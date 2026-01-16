@@ -71,6 +71,18 @@
 │  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      Compliance Layer                                │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │   │
+│  │  │ Regulatory   │  │  Proof of    │  │    KYC       │              │   │
+│  │  │ Registry     │  │  Reserve     │  │   Registry   │              │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘              │   │
+│  │  ┌──────────────┐  ┌──────────────┐                                │   │
+│  │  │ Audit        │  │  Monthly     │                                │   │
+│  │  │ Logger       │  │ Attestation  │                                │   │
+│  │  └──────────────┘  └──────────────┘                                │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1515,7 +1527,101 @@ contract SecureBridge {
 
 ---
 
-## 9. 컨트랙트 배포 순서
+## 9. Compliance Contracts
+
+규제 준수를 위한 스마트 컨트랙트입니다. 상세 구현은 [08_Regulatory_Compliance.md](./08_Regulatory_Compliance.md) 참조.
+
+### 9.1 Compliance Contracts 개요
+
+| 컨트랙트 | 목적 | 주요 기능 |
+|---------|------|----------|
+| **RegulatoryRegistry** | 규제기관 등록 및 권한 관리 | MRK 공개키 저장, 2-of-3 다중서명 승인 |
+| **ProofOfReserve** | 100% 준비금 증명 | Chainlink PoR 오라클 연동, 자동 Pause |
+| **KYCRegistry** | KYC 상태 온체인 기록 | 허용/차단 목록, OFAC 제재 연동 |
+| **AuditLogger** | 불변 감사 로그 | 모든 규제기관 접근 기록 |
+| **MonthlyAttestation** | CEO/CFO 월간 증명 | GENIUS Act 준수, 증명 누락 알림 |
+
+### 9.2 RegulatoryRegistry 요약
+
+```solidity
+/**
+ * @title RegulatoryRegistry
+ * @notice 규제기관 등록 및 Regulatory Viewing Key 관리
+ */
+contract RegulatoryRegistry is AccessControlUpgradeable {
+    bytes32 public constant REGULATOR_ROLE = keccak256("REGULATOR_ROLE");
+    bytes32 public constant APPROVER_ROLE = keccak256("APPROVER_ROLE");
+
+    // Master Regulatory Key 공개키
+    bytes public masterRegulatoryKeyPubKey;
+
+    // 2-of-3 다중서명 승인 필요
+    uint8 public constant REQUIRED_APPROVALS = 2;
+
+    // 규제기관 등록
+    function registerRegulator(address, string, string, uint8) external;
+
+    // 자금 추적 요청 (법적 근거 필수)
+    function requestTrace(address targetAccount, bytes32 legalBasisHash) external returns (bytes32);
+
+    // 추적 요청 승인 (다중서명)
+    function approveTrace(bytes32 requestId) external;
+}
+```
+
+### 9.3 ProofOfReserve 요약
+
+```solidity
+/**
+ * @title ProofOfReserve
+ * @notice Chainlink PoR 오라클 기반 100% 준비금 증명
+ */
+contract ProofOfReserve is PausableUpgradeable {
+    AggregatorV3Interface public reserveOracle;
+    uint256 public constant MIN_RESERVE_RATIO = 10000; // 100%
+
+    // 준비금 검증 (부족시 자동 Pause)
+    function verifyReserve() external returns (bool);
+
+    // 외부 감사인용 증명 생성
+    function generateProof() external view returns (
+        uint256 totalSupply,
+        uint256 totalReserve,
+        uint256 ratio,
+        uint256 timestamp,
+        bytes32 proofHash
+    );
+}
+```
+
+### 9.4 KYCRegistry 요약
+
+```solidity
+/**
+ * @title KYCRegistry
+ * @notice KYC 상태 및 제재 목록 관리
+ */
+contract KYCRegistry is AccessControlUpgradeable {
+    enum KYCStatus { NONE, PENDING, VERIFIED, REJECTED, EXPIRED }
+    enum RiskLevel { LOW, MEDIUM, HIGH, PROHIBITED }
+
+    mapping(address => KYCRecord) public kycRecords;
+    mapping(address => bool) public sanctionedAddresses;
+
+    // KYC 상태 업데이트
+    function updateKYCStatus(address, KYCStatus, RiskLevel, bytes32, string) external;
+
+    // 거래 허용 여부 확인 (다른 컨트랙트에서 호출)
+    function canTransact(address account) external view returns (bool);
+
+    // 제재 목록 추가
+    function addToSanctionList(address account, string reason) external;
+}
+```
+
+---
+
+## 10. 컨트랙트 배포 순서
 
 ```
 Phase 1: Core Infrastructure
@@ -1560,37 +1666,46 @@ Phase 7: Bridge
 ├── 27. Deploy BridgeValidator
 ├── 28. Deploy MessageVerifier
 └── 29. Deploy SecureBridge
+
+Phase 8: Compliance
+├── 30. Deploy RegulatoryRegistry
+├── 31. Deploy ProofOfReserve (with Chainlink PoR Oracle)
+├── 32. Deploy KYCRegistry
+├── 33. Deploy AuditLogger
+└── 34. Deploy MonthlyAttestation
 ```
 
 ---
 
-## 10. 보안 고려사항
+## 11. 보안 고려사항
 
-### 10.1 공통 보안 패턴
+### 11.1 공통 보안 패턴
 
 | 패턴 | 적용 컨트랙트 | 설명 |
 |------|--------------|------|
 | Reentrancy Guard | 모든 토큰 전송 컨트랙트 | nonReentrant modifier |
-| Access Control | Paymaster, Bridge | OpenZeppelin AccessControl |
-| Pausable | Core 컨트랙트 | 긴급 정지 기능 |
+| Access Control | Paymaster, Bridge, Compliance | OpenZeppelin AccessControl |
+| Pausable | Core, ProofOfReserve | 긴급 정지 기능 |
 | Rate Limiting | Bridge, Paymaster | 시간당/일일 한도 |
 | Signature Replay | Paymaster, Permission | Nonce 및 deadline 적용 |
+| Multi-Sig | RegulatoryRegistry | 2-of-3 다중서명 승인 |
 
-### 10.2 감사 대상 우선순위
+### 11.2 감사 대상 우선순위
 
-1. **Critical**: EntryPoint, Kernel, SecureBridge
-2. **High**: Paymaster 컨트랙트, SubscriptionManager
-3. **Medium**: Executor/Hook 모듈, PrivateBank
-4. **Low**: Factory, Registry, Oracle
+1. **Critical**: EntryPoint, Kernel, SecureBridge, RegulatoryRegistry
+2. **High**: Paymaster 컨트랙트, SubscriptionManager, ProofOfReserve
+3. **Medium**: Executor/Hook 모듈, PrivateBank, KYCRegistry
+4. **Low**: Factory, Registry, Oracle, AuditLogger
 
 ---
 
-## 11. 관련 문서
+## 12. 관련 문서
 
 - [00_PoC_Overview.md](./00_PoC_Overview.md) - PoC 개요
 - [01_System_Architecture.md](./01_System_Architecture.md) - 시스템 아키텍처
 - [03_Development_Roadmap.md](./03_Development_Roadmap.md) - 개발 로드맵
 - [04_Secure_Bridge.md](./04_Secure_Bridge.md) - 브릿지 상세 설계
+- [08_Regulatory_Compliance.md](./08_Regulatory_Compliance.md) - 규제 준수 아키텍처
 
 ---
 
