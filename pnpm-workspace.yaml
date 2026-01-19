@@ -1,0 +1,16 @@
+packages:
+  # SDK packages
+  - "packages/sdk/packages/*"
+  - "packages/sdk/plugins/*"
+  - "packages/stealth-sdk"
+  - "packages/types"
+  - "packages/config"
+
+  # Applications
+  - "apps/*"
+
+  # Backend services
+  - "services/*"
+
+  # Simulators
+  - "simulators/*"
