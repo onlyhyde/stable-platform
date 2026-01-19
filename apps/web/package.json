@@ -1,0 +1,34 @@
+{
+  "name": "@stablenet/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "StableNet Web Application",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome lint app/ components/ hooks/ lib/",
+    "lint:fix": "biome lint --write app/ components/ hooks/ lib/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@stablenet/core": "workspace:*",
+    "@stablenet/stealth-sdk": "workspace:*",
+    "@tanstack/react-query": "^5.62.7",
+    "next": "^15.1.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "viem": "^2.21.0",
+    "wagmi": "^2.14.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2"
+  }
+}
