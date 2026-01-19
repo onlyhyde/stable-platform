@@ -1,0 +1,102 @@
+import type { Network } from '../types'
+
+/**
+ * Default networks configuration
+ */
+export const DEFAULT_NETWORKS: Network[] = [
+  {
+    chainId: 31337,
+    name: 'StableNet Devnet',
+    rpcUrl: 'http://localhost:8545',
+    bundlerUrl: 'http://localhost:4337',
+    paymasterUrl: 'http://localhost:4338',
+    currency: {
+      name: 'Ether',
+      symbol: 'ETH',
+      decimals: 18,
+    },
+  },
+  {
+    chainId: 11155111,
+    name: 'Sepolia',
+    rpcUrl: 'https://rpc.sepolia.org',
+    bundlerUrl: 'https://bundler.sepolia.stablenet.dev',
+    paymasterUrl: 'https://paymaster.sepolia.stablenet.dev',
+    explorerUrl: 'https://sepolia.etherscan.io',
+    currency: {
+      name: 'Sepolia Ether',
+      symbol: 'ETH',
+      decimals: 18,
+    },
+  },
+]
+
+/**
+ * Storage keys
+ */
+export const STORAGE_KEYS = {
+  WALLET_STATE: 'stablenet_wallet_state',
+  ENCRYPTED_VAULT: 'stablenet_encrypted_vault',
+  CONNECTED_SITES: 'stablenet_connected_sites',
+  PREFERENCES: 'stablenet_preferences',
+} as const
+
+/**
+ * Message types for extension communication
+ */
+export const MESSAGE_TYPES = {
+  RPC_REQUEST: 'RPC_REQUEST',
+  RPC_RESPONSE: 'RPC_RESPONSE',
+  STATE_UPDATE: 'STATE_UPDATE',
+  CONNECT_REQUEST: 'CONNECT_REQUEST',
+  CONNECT_RESPONSE: 'CONNECT_RESPONSE',
+  DISCONNECT: 'DISCONNECT',
+} as const
+
+/**
+ * Provider events (EIP-1193)
+ */
+export const PROVIDER_EVENTS = {
+  ACCOUNTS_CHANGED: 'accountsChanged',
+  CHAIN_CHANGED: 'chainChanged',
+  CONNECT: 'connect',
+  DISCONNECT: 'disconnect',
+  MESSAGE: 'message',
+} as const
+
+/**
+ * RPC error codes
+ */
+export const RPC_ERRORS = {
+  INVALID_INPUT: { code: -32000, message: 'Invalid input' },
+  RESOURCE_NOT_FOUND: { code: -32001, message: 'Resource not found' },
+  RESOURCE_UNAVAILABLE: { code: -32002, message: 'Resource unavailable' },
+  TRANSACTION_REJECTED: { code: -32003, message: 'Transaction rejected' },
+  METHOD_NOT_SUPPORTED: { code: -32004, message: 'Method not supported' },
+  LIMIT_EXCEEDED: { code: -32005, message: 'Limit exceeded' },
+  PARSE_ERROR: { code: -32700, message: 'Parse error' },
+  INVALID_REQUEST: { code: -32600, message: 'Invalid request' },
+  METHOD_NOT_FOUND: { code: -32601, message: 'Method not found' },
+  INVALID_PARAMS: { code: -32602, message: 'Invalid params' },
+  INTERNAL_ERROR: { code: -32603, message: 'Internal error' },
+  USER_REJECTED: { code: 4001, message: 'User rejected the request' },
+  UNAUTHORIZED: { code: 4100, message: 'The requested account has not been authorized' },
+  UNSUPPORTED_METHOD: { code: 4200, message: 'The requested method is not supported' },
+  DISCONNECTED: { code: 4900, message: 'The provider is disconnected from all chains' },
+  CHAIN_DISCONNECTED: { code: 4901, message: 'The provider is disconnected from the specified chain' },
+} as const
+
+/**
+ * EntryPoint addresses
+ */
+export const ENTRY_POINT_ADDRESSES = {
+  V07: '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as const,
+} as const
+
+/**
+ * Popup dimensions
+ */
+export const POPUP_DIMENSIONS = {
+  WIDTH: 360,
+  HEIGHT: 600,
+} as const
