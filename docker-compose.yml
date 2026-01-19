@@ -1,0 +1,167 @@
+version: '3.8'
+
+services:
+  # ===================
+  # Infrastructure
+  # ===================
+  postgres:
+    image: postgres:16-alpine
+    container_name: stablenet-postgres
+    environment:
+      POSTGRES_USER: stablenet
+      POSTGRES_PASSWORD: stablenet
+      POSTGRES_DB: stablenet
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stablenet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: stablenet-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ===================
+  # TypeScript Services
+  # ===================
+  bundler:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.node
+      args:
+        SERVICE: services/bundler
+    container_name: stablenet-bundler
+    ports:
+      - "4337:4337"
+    environment:
+      - PORT=4337
+      - STABLENET_RPC_URL=http://host.docker.internal:8545
+    depends_on:
+      - redis
+    volumes:
+      - ./services/bundler:/app/services/bundler
+      - /app/services/bundler/node_modules
+
+  paymaster-proxy:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.node
+      args:
+        SERVICE: services/paymaster-proxy
+    container_name: stablenet-paymaster-proxy
+    ports:
+      - "4338:4338"
+    environment:
+      - PORT=4338
+      - STABLENET_RPC_URL=http://host.docker.internal:8545
+    volumes:
+      - ./services/paymaster-proxy:/app/services/paymaster-proxy
+      - /app/services/paymaster-proxy/node_modules
+
+  # ===================
+  # Go Services
+  # ===================
+  stealth-server:
+    build:
+      context: ./services/stealth-server
+      dockerfile: ../../infra/docker/Dockerfile.go
+    container_name: stablenet-stealth-server
+    ports:
+      - "4339:4339"
+    environment:
+      - PORT=4339
+      - DATABASE_URL=postgres://stablenet:stablenet@postgres:5432/stablenet_stealth?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  order-router:
+    build:
+      context: ./services/order-router
+      dockerfile: ../../infra/docker/Dockerfile.go
+    container_name: stablenet-order-router
+    ports:
+      - "4340:4340"
+    environment:
+      - PORT=4340
+      - STABLENET_RPC_URL=http://host.docker.internal:8545
+
+  subscription-executor:
+    build:
+      context: ./services/subscription-executor
+      dockerfile: ../../infra/docker/Dockerfile.go
+    container_name: stablenet-subscription-executor
+    ports:
+      - "4341:4341"
+    environment:
+      - PORT=4341
+      - REDIS_URL=redis://redis:6379
+      - STABLENET_RPC_URL=http://host.docker.internal:8545
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  bridge-relayer:
+    build:
+      context: ./services/bridge-relayer
+      dockerfile: ../../infra/docker/Dockerfile.go
+    container_name: stablenet-bridge-relayer
+    ports:
+      - "4342:4342"
+    environment:
+      - PORT=4342
+      - STABLENET_RPC_URL=http://host.docker.internal:8545
+
+  # ===================
+  # Simulators (Go)
+  # ===================
+  simulator-bank:
+    build:
+      context: ./simulators/bank
+      dockerfile: ../../infra/docker/Dockerfile.go
+    container_name: stablenet-simulator-bank
+    ports:
+      - "4350:4350"
+    environment:
+      - PORT=4350
+
+  simulator-pg:
+    build:
+      context: ./simulators/pg
+      dockerfile: ../../infra/docker/Dockerfile.go
+    container_name: stablenet-simulator-pg
+    ports:
+      - "4351:4351"
+    environment:
+      - PORT=4351
+
+  simulator-onramp:
+    build:
+      context: ./simulators/onramp
+      dockerfile: ../../infra/docker/Dockerfile.go
+    container_name: stablenet-simulator-onramp
+    ports:
+      - "4352:4352"
+    environment:
+      - PORT=4352
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: stablenet-network
