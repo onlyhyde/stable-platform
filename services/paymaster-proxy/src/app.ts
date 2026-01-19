@@ -1,0 +1,301 @@
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { logger } from 'hono/logger'
+import type { Address, Hex } from 'viem'
+import type { PaymasterProxyConfig, JsonRpcResponse, UserOperationRpc, PackedUserOperationRpc } from './types'
+import { RPC_ERROR_CODES } from './types'
+import {
+  jsonRpcRequestSchema,
+  getPaymasterStubDataParamsSchema,
+  getPaymasterDataParamsSchema,
+} from './schemas'
+import {
+  handleGetPaymasterStubData,
+  handleGetPaymasterData,
+} from './handlers'
+import { PaymasterSigner } from './signer/paymasterSigner'
+import { SponsorPolicyManager } from './policy/sponsorPolicy'
+
+/**
+ * Create the Paymaster Proxy application
+ */
+export function createApp(config: PaymasterProxyConfig): Hono {
+  const app = new Hono()
+
+  // Initialize components
+  const signer = new PaymasterSigner(config.signerPrivateKey, config.paymasterAddress)
+  const policyManager = new SponsorPolicyManager()
+
+  // Handler configuration
+  const handlerConfig = {
+    paymasterAddress: config.paymasterAddress,
+    signer,
+    policyManager,
+    supportedChainIds: config.supportedChainIds,
+    sponsorName: 'StableNet Paymaster',
+  }
+
+  // Middleware
+  app.use('*', cors())
+  if (config.debug) {
+    app.use('*', logger())
+  }
+
+  // Health check
+  app.get('/health', (c) => {
+    return c.json({
+      status: 'ok',
+      paymaster: config.paymasterAddress,
+      signer: signer.getSignerAddress(),
+      supportedChainIds: config.supportedChainIds,
+    })
+  })
+
+  // Policy management endpoints (admin)
+  app.get('/admin/policies', (c) => {
+    const policies = policyManager.getAllPolicies()
+    return c.json({ policies })
+  })
+
+  app.post('/admin/policies', async (c) => {
+    const body = await c.req.json()
+    policyManager.setPolicy(body)
+    return c.json({ success: true })
+  })
+
+  // JSON-RPC endpoint
+  app.post('/', async (c) => {
+    const body = await c.req.json()
+
+    // Handle batch requests
+    if (Array.isArray(body)) {
+      const results = await Promise.all(
+        body.map((req) => handleJsonRpcRequest(req, handlerConfig))
+      )
+      return c.json(results)
+    }
+
+    const result = await handleJsonRpcRequest(body, handlerConfig)
+    return c.json(result)
+  })
+
+  // Also support /rpc path
+  app.post('/rpc', async (c) => {
+    const body = await c.req.json()
+
+    // Handle batch requests
+    if (Array.isArray(body)) {
+      const results = await Promise.all(
+        body.map((req) => handleJsonRpcRequest(req, handlerConfig))
+      )
+      return c.json(results)
+    }
+
+    const result = await handleJsonRpcRequest(body, handlerConfig)
+    return c.json(result)
+  })
+
+  return app
+}
+
+/**
+ * Handle a single JSON-RPC request
+ */
+async function handleJsonRpcRequest(
+  req: unknown,
+  config: {
+    paymasterAddress: Address
+    signer: PaymasterSigner
+    policyManager: SponsorPolicyManager
+    supportedChainIds: number[]
+    sponsorName?: string
+  }
+): Promise<JsonRpcResponse> {
+  // Parse request
+  const parseResult = jsonRpcRequestSchema.safeParse(req)
+  if (!parseResult.success) {
+    return {
+      jsonrpc: '2.0',
+      id: (req as { id?: number | string })?.id ?? null as unknown as number,
+      error: {
+        code: RPC_ERROR_CODES.INVALID_REQUEST,
+        message: 'Invalid JSON-RPC request',
+        data: parseResult.error.issues,
+      },
+    }
+  }
+
+  const { id, method, params } = parseResult.data
+
+  try {
+    const result = await callMethod(method, params, config)
+    return { jsonrpc: '2.0', id, result }
+  } catch (error) {
+    if (error instanceof RpcError) {
+      return {
+        jsonrpc: '2.0',
+        id,
+        error: {
+          code: error.code,
+          message: error.message,
+          data: error.data,
+        },
+      }
+    }
+
+    return {
+      jsonrpc: '2.0',
+      id,
+      error: {
+        code: RPC_ERROR_CODES.INTERNAL_ERROR,
+        message: error instanceof Error ? error.message : 'Internal error',
+      },
+    }
+  }
+}
+
+/**
+ * RPC Error class
+ */
+class RpcError extends Error {
+  constructor(
+    message: string,
+    public code: number,
+    public data?: unknown
+  ) {
+    super(message)
+    this.name = 'RpcError'
+  }
+}
+
+/**
+ * Call an RPC method
+ */
+async function callMethod(
+  method: string,
+  params: unknown[],
+  config: {
+    paymasterAddress: Address
+    signer: PaymasterSigner
+    policyManager: SponsorPolicyManager
+    supportedChainIds: number[]
+    sponsorName?: string
+  }
+): Promise<unknown> {
+  switch (method) {
+    case 'pm_getPaymasterStubData':
+      return handlePmGetPaymasterStubData(params, config)
+
+    case 'pm_getPaymasterData':
+      return handlePmGetPaymasterData(params, config)
+
+    case 'pm_supportedChainIds':
+      return config.supportedChainIds
+
+    case 'pm_sponsorUserOperation':
+      // Alias for pm_getPaymasterData (for compatibility)
+      return handlePmGetPaymasterData(params, config)
+
+    default:
+      throw new RpcError(
+        `Method ${method} not found`,
+        RPC_ERROR_CODES.METHOD_NOT_FOUND
+      )
+  }
+}
+
+/**
+ * Handle pm_getPaymasterStubData
+ */
+function handlePmGetPaymasterStubData(
+  params: unknown[],
+  config: {
+    paymasterAddress: Address
+    signer: PaymasterSigner
+    policyManager: SponsorPolicyManager
+    supportedChainIds: number[]
+    sponsorName?: string
+  }
+): unknown {
+  // Parse params
+  const parseResult = getPaymasterStubDataParamsSchema.safeParse(params)
+  if (!parseResult.success) {
+    throw new RpcError(
+      'Invalid parameters',
+      RPC_ERROR_CODES.INVALID_PARAMS,
+      parseResult.error.issues
+    )
+  }
+
+  const [userOp, entryPoint, chainId, context] = parseResult.data
+
+  const result = handleGetPaymasterStubData(
+    {
+      userOp: userOp as UserOperationRpc | PackedUserOperationRpc,
+      entryPoint: entryPoint as Address,
+      chainId: chainId as Hex,
+      context: context as Record<string, unknown> | undefined,
+    },
+    {
+      ...config,
+    }
+  )
+
+  if (!result.success) {
+    throw new RpcError(
+      result.error.message,
+      result.error.code,
+      result.error.data
+    )
+  }
+
+  return result.data
+}
+
+/**
+ * Handle pm_getPaymasterData
+ */
+async function handlePmGetPaymasterData(
+  params: unknown[],
+  config: {
+    paymasterAddress: Address
+    signer: PaymasterSigner
+    policyManager: SponsorPolicyManager
+    supportedChainIds: number[]
+    sponsorName?: string
+  }
+): Promise<unknown> {
+  // Parse params
+  const parseResult = getPaymasterDataParamsSchema.safeParse(params)
+  if (!parseResult.success) {
+    throw new RpcError(
+      'Invalid parameters',
+      RPC_ERROR_CODES.INVALID_PARAMS,
+      parseResult.error.issues
+    )
+  }
+
+  const [userOp, entryPoint, chainId, context] = parseResult.data
+
+  const result = await handleGetPaymasterData(
+    {
+      userOp: userOp as UserOperationRpc | PackedUserOperationRpc,
+      entryPoint: entryPoint as Address,
+      chainId: chainId as Hex,
+      context: context as Record<string, unknown> | undefined,
+    },
+    {
+      ...config,
+    }
+  )
+
+  if (!result.success) {
+    throw new RpcError(
+      result.error.message,
+      result.error.code,
+      result.error.data
+    )
+  }
+
+  return result.data
+}

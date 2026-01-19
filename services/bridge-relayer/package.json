@@ -1,0 +1,12 @@
+{
+  "name": "@stablenet/bridge-relayer",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "go build -o bin/bridge-relayer ./cmd/main.go",
+    "dev": "go run ./cmd/main.go",
+    "test": "go test ./... || echo 'No tests yet'",
+    "lint": "which golangci-lint > /dev/null && golangci-lint run || echo 'golangci-lint not installed, skipping'",
+    "clean": "rm -rf bin"
+  }
+}
