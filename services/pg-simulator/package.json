@@ -1,0 +1,10 @@
+{
+  "name": "@stablenet/pg-simulator",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "go build -o bin/pg-simulator ./cmd",
+    "start": "go run ./cmd",
+    "dev": "go run ./cmd"
+  }
+}

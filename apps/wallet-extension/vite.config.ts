@@ -37,6 +37,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         popup: resolve(__dirname, 'src/ui/popup.html'),
+        approval: resolve(__dirname, 'src/approval/approval.html'),
         background: resolve(__dirname, 'src/background/index.ts'),
         contentscript: resolve(__dirname, 'src/contentscript/index.ts'),
         inpage: resolve(__dirname, 'src/inpage/index.ts'),

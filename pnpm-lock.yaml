@@ -20,15 +20,30 @@ importers:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
+      viem:
+        specifier: ^2.21.0
+        version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.5)
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.19.7)
 
   apps/wallet-extension:
     dependencies:
+      '@noble/hashes':
+        specifier: ^1.3.3
+        version: 1.8.0
       '@stablenet/core':
         specifier: workspace:*
         version: link:../../packages/sdk/packages/core
-      '@stablenet/stealth-sdk':
+      '@stablenet/plugin-stealth':
         specifier: workspace:*
-        version: link:../../packages/stealth-sdk
+        version: link:../../packages/sdk/plugins/stealth
+      bip39:
+        specifier: ^3.1.0
+        version: 3.1.0
+      qrcode:
+        specifier: ^1.5.3
+        version: 1.5.3
       react:
         specifier: ^19.0.0
         version: 19.2.3
@@ -84,9 +99,9 @@ importers:
       '@stablenet/core':
         specifier: workspace:*
         version: link:../../packages/sdk/packages/core
-      '@stablenet/stealth-sdk':
+      '@stablenet/plugin-stealth':
         specifier: workspace:*
-        version: link:../../packages/stealth-sdk
+        version: link:../../packages/sdk/plugins/stealth
       '@tanstack/react-query':
         specifier: ^5.62.7
         version: 5.90.19(react@19.2.3)
@@ -296,31 +311,6 @@ importers:
 
   packages/sdk/plugins/stealth:
     dependencies:
-      '@stablenet/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@stablenet/types':
-        specifier: workspace:*
-        version: link:../../packages/types
-      viem:
-        specifier: ^2.21.0
-        version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.5)
-    devDependencies:
-      '@biomejs/biome':
-        specifier: ^1.9.4
-        version: 1.9.4
-      tsup:
-        specifier: ^8.3.5
-        version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@22.19.7)
-
-  packages/stealth-sdk:
-    dependencies:
       '@noble/curves':
         specifier: ^1.7.0
         version: 1.9.7
@@ -355,6 +345,8 @@ importers:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
+
+  services/bank-simulator: {}
 
   services/bridge-relayer: {}
 
@@ -404,6 +396,8 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.19.7)
 
+  services/onramp-simulator: {}
+
   services/order-router: {}
 
   services/paymaster-proxy:
@@ -449,15 +443,9 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.19.7)
 
-  services/stealth-server: {}
+  services/pg-simulator: {}
 
   services/subscription-executor: {}
-
-  simulators/bank: {}
-
-  simulators/onramp: {}
-
-  simulators/pg: {}
 
 packages:
 
@@ -2536,6 +2524,9 @@ packages:
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
+
+  bip39@3.1.0:
+    resolution: {integrity: sha512-c9kiwdk45Do5GL0vJMe7tS95VjCii65mYAH7DfWl3uW8AVzXKQVUm64i3hzVybBDMp9r7j9iNxR85+ul8MdN/A==}
 
   bn.js@5.2.2:
     resolution: {integrity: sha512-v2YAxEmKaBLahNwE1mjp4WON6huMNeuDvagFZW+ASCuA/ku0bXR9hSMw0XpiqMoA3+rmnyck/tPRSFQkoC9Cuw==}
@@ -6236,7 +6227,7 @@ snapshots:
 
   '@scure/bip32@1.7.0':
     dependencies:
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
 
@@ -7619,6 +7610,10 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
+  bip39@3.1.0:
+    dependencies:
+      '@noble/hashes': 1.8.0
+
   bn.js@5.2.2: {}
 
   boolbase@1.0.0: {}
@@ -8760,8 +8755,8 @@ snapshots:
   ox@0.6.7(typescript@5.9.3)(zod@4.3.5):
     dependencies:
       '@adraffy/ens-normalize': 1.11.1
-      '@noble/curves': 1.8.1
-      '@noble/hashes': 1.7.1
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
       '@scure/bip32': 1.6.2
       '@scure/bip39': 1.5.4
       abitype: 1.0.8(typescript@5.9.3)(zod@4.3.5)

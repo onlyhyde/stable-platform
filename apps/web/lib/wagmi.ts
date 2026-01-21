@@ -1,17 +1,17 @@
 'use client'
 
 import { createConfig, http } from 'wagmi'
-import { injected, metaMask } from 'wagmi/connectors'
+import { injected } from 'wagmi/connectors'
 import { supportedChains, stablenetDevnet } from './chains'
 
 /**
  * Wagmi configuration for StableNet
+ * Using injected() connector which works with MetaMask, Rabby, and other browser wallets
  */
 export const wagmiConfig = createConfig({
   chains: supportedChains,
   connectors: [
     injected(),
-    metaMask(),
   ],
   transports: {
     [stablenetDevnet.id]: http(),

@@ -1,83 +1,14 @@
 import type { Address, Hex } from 'viem'
 
-/**
- * Account types
- */
-export interface Account {
-  address: Address
-  name: string
-  type: 'smart' | 'eoa'
-  isDeployed?: boolean
-}
-
-export interface AccountState {
-  accounts: Account[]
-  selectedAccount: Address | null
-}
-
-/**
- * Network types
- */
-export interface Network {
-  chainId: number
-  name: string
-  rpcUrl: string
-  bundlerUrl: string
-  paymasterUrl?: string
-  explorerUrl?: string
-  currency: {
-    name: string
-    symbol: string
-    decimals: number
-  }
-}
-
-export interface NetworkState {
-  networks: Network[]
-  selectedChainId: number
-}
-
-/**
- * Transaction types
- */
-export interface PendingTransaction {
-  id: string
-  from: Address
-  to: Address
-  value: bigint
-  data?: Hex
-  chainId: number
-  status: 'pending' | 'submitted' | 'confirmed' | 'failed'
-  userOpHash?: Hex
-  txHash?: Hex
-  timestamp: number
-}
-
-export interface TransactionState {
-  pendingTransactions: PendingTransaction[]
-  history: PendingTransaction[]
-}
-
-/**
- * RPC Request/Response types
- */
-export interface JsonRpcRequest {
-  jsonrpc: '2.0'
-  id: number | string
-  method: string
-  params?: unknown[]
-}
-
-export interface JsonRpcResponse<T = unknown> {
-  jsonrpc: '2.0'
-  id: number | string
-  result?: T
-  error?: {
-    code: number
-    message: string
-    data?: unknown
-  }
-}
+// Re-export from individual type files
+export * from './account'
+export * from './network'
+export * from './transaction'
+export * from './keyring'
+export * from './approval'
+export * from './bank'
+export * from './onramp'
+export * from './rpc'
 
 /**
  * Message types for extension communication
@@ -89,6 +20,11 @@ export type MessageType =
   | 'CONNECT_REQUEST'
   | 'CONNECT_RESPONSE'
   | 'DISCONNECT'
+  | 'OPEN_POPUP'
+  | 'APPROVAL_REQUEST'
+  | 'APPROVAL_RESPONSE'
+  | 'LOCK'
+  | 'UNLOCK'
 
 export interface ExtensionMessage<T = unknown> {
   type: MessageType
@@ -114,38 +50,37 @@ export interface ConnectionState {
 }
 
 /**
- * Keyring types
- */
-export interface KeyringAccount {
-  address: Address
-  type: 'hd' | 'privateKey' | 'hardware'
-  index?: number
-}
-
-export interface KeyringState {
-  isUnlocked: boolean
-  accounts: KeyringAccount[]
-}
-
-/**
  * UI State types
  */
+export type Page =
+  | 'home'
+  | 'send'
+  | 'receive'
+  | 'activity'
+  | 'settings'
+  | 'connect'
+  | 'bank'
+  | 'buy'
+  | 'onboarding'
+  | 'lock'
+
 export interface UIState {
   isLoading: boolean
   error: string | null
-  currentPage: 'home' | 'send' | 'receive' | 'activity' | 'settings' | 'connect'
+  currentPage: Page
 }
 
 /**
  * Complete wallet state
  */
 export interface WalletState {
-  accounts: AccountState
-  networks: NetworkState
-  transactions: TransactionState
+  accounts: import('./account').AccountState
+  networks: import('./network').NetworkState
+  transactions: import('./transaction').TransactionState
   connections: ConnectionState
-  keyring: KeyringState
+  keyring: import('./keyring').KeyringControllerState
   ui: UIState
+  isInitialized: boolean
 }
 
 /**
@@ -161,21 +96,16 @@ export interface EIP1193Provider {
 }
 
 /**
- * Supported RPC methods
+ * EIP-6963 Provider Info
  */
-export type SupportedMethod =
-  | 'eth_accounts'
-  | 'eth_requestAccounts'
-  | 'eth_chainId'
-  | 'wallet_switchEthereumChain'
-  | 'wallet_addEthereumChain'
-  | 'eth_sendUserOperation'
-  | 'eth_estimateUserOperationGas'
-  | 'eth_getUserOperationByHash'
-  | 'eth_getUserOperationReceipt'
-  | 'personal_sign'
-  | 'eth_signTypedData_v4'
-  | 'eth_getBalance'
-  | 'eth_call'
-  | 'eth_blockNumber'
-  | 'eth_getTransactionReceipt'
+export interface EIP6963ProviderInfo {
+  uuid: string
+  name: string
+  icon: string
+  rdns: string
+}
+
+export interface EIP6963ProviderDetail {
+  info: EIP6963ProviderInfo
+  provider: EIP1193Provider
+}

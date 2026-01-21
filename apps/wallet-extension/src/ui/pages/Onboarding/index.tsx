@@ -1,0 +1,178 @@
+import { useState, useCallback } from 'react'
+import type { Address } from 'viem'
+import { Welcome } from './Welcome'
+import { CreatePassword } from './CreatePassword'
+import { SeedPhrase } from './SeedPhrase'
+import { ConfirmSeed } from './ConfirmSeed'
+import { ImportWallet } from './ImportWallet'
+import { Complete } from './Complete'
+import { keyringController } from '../../../background/keyring'
+
+export type OnboardingStep =
+  | 'welcome'
+  | 'createPassword'
+  | 'seedPhrase'
+  | 'confirmSeed'
+  | 'importWallet'
+  | 'importPassword'
+  | 'complete'
+
+interface OnboardingProps {
+  onComplete: () => void
+}
+
+export function Onboarding({ onComplete }: OnboardingProps) {
+  const [step, setStep] = useState<OnboardingStep>('welcome')
+  const [password, setPassword] = useState('')
+  const [mnemonic, setMnemonic] = useState('')
+  const [createdAddress, setCreatedAddress] = useState<Address | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  // Flow: Create New Wallet
+  // welcome -> createPassword -> seedPhrase -> confirmSeed -> complete
+
+  // Flow: Import Wallet
+  // welcome -> importWallet -> importPassword -> complete
+
+  const handleCreateNew = useCallback(() => {
+    setStep('createPassword')
+  }, [])
+
+  const handleImport = useCallback(() => {
+    setStep('importWallet')
+  }, [])
+
+  const handlePasswordCreate = useCallback(async (pwd: string) => {
+    setPassword(pwd)
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const result = await keyringController.createNewVault(pwd)
+      setMnemonic(result.mnemonic)
+      setCreatedAddress(result.account.address)
+      setStep('seedPhrase')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create wallet')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const handleSeedConfirm = useCallback(() => {
+    setStep('confirmSeed')
+  }, [])
+
+  const handleConfirmComplete = useCallback(() => {
+    setStep('complete')
+  }, [])
+
+  const handleImportMnemonic = useCallback(async (importedMnemonic: string) => {
+    setMnemonic(importedMnemonic)
+    setStep('importPassword')
+  }, [])
+
+  const handleImportPasswordCreate = useCallback(async (pwd: string) => {
+    setPassword(pwd)
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const account = await keyringController.restoreFromMnemonic(pwd, mnemonic)
+      setCreatedAddress(account.address)
+      setStep('complete')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to import wallet')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [mnemonic])
+
+  const handleFinish = useCallback(() => {
+    // Clear sensitive data
+    setPassword('')
+    setMnemonic('')
+    onComplete()
+  }, [onComplete])
+
+  const handleBack = useCallback(() => {
+    switch (step) {
+      case 'createPassword':
+      case 'importWallet':
+        setStep('welcome')
+        break
+      case 'seedPhrase':
+        setStep('createPassword')
+        break
+      case 'confirmSeed':
+        setStep('seedPhrase')
+        break
+      case 'importPassword':
+        setStep('importWallet')
+        break
+      default:
+        setStep('welcome')
+    }
+  }, [step])
+
+  return (
+    <div className="h-full bg-white">
+      {step === 'welcome' && (
+        <Welcome onCreateNew={handleCreateNew} onImport={handleImport} />
+      )}
+
+      {step === 'createPassword' && (
+        <CreatePassword
+          onSubmit={handlePasswordCreate}
+          onBack={handleBack}
+          isLoading={isLoading}
+        />
+      )}
+
+      {step === 'seedPhrase' && mnemonic && (
+        <SeedPhrase
+          mnemonic={mnemonic}
+          onConfirm={handleSeedConfirm}
+          onBack={handleBack}
+        />
+      )}
+
+      {step === 'confirmSeed' && mnemonic && (
+        <ConfirmSeed
+          mnemonic={mnemonic}
+          onConfirm={handleConfirmComplete}
+          onBack={handleBack}
+        />
+      )}
+
+      {step === 'importWallet' && (
+        <ImportWallet
+          onImport={handleImportMnemonic}
+          onBack={handleBack}
+          error={error}
+        />
+      )}
+
+      {step === 'importPassword' && (
+        <CreatePassword
+          onSubmit={handleImportPasswordCreate}
+          onBack={handleBack}
+          isLoading={isLoading}
+        />
+      )}
+
+      {step === 'complete' && createdAddress && (
+        <Complete address={createdAddress} onFinish={handleFinish} />
+      )}
+    </div>
+  )
+}
+
+// Re-export individual components
+export { Welcome } from './Welcome'
+export { CreatePassword } from './CreatePassword'
+export { SeedPhrase } from './SeedPhrase'
+export { ConfirmSeed } from './ConfirmSeed'
+export { ImportWallet } from './ImportWallet'
+export { Complete } from './Complete'

@@ -34,12 +34,23 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 ARG SERVICE
 
+# Copy workspace configuration
 COPY --from=base /app/package.json ./
 COPY --from=base /app/pnpm-workspace.yaml ./
+COPY --from=base /app/pnpm-lock.yaml ./
+
+# Copy all node_modules (including .pnpm store)
 COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/${SERVICE}/dist ./${SERVICE}/dist
-COPY --from=base /app/${SERVICE}/package.json ./${SERVICE}/
+
+# Copy packages (shared libraries)
+COPY --from=base /app/packages ./packages
+
+# Copy service with its node_modules
+COPY --from=base /app/${SERVICE} ./${SERVICE}
 
 WORKDIR /app/${SERVICE}
+
+# Set production environment
+ENV NODE_ENV=production
 
 CMD ["node", "dist/index.js"]

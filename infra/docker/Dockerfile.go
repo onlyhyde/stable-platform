@@ -1,16 +1,19 @@
 # Go Service Dockerfile
 FROM golang:1.23-alpine AS builder
 
-# Install build dependencies
-RUN apk add --no-cache git ca-certificates
+# Install build dependencies and update CA certificates
+RUN apk add --no-cache git ca-certificates tzdata && \
+    update-ca-certificates
 
 WORKDIR /app
 
 # Copy go mod files
 COPY go.mod go.sum* ./
 
-# Download dependencies
-RUN go mod download
+# Download dependencies (with retry and GOPROXY fallback)
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download || \
+    GOPROXY=direct go mod download
 
 # Copy source code
 COPY . .

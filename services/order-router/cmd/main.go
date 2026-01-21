@@ -2,38 +2,37 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	"github.com/stablenet/stable-platform/services/order-router/internal/config"
+	"github.com/stablenet/stable-platform/services/order-router/internal/handler"
+	"github.com/stablenet/stable-platform/services/order-router/internal/service"
 )
 
 func main() {
-	// Load .env file
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found")
-	}
+	// Load configuration
+	cfg := config.Load()
 
-	// Get port from environment
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	// Initialize router service
+	routerService := service.NewRouterService(cfg)
 
 	// Create Gin router
 	r := gin.Default()
 
-	// Health check endpoint
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":  "ok",
-			"service": "order-router",
-		})
-	})
+	// Add middleware
+	r.Use(gin.Recovery())
+
+	// Initialize handler and register routes
+	routerHandler := handler.NewRouterHandler(routerService)
+	routerHandler.RegisterRoutes(r)
+
+	// Log startup info
+	log.Printf("Order Router Service starting on port %s", cfg.Port)
+	log.Printf("Chain ID: %d", cfg.ChainID)
+	log.Printf("Supported protocols: %v", routerService.GetSupportedProtocols())
 
 	// Start server
-	log.Printf("Starting order-router on port %s", port)
-	if err := r.Run(":" + port); err != nil {
+	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

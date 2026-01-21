@@ -41,7 +41,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["inpage.js"],
+      "resources": ["inpage.js", "src/approval/approval.html"],
       "matches": ["<all_urls>"]
     }
   ]

@@ -14,6 +14,36 @@ export {
   getUserOperationHash,
 } from './utils/userOperation'
 
+// EIP-7702 Module
+export {
+  // Types
+  type Authorization,
+  type SignedAuthorization,
+  type DelegatePreset,
+  type DelegationStatus,
+  type EIP7702Result,
+  type SetCodeTransactionParams,
+  // Constants
+  EIP7702_MAGIC,
+  SETCODE_TX_TYPE,
+  DELEGATION_PREFIX,
+  ZERO_ADDRESS,
+  DELEGATE_PRESETS,
+  // Functions
+  createAuthorizationHash,
+  createAuthorization,
+  createRevocationAuthorization,
+  parseSignature,
+  createSignedAuthorization,
+  isDelegatedAccount,
+  extractDelegateAddress,
+  getDelegationStatus,
+  isValidAddress,
+  getDelegatePresets,
+  isRevocationAuthorization,
+  formatAuthorization,
+} from './eip7702'
+
 // Re-export types for convenience
 export type {
   UserOperation,

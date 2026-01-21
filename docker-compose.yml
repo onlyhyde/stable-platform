@@ -1,4 +1,35 @@
-version: '3.8'
+# ===========================================
+# StableNet PoC Platform - Docker Compose
+# ===========================================
+# Service Ports:
+#   - 4337: Bundler (ERC-4337)
+#   - 4338: Paymaster Proxy (ERC-7677)
+#   - 4339: Stealth Server (Rust)
+#   - 4340: Order Router
+#   - 4341: Subscription Executor
+#   - 4342: Bridge Relayer
+#   - 4350-4352: Simulators (Bank, PG, OnRamp)
+#   - 5432: PostgreSQL
+#   - 6379: Redis
+#   - 8545: Anvil (local chain, external)
+# ===========================================
+
+x-common-env: &common-env
+  CHAIN_ID: ${CHAIN_ID:-31337}
+  STABLENET_RPC_URL: ${STABLENET_RPC_URL:-http://host.docker.internal:8545}
+
+x-contract-addresses: &contract-addresses
+  ENTRY_POINT_ADDRESS: ${ENTRY_POINT_ADDRESS:-0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0}
+  KERNEL_FACTORY_ADDRESS: ${KERNEL_FACTORY_ADDRESS:-0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9}
+  KERNEL_IMPLEMENTATION_ADDRESS: ${KERNEL_IMPLEMENTATION_ADDRESS:-0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9}
+  ECDSA_VALIDATOR_ADDRESS: ${ECDSA_VALIDATOR_ADDRESS:-0x5FC8d32690cc91D4c39d9d3abcBD16989F875707}
+  VERIFYING_PAYMASTER_ADDRESS: ${VERIFYING_PAYMASTER_ADDRESS:-0x0165878A594ca255338adfa4d48449f69242Eb8F}
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
 
 services:
   # ===================
@@ -8,31 +39,33 @@ services:
     image: postgres:16-alpine
     container_name: stablenet-postgres
     environment:
-      POSTGRES_USER: stablenet
-      POSTGRES_PASSWORD: stablenet
-      POSTGRES_DB: stablenet
+      POSTGRES_USER: ${POSTGRES_USER:-stablenet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stablenet}
+      POSTGRES_DB: ${POSTGRES_DB:-stablenet}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./infra/docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U stablenet"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      <<: *healthcheck-defaults
+    networks:
+      - stablenet
 
   redis:
     image: redis:7-alpine
     container_name: stablenet-redis
+    command: redis-server --appendonly yes
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      <<: *healthcheck-defaults
+    networks:
+      - stablenet
 
   # ===================
   # TypeScript Services
@@ -45,15 +78,30 @@ services:
         SERVICE: services/bundler
     container_name: stablenet-bundler
     ports:
-      - "4337:4337"
+      - "${BUNDLER_PORT:-4337}:4337"
     environment:
-      - PORT=4337
-      - STABLENET_RPC_URL=http://host.docker.internal:8545
+      <<: [*common-env, *contract-addresses]
+      PORT: 4337
+      REDIS_URL: redis://redis:6379
+      BUNDLER_PRIVATE_KEY: ${BUNDLER_PRIVATE_KEY:-0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6}
+      BUNDLER_BENEFICIARY: ${BUNDLER_BENEFICIARY:-0x90F79bf6EB2c4f870365E785982E1f101E93b906}
+    command: >
+      node dist/cli/index.js run
+      --port 4337
+      --rpc-url ${STABLENET_RPC_URL:-http://host.docker.internal:8545}
+      --entry-point ${ENTRY_POINT_ADDRESS:-0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0}
+      --beneficiary ${BUNDLER_BENEFICIARY:-0x90F79bf6EB2c4f870365E785982E1f101E93b906}
+      --private-key ${BUNDLER_PRIVATE_KEY:-0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6}
+      --network devnet
+      --log-level info
     depends_on:
-      - redis
-    volumes:
-      - ./services/bundler:/app/services/bundler
-      - /app/services/bundler/node_modules
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4337/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      <<: *healthcheck-defaults
+    networks:
+      - stablenet
 
   paymaster-proxy:
     build:
@@ -63,41 +111,77 @@ services:
         SERVICE: services/paymaster-proxy
     container_name: stablenet-paymaster-proxy
     ports:
-      - "4338:4338"
+      - "${PAYMASTER_PORT:-4338}:4338"
     environment:
-      - PORT=4338
-      - STABLENET_RPC_URL=http://host.docker.internal:8545
-    volumes:
-      - ./services/paymaster-proxy:/app/services/paymaster-proxy
-      - /app/services/paymaster-proxy/node_modules
+      <<: [*common-env, *contract-addresses]
+      PORT: 4338
+      BUNDLER_URL: http://bundler:4337
+      PAYMASTER_SIGNER_PRIVATE_KEY: ${PAYMASTER_SIGNER_PRIVATE_KEY:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}
+    command: >
+      node dist/cli/index.js run
+      --port 4338
+      --paymaster ${VERIFYING_PAYMASTER_ADDRESS:-0x0165878A594ca255338adfa4d48449f69242Eb8F}
+      --signer ${PAYMASTER_SIGNER_PRIVATE_KEY:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}
+      --rpc ${STABLENET_RPC_URL:-http://host.docker.internal:8545}
+      --chain-ids ${CHAIN_ID:-31337}
+    depends_on:
+      bundler:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4338/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      <<: *healthcheck-defaults
+    networks:
+      - stablenet
 
   # ===================
-  # Go Services
+  # Rust Services
   # ===================
   stealth-server:
     build:
       context: ./services/stealth-server
-      dockerfile: ../../infra/docker/Dockerfile.go
+      dockerfile: Dockerfile
     container_name: stablenet-stealth-server
     ports:
-      - "4339:4339"
+      - "${STEALTH_SERVER_PORT:-4339}:8080"
     environment:
-      - PORT=4339
-      - DATABASE_URL=postgres://stablenet:stablenet@postgres:5432/stablenet_stealth?sslmode=disable
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+      DATABASE_URL: postgres://${POSTGRES_USER:-stablenet}:${POSTGRES_PASSWORD:-stablenet}@postgres:5432/stablenet_stealth?sslmode=disable
+      DATABASE_MAX_CONNECTIONS: 10
+      CHAIN_ID: ${CHAIN_ID:-31337}
+      INDEXER_WS_URL: ${STABLENET_RPC_URL:-ws://host.docker.internal:8545}
+      RUST_LOG: stealth_server=info,actix_web=info
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
+      <<: *healthcheck-defaults
+    networks:
+      - stablenet
 
+  # ===================
+  # Go Services
+  # ===================
   order-router:
     build:
       context: ./services/order-router
       dockerfile: ../../infra/docker/Dockerfile.go
     container_name: stablenet-order-router
     ports:
-      - "4340:4340"
+      - "${ORDER_ROUTER_PORT:-4340}:4340"
     environment:
-      - PORT=4340
-      - STABLENET_RPC_URL=http://host.docker.internal:8545
+      <<: [*common-env, *contract-addresses]
+      PORT: 4340
+      UNISWAP_V3_ROUTER: ${UNISWAP_V3_ROUTER:-0xE592427A0AEce92De3Edee1F18E0157C05861564}
+      UNISWAP_V3_QUOTER: ${UNISWAP_V3_QUOTER:-0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6}
+      PRICE_CACHE_TTL: 30
+      MAX_HOPS: 3
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4340/health"]
+      <<: *healthcheck-defaults
+    networks:
+      - stablenet
 
   subscription-executor:
     build:
@@ -105,14 +189,25 @@ services:
       dockerfile: ../../infra/docker/Dockerfile.go
     container_name: stablenet-subscription-executor
     ports:
-      - "4341:4341"
+      - "${SUBSCRIPTION_EXECUTOR_PORT:-4341}:4341"
     environment:
-      - PORT=4341
-      - REDIS_URL=redis://redis:6379
-      - STABLENET_RPC_URL=http://host.docker.internal:8545
+      <<: [*common-env, *contract-addresses]
+      PORT: 4341
+      REDIS_URL: redis://redis:6379
+      BUNDLER_URL: http://bundler:4337
+      PAYMASTER_URL: http://paymaster-proxy:4338
     depends_on:
       redis:
         condition: service_healthy
+      bundler:
+        condition: service_healthy
+      paymaster-proxy:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4341/health"]
+      <<: *healthcheck-defaults
+    networks:
+      - stablenet
 
   bridge-relayer:
     build:
@@ -120,10 +215,15 @@ services:
       dockerfile: ../../infra/docker/Dockerfile.go
     container_name: stablenet-bridge-relayer
     ports:
-      - "4342:4342"
+      - "${BRIDGE_RELAYER_PORT:-4342}:4342"
     environment:
-      - PORT=4342
-      - STABLENET_RPC_URL=http://host.docker.internal:8545
+      <<: [*common-env, *contract-addresses]
+      PORT: 4342
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4342/health"]
+      <<: *healthcheck-defaults
+    networks:
+      - stablenet
 
   # ===================
   # Simulators (Go)
@@ -134,9 +234,14 @@ services:
       dockerfile: ../../infra/docker/Dockerfile.go
     container_name: stablenet-simulator-bank
     ports:
-      - "4350:4350"
+      - "${BANK_SIMULATOR_PORT:-4350}:4350"
     environment:
-      - PORT=4350
+      PORT: 4350
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4350/health"]
+      <<: *healthcheck-defaults
+    networks:
+      - stablenet
 
   simulator-pg:
     build:
@@ -144,9 +249,14 @@ services:
       dockerfile: ../../infra/docker/Dockerfile.go
     container_name: stablenet-simulator-pg
     ports:
-      - "4351:4351"
+      - "${PG_SIMULATOR_PORT:-4351}:4351"
     environment:
-      - PORT=4351
+      PORT: 4351
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4351/health"]
+      <<: *healthcheck-defaults
+    networks:
+      - stablenet
 
   simulator-onramp:
     build:
@@ -154,14 +264,20 @@ services:
       dockerfile: ../../infra/docker/Dockerfile.go
     container_name: stablenet-simulator-onramp
     ports:
-      - "4352:4352"
+      - "${ONRAMP_SIMULATOR_PORT:-4352}:4352"
     environment:
-      - PORT=4352
+      PORT: 4352
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4352/health"]
+      <<: *healthcheck-defaults
+    networks:
+      - stablenet
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
-  default:
+  stablenet:
     name: stablenet-network
+    driver: bridge

@@ -1,0 +1,101 @@
+# Development Override for Docker Compose
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  # ===================
+  # Development Tools
+  # ===================
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: stablenet-anvil
+    entrypoint: ["anvil"]
+    command:
+      - --host=0.0.0.0
+      - --chain-id=31337
+      - --block-time=1
+      - --accounts=10
+      - --balance=10000
+      - --gas-limit=30000000
+    ports:
+      - "8545:8545"
+    healthcheck:
+      test: ["CMD", "cast", "block-number", "--rpc-url", "http://localhost:8545"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - stablenet
+
+  # ===================
+  # TypeScript Services (Dev Mode)
+  # ===================
+  bundler:
+    build:
+      target: base  # Use development stage
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - STABLENET_RPC_URL=http://anvil:8545
+    volumes:
+      - ./services/bundler/src:/app/services/bundler/src:ro
+      - ./packages:/app/packages:ro
+    depends_on:
+      anvil:
+        condition: service_healthy
+
+  paymaster-proxy:
+    build:
+      target: base
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - STABLENET_RPC_URL=http://anvil:8545
+    volumes:
+      - ./services/paymaster-proxy/src:/app/services/paymaster-proxy/src:ro
+      - ./packages:/app/packages:ro
+    depends_on:
+      anvil:
+        condition: service_healthy
+
+  # ===================
+  # Rust Services (Dev Mode)
+  # ===================
+  stealth-server:
+    environment:
+      - RUST_LOG=stealth_server=debug,actix_web=debug
+      - INDEXER_WS_URL=ws://anvil:8545
+    depends_on:
+      anvil:
+        condition: service_healthy
+
+  # ===================
+  # Go Services (Dev Mode)
+  # ===================
+  order-router:
+    environment:
+      - LOG_LEVEL=debug
+      - STABLENET_RPC_URL=http://anvil:8545
+    depends_on:
+      anvil:
+        condition: service_healthy
+
+  subscription-executor:
+    environment:
+      - LOG_LEVEL=debug
+      - STABLENET_RPC_URL=http://anvil:8545
+    depends_on:
+      anvil:
+        condition: service_healthy
+
+  bridge-relayer:
+    environment:
+      - LOG_LEVEL=debug
+      - STABLENET_RPC_URL=http://anvil:8545
+    depends_on:
+      anvil:
+        condition: service_healthy
+
+networks:
+  stablenet:
+    name: stablenet-network
