@@ -26,6 +26,14 @@ export interface BundlerConfig {
   logLevel: 'debug' | 'info' | 'warn' | 'error'
   /** Enable debug mode */
   debug: boolean
+  /** Maximum allowed nonce gap from on-chain nonce (default: 10) */
+  maxNonceGap?: bigint
+  /** Minimum seconds before validUntil for a valid operation (default: 30) */
+  minValidUntilBuffer?: bigint
+  /** Enable mempool nonce continuity validation (default: false) */
+  validateNonceContinuity?: boolean
+  /** Maximum nonce gap in mempool when continuity validation enabled (default: 0) */
+  mempoolMaxNonceGap?: number
 }
 
 /**
@@ -87,6 +95,8 @@ export interface MempoolEntry {
   transactionHash?: Hex
   blockNumber?: bigint
   error?: string
+  /** Aggregator address if this op uses signature aggregation */
+  aggregator?: Address
 }
 
 /**
@@ -183,3 +193,20 @@ export class RpcError extends Error {
     this.data = data
   }
 }
+
+// Re-export validation types for convenience
+export type {
+  ValidationResult,
+  StakeInfo,
+  ReturnInfo,
+  ReputationEntry,
+  ReputationConfig,
+  ReputationStatus,
+  // Aggregator types
+  AggregatorInfo,
+  ValidationResultWithAggregation,
+  UserOpsPerAggregator,
+  PackedUserOperation as ValidationPackedUserOperation,
+  AggregatorValidationResult,
+  IAggregatorValidator,
+} from '../validation/types'

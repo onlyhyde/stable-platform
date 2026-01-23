@@ -1,41 +1,43 @@
-import type { Address, PublicClient } from 'viem'
+import type { Address, Hex, PublicClient } from 'viem'
+import { concat, pad, toHex, hexToBytes, encodeAbiParameters } from 'viem'
 import type { GasEstimation, UserOperation } from '../types'
 import type { Logger } from '../utils/logger'
+import { ENTRY_POINT_V07_ABI } from '../abi'
 
 /**
- * Entry Point ABI for simulation
- * @todo Use for actual simulation calls
+ * Gas estimator configuration
  */
-const _ENTRY_POINT_SIMULATE_ABI = [
-  {
-    inputs: [
-      {
-        components: [
-          { name: 'sender', type: 'address' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'initCode', type: 'bytes' },
-          { name: 'callData', type: 'bytes' },
-          { name: 'accountGasLimits', type: 'bytes32' },
-          { name: 'preVerificationGas', type: 'uint256' },
-          { name: 'gasFees', type: 'bytes32' },
-          { name: 'paymasterAndData', type: 'bytes' },
-          { name: 'signature', type: 'bytes' },
-        ],
-        name: 'userOp',
-        type: 'tuple',
-      },
-    ],
-    name: 'simulateValidation',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-] as const
+export interface GasEstimatorConfig {
+  /** Buffer percentage for verification gas (default: 10) */
+  verificationGasBufferPercent?: number
+  /** Buffer percentage for call gas (default: 10) */
+  callGasBufferPercent?: number
+  /** Buffer percentage for preVerification gas (default: 5) */
+  preVerificationGasBufferPercent?: number
+  /** Buffer percentage for paymaster verification gas (default: 10) */
+  paymasterVerificationGasBufferPercent?: number
+  /** Buffer percentage for paymaster postOp gas (default: 10) */
+  paymasterPostOpGasBufferPercent?: number
+  /** Fixed overhead for EntryPoint handling (default: 21000) */
+  fixedOverhead?: bigint
+  /** Per UserOp overhead (default: 18300) */
+  perUserOpOverhead?: bigint
+  /** Maximum iterations for binary search (default: 20) */
+  maxBinarySearchIterations?: number
+  /** Initial gas for binary search upper bound (default: 10_000_000) */
+  initialGasUpperBound?: bigint
+  /** Whether this is an L2 chain (default: false) */
+  isL2Chain?: boolean
+  /** L1 gas price for L2 data cost calculation (optional, fetched dynamically if not set) */
+  l1GasPrice?: bigint
+  /** L2 gas price for L1 data cost ratio (optional) */
+  l2GasPrice?: bigint
+}
 
 /**
  * Gas overhead constants
  */
-const GAS_OVERHEAD = {
+const DEFAULT_GAS_OVERHEAD = {
   /** Fixed overhead for EntryPoint handling */
   FIXED: 21000n,
   /** Per UserOp overhead */
@@ -44,24 +46,70 @@ const GAS_OVERHEAD = {
   ZERO_BYTE: 4n,
   /** Per non-zero byte in calldata */
   NON_ZERO_BYTE: 16n,
-  /** Verification overhead buffer */
-  VERIFICATION_BUFFER: 10000n,
-  /** Call overhead buffer */
-  CALL_BUFFER: 5000n,
+  /** L1 data cost multiplier for L2 chains */
+  L1_DATA_COST_MULTIPLIER: 16n,
+}
+
+/**
+ * Default configuration values
+ */
+const DEFAULT_CONFIG = {
+  verificationGasBufferPercent: 10,
+  callGasBufferPercent: 10,
+  preVerificationGasBufferPercent: 5,
+  paymasterVerificationGasBufferPercent: 10,
+  paymasterPostOpGasBufferPercent: 10,
+  fixedOverhead: DEFAULT_GAS_OVERHEAD.FIXED,
+  perUserOpOverhead: DEFAULT_GAS_OVERHEAD.PER_USER_OP,
+  maxBinarySearchIterations: 20,
+  initialGasUpperBound: 10_000_000n,
+  isL2Chain: false,
+  l1GasPrice: undefined as bigint | undefined,
+  l2GasPrice: undefined as bigint | undefined,
+}
+
+type RequiredConfig = typeof DEFAULT_CONFIG
+
+/**
+ * Validate buffer percentage is within valid range
+ */
+function validateBufferPercent(value: number | undefined, name: string): void {
+  if (value === undefined) return
+  if (value < 0) {
+    throw new Error(`${name} cannot be negative: ${value}`)
+  }
+  if (value > 100) {
+    throw new Error(`${name} cannot exceed 100%: ${value}`)
+  }
 }
 
 /**
  * Gas estimator for UserOperations
+ * Uses simulation-based estimation with binary search for accurate gas limits
  */
 export class GasEstimator {
   private client: PublicClient
   private entryPoint: Address
   private logger: Logger
+  private config: RequiredConfig
 
-  constructor(client: PublicClient, entryPoint: Address, logger: Logger) {
+  constructor(
+    client: PublicClient,
+    entryPoint: Address,
+    logger: Logger,
+    config: GasEstimatorConfig = {}
+  ) {
+    // Validate buffer percentages
+    validateBufferPercent(config.verificationGasBufferPercent, 'verificationGasBufferPercent')
+    validateBufferPercent(config.callGasBufferPercent, 'callGasBufferPercent')
+    validateBufferPercent(config.preVerificationGasBufferPercent, 'preVerificationGasBufferPercent')
+    validateBufferPercent(config.paymasterVerificationGasBufferPercent, 'paymasterVerificationGasBufferPercent')
+    validateBufferPercent(config.paymasterPostOpGasBufferPercent, 'paymasterPostOpGasBufferPercent')
+
     this.client = client
     this.entryPoint = entryPoint
     this.logger = logger.child({ module: 'gasEstimator' })
+    this.config = { ...DEFAULT_CONFIG, ...config }
   }
 
   /**
@@ -70,13 +118,13 @@ export class GasEstimator {
   async estimate(userOp: UserOperation): Promise<GasEstimation> {
     this.logger.debug({ sender: userOp.sender }, 'Estimating gas for UserOp')
 
-    // Calculate preVerificationGas
-    const preVerificationGas = this.calculatePreVerificationGas(userOp)
+    // Calculate preVerificationGas using packed format (includes L2 cost if applicable)
+    const preVerificationGas = await this.calculatePreVerificationGas(userOp)
 
-    // Estimate verification gas
+    // Estimate verification gas using binary search simulation
     const verificationGasLimit = await this.estimateVerificationGas(userOp)
 
-    // Estimate call gas
+    // Estimate call gas using simulateHandleOp
     const callGasLimit = await this.estimateCallGas(userOp)
 
     // Estimate paymaster gas if paymaster is present
@@ -84,9 +132,8 @@ export class GasEstimator {
     let paymasterPostOpGasLimit: bigint | undefined
 
     if (userOp.paymaster) {
-      paymasterVerificationGasLimit = await this.estimatePaymasterVerificationGas(
-        userOp
-      )
+      paymasterVerificationGasLimit =
+        await this.estimatePaymasterVerificationGas(userOp)
       paymasterPostOpGasLimit = await this.estimatePaymasterPostOpGas(userOp)
     }
 
@@ -107,44 +154,353 @@ export class GasEstimator {
   }
 
   /**
-   * Calculate preVerificationGas (calldata cost)
+   * Calculate preVerificationGas based on packed UserOp format
+   * Includes L1 data cost for L2 chains
    */
-  private calculatePreVerificationGas(userOp: UserOperation): bigint {
-    // Serialize to calldata (simplified)
-    const calldataBytes = this.serializeUserOp(userOp)
+  private async calculatePreVerificationGas(userOp: UserOperation): Promise<bigint> {
+    // Pack UserOp in v0.7 format for accurate byte calculation
+    const packedBytes = this.packUserOpForGasCalculation(userOp)
 
     let calldataGas = 0n
-    for (let i = 0; i < calldataBytes.length; i++) {
-      if (calldataBytes[i] === 0) {
-        calldataGas += GAS_OVERHEAD.ZERO_BYTE
+    for (let i = 0; i < packedBytes.length; i++) {
+      if (packedBytes[i] === 0) {
+        calldataGas += DEFAULT_GAS_OVERHEAD.ZERO_BYTE
       } else {
-        calldataGas += GAS_OVERHEAD.NON_ZERO_BYTE
+        calldataGas += DEFAULT_GAS_OVERHEAD.NON_ZERO_BYTE
       }
     }
 
-    return calldataGas + GAS_OVERHEAD.FIXED + GAS_OVERHEAD.PER_USER_OP
+    let baseGas =
+      calldataGas + this.config.fixedOverhead + this.config.perUserOpOverhead
+
+    // Add L1 data cost for L2 chains
+    if (this.config.isL2Chain) {
+      const l1DataCost = await this.calculateL1DataCost(packedBytes)
+      baseGas += l1DataCost
+    }
+
+    // Apply buffer
+    const buffer =
+      (baseGas * BigInt(this.config.preVerificationGasBufferPercent)) / 100n
+    return baseGas + buffer
   }
 
   /**
-   * Estimate verification gas limit
+   * Calculate L1 data posting cost for L2 chains
+   */
+  private async calculateL1DataCost(packedBytes: Uint8Array): Promise<bigint> {
+    // Get L1 gas price (use configured or fetch dynamically)
+    let l1GasPrice = this.config.l1GasPrice
+    if (l1GasPrice === undefined) {
+      try {
+        l1GasPrice = await this.client.getGasPrice()
+      } catch {
+        // Fallback to a reasonable default
+        l1GasPrice = 30000000000n // 30 gwei
+      }
+    }
+
+    // Get L2 gas price for ratio calculation
+    let l2GasPrice = this.config.l2GasPrice
+    if (l2GasPrice === undefined) {
+      l2GasPrice = 100000000n // 0.1 gwei default
+    }
+
+    // Calculate L1 data cost
+    // Formula: (data_bytes * 16) * (l1_gas_price / l2_gas_price)
+    const dataBytes = BigInt(packedBytes.length)
+    const l1Gas = dataBytes * DEFAULT_GAS_OVERHEAD.L1_DATA_COST_MULTIPLIER
+
+    // Convert L1 cost to L2 gas units
+    if (l2GasPrice === 0n) {
+      return l1Gas
+    }
+    const l1CostInL2Gas = (l1Gas * l1GasPrice) / l2GasPrice
+
+    return l1CostInL2Gas
+  }
+
+  /**
+   * Pack UserOperation for gas calculation (v0.7 format)
+   */
+  private packUserOpForGasCalculation(userOp: UserOperation): Uint8Array {
+    // Build initCode
+    const initCode =
+      userOp.factory && userOp.factoryData
+        ? concat([userOp.factory, userOp.factoryData])
+        : '0x'
+
+    // Build accountGasLimits (verificationGasLimit || callGasLimit)
+    const accountGasLimits = concat([
+      pad(toHex(userOp.verificationGasLimit), { size: 16 }),
+      pad(toHex(userOp.callGasLimit), { size: 16 }),
+    ])
+
+    // Build gasFees (maxPriorityFeePerGas || maxFeePerGas)
+    const gasFees = concat([
+      pad(toHex(userOp.maxPriorityFeePerGas), { size: 16 }),
+      pad(toHex(userOp.maxFeePerGas), { size: 16 }),
+    ])
+
+    // Build paymasterAndData
+    let paymasterAndData: Hex = '0x'
+    if (userOp.paymaster) {
+      paymasterAndData = concat([
+        userOp.paymaster,
+        pad(toHex(userOp.paymasterVerificationGasLimit || 0n), { size: 16 }),
+        pad(toHex(userOp.paymasterPostOpGasLimit || 0n), { size: 16 }),
+        userOp.paymasterData || '0x',
+      ])
+    }
+
+    // Encode as ABI-packed tuple (approximation for gas calculation)
+    const encoded = encodeAbiParameters(
+      [
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'bytes' },
+        { type: 'bytes' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'bytes' },
+        { type: 'bytes' },
+      ],
+      [
+        userOp.sender,
+        userOp.nonce,
+        initCode as Hex,
+        userOp.callData,
+        accountGasLimits as Hex,
+        userOp.preVerificationGas,
+        gasFees as Hex,
+        paymasterAndData,
+        userOp.signature,
+      ]
+    )
+
+    return hexToBytes(encoded)
+  }
+
+  /**
+   * Estimate verification gas limit using binary search simulation
    */
   private async estimateVerificationGas(
     userOp: UserOperation
   ): Promise<bigint> {
-    // For accounts with factory (deployment), add deployment gas
-    let baseGas = 100000n
-
-    if (userOp.factory) {
-      // Estimate factory deployment gas
-      baseGas += 200000n
+    // Try to use binary search simulation
+    try {
+      const estimatedGas = await this.binarySearchVerificationGas(userOp)
+      // Apply buffer
+      const buffer =
+        (estimatedGas * BigInt(this.config.verificationGasBufferPercent)) / 100n
+      return estimatedGas + buffer
+    } catch (error) {
+      this.logger.warn(
+        { error },
+        'Binary search simulation failed, using fallback estimation'
+      )
+      return this.fallbackVerificationGasEstimate(userOp)
     }
-
-    // Add buffer
-    return baseGas + GAS_OVERHEAD.VERIFICATION_BUFFER
   }
 
   /**
-   * Estimate call gas limit
+   * Binary search to find minimum verification gas
+   */
+  private async binarySearchVerificationGas(
+    userOp: UserOperation
+  ): Promise<bigint> {
+    let low = 10000n
+    let high = this.config.initialGasUpperBound
+    let result = high
+
+    for (let i = 0; i < this.config.maxBinarySearchIterations; i++) {
+      const mid = (low + high) / 2n
+
+      const success = await this.trySimulateValidation(userOp, mid)
+
+      if (success) {
+        result = mid
+        high = mid - 1n
+      } else {
+        low = mid + 1n
+      }
+
+      // Early exit if range is small enough
+      if (high - low < 1000n) {
+        break
+      }
+    }
+
+    return result
+  }
+
+  /**
+   * Try to simulate validation with a given gas limit
+   */
+  private async trySimulateValidation(
+    userOp: UserOperation,
+    gasLimit: bigint
+  ): Promise<boolean> {
+    try {
+      const packedOp = this.packUserOpForSimulation(userOp)
+
+      await this.client.simulateContract({
+        address: this.entryPoint,
+        abi: ENTRY_POINT_V07_ABI,
+        functionName: 'simulateValidation',
+        args: [packedOp],
+        gas: gasLimit,
+      })
+
+      // simulateValidation always reverts, so if we get here something is wrong
+      return false
+    } catch (error: unknown) {
+      // Check if it's an out of gas error
+      const errorStr = String(error)
+      if (
+        errorStr.includes('out of gas') ||
+        errorStr.includes('OutOfGas') ||
+        errorStr.includes('gas required exceeds')
+      ) {
+        return false
+      }
+
+      // ValidationResult error means success (validation passed)
+      if (this.isValidationResultError(error)) {
+        return true
+      }
+
+      // FailedOp means validation logic failed (not gas)
+      if (this.isFailedOpError(error)) {
+        return true // Gas was sufficient, validation logic failed
+      }
+
+      // Unknown error - assume gas was insufficient
+      return false
+    }
+  }
+
+  /**
+   * Check if error is a ValidationResult (expected revert)
+   */
+  private isValidationResultError(error: unknown): boolean {
+    if (typeof error === 'object' && error !== null) {
+      const errObj = error as Record<string, unknown>
+      // Check for ValidationResult selector: 0xe0cff05f
+      if (typeof errObj.data === 'string') {
+        return errObj.data.startsWith('0xe0cff05f')
+      }
+      if (errObj.name === 'ContractFunctionExecutionError') {
+        return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * Check if error is a FailedOp error
+   */
+  private isFailedOpError(error: unknown): boolean {
+    if (typeof error === 'object' && error !== null) {
+      const errObj = error as Record<string, unknown>
+      if (typeof errObj.data === 'string') {
+        // FailedOp selector: 0x220266b6
+        // FailedOpWithRevert selector: 0x65c8fd4d
+        return (
+          errObj.data.startsWith('0x220266b6') ||
+          errObj.data.startsWith('0x65c8fd4d')
+        )
+      }
+    }
+    return false
+  }
+
+  /**
+   * Check if error is an ExecutionResult (expected revert from simulateHandleOp)
+   */
+  private isExecutionResultError(error: unknown): boolean {
+    if (typeof error === 'object' && error !== null) {
+      const errObj = error as Record<string, unknown>
+      // Check for ExecutionResult selector: 0x8b7ac980
+      if (typeof errObj.data === 'string') {
+        return errObj.data.startsWith('0x8b7ac980')
+      }
+    }
+    return false
+  }
+
+  /**
+   * Pack UserOperation for simulation call
+   */
+  private packUserOpForSimulation(userOp: UserOperation): {
+    sender: Address
+    nonce: bigint
+    initCode: Hex
+    callData: Hex
+    accountGasLimits: Hex
+    preVerificationGas: bigint
+    gasFees: Hex
+    paymasterAndData: Hex
+    signature: Hex
+  } {
+    const initCode =
+      userOp.factory && userOp.factoryData
+        ? concat([userOp.factory, userOp.factoryData])
+        : '0x'
+
+    const accountGasLimits = concat([
+      pad(toHex(userOp.verificationGasLimit), { size: 16 }),
+      pad(toHex(userOp.callGasLimit), { size: 16 }),
+    ])
+
+    const gasFees = concat([
+      pad(toHex(userOp.maxPriorityFeePerGas), { size: 16 }),
+      pad(toHex(userOp.maxFeePerGas), { size: 16 }),
+    ])
+
+    let paymasterAndData: Hex = '0x'
+    if (userOp.paymaster) {
+      paymasterAndData = concat([
+        userOp.paymaster,
+        pad(toHex(userOp.paymasterVerificationGasLimit || 0n), { size: 16 }),
+        pad(toHex(userOp.paymasterPostOpGasLimit || 0n), { size: 16 }),
+        userOp.paymasterData || '0x',
+      ])
+    }
+
+    return {
+      sender: userOp.sender,
+      nonce: userOp.nonce,
+      initCode: initCode as Hex,
+      callData: userOp.callData,
+      accountGasLimits: accountGasLimits as Hex,
+      preVerificationGas: userOp.preVerificationGas,
+      gasFees: gasFees as Hex,
+      paymasterAndData,
+      signature: userOp.signature,
+    }
+  }
+
+  /**
+   * Fallback verification gas estimation (when simulation fails)
+   */
+  private fallbackVerificationGasEstimate(userOp: UserOperation): bigint {
+    let baseGas = 100000n
+
+    if (userOp.factory) {
+      // Add deployment gas
+      baseGas += 200000n
+    }
+
+    // Apply buffer
+    const buffer =
+      (baseGas * BigInt(this.config.verificationGasBufferPercent)) / 100n
+    return baseGas + buffer
+  }
+
+  /**
+   * Estimate call gas limit using simulateHandleOp
    */
   private async estimateCallGas(userOp: UserOperation): Promise<bigint> {
     try {
@@ -154,59 +510,254 @@ export class GasEstimator {
 
       if (!isDeployed) {
         // Can't estimate for non-deployed account, use default
-        return 100000n + GAS_OVERHEAD.CALL_BUFFER
+        return this.applyCallGasBuffer(100000n)
       }
 
-      // Estimate gas for the call
+      // Try to use simulateHandleOp for accurate call gas estimation
+      const estimatedGas = await this.binarySearchCallGas(userOp)
+      return this.applyCallGasBuffer(estimatedGas)
+    } catch (error) {
+      this.logger.warn({ error }, 'Failed to estimate call gas, using fallback')
+      return this.fallbackCallGasEstimate(userOp)
+    }
+  }
+
+  /**
+   * Binary search to find minimum call gas using simulateHandleOp
+   */
+  private async binarySearchCallGas(userOp: UserOperation): Promise<bigint> {
+    let low = 21000n
+    let high = this.config.initialGasUpperBound
+    let result = high
+
+    for (let i = 0; i < this.config.maxBinarySearchIterations; i++) {
+      const mid = (low + high) / 2n
+
+      const success = await this.trySimulateHandleOp(userOp, mid)
+
+      if (success) {
+        result = mid
+        high = mid - 1n
+      } else {
+        low = mid + 1n
+      }
+
+      // Early exit if range is small enough
+      if (high - low < 1000n) {
+        break
+      }
+    }
+
+    return result
+  }
+
+  /**
+   * Try to simulate handle op with a given gas limit
+   */
+  private async trySimulateHandleOp(
+    userOp: UserOperation,
+    gasLimit: bigint
+  ): Promise<boolean> {
+    try {
+      const packedOp = this.packUserOpForSimulation(userOp)
+
+      await this.client.simulateContract({
+        address: this.entryPoint,
+        abi: ENTRY_POINT_V07_ABI,
+        functionName: 'simulateHandleOp',
+        args: [packedOp, userOp.sender, '0x'],
+        gas: gasLimit,
+      })
+
+      // simulateHandleOp always reverts with ExecutionResult
+      return false
+    } catch (error: unknown) {
+      // Check if it's an out of gas error
+      const errorStr = String(error)
+      if (
+        errorStr.includes('out of gas') ||
+        errorStr.includes('OutOfGas') ||
+        errorStr.includes('gas required exceeds')
+      ) {
+        return false
+      }
+
+      // ExecutionResult error means success (execution completed)
+      if (this.isExecutionResultError(error)) {
+        return true
+      }
+
+      // ValidationResult is also acceptable (validation passed)
+      if (this.isValidationResultError(error)) {
+        return true
+      }
+
+      // FailedOp means logic failed but gas was sufficient
+      if (this.isFailedOpError(error)) {
+        return true
+      }
+
+      // For any ContractFunctionExecutionError, assume gas was sufficient
+      if (typeof error === 'object' && error !== null) {
+        const errObj = error as Record<string, unknown>
+        if (errObj.name === 'ContractFunctionExecutionError') {
+          return true
+        }
+      }
+
+      // Unknown error - assume gas was insufficient
+      return false
+    }
+  }
+
+  /**
+   * Fallback call gas estimation (when simulateHandleOp fails)
+   */
+  private async fallbackCallGasEstimate(userOp: UserOperation): Promise<bigint> {
+    try {
+      // Try eth_estimateGas as fallback
       const gasEstimate = await this.client.estimateGas({
         account: userOp.sender,
         to: userOp.sender,
         data: userOp.callData,
       })
-
-      return gasEstimate + GAS_OVERHEAD.CALL_BUFFER
-    } catch (error) {
-      this.logger.warn({ error }, 'Failed to estimate call gas, using default')
-      return 200000n + GAS_OVERHEAD.CALL_BUFFER
+      return this.applyCallGasBuffer(gasEstimate)
+    } catch {
+      // Last resort: return a reasonable default
+      return this.applyCallGasBuffer(200000n)
     }
   }
 
   /**
-   * Estimate paymaster verification gas
+   * Apply buffer to call gas estimate
+   */
+  private applyCallGasBuffer(gas: bigint): bigint {
+    const buffer = (gas * BigInt(this.config.callGasBufferPercent)) / 100n
+    return gas + buffer
+  }
+
+  /**
+   * Estimate paymaster verification gas using binary search
    */
   private async estimatePaymasterVerificationGas(
-    _userOp: UserOperation
+    userOp: UserOperation
   ): Promise<bigint> {
-    // Default paymaster verification gas
-    return 100000n
+    try {
+      // Use binary search with simulateValidation
+      const estimatedGas = await this.binarySearchPaymasterVerificationGas(userOp)
+      // Apply buffer
+      const buffer =
+        (estimatedGas * BigInt(this.config.paymasterVerificationGasBufferPercent)) / 100n
+      return estimatedGas + buffer
+    } catch (error) {
+      this.logger.warn(
+        { error },
+        'Failed to estimate paymaster verification gas, using default'
+      )
+      // Return reasonable default with buffer
+      const defaultGas = 100000n
+      const buffer =
+        (defaultGas * BigInt(this.config.paymasterVerificationGasBufferPercent)) / 100n
+      return defaultGas + buffer
+    }
   }
 
   /**
-   * Estimate paymaster postOp gas
+   * Binary search to find minimum paymaster verification gas
+   */
+  private async binarySearchPaymasterVerificationGas(
+    userOp: UserOperation
+  ): Promise<bigint> {
+    let low = 10000n
+    let high = 500000n // Paymasters typically need less gas
+    let result = high
+
+    for (let i = 0; i < this.config.maxBinarySearchIterations; i++) {
+      const mid = (low + high) / 2n
+
+      // Create a modified userOp with the test gas limit
+      const testOp: UserOperation = {
+        ...userOp,
+        paymasterVerificationGasLimit: mid,
+      }
+
+      const success = await this.trySimulateValidation(testOp, this.config.initialGasUpperBound)
+
+      if (success) {
+        result = mid
+        high = mid - 1n
+      } else {
+        low = mid + 1n
+      }
+
+      if (high - low < 1000n) {
+        break
+      }
+    }
+
+    return result
+  }
+
+  /**
+   * Estimate paymaster postOp gas using simulation
    */
   private async estimatePaymasterPostOpGas(
-    _userOp: UserOperation
+    userOp: UserOperation
   ): Promise<bigint> {
-    // Default paymaster postOp gas
-    return 50000n
+    try {
+      // Use binary search with simulateHandleOp
+      const estimatedGas = await this.binarySearchPaymasterPostOpGas(userOp)
+      // Apply buffer
+      const buffer =
+        (estimatedGas * BigInt(this.config.paymasterPostOpGasBufferPercent)) / 100n
+      return estimatedGas + buffer
+    } catch (error) {
+      this.logger.warn(
+        { error },
+        'Failed to estimate paymaster postOp gas, using default'
+      )
+      // Return reasonable default with buffer
+      const defaultGas = 50000n
+      const buffer =
+        (defaultGas * BigInt(this.config.paymasterPostOpGasBufferPercent)) / 100n
+      return defaultGas + buffer
+    }
   }
 
   /**
-   * Serialize UserOperation for gas calculation
+   * Binary search to find minimum paymaster postOp gas
    */
-  private serializeUserOp(userOp: UserOperation): Uint8Array {
-    // Simplified serialization - in production, use actual packed format
-    const json = JSON.stringify({
-      sender: userOp.sender,
-      nonce: userOp.nonce.toString(),
-      factory: userOp.factory,
-      factoryData: userOp.factoryData,
-      callData: userOp.callData,
-      signature: userOp.signature,
-      paymaster: userOp.paymaster,
-      paymasterData: userOp.paymasterData,
-    })
-    return new TextEncoder().encode(json)
+  private async binarySearchPaymasterPostOpGas(
+    userOp: UserOperation
+  ): Promise<bigint> {
+    let low = 5000n
+    let high = 200000n // PostOp typically needs less gas than verification
+    let result = high
+
+    for (let i = 0; i < this.config.maxBinarySearchIterations; i++) {
+      const mid = (low + high) / 2n
+
+      // Create a modified userOp with the test gas limit
+      const testOp: UserOperation = {
+        ...userOp,
+        paymasterPostOpGasLimit: mid,
+      }
+
+      const success = await this.trySimulateHandleOp(testOp, this.config.initialGasUpperBound)
+
+      if (success) {
+        result = mid
+        high = mid - 1n
+      } else {
+        low = mid + 1n
+      }
+
+      if (high - low < 500n) {
+        break
+      }
+    }
+
+    return result
   }
 
   /**

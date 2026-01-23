@@ -1,38 +1,12 @@
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
-import { concat, encodeFunctionData, pad, toHex } from 'viem'
+import { concat, decodeEventLog, encodeFunctionData, pad, toHex } from 'viem'
 import type { MempoolEntry, UserOperation } from '../types'
 import type { Mempool } from '../mempool/mempool'
+import type { UserOperationValidator, AggregatorValidator } from '../validation'
+import { ENTRY_POINT_V07_ABI, HANDLE_AGGREGATED_OPS_ABI, EVENT_SIGNATURES } from '../abi'
+import type { UserOperationEventData, UserOpsPerAggregator } from '../validation/types'
 import type { Logger } from '../utils/logger'
-
-/**
- * EntryPoint v0.7 ABI for handleOps
- */
-const ENTRY_POINT_ABI = [
-  {
-    inputs: [
-      {
-        components: [
-          { name: 'sender', type: 'address' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'initCode', type: 'bytes' },
-          { name: 'callData', type: 'bytes' },
-          { name: 'accountGasLimits', type: 'bytes32' },
-          { name: 'preVerificationGas', type: 'uint256' },
-          { name: 'gasFees', type: 'bytes32' },
-          { name: 'paymasterAndData', type: 'bytes' },
-          { name: 'signature', type: 'bytes' },
-        ],
-        name: 'ops',
-        type: 'tuple[]',
-      },
-      { name: 'beneficiary', type: 'address' },
-    ],
-    name: 'handleOps',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-] as const
+import { VALIDATION_CONSTANTS } from '../validation/types'
 
 /**
  * Bundle executor configuration
@@ -51,6 +25,8 @@ export class BundleExecutor {
   private publicClient: PublicClient
   private walletClient: WalletClient
   private mempool: Mempool
+  private validator: UserOperationValidator
+  private aggregatorValidator: AggregatorValidator | null = null
   private config: BundleExecutorConfig
   private logger: Logger
   private bundleTimer: ReturnType<typeof setInterval> | null = null
@@ -60,12 +36,14 @@ export class BundleExecutor {
     publicClient: PublicClient,
     walletClient: WalletClient,
     mempool: Mempool,
+    validator: UserOperationValidator,
     config: BundleExecutorConfig,
     logger: Logger
   ) {
     this.publicClient = publicClient
     this.walletClient = walletClient
     this.mempool = mempool
+    this.validator = validator
     this.config = config
     this.logger = logger.child({ module: 'executor' })
   }
@@ -102,6 +80,14 @@ export class BundleExecutor {
   }
 
   /**
+   * Set the aggregator validator for handling aggregated operations
+   */
+  setAggregatorValidator(validator: AggregatorValidator): void {
+    this.aggregatorValidator = validator
+    this.logger.info('Aggregator validator configured')
+  }
+
+  /**
    * Try to create and submit a bundle
    */
   async tryBundle(): Promise<Hex | null> {
@@ -119,24 +105,87 @@ export class BundleExecutor {
       'Creating bundle from pending operations'
     )
 
-    return this.submitBundle(pending)
+    // Pre-flight validation
+    const validEntries = await this.preflightValidation(pending)
+
+    if (validEntries.length === 0) {
+      this.logger.debug('No valid operations after pre-flight validation')
+      return null
+    }
+
+    return this.submitBundle(validEntries)
+  }
+
+  /**
+   * Pre-flight validation before bundling
+   * Re-validates operations to ensure they're still valid
+   */
+  private async preflightValidation(
+    entries: MempoolEntry[]
+  ): Promise<MempoolEntry[]> {
+    const valid: MempoolEntry[] = []
+    const simulationValidator = this.validator.getSimulationValidator()
+
+    for (const entry of entries) {
+      try {
+        // Re-simulate before bundling
+        await simulationValidator.simulate(entry.userOp)
+        valid.push(entry)
+      } catch (error) {
+        // Remove invalid operation from mempool
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        this.mempool.updateStatus(
+          entry.userOpHash,
+          'dropped',
+          undefined,
+          undefined,
+          errorMessage
+        )
+
+        this.logger.warn(
+          { userOpHash: entry.userOpHash, error: errorMessage },
+          'Operation failed pre-flight validation, dropped from mempool'
+        )
+      }
+    }
+
+    return valid
   }
 
   /**
    * Submit a bundle of UserOperations
    */
   async submitBundle(entries: MempoolEntry[]): Promise<Hex> {
-    const userOps = entries.map((e) => e.userOp)
+    // Separate aggregated and non-aggregated operations
+    const { aggregatedEntries, nonAggregatedEntries } = this.separateByAggregator(entries)
 
-    // Pack UserOperations for EntryPoint
-    const packedOps = userOps.map((op) => this.packUserOp(op))
+    let data: Hex
 
-    // Encode handleOps call
-    const data = encodeFunctionData({
-      abi: ENTRY_POINT_ABI,
-      functionName: 'handleOps',
-      args: [packedOps, this.config.beneficiary],
-    })
+    // If all operations use aggregators and we have aggregator validator
+    if (
+      aggregatedEntries.length > 0 &&
+      nonAggregatedEntries.length === 0 &&
+      this.aggregatorValidator
+    ) {
+      data = await this.encodeHandleAggregatedOps(aggregatedEntries)
+    } else if (
+      aggregatedEntries.length > 0 &&
+      nonAggregatedEntries.length > 0 &&
+      this.aggregatorValidator
+    ) {
+      // Mixed bundle - encode handleAggregatedOps including non-aggregated as zero-address group
+      data = await this.encodeHandleAggregatedOps(entries)
+    } else {
+      // All non-aggregated - use handleOps
+      const userOps = entries.map((e) => e.userOp)
+      const packedOps = userOps.map((op) => this.packUserOp(op))
+
+      data = encodeFunctionData({
+        abi: ENTRY_POINT_V07_ABI,
+        functionName: 'handleOps',
+        args: [packedOps, this.config.beneficiary],
+      })
+    }
 
     // Mark operations as submitted
     for (const entry of entries) {
@@ -210,26 +259,124 @@ export class BundleExecutor {
         timeout: 60000,
       })
 
-      const status = receipt.status === 'success' ? 'included' : 'failed'
       const blockNumber = receipt.blockNumber
 
+      // Parse UserOperationEvent logs
+      const userOpEvents = this.parseUserOperationEvents(receipt.logs)
+
+      // Create a map of userOpHash to event data
+      const eventMap = new Map<Hex, UserOperationEventData>()
+      for (const event of userOpEvents) {
+        eventMap.set(event.userOpHash, event)
+      }
+
+      // Update status for each entry based on events
       for (const entry of entries) {
-        this.mempool.updateStatus(
-          entry.userOpHash,
-          status,
-          hash,
-          blockNumber,
-          status === 'failed' ? 'Transaction reverted' : undefined
-        )
+        const event = eventMap.get(entry.userOpHash)
+
+        if (event) {
+          const status = event.success ? 'included' : 'failed'
+          this.mempool.updateStatus(
+            entry.userOpHash,
+            status,
+            hash,
+            blockNumber,
+            event.success ? undefined : 'UserOperation execution failed'
+          )
+
+          // Update reputation for included operations
+          if (event.success) {
+            this.validator.updateReputationIncluded(entry.userOp)
+          }
+        } else {
+          // No event found - might have been dropped
+          const status = receipt.status === 'success' ? 'included' : 'failed'
+          this.mempool.updateStatus(
+            entry.userOpHash,
+            status,
+            hash,
+            blockNumber,
+            status === 'failed' ? 'Transaction reverted' : undefined
+          )
+
+          if (status === 'included') {
+            this.validator.updateReputationIncluded(entry.userOp)
+          }
+        }
       }
 
       this.logger.info(
-        { hash, status, blockNumber: blockNumber.toString() },
+        {
+          hash,
+          status: receipt.status,
+          blockNumber: blockNumber.toString(),
+          eventsFound: userOpEvents.length,
+        },
         'Bundle confirmed'
       )
     } catch (error) {
       this.logger.error({ error, hash }, 'Failed to get transaction receipt')
     }
+  }
+
+  /**
+   * Parse UserOperationEvent logs from transaction receipt
+   */
+  private parseUserOperationEvents(
+    logs: Array<{
+      address: Address
+      topics: Hex[]
+      data: Hex
+    }>
+  ): UserOperationEventData[] {
+    const events: UserOperationEventData[] = []
+
+    for (const log of logs) {
+      // Check if this is a UserOperationEvent
+      if (
+        log.address.toLowerCase() === this.config.entryPoint.toLowerCase() &&
+        log.topics[0]?.toLowerCase() === EVENT_SIGNATURES.UserOperationEvent.toLowerCase()
+      ) {
+        try {
+          // Type cast required for decodeEventLog topics parameter
+          const topics = log.topics as [Hex, ...Hex[]]
+          const decoded = decodeEventLog({
+            abi: ENTRY_POINT_V07_ABI,
+            data: log.data,
+            topics,
+          })
+
+          if (decoded.eventName === 'UserOperationEvent') {
+            const args = decoded.args as {
+              userOpHash: Hex
+              sender: Address
+              paymaster: Address
+              nonce: bigint
+              success: boolean
+              actualGasCost: bigint
+              actualGasUsed: bigint
+            }
+
+            events.push({
+              userOpHash: args.userOpHash,
+              sender: args.sender,
+              paymaster: args.paymaster,
+              nonce: args.nonce,
+              success: args.success,
+              actualGasCost: args.actualGasCost,
+              actualGasUsed: args.actualGasUsed,
+            })
+          }
+        } catch (error) {
+          this.logger.warn(
+            { error, log },
+            'Failed to decode UserOperationEvent'
+          )
+        }
+      }
+    }
+
+    return events
   }
 
   /**
@@ -286,5 +433,97 @@ export class BundleExecutor {
       paymasterAndData,
       signature: userOp.signature,
     }
+  }
+
+  /**
+   * Separate entries by whether they have an aggregator
+   */
+  private separateByAggregator(entries: MempoolEntry[]): {
+    aggregatedEntries: MempoolEntry[]
+    nonAggregatedEntries: MempoolEntry[]
+  } {
+    const aggregatedEntries: MempoolEntry[] = []
+    const nonAggregatedEntries: MempoolEntry[] = []
+
+    for (const entry of entries) {
+      if (
+        entry.aggregator &&
+        entry.aggregator !== VALIDATION_CONSTANTS.ZERO_ADDRESS
+      ) {
+        aggregatedEntries.push(entry)
+      } else {
+        nonAggregatedEntries.push(entry)
+      }
+    }
+
+    return { aggregatedEntries, nonAggregatedEntries }
+  }
+
+  /**
+   * Encode handleAggregatedOps call for aggregated operations
+   */
+  private async encodeHandleAggregatedOps(entries: MempoolEntry[]): Promise<Hex> {
+    if (!this.aggregatorValidator) {
+      throw new Error('Aggregator validator not configured')
+    }
+
+    // Group entries by aggregator
+    const groupedByAggregator = new Map<Address, MempoolEntry[]>()
+
+    for (const entry of entries) {
+      const aggregator = entry.aggregator || VALIDATION_CONSTANTS.ZERO_ADDRESS
+      const existing = groupedByAggregator.get(aggregator) || []
+      existing.push(entry)
+      groupedByAggregator.set(aggregator, existing)
+    }
+
+    // Build opsPerAggregator array
+    const opsPerAggregator: UserOpsPerAggregator[] = []
+
+    for (const [aggregator, groupEntries] of groupedByAggregator) {
+      const packedOps = groupEntries.map((e) => this.packUserOp(e.userOp))
+
+      let aggregatedSignature: Hex
+
+      if (aggregator === VALIDATION_CONSTANTS.ZERO_ADDRESS) {
+        // No aggregator - use empty signature for this group
+        aggregatedSignature = '0x' as Hex
+      } else {
+        // Aggregate signatures through the aggregator contract
+        aggregatedSignature = await this.aggregatorValidator.aggregateSignatures(
+          aggregator,
+          packedOps.map((op) => ({
+            ...op,
+            accountGasLimits: op.accountGasLimits,
+          }))
+        )
+
+        // Validate the aggregated signature
+        await this.aggregatorValidator.validateSignatures(
+          aggregator,
+          packedOps.map((op) => ({
+            ...op,
+            accountGasLimits: op.accountGasLimits,
+          })),
+          aggregatedSignature
+        )
+      }
+
+      opsPerAggregator.push({
+        userOps: packedOps.map((op) => ({
+          ...op,
+          accountGasLimits: op.accountGasLimits,
+        })),
+        aggregator,
+        signature: aggregatedSignature,
+      })
+    }
+
+    // Encode the handleAggregatedOps call
+    return encodeFunctionData({
+      abi: HANDLE_AGGREGATED_OPS_ABI,
+      functionName: 'handleAggregatedOps',
+      args: [opsPerAggregator, this.config.beneficiary],
+    })
   }
 }

@@ -6,6 +6,7 @@ import { RpcError, RPC_ERROR_CODES } from '../types'
 import { Mempool } from '../mempool/mempool'
 import { GasEstimator } from '../gas/gasEstimator'
 import { BundleExecutor } from '../executor/bundleExecutor'
+import { UserOperationValidator } from '../validation'
 import type { Logger } from '../utils/logger'
 import { unpackUserOperation, getUserOperationHash } from './utils'
 
@@ -41,6 +42,7 @@ export class RpcServer {
   private mempool: Mempool
   private gasEstimator: GasEstimator
   private executor: BundleExecutor
+  private validator: UserOperationValidator
   private config: BundlerConfig
   private publicClient: PublicClient
   private logger: Logger
@@ -55,8 +57,11 @@ export class RpcServer {
     this.config = config
     this.logger = logger.child({ module: 'rpc' })
 
-    // Initialize mempool
-    this.mempool = new Mempool(logger)
+    // Initialize mempool with optional nonce continuity validation
+    this.mempool = new Mempool(logger, {
+      validateNonceContinuity: config.validateNonceContinuity,
+      maxNonceGap: config.mempoolMaxNonceGap,
+    })
 
     // Get the first entry point (validated in config)
     const primaryEntryPoint = config.entryPoints[0]!
@@ -68,11 +73,24 @@ export class RpcServer {
       logger
     )
 
+    // Initialize validator using factory method (DI pattern)
+    this.validator = UserOperationValidator.create(
+      publicClient,
+      {
+        entryPoint: primaryEntryPoint,
+        skipSimulation: config.debug, // Skip simulation in debug mode for easier testing
+        maxNonceGap: config.maxNonceGap,
+        minValidUntilBuffer: config.minValidUntilBuffer,
+      },
+      logger
+    )
+
     // Initialize bundle executor
     this.executor = new BundleExecutor(
       publicClient,
       walletClient,
       this.mempool,
+      this.validator,
       {
         entryPoint: primaryEntryPoint,
         beneficiary: config.beneficiary,
@@ -189,6 +207,15 @@ export class RpcServer {
       case 'debug_bundler_dumpMempool':
         return this.debugDumpMempool(params)
 
+      case 'debug_bundler_setReputation':
+        return this.debugSetReputation(params)
+
+      case 'debug_bundler_dumpReputation':
+        return this.debugDumpReputation(params)
+
+      case 'debug_bundler_clearReputation':
+        return this.debugClearReputation()
+
       default:
         throw new RpcError(
           `Method ${method} not found`,
@@ -215,12 +242,16 @@ export class RpcServer {
     const userOp = unpackUserOperation(packedOp)
 
     // Calculate hash
-    const userOpHash = getUserOperationHash(userOp, entryPoint, BigInt(await this.publicClient.getChainId()))
+    const chainId = BigInt(await this.publicClient.getChainId())
+    const userOpHash = getUserOperationHash(userOp, entryPoint, chainId)
+
+    // Validate UserOperation (format, reputation, state, simulation)
+    await this.validator.validate(userOp)
 
     // Add to mempool
     this.mempool.add(userOp, userOpHash, entryPoint)
 
-    this.logger.info({ userOpHash, sender: userOp.sender }, 'UserOperation received')
+    this.logger.info({ userOpHash, sender: userOp.sender }, 'UserOperation received and validated')
 
     return userOpHash
   }
@@ -403,6 +434,69 @@ export class RpcServer {
         userOpHash: e.userOpHash,
         status: e.status,
       }))
+  }
+
+  /**
+   * debug_bundler_setReputation
+   */
+  private debugSetReputation(params: unknown[]): { success: boolean } {
+    if (!this.config.debug) {
+      throw new RpcError('Debug methods disabled', RPC_ERROR_CODES.METHOD_NOT_FOUND)
+    }
+
+    const [entries] = params as [
+      Array<{
+        address: Address
+        opsSeen: number
+        opsIncluded: number
+        status?: 'ok' | 'throttled' | 'banned'
+      }>
+    ]
+
+    const reputationManager = this.validator.getReputationManager()
+    for (const entry of entries) {
+      reputationManager.setReputation(
+        entry.address,
+        entry.opsSeen,
+        entry.opsIncluded,
+        entry.status
+      )
+    }
+
+    return { success: true }
+  }
+
+  /**
+   * debug_bundler_dumpReputation
+   */
+  private debugDumpReputation(params: unknown[]): unknown[] {
+    if (!this.config.debug) {
+      throw new RpcError('Debug methods disabled', RPC_ERROR_CODES.METHOD_NOT_FOUND)
+    }
+
+    const [_entryPoint] = params as [Address | undefined]
+    // EntryPoint parameter is ignored since reputation is global
+    // but we accept it for API compatibility (unused intentionally)
+
+    const reputationManager = this.validator.getReputationManager()
+    return reputationManager.dump().map((entry) => ({
+      address: entry.address,
+      opsSeen: entry.opsSeen,
+      opsIncluded: entry.opsIncluded,
+      status: entry.status,
+    }))
+  }
+
+  /**
+   * debug_bundler_clearReputation
+   */
+  private debugClearReputation(): { success: boolean } {
+    if (!this.config.debug) {
+      throw new RpcError('Debug methods disabled', RPC_ERROR_CODES.METHOD_NOT_FOUND)
+    }
+
+    this.validator.clearAllReputation()
+    return { success: true }
   }
 
   /**

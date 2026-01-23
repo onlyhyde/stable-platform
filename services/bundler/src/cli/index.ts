@@ -3,7 +3,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { createPublicClient, createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { parseConfig } from './config'
+import { parseConfig, getEnvHelp } from './config'
 import { RpcServer } from '../rpc/server'
 import { createLogger } from '../utils/logger'
 
@@ -29,7 +29,6 @@ async function main() {
             alias: 'p',
             type: 'number',
             description: 'RPC server port',
-            default: 4337,
           })
           .option('entry-point', {
             alias: 'e',
@@ -40,7 +39,6 @@ async function main() {
             alias: 'b',
             type: 'string',
             description: 'Beneficiary address for bundle fees',
-            demandOption: true,
           })
           .option('rpc-url', {
             alias: 'r',
@@ -51,7 +49,6 @@ async function main() {
             alias: 'k',
             type: 'string',
             description: 'Private key for signing bundles',
-            demandOption: true,
           })
           .option('min-balance', {
             type: 'string',
@@ -60,25 +57,38 @@ async function main() {
           .option('bundle-interval', {
             type: 'number',
             description: 'Bundle interval in milliseconds',
-            default: 1000,
           })
           .option('max-bundle-size', {
             type: 'number',
             description: 'Maximum operations per bundle',
-            default: 10,
           })
           .option('log-level', {
             alias: 'l',
             type: 'string',
             description: 'Log level (debug, info, warn, error)',
-            default: 'info',
           })
           .option('debug', {
             alias: 'd',
             type: 'boolean',
             description: 'Enable debug mode',
-            default: false,
           })
+          .option('max-nonce-gap', {
+            type: 'number',
+            description: 'Maximum allowed nonce gap from on-chain nonce (default: 10)',
+          })
+          .option('min-valid-until-buffer', {
+            type: 'number',
+            description: 'Minimum seconds before validUntil for valid operation (default: 30)',
+          })
+          .option('validate-nonce-continuity', {
+            type: 'boolean',
+            description: 'Enable mempool nonce continuity validation (default: false)',
+          })
+          .option('mempool-max-nonce-gap', {
+            type: 'number',
+            description: 'Maximum nonce gap in mempool when continuity validation enabled (default: 0)',
+          })
+          .epilog(getEnvHelp())
       },
       async (argv) => {
         await runBundler(argv)
@@ -104,8 +114,12 @@ async function runBundler(argv: {
   maxBundleSize?: number
   logLevel?: string
   debug?: boolean
+  maxNonceGap?: number
+  minValidUntilBuffer?: number
+  validateNonceContinuity?: boolean
+  mempoolMaxNonceGap?: number
 }) {
-  // Parse configuration
+  // Parse configuration (handles env vars automatically)
   const config = parseConfig({
     network: argv.network,
     port: argv.port,

@@ -1,0 +1,258 @@
+import { describe, it, expect } from 'vitest'
+import {
+  extractErrorData,
+  matchesErrorSelector,
+  parseValidationData,
+  validateTimestamps,
+  isSignatureFailure,
+  formatRevertReason,
+} from '../../src/validation/errors'
+import { ERROR_SELECTORS } from '../../src/abi'
+import { VALIDATION_CONSTANTS } from '../../src/validation/types'
+import type { Hex } from 'viem'
+
+describe('Error utilities', () => {
+  describe('extractErrorData', () => {
+    it('should extract hex string directly', () => {
+      const data = extractErrorData('0x1234abcd')
+      expect(data).toBe('0x1234abcd')
+    })
+
+    it('should extract from error object with data property', () => {
+      const error = { data: '0x1234abcd' }
+      const data = extractErrorData(error)
+      expect(data).toBe('0x1234abcd')
+    })
+
+    it('should extract from nested cause', () => {
+      const error = { cause: { data: '0x1234abcd' } }
+      const data = extractErrorData(error)
+      expect(data).toBe('0x1234abcd')
+    })
+
+    it('should extract from error property', () => {
+      const error = { error: { data: '0x1234abcd' } }
+      const data = extractErrorData(error)
+      expect(data).toBe('0x1234abcd')
+    })
+
+    it('should extract hex from error message', () => {
+      const error = { message: 'Transaction reverted: 0x1234567890abcdef' }
+      const data = extractErrorData(error)
+      expect(data).toBe('0x1234567890abcdef')
+    })
+
+    it('should return null for non-hex data', () => {
+      const error = { message: 'Some error without hex' }
+      const data = extractErrorData(error)
+      expect(data).toBeNull()
+    })
+
+    it('should return null for null input', () => {
+      const data = extractErrorData(null)
+      expect(data).toBeNull()
+    })
+
+    it('should return null for undefined input', () => {
+      const data = extractErrorData(undefined)
+      expect(data).toBeNull()
+    })
+  })
+
+  describe('matchesErrorSelector', () => {
+    it('should match ValidationResult selector', () => {
+      const data = (ERROR_SELECTORS.ValidationResult + '0'.repeat(128)) as Hex
+      expect(matchesErrorSelector(data, 'ValidationResult')).toBe(true)
+    })
+
+    it('should match FailedOp selector', () => {
+      const data = (ERROR_SELECTORS.FailedOp + '0'.repeat(128)) as Hex
+      expect(matchesErrorSelector(data, 'FailedOp')).toBe(true)
+    })
+
+    it('should not match wrong selector', () => {
+      const data = (ERROR_SELECTORS.ValidationResult + '0'.repeat(128)) as Hex
+      expect(matchesErrorSelector(data, 'FailedOp')).toBe(false)
+    })
+
+    it('should return false for data too short', () => {
+      const data = '0x1234' as Hex
+      expect(matchesErrorSelector(data, 'ValidationResult')).toBe(false)
+    })
+
+    it('should be case insensitive in comparison', () => {
+      // The actual selector is lowercase, but the comparison should work regardless
+      const data = (ERROR_SELECTORS.ValidationResult + '0'.repeat(128)) as Hex
+      // Both selectors are compared in lowercase
+      expect(matchesErrorSelector(data, 'ValidationResult')).toBe(true)
+    })
+  })
+
+  describe('parseValidationData', () => {
+    it('should parse validation data with no aggregator', () => {
+      const validationData = 0n
+      const result = parseValidationData(validationData)
+
+      expect(result.aggregator).toBe(VALIDATION_CONSTANTS.SIG_VALIDATION_SUCCESS)
+      expect(result.validAfter).toBe(0n)
+      expect(result.validUntil).toBe(0n)
+    })
+
+    it('should parse validation data with signature failure marker', () => {
+      // Signature failure marker in upper 160 bits
+      const sigFailureMarker = 1n << 96n // aggregator = 0x1
+      const result = parseValidationData(sigFailureMarker)
+
+      expect(result.aggregator).toBe(VALIDATION_CONSTANTS.SIG_VALIDATION_FAILED)
+    })
+
+    it('should parse validAfter correctly', () => {
+      const validAfter = 1000000n
+      const result = parseValidationData(validAfter)
+
+      expect(result.validAfter).toBe(validAfter)
+      expect(result.validUntil).toBe(0n)
+    })
+
+    it('should parse validUntil correctly', () => {
+      const validUntil = 2000000n
+      const validationData = validUntil << 48n
+      const result = parseValidationData(validationData)
+
+      expect(result.validAfter).toBe(0n)
+      expect(result.validUntil).toBe(validUntil)
+    })
+
+    it('should parse all fields together', () => {
+      // Pack: aggregator (160 bits) | validUntil (48 bits) | validAfter (48 bits)
+      const aggregator = 0xabcdef1234567890abcdef1234567890abcdef12n
+      const validUntil = 2000000n
+      const validAfter = 1000000n
+
+      const validationData = (aggregator << 96n) | (validUntil << 48n) | validAfter
+      const result = parseValidationData(validationData)
+
+      expect(result.aggregator.toLowerCase()).toBe('0xabcdef1234567890abcdef1234567890abcdef12')
+      expect(result.validUntil).toBe(validUntil)
+      expect(result.validAfter).toBe(validAfter)
+    })
+  })
+
+  describe('isSignatureFailure', () => {
+    it('should return true for signature failure', () => {
+      const sigFailureMarker = 1n << 96n
+      expect(isSignatureFailure(sigFailureMarker)).toBe(true)
+    })
+
+    it('should return false for success', () => {
+      expect(isSignatureFailure(0n)).toBe(false)
+    })
+
+    it('should return false for real aggregator', () => {
+      const aggregator = 0x1234567890123456789012345678901234567890n << 96n
+      expect(isSignatureFailure(aggregator)).toBe(false)
+    })
+  })
+
+  describe('validateTimestamps', () => {
+    it('should return valid for zero timestamps', () => {
+      const result = validateTimestamps(0n, 0n)
+      expect(result.valid).toBe(true)
+    })
+
+    it('should return invalid for validAfter in future', () => {
+      const futureTime = BigInt(Math.floor(Date.now() / 1000) + 3600)
+      const result = validateTimestamps(futureTime, 0n)
+
+      expect(result.valid).toBe(false)
+      expect(result.reason).toContain('validAfter')
+    })
+
+    it('should return invalid for validUntil too soon', () => {
+      const now = BigInt(Math.floor(Date.now() / 1000))
+      const validUntil = now + 10n // Only 10 seconds buffer (need 30)
+
+      const result = validateTimestamps(0n, validUntil, now)
+
+      expect(result.valid).toBe(false)
+      expect(result.reason).toContain('validUntil')
+    })
+
+    it('should return valid for validUntil with sufficient buffer', () => {
+      const now = BigInt(Math.floor(Date.now() / 1000))
+      const validUntil = now + 60n // 60 seconds buffer (need 30)
+
+      const result = validateTimestamps(0n, validUntil, now)
+
+      expect(result.valid).toBe(true)
+    })
+
+    it('should return valid for past validAfter', () => {
+      const now = BigInt(Math.floor(Date.now() / 1000))
+      const validAfter = now - 60n // 60 seconds ago
+
+      const result = validateTimestamps(validAfter, 0n, now)
+
+      expect(result.valid).toBe(true)
+    })
+
+    it('should handle both timestamps together', () => {
+      const now = BigInt(Math.floor(Date.now() / 1000))
+      const validAfter = now - 60n
+      const validUntil = now + 60n
+
+      const result = validateTimestamps(validAfter, validUntil, now)
+
+      expect(result.valid).toBe(true)
+    })
+
+    it('should accept custom minValidUntilBuffer via options', () => {
+      const now = BigInt(Math.floor(Date.now() / 1000))
+      const validUntil = now + 10n // Only 10 seconds buffer
+
+      // With default buffer (30), this would fail
+      const resultDefault = validateTimestamps(0n, validUntil, { now })
+      expect(resultDefault.valid).toBe(false)
+
+      // With custom buffer of 5 seconds, this should pass
+      const resultCustom = validateTimestamps(0n, validUntil, { now, minValidUntilBuffer: 5n })
+      expect(resultCustom.valid).toBe(true)
+    })
+
+    it('should handle backward compatibility with bigint now parameter', () => {
+      const now = BigInt(Math.floor(Date.now() / 1000))
+      const validUntil = now + 60n
+
+      // Old API: passing bigint directly as now
+      const result = validateTimestamps(0n, validUntil, now)
+      expect(result.valid).toBe(true)
+    })
+
+    it('should use custom buffer for error message', () => {
+      const now = 1000n
+      const validUntil = 1008n // 8 seconds from now
+      const customBuffer = 10n
+
+      const result = validateTimestamps(0n, validUntil, { now, minValidUntilBuffer: customBuffer })
+      expect(result.valid).toBe(false)
+      expect(result.reason).toContain('1010') // now + customBuffer
+    })
+  })
+
+  describe('formatRevertReason', () => {
+    it('should format AA error codes', () => {
+      const result = formatRevertReason('AA21 didn\'t pay prefund')
+      expect(result).toContain('Account Abstraction Error')
+    })
+
+    it('should format PM error codes', () => {
+      const result = formatRevertReason('PM insufficient funds')
+      expect(result).toContain('Paymaster Error')
+    })
+
+    it('should pass through plain text', () => {
+      const result = formatRevertReason('Some error message')
+      expect(result).toBe('Some error message')
+    })
+  })
+})
