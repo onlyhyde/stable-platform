@@ -28,14 +28,8 @@ export const DELEGATE_PRESETS: Record<number, DelegatePreset[]> = {
     {
       name: 'Kernel v3.0',
       description: 'ZeroDev Kernel - ERC-7579 compatible Smart Account',
-      address: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+      address: '0xA7c59f010700930003b33aB25a7a0679C860f29c',
       features: ['ERC-7579', 'Modular', 'Gas Sponsorship', 'Session Keys'],
-    },
-    {
-      name: 'Simple Account',
-      description: 'Basic Smart Account implementation',
-      address: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-      features: ['Basic', 'ERC-4337'],
     },
   ],
   // Testnet (Sepolia)

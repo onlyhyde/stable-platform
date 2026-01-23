@@ -4,6 +4,7 @@ packages:
   - "packages/sdk/plugins/*"
   - "packages/types"
   - "packages/config"
+  - "packages/contracts"
 
   # Applications
   - "apps/*"

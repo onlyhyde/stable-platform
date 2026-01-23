@@ -230,7 +230,7 @@ services:
   # ===================
   simulator-bank:
     build:
-      context: ./simulators/bank
+      context: ./services/bank-simulator
       dockerfile: ../../infra/docker/Dockerfile.go
     container_name: stablenet-simulator-bank
     ports:
@@ -245,7 +245,7 @@ services:
 
   simulator-pg:
     build:
-      context: ./simulators/pg
+      context: ./services/pg-simulator
       dockerfile: ../../infra/docker/Dockerfile.go
     container_name: stablenet-simulator-pg
     ports:
@@ -260,7 +260,7 @@ services:
 
   simulator-onramp:
     build:
-      context: ./simulators/onramp
+      context: ./services/onramp-simulator
       dockerfile: ../../infra/docker/Dockerfile.go
     container_name: stablenet-simulator-onramp
     ports:

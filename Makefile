@@ -24,8 +24,12 @@ help:
 	@echo "  make docker-clean   - Remove all containers and volumes"
 	@echo ""
 	@echo "Local Development:"
-	@echo "  make anvil          - Start local Anvil node"
-	@echo "  make deploy         - Deploy contracts to local Anvil"
+	@echo "  make anvil          - Start local Anvil node (Prague hardfork)"
+	@echo "  make deploy         - Deploy essential contracts to local Anvil"
+	@echo "  make deploy-full    - Deploy all contracts to local Anvil"
+	@echo "  make fund-paymaster - Fund paymaster with ETH"
+	@echo "  make gen-addresses  - Generate TypeScript addresses from deployment"
+	@echo "  make dev-setup      - Full dev setup (anvil + deploy + generate)"
 	@echo "  make bundler        - Start bundler service"
 	@echo "  make paymaster      - Start paymaster proxy service"
 	@echo ""
@@ -108,14 +112,55 @@ docker-ps:
 # ===================================
 
 anvil:
-	anvil --chain-id 31337 --block-time 1 --accounts 10 --balance 10000
+	anvil --chain-id 31337 --block-time 1 --accounts 10 --balance 10000 --hardfork prague
 
-deploy: deploy-contracts
+# Essential contracts deployment (fast, for development)
+deploy: deploy-contracts gen-addresses
 
 deploy-contracts:
-	@echo "Deploying contracts to local Anvil..."
-	cd ../poc-contract && forge script script/DeployCore.s.sol:DeployCoreScript --rpc-url http://127.0.0.1:8545 --broadcast
-	@echo "Contracts deployed. Update .env with the new addresses."
+	@echo "Deploying essential contracts to local Anvil..."
+	cd ../poc-contract && forge script script/deploy/DeployDevnet.s.sol:DeployDevnetScript \
+		--rpc-url http://127.0.0.1:8545 \
+		--private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+		--broadcast
+	@echo "Essential contracts deployed."
+
+# Full contracts deployment (all contracts, slower)
+deploy-full:
+	@echo "Deploying all contracts to local Anvil..."
+	cd ../poc-contract && forge script script/DeployOrchestrator.s.sol:DeployOrchestratorScript \
+		--rpc-url http://127.0.0.1:8545 \
+		--private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+		--broadcast
+	@$(MAKE) gen-addresses
+	@echo "All contracts deployed and addresses generated."
+
+# Fund paymaster for gas sponsorship
+fund-paymaster:
+	@echo "Funding paymaster..."
+	cd ../poc-contract && forge script script/deploy/DeployDevnet.s.sol:FundPaymasterScript \
+		--rpc-url http://127.0.0.1:8545 \
+		--private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+		--broadcast
+
+# Generate TypeScript addresses from deployment output
+gen-addresses:
+	@echo "Generating TypeScript addresses..."
+	@if [ -f ../poc-contract/deployments/31337/addresses.json ]; then \
+		pnpm --filter @stablenet/contracts generate --input ../poc-contract/deployments; \
+		echo "Addresses generated successfully."; \
+	else \
+		echo "No deployment file found. Run 'make deploy' first."; \
+	fi
+
+# One-command dev setup: deploy contracts and generate addresses
+dev-setup: deploy fund-paymaster
+	@echo ""
+	@echo "=== Dev Setup Complete ==="
+	@echo "Contracts deployed and addresses generated."
+	@echo "Paymaster funded with 10 ETH."
+	@echo ""
+	@echo "Start services with: make docker-dev"
 
 bundler:
 	cd services/bundler && pnpm dev
