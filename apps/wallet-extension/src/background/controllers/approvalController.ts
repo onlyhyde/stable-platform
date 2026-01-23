@@ -94,6 +94,46 @@ export class ApprovalController {
   }
 
   /**
+   * Request sign message approval (simplified interface for personal_sign)
+   */
+  async requestSignMessage(params: {
+    origin: string
+    message: string
+    address: Address
+    method: 'personal_sign' | 'eth_signTypedData_v4'
+    favicon?: string
+  }): Promise<{ approved: boolean }> {
+    return this.requestSignature(
+      params.origin,
+      params.method,
+      params.address,
+      params.message,
+      undefined,
+      params.favicon
+    ).then(() => ({ approved: true })).catch(() => ({ approved: false }))
+  }
+
+  /**
+   * Request typed data signing approval (simplified interface for eth_signTypedData_v4)
+   */
+  async requestSignTypedData(params: {
+    origin: string
+    address: Address
+    typedData: unknown
+    method: 'eth_signTypedData_v4'
+    favicon?: string
+  }): Promise<{ approved: boolean }> {
+    return this.requestSignature(
+      params.origin,
+      params.method,
+      params.address,
+      '', // No plain message for typed data
+      params.typedData,
+      params.favicon
+    ).then(() => ({ approved: true })).catch(() => ({ approved: false }))
+  }
+
+  /**
    * Request signature approval
    */
   async requestSignature(
