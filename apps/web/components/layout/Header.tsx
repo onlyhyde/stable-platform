@@ -1,13 +1,26 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useWallet, useBalance } from '@/hooks'
-import { Button } from '@/components/common'
+import { Button, WalletSelectorModal } from '@/components/common'
 import { formatAddress, formatTokenAmount } from '@/lib/utils'
 
 export function Header() {
-  const { address, isConnected, isConnecting, connect, disconnect } = useWallet()
+  const { address, isConnected, isConnecting, connect, disconnect, connectors } = useWallet()
   const { balance, symbol, decimals } = useBalance({ address, watch: true })
+  const [showWalletModal, setShowWalletModal] = useState(false)
+  const [pendingConnector, setPendingConnector] = useState<string>()
+
+  const handleSelectWallet = (connectorId: string) => {
+    setPendingConnector(connectorId)
+    connect(connectorId)
+    // Close modal after a short delay to show connecting state
+    setTimeout(() => {
+      setShowWalletModal(false)
+      setPendingConnector(undefined)
+    }, 1500)
+  }
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/80 backdrop-blur-sm">
@@ -45,7 +58,7 @@ export function Header() {
             </>
           ) : (
             <Button
-              onClick={() => connect()}
+              onClick={() => setShowWalletModal(true)}
               isLoading={isConnecting}
               size="sm"
             >
@@ -54,6 +67,16 @@ export function Header() {
           )}
         </div>
       </div>
+
+      {/* Wallet Selector Modal */}
+      <WalletSelectorModal
+        isOpen={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        connectors={connectors}
+        onSelectWallet={handleSelectWallet}
+        isConnecting={isConnecting}
+        pendingConnector={pendingConnector}
+      />
     </header>
   )
 }

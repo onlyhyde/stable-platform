@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react'
 import { useSmartAccount, useWallet } from '@/hooks'
-import { Card, CardContent, PageHeader, InfoBanner, ConnectWalletCard } from '@/components/common'
+import type { SigningMethod } from '@/hooks/useSmartAccount'
+import { Card, CardContent, PageHeader, InfoBanner, ConnectWalletCard, useToast } from '@/components/common'
 import {
   AccountStatusCard,
   PrivateKeyCard,
@@ -11,12 +12,14 @@ import {
   AuthorizationDetailsCard,
   FeatureComparisonCard,
   ContractAddressesCard,
+  SigningMethodCard,
+  MetaMaskUnsupportedModal,
 } from '@/components/smart-account'
 import { getDelegatePresets } from '@/lib/eip7702'
 import type { Address, Hex } from 'viem'
 
 export default function SmartAccountPage() {
-  const { connect, isConnecting } = useWallet()
+  const { connect, isConnecting, connectors } = useWallet()
   const {
     status,
     isConnected,
@@ -30,10 +33,17 @@ export default function SmartAccountPage() {
     lastTxHash,
     upgradeToSmartAccount,
     revokeSmartAccount,
+    upgradeWithMetaMask,
+    revokeWithMetaMask,
     refreshStatus,
     contracts,
     anvilAccounts,
   } = useSmartAccount()
+
+  const { addToast, updateToast, removeToast } = useToast()
+
+  // State for signing method selection
+  const [signingMethod, setSigningMethod] = useState<SigningMethod>('privateKey')
 
   // State for selected delegate address
   const [selectedDelegate, setSelectedDelegate] = useState<Address>(() => {
@@ -41,8 +51,11 @@ export default function SmartAccountPage() {
     return presets.length > 0 ? presets[0].address : contracts.defaultKernelImplementation
   })
 
-  // State for private key (required for EIP-7702 signing)
+  // State for private key (required for EIP-7702 signing with privateKey method)
   const [privateKey, setPrivateKey] = useState<Hex | ''>('')
+
+  // State for MetaMask unsupported modal
+  const [showMetaMaskModal, setShowMetaMaskModal] = useState(false)
 
   // Find matching Anvil account based on connected address
   const matchingAnvilAccount = useMemo(() => {
@@ -60,21 +73,111 @@ export default function SmartAccountPage() {
   }
 
   // Handle upgrade with selected delegate
-  const handleUpgrade = () => {
-    if (privateKey) {
-      upgradeToSmartAccount(privateKey as Hex, selectedDelegate)
+  const handleUpgrade = async () => {
+    const toastId = addToast({
+      type: 'loading',
+      title: 'Upgrading to Smart Account',
+      message: 'Signing authorization and sending transaction...',
+      persistent: true,
+    })
+
+    try {
+      let result
+      if (signingMethod === 'metamask') {
+        result = await upgradeWithMetaMask(selectedDelegate)
+        if (!result.success && result.error?.includes('eth_sign')) {
+          removeToast(toastId)
+          setShowMetaMaskModal(true)
+          return
+        }
+      } else {
+        if (!privateKey) {
+          removeToast(toastId)
+          return
+        }
+        result = await upgradeToSmartAccount(privateKey as Hex, selectedDelegate)
+      }
+
+      if (result.success) {
+        updateToast(toastId, {
+          type: 'success',
+          title: 'Upgrade Successful',
+          message: 'Your account is now a Smart Account!',
+          txHash: result.txHash,
+          persistent: false,
+        })
+      } else {
+        updateToast(toastId, {
+          type: 'error',
+          title: 'Upgrade Failed',
+          message: result.error || 'Unknown error occurred',
+          persistent: false,
+        })
+      }
+    } catch (err) {
+      updateToast(toastId, {
+        type: 'error',
+        title: 'Upgrade Failed',
+        message: err instanceof Error ? err.message : 'Unknown error occurred',
+        persistent: false,
+      })
     }
   }
 
   // Handle revoke
-  const handleRevoke = () => {
-    if (privateKey) {
-      revokeSmartAccount(privateKey as Hex)
+  const handleRevoke = async () => {
+    const toastId = addToast({
+      type: 'loading',
+      title: 'Revoking Smart Account',
+      message: 'Signing revocation and sending transaction...',
+      persistent: true,
+    })
+
+    try {
+      let result
+      if (signingMethod === 'metamask') {
+        result = await revokeWithMetaMask()
+        if (!result.success && result.error?.includes('eth_sign')) {
+          removeToast(toastId)
+          setShowMetaMaskModal(true)
+          return
+        }
+      } else {
+        if (!privateKey) {
+          removeToast(toastId)
+          return
+        }
+        result = await revokeSmartAccount(privateKey as Hex)
+      }
+
+      if (result.success) {
+        updateToast(toastId, {
+          type: 'success',
+          title: 'Revocation Successful',
+          message: 'Your account is now a regular EOA again.',
+          txHash: result.txHash,
+          persistent: false,
+        })
+      } else {
+        updateToast(toastId, {
+          type: 'error',
+          title: 'Revocation Failed',
+          message: result.error || 'Unknown error occurred',
+          persistent: false,
+        })
+      }
+    } catch (err) {
+      updateToast(toastId, {
+        type: 'error',
+        title: 'Revocation Failed',
+        message: err instanceof Error ? err.message : 'Unknown error occurred',
+        persistent: false,
+      })
     }
   }
 
-  // Check if action is allowed (requires private key)
-  const canPerformAction = !!privateKey
+  // Check if action is allowed
+  const canPerformAction = signingMethod === 'metamask' || !!privateKey
 
   // Show loading while reconnecting
   if (isReconnecting) {
@@ -106,6 +209,7 @@ export default function SmartAccountPage() {
           onConnect={connect}
           isConnecting={isConnecting}
           description="Connect your wallet to manage your Smart Account"
+          connectors={connectors}
         />
       ) : (
         <>
@@ -116,13 +220,20 @@ export default function SmartAccountPage() {
             onRefresh={refreshStatus}
           />
 
-          <PrivateKeyCard
-            privateKey={privateKey}
-            onPrivateKeyChange={setPrivateKey}
-            matchingAnvilAccount={matchingAnvilAccount}
-            onAutoFill={handleAutoFillPrivateKey}
-            anvilAccounts={anvilAccounts}
+          <SigningMethodCard
+            signingMethod={signingMethod}
+            onSigningMethodChange={setSigningMethod}
           />
+
+          {signingMethod === 'privateKey' && (
+            <PrivateKeyCard
+              privateKey={privateKey}
+              onPrivateKeyChange={setPrivateKey}
+              matchingAnvilAccount={matchingAnvilAccount}
+              onAutoFill={handleAutoFillPrivateKey}
+              anvilAccounts={anvilAccounts}
+            />
+          )}
 
           {!status.isSmartAccount ? (
             <UpgradeCard
@@ -160,6 +271,12 @@ export default function SmartAccountPage() {
           />
         </>
       )}
+
+      {/* MetaMask Unsupported Modal */}
+      <MetaMaskUnsupportedModal
+        isOpen={showMetaMaskModal}
+        onClose={() => setShowMetaMaskModal(false)}
+      />
     </div>
   )
 }

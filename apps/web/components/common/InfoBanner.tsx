@@ -6,7 +6,7 @@ type BannerVariant = 'info' | 'warning' | 'success' | 'error'
 
 interface InfoBannerProps {
   title: string
-  description: string
+  description?: string
   variant?: BannerVariant
   className?: string
 }
@@ -65,7 +65,7 @@ export function InfoBanner({ title, description, variant = 'info', className }: 
           </svg>
           <div>
             <p className={cn('font-medium', styles.title)}>{title}</p>
-            <p className={cn('text-sm mt-1', styles.text)}>{description}</p>
+            {description && <p className={cn('text-sm mt-1', styles.text)}>{description}</p>}
           </div>
         </div>
       </CardContent>

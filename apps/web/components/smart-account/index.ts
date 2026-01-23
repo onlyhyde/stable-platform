@@ -9,4 +9,6 @@ export {
   AuthorizationDetailsCard,
   FeatureComparisonCard,
   ContractAddressesCard,
+  SigningMethodCard,
+  MetaMaskUnsupportedModal,
 } from './cards'

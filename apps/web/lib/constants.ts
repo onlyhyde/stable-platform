@@ -12,11 +12,11 @@ export const CONTRACT_ADDRESSES: Record<number, {
 }> = {
   // Devnet
   31337: {
-    entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
-    accountFactory: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-    paymaster: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
-    stealthAnnouncer: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
-    stealthRegistry: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+    entryPoint: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    accountFactory: '0xfaAddC93baf78e89DCf37bA67943E1bE8F37Bb8c',
+    paymaster: '0x2dd78fd9b8f40659af32ef98555b8b31bc97a351',
+    stealthAnnouncer: '0x8fc8cfb7f7362e44e472c690a6e025b80e406458',
+    stealthRegistry: '0xc7143d5ba86553c06f5730c8dc9f8187a621a8d4',
   },
   // Testnet
   11155111: {

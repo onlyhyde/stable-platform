@@ -1,8 +1,22 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { WalletProvider } from './WalletProvider'
+import dynamic from 'next/dynamic'
 import { StableNetProvider } from './StableNetProvider'
+import { ToastProvider } from '@/components/common'
+
+// Dynamically import WalletProvider to prevent SSR issues with wagmi
+const DynamicWalletProvider = dynamic(
+  () => import('./WalletProvider').then((mod) => mod.WalletProvider),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600" />
+      </div>
+    ),
+  }
+)
 
 interface ProvidersProps {
   children: ReactNode
@@ -10,13 +24,12 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <WalletProvider>
+    <DynamicWalletProvider>
       <StableNetProvider>
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </StableNetProvider>
-    </WalletProvider>
+    </DynamicWalletProvider>
   )
 }
 
-export { WalletProvider } from './WalletProvider'
 export { StableNetProvider, useStableNetContext } from './StableNetProvider'

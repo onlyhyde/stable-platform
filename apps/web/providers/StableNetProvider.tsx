@@ -8,6 +8,7 @@ import { stablenetDevnet } from '@/lib/chains'
 
 interface StableNetContextValue {
   publicClient: PublicClient
+  chainId: number
   bundlerUrl: string
   paymasterUrl: string
   stealthServerUrl: string
@@ -41,6 +42,7 @@ export function StableNetProvider({ children }: StableNetProviderProps) {
 
     return {
       publicClient,
+      chainId: currentChainId,
       bundlerUrl: services.bundler,
       paymasterUrl: services.paymaster,
       stealthServerUrl: services.stealthServer,
