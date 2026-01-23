@@ -6,6 +6,18 @@ import type { Network } from '../types'
 export const DEFAULT_NETWORKS: Network[] = [
   {
     chainId: 31337,
+    name: 'Anvil (Local)',
+    rpcUrl: 'http://127.0.0.1:8545',
+    bundlerUrl: 'http://127.0.0.1:8545',
+    currency: {
+      name: 'Ether',
+      symbol: 'ETH',
+      decimals: 18,
+    },
+    isTestnet: true,
+  },
+  {
+    chainId: 1337,
     name: 'StableNet Devnet',
     rpcUrl: 'http://localhost:8545',
     bundlerUrl: 'http://localhost:4337',
@@ -15,6 +27,7 @@ export const DEFAULT_NETWORKS: Network[] = [
       symbol: 'ETH',
       decimals: 18,
     },
+    isTestnet: true,
   },
   {
     chainId: 11155111,
@@ -28,6 +41,7 @@ export const DEFAULT_NETWORKS: Network[] = [
       symbol: 'ETH',
       decimals: 18,
     },
+    isTestnet: true,
   },
 ]
 
@@ -42,6 +56,16 @@ export const STORAGE_KEYS = {
 } as const
 
 /**
+ * Session storage keys (for service worker persistence)
+ * These are stored in chrome.storage.session which persists across
+ * service worker restarts but is cleared when browser closes
+ */
+export const SESSION_KEYS = {
+  VAULT_SESSION: 'stablenet_vault_session',
+  SESSION_TIMESTAMP: 'stablenet_session_timestamp',
+} as const
+
+/**
  * Message types for extension communication
  */
 export const MESSAGE_TYPES = {
@@ -51,6 +75,7 @@ export const MESSAGE_TYPES = {
   CONNECT_REQUEST: 'CONNECT_REQUEST',
   CONNECT_RESPONSE: 'CONNECT_RESPONSE',
   DISCONNECT: 'DISCONNECT',
+  APPROVAL_RESPONSE: 'APPROVAL_RESPONSE',
 } as const
 
 /**

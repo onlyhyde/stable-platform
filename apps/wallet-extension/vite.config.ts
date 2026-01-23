@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 import { copyFileSync, mkdirSync, existsSync } from 'fs'
+import { build } from 'vite'
 
 // Plugin to copy manifest and assets
 function copyManifestPlugin() {
@@ -31,16 +32,66 @@ function copyManifestPlugin() {
   }
 }
 
+// Plugin to build content script and inpage as IIFE
+function buildIIFEScripts() {
+  return {
+    name: 'build-iife-scripts',
+    async closeBundle() {
+      // Build content script as IIFE
+      await build({
+        configFile: false,
+        build: {
+          emptyOutDir: false,
+          outDir: 'dist',
+          lib: {
+            entry: resolve(__dirname, 'src/contentscript/index.ts'),
+            name: 'contentscript',
+            formats: ['iife'],
+            fileName: () => 'contentscript.js',
+          },
+          rollupOptions: {
+            output: {
+              extend: true,
+            },
+          },
+          minify: true,
+          sourcemap: false,
+        },
+      })
+
+      // Build inpage script as IIFE
+      await build({
+        configFile: false,
+        build: {
+          emptyOutDir: false,
+          outDir: 'dist',
+          lib: {
+            entry: resolve(__dirname, 'src/inpage/index.ts'),
+            name: 'inpage',
+            formats: ['iife'],
+            fileName: () => 'inpage.js',
+          },
+          rollupOptions: {
+            output: {
+              extend: true,
+            },
+          },
+          minify: true,
+          sourcemap: false,
+        },
+      })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), copyManifestPlugin()],
+  plugins: [react(), copyManifestPlugin(), buildIIFEScripts()],
   build: {
     rollupOptions: {
       input: {
         popup: resolve(__dirname, 'src/ui/popup.html'),
         approval: resolve(__dirname, 'src/approval/approval.html'),
         background: resolve(__dirname, 'src/background/index.ts'),
-        contentscript: resolve(__dirname, 'src/contentscript/index.ts'),
-        inpage: resolve(__dirname, 'src/inpage/index.ts'),
       },
       output: {
         entryFileNames: '[name].js',

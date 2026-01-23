@@ -2,11 +2,22 @@ import { useEffect } from 'react'
 import { useWalletStore } from './hooks/useWalletStore'
 import { Header } from './components/Header'
 import { Navigation } from './components/Navigation'
-import { Home, Send, Receive, Activity, Settings } from './pages'
+import { Home, Send, Receive, Activity, Settings, Lock, Bank, BuyPage } from './pages'
+import { Onboarding } from './pages/Onboarding'
+import { Spinner } from './components/common'
 import './styles/globals.css'
 
 export function App() {
-  const { currentPage, isLoading, error, setError, syncWithBackground } = useWalletStore()
+  const {
+    currentPage,
+    isLoading,
+    isInitialized,
+    isUnlocked,
+    error,
+    setError,
+    syncWithBackground,
+    unlockWallet,
+  } = useWalletStore()
 
   useEffect(() => {
     // Sync with background on mount
@@ -28,6 +39,41 @@ export function App() {
     }
   }, [syncWithBackground])
 
+  // Show loading spinner while checking initialization
+  if (isLoading && !isInitialized) {
+    return (
+      <div className="w-[360px] h-[600px] bg-gray-50 flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  // Show onboarding if wallet is not initialized
+  if (!isInitialized) {
+    return (
+      <div className="w-[360px] h-[600px] bg-gray-50">
+        <Onboarding onComplete={() => syncWithBackground()} />
+      </div>
+    )
+  }
+
+  // Show lock screen if wallet is locked
+  if (!isUnlocked) {
+    return (
+      <div className="w-[360px] h-[600px] bg-gray-50">
+        <Lock
+          onUnlock={async (password) => {
+            const success = await unlockWallet(password)
+            if (!success) {
+              throw new Error('Invalid password')
+            }
+          }}
+          error={error ?? undefined}
+        />
+      </div>
+    )
+  }
+
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
@@ -40,6 +86,10 @@ export function App() {
         return <Activity />
       case 'settings':
         return <Settings />
+      case 'bank':
+        return <Bank />
+      case 'buy':
+        return <BuyPage />
       default:
         return <Home />
     }

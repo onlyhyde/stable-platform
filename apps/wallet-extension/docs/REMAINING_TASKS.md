@@ -1,7 +1,8 @@
 # StableNet Wallet - 남은 작업 목록
 
 > 작성일: 2026-01-23
-> 현재 테스트: 305개 통과
+> 최종 업데이트: 2026-01-23
+> 현재 테스트: 430개 통과
 
 ---
 
@@ -21,63 +22,30 @@
 - [x] NetworkController (33 tests)
 - [x] ControllerMessenger (28 tests)
 
+### ✅ 보안 강화 (125 tests)
+- [x] RPC 에러 처리 표준화 (27 tests)
+  - RpcError, ProviderRpcError 클래스
+  - JSON-RPC 2.0, EIP-1193, EIP-1474 표준 에러 코드
+- [x] 피싱 감지 시스템 (27 tests)
+  - Typosquatting 감지
+  - Homograph/Punycode 공격 감지
+  - 의심스러운 서브도메인 감지
+  - 커스텀 Blocklist/Allowlist
+- [x] 서명 위험도 분석 (18 tests)
+  - eth_sign 블라인드 서명 경고
+  - EIP-712 typed data 파싱
+  - 무제한 토큰 승인 감지
+  - NFT setApprovalForAll 감지
+- [x] 입력 검증 강화 (53 tests)
+  - 주소 검증 (EIP-55 체크섬)
+  - Hex 문자열 검증
+  - Chain ID 검증
+  - 트랜잭션/RPC 요청 검증
+  - 문자열 새니타이징 (XSS 방지)
+
 ---
 
 ## 남은 작업
-
-### 🟠 보안 강화 (우선순위: High)
-
-#### 3.1 에러 처리 표준화
-- [ ] RpcError 클래스 구현
-- [ ] ErrorHandler 유틸리티
-- [ ] JSON-RPC 표준 에러 코드 적용
-
-```typescript
-// 예시 테스트 케이스
-describe('RpcError', () => {
-  it('should create error with code and message')
-  it('should serialize to JSON-RPC format')
-})
-```
-
-#### 3.2 피싱 감지 시스템
-- [ ] PhishingController 구현
-- [ ] 알려진 피싱 도메인 블록리스트
-- [ ] EIP-712 도메인 검증
-
-```typescript
-describe('PhishingController', () => {
-  it('should detect known phishing domains')
-  it('should validate EIP-712 domain')
-})
-```
-
-#### 3.3 서명 위험도 분석
-- [ ] SigningRiskAssessor 구현
-- [ ] Permit 서명 감지
-- [ ] 토큰 승인 분석
-
-```typescript
-describe('SigningRiskAssessor', () => {
-  it('should detect permit signatures')
-  it('should calculate risk score')
-})
-```
-
-#### 3.4 입력 검증 강화
-- [ ] 주소 검증 (체크섬 포함)
-- [ ] 프라이빗 키 검증
-- [ ] 니모닉 검증 (BIP39)
-
-```typescript
-describe('InputValidation', () => {
-  it('should validate and checksum addresses')
-  it('should reject invalid private keys')
-  it('should validate BIP39 mnemonics')
-})
-```
-
----
 
 ### 🟡 기능 확장 (우선순위: Medium)
 
@@ -86,45 +54,79 @@ describe('InputValidation', () => {
 - [ ] EIP-1559 지원
 - [ ] 가스 가격 히스토리
 
+```typescript
+describe('GasFeeController', () => {
+  it('should estimate gas for transactions')
+  it('should support EIP-1559 fee parameters')
+  it('should track gas price history')
+})
+```
+
 #### 4.2 토큰 관리
 - [ ] ERC-20 토큰 추적
 - [ ] 토큰 잔액 조회
 - [ ] 토큰 전송 UI
 
-#### 4.4 E2E 테스트
+```typescript
+describe('TokenController', () => {
+  it('should track ERC-20 tokens')
+  it('should fetch token balances')
+  it('should support token transfers')
+})
+```
+
+#### 4.3 E2E 테스트
 - [ ] Playwright 설정
 - [ ] 온보딩 플로우 테스트
 - [ ] 트랜잭션 서명 테스트
 
 ---
 
-### 🟢 기능 확장 (우선순위: Low)
+### 🟢 추가 기능 (우선순위: Low)
 
-#### 4.3 하드웨어 지갑 지원
+#### 4.4 하드웨어 지갑 지원
 - [ ] Ledger 연동
 - [ ] 트랜잭션 서명 지원
+
+#### 4.5 dApp 브라우저 연동
+- [ ] WalletConnect 지원
+- [ ] Deep linking
 
 ---
 
 ## 우선순위 매트릭스
 
-| 작업 | 복잡도 | 영향도 | 우선순위 |
-|------|--------|--------|----------|
-| 에러 처리 표준화 | 중 | 높음 | 🟠 High |
-| 피싱 감지 | 중 | 높음 | 🟠 High |
-| 서명 위험도 분석 | 중 | 높음 | 🟠 High |
-| 입력 검증 강화 | 낮음 | 높음 | 🟠 High |
-| GasFeeController | 중 | 중간 | 🟡 Medium |
-| E2E 테스트 | 중 | 중간 | 🟡 Medium |
-| 토큰 관리 | 높음 | 중간 | 🟡 Medium |
-| 하드웨어 지갑 | 높음 | 낮음 | 🟢 Low |
+| 작업 | 복잡도 | 영향도 | 우선순위 | 상태 |
+|------|--------|--------|----------|------|
+| 에러 처리 표준화 | 중 | 높음 | High | ✅ 완료 |
+| 피싱 감지 | 중 | 높음 | High | ✅ 완료 |
+| 서명 위험도 분석 | 중 | 높음 | High | ✅ 완료 |
+| 입력 검증 강화 | 낮음 | 높음 | High | ✅ 완료 |
+| GasFeeController | 중 | 중간 | Medium | 🟡 대기 |
+| 토큰 관리 | 높음 | 중간 | Medium | 🟡 대기 |
+| E2E 테스트 | 중 | 중간 | Medium | 🟡 대기 |
+| 하드웨어 지갑 | 높음 | 낮음 | Low | 🟢 대기 |
+| WalletConnect | 중 | 낮음 | Low | 🟢 대기 |
+
+---
+
+## 진행률
+
+```
+기초 인프라:     ████████████████████ 100%
+아키텍처 개선:   ████████████████████ 100%
+보안 강화:       ████████████████████ 100%
+기능 확장:       ░░░░░░░░░░░░░░░░░░░░   0%
+```
+
+**전체 진행률: 75% (3/4 단계 완료)**
 
 ---
 
 ## 다음 단계 제안
 
-1. **보안 강화 작업** (3.1 ~ 3.4)을 먼저 완료하여 프로덕션 준비도 향상
-2. **GasFeeController** 구현으로 사용자 경험 개선
+1. **GasFeeController** 구현으로 트랜잭션 UX 개선
+2. **토큰 관리** 기능 추가로 사용성 확대
 3. **E2E 테스트** 구축으로 회귀 방지
 
 ---

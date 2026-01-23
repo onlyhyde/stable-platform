@@ -9,6 +9,7 @@ export type KeyringType = 'hd' | 'simple' | 'hardware'
 export interface KeyringAccount {
   address: Address
   type: KeyringType
+  name?: string // Display name for the account
   index?: number // HD derivation index
   path?: string // BIP44 path
 }
@@ -125,4 +126,25 @@ export interface TransactionSignRequest extends SigningRequest {
     maxFeePerGas?: bigint
     maxPriorityFeePerGas?: bigint
   }
+}
+
+/**
+ * Vault session data for service worker persistence
+ * Stored in chrome.storage.session to survive service worker restarts
+ *
+ * Security note: chrome.storage.session is:
+ * - Cleared when browser closes
+ * - Not persisted to disk
+ * - Not accessible to other extensions
+ * - Similar security model to MetaMask's in-memory vault
+ */
+export interface VaultSessionData {
+  /** Decrypted vault data */
+  vaultData: VaultData
+  /** Vault password for re-encryption on updates */
+  password: string
+  /** Timestamp when session was created */
+  createdAt: number
+  /** Auto-lock timeout in minutes */
+  autoLockMinutes: number
 }

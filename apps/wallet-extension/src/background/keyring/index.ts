@@ -5,8 +5,11 @@ import { vault } from './vault'
 import type {
   KeyringAccount,
   KeyringControllerState,
-  SerializedKeyring,
   KeyringType,
+  VaultData,
+  HDKeyringData,
+  SimpleKeyringData,
+  SerializedKeyring,
 } from '../../types'
 
 /**
@@ -26,13 +29,45 @@ export class KeyringController {
 
   /**
    * Initialize the keyring controller
+   * Attempts to restore state from session storage if available
    */
   async initialize(): Promise<void> {
-    // Check if vault is initialized but locked
-    if (await vault.isInitialized()) {
-      // Vault exists, waiting for unlock
+    // Check if vault is initialized
+    if (!(await vault.isInitialized())) {
+      // No vault exists yet
       return
     }
+
+    // Try to restore from session storage (service worker restart case)
+    const sessionData = await vault.tryRestoreFromSession()
+    if (sessionData) {
+      // Reconstruct keyrings from session data
+      this.reconstructKeyrings(sessionData)
+    }
+    // If no session data, vault remains locked until user unlocks
+  }
+
+  /**
+   * Reconstruct keyrings from vault data
+   */
+  private reconstructKeyrings(data: VaultData): void {
+    this.hdKeyrings = []
+    this.simpleKeyrings = []
+
+    for (const serialized of data.keyrings) {
+      if (serialized.type === 'hd') {
+        this.hdKeyrings.push(new HDKeyring(serialized.data as HDKeyringData))
+      } else if (serialized.type === 'simple') {
+        this.simpleKeyrings.push(new SimpleKeyring(serialized.data as SimpleKeyringData))
+      }
+    }
+
+    // Restore selected address or set default
+    this.selectedAddress = data.selectedAddress ?? this.getAllAccounts()[0]?.address ?? null
+
+    this.emit('unlock')
+    this.emit('accountsChanged', this.getAllAccounts())
+    this.emit('selectedChanged', this.selectedAddress)
   }
 
   /**
@@ -135,23 +170,7 @@ export class KeyringController {
     const data = await vault.unlock(password)
 
     // Reconstruct keyrings from vault data
-    this.hdKeyrings = []
-    this.simpleKeyrings = []
-
-    for (const serialized of data.keyrings) {
-      if (serialized.type === 'hd') {
-        this.hdKeyrings.push(new HDKeyring(serialized.data as typeof serialized.data & { mnemonic: string }))
-      } else if (serialized.type === 'simple') {
-        this.simpleKeyrings.push(new SimpleKeyring(serialized.data as typeof serialized.data & { privateKeys: Hex[] }))
-      }
-    }
-
-    // Restore selected address or set default
-    this.selectedAddress = data.selectedAddress ?? this.getAllAccounts()[0]?.address ?? null
-
-    this.emit('unlock')
-    this.emit('accountsChanged', this.getAllAccounts())
-    this.emit('selectedChanged', this.selectedAddress)
+    this.reconstructKeyrings(data)
   }
 
   /**

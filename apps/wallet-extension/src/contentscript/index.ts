@@ -8,11 +8,35 @@
 import type { ExtensionMessage } from '../types'
 import { MESSAGE_TYPES } from '../shared/constants'
 
-// Inject the inpage script into the page
-injectScript()
+// Sync MetaMask mode setting before injecting inpage script
+syncMetaMaskMode().then(() => {
+  // Inject the inpage script into the page
+  injectScript()
 
-// Set up message relay between page and background
-setupMessageRelay()
+  // Set up message relay between page and background
+  setupMessageRelay()
+
+  // Listen for MetaMask mode changes from background
+  listenForModeChanges()
+})
+
+/**
+ * Sync MetaMask mode from chrome.storage to localStorage
+ * This must happen BEFORE the inpage script is injected
+ */
+async function syncMetaMaskMode(): Promise<void> {
+  try {
+    const result = await chrome.storage.local.get('stablenet_metamask_mode')
+    const enabled = result.stablenet_metamask_mode ?? false
+
+    // Sync to localStorage so inpage script can read it
+    // (inpage runs in page context and can't access chrome.storage)
+    window.localStorage.setItem('__stablenetAppearAsMM__', JSON.stringify(enabled))
+  } catch {
+    // If sync fails, use default (false)
+    window.localStorage.setItem('__stablenetAppearAsMM__', 'false')
+  }
+}
 
 /**
  * Inject the inpage script into the page
@@ -92,8 +116,25 @@ function setupMessageRelay(): void {
   })
 }
 
-// Log that content script is loaded
-const hostname = window.location.hostname
-if (hostname && hostname !== 'localhost' && !hostname.includes('chrome')) {
-  // Content script loaded
+/**
+ * Listen for MetaMask mode changes from background
+ * When changed, notify the page that a reload is needed
+ */
+function listenForModeChanges(): void {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes.stablenet_metamask_mode) {
+      const newValue = changes.stablenet_metamask_mode.newValue ?? false
+
+      // Update localStorage for next page load
+      window.localStorage.setItem('__stablenetAppearAsMM__', JSON.stringify(newValue))
+
+      // Notify the page that MetaMask mode has changed
+      // dApps can listen to this custom event if they want to handle it
+      window.dispatchEvent(
+        new CustomEvent('stablenet:metamaskModeChanged', {
+          detail: { enabled: newValue, requiresReload: true },
+        })
+      )
+    }
+  })
 }

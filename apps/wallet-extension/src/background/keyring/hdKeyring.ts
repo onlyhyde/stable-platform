@@ -104,6 +104,7 @@ export class HDKeyring {
     return {
       address: viemAccount.address as Address,
       type: 'hd',
+      name: `Account ${index + 1}`,
       index,
       path: `${this.hdPath}/${index}`,
     }

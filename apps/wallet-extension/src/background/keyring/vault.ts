@@ -1,6 +1,6 @@
 import { encrypt, decrypt, bufferToHex, getRandomBytes } from './crypto'
-import type { EncryptedVault, VaultData, SerializedKeyring } from '../../types'
-import { STORAGE_KEYS } from '../../shared/constants'
+import type { EncryptedVault, VaultData, SerializedKeyring, VaultSessionData } from '../../types'
+import { STORAGE_KEYS, SESSION_KEYS } from '../../shared/constants'
 
 /**
  * Vault for secure storage of encrypted keyring data
@@ -16,9 +16,13 @@ export class Vault {
   private cachedPassword: string | null = null
   private cachedData: VaultData | null = null
   private lockTimeout: ReturnType<typeof setTimeout> | null = null
-  private readonly autoLockDelay: number
+  private autoLockDelay: number
+  private autoLockMinutes: number
+  /** Flag indicating if restored from session (password not available) */
+  private isSessionRestored: boolean = false
 
   constructor(autoLockMinutes: number = 15) {
+    this.autoLockMinutes = autoLockMinutes
     this.autoLockDelay = autoLockMinutes * 60 * 1000
   }
 
@@ -52,7 +56,11 @@ export class Vault {
     await this.saveVault(data, password)
     this.cachedPassword = password
     this.cachedData = data
+    this.isSessionRestored = false
     this.resetAutoLock()
+
+    // Save to session storage for service worker persistence
+    await this.saveToSession(data)
   }
 
   /**
@@ -79,7 +87,11 @@ export class Vault {
 
       this.cachedPassword = password
       this.cachedData = data
+      this.isSessionRestored = false
       this.resetAutoLock()
+
+      // Save to session storage for service worker persistence
+      await this.saveToSession(data)
 
       return data
     } catch (error) {
@@ -93,7 +105,12 @@ export class Vault {
   lock(): void {
     this.cachedPassword = null
     this.cachedData = null
+    this.isSessionRestored = false
     this.clearAutoLock()
+    // Clear session storage
+    this.clearSession().catch(() => {
+      // Silent fail for session clear
+    })
   }
 
   /**
@@ -114,8 +131,15 @@ export class Vault {
       throw new Error('Vault is locked')
     }
 
+    if (!this.cachedPassword) {
+      throw new Error('Password not available. Please unlock wallet again.')
+    }
+
     this.cachedData = { ...this.cachedData!, ...data }
-    await this.saveVault(this.cachedData, this.cachedPassword!)
+
+    // Save to both encrypted vault and session storage
+    await this.saveVault(this.cachedData, this.cachedPassword)
+    await this.saveToSession(this.cachedData)
     this.resetAutoLock()
   }
 
@@ -158,6 +182,9 @@ export class Vault {
     // Re-encrypt with new password
     await this.saveVault(this.cachedData!, newPassword)
     this.cachedPassword = newPassword
+
+    // Update session with new password
+    await this.saveToSession(this.cachedData!)
   }
 
   /**
@@ -166,6 +193,109 @@ export class Vault {
   async clear(): Promise<void> {
     this.lock()
     await chrome.storage.local.remove(STORAGE_KEYS.ENCRYPTED_VAULT)
+    await this.clearSession()
+  }
+
+  /**
+   * Try to restore vault state from session storage
+   * Called on service worker restart to maintain unlocked state
+   * @returns VaultData if session is valid and not expired, null otherwise
+   */
+  async tryRestoreFromSession(): Promise<VaultData | null> {
+    try {
+      // Check if chrome.storage.session is available (MV3)
+      if (!chrome.storage.session) {
+        return null
+      }
+
+      const stored = await chrome.storage.session.get(SESSION_KEYS.VAULT_SESSION)
+      const sessionData = stored[SESSION_KEYS.VAULT_SESSION] as VaultSessionData | undefined
+
+      if (!sessionData) {
+        return null
+      }
+
+      // Check if session has expired based on auto-lock timeout
+      const elapsed = Date.now() - sessionData.createdAt
+      const timeoutMs = sessionData.autoLockMinutes * 60 * 1000
+
+      // If auto-lock is disabled (0), session doesn't expire
+      if (sessionData.autoLockMinutes > 0 && elapsed > timeoutMs) {
+        // Session expired, clear it
+        await this.clearSession()
+        return null
+      }
+
+      // Restore cached data and password from session
+      this.cachedData = sessionData.vaultData
+      this.cachedPassword = sessionData.password
+      this.isSessionRestored = true
+      this.resetAutoLock()
+
+      return sessionData.vaultData
+    } catch {
+      // Session storage access failed
+      return null
+    }
+  }
+
+  /**
+   * Check if vault was restored from session (password not available)
+   */
+  isRestoredFromSession(): boolean {
+    return this.isSessionRestored
+  }
+
+  /**
+   * Save vault data to session storage
+   */
+  private async saveToSession(data: VaultData): Promise<void> {
+    try {
+      // Check if chrome.storage.session is available (MV3)
+      if (!chrome.storage.session) {
+        return
+      }
+
+      // Only save if we have the password
+      if (!this.cachedPassword) {
+        return
+      }
+
+      const sessionData: VaultSessionData = {
+        vaultData: data,
+        password: this.cachedPassword,
+        createdAt: Date.now(),
+        autoLockMinutes: this.autoLockMinutes,
+      }
+
+      await chrome.storage.session.set({
+        [SESSION_KEYS.VAULT_SESSION]: sessionData,
+      })
+    } catch {
+      // Silent fail for session save
+    }
+  }
+
+  /**
+   * Clear session storage
+   */
+  private async clearSession(): Promise<void> {
+    try {
+      if (chrome.storage.session) {
+        await chrome.storage.session.remove(SESSION_KEYS.VAULT_SESSION)
+      }
+    } catch {
+      // Silent fail for session clear
+    }
+  }
+
+  /**
+   * Update session timestamp (refresh auto-lock timer)
+   */
+  async refreshSession(): Promise<void> {
+    if (this.isUnlocked() && this.cachedData) {
+      await this.saveToSession(this.cachedData)
+    }
   }
 
   /**
@@ -184,7 +314,11 @@ export class Vault {
     await this.saveVault(parsed, password)
     this.cachedPassword = password
     this.cachedData = parsed
+    this.isSessionRestored = false
     this.resetAutoLock()
+
+    // Save to session storage
+    await this.saveToSession(parsed)
   }
 
   /**

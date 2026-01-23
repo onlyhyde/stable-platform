@@ -6,7 +6,7 @@ import { SeedPhrase } from './SeedPhrase'
 import { ConfirmSeed } from './ConfirmSeed'
 import { ImportWallet } from './ImportWallet'
 import { Complete } from './Complete'
-import { keyringController } from '../../../background/keyring'
+import { useWalletStore } from '../../hooks/useWalletStore'
 
 export type OnboardingStep =
   | 'welcome'
@@ -22,6 +22,8 @@ interface OnboardingProps {
 }
 
 export function Onboarding({ onComplete }: OnboardingProps) {
+  const { createWallet, restoreWallet } = useWalletStore()
+
   const [step, setStep] = useState<OnboardingStep>('welcome')
   const [password, setPassword] = useState('')
   const [mnemonic, setMnemonic] = useState('')
@@ -49,16 +51,16 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     setError('')
 
     try {
-      const result = await keyringController.createNewVault(pwd)
+      const result = await createWallet(pwd)
       setMnemonic(result.mnemonic)
-      setCreatedAddress(result.account.address)
+      setCreatedAddress(result.address)
       setStep('seedPhrase')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create wallet')
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [createWallet])
 
   const handleSeedConfirm = useCallback(() => {
     setStep('confirmSeed')
@@ -68,7 +70,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     setStep('complete')
   }, [])
 
-  const handleImportMnemonic = useCallback(async (importedMnemonic: string) => {
+  const handleImportMnemonic = useCallback((importedMnemonic: string) => {
     setMnemonic(importedMnemonic)
     setStep('importPassword')
   }, [])
@@ -79,15 +81,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     setError('')
 
     try {
-      const account = await keyringController.restoreFromMnemonic(pwd, mnemonic)
-      setCreatedAddress(account.address)
+      const address = await restoreWallet(pwd, mnemonic)
+      setCreatedAddress(address)
       setStep('complete')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to import wallet')
     } finally {
       setIsLoading(false)
     }
-  }, [mnemonic])
+  }, [mnemonic, restoreWallet])
 
   const handleFinish = useCallback(() => {
     // Clear sensitive data

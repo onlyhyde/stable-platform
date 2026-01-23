@@ -3,12 +3,42 @@
  *
  * This script is injected into web pages and provides an EIP-1193 compatible
  * Ethereum provider interface at window.stablenet (and optionally window.ethereum)
+ *
+ * Features:
+ * - EIP-1193 Ethereum Provider
+ * - EIP-6963 Provider Announcement for multi-wallet discovery
+ * - MetaMask Compatibility Mode for legacy dApp support
  */
 
 import type { EIP1193Provider, ExtensionMessage, JsonRpcRequest, JsonRpcResponse } from '../types'
 import { MESSAGE_TYPES, PROVIDER_EVENTS } from '../shared/constants'
 
 type EventListener = (...args: unknown[]) => void
+
+// Read MetaMask appearance mode from localStorage
+let appearAsMetaMask = false
+try {
+  const stored = window.localStorage.getItem('__stablenetAppearAsMM__')
+  appearAsMetaMask = stored ? JSON.parse(stored) : false
+} catch {
+  appearAsMetaMask = false
+}
+
+/**
+ * Generate a deterministic UUID for EIP-6963
+ * Uses a fixed UUID for consistent wallet identification
+ */
+const WALLET_UUID = 'd8f3b2a1-5c4e-4f6d-9a8b-7e1c2d3f4a5b'
+
+/**
+ * Wallet info for EIP-6963 announcement
+ */
+const walletInfo = {
+  uuid: WALLET_UUID,
+  name: appearAsMetaMask ? 'MetaMask' : 'StableNet Wallet',
+  icon: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiM0RjQ2RTUiLz48dGV4dCB4PSIxNiIgeT0iMjEiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LXNpemU9IjE0IiBmb250LWZhbWlseT0iQXJpYWwiPjwvdGV4dD48cGF0aCBkPSJNOCAxMmgxNnYySDh6TTggMTZoMTJ2Mkg4ek04IDIwaDh2Mkg4eiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=',
+  rdns: appearAsMetaMask ? 'io.metamask' : 'dev.stablenet.wallet',
+}
 
 /**
  * StableNet Provider Class
@@ -19,6 +49,12 @@ class StableNetProvider implements EIP1193Provider {
   chainId: string | null = null
   selectedAddress: string | null = null
 
+  // MetaMask compatibility flags
+  isMetaMask: boolean
+  _metamask?: {
+    isUnlocked: () => Promise<boolean>
+  }
+
   private eventListeners: Map<string, Set<EventListener>> = new Map()
   private requestId = 0
   private pendingRequests: Map<
@@ -26,7 +62,15 @@ class StableNetProvider implements EIP1193Provider {
     { resolve: (value: unknown) => void; reject: (error: Error) => void }
   > = new Map()
 
-  constructor() {
+  constructor(asMetaMask: boolean = false) {
+    this.isMetaMask = asMetaMask
+
+    if (asMetaMask) {
+      this._metamask = {
+        isUnlocked: () => Promise.resolve(true),
+      }
+    }
+
     this.setupMessageListener()
     this.initialize()
   }
@@ -195,6 +239,14 @@ class StableNetProvider implements EIP1193Provider {
   }
 
   /**
+   * Set max listeners (for compatibility)
+   */
+  setMaxListeners(_n: number): this {
+    // No-op for compatibility
+    return this
+  }
+
+  /**
    * Legacy method: enable (deprecated but some dApps still use it)
    */
   async enable(): Promise<string[]> {
@@ -270,53 +322,162 @@ class ProviderError extends Error {
   }
 }
 
-// Create and expose the provider
-const provider = new StableNetProvider()
+// Create provider with MetaMask compatibility mode if enabled
+const provider = new StableNetProvider(appearAsMetaMask)
 
-// Expose at window.stablenet
+// Set max listeners to avoid warnings
+provider.setMaxListeners(100)
+
+/**
+ * Set provider on window.ethereum
+ */
+function setProvider(): void {
+  const existingProvider = Object.getOwnPropertyDescriptor(window, 'ethereum')
+
+  if (existingProvider?.configurable !== false) {
+    Object.defineProperty(window, 'ethereum', {
+      value: provider,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    })
+  } else {
+    // If not configurable, try direct assignment
+    try {
+      window.ethereum = provider
+    } catch {
+      // Cannot set window.ethereum
+    }
+  }
+}
+
+// Expose at window.stablenet (always)
 Object.defineProperty(window, 'stablenet', {
   value: provider,
   writable: false,
   configurable: false,
 })
 
-// Announce provider (EIP-6963)
-announceProvider(provider)
+// Set as window.ethereum
+setProvider()
+
+// Re-set on document ready state changes (some dApps check early)
+document.addEventListener('readystatechange', () => {
+  if (document.readyState === 'interactive') {
+    setProvider()
+  }
+})
 
 /**
- * Announce provider via EIP-6963
+ * Shim for legacy web3 (deprecated but some dApps still check for it)
  */
-function announceProvider(provider: StableNetProvider): void {
-  const info = {
-    uuid: 'stablenet-wallet',
-    name: 'StableNet Wallet',
-    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="%234F46E5"/><text x="16" y="21" text-anchor="middle" fill="white" font-size="14" font-family="Arial">S</text></svg>',
-    rdns: 'dev.stablenet.wallet',
-  }
+function shimWeb3(provider: StableNetProvider, asMetaMask: boolean): void {
+  if (window.web3) return
 
-  const detail = Object.freeze({ info, provider })
+  const SHIM_IDENTIFIER = asMetaMask ? '__isMetaMaskShim__' : '__isStableNetShim__'
+
+  const shim: Record<string, unknown> = { currentProvider: provider }
+  Object.defineProperty(shim, SHIM_IDENTIFIER, {
+    value: true,
+    enumerable: true,
+    configurable: false,
+    writable: false,
+  })
+
+  let loggedCurrentProvider = false
+  const web3Shim = new Proxy(shim, {
+    get: (target, property, ...args) => {
+      if (property === 'currentProvider' && !loggedCurrentProvider) {
+        loggedCurrentProvider = true
+        console.warn(
+          'You are accessing the StableNet window.web3.currentProvider shim. This property is deprecated; use window.ethereum instead.'
+        )
+      } else if (property !== 'currentProvider' && property !== SHIM_IDENTIFIER) {
+        console.error(
+          `You are requesting the "${String(property)}" property of window.web3 which is no longer supported; use window.ethereum instead.`
+        )
+      }
+      return Reflect.get(target, property, ...args)
+    },
+    set: (...args) => {
+      console.warn(
+        'You are accessing the StableNet window.web3 shim. This object is deprecated; use window.ethereum instead.'
+      )
+      return Reflect.set(...args)
+    },
+  })
+
+  Object.defineProperty(window, 'web3', {
+    value: web3Shim,
+    enumerable: false,
+    configurable: true,
+    writable: true,
+  })
+}
+
+// Set up web3 shim
+shimWeb3(provider, appearAsMetaMask)
+
+/**
+ * EIP-6963: Announce provider for multi-wallet discovery
+ * This allows dApps to discover all installed wallets
+ */
+function announceEIP6963Provider(): void {
+  const detail = Object.freeze({
+    info: Object.freeze(walletInfo),
+    provider,
+  })
 
   // Dispatch announce event
   window.dispatchEvent(
-    new CustomEvent('eip6963:announceProvider', {
-      detail,
-    })
+    new CustomEvent('eip6963:announceProvider', { detail })
   )
 
-  // Listen for request events
+  // Listen for request events and re-announce
   window.addEventListener('eip6963:requestProvider', () => {
     window.dispatchEvent(
-      new CustomEvent('eip6963:announceProvider', {
-        detail,
-      })
+      new CustomEvent('eip6963:announceProvider', { detail })
     )
   })
 }
+
+// Announce via EIP-6963
+announceEIP6963Provider()
+
+/**
+ * Handle embedded actions from extension
+ */
+const embeddedActions: Record<string, (action: unknown) => Promise<unknown>> = {
+  getChainId: async () => ({
+    chainId: await provider.request({ method: 'eth_chainId' }),
+  }),
+}
+
+window.addEventListener('message', async (event) => {
+  if (
+    event &&
+    event.source === window &&
+    event.data &&
+    event.data.type === 'embedded:action' &&
+    window.self === window.top
+  ) {
+    const action = event.data.action as { type: string }
+    if (action && embeddedActions[action.type]) {
+      const res = await embeddedActions[action.type](action)
+      const payload = { method: 'embedded_action_res', params: [action, res] }
+      window.postMessage(
+        { target: 'stablenet-contentscript', data: { type: MESSAGE_TYPES.RPC_REQUEST, id: `embedded-${Date.now()}`, payload } },
+        window.location.origin
+      )
+    }
+  }
+})
 
 // Declare window types
 declare global {
   interface Window {
     stablenet: StableNetProvider
     ethereum?: StableNetProvider
+    web3?: unknown
   }
 }

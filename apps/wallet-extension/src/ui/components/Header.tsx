@@ -1,11 +1,25 @@
-
 import { useWalletStore } from '../hooks/useWalletStore'
+import { AccountSelector } from './common/AccountSelector'
 
 export function Header() {
-  const { selectedAccount, accounts, networks, selectedChainId, selectNetwork } =
-    useWalletStore()
+  const {
+    selectedAccount,
+    accounts,
+    networks,
+    selectedChainId,
+    selectNetwork,
+    selectAccount,
+    addAccount,
+    isLoading,
+  } = useWalletStore()
 
-  const currentAccount = accounts.find((a) => a.address === selectedAccount)
+  const handleAddAccount = async () => {
+    try {
+      await addAccount()
+    } catch (error) {
+      console.error('Failed to add account:', error)
+    }
+  }
 
   return (
     <header className="bg-indigo-600 text-white p-4">
@@ -28,26 +42,20 @@ export function Header() {
         </div>
       </div>
 
-      {/* Account Display */}
-      {currentAccount && (
+      {/* Account Selector */}
+      {accounts.length > 0 && (
         <div className="mt-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center">
-              {currentAccount.name[0]}
-            </div>
-            <div>
-              <p className="font-medium">{currentAccount.name}</p>
-              <p className="text-xs text-indigo-200">
-                {formatAddress(currentAccount.address)}
-              </p>
-            </div>
-          </div>
+          <AccountSelector
+            accounts={accounts}
+            selectedAccount={selectedAccount}
+            onSelect={selectAccount}
+            onAddAccount={handleAddAccount}
+          />
+          {isLoading && (
+            <div className="mt-2 text-xs text-indigo-200">Loading...</div>
+          )}
         </div>
       )}
     </header>
   )
-}
-
-function formatAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`
 }

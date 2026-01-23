@@ -57,9 +57,11 @@ export class SimpleKeyring {
 
     this.privateKeys.set(address, normalizedKey)
 
+    const importIndex = this.accounts.length + 1
     const account: KeyringAccount = {
       address,
       type: 'simple',
+      name: `Imported ${importIndex}`,
     }
 
     this.accounts.push(account)
@@ -189,6 +191,7 @@ export class SimpleKeyring {
    * Deserialize keyring data from storage
    */
   private deserialize(data: SimpleKeyringData): void {
+    let index = 1
     for (const privateKey of data.privateKeys) {
       const viemAccount = privateKeyToAccount(privateKey)
       const address = viemAccount.address as Address
@@ -197,7 +200,9 @@ export class SimpleKeyring {
       this.accounts.push({
         address,
         type: 'simple',
+        name: `Imported ${index}`,
       })
+      index++
     }
   }
 

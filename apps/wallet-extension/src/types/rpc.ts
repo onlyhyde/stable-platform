@@ -114,7 +114,7 @@ export type SignTypedDataParams = [Address, string]
 export type SignTypedDataResult = Hex
 
 // eth_sendTransaction
-export interface TransactionRequest {
+export interface RpcTransactionRequest {
   from: Address
   to?: Address
   value?: Hex
@@ -125,7 +125,7 @@ export interface TransactionRequest {
   maxPriorityFeePerGas?: Hex
   nonce?: Hex
 }
-export type SendTransactionParams = [TransactionRequest]
+export type SendTransactionParams = [RpcTransactionRequest]
 export type SendTransactionResult = Hex
 
 // eth_getBalance

@@ -29,13 +29,16 @@ const initialState: WalletState = {
   },
   keyring: {
     isUnlocked: false,
+    isInitialized: false,
     accounts: [],
+    selectedAddress: null,
   },
   ui: {
     isLoading: false,
     error: null,
     currentPage: 'home',
   },
+  isInitialized: false,
 }
 
 /**
@@ -50,9 +53,34 @@ class WalletStateManager {
     try {
       const stored = await chrome.storage.local.get(STORAGE_KEYS.WALLET_STATE)
       if (stored[STORAGE_KEYS.WALLET_STATE]) {
+        const storedState = stored[STORAGE_KEYS.WALLET_STATE]
+        // Deep merge to ensure nested objects have all required properties
         this.state = {
-          ...initialState,
-          ...stored[STORAGE_KEYS.WALLET_STATE],
+          accounts: {
+            ...initialState.accounts,
+            ...(storedState.accounts ?? {}),
+          },
+          networks: {
+            ...initialState.networks,
+            ...(storedState.networks ?? {}),
+          },
+          transactions: {
+            ...initialState.transactions,
+            ...(storedState.transactions ?? {}),
+          },
+          connections: {
+            ...initialState.connections,
+            ...(storedState.connections ?? {}),
+          },
+          keyring: {
+            ...initialState.keyring,
+            ...(storedState.keyring ?? {}),
+          },
+          ui: {
+            ...initialState.ui,
+            ...(storedState.ui ?? {}),
+          },
+          isInitialized: storedState.isInitialized ?? false,
         }
       }
     } catch {
@@ -113,6 +141,15 @@ class WalletStateManager {
     })
   }
 
+  async clearAccounts(): Promise<void> {
+    await this.setState({
+      accounts: {
+        accounts: [],
+        selectedAccount: null,
+      },
+    })
+  }
+
   // Network actions
   async selectNetwork(chainId: number): Promise<void> {
     await this.setState({
@@ -129,6 +166,29 @@ class WalletStateManager {
       networks: {
         ...this.state.networks,
         networks,
+      },
+    })
+  }
+
+  async removeNetwork(chainId: number): Promise<void> {
+    // Don't remove default networks
+    const network = this.state.networks.networks.find((n) => n.chainId === chainId)
+    if (!network?.isCustom) {
+      throw new Error('Cannot remove default network')
+    }
+
+    const networks = this.state.networks.networks.filter((n) => n.chainId !== chainId)
+
+    // If removing the selected network, switch to first available
+    let selectedChainId = this.state.networks.selectedChainId
+    if (selectedChainId === chainId && networks.length > 0) {
+      selectedChainId = networks[0].chainId
+    }
+
+    await this.setState({
+      networks: {
+        networks,
+        selectedChainId,
       },
     })
   }
@@ -226,6 +286,10 @@ class WalletStateManager {
         isUnlocked,
       },
     })
+  }
+
+  async setInitialized(isInitialized: boolean): Promise<void> {
+    await this.setState({ isInitialized })
   }
 
   // UI actions
