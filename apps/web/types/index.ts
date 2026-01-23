@@ -82,6 +82,19 @@ export interface Pool {
 }
 
 /**
+ * Liquidity Position types
+ */
+export interface LiquidityPosition {
+  poolAddress: Address
+  token0: Token
+  token1: Token
+  liquidity: bigint
+  token0Amount: bigint
+  token1Amount: bigint
+  shareOfPool: number
+}
+
+/**
  * Stealth types
  */
 export interface StealthMetaAddress {

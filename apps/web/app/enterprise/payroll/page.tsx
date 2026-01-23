@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useWallet } from '@/hooks'
+import { usePayroll } from '@/hooks/usePayroll'
 import { PageHeader, ConnectWalletCard, Button } from '@/components/common'
 import {
   PayrollSummaryCards,
@@ -9,49 +10,41 @@ import {
   PayrollQuickActionsCard,
   AddEmployeeModal,
 } from '@/components/enterprise'
-import type { PayrollEntry } from '@/types'
-
-// Mock payroll data
-const mockPayroll: PayrollEntry[] = [
-  {
-    id: '1',
-    recipient: '0x1234567890123456789012345678901234567890',
-    amount: BigInt('5000000000'),
-    token: {
-      address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-      symbol: 'USDC',
-      name: 'USD Coin',
-      decimals: 6,
-    },
-    frequency: 'monthly',
-    nextPaymentDate: new Date('2024-02-01'),
-    status: 'active',
-  },
-  {
-    id: '2',
-    recipient: '0x2345678901234567890123456789012345678901',
-    amount: BigInt('3500000000'),
-    token: {
-      address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-      symbol: 'USDC',
-      name: 'USD Coin',
-      decimals: 6,
-    },
-    frequency: 'biweekly',
-    nextPaymentDate: new Date('2024-01-15'),
-    status: 'active',
-  },
-]
 
 export default function PayrollPage() {
   const { isConnected } = useWallet()
+  const { payrollEntries, summary, isLoading, error } = usePayroll()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [payrollEntries] = useState<PayrollEntry[]>(mockPayroll)
 
   if (!isConnected) {
     return (
       <ConnectWalletCard message="Please connect your wallet to manage payroll" />
     )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-gray-500">Loading payroll...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-red-500">Error: {error.message}</p>
+      </div>
+    )
+  }
+
+  const formatCurrency = (value: number) => {
+    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+
+  const formatNextPayment = (date: Date | null) => {
+    if (!date) return 'N/A'
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
   return (
@@ -70,10 +63,10 @@ export default function PayrollPage() {
       </div>
 
       <PayrollSummaryCards
-        monthlyPayroll="$8,500.00"
-        activeEmployees={payrollEntries.length}
-        nextPayment="Jan 15"
-        ytdPayments="$0.00"
+        monthlyPayroll={formatCurrency(summary.totalMonthly)}
+        activeEmployees={summary.activeEmployees}
+        nextPayment={formatNextPayment(summary.nextPaymentDate)}
+        ytdPayments={formatCurrency(summary.ytdTotal)}
       />
 
       <PayrollListCard entries={payrollEntries} />

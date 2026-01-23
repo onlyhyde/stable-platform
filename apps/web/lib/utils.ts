@@ -108,3 +108,67 @@ export function delay(ms: number): Promise<void> {
 export function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ')
 }
+
+/**
+ * RPC Settings stored in localStorage
+ */
+export interface RpcSettings {
+  rpcUrl: string
+  bundlerUrl: string
+  paymasterUrl: string
+}
+
+const STORAGE_KEY = 'stable-net-rpc-settings'
+
+/**
+ * Get saved RPC settings from localStorage
+ */
+export function getRpcSettings(): RpcSettings | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      return JSON.parse(saved) as RpcSettings
+    }
+  } catch {
+    // Silently fail - will return null and use defaults
+  }
+
+  return null
+}
+
+/**
+ * Get RPC URL for a specific chain, falling back to default if not set
+ */
+export function getRpcUrl(chainId: number, defaultUrl?: string): string | undefined {
+  const settings = getRpcSettings()
+  if (settings?.rpcUrl) {
+    return settings.rpcUrl
+  }
+  return defaultUrl
+}
+
+/**
+ * Get Bundler URL, falling back to default if not set
+ */
+export function getBundlerUrl(defaultUrl?: string): string | undefined {
+  const settings = getRpcSettings()
+  if (settings?.bundlerUrl) {
+    return settings.bundlerUrl
+  }
+  return defaultUrl
+}
+
+/**
+ * Get Paymaster URL, falling back to default if not set
+ */
+export function getPaymasterUrl(defaultUrl?: string): string | undefined {
+  const settings = getRpcSettings()
+  if (settings?.paymasterUrl) {
+    return settings.paymasterUrl
+  }
+  return defaultUrl
+}

@@ -1,20 +1,35 @@
 'use client'
 
 import { useWallet } from '@/hooks'
+import { useTransactionHistory } from '@/hooks/useTransactionHistory'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { formatAddress, formatRelativeTime } from '@/lib/utils'
 import type { Transaction } from '@/types'
 
-// Mock transactions for demo
-const mockTransactions: Transaction[] = []
-
 export default function HistoryPage() {
-  const { isConnected } = useWallet()
+  const { isConnected, address } = useWallet()
+  const { transactions, isLoading, error } = useTransactionHistory({ address })
 
   if (!isConnected) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <p className="text-gray-500">Please connect your wallet to view history</p>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-gray-500">Loading transactions...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-red-500">Error: {error.message}</p>
       </div>
     )
   }
@@ -31,7 +46,7 @@ export default function HistoryPage() {
           <CardTitle>Recent Transactions</CardTitle>
         </CardHeader>
         <CardContent>
-          {mockTransactions.length === 0 ? (
+          {transactions.length === 0 ? (
             <div className="text-center py-12">
               <svg
                 className="w-16 h-16 text-gray-300 mx-auto mb-4"
@@ -54,7 +69,7 @@ export default function HistoryPage() {
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
-              {mockTransactions.map((tx) => (
+              {transactions.map((tx) => (
                 <TransactionItem key={tx.hash} transaction={tx} />
               ))}
             </div>

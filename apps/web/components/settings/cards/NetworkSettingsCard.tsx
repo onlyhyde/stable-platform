@@ -1,14 +1,92 @@
 'use client'
 
-import { Card, CardContent, CardTitle, CardDescription, Button, Input } from '@/components/common'
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardTitle, CardDescription, Button, Input, InfoBanner } from '@/components/common'
 import { supportedChains } from '@/lib/chains'
+import { getRpcSettings, type RpcSettings } from '@/lib/utils'
 
 interface NetworkSettingsCardProps {
   currentChainId: number
   onSwitchChain: (chainId: number) => void
 }
 
+const STORAGE_KEY = 'stable-net-rpc-settings'
+
 export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSettingsCardProps) {
+  const [rpcUrl, setRpcUrl] = useState('')
+  const [bundlerUrl, setBundlerUrl] = useState('')
+  const [paymasterUrl, setPaymasterUrl] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Load saved settings from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const settings: RpcSettings = JSON.parse(saved)
+        setRpcUrl(settings.rpcUrl || '')
+        setBundlerUrl(settings.bundlerUrl || '')
+        setPaymasterUrl(settings.paymasterUrl || '')
+      }
+    } catch {
+      // Silently fail - will use empty strings as defaults
+    }
+  }, [])
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    setSaveMessage(null)
+
+    try {
+      // Validate URLs if provided
+      if (rpcUrl && !isValidUrl(rpcUrl)) {
+        setSaveMessage({ type: 'error', text: 'Invalid RPC URL format' })
+        setIsSaving(false)
+        return
+      }
+      if (bundlerUrl && !isValidUrl(bundlerUrl)) {
+        setSaveMessage({ type: 'error', text: 'Invalid Bundler URL format' })
+        setIsSaving(false)
+        return
+      }
+      if (paymasterUrl && !isValidUrl(paymasterUrl)) {
+        setSaveMessage({ type: 'error', text: 'Invalid Paymaster URL format' })
+        setIsSaving(false)
+        return
+      }
+
+      // Save to localStorage
+      const settings: RpcSettings = {
+        rpcUrl: rpcUrl.trim(),
+        bundlerUrl: bundlerUrl.trim(),
+        paymasterUrl: paymasterUrl.trim(),
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+
+      setSaveMessage({ type: 'success', text: 'RPC settings saved successfully!' })
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setSaveMessage(null)
+      }, 3000)
+    } catch {
+      setSaveMessage({ type: 'error', text: 'Failed to save settings. Please try again.' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const isValidUrl = (url: string): boolean => {
+    if (!url.trim()) return true // Empty is valid (will use default)
+    try {
+      const parsed = new URL(url)
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    } catch {
+      return false
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -72,23 +150,45 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
             Configure custom RPC endpoints for advanced users.
           </CardDescription>
 
+          {saveMessage && (
+            <div className="mb-4">
+              <InfoBanner
+                title={saveMessage.text}
+                variant={saveMessage.type === 'success' ? 'info' : 'warning'}
+              />
+            </div>
+          )}
+
           <div className="space-y-4">
             <Input
               label="RPC URL"
               placeholder="https://rpc.example.com"
               hint="Leave empty to use default RPC endpoint"
+              value={rpcUrl}
+              onChange={(e) => setRpcUrl(e.target.value)}
             />
             <Input
               label="Bundler URL"
               placeholder="https://bundler.example.com"
               hint="ERC-4337 bundler endpoint for UserOperations"
+              value={bundlerUrl}
+              onChange={(e) => setBundlerUrl(e.target.value)}
             />
             <Input
               label="Paymaster URL"
               placeholder="https://paymaster.example.com"
               hint="Paymaster endpoint for gas sponsorship"
+              value={paymasterUrl}
+              onChange={(e) => setPaymasterUrl(e.target.value)}
             />
-            <Button variant="secondary">Save RPC Settings</Button>
+            <Button 
+              variant="secondary" 
+              onClick={handleSave}
+              isLoading={isSaving}
+              disabled={isSaving}
+            >
+              Save RPC Settings
+            </Button>
           </div>
         </CardContent>
       </Card>

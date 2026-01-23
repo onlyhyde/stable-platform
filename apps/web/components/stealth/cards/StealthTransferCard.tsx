@@ -12,11 +12,13 @@ interface StealthTransferCardProps {
   onAmountChange: (value: string) => void
   generatedAddress: string | null
   isLoading: boolean
+  isSending?: boolean
   canGenerate: boolean
   onGenerate: () => void
   onSend: () => void
   onCancel: () => void
   error?: Error | null
+  txHash?: string | null
   formatTokenAmount: (amount: bigint, decimals: number) => string
 }
 
@@ -30,11 +32,13 @@ export function StealthTransferCard({
   onAmountChange,
   generatedAddress,
   isLoading,
+  isSending = false,
   canGenerate,
   onGenerate,
   onSend,
   onCancel,
   error,
+  txHash,
   formatTokenAmount,
 }: StealthTransferCardProps) {
   const isValidMetaAddress = stealthMetaAddress === '' || stealthMetaAddress.startsWith('st:eth:')
@@ -129,12 +133,30 @@ export function StealthTransferCard({
           </div>
         )}
 
+        {/* Transaction Success */}
+        {txHash && (
+          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <div>
+                <p className="font-medium text-green-800">Transaction Sent Successfully</p>
+                <code className="text-xs text-green-700 break-all block mt-1">
+                  {txHash}
+                </code>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex gap-3 pt-4">
           <Button
             variant="secondary"
             onClick={onCancel}
             className="flex-1"
+            disabled={isSending}
           >
             Cancel
           </Button>
@@ -150,10 +172,11 @@ export function StealthTransferCard({
           ) : (
             <Button
               onClick={onSend}
-              isLoading={isLoading}
+              isLoading={isSending}
+              disabled={!!txHash}
               className="flex-1"
             >
-              Send Privately
+              {txHash ? 'Sent!' : 'Send Privately'}
             </Button>
           )}
         </div>

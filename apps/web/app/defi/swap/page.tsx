@@ -1,42 +1,31 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useWallet, useSwap } from '@/hooks'
+import { useTokens } from '@/hooks/useTokens'
 import { PageHeader, ConnectWalletCard } from '@/components/common'
 import { SwapCard } from '@/components/defi'
 import type { Token } from '@/types'
 
-// Mock tokens for demo
-const mockTokens: Token[] = [
-  {
-    address: '0x0000000000000000000000000000000000000000',
-    symbol: 'ETH',
-    name: 'Ethereum',
-    decimals: 18,
-  },
-  {
-    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-    symbol: 'USDC',
-    name: 'USD Coin',
-    decimals: 6,
-  },
-  {
-    address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-    symbol: 'USDT',
-    name: 'Tether USD',
-    decimals: 6,
-  },
-]
-
 export default function SwapPage() {
   const { address, isConnected } = useWallet()
+  const { tokens, isLoading: tokensLoading } = useTokens()
   const { quote, isLoading, error, getQuote, executeSwap } = useSwap()
 
-  const [tokenIn, setTokenIn] = useState<Token>(mockTokens[0])
-  const [tokenOut, setTokenOut] = useState<Token>(mockTokens[1])
+  const [tokenIn, setTokenIn] = useState<Token | null>(null)
+  const [tokenOut, setTokenOut] = useState<Token | null>(null)
   const [amountIn, setAmountIn] = useState('')
 
+  // Initialize default tokens when loaded
+  useEffect(() => {
+    if (tokens.length >= 2 && !tokenIn && !tokenOut) {
+      setTokenIn(tokens[0])
+      setTokenOut(tokens[1])
+    }
+  }, [tokens, tokenIn, tokenOut])
+
   function handleSwapTokens() {
+    if (!tokenIn || !tokenOut) return
     const temp = tokenIn
     setTokenIn(tokenOut)
     setTokenOut(temp)
@@ -44,7 +33,7 @@ export default function SwapPage() {
   }
 
   async function handleGetQuote() {
-    if (!amountIn || Number(amountIn) <= 0) return
+    if (!amountIn || Number(amountIn) <= 0 || !tokenIn || !tokenOut) return
     const amountInBigInt = BigInt(Math.floor(Number(amountIn) * 10 ** tokenIn.decimals))
     await getQuote({ tokenIn, tokenOut, amountIn: amountInBigInt })
   }
@@ -60,6 +49,14 @@ export default function SwapPage() {
     )
   }
 
+  if (tokensLoading || !tokenIn || !tokenOut) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-gray-500">Loading tokens...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <PageHeader
@@ -68,7 +65,7 @@ export default function SwapPage() {
       />
 
       <SwapCard
-        tokens={mockTokens}
+        tokens={tokens}
         tokenIn={tokenIn}
         tokenOut={tokenOut}
         amountIn={amountIn}

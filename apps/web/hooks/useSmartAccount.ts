@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { useAccount, useChainId } from 'wagmi'
+import { useAccount, useChainId, useWalletClient } from 'wagmi'
 import { getPublicClient } from 'wagmi/actions'
-import { createWalletClient, http, type Chain } from 'viem'
+import { createWalletClient, http, type Chain, serializeTransaction, keccak256, concat, toHex, toRlp, numberToHex } from 'viem'
 import type { Address, Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { anvil, sepolia, mainnet } from 'viem/chains'
@@ -13,6 +13,9 @@ import {
   extractDelegateAddress,
   getDelegatePresets,
   ZERO_ADDRESS,
+  createAuthorizationHash,
+  parseSignature,
+  type SignedAuthorization,
 } from '@/lib/eip7702'
 
 // Contract addresses (local devnet) - can be overridden by user selection
@@ -60,6 +63,12 @@ export interface UpgradeResult {
   error?: string
 }
 
+// Signing method for EIP-7702 authorization
+export type SigningMethod = 'privateKey' | 'metamask'
+
+// EIP-7702 Magic byte
+const EIP7702_MAGIC = 0x05
+
 // Get chain configuration based on chainId
 function getChainConfig(chainId: number): Chain {
   switch (chainId) {
@@ -67,7 +76,7 @@ function getChainConfig(chainId: number): Chain {
       return {
         ...anvil,
         rpcUrls: {
-          default: { http: ['http://127.0.0.1:8545'] },
+          default: { http: ['http://localhost:8545'] },
         },
       }
     case 11155111:
@@ -104,6 +113,9 @@ export function useSmartAccount() {
   const [lastAuthorization, setLastAuthorization] = useState<AuthorizationInfo | null>(null)
   const [lastTxHash, setLastTxHash] = useState<Hex | null>(null)
 
+  // Get wagmi wallet client for MetaMask signing
+  const { data: wagmiWalletClient } = useWalletClient()
+
   // Get default delegate address for current chain
   const getDefaultDelegateAddress = useCallback((): Address => {
     const presets = getDelegatePresets(chainId)
@@ -126,20 +138,15 @@ export function useSmartAccount() {
       setStatus((prev) => ({ ...prev, isLoading: true }))
 
       const publicClient = getPublicClient(wagmiConfig, { chainId })
+
       if (!publicClient) {
         throw new Error('Public client not available')
       }
 
       const code = await publicClient.getCode({ address })
+
       const hasCode = isDelegatedAccount(code)
       const implementation = extractDelegateAddress(code)
-
-      console.debug('[EIP-7702] Account status:', {
-        address,
-        isSmartAccount: hasCode,
-        implementation,
-        code: code ? `${code.slice(0, 20)}...` : null,
-      })
 
       setStatus({
         isSmartAccount: hasCode,
@@ -147,8 +154,7 @@ export function useSmartAccount() {
         code: code || null,
         isLoading: false,
       })
-    } catch (err) {
-      console.error('[EIP-7702] Failed to check status:', err)
+    } catch {
       setStatus({
         isSmartAccount: false,
         implementation: null,
@@ -216,12 +222,6 @@ export function useSmartAccount() {
 
         const nonce = await publicClient.getTransactionCount({ address })
 
-        console.debug('[EIP-7702] Signing authorization:', {
-          contractAddress: targetDelegate,
-          chainId,
-          nonce: Number(nonce),
-        })
-
         const authorization = await walletClient.signAuthorization({
           contractAddress: targetDelegate,
         })
@@ -239,7 +239,6 @@ export function useSmartAccount() {
           authorizationList: [authorization],
         })
 
-        console.debug('[EIP-7702] Transaction sent:', hash)
         setLastTxHash(hash)
 
         const receipt = await publicClient.waitForTransactionReceipt({ hash })
@@ -251,7 +250,6 @@ export function useSmartAccount() {
 
         throw new Error('Transaction failed')
       } catch (err) {
-        console.error('[EIP-7702] Upgrade failed:', err)
         const errorMessage = err instanceof Error ? err.message : 'Failed to upgrade'
         setError(errorMessage.split('\n')[0])
         return { success: false, error: errorMessage }
@@ -260,6 +258,246 @@ export function useSmartAccount() {
       }
     },
     [isConnected, address, chainId, status.isSmartAccount, getDefaultDelegateAddress, checkSmartAccountStatus]
+  )
+
+  /**
+   * Upgrade EOA to Smart Account using MetaMask eth_sign
+   * This method uses eth_sign to sign the authorization hash,
+   * then uses a relayer account to send the EIP-7702 transaction.
+   *
+   * @param delegateAddress - Smart contract address to delegate to
+   * @param relayerPrivateKey - Private key of the relayer account (pays gas)
+   */
+  const upgradeWithMetaMask = useCallback(
+    async (delegateAddress?: Address, relayerPrivateKey?: Hex): Promise<UpgradeResult> => {
+      if (!isConnected || !address) {
+        setError('Wallet not connected')
+        return { success: false, error: 'Wallet not connected' }
+      }
+
+      if (status.isSmartAccount) {
+        setError('Already a smart account')
+        return { success: false, error: 'Already a smart account' }
+      }
+
+      if (!wagmiWalletClient) {
+        setError('Wallet client not available')
+        return { success: false, error: 'Wallet client not available' }
+      }
+
+      // Use first Anvil account as default relayer
+      const relayerKey = relayerPrivateKey || ANVIL_ACCOUNTS[0].privateKey
+      const targetDelegate = delegateAddress || getDefaultDelegateAddress()
+
+      setIsUpgrading(true)
+      setError(null)
+
+      try {
+        const chain = getChainConfig(chainId)
+        const publicClient = getPublicClient(wagmiConfig, { chainId })
+
+        if (!publicClient) {
+          throw new Error('Public client not available')
+        }
+
+        // Get current nonce for authorization
+        const nonce = await publicClient.getTransactionCount({ address })
+
+        // Create authorization hash according to EIP-7702 spec
+        // hash = keccak256(0x05 || rlp([chainId, address, nonce]))
+        const authHash = createAuthorizationHash({
+          chainId: BigInt(chainId),
+          address: targetDelegate,
+          nonce: BigInt(nonce),
+        })
+
+        // Request signature from MetaMask using eth_sign
+        // This requires eth_sign to be enabled in MetaMask settings
+        let signature: Hex
+        try {
+          signature = await wagmiWalletClient.request({
+            method: 'eth_sign',
+            params: [address, authHash],
+          }) as Hex
+        } catch (signError: unknown) {
+          const errorMsg = signError instanceof Error ? signError.message : String(signError)
+          if (errorMsg.includes('eth_sign') || errorMsg.includes('disabled')) {
+            throw new Error(
+              'eth_sign is disabled in MetaMask. Please enable it in Settings > Advanced > "Toggle eth_sign requests"'
+            )
+          }
+          throw signError
+        }
+
+        // Parse signature into v, r, s
+        const { v, r, s } = parseSignature(signature)
+
+        // Create signed authorization in viem-compatible format
+        // viem expects chainId and nonce as number, and yParity instead of v
+        const signedAuthorization = {
+          chainId: chainId,
+          address: targetDelegate,
+          nonce: Number(nonce),
+          r,
+          s,
+          yParity: v as 0 | 1,
+        }
+
+        const authInfo: AuthorizationInfo = {
+          chainId,
+          contractAddress: targetDelegate,
+          nonce: Number(nonce),
+        }
+        setLastAuthorization(authInfo)
+
+        // Create relayer wallet client to send the transaction
+        const relayerAccount = privateKeyToAccount(relayerKey)
+        const relayerWalletClient = createWalletClient({
+          account: relayerAccount,
+          chain,
+          transport: http(),
+        })
+
+        // Send EIP-7702 transaction with the authorization
+        // The relayer pays gas, but the authorization is for the user's EOA
+        const hash = await relayerWalletClient.sendTransaction({
+          to: address, // Send to the EOA being upgraded
+          data: '0x',
+          authorizationList: [signedAuthorization] as any,
+        })
+
+        setLastTxHash(hash)
+
+        const receipt = await publicClient.waitForTransactionReceipt({ hash })
+
+        if (receipt.status === 'success') {
+          await checkSmartAccountStatus()
+          return { success: true, txHash: hash, authorization: authInfo }
+        }
+
+        throw new Error('Transaction failed')
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to upgrade with MetaMask'
+        setError(errorMessage.split('\n')[0])
+        return { success: false, error: errorMessage }
+      } finally {
+        setIsUpgrading(false)
+      }
+    },
+    [isConnected, address, chainId, status.isSmartAccount, wagmiWalletClient, getDefaultDelegateAddress, checkSmartAccountStatus]
+  )
+
+  /**
+   * Revoke Smart Account delegation using MetaMask eth_sign
+   * @param relayerPrivateKey - Private key of the relayer account (pays gas)
+   */
+  const revokeWithMetaMask = useCallback(
+    async (relayerPrivateKey?: Hex): Promise<UpgradeResult> => {
+      if (!isConnected || !address) {
+        setError('Wallet not connected')
+        return { success: false, error: 'Wallet not connected' }
+      }
+
+      if (!status.isSmartAccount) {
+        setError('Not a smart account')
+        return { success: false, error: 'Not a smart account' }
+      }
+
+      if (!wagmiWalletClient) {
+        setError('Wallet client not available')
+        return { success: false, error: 'Wallet client not available' }
+      }
+
+      const relayerKey = relayerPrivateKey || ANVIL_ACCOUNTS[0].privateKey
+
+      setIsRevoking(true)
+      setError(null)
+
+      try {
+        const chain = getChainConfig(chainId)
+        const publicClient = getPublicClient(wagmiConfig, { chainId })
+
+        if (!publicClient) {
+          throw new Error('Public client not available')
+        }
+
+        const nonce = await publicClient.getTransactionCount({ address })
+
+        // Create revocation authorization hash (delegate to zero address)
+        const authHash = createAuthorizationHash({
+          chainId: BigInt(chainId),
+          address: ZERO_ADDRESS,
+          nonce: BigInt(nonce),
+        })
+
+        // Request signature from MetaMask
+        let signature: Hex
+        try {
+          signature = await wagmiWalletClient.request({
+            method: 'eth_sign',
+            params: [address, authHash],
+          }) as Hex
+        } catch (signError: unknown) {
+          const errorMsg = signError instanceof Error ? signError.message : String(signError)
+          if (errorMsg.includes('eth_sign') || errorMsg.includes('disabled')) {
+            throw new Error(
+              'eth_sign is disabled in MetaMask. Please enable it in Settings > Advanced > "Toggle eth_sign requests"'
+            )
+          }
+          throw signError
+        }
+
+        const { v, r, s } = parseSignature(signature)
+
+        // Create signed authorization in viem-compatible format
+        const signedAuthorization = {
+          chainId: chainId,
+          address: ZERO_ADDRESS,
+          nonce: Number(nonce),
+          r,
+          s,
+          yParity: v as 0 | 1,
+        }
+
+        const authInfo: AuthorizationInfo = {
+          chainId,
+          contractAddress: ZERO_ADDRESS,
+          nonce: Number(nonce),
+        }
+        setLastAuthorization(authInfo)
+
+        const relayerAccount = privateKeyToAccount(relayerKey)
+        const relayerWalletClient = createWalletClient({
+          account: relayerAccount,
+          chain,
+          transport: http(),
+        })
+
+        const hash = await relayerWalletClient.sendTransaction({
+          to: address,
+          data: '0x',
+          authorizationList: [signedAuthorization] as any,
+        })
+
+        setLastTxHash(hash)
+
+        const receipt = await publicClient.waitForTransactionReceipt({ hash })
+
+        if (receipt.status === 'success') {
+          await checkSmartAccountStatus()
+          return { success: true, txHash: hash, authorization: authInfo }
+        }
+
+        throw new Error('Revocation failed')
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to revoke with MetaMask'
+        setError(errorMessage.split('\n')[0])
+        return { success: false, error: errorMessage }
+      } finally {
+        setIsRevoking(false)
+      }
+    },
+    [isConnected, address, chainId, status.isSmartAccount, wagmiWalletClient, checkSmartAccountStatus]
   )
 
   /**
@@ -338,7 +576,6 @@ export function useSmartAccount() {
 
         throw new Error('Revocation failed')
       } catch (err) {
-        console.error('[EIP-7702] Revoke failed:', err)
         const errorMessage = err instanceof Error ? err.message : 'Failed to revoke'
         setError(errorMessage.split('\n')[0])
         return { success: false, error: errorMessage }
@@ -368,9 +605,15 @@ export function useSmartAccount() {
     lastAuthorization,
     lastTxHash,
 
-    // Actions
+    // Actions - Private Key method
     upgradeToSmartAccount,
     revokeSmartAccount,
+
+    // Actions - MetaMask eth_sign method
+    upgradeWithMetaMask,
+    revokeWithMetaMask,
+
+    // Common actions
     refreshStatus: checkSmartAccountStatus,
     clearError,
 

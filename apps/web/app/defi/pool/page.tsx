@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useWallet } from '@/hooks'
+import { usePools } from '@/hooks/usePools'
 import { PageHeader, ConnectWalletCard, Button } from '@/components/common'
 import {
   YourPositionsCard,
@@ -10,52 +11,9 @@ import {
 } from '@/components/defi'
 import type { Pool } from '@/types'
 
-// Mock pools for demo
-const mockPools: Pool[] = [
-  {
-    address: '0x1234567890123456789012345678901234567890',
-    token0: {
-      address: '0x0000000000000000000000000000000000000000',
-      symbol: 'ETH',
-      name: 'Ethereum',
-      decimals: 18,
-    },
-    token1: {
-      address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-      symbol: 'USDC',
-      name: 'USD Coin',
-      decimals: 6,
-    },
-    reserve0: BigInt('1000000000000000000000'),
-    reserve1: BigInt('2000000000000'),
-    fee: 0.3,
-    tvl: 4000000,
-    apr: 12.5,
-  },
-  {
-    address: '0x2345678901234567890123456789012345678901',
-    token0: {
-      address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-      symbol: 'USDC',
-      name: 'USD Coin',
-      decimals: 6,
-    },
-    token1: {
-      address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-      symbol: 'USDT',
-      name: 'Tether USD',
-      decimals: 6,
-    },
-    reserve0: BigInt('5000000000000'),
-    reserve1: BigInt('5000000000000'),
-    fee: 0.05,
-    tvl: 10000000,
-    apr: 5.2,
-  },
-]
-
 export default function PoolPage() {
   const { isConnected } = useWallet()
+  const { pools, isLoading, error } = usePools()
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null)
   const [isAddLiquidityOpen, setIsAddLiquidityOpen] = useState(false)
 
@@ -72,6 +30,22 @@ export default function PoolPage() {
   if (!isConnected) {
     return (
       <ConnectWalletCard message="Please connect your wallet to view pools" />
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-gray-500">Loading pools...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-red-500">Error: {error.message}</p>
+      </div>
     )
   }
 
@@ -93,7 +67,7 @@ export default function PoolPage() {
       <YourPositionsCard />
 
       <AvailablePoolsCard
-        pools={mockPools}
+        pools={pools}
         onAddLiquidity={handleAddLiquidity}
       />
 

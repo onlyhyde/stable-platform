@@ -10,6 +10,7 @@ interface StealthMetaAddressCardProps {
   isLoading: boolean
   onRegister: () => void
   isRegistering: boolean
+  onGenerate?: () => void
 }
 
 export function StealthMetaAddressCard({
@@ -17,6 +18,7 @@ export function StealthMetaAddressCard({
   isLoading,
   onRegister,
   isRegistering,
+  onGenerate,
 }: StealthMetaAddressCardProps) {
   const [copied, setCopied] = useState(false)
 
@@ -98,7 +100,7 @@ export function StealthMetaAddressCard({
               />
             </svg>
             <p className="text-gray-500 mb-4">No stealth meta-address generated</p>
-            <Button isLoading={isLoading}>
+            <Button isLoading={isLoading} onClick={onGenerate} disabled={isLoading}>
               Generate Meta-Address
             </Button>
           </div>

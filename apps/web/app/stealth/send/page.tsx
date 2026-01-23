@@ -6,16 +6,20 @@ import { useWallet, useBalance, useStealth } from '@/hooks'
 import { PageHeader, ConnectWalletCard } from '@/components/common'
 import { StealthTransferCard } from '@/components/stealth'
 import { formatTokenAmount } from '@/lib/utils'
+import type { Hex } from 'viem'
 
 export default function StealthSendPage() {
   const router = useRouter()
   const { address, isConnected } = useWallet()
   const { balance, decimals, symbol } = useBalance({ address })
-  const { generateStealthAddress, isLoading, error } = useStealth()
+  const { generateStealthAddress, sendToStealthAddress, isLoading, error } = useStealth()
 
   const [stealthMetaAddress, setStealthMetaAddress] = useState('')
   const [amount, setAmount] = useState('')
   const [generatedAddress, setGeneratedAddress] = useState<string | null>(null)
+  const [ephemeralPubKey, setEphemeralPubKey] = useState<Hex | null>(null)
+  const [txHash, setTxHash] = useState<string | null>(null)
+  const [isSending, setIsSending] = useState(false)
 
   const canGenerate = stealthMetaAddress.startsWith('st:eth:') && Number(amount) > 0 && isConnected
 
@@ -25,13 +29,30 @@ export default function StealthSendPage() {
     const result = await generateStealthAddress(stealthMetaAddress)
     if (result?.stealthAddress) {
       setGeneratedAddress(result.stealthAddress)
+      setEphemeralPubKey(result.ephemeralPubKey)
     }
   }
 
   async function handleSend() {
-    if (!generatedAddress) return
-    // In production, this would send the transaction to the generated stealth address
-    router.push('/stealth')
+    if (!generatedAddress || !ephemeralPubKey) return
+
+    setIsSending(true)
+    try {
+      const amountInWei = BigInt(Math.floor(Number(amount) * 10 ** decimals))
+      const result = await sendToStealthAddress({
+        stealthAddress: generatedAddress as `0x${string}`,
+        ephemeralPubKey,
+        value: amountInWei,
+      })
+
+      if (result?.hash) {
+        setTxHash(result.hash)
+        // Navigate to stealth page after successful transaction
+        setTimeout(() => router.push('/stealth'), 2000)
+      }
+    } finally {
+      setIsSending(false)
+    }
   }
 
   function handleStealthMetaAddressChange(value: string) {
@@ -62,11 +83,13 @@ export default function StealthSendPage() {
         onAmountChange={setAmount}
         generatedAddress={generatedAddress}
         isLoading={isLoading}
+        isSending={isSending}
         canGenerate={canGenerate}
         onGenerate={handleGenerate}
         onSend={handleSend}
         onCancel={() => router.back()}
         error={error}
+        txHash={txHash}
         formatTokenAmount={formatTokenAmount}
       />
     </div>

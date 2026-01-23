@@ -9,12 +9,14 @@ interface IncomingPaymentsCardProps {
   announcements: Announcement[]
   isScanning: boolean
   onScan: () => void
+  onWithdraw?: (announcement: Announcement) => Promise<void>
 }
 
 export function IncomingPaymentsCard({
   announcements,
   isScanning,
   onScan,
+  onWithdraw,
 }: IncomingPaymentsCardProps) {
   return (
     <Card>
@@ -57,7 +59,11 @@ export function IncomingPaymentsCard({
         ) : (
           <div className="divide-y divide-gray-200">
             {announcements.map((announcement) => (
-              <AnnouncementItem key={announcement.stealthAddress} announcement={announcement} />
+              <AnnouncementItem
+                key={announcement.stealthAddress}
+                announcement={announcement}
+                onWithdraw={onWithdraw}
+              />
             ))}
           </div>
         )}
@@ -68,16 +74,21 @@ export function IncomingPaymentsCard({
 
 interface AnnouncementItemProps {
   announcement: Announcement
+  onWithdraw?: (announcement: Announcement) => Promise<void>
 }
 
-function AnnouncementItem({ announcement }: AnnouncementItemProps) {
+function AnnouncementItem({ announcement, onWithdraw }: AnnouncementItemProps) {
   const [isWithdrawing, setIsWithdrawing] = useState(false)
 
   async function handleWithdraw() {
     setIsWithdrawing(true)
-    // In production, this would initiate the withdrawal process
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsWithdrawing(false)
+    try {
+      if (onWithdraw) {
+        await onWithdraw(announcement)
+      }
+    } finally {
+      setIsWithdrawing(false)
+    }
   }
 
   return (
