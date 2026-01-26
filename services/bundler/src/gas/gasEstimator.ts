@@ -212,8 +212,14 @@ export class GasEstimator {
     const l1Gas = dataBytes * DEFAULT_GAS_OVERHEAD.L1_DATA_COST_MULTIPLIER
 
     // Convert L1 cost to L2 gas units
-    if (l2GasPrice === 0n) {
-      return l1Gas
+    // Prevent division by zero with minimum gas price threshold
+    const MIN_GAS_PRICE = 1000000n // 0.001 gwei minimum
+    if (l2GasPrice < MIN_GAS_PRICE) {
+      this.logger.warn(
+        { l2GasPrice: l2GasPrice.toString() },
+        'L2 gas price below minimum threshold, using minimum'
+      )
+      l2GasPrice = MIN_GAS_PRICE
     }
     const l1CostInL2Gas = (l1Gas * l1GasPrice) / l2GasPrice
 

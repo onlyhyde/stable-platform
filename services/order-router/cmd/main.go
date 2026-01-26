@@ -11,8 +11,11 @@ import (
 )
 
 func main() {
-	// Load configuration
-	cfg := config.Load()
+	// Load and validate configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
 	// Initialize router service
 	routerService := service.NewRouterService(cfg)

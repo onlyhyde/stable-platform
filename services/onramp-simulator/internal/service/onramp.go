@@ -113,8 +113,12 @@ func (s *OnRampService) CreateOrder(req *model.CreateOrderRequest) (*model.Order
 	s.orders[order.ID] = order
 	log.Printf("Order created: %s (User: %s, Amount: %s %s)", order.ID, order.UserID, order.FiatAmount, order.FiatCurrency)
 
-	// Send webhook notification
-	go s.sendWebhook("order.created", order)
+	// Create a copy of order for webhook to avoid race condition
+	// The webhook goroutine may execute while processOrder modifies the order
+	orderCopy := *order
+
+	// Send webhook notification with copy to prevent race condition
+	go s.sendWebhook("order.created", &orderCopy)
 
 	// Start async processing
 	go s.processOrder(order.ID)

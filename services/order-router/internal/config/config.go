@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -34,8 +36,8 @@ type Config struct {
 }
 
 // Load loads configuration from environment variables
-func Load() *Config {
-	return &Config{
+func Load() (*Config, error) {
+	cfg := &Config{
 		Port:    getEnv("PORT", "8087"),
 		RPCURL:  getEnv("RPC_URL", "http://localhost:8545"),
 		ChainID: getEnvInt("CHAIN_ID", 1),
@@ -59,6 +61,44 @@ func Load() *Config {
 		MaxSplits:       getEnvInt("MAX_SPLITS", 5),
 		DefaultSlippage: getEnvFloat("DEFAULT_SLIPPAGE", 50), // 0.5%
 	}
+
+	// Validate required configuration
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
+// Validate checks that required configuration values are set and valid
+func (c *Config) Validate() error {
+	// Validate RPC URL format
+	if c.RPCURL == "" {
+		return fmt.Errorf("RPC_URL is required")
+	}
+	if _, err := url.Parse(c.RPCURL); err != nil {
+		return fmt.Errorf("invalid RPC_URL format: %w", err)
+	}
+
+	// Validate port
+	if c.Port == "" {
+		return fmt.Errorf("PORT is required")
+	}
+
+	// Validate chain ID is positive
+	if c.ChainID <= 0 {
+		return fmt.Errorf("CHAIN_ID must be a positive integer")
+	}
+
+	// Validate routing settings
+	if c.MaxHops <= 0 {
+		return fmt.Errorf("MAX_HOPS must be a positive integer")
+	}
+	if c.MaxSplits <= 0 {
+		return fmt.Errorf("MAX_SPLITS must be a positive integer")
+	}
+
+	return nil
 }
 
 // SupportedProtocols returns list of supported DEX protocols
