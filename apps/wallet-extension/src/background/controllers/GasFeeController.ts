@@ -334,12 +334,22 @@ export class GasFeeController {
 
     this.state.isPolling = true
 
-    // Initial fetch
-    this.getGasPrice().catch(() => {})
+    // Initial fetch - errors are handled internally, polling continues on failure
+    this.getGasPrice().catch((error) => {
+      // Silently ignore polling errors - will retry on next interval
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[GasFeeController] Gas price fetch failed:', error)
+      }
+    })
 
     // Set up polling
     this.pollingTimer = setInterval(() => {
-      this.getGasPrice().catch(() => {})
+      this.getGasPrice().catch((error) => {
+        // Silently ignore polling errors - will retry on next interval
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[GasFeeController] Gas price fetch failed:', error)
+        }
+      })
     }, this.state.pollingInterval)
   }
 

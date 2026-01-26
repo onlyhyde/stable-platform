@@ -900,9 +900,13 @@ async function initialize(): Promise<void> {
   chrome.idle.setDetectionInterval(60)
 }
 
-// Initialize
-initialize().catch(() => {
-  // Silent initialization error
+// Initialize with proper error handling
+initialize().catch((error) => {
+  // Log initialization errors in development
+  if (process.env.NODE_ENV === 'development') {
+    console.error('[Background] Initialization failed:', error)
+  }
+  // Continue running - partial functionality may still work
 })
 
 // Export controllers for popup communication

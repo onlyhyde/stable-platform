@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useAccount, useChainId, useWalletClient } from 'wagmi'
 import { getPublicClient } from 'wagmi/actions'
 import { createWalletClient, http, type Chain, serializeTransaction, keccak256, concat, toHex, toRlp, numberToHex } from 'viem'
-import type { Address, Hex } from 'viem'
+import type { Address, Hex, SignedAuthorization as ViemSignedAuthorization } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { anvil, sepolia, mainnet } from 'viem/chains'
 import { wagmiConfig } from '@/lib/wagmi'
@@ -15,7 +15,6 @@ import {
   ZERO_ADDRESS,
   createAuthorizationHash,
   parseSignature,
-  type SignedAuthorization,
 } from '@/lib/eip7702'
 
 // Contract addresses (local devnet) - can be overridden by user selection
@@ -333,14 +332,14 @@ export function useSmartAccount() {
         const { v, r, s } = parseSignature(signature)
 
         // Create signed authorization in viem-compatible format
-        // viem expects chainId and nonce as number, and yParity instead of v
-        const signedAuthorization = {
+        // viem expects chainId and nonce as number, v as bigint (legacy format)
+        const signedAuthorization: ViemSignedAuthorization = {
           chainId: chainId,
           address: targetDelegate,
           nonce: Number(nonce),
           r,
           s,
-          yParity: v as 0 | 1,
+          v: BigInt(v === 0 ? 27 : v === 1 ? 28 : v), // Convert yParity back to v
         }
 
         const authInfo: AuthorizationInfo = {
@@ -363,7 +362,7 @@ export function useSmartAccount() {
         const hash = await relayerWalletClient.sendTransaction({
           to: address, // Send to the EOA being upgraded
           data: '0x',
-          authorizationList: [signedAuthorization] as any,
+          authorizationList: [signedAuthorization],
         })
 
         setLastTxHash(hash)
@@ -450,13 +449,14 @@ export function useSmartAccount() {
         const { v, r, s } = parseSignature(signature)
 
         // Create signed authorization in viem-compatible format
-        const signedAuthorization = {
+        // viem expects chainId and nonce as number, v as bigint (legacy format)
+        const signedAuthorization: ViemSignedAuthorization = {
           chainId: chainId,
           address: ZERO_ADDRESS,
           nonce: Number(nonce),
           r,
           s,
-          yParity: v as 0 | 1,
+          v: BigInt(v === 0 ? 27 : v === 1 ? 28 : v), // Convert yParity back to v
         }
 
         const authInfo: AuthorizationInfo = {
@@ -476,7 +476,7 @@ export function useSmartAccount() {
         const hash = await relayerWalletClient.sendTransaction({
           to: address,
           data: '0x',
-          authorizationList: [signedAuthorization] as any,
+          authorizationList: [signedAuthorization],
         })
 
         setLastTxHash(hash)

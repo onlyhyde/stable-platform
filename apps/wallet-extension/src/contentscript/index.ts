@@ -9,16 +9,23 @@ import type { ExtensionMessage } from '../types'
 import { MESSAGE_TYPES } from '../shared/constants'
 
 // Sync MetaMask mode setting before injecting inpage script
-syncMetaMaskMode().then(() => {
-  // Inject the inpage script into the page
-  injectScript()
+syncMetaMaskMode()
+  .then(() => {
+    // Inject the inpage script into the page
+    injectScript()
 
-  // Set up message relay between page and background
-  setupMessageRelay()
+    // Set up message relay between page and background
+    setupMessageRelay()
 
-  // Listen for MetaMask mode changes from background
-  listenForModeChanges()
-})
+    // Listen for MetaMask mode changes from background
+    listenForModeChanges()
+  })
+  .catch(() => {
+    // Still inject scripts even if sync fails, using default settings
+    injectScript()
+    setupMessageRelay()
+    listenForModeChanges()
+  })
 
 /**
  * Sync MetaMask mode from chrome.storage to localStorage
