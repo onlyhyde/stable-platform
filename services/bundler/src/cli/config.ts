@@ -17,6 +17,7 @@ export const ENV_VARS = {
   MIN_VALID_UNTIL_BUFFER: ['BUNDLER_MIN_VALID_UNTIL_BUFFER', 'MIN_VALID_UNTIL_BUFFER'],
   VALIDATE_NONCE_CONTINUITY: ['BUNDLER_VALIDATE_NONCE_CONTINUITY', 'VALIDATE_NONCE_CONTINUITY'],
   MEMPOOL_MAX_NONCE_GAP: ['BUNDLER_MEMPOOL_MAX_NONCE_GAP', 'MEMPOOL_MAX_NONCE_GAP'],
+  CORS_ORIGINS: ['BUNDLER_CORS_ORIGINS', 'CORS_ORIGINS'],
 } as const
 
 /**
@@ -59,6 +60,18 @@ function parseEntryPointsFromEnv(): Address[] | undefined {
   const value = getEnv(ENV_VARS.ENTRY_POINT)
   if (!value) return undefined
   return value.split(',').map((addr) => addr.trim() as Address)
+}
+
+/**
+ * Parse CORS origins from environment variable
+ * Supports comma-separated list: "http://localhost:3000,https://app.example.com"
+ * Special value "*" allows all origins (not recommended for production)
+ */
+function parseCorsOriginsFromEnv(): string[] | undefined {
+  const value = getEnv(ENV_VARS.CORS_ORIGINS)
+  if (!value) return undefined
+  if (value === '*') return ['*']
+  return value.split(',').map((origin) => origin.trim()).filter(Boolean)
 }
 
 /**
@@ -116,6 +129,7 @@ export interface CliOptions {
   minValidUntilBuffer?: number
   validateNonceContinuity?: boolean
   mempoolMaxNonceGap?: number
+  corsOrigins?: string[]
 }
 
 /**
@@ -193,6 +207,9 @@ export function parseConfig(options: CliOptions): BundlerConfig {
   // Mempool max nonce gap: CLI > env > default (0)
   const mempoolMaxNonceGap = options.mempoolMaxNonceGap ?? getEnvNumber(ENV_VARS.MEMPOOL_MAX_NONCE_GAP)
 
+  // CORS origins: CLI > env > default (localhost only, or all in debug mode)
+  const corsOrigins = options.corsOrigins ?? parseCorsOriginsFromEnv()
+
   return {
     network,
     port,
@@ -211,6 +228,7 @@ export function parseConfig(options: CliOptions): BundlerConfig {
     minValidUntilBuffer,
     validateNonceContinuity,
     mempoolMaxNonceGap,
+    corsOrigins,
   }
 }
 
@@ -232,6 +250,7 @@ Environment Variables:
   ${ENV_VARS.MIN_VALID_UNTIL_BUFFER.join(' or ')} Min seconds before validUntil (default: 30)
   ${ENV_VARS.VALIDATE_NONCE_CONTINUITY.join(' or ')} Enable mempool nonce continuity (default: false)
   ${ENV_VARS.MEMPOOL_MAX_NONCE_GAP.join(' or ')} Max nonce gap in mempool (default: 0)
+  ${ENV_VARS.CORS_ORIGINS.join(' or ')}    CORS allowed origins, comma-separated (default: localhost only)
 
 Priority: CLI arguments > Environment variables > Network presets > Defaults
 `.trim()

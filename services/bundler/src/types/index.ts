@@ -34,6 +34,8 @@ export interface BundlerConfig {
   validateNonceContinuity?: boolean
   /** Maximum nonce gap in mempool when continuity validation enabled (default: 0) */
   mempoolMaxNonceGap?: number
+  /** CORS allowed origins (default: localhost only in production, all in debug mode) */
+  corsOrigins?: string[]
 }
 
 /**

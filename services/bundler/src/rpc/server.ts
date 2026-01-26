@@ -112,8 +112,26 @@ export class RpcServer {
    * Setup routes
    */
   private setupRoutes(): void {
-    // Enable CORS
-    this.app.register(cors, { origin: true })
+    // Enable CORS with origin whitelist
+    // In debug mode: allow all origins for easier testing
+    // In production: only allow configured origins (default: localhost)
+    const corsOrigin = this.config.debug
+      ? true // Allow all origins in debug mode
+      : this.config.corsOrigins && this.config.corsOrigins.length > 0
+        ? this.config.corsOrigins.includes('*')
+          ? true // Explicit wildcard
+          : this.config.corsOrigins // Whitelist
+        : [
+            // Default: localhost only
+            'http://localhost:3000',
+            'http://localhost:4173',
+            'http://localhost:5173',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:4173',
+            'http://127.0.0.1:5173',
+          ]
+
+    this.app.register(cors, { origin: corsOrigin })
 
     // Health check
     this.app.get('/health', async () => ({

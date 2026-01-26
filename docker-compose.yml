@@ -100,6 +100,8 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:-stablenet-redis-dev}@redis:6379
       BUNDLER_PRIVATE_KEY: ${BUNDLER_PRIVATE_KEY:?required - copy .env.example to .env}
       BUNDLER_BENEFICIARY: ${BUNDLER_BENEFICIARY:-0x90F79bf6EB2c4f870365E785982E1f101E93b906}
+      # CORS: comma-separated origins or "*" for all (not recommended in production)
+      BUNDLER_CORS_ORIGINS: ${BUNDLER_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
     command: >
       node dist/cli/index.js run
       --port 4337
