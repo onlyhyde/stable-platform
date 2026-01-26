@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stablenet/stable-platform/services/order-router/internal/model"
 	"github.com/stablenet/stable-platform/services/order-router/internal/service"
+	"github.com/stablenet/stable-platform/services/order-router/internal/validation"
 )
 
 // RouterHandler handles HTTP requests for the router service
@@ -38,22 +39,54 @@ func (h *RouterHandler) RegisterRoutes(r *gin.Engine) {
 // GetQuote returns the best quote for a swap
 // GET /api/v1/quote?tokenIn=0x...&tokenOut=0x...&amountIn=1000000&slippage=50
 func (h *RouterHandler) GetQuote(c *gin.Context) {
+	tokenIn := c.Query("tokenIn")
+	tokenOut := c.Query("tokenOut")
+	amountIn := c.Query("amountIn")
+
+	// Validate required parameters
+	v := validation.NewValidator()
+	v.ValidateEthereumAddress(tokenIn, "tokenIn")
+	v.ValidateEthereumAddress(tokenOut, "tokenOut")
+	v.ValidateAmount(amountIn, "amountIn")
+
+	if v.HasErrors() {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "validation failed",
+			"message": v.Error(),
+		})
+		return
+	}
+
 	req := &model.QuoteRequest{
-		TokenIn:  c.Query("tokenIn"),
-		TokenOut: c.Query("tokenOut"),
-		AmountIn: c.Query("amountIn"),
+		TokenIn:  tokenIn,
+		TokenOut: tokenOut,
+		AmountIn: amountIn,
 	}
 
 	// Parse optional parameters
 	if slippage := c.Query("slippage"); slippage != "" {
 		if s, err := strconv.ParseFloat(slippage, 64); err == nil {
+			if !validation.IsValidSlippage(s) {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error":   "validation failed",
+					"message": "slippage must be between 0 and 10000 (basis points)",
+				})
+				return
+			}
 			req.Slippage = s
 		}
 	}
 
 	if maxHops := c.Query("maxHops"); maxHops != "" {
-		if h, err := strconv.Atoi(maxHops); err == nil {
-			req.MaxHops = h
+		if mh, err := strconv.Atoi(maxHops); err == nil {
+			if mh < 1 || mh > 10 {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error":   "validation failed",
+					"message": "maxHops must be between 1 and 10",
+				})
+				return
+			}
+			req.MaxHops = mh
 		}
 	}
 
@@ -82,21 +115,53 @@ func (h *RouterHandler) GetQuote(c *gin.Context) {
 // GetSplitQuote returns a quote with split routing
 // GET /api/v1/quote/split?tokenIn=0x...&tokenOut=0x...&amountIn=1000000&maxSplits=3
 func (h *RouterHandler) GetSplitQuote(c *gin.Context) {
+	tokenIn := c.Query("tokenIn")
+	tokenOut := c.Query("tokenOut")
+	amountIn := c.Query("amountIn")
+
+	// Validate required parameters
+	v := validation.NewValidator()
+	v.ValidateEthereumAddress(tokenIn, "tokenIn")
+	v.ValidateEthereumAddress(tokenOut, "tokenOut")
+	v.ValidateAmount(amountIn, "amountIn")
+
+	if v.HasErrors() {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "validation failed",
+			"message": v.Error(),
+		})
+		return
+	}
+
 	req := &model.QuoteRequest{
-		TokenIn:  c.Query("tokenIn"),
-		TokenOut: c.Query("tokenOut"),
-		AmountIn: c.Query("amountIn"),
+		TokenIn:  tokenIn,
+		TokenOut: tokenOut,
+		AmountIn: amountIn,
 	}
 
 	// Parse optional parameters
 	if slippage := c.Query("slippage"); slippage != "" {
 		if s, err := strconv.ParseFloat(slippage, 64); err == nil {
+			if !validation.IsValidSlippage(s) {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error":   "validation failed",
+					"message": "slippage must be between 0 and 10000 (basis points)",
+				})
+				return
+			}
 			req.Slippage = s
 		}
 	}
 
 	if maxSplits := c.Query("maxSplits"); maxSplits != "" {
 		if ms, err := strconv.Atoi(maxSplits); err == nil {
+			if ms < 1 || ms > 10 {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error":   "validation failed",
+					"message": "maxSplits must be between 1 and 10",
+				})
+				return
+			}
 			req.MaxSplits = ms
 		}
 	}
@@ -138,6 +203,31 @@ func (h *RouterHandler) BuildSwap(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid request",
 			"message": err.Error(),
+		})
+		return
+	}
+
+	// Validate Ethereum addresses and amounts
+	v := validation.NewValidator()
+	v.ValidateEthereumAddress(req.TokenIn, "tokenIn")
+	v.ValidateEthereumAddress(req.TokenOut, "tokenOut")
+	v.ValidateEthereumAddress(req.Recipient, "recipient")
+	v.ValidateAmount(req.AmountIn, "amountIn")
+	v.ValidateAmountOrZero(req.AmountOutMin, "amountOutMin")
+
+	if v.HasErrors() {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "validation failed",
+			"message": v.Error(),
+		})
+		return
+	}
+
+	// Validate optional slippage if provided
+	if req.Slippage != 0 && !validation.IsValidSlippage(req.Slippage) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "validation failed",
+			"message": "slippage must be between 0 and 10000 (basis points)",
 		})
 		return
 	}

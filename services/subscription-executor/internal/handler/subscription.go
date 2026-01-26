@@ -7,6 +7,7 @@ import (
 
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/model"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/service"
+	"github.com/stablenet/stable-platform/services/subscription-executor/internal/validation"
 )
 
 // SubscriptionHandler handles subscription HTTP requests
@@ -54,6 +55,18 @@ func (h *SubscriptionHandler) CreateSubscription(c *gin.Context) {
 		return
 	}
 
+	// Validate Ethereum addresses and amounts
+	v := validation.NewValidator()
+	v.ValidateEthereumAddress(req.SmartAccount, "smartAccount")
+	v.ValidateEthereumAddress(req.Recipient, "recipient")
+	v.ValidateEthereumAddress(req.Token, "token")
+	v.ValidateAmount(req.Amount, "amount")
+
+	if v.HasErrors() {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: v.Error()})
+		return
+	}
+
 	sub, err := h.executorService.CreateSubscription(c.Request.Context(), &req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
@@ -94,6 +107,12 @@ func (h *SubscriptionHandler) GetSubscription(c *gin.Context) {
 // @Router /api/v1/subscriptions/account/{account} [get]
 func (h *SubscriptionHandler) GetSubscriptionsByAccount(c *gin.Context) {
 	account := c.Param("account")
+
+	// Validate Ethereum address
+	if !validation.IsValidEthereumAddress(account) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "account must be a valid Ethereum address"})
+		return
+	}
 
 	subs, err := h.executorService.GetSubscriptionsByAccount(c.Request.Context(), account)
 	if err != nil {
