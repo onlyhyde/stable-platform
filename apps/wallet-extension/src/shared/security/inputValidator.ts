@@ -3,6 +3,8 @@
  * Comprehensive input validation for wallet security
  */
 
+import { getAddress, isAddress } from 'viem'
+
 /**
  * Validation result interface
  */
@@ -57,45 +59,33 @@ export interface RpcRequestObject {
 }
 
 /**
- * EIP-55 checksum validation helper
+ * EIP-55 checksum address conversion using viem's keccak256-based implementation
+ * Returns the checksummed address or null if invalid
  */
-function toChecksumAddress(address: string): string {
-  const addr = address.toLowerCase().replace('0x', '')
-
-  // Simple keccak256 hash simulation for checksum
-  // In production, use a proper keccak256 implementation
-  let hash = ''
-  for (let i = 0; i < addr.length; i++) {
-    hash += ((addr.charCodeAt(i) * (i + 1)) % 16).toString(16)
+function toChecksumAddress(address: string): string | null {
+  try {
+    return getAddress(address)
+  } catch {
+    return null
   }
-
-  let checksumAddress = '0x'
-  for (let i = 0; i < addr.length; i++) {
-    if (parseInt(hash[i], 16) >= 8) {
-      checksumAddress += addr[i].toUpperCase()
-    } else {
-      checksumAddress += addr[i]
-    }
-  }
-
-  return checksumAddress
 }
 
 /**
- * Check if address has valid EIP-55 checksum
+ * Check if address has valid EIP-55 checksum using viem's strict validation
  */
 function hasValidChecksum(address: string): boolean {
-  // All lowercase or all uppercase is valid
-  const lowerCase = address.slice(2).toLowerCase()
-  const upperCase = address.slice(2).toUpperCase()
+  // All lowercase or all uppercase is valid (no checksum to verify)
+  const hexPart = address.slice(2)
+  const lowerCase = hexPart.toLowerCase()
+  const upperCase = hexPart.toUpperCase()
 
-  if (address.slice(2) === lowerCase || address.slice(2) === upperCase) {
+  if (hexPart === lowerCase || hexPart === upperCase) {
     return true
   }
 
-  // For mixed case, would need proper keccak256 to verify
-  // For now, we accept mixed case but warn about it
-  return true
+  // For mixed case, verify checksum using viem's strict mode
+  // isAddress with strict: true validates EIP-55 checksum
+  return isAddress(address, { strict: true })
 }
 
 /**
@@ -133,18 +123,10 @@ export class InputValidator {
       errors.push('Address contains invalid characters')
     }
 
-    // Check checksum for mixed case addresses
+    // Validate EIP-55 checksum for mixed case addresses
     if (errors.length === 0) {
-      const lowerCase = hexPart.toLowerCase()
-      const upperCase = hexPart.toUpperCase()
-
-      // If mixed case, warn about potential checksum issue
-      if (hexPart !== lowerCase && hexPart !== upperCase) {
-        // Simple checksum validation
-        const expectedChecksum = toChecksumAddress(address)
-        if (address !== expectedChecksum) {
-          warnings.push('Address may have invalid checksum')
-        }
+      if (!hasValidChecksum(address)) {
+        errors.push('Address has invalid EIP-55 checksum')
       }
     }
 
@@ -152,7 +134,8 @@ export class InputValidator {
       isValid: errors.length === 0,
       errors,
       warnings: warnings.length > 0 ? warnings : undefined,
-      normalizedValue: errors.length === 0 ? address.toLowerCase() : undefined,
+      // Return EIP-55 checksummed address as normalized value
+      normalizedValue: errors.length === 0 ? toChecksumAddress(address) : undefined,
     }
   }
 
