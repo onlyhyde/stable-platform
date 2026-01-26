@@ -27,10 +27,20 @@ FROM alpine:3.19
 # Install ca-certificates for HTTPS
 RUN apk --no-cache add ca-certificates
 
+# Create non-root user for security
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -S appuser -u 1001 -G appgroup
+
 WORKDIR /app
 
 # Copy the binary
 COPY --from=builder /app/main .
+
+# Change ownership to non-root user
+RUN chown -R appuser:appgroup /app
+
+# Run as non-root user
+USER appuser
 
 # Run the application
 CMD ["./main"]

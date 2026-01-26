@@ -28,6 +28,10 @@ RUN pnpm turbo build --filter=@stablenet/$(basename ${SERVICE})
 # Production stage
 FROM node:20-alpine AS production
 
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -52,5 +56,11 @@ WORKDIR /app/${SERVICE}
 
 # Set production environment
 ENV NODE_ENV=production
+
+# Change ownership to non-root user
+RUN chown -R nodejs:nodejs /app
+
+# Run as non-root user
+USER nodejs
 
 CMD ["node", "dist/index.js"]

@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify'
 import cors from '@fastify/cors'
+import rateLimit from '@fastify/rate-limit'
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
 import type { BundlerConfig, UserOperation, UserOperationReceipt } from '../types'
 import { RpcError, RPC_ERROR_CODES } from '../types'
@@ -100,18 +101,38 @@ export class RpcServer {
       logger
     )
 
-    // Initialize Fastify
+    // Initialize Fastify with body size limit (1MB max for JSON-RPC requests)
     this.app = Fastify({
       logger: false, // We use our own logger
+      bodyLimit: 1024 * 1024, // 1MB - sufficient for UserOperation batches
     })
+  }
 
-    this.setupRoutes()
+  /**
+   * Initialize server (async initialization for plugins)
+   */
+  private async initialize(): Promise<void> {
+    await this.setupRoutes()
   }
 
   /**
    * Setup routes
    */
-  private setupRoutes(): void {
+  private async setupRoutes(): Promise<void> {
+    // Rate limiting: 100 requests per minute per IP
+    await this.app.register(rateLimit, {
+      max: 100,
+      timeWindow: '1 minute',
+      errorResponseBuilder: () => ({
+        jsonrpc: '2.0',
+        id: null,
+        error: {
+          code: -32005,
+          message: 'Rate limit exceeded. Please slow down.',
+        },
+      }),
+    })
+
     // Enable CORS with origin whitelist
     // In debug mode: allow all origins for easier testing
     // In production: only allow configured origins (default: localhost)
@@ -131,7 +152,7 @@ export class RpcServer {
             'http://127.0.0.1:5173',
           ]
 
-    this.app.register(cors, { origin: corsOrigin })
+    await this.app.register(cors, { origin: corsOrigin })
 
     // Health check
     this.app.get('/health', async () => ({
@@ -548,6 +569,9 @@ export class RpcServer {
    * Start the server
    */
   async start(): Promise<void> {
+    // Initialize plugins and routes
+    await this.initialize()
+
     // Start bundle executor
     this.executor.start()
 

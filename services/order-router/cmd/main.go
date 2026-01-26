@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stablenet/stable-platform/services/order-router/internal/config"
 	"github.com/stablenet/stable-platform/services/order-router/internal/handler"
+	"github.com/stablenet/stable-platform/services/order-router/internal/middleware"
 	"github.com/stablenet/stable-platform/services/order-router/internal/service"
 )
 
@@ -19,8 +20,10 @@ func main() {
 	// Create Gin router
 	r := gin.Default()
 
-	// Add middleware
+	// Add security middleware
 	r.Use(gin.Recovery())
+	r.Use(middleware.DefaultRateLimiter().Middleware()) // 100 requests per minute per IP
+	r.Use(middleware.DefaultBodyLimit())                // 1MB max body size
 
 	// Initialize handler and register routes
 	routerHandler := handler.NewRouterHandler(routerService)
