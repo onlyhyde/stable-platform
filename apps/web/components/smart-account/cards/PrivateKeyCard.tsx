@@ -5,16 +5,20 @@ import { formatAddress } from '@/lib/utils'
 import type { Address, Hex } from 'viem'
 
 interface PrivateKeyCardProps {
-  privateKey: Hex | ''
+  /** Whether a private key has been entered (actual key is stored in ref for security) */
+  hasPrivateKey: boolean
   onPrivateKeyChange: (key: Hex | '') => void
+  /** Clear the private key */
+  onClear?: () => void
   matchingAnvilAccount: { address: Address; privateKey: Hex } | null | undefined
   onAutoFill: () => void
   anvilAccounts: readonly { address: Address; privateKey: Hex }[]
 }
 
 export function PrivateKeyCard({
-  privateKey,
+  hasPrivateKey,
   onPrivateKeyChange,
+  onClear,
   matchingAnvilAccount,
   onAutoFill,
   anvilAccounts,
@@ -37,18 +41,28 @@ export function PrivateKeyCard({
             <div className="space-y-3">
               <div>
                 <label htmlFor="privateKey" className="block text-sm font-medium text-yellow-800 mb-1">
-                  Private Key
+                  Private Key {hasPrivateKey && <span className="text-green-600">(entered)</span>}
                 </label>
                 <div className="flex gap-2">
+                  {/* SECURITY: Input is write-only, value not displayed to prevent DevTools exposure */}
                   <input
                     id="privateKey"
                     type="password"
-                    value={privateKey}
+                    placeholder={hasPrivateKey ? '••••••••••••••••' : '0x...'}
                     onChange={(e) => onPrivateKeyChange(e.target.value as Hex | '')}
-                    placeholder="0x..."
                     className="flex-1 px-3 py-2 border border-yellow-300 rounded-lg text-sm font-mono bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
-                  {matchingAnvilAccount && (
+                  {hasPrivateKey && onClear && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={onClear}
+                      className="whitespace-nowrap text-red-600 hover:text-red-700"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                  {matchingAnvilAccount && !hasPrivateKey && (
                     <Button
                       variant="secondary"
                       size="sm"

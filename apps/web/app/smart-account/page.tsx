@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useSmartAccount, useWallet } from '@/hooks'
 import type { SigningMethod } from '@/hooks/useSmartAccount'
 import { Card, CardContent, PageHeader, InfoBanner, ConnectWalletCard, useToast } from '@/components/common'
@@ -51,8 +51,30 @@ export default function SmartAccountPage() {
     return presets.length > 0 ? presets[0].address : contracts.defaultKernelImplementation
   })
 
-  // State for private key (required for EIP-7702 signing with privateKey method)
-  const [privateKey, setPrivateKey] = useState<Hex | ''>('')
+  // SECURITY: Use ref instead of state to prevent exposure in React DevTools
+  // Private key is sensitive and should not be visible in debugging tools
+  const privateKeyRef = useRef<Hex | ''>('')
+  // Track if private key is set (for UI updates without exposing the actual key)
+  const [hasPrivateKey, setHasPrivateKey] = useState(false)
+
+  // Secure setter that updates ref and state flag
+  const setPrivateKey = useCallback((value: Hex | '') => {
+    privateKeyRef.current = value
+    setHasPrivateKey(!!value)
+  }, [])
+
+  // Clear private key from memory
+  const clearPrivateKey = useCallback(() => {
+    privateKeyRef.current = ''
+    setHasPrivateKey(false)
+  }, [])
+
+  // SECURITY: Clear private key on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      privateKeyRef.current = ''
+    }
+  }, [])
 
   // State for MetaMask unsupported modal
   const [showMetaMaskModal, setShowMetaMaskModal] = useState(false)
@@ -91,11 +113,14 @@ export default function SmartAccountPage() {
           return
         }
       } else {
-        if (!privateKey) {
+        const key = privateKeyRef.current
+        if (!key) {
           removeToast(toastId)
           return
         }
-        result = await upgradeToSmartAccount(privateKey as Hex, selectedDelegate)
+        result = await upgradeToSmartAccount(key as Hex, selectedDelegate)
+        // SECURITY: Clear private key after use
+        clearPrivateKey()
       }
 
       if (result.success) {
@@ -143,11 +168,14 @@ export default function SmartAccountPage() {
           return
         }
       } else {
-        if (!privateKey) {
+        const key = privateKeyRef.current
+        if (!key) {
           removeToast(toastId)
           return
         }
-        result = await revokeSmartAccount(privateKey as Hex)
+        result = await revokeSmartAccount(key as Hex)
+        // SECURITY: Clear private key after use
+        clearPrivateKey()
       }
 
       if (result.success) {
@@ -177,7 +205,7 @@ export default function SmartAccountPage() {
   }
 
   // Check if action is allowed
-  const canPerformAction = signingMethod === 'metamask' || !!privateKey
+  const canPerformAction = signingMethod === 'metamask' || hasPrivateKey
 
   // Show loading while reconnecting
   if (isReconnecting) {
@@ -227,8 +255,9 @@ export default function SmartAccountPage() {
 
           {signingMethod === 'privateKey' && (
             <PrivateKeyCard
-              privateKey={privateKey}
+              hasPrivateKey={hasPrivateKey}
               onPrivateKeyChange={setPrivateKey}
+              onClear={clearPrivateKey}
               matchingAnvilAccount={matchingAnvilAccount}
               onAutoFill={handleAutoFillPrivateKey}
               anvilAccounts={anvilAccounts}
