@@ -7,6 +7,19 @@ import { parseConfig, getEnvHelp } from './config'
 import { RpcServer } from '../rpc/server'
 import { createLogger } from '../utils/logger'
 
+// Global error handlers for unhandled rejections and exceptions
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Promise Rejection:', reason)
+  console.error('Promise:', promise)
+  // Log but don't exit - allows graceful handling
+})
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error)
+  // Exit with error code for uncaught exceptions
+  process.exit(1)
+})
+
 /**
  * StableNet Bundler CLI
  */

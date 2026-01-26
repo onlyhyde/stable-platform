@@ -7,6 +7,19 @@ import { createApp } from '../app'
 import { loadConfig, createConfig } from '../config'
 import type { PaymasterProxyConfig } from '../types'
 
+// Global error handlers for unhandled rejections and exceptions
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Promise Rejection:', reason)
+  console.error('Promise:', promise)
+  // Log but don't exit - allows graceful handling
+})
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error)
+  // Exit with error code for uncaught exceptions
+  process.exit(1)
+})
+
 /**
  * CLI entry point
  */
