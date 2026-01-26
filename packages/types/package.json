@@ -1,5 +1,5 @@
 {
-  "name": "@stablenet/shared-types",
+  "name": "@stablenet/types",
   "version": "0.1.0",
   "private": true,
   "description": "StableNet - Shared Type Definitions",
@@ -19,6 +19,9 @@
     "lint": "biome lint src/",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
