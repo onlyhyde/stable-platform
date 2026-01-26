@@ -179,6 +179,14 @@ export const VALIDATION_CONSTANTS = {
   MIN_PRE_VERIFICATION_GAS: 21000n,
   /** Minimum signature length (65 bytes = 0x + 130 chars) */
   MIN_SIGNATURE_LENGTH: 132,
+  /** Maximum signature length (2KB = 0x + 4096 chars) */
+  MAX_SIGNATURE_LENGTH: 4098,
+  /** Maximum callData length (50KB = 0x + 102400 chars) */
+  MAX_CALLDATA_LENGTH: 102402,
+  /** Maximum factoryData length (50KB = 0x + 102400 chars) */
+  MAX_FACTORY_DATA_LENGTH: 102402,
+  /** Maximum paymasterData length (10KB = 0x + 20480 chars) */
+  MAX_PAYMASTER_DATA_LENGTH: 20482,
   /** Maximum gas for a single operation */
   MAX_VERIFICATION_GAS: 10_000_000n,
   /** Maximum bundle gas */

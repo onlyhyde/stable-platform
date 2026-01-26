@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { FormatValidator } from '../../src/validation/formatValidator'
 import type { UserOperation } from '../../src/types'
 import { RpcError } from '../../src/types'
+import { VALIDATION_CONSTANTS } from '../../src/validation/types'
 
 describe('FormatValidator', () => {
   const validator = new FormatValidator()
@@ -231,6 +232,83 @@ describe('FormatValidator', () => {
     it('validateHexFormat should return false for invalid hex', () => {
       const result = validator.validateHexFormat('not-hex')
       expect(result).toBe(false)
+    })
+  })
+
+  describe('data length bounds checking', () => {
+    it('should reject callData exceeding maximum length', () => {
+      const oversizedCallData = '0x' + 'ab'.repeat(VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH) as `0x${string}`
+      const invalidOp: UserOperation = {
+        ...validUserOp,
+        callData: oversizedCallData,
+      }
+      expect(() => validator.validate(invalidOp)).toThrow(RpcError)
+      expect(() => validator.validate(invalidOp)).toThrow(/callData too large/)
+    })
+
+    it('should accept callData within maximum length', () => {
+      // 1KB of callData (well within 50KB limit)
+      const validCallData = '0x' + 'ab'.repeat(1024) as `0x${string}`
+      const validOp: UserOperation = {
+        ...validUserOp,
+        callData: validCallData,
+      }
+      expect(() => validator.validate(validOp)).not.toThrow()
+    })
+
+    it('should reject factoryData exceeding maximum length', () => {
+      const oversizedFactoryData = '0x' + 'ab'.repeat(VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH) as `0x${string}`
+      const invalidOp: UserOperation = {
+        ...validUserOp,
+        factory: '0x1234567890123456789012345678901234567890',
+        factoryData: oversizedFactoryData,
+      }
+      expect(() => validator.validate(invalidOp)).toThrow(RpcError)
+      expect(() => validator.validate(invalidOp)).toThrow(/factoryData too large/)
+    })
+
+    it('should reject paymasterData exceeding maximum length', () => {
+      const oversizedPaymasterData = '0x' + 'ab'.repeat(VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH) as `0x${string}`
+      const invalidOp: UserOperation = {
+        ...validUserOp,
+        paymaster: '0x1234567890123456789012345678901234567890',
+        paymasterVerificationGasLimit: 50000n,
+        paymasterPostOpGasLimit: 30000n,
+        paymasterData: oversizedPaymasterData,
+      }
+      expect(() => validator.validate(invalidOp)).toThrow(RpcError)
+      expect(() => validator.validate(invalidOp)).toThrow(/paymasterData too large/)
+    })
+
+    it('should reject signature exceeding maximum length', () => {
+      // Create a signature that exceeds the 2KB max (VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH)
+      const oversizedSignature = '0x' + 'ab'.repeat(VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH) as `0x${string}`
+      const invalidOp: UserOperation = {
+        ...validUserOp,
+        signature: oversizedSignature,
+      }
+      expect(() => validator.validate(invalidOp)).toThrow(RpcError)
+      expect(() => validator.validate(invalidOp)).toThrow(/signature too large/)
+    })
+
+    it('should accept signature within bounds', () => {
+      // 65 bytes is the minimum, 2KB is the maximum
+      const validSignature = '0x' + '00'.repeat(65) as `0x${string}`
+      const validOp: UserOperation = {
+        ...validUserOp,
+        signature: validSignature,
+      }
+      expect(() => validator.validate(validOp)).not.toThrow()
+    })
+
+    it('should accept larger but valid signature (for aggregators)', () => {
+      // 256 bytes signature (valid for some aggregator schemes)
+      const validSignature = '0x' + '00'.repeat(256) as `0x${string}`
+      const validOp: UserOperation = {
+        ...validUserOp,
+        signature: validSignature,
+      }
+      expect(() => validator.validate(validOp)).not.toThrow()
     })
   })
 })

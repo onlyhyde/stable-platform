@@ -39,7 +39,7 @@ const optionalHexSchema = z.string().optional().refine(
 )
 
 /**
- * Zod schema for UserOperation validation
+ * Zod schema for UserOperation validation with bounds checking
  */
 export const userOperationSchema = z.object({
   sender: addressSchema,
@@ -47,8 +47,14 @@ export const userOperationSchema = z.object({
     message: 'nonce must be non-negative',
   }),
   factory: optionalAddressSchema,
-  factoryData: optionalHexSchema,
-  callData: hexSchema,
+  factoryData: optionalHexSchema.refine(
+    (val) => val === undefined || val.length <= VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH,
+    { message: `factoryData exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH - 2) / 2} bytes)` }
+  ),
+  callData: hexSchema.refine(
+    (val) => val.length <= VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH,
+    { message: `callData exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH - 2) / 2} bytes)` }
+  ),
   callGasLimit: z.bigint().min(VALIDATION_CONSTANTS.MIN_CALL_GAS_LIMIT, {
     message: `callGasLimit must be at least ${VALIDATION_CONSTANTS.MIN_CALL_GAS_LIMIT}`,
   }),
@@ -67,10 +73,16 @@ export const userOperationSchema = z.object({
   paymaster: optionalAddressSchema,
   paymasterVerificationGasLimit: z.bigint().optional(),
   paymasterPostOpGasLimit: z.bigint().optional(),
-  paymasterData: optionalHexSchema,
+  paymasterData: optionalHexSchema.refine(
+    (val) => val === undefined || val.length <= VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH,
+    { message: `paymasterData exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH - 2) / 2} bytes)` }
+  ),
   signature: hexSchema.refine(
     (val) => val.length >= VALIDATION_CONSTANTS.MIN_SIGNATURE_LENGTH,
     { message: `signature must be at least ${VALIDATION_CONSTANTS.MIN_SIGNATURE_LENGTH} characters (65 bytes)` }
+  ).refine(
+    (val) => val.length <= VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH,
+    { message: `signature exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH - 2) / 2} bytes)` }
   ),
 })
 
@@ -84,20 +96,69 @@ export class FormatValidator implements IFormatValidator {
    * @throws RpcError if validation fails
    */
   validate(userOp: UserOperation): void {
-    // 1. Schema validation
+    // 1. Data length bounds check (early rejection for oversized data)
+    this.validateDataLengths(userOp)
+
+    // 2. Schema validation
     this.validateSchema(userOp)
 
-    // 2. Gas relationship check
+    // 3. Gas relationship check
     this.validateGasRelationships(userOp)
 
-    // 3. Factory/factoryData consistency
+    // 4. Factory/factoryData consistency
     this.validateFactoryConsistency(userOp)
 
-    // 4. Paymaster field consistency
+    // 5. Paymaster field consistency
     this.validatePaymasterConsistency(userOp)
 
-    // 5. Gas limits sanity check
+    // 6. Gas limits sanity check
     this.validateGasLimits(userOp)
+  }
+
+  /**
+   * Validate data field lengths to prevent oversized UserOperations
+   * This is a security measure against DoS attacks with large payloads
+   */
+  private validateDataLengths(userOp: UserOperation): void {
+    // Check callData length
+    if (userOp.callData && userOp.callData.length > VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH) {
+      throw new RpcError(
+        `callData too large: ${userOp.callData.length} chars (max: ${VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH}, ${(VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH - 2) / 2} bytes)`,
+        RPC_ERROR_CODES.INVALID_PARAMS
+      )
+    }
+
+    // Check factoryData length
+    if (userOp.factoryData && userOp.factoryData.length > VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH) {
+      throw new RpcError(
+        `factoryData too large: ${userOp.factoryData.length} chars (max: ${VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH}, ${(VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH - 2) / 2} bytes)`,
+        RPC_ERROR_CODES.INVALID_PARAMS
+      )
+    }
+
+    // Check paymasterData length
+    if (userOp.paymasterData && userOp.paymasterData.length > VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH) {
+      throw new RpcError(
+        `paymasterData too large: ${userOp.paymasterData.length} chars (max: ${VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH}, ${(VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH - 2) / 2} bytes)`,
+        RPC_ERROR_CODES.INVALID_PARAMS
+      )
+    }
+
+    // Check signature length (min and max)
+    if (userOp.signature) {
+      if (userOp.signature.length < VALIDATION_CONSTANTS.MIN_SIGNATURE_LENGTH) {
+        throw new RpcError(
+          `signature too short: ${userOp.signature.length} chars (min: ${VALIDATION_CONSTANTS.MIN_SIGNATURE_LENGTH}, 65 bytes)`,
+          RPC_ERROR_CODES.INVALID_PARAMS
+        )
+      }
+      if (userOp.signature.length > VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH) {
+        throw new RpcError(
+          `signature too large: ${userOp.signature.length} chars (max: ${VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH}, ${(VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH - 2) / 2} bytes)`,
+          RPC_ERROR_CODES.INVALID_PARAMS
+        )
+      }
+    }
   }
 
   /**
