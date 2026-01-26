@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"errors"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -103,7 +105,7 @@ func (h *PaymentHandler) RefundPayment(c *gin.Context) {
 	id := c.Param("id")
 
 	var req model.RefundRequest
-	if err := c.ShouldBindJSON(&req); err != nil && err.Error() != "EOF" {
+	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
 		return
 	}

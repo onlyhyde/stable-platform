@@ -28,7 +28,7 @@ export function createSponsorPaymaster(
     'Content-Type': 'application/json',
   }
 
-  if (apiKey) {
+  if (apiKey && apiKey.trim().length > 0) {
     headers['Authorization'] = `Bearer ${apiKey}`
   }
 
