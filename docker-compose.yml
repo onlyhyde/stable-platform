@@ -83,7 +83,7 @@ services:
       <<: [*common-env, *contract-addresses]
       PORT: 4337
       REDIS_URL: redis://redis:6379
-      BUNDLER_PRIVATE_KEY: ${BUNDLER_PRIVATE_KEY:-0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6}
+      BUNDLER_PRIVATE_KEY: ${BUNDLER_PRIVATE_KEY:?required - copy .env.example to .env}
       BUNDLER_BENEFICIARY: ${BUNDLER_BENEFICIARY:-0x90F79bf6EB2c4f870365E785982E1f101E93b906}
     command: >
       node dist/cli/index.js run
@@ -91,7 +91,7 @@ services:
       --rpc-url ${STABLENET_RPC_URL:-http://host.docker.internal:8545}
       --entry-point ${ENTRY_POINT_ADDRESS:-0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0}
       --beneficiary ${BUNDLER_BENEFICIARY:-0x90F79bf6EB2c4f870365E785982E1f101E93b906}
-      --private-key ${BUNDLER_PRIVATE_KEY:-0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6}
+      --private-key ${BUNDLER_PRIVATE_KEY}
       --network devnet
       --log-level info
     depends_on:
@@ -116,12 +116,12 @@ services:
       <<: [*common-env, *contract-addresses]
       PORT: 4338
       BUNDLER_URL: http://bundler:4337
-      PAYMASTER_SIGNER_PRIVATE_KEY: ${PAYMASTER_SIGNER_PRIVATE_KEY:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}
+      PAYMASTER_SIGNER_PRIVATE_KEY: ${PAYMASTER_SIGNER_PRIVATE_KEY:?required - copy .env.example to .env}
     command: >
       node dist/cli/index.js run
       --port 4338
       --paymaster ${VERIFYING_PAYMASTER_ADDRESS:-0x0165878A594ca255338adfa4d48449f69242Eb8F}
-      --signer ${PAYMASTER_SIGNER_PRIVATE_KEY:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}
+      --signer ${PAYMASTER_SIGNER_PRIVATE_KEY}
       --rpc ${STABLENET_RPC_URL:-http://host.docker.internal:8545}
       --chain-ids ${CHAIN_ID:-31337}
     depends_on:
