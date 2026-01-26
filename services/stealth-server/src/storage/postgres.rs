@@ -1,5 +1,6 @@
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use sqlx::FromRow;
+use std::time::Duration;
 use thiserror::Error;
 use tracing::info;
 
@@ -68,14 +69,34 @@ pub struct Storage {
 }
 
 impl Storage {
-    /// Create a new storage instance
+    /// Create a new storage instance with connection pool optimizations
+    /// - Configurable timeouts prevent connection leaks
+    /// - Statement timeout prevents runaway queries
     pub async fn new(config: &DatabaseConfig) -> Result<Self, StorageError> {
+        // Copy timeout value to avoid lifetime issues with closure
+        let statement_timeout_secs = config.statement_timeout_secs;
+
         let pool = PgPoolOptions::new()
             .max_connections(config.max_connections)
+            // Connection acquire timeout - fail fast if pool exhausted
+            .acquire_timeout(Duration::from_secs(config.acquire_timeout_secs))
+            // Idle connection timeout - reclaim unused connections
+            .idle_timeout(Duration::from_secs(config.idle_timeout_secs))
+            // Max connection lifetime - prevent stale connections
+            .max_lifetime(Duration::from_secs(config.max_lifetime_secs))
+            // Set statement timeout on each connection to prevent runaway queries
+            .after_connect(move |conn, _meta| {
+                Box::pin(async move {
+                    sqlx::query(&format!("SET statement_timeout = '{}s'", statement_timeout_secs))
+                        .execute(conn)
+                        .await?;
+                    Ok(())
+                })
+            })
             .connect(&config.url)
             .await?;
 
-        info!("Connected to database");
+        info!("Connected to database with pool optimizations");
         Ok(Storage { pool })
     }
 
@@ -117,7 +138,19 @@ impl Storage {
         Ok(row.map(|r| r.0).unwrap_or(0))
     }
 
-    /// Get announcements with optional filters
+    /// Get announcements with optional filters using cursor-based pagination
+    ///
+    /// # Cursor-Based Pagination (Best Practice)
+    /// Instead of OFFSET which scans all skipped rows (O(n)), this uses
+    /// keyset/cursor pagination which is O(1) regardless of page depth.
+    ///
+    /// # Arguments
+    /// * `from_block` - Filter: block_number >= from_block
+    /// * `to_block` - Filter: block_number <= to_block
+    /// * `view_tag` - Filter: view_tag = view_tag
+    /// * `limit` - Maximum number of results (default: 100)
+    /// * `cursor` - Cursor for pagination: (block_number, log_index) from previous result
+    #[deprecated(note = "Use get_announcements_cursor() for better performance")]
     pub async fn get_announcements(
         &self,
         from_block: Option<u64>,
@@ -144,6 +177,55 @@ impl Storage {
         .bind(view_tag.map(|v| v as i16))
         .bind(limit.unwrap_or(100))
         .bind(offset.unwrap_or(0))
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(Announcement::from).collect())
+    }
+
+    /// Get announcements with cursor-based pagination (recommended)
+    ///
+    /// # Performance
+    /// - O(1) regardless of page depth (vs O(n) for OFFSET)
+    /// - Uses composite index on (block_number DESC, log_index DESC)
+    ///
+    /// # Arguments
+    /// * `from_block` - Filter: block_number >= from_block
+    /// * `to_block` - Filter: block_number <= to_block
+    /// * `view_tag` - Filter: view_tag = view_tag
+    /// * `limit` - Maximum number of results (default: 100)
+    /// * `cursor` - Cursor from previous page: (block_number, log_index)
+    ///              For first page, pass None
+    pub async fn get_announcements_cursor(
+        &self,
+        from_block: Option<u64>,
+        to_block: Option<u64>,
+        view_tag: Option<u8>,
+        limit: Option<i64>,
+        cursor: Option<(u64, u32)>,
+    ) -> Result<Vec<Announcement>, StorageError> {
+        let rows = sqlx::query_as::<_, AnnouncementRow>(
+            r#"
+            SELECT id, scheme_id, stealth_address, caller, ephemeral_pub_key,
+                   metadata, view_tag, block_number, transaction_hash, log_index, created_at
+            FROM announcements
+            WHERE ($1::bigint IS NULL OR block_number >= $1)
+              AND ($2::bigint IS NULL OR block_number <= $2)
+              AND ($3::smallint IS NULL OR view_tag = $3)
+              AND (
+                $4::bigint IS NULL
+                OR (block_number, log_index) < ($4, $5)
+              )
+            ORDER BY block_number DESC, log_index DESC
+            LIMIT $6
+            "#,
+        )
+        .bind(from_block.map(|b| b as i64))
+        .bind(to_block.map(|b| b as i64))
+        .bind(view_tag.map(|v| v as i16))
+        .bind(cursor.map(|(b, _)| b as i64))
+        .bind(cursor.map(|(_, l)| l as i32).unwrap_or(0))
+        .bind(limit.unwrap_or(100))
         .fetch_all(&self.pool)
         .await?;
 
@@ -229,8 +311,55 @@ impl Storage {
         Ok(row)
     }
 
-    /// Get the latest processed block number
+    /// Get the latest processed block number from sync_state table
+    ///
+    /// # Performance
+    /// Uses sync_state table (single row lookup) instead of MAX() aggregate
+    /// which would require scanning the entire announcements table or index.
     pub async fn get_latest_block(&self) -> Result<Option<u64>, StorageError> {
+        let row: Option<(i64,)> = sqlx::query_as(
+            r#"
+            SELECT last_block_number
+            FROM sync_state
+            WHERE id = 1
+            "#,
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|r| r.0 as u64).filter(|&b| b > 0))
+    }
+
+    /// Update the sync state with the latest processed block
+    pub async fn update_sync_state(
+        &self,
+        block_number: u64,
+        block_hash: Option<&str>,
+    ) -> Result<(), StorageError> {
+        sqlx::query(
+            r#"
+            UPDATE sync_state
+            SET last_block_number = $1,
+                last_block_hash = $2,
+                updated_at = NOW()
+            WHERE id = 1
+            "#,
+        )
+        .bind(block_number as i64)
+        .bind(block_hash)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Get the latest processed block number using MAX() aggregate
+    ///
+    /// # Warning
+    /// This is slower than get_latest_block() for large tables.
+    /// Use only when sync_state may be out of sync.
+    #[deprecated(note = "Use get_latest_block() which uses sync_state table")]
+    pub async fn get_latest_block_from_announcements(&self) -> Result<Option<u64>, StorageError> {
         let row: Option<(Option<i64>,)> = sqlx::query_as(
             r#"
             SELECT MAX(block_number)
@@ -243,7 +372,11 @@ impl Storage {
         Ok(row.and_then(|r| r.0).map(|b| b as u64))
     }
 
-    /// Get total announcement count
+    /// Get total announcement count (exact)
+    ///
+    /// # Warning
+    /// For large tables (>1M rows), this can be slow.
+    /// Consider using get_announcement_count_approx() for dashboards/monitoring.
     pub async fn get_announcement_count(&self) -> Result<i64, StorageError> {
         let row: (i64,) = sqlx::query_as(
             r#"
@@ -255,5 +388,38 @@ impl Storage {
         .await?;
 
         Ok(row.0)
+    }
+
+    /// Get approximate announcement count (fast)
+    ///
+    /// # Performance
+    /// Uses pg_class.reltuples which is updated by VACUUM/ANALYZE.
+    /// Returns approximate count in O(1) time vs O(n) for exact COUNT(*).
+    /// Accuracy depends on how recently ANALYZE was run.
+    ///
+    /// # Use Cases
+    /// - Dashboard statistics
+    /// - Monitoring/alerting
+    /// - UI where exact count isn't critical
+    pub async fn get_announcement_count_approx(&self) -> Result<i64, StorageError> {
+        let row: (f32,) = sqlx::query_as(
+            r#"
+            SELECT reltuples::float4
+            FROM pg_class
+            WHERE relname = 'announcements'
+            "#,
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(row.0 as i64)
+    }
+
+    /// Health check - verify database connectivity
+    pub async fn health_check(&self) -> Result<(), StorageError> {
+        sqlx::query("SELECT 1")
+            .execute(&self.pool)
+            .await?;
+        Ok(())
     }
 }

@@ -54,7 +54,7 @@ func (h *SubscriptionHandler) CreateSubscription(c *gin.Context) {
 		return
 	}
 
-	sub, err := h.executorService.CreateSubscription(&req)
+	sub, err := h.executorService.CreateSubscription(c.Request.Context(), &req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -75,7 +75,7 @@ func (h *SubscriptionHandler) CreateSubscription(c *gin.Context) {
 func (h *SubscriptionHandler) GetSubscription(c *gin.Context) {
 	id := c.Param("id")
 
-	sub, err := h.executorService.GetSubscription(id)
+	sub, err := h.executorService.GetSubscription(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 		return
@@ -95,7 +95,11 @@ func (h *SubscriptionHandler) GetSubscription(c *gin.Context) {
 func (h *SubscriptionHandler) GetSubscriptionsByAccount(c *gin.Context) {
 	account := c.Param("account")
 
-	subs := h.executorService.GetSubscriptionsByAccount(account)
+	subs, err := h.executorService.GetSubscriptionsByAccount(c.Request.Context(), account)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
 
 	var responses []*model.SubscriptionResponse
 	for _, sub := range subs {
@@ -117,7 +121,7 @@ func (h *SubscriptionHandler) GetSubscriptionsByAccount(c *gin.Context) {
 func (h *SubscriptionHandler) CancelSubscription(c *gin.Context) {
 	id := c.Param("id")
 
-	if err := h.executorService.CancelSubscription(id); err != nil {
+	if err := h.executorService.CancelSubscription(c.Request.Context(), id); err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -137,7 +141,7 @@ func (h *SubscriptionHandler) CancelSubscription(c *gin.Context) {
 func (h *SubscriptionHandler) PauseSubscription(c *gin.Context) {
 	id := c.Param("id")
 
-	if err := h.executorService.PauseSubscription(id); err != nil {
+	if err := h.executorService.PauseSubscription(c.Request.Context(), id); err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -158,7 +162,7 @@ func (h *SubscriptionHandler) PauseSubscription(c *gin.Context) {
 func (h *SubscriptionHandler) ResumeSubscription(c *gin.Context) {
 	id := c.Param("id")
 
-	if err := h.executorService.ResumeSubscription(id); err != nil {
+	if err := h.executorService.ResumeSubscription(c.Request.Context(), id); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}

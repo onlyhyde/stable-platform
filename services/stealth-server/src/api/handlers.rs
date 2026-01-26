@@ -37,43 +37,81 @@ pub async fn get_stats(storage: web::Data<Storage>) -> impl Responder {
     })
 }
 
-/// Announcements query parameters
+/// Announcements query parameters (cursor-based pagination)
 #[derive(Debug, Deserialize)]
 pub struct AnnouncementsQuery {
     pub from_block: Option<u64>,
     pub to_block: Option<u64>,
     pub view_tag: Option<u8>,
     pub limit: Option<i64>,
-    pub offset: Option<i64>,
+    /// Cursor for pagination: block_number from last result
+    /// For first page, omit this parameter
+    pub cursor_block: Option<u64>,
+    /// Cursor for pagination: log_index from last result
+    /// Required if cursor_block is provided
+    pub cursor_log_index: Option<u32>,
 }
 
-/// Announcements response
+/// Announcements response with cursor for next page
 #[derive(Serialize)]
 pub struct AnnouncementsResponse {
     pub announcements: Vec<crate::parser::Announcement>,
     pub total: usize,
+    /// Cursor for next page: use these values in cursor_block and cursor_log_index
+    /// If None, this is the last page
+    pub next_cursor: Option<AnnouncementCursor>,
 }
 
-/// Get announcements
+/// Cursor for pagination
+#[derive(Serialize)]
+pub struct AnnouncementCursor {
+    pub block_number: u64,
+    pub log_index: u32,
+}
+
+/// Get announcements with cursor-based pagination
+///
+/// # Performance
+/// Uses cursor-based pagination for O(1) performance regardless of page depth.
+/// OFFSET-based pagination is deprecated as it degrades performance on deep pages.
+///
+/// # Usage
+/// - First request: omit cursor_block and cursor_log_index
+/// - Next page: use next_cursor values from previous response
 pub async fn get_announcements(
     storage: web::Data<Storage>,
     query: web::Query<AnnouncementsQuery>,
 ) -> impl Responder {
+    // Build cursor from query params
+    let cursor = match (query.cursor_block, query.cursor_log_index) {
+        (Some(block), Some(log_index)) => Some((block, log_index)),
+        (Some(block), None) => Some((block, 0)), // Default log_index to 0
+        _ => None,
+    };
+
     match storage
-        .get_announcements(
+        .get_announcements_cursor(
             query.from_block,
             query.to_block,
             query.view_tag,
             query.limit,
-            query.offset,
+            cursor,
         )
         .await
     {
         Ok(announcements) => {
             let total = announcements.len();
+
+            // Build next cursor from last announcement
+            let next_cursor = announcements.last().map(|a| AnnouncementCursor {
+                block_number: a.block_number,
+                log_index: a.log_index,
+            });
+
             HttpResponse::Ok().json(AnnouncementsResponse {
                 announcements,
                 total,
+                next_cursor,
             })
         }
         Err(e) => {
@@ -237,6 +275,17 @@ pub struct ScanQuery {
     pub from_block: Option<u64>,
     pub to_block: Option<u64>,
     pub limit: Option<i64>,
+    /// Cursor for pagination
+    pub cursor_block: Option<u64>,
+    pub cursor_log_index: Option<u32>,
+}
+
+/// Scan response with cursor
+#[derive(Serialize)]
+pub struct ScanResponse {
+    pub announcements: Vec<crate::parser::Announcement>,
+    pub total: usize,
+    pub next_cursor: Option<AnnouncementCursor>,
 }
 
 /// Scan for announcements matching a viewing key
@@ -244,9 +293,16 @@ pub async fn scan(
     storage: web::Data<Storage>,
     query: web::Query<ScanQuery>,
 ) -> impl Responder {
-    // First get all announcements with view tags
+    // Build cursor from query params
+    let cursor = match (query.cursor_block, query.cursor_log_index) {
+        (Some(block), Some(log_index)) => Some((block, log_index)),
+        (Some(block), None) => Some((block, 0)),
+        _ => None,
+    };
+
+    // First get announcements with cursor-based pagination
     let announcements = match storage
-        .get_announcements(query.from_block, query.to_block, None, query.limit, None)
+        .get_announcements_cursor(query.from_block, query.to_block, None, query.limit, cursor)
         .await
     {
         Ok(a) => a,
@@ -256,6 +312,12 @@ pub async fn scan(
             }));
         }
     };
+
+    // Build cursor for next page from last announcement (before filtering)
+    let next_cursor = announcements.last().map(|a| AnnouncementCursor {
+        block_number: a.block_number,
+        log_index: a.log_index,
+    });
 
     // Filter by view tag matching
     let mut matches = Vec::new();
@@ -273,8 +335,9 @@ pub async fn scan(
         }
     }
 
-    HttpResponse::Ok().json(AnnouncementsResponse {
+    HttpResponse::Ok().json(ScanResponse {
         total: matches.len(),
         announcements: matches,
+        next_cursor,
     })
 }
