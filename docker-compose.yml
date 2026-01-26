@@ -1,7 +1,7 @@
 # ===========================================
 # StableNet PoC Platform - Docker Compose
 # ===========================================
-# Service Ports:
+# Service Ports (external):
 #   - 4337: Bundler (ERC-4337)
 #   - 4338: Paymaster Proxy (ERC-7677)
 #   - 4339: Stealth Server (Rust)
@@ -9,9 +9,15 @@
 #   - 4341: Subscription Executor
 #   - 4342: Bridge Relayer
 #   - 4350-4352: Simulators (Bank, PG, OnRamp)
-#   - 5432: PostgreSQL
-#   - 6379: Redis
-#   - 8545: Anvil (local chain, external)
+#
+# Internal Only (not exposed externally):
+#   - PostgreSQL (5432) - data-internal network
+#   - Redis (6379) - data-internal network
+#
+# Network Architecture:
+#   - data-internal: PostgreSQL, Redis (isolated)
+#   - stablenet: All services (inter-service communication)
+#   - Services needing data access join both networks
 # ===========================================
 
 x-common-env: &common-env
@@ -33,7 +39,7 @@ x-healthcheck-defaults: &healthcheck-defaults
 
 services:
   # ===================
-  # Infrastructure
+  # Infrastructure (Internal Network Only)
   # ===================
   postgres:
     image: postgres:16-alpine
@@ -42,8 +48,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-stablenet}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required - copy .env.example to .env}
       POSTGRES_DB: ${POSTGRES_DB:-stablenet}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+    # SECURITY: PostgreSQL is NOT exposed externally. Access via data-internal network only.
+    # For local debugging, uncomment the ports section below:
+    # ports:
+    #   - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
@@ -51,21 +59,27 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stablenet}"]
       <<: *healthcheck-defaults
     networks:
-      - stablenet
+      - data-internal
 
   redis:
     image: redis:7-alpine
     container_name: stablenet-redis
-    command: redis-server --appendonly yes
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    # SECURITY: Redis with password authentication
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-stablenet-redis-dev}
+    # SECURITY: Redis is NOT exposed externally. Access via data-internal network only.
+    # For local debugging, uncomment the ports section below:
+    # ports:
+    #   - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-stablenet-redis-dev}", "ping"]
       <<: *healthcheck-defaults
     networks:
-      - stablenet
+      - data-internal
 
   # ===================
   # TypeScript Services
@@ -82,7 +96,8 @@ services:
     environment:
       <<: [*common-env, *contract-addresses]
       PORT: 4337
-      REDIS_URL: redis://redis:6379
+      # Redis URL with authentication
+      REDIS_URL: redis://:${REDIS_PASSWORD:-stablenet-redis-dev}@redis:6379
       BUNDLER_PRIVATE_KEY: ${BUNDLER_PRIVATE_KEY:?required - copy .env.example to .env}
       BUNDLER_BENEFICIARY: ${BUNDLER_BENEFICIARY:-0x90F79bf6EB2c4f870365E785982E1f101E93b906}
     command: >
@@ -102,6 +117,7 @@ services:
       <<: *healthcheck-defaults
     networks:
       - stablenet
+      - data-internal
 
   paymaster-proxy:
     build:
@@ -160,6 +176,7 @@ services:
       <<: *healthcheck-defaults
     networks:
       - stablenet
+      - data-internal
 
   # ===================
   # Go Services
@@ -197,7 +214,8 @@ services:
       # NOTE: sslmode=disable is acceptable for local Docker network only. Use sslmode=require in production.
       DATABASE_URL: postgres://${POSTGRES_USER:-stablenet}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-stablenet}?sslmode=disable
       DATABASE_USE_INMEMORY: ${DATABASE_USE_INMEMORY:-false}
-      REDIS_URL: redis://redis:6379
+      # Redis URL with authentication
+      REDIS_URL: redis://:${REDIS_PASSWORD:-stablenet-redis-dev}@redis:6379
       BUNDLER_URL: http://bundler:4337
       PAYMASTER_URL: http://paymaster-proxy:4338
     depends_on:
@@ -214,6 +232,7 @@ services:
       <<: *healthcheck-defaults
     networks:
       - stablenet
+      - data-internal
 
   bridge-relayer:
     build:
@@ -284,6 +303,15 @@ volumes:
   redis_data:
 
 networks:
+  # Internal network for data services (PostgreSQL, Redis)
+  # Not accessible from outside Docker
+  data-internal:
+    name: stablenet-data-internal
+    driver: bridge
+    internal: true
+
+  # Service communication network
+  # Services expose ports to host via this network
   stablenet:
     name: stablenet-network
     driver: bridge
