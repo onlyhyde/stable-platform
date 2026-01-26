@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/stablenet/stable-platform/services/subscription-executor/internal/client"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/config"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/model"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/repository"
@@ -14,17 +15,37 @@ import (
 
 // ExecutorService handles subscription execution
 type ExecutorService struct {
-	cfg    *config.Config
-	repo   repository.SubscriptionRepository
-	stopCh chan struct{}
+	cfg             *config.Config
+	repo            repository.SubscriptionRepository
+	stopCh          chan struct{}
+	bundlerClient   *client.BundlerClient
+	paymasterClient *client.PaymasterClient
+	userOpBuilder   *client.UserOpBuilder
+	rpcClient       *client.RPCClient
 }
 
 // NewExecutorService creates a new executor service with the given repository
 func NewExecutorService(cfg *config.Config, repo repository.SubscriptionRepository) *ExecutorService {
+	// Initialize bundler client
+	bundlerClient := client.NewBundlerClient(cfg.BundlerURL, cfg.EntryPointAddress)
+
+	// Initialize paymaster client
+	paymasterClient := client.NewPaymasterClient(cfg.PaymasterURL)
+
+	// Initialize UserOp builder
+	userOpBuilder := client.NewUserOpBuilder(cfg.ChainID, cfg.EntryPointAddress)
+
+	// Initialize RPC client for nonce queries
+	rpcClient := client.NewRPCClient(cfg.RPCURL)
+
 	return &ExecutorService{
-		cfg:    cfg,
-		repo:   repo,
-		stopCh: make(chan struct{}),
+		cfg:             cfg,
+		repo:            repo,
+		stopCh:          make(chan struct{}),
+		bundlerClient:   bundlerClient,
+		paymasterClient: paymasterClient,
+		userOpBuilder:   userOpBuilder,
+		rpcClient:       rpcClient,
 	}
 }
 
@@ -182,14 +203,28 @@ func (s *ExecutorService) executeSubscription(ctx context.Context, sub *model.Su
 		// Continue with execution even if record creation fails
 	}
 
-	// TODO: Build and submit UserOperation via bundler
-	// 1. Build calldata for ERC20 transfer or RecurringPaymentExecutor
-	// 2. Create UserOperation
-	// 3. Get paymaster signature
-	// 4. Submit to bundler
-	// 5. Wait for receipt
+	// Parse record ID for updates
+	var recordID int64
+	if record.ID != "" {
+		fmt.Sscanf(record.ID, "%d", &recordID)
+	}
 
-	// For now, simulate execution
+	// Execute UserOperation
+	txHash, gasUsed, err := s.submitUserOperation(ctx, sub)
+	if err != nil {
+		// Update record as failed
+		if recordID > 0 {
+			s.updateExecutionRecord(ctx, recordID, "failed", "", 0, err.Error())
+		}
+		return fmt.Errorf("failed to submit user operation: %w", err)
+	}
+
+	// Update execution record as success
+	if recordID > 0 {
+		s.updateExecutionRecord(ctx, recordID, "success", txHash, gasUsed, "")
+	}
+
+	// Update subscription state
 	now := time.Now()
 	sub.LastExecution = &now
 	sub.ExecutionCount++
@@ -207,12 +242,166 @@ func (s *ExecutorService) executeSubscription(ctx context.Context, sub *model.Su
 		return fmt.Errorf("failed to update subscription: %w", err)
 	}
 
-	// Update execution record as success
-	// TODO: In production, update with actual txHash and gasUsed
-	// For now, we'll skip updating since we don't have the record ID readily available
-
-	log.Printf("Successfully executed subscription: %s (count: %d)", sub.ID, sub.ExecutionCount)
+	log.Printf("Successfully executed subscription: %s (txHash: %s, count: %d)", sub.ID, txHash, sub.ExecutionCount)
 	return nil
+}
+
+// submitUserOperation builds and submits a UserOperation for a subscription payment
+func (s *ExecutorService) submitUserOperation(ctx context.Context, sub *model.Subscription) (string, uint64, error) {
+	chainID := fmt.Sprintf("0x%x", s.cfg.ChainID)
+
+	// 1. Get nonce from EntryPoint
+	nonce, err := s.rpcClient.GetNonce(ctx, sub.SmartAccount, s.cfg.EntryPointAddress)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to get nonce: %w", err)
+	}
+	nonceInt := new(big.Int)
+	nonceInt.SetString(nonce[2:], 16)
+
+	// 2. Build UserOperation
+	userOp := s.userOpBuilder.CreateUserOperation(
+		sub.SmartAccount,
+		nonceInt,
+		sub.Token,
+		sub.Recipient,
+		sub.Amount,
+	)
+
+	// 3. Get gas prices
+	gasPrice, err := s.rpcClient.GetGasPrice(ctx)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to get gas price: %w", err)
+	}
+	maxPriorityFee, _ := s.rpcClient.GetMaxPriorityFeePerGas(ctx)
+
+	gasPriceInt := new(big.Int)
+	gasPriceInt.SetString(gasPrice[2:], 16)
+	maxPriorityFeeInt := new(big.Int)
+	maxPriorityFeeInt.SetString(maxPriorityFee[2:], 16)
+
+	// Set gas fees (maxPriorityFeePerGas || maxFeePerGas)
+	userOp.GasFees = client.PackGasFees(maxPriorityFeeInt, gasPriceInt)
+
+	// 4. Get paymaster stub data for gas estimation
+	stubReq := &client.PaymasterStubDataRequest{
+		Sender:   userOp.Sender,
+		Nonce:    userOp.Nonce,
+		InitCode: userOp.InitCode,
+		CallData: userOp.CallData,
+	}
+	stubData, err := s.paymasterClient.GetPaymasterStubData(ctx, stubReq, chainID, s.cfg.EntryPointAddress)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to get paymaster stub data: %w", err)
+	}
+
+	// Set stub paymaster data for gas estimation
+	pmVerifyGas := new(big.Int)
+	pmVerifyGas.SetString(stubData.PaymasterVerificationGasLimit[2:], 16)
+	pmPostOpGas := new(big.Int)
+	pmPostOpGas.SetString(stubData.PaymasterPostOpGasLimit[2:], 16)
+	userOp.PaymasterAndData = client.PackPaymasterAndData(
+		stubData.Paymaster,
+		pmVerifyGas,
+		pmPostOpGas,
+		stubData.PaymasterData,
+	)
+
+	// 5. Estimate gas via bundler
+	// Use a dummy signature for estimation (65 bytes of 0x01)
+	userOp.Signature = "0x" + fmt.Sprintf("%0130x", 1)
+	gasEstimate, err := s.bundlerClient.EstimateUserOperationGas(ctx, userOp)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to estimate gas: %w", err)
+	}
+
+	// 6. Set estimated gas limits
+	verifyGas := new(big.Int)
+	verifyGas.SetString(gasEstimate.VerificationGasLimit[2:], 16)
+	callGas := new(big.Int)
+	callGas.SetString(gasEstimate.CallGasLimit[2:], 16)
+	preVerifyGas := new(big.Int)
+	preVerifyGas.SetString(gasEstimate.PreVerificationGas[2:], 16)
+
+	userOp.AccountGasLimits = client.PackAccountGasLimits(verifyGas, callGas)
+	userOp.PreVerificationGas = fmt.Sprintf("0x%x", preVerifyGas)
+
+	// 7. Get final paymaster data with signature
+	pmDataReq := &client.PaymasterDataRequest{
+		Sender:             userOp.Sender,
+		Nonce:              userOp.Nonce,
+		InitCode:           userOp.InitCode,
+		CallData:           userOp.CallData,
+		AccountGasLimits:   userOp.AccountGasLimits,
+		PreVerificationGas: userOp.PreVerificationGas,
+		GasFees:            userOp.GasFees,
+	}
+	pmData, err := s.paymasterClient.GetPaymasterData(ctx, pmDataReq, chainID, s.cfg.EntryPointAddress)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to get paymaster data: %w", err)
+	}
+
+	// Update paymaster data with final signature
+	finalPmVerifyGas := pmVerifyGas
+	finalPmPostOpGas := pmPostOpGas
+	if pmData.PaymasterVerificationGasLimit != "" {
+		finalPmVerifyGas = new(big.Int)
+		finalPmVerifyGas.SetString(pmData.PaymasterVerificationGasLimit[2:], 16)
+	}
+	if pmData.PaymasterPostOpGasLimit != "" {
+		finalPmPostOpGas = new(big.Int)
+		finalPmPostOpGas.SetString(pmData.PaymasterPostOpGasLimit[2:], 16)
+	}
+	userOp.PaymasterAndData = client.PackPaymasterAndData(
+		pmData.Paymaster,
+		finalPmVerifyGas,
+		finalPmPostOpGas,
+		pmData.PaymasterData,
+	)
+
+	// 8. Sign the UserOperation
+	// For subscription executor, we use a session key or pre-authorized signature
+	// The smart account should have pre-authorized this executor
+	// Using a placeholder signature - in production, implement proper signing
+	userOp.Signature = "0x" + fmt.Sprintf("%0130x", 1) // Placeholder
+
+	// 9. Submit to bundler
+	userOpHash, err := s.bundlerClient.SendUserOperation(ctx, userOp)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to send user operation: %w", err)
+	}
+	log.Printf("UserOperation submitted: %s", userOpHash)
+
+	// 10. Wait for receipt
+	receipt, err := s.bundlerClient.WaitForReceipt(ctx, userOpHash, 60*time.Second)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to get receipt: %w", err)
+	}
+
+	if !receipt.Success {
+		return "", 0, fmt.Errorf("user operation failed: %s", receipt.Reason)
+	}
+
+	// Parse gas used
+	gasUsed := uint64(0)
+	if receipt.ActualGasUsed != "" {
+		gasUsedInt := new(big.Int)
+		gasUsedInt.SetString(receipt.ActualGasUsed[2:], 16)
+		gasUsed = gasUsedInt.Uint64()
+	}
+
+	return receipt.Receipt.TransactionHash, gasUsed, nil
+}
+
+// updateExecutionRecord updates an execution record with the result
+func (s *ExecutorService) updateExecutionRecord(ctx context.Context, recordID int64, status string, txHash string, gasUsed uint64, errMsg string) {
+	gasUsedStr := ""
+	if gasUsed > 0 {
+		gasUsedStr = fmt.Sprintf("%d", gasUsed)
+	}
+
+	if err := s.repo.UpdateExecutionRecord(ctx, recordID, status, txHash, errMsg, gasUsedStr); err != nil {
+		log.Printf("Failed to update execution record: %v", err)
+	}
 }
 
 // generateID generates a unique ID

@@ -20,6 +20,9 @@ type Config struct {
 	// Bundler settings
 	BundlerURL string
 
+	// Paymaster settings
+	PaymasterURL string
+
 	// Executor wallet (for gas)
 	ExecutorPrivateKey string
 
@@ -63,6 +66,7 @@ func Load() *Config {
 		RecurringPaymentExecutorAddr: getEnv("RECURRING_PAYMENT_EXECUTOR_ADDRESS", ""),
 		EntryPointAddress:            getEnv("ENTRYPOINT_ADDRESS", "0x0000000071727De22E5E9d8BAf0edAc6f37da032"),
 		BundlerURL:                   getEnv("BUNDLER_URL", "http://localhost:4337"),
+		PaymasterURL:                 getEnv("PAYMASTER_URL", "http://localhost:3001"),
 		ExecutorPrivateKey:           getEnv("EXECUTOR_PRIVATE_KEY", ""),
 		Database: DatabaseConfig{
 			URL:               getEnv("DATABASE_URL", "postgres://localhost:5432/subscription_executor?sslmode=disable"),
