@@ -10,6 +10,31 @@ import { CHAIN_ADDRESSES, DEFAULT_TOKENS, SERVICE_URLS } from './generated/addre
 export { CHAIN_ADDRESSES, DEFAULT_TOKENS, SERVICE_URLS }
 
 /**
+ * Zero address constant for validation
+ */
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address
+
+/**
+ * Check if an address is the zero address
+ */
+export function isZeroAddress(address: Address): boolean {
+  return address.toLowerCase() === ZERO_ADDRESS.toLowerCase()
+}
+
+/**
+ * Validate that an address is not the zero address
+ * @throws Error if address is zero address
+ */
+export function assertNotZeroAddress(address: Address, context?: string): void {
+  if (isZeroAddress(address)) {
+    const message = context
+      ? `${context}: address cannot be zero address`
+      : 'Address cannot be zero address'
+    throw new Error(message)
+  }
+}
+
+/**
  * Supported chain IDs
  */
 export const SUPPORTED_CHAIN_IDS = Object.keys(CHAIN_ADDRESSES).map(Number) as number[]

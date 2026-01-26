@@ -63,11 +63,14 @@ func (s *PaymentService) CreatePayment(req *model.CreatePaymentRequest) (*model.
 	// Simulate payment processing
 	if s.shouldSucceed() {
 		payment.Status = model.PaymentStatusApproved
-		log.Printf("Payment approved: %s (Order: %s, Amount: %s %s)", payment.ID, payment.OrderID, payment.Amount, payment.Currency)
+		// Log with masked card data for security
+		log.Printf("Payment approved: %s (Order: %s, Amount: %s %s, Card: %s)",
+			payment.ID, payment.OrderID, payment.Amount, payment.Currency, maskCardInfo(payment.CardLast4, payment.CardBrand))
 	} else {
 		payment.Status = model.PaymentStatusDeclined
 		payment.FailureReason = getRandomDeclineReason(s.rng)
-		log.Printf("Payment declined: %s (Reason: %s)", payment.ID, payment.FailureReason)
+		log.Printf("Payment declined: %s (Reason: %s, Card: %s)",
+			payment.ID, payment.FailureReason, maskCardInfo(payment.CardLast4, payment.CardBrand))
 	}
 
 	s.payments[payment.ID] = payment
@@ -240,4 +243,19 @@ func computeHMAC(data []byte, secret string) string {
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write(data)
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// maskCardInfo returns a masked representation of card info for logging
+// Only shows brand and last 4 digits (e.g., "visa:****1234")
+func maskCardInfo(last4, brand string) string {
+	if last4 == "" && brand == "" {
+		return "N/A"
+	}
+	if last4 == "" {
+		return brand + ":****"
+	}
+	if brand == "" {
+		return "****" + last4
+	}
+	return brand + ":****" + last4
 }

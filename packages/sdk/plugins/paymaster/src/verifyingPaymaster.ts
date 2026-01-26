@@ -2,6 +2,7 @@ import type { Address, Hex, LocalAccount } from 'viem'
 import { encodePacked, keccak256, toHex, pad, concat } from 'viem'
 import type { UserOperation, PaymasterClient, PaymasterStubData, PaymasterData } from '@stablenet/types'
 import type { VerifyingPaymasterConfig } from './types'
+import { DEFAULT_VALIDITY_SECONDS } from './types'
 
 // Default gas limits for paymaster operations
 const DEFAULT_PAYMASTER_VERIFICATION_GAS_LIMIT = 100_000n
@@ -32,7 +33,7 @@ const STUB_SIGNATURE: Hex = `0x${'00'.repeat(65)}`
 export function createVerifyingPaymaster(
   config: VerifyingPaymasterConfig
 ): PaymasterClient {
-  const { paymasterAddress, signer, chainId } = config
+  const { paymasterAddress, signer, chainId, validitySeconds = DEFAULT_VALIDITY_SECONDS } = config
 
   /**
    * Get stub data for gas estimation
@@ -44,7 +45,7 @@ export function createVerifyingPaymaster(
     _chainId: bigint
   ): Promise<PaymasterStubData> => {
     // Create stub paymaster data with placeholder timestamps and signature
-    const validUntil = BigInt(Math.floor(Date.now() / 1000) + 3600) // 1 hour from now
+    const validUntil = BigInt(Math.floor(Date.now() / 1000) + validitySeconds)
     const validAfter = 0n
 
     const paymasterData = encodePaymasterData(validUntil, validAfter, STUB_SIGNATURE)
@@ -65,8 +66,8 @@ export function createVerifyingPaymaster(
     entryPoint: Address,
     _chainId: bigint
   ): Promise<PaymasterData> => {
-    // Set validity window
-    const validUntil = BigInt(Math.floor(Date.now() / 1000) + 3600) // 1 hour from now
+    // Set validity window (configurable, default: 1 hour)
+    const validUntil = BigInt(Math.floor(Date.now() / 1000) + validitySeconds)
     const validAfter = 0n
 
     // Compute the hash that needs to be signed

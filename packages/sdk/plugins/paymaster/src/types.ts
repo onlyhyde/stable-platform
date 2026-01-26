@@ -2,6 +2,11 @@ import type { Address, Hex, LocalAccount } from 'viem'
 import type { UserOperation, PaymasterClient, PaymasterStubData, PaymasterData } from '@stablenet/types'
 
 /**
+ * Default validity window for paymaster signatures (1 hour)
+ */
+export const DEFAULT_VALIDITY_SECONDS = 3600
+
+/**
  * Verifying Paymaster configuration
  */
 export interface VerifyingPaymasterConfig {
@@ -11,6 +16,8 @@ export interface VerifyingPaymasterConfig {
   signer: LocalAccount
   /** Chain ID */
   chainId: bigint
+  /** Validity window in seconds (default: 3600 = 1 hour) */
+  validitySeconds?: number
 }
 
 /**

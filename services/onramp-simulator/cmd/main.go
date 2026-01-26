@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -17,14 +18,21 @@ func main() {
 		log.Println("No .env file found")
 	}
 
-	// Load configuration
-	cfg := config.Load()
+	// Load and validate configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
 	// Create onramp service
 	onrampService := service.NewOnRampService(cfg)
 
 	// Create Gin router
 	r := gin.Default()
+
+	// Add security middleware
+	r.Use(gin.Recovery())
+	r.Use(bodyLimitMiddleware(1024 * 1024)) // 1MB max body size
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
@@ -42,5 +50,19 @@ func main() {
 	log.Printf("Starting onramp-simulator on port %s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
+	}
+}
+
+// bodyLimitMiddleware limits the request body size
+func bodyLimitMiddleware(maxBytes int64) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.ContentLength > maxBytes {
+			c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, gin.H{
+				"error": "request body too large",
+			})
+			return
+		}
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBytes)
+		c.Next()
 	}
 }

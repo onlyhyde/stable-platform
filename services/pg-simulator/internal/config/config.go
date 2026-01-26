@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
@@ -18,13 +19,31 @@ type Config struct {
 }
 
 // Load loads configuration from environment variables
-func Load() *Config {
-	return &Config{
+func Load() (*Config, error) {
+	cfg := &Config{
 		Port:          getEnv("PORT", "4351"),
 		WebhookURL:    getEnv("WEBHOOK_URL", ""),
 		WebhookSecret: getEnvWithWarning("WEBHOOK_SECRET", "pg-webhook-secret-dev"),
 		SuccessRate:   getEnvInt("SUCCESS_RATE", 95),
 	}
+
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
+// Validate checks that required configuration values are set
+func (c *Config) Validate() error {
+	// In production (GIN_MODE=release), webhook secret must be explicitly set
+	if os.Getenv("GIN_MODE") == "release" {
+		if c.WebhookSecret == "pg-webhook-secret-dev" {
+			return fmt.Errorf("WEBHOOK_SECRET must be set in production (GIN_MODE=release)")
+		}
+	}
+	return nil
 }
 
 // getEnvWithWarning returns environment variable value with a warning if using default

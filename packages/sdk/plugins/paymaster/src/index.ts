@@ -49,6 +49,9 @@ export type {
   ERC20PaymasterData,
 } from './types'
 
+// Constants
+export { DEFAULT_VALIDITY_SECONDS } from './types'
+
 // Verifying Paymaster
 export {
   createVerifyingPaymaster,

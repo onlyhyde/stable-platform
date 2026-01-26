@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
@@ -18,14 +19,31 @@ type Config struct {
 }
 
 // Load loads configuration from environment variables
-func Load() *Config {
+func Load() (*Config, error) {
 	cfg := &Config{
 		Port:           getEnv("PORT", "4350"),
 		WebhookURL:     getEnv("WEBHOOK_URL", ""),
 		WebhookSecret:  getEnvWithWarning("WEBHOOK_SECRET", "bank-webhook-secret-dev"),
 		DefaultBalance: getEnv("DEFAULT_BALANCE", "10000.00"),
 	}
-	return cfg
+
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
+// Validate checks that required configuration values are set
+func (c *Config) Validate() error {
+	// In production (GIN_MODE=release), webhook secret must be explicitly set
+	if os.Getenv("GIN_MODE") == "release" {
+		if c.WebhookSecret == "bank-webhook-secret-dev" {
+			return fmt.Errorf("WEBHOOK_SECRET must be set in production (GIN_MODE=release)")
+		}
+	}
+	return nil
 }
 
 // getEnvWithWarning returns environment variable value with a warning if using default
