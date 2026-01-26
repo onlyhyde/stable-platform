@@ -17,7 +17,10 @@ export function Header() {
     try {
       await addAccount()
     } catch (error) {
-      console.error('Failed to add account:', error)
+      // Log errors only in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Header] Failed to add account:', error)
+      }
     }
   }
 

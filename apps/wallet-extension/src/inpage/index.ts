@@ -385,24 +385,30 @@ function shimWeb3(provider: StableNetProvider, asMetaMask: boolean): void {
   })
 
   let loggedCurrentProvider = false
+  let loggedWeb3Set = false
+  const isDev = process.env.NODE_ENV === 'development'
+
   const web3Shim = new Proxy(shim, {
     get: (target, property, ...args) => {
-      if (property === 'currentProvider' && !loggedCurrentProvider) {
+      if (property === 'currentProvider' && !loggedCurrentProvider && isDev) {
         loggedCurrentProvider = true
         console.warn(
-          'You are accessing the StableNet window.web3.currentProvider shim. This property is deprecated; use window.ethereum instead.'
+          '[StableNet] window.web3.currentProvider is deprecated; use window.ethereum instead.'
         )
-      } else if (property !== 'currentProvider' && property !== SHIM_IDENTIFIER) {
-        console.error(
-          `You are requesting the "${String(property)}" property of window.web3 which is no longer supported; use window.ethereum instead.`
+      } else if (property !== 'currentProvider' && property !== SHIM_IDENTIFIER && isDev) {
+        console.warn(
+          `[StableNet] window.web3.${String(property)} is not supported; use window.ethereum instead.`
         )
       }
       return Reflect.get(target, property, ...args)
     },
     set: (...args) => {
-      console.warn(
-        'You are accessing the StableNet window.web3 shim. This object is deprecated; use window.ethereum instead.'
-      )
+      if (!loggedWeb3Set && isDev) {
+        loggedWeb3Set = true
+        console.warn(
+          '[StableNet] window.web3 is deprecated; use window.ethereum instead.'
+        )
+      }
       return Reflect.set(...args)
     },
   })

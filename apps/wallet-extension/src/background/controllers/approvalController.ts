@@ -386,7 +386,10 @@ export class ApprovalController {
         focused: true,
       })
     } catch (error) {
-      console.error('Failed to open approval popup:', error)
+      // Log errors only in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[ApprovalController] Failed to open approval popup:', error)
+      }
     }
   }
 

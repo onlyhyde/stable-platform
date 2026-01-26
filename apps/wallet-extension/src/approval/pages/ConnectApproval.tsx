@@ -49,7 +49,10 @@ export function ConnectApproval({
         }
       }
     } catch (err) {
-      console.error('Failed to load accounts:', err)
+      // Log errors only in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[ConnectApproval] Failed to load accounts:', err)
+      }
     } finally {
       setLoading(false)
     }
