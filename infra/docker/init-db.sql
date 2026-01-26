@@ -44,22 +44,65 @@ CREATE INDEX IF NOT EXISTS idx_announcements_block_number ON stealth_announcemen
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
--- Subscription payments table
+-- =============================================================================
+-- Subscription Executor Tables
+-- =============================================================================
+
+-- Subscription payments table (matches subscription-executor service schema)
 CREATE TABLE IF NOT EXISTS subscriptions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    smart_account_address VARCHAR(42) NOT NULL,
-    recipient_address VARCHAR(42) NOT NULL,
-    token_address VARCHAR(42) NOT NULL,
+    id TEXT PRIMARY KEY,
+    smart_account VARCHAR(42) NOT NULL,
+    recipient VARCHAR(42) NOT NULL,
+    token VARCHAR(42) NOT NULL,
     amount NUMERIC(78, 0) NOT NULL,
-    interval_seconds INTEGER NOT NULL,
-    next_execution_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    status VARCHAR(20) DEFAULT 'active',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    interval_seconds BIGINT NOT NULL,
+    next_execution TIMESTAMPTZ NOT NULL,
+    last_execution TIMESTAMPTZ,
+    execution_count BIGINT NOT NULL DEFAULT 0,
+    max_executions BIGINT NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active'
+        CHECK (status IN ('active', 'paused', 'cancelled', 'expired')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_subscriptions_next_execution ON subscriptions(next_execution_at) WHERE status = 'active';
-CREATE INDEX IF NOT EXISTS idx_subscriptions_smart_account ON subscriptions(smart_account_address);
+-- Indexes for subscriptions (following Postgres best practices)
+CREATE INDEX IF NOT EXISTS idx_subscriptions_smart_account ON subscriptions(smart_account);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_due ON subscriptions(status, next_execution) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_subscriptions_active_account ON subscriptions(smart_account) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_subscriptions_cursor ON subscriptions(created_at DESC, id);
+
+-- Execution records for audit trail
+CREATE TABLE IF NOT EXISTS execution_records (
+    id BIGSERIAL PRIMARY KEY,
+    subscription_id TEXT NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+    user_op_hash VARCHAR(66),
+    tx_hash VARCHAR(66),
+    status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'success', 'failed')),
+    error TEXT,
+    gas_used NUMERIC(78, 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_execution_records_subscription ON execution_records(subscription_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_execution_records_tx_hash ON execution_records(tx_hash) WHERE tx_hash IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_execution_records_pending ON execution_records(subscription_id, created_at) WHERE status = 'pending';
+
+-- Auto-update updated_at trigger
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS subscriptions_updated_at ON subscriptions;
+CREATE TRIGGER subscriptions_updated_at
+    BEFORE UPDATE ON subscriptions
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 
 -- User operations history
 CREATE TABLE IF NOT EXISTS user_operations (

@@ -40,7 +40,7 @@ services:
     container_name: stablenet-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-stablenet}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stablenet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required - copy .env.example to .env}
       POSTGRES_DB: ${POSTGRES_DB:-stablenet}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
@@ -48,7 +48,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U stablenet"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stablenet}"]
       <<: *healthcheck-defaults
     networks:
       - stablenet
@@ -146,7 +146,8 @@ services:
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 8080
-      DATABASE_URL: postgres://${POSTGRES_USER:-stablenet}:${POSTGRES_PASSWORD:-stablenet}@postgres:5432/stablenet_stealth?sslmode=disable
+      # NOTE: sslmode=disable is acceptable for local Docker network only. Use sslmode=require in production.
+      DATABASE_URL: postgres://${POSTGRES_USER:-stablenet}:${POSTGRES_PASSWORD}@postgres:5432/stablenet_stealth?sslmode=disable
       DATABASE_MAX_CONNECTIONS: 10
       CHAIN_ID: ${CHAIN_ID:-31337}
       INDEXER_WS_URL: ${STABLENET_RPC_URL:-ws://host.docker.internal:8545}
@@ -193,10 +194,15 @@ services:
     environment:
       <<: [*common-env, *contract-addresses]
       PORT: 4341
+      # NOTE: sslmode=disable is acceptable for local Docker network only. Use sslmode=require in production.
+      DATABASE_URL: postgres://${POSTGRES_USER:-stablenet}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-stablenet}?sslmode=disable
+      DATABASE_USE_INMEMORY: ${DATABASE_USE_INMEMORY:-false}
       REDIS_URL: redis://redis:6379
       BUNDLER_URL: http://bundler:4337
       PAYMASTER_URL: http://paymaster-proxy:4338
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
       bundler:
