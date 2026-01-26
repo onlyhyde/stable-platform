@@ -92,7 +92,7 @@ describe('Vault', () => {
       expect(encryptedVault.tag).toBeDefined()
     })
 
-    it('should save to session storage', async () => {
+    it('should save to session storage without password', async () => {
       await vault.initialize(TEST_PASSWORD, [createTestKeyring()])
 
       const stored = await mockChrome.storage.session.get(SESSION_KEYS.VAULT_SESSION)
@@ -100,7 +100,8 @@ describe('Vault', () => {
 
       expect(sessionData).toBeDefined()
       expect(sessionData.vaultData).toBeDefined()
-      expect(sessionData.password).toBe(TEST_PASSWORD)
+      // SECURITY: Password should NOT be stored in session
+      expect((sessionData as Record<string, unknown>).password).toBeUndefined()
       expect(sessionData.createdAt).toBeDefined()
       expect(sessionData.autoLockMinutes).toBe(15)
     })
@@ -145,7 +146,7 @@ describe('Vault', () => {
       )
     })
 
-    it('should save to session storage after unlock', async () => {
+    it('should save to session storage after unlock without password', async () => {
       // Clear session storage first
       await mockChrome.storage.session.clear()
 
@@ -155,7 +156,9 @@ describe('Vault', () => {
       const sessionData = stored[SESSION_KEYS.VAULT_SESSION] as VaultSessionData
 
       expect(sessionData).toBeDefined()
-      expect(sessionData.password).toBe(TEST_PASSWORD)
+      expect(sessionData.vaultData).toBeDefined()
+      // SECURITY: Password should NOT be stored in session
+      expect((sessionData as Record<string, unknown>).password).toBeUndefined()
     })
 
     it('should restore selected address if present', async () => {
@@ -319,6 +322,51 @@ describe('Vault', () => {
       const restored = await newVault.tryRestoreFromSession()
 
       expect(restored).not.toBeNull()
+    })
+
+    it('should restore as read-only (no password)', async () => {
+      await vault.initialize(TEST_PASSWORD, [createTestKeyring()])
+
+      // Create new vault instance (simulating service worker restart)
+      const newVault = new Vault()
+      await newVault.tryRestoreFromSession()
+
+      // Should be unlocked but session-restored
+      expect(newVault.isUnlocked()).toBe(true)
+      expect(newVault.isRestoredFromSession()).toBe(true)
+
+      // Read should work
+      const data = newVault.getData()
+      expect(data.keyrings).toHaveLength(1)
+
+      // Write should fail (no password available)
+      await expect(newVault.updateData({ keyrings: [] })).rejects.toThrow(
+        'Re-authentication required'
+      )
+    })
+
+    it('should enable writes after reauthenticate', async () => {
+      await vault.initialize(TEST_PASSWORD, [createTestKeyring()])
+
+      // Create new vault instance and restore
+      const newVault = new Vault()
+      await newVault.tryRestoreFromSession()
+
+      // Re-authenticate with correct password
+      await newVault.reauthenticate(TEST_PASSWORD)
+      expect(newVault.isRestoredFromSession()).toBe(false)
+
+      // Write should now work
+      await expect(newVault.updateData({ keyrings: [] })).resolves.not.toThrow()
+    })
+
+    it('should reject reauthenticate with wrong password', async () => {
+      await vault.initialize(TEST_PASSWORD, [createTestKeyring()])
+
+      const newVault = new Vault()
+      await newVault.tryRestoreFromSession()
+
+      await expect(newVault.reauthenticate('wrong-password')).rejects.toThrow('Incorrect password')
     })
   })
 

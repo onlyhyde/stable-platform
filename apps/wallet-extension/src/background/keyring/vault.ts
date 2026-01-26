@@ -36,9 +36,17 @@ export class Vault {
 
   /**
    * Check if vault is currently unlocked
+   * Vault is unlocked if data is available (either with password or session-restored)
    */
   isUnlocked(): boolean {
-    return this.cachedPassword !== null && this.cachedData !== null
+    return this.cachedData !== null
+  }
+
+  /**
+   * Check if vault has full write access (password available)
+   */
+  hasWriteAccess(): boolean {
+    return this.cachedData !== null && this.cachedPassword !== null
   }
 
   /**
@@ -125,6 +133,7 @@ export class Vault {
 
   /**
    * Update the vault data
+   * Requires password (not available after session restore - call reauthenticate() first)
    */
   async updateData(data: Partial<VaultData>): Promise<void> {
     if (!this.isUnlocked()) {
@@ -132,7 +141,7 @@ export class Vault {
     }
 
     if (!this.cachedPassword) {
-      throw new Error('Password not available. Please unlock wallet again.')
+      throw new Error('Re-authentication required. Please enter your password to make changes.')
     }
 
     this.cachedData = { ...this.cachedData!, ...data }
@@ -199,6 +208,10 @@ export class Vault {
   /**
    * Try to restore vault state from session storage
    * Called on service worker restart to maintain unlocked state
+   *
+   * SECURITY: Password is NOT restored from session.
+   * Session-restored vaults are read-only until re-authenticated via reauthenticate().
+   *
    * @returns VaultData if session is valid and not expired, null otherwise
    */
   async tryRestoreFromSession(): Promise<VaultData | null> {
@@ -226,9 +239,9 @@ export class Vault {
         return null
       }
 
-      // Restore cached data and password from session
+      // Restore cached data only (NOT password for security)
       this.cachedData = sessionData.vaultData
-      this.cachedPassword = sessionData.password
+      this.cachedPassword = null // SECURITY: Password not stored in session
       this.isSessionRestored = true
       this.resetAutoLock()
 
@@ -236,6 +249,37 @@ export class Vault {
     } catch {
       // Session storage access failed
       return null
+    }
+  }
+
+  /**
+   * Re-authenticate to enable write operations after session restore
+   * Required for any vault modifications when restored from session
+   */
+  async reauthenticate(password: string): Promise<void> {
+    const stored = await this.getStoredVault()
+    if (!stored) {
+      throw new Error('Vault is not initialized')
+    }
+
+    try {
+      // Verify password by attempting to decrypt
+      await decrypt(
+        {
+          ciphertext: stored.ciphertext,
+          iv: stored.iv,
+          salt: stored.salt,
+          tag: stored.tag,
+        },
+        password
+      )
+
+      // Password verified, cache it for write operations
+      this.cachedPassword = password
+      this.isSessionRestored = false
+      this.resetAutoLock()
+    } catch {
+      throw new Error('Incorrect password')
     }
   }
 
@@ -248,6 +292,7 @@ export class Vault {
 
   /**
    * Save vault data to session storage
+   * SECURITY: Password is NOT saved to session storage
    */
   private async saveToSession(data: VaultData): Promise<void> {
     try {
@@ -256,14 +301,9 @@ export class Vault {
         return
       }
 
-      // Only save if we have the password
-      if (!this.cachedPassword) {
-        return
-      }
-
+      // SECURITY: Do NOT store password in session storage
       const sessionData: VaultSessionData = {
         vaultData: data,
-        password: this.cachedPassword,
         createdAt: Date.now(),
         autoLockMinutes: this.autoLockMinutes,
       }

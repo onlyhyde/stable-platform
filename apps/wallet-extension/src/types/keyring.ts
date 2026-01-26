@@ -137,12 +137,13 @@ export interface TransactionSignRequest extends SigningRequest {
  * - Not persisted to disk
  * - Not accessible to other extensions
  * - Similar security model to MetaMask's in-memory vault
+ *
+ * SECURITY: Password is NOT stored in session storage.
+ * Session-restored vaults are read-only until re-authenticated.
  */
 export interface VaultSessionData {
   /** Decrypted vault data */
   vaultData: VaultData
-  /** Vault password for re-encryption on updates */
-  password: string
   /** Timestamp when session was created */
   createdAt: number
   /** Auto-lock timeout in minutes */
