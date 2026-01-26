@@ -32,20 +32,18 @@ stable-platform/
 │   └── marketplace/              # Module Marketplace
 │
 ├── services/                     # 백엔드 서비스
-│   ├── bundler/                  # ERC-4337 Bundler
+│   ├── bundler/                  # ERC-4337 Bundler (TypeScript, Fastify)
 │   ├── stealth-server/           # Stealth Address Server (Rust)
-│   ├── paymaster-proxy/          # ERC-7677 Proxy
-│   ├── order-router/             # Smart Order Router
-│   ├── subscription-executor/    # 정기 결제 실행기
-│   └── bridge-relayer/           # Bridge Relayer
-│
-├── simulators/                   # 외부 시스템 시뮬레이터
-│   ├── bank/                     # 은행 API 시뮬레이터
-│   ├── pg/                       # PG사 시뮬레이터
-│   └── onramp/                   # On-Ramp 시뮬레이터
+│   ├── paymaster-proxy/          # ERC-7677 Proxy (TypeScript, Hono)
+│   ├── order-router/             # Smart Order Router (Go)
+│   ├── subscription-executor/    # 정기 결제 실행기 (Go)
+│   ├── bridge-relayer/           # Bridge Relayer (Go)
+│   ├── bank-simulator/           # 은행 API 시뮬레이터 (Go)
+│   ├── pg-simulator/             # PG사 시뮬레이터 (Go)
+│   └── onramp-simulator/         # On-Ramp 시뮬레이터 (Go)
 │
 ├── infra/                        # 인프라 설정
-│   ├── docker/                   # Docker 설정
+│   ├── docker/                   # Docker 설정 (Dockerfiles)
 │   ├── k8s/                      # Kubernetes 매니페스트
 │   └── terraform/                # IaC (선택적)
 │
@@ -441,7 +439,9 @@ services/stealth-server/
 ### 5.3 다른 서비스 구조 (간략)
 
 ```
-services/paymaster-proxy/         # ERC-7677 Proxy
+services/paymaster-proxy/         # ERC-7677 Proxy (TypeScript, Hono)
+├── package.json
+├── tsconfig.json
 ├── src/
 │   ├── server.ts
 │   ├── routes/
@@ -451,78 +451,79 @@ services/paymaster-proxy/         # ERC-7677 Proxy
 │       ├── verifying.ts
 │       └── erc20.ts
 
-services/order-router/            # Smart Order Router
-├── src/
-│   ├── server.ts
-│   ├── routes/
-│   │   ├── quote.ts              # 견적
-│   │   └── swap.ts               # 스왑 실행
-│   ├── routing/
-│   │   ├── pathfinder.ts         # 경로 탐색
-│   │   └── optimizer.ts          # 최적화
-│   └── oracle/
-│       └── price.ts              # 가격 정보
+services/order-router/            # Smart Order Router (Go)
+├── go.mod
+├── go.sum
+├── cmd/                          # CLI 엔트리
+├── internal/                     # 내부 패키지
+│   ├── server/                   # HTTP 서버
+│   ├── routing/                  # 경로 탐색
+│   └── oracle/                   # 가격 정보
+└── bin/
 
-services/subscription-executor/   # Subscription Executor
-├── src/
-│   ├── server.ts
-│   ├── scheduler/
-│   │   └── cron.ts               # 스케줄러
-│   ├── executor/
-│   │   └── payment.ts            # 결제 실행
-│   └── queue/
-│       └── bull.ts               # 작업 큐
+services/subscription-executor/   # Subscription Executor (Go)
+├── go.mod
+├── go.sum
+├── cmd/                          # CLI 엔트리
+├── internal/                     # 내부 패키지
+│   ├── server/                   # HTTP 서버
+│   ├── scheduler/                # 스케줄러
+│   └── executor/                 # 결제 실행
+└── bin/
 
-services/bridge-relayer/          # Bridge Relayer
-├── src/
-│   ├── server.ts
-│   ├── relayer/
-│   │   ├── source.ts             # 소스 체인 모니터
-│   │   └── target.ts             # 타겟 체인 실행
-│   ├── mpc/
-│   │   └── signer.ts             # MPC 서명 조율
-│   └── monitor/
-│       └── alerts.ts             # 알림
+services/bridge-relayer/          # Bridge Relayer (Go)
+├── go.mod
+├── go.sum
+├── cmd/                          # CLI 엔트리
+├── internal/                     # 내부 패키지
+│   ├── server/                   # HTTP 서버
+│   ├── relayer/                  # 소스/타겟 체인 모니터
+│   └── mpc/                      # MPC 서명 조율
+└── bin/
 ```
 
 ---
 
-## 6. Simulators
+## 6. Simulators (Go, services/ 하위)
+
+> **참고**: 시뮬레이터는 `services/` 디렉토리 하위에 위치합니다.
 
 ```
-simulators/
-├── bank/                         # 은행 API 시뮬레이터
-│   ├── src/
-│   │   ├── server.go
-│   │   ├── handlers/
-│   │   │   ├── account.go        # 계좌 조회
-│   │   │   ├── transfer.go       # 이체
-│   │   │   └── webhook.go        # 웹훅
-│   │   └── data/
-│   │       └── accounts.json     # 테스트 데이터
-│   └── Dockerfile
-│
-├── pg/                           # PG사 시뮬레이터
-│   ├── src/
-│   │   ├── server.go
-│   │   ├── handlers/
-│   │   │   ├── payment.go        # 결제
-│   │   │   ├── cancel.go         # 취소
-│   │   │   └── billing.go        # 정기결제
-│   │   └── data/
-│   │       └── merchants.json
-│   └── Dockerfile
-│
-└── onramp/                       # On-Ramp 시뮬레이터
-    ├── src/
-    │   ├── server.go
-    │   ├── handlers/
-    │   │   ├── deposit.go        # 입금
-    │   │   ├── withdraw.go       # 출금
-    │   │   └── kyc.go            # KYC
-    │   └── data/
-    │       └── users.json
-    └── Dockerfile
+services/bank-simulator/          # 은행 API 시뮬레이터 (Go)
+├── go.mod
+├── go.sum
+├── cmd/                          # CLI 엔트리
+├── internal/                     # 내부 패키지
+│   ├── server/                   # HTTP 서버
+│   └── handlers/
+│       ├── account.go            # 계좌 조회
+│       ├── transfer.go           # 이체
+│       └── webhook.go            # 웹훅
+└── bin/
+
+services/pg-simulator/            # PG사 시뮬레이터 (Go)
+├── go.mod
+├── go.sum
+├── cmd/                          # CLI 엔트리
+├── internal/                     # 내부 패키지
+│   ├── server/                   # HTTP 서버
+│   └── handlers/
+│       ├── payment.go            # 결제
+│       ├── cancel.go             # 취소
+│       └── billing.go            # 정기결제
+└── bin/
+
+services/onramp-simulator/        # On-Ramp 시뮬레이터 (Go)
+├── go.mod
+├── go.sum
+├── cmd/                          # CLI 엔트리
+├── internal/                     # 내부 패키지
+│   ├── server/                   # HTTP 서버
+│   └── handlers/
+│       ├── deposit.go            # 입금
+│       ├── withdraw.go           # 출금
+│       └── kyc.go                # KYC
+└── bin/
 ```
 
 ---
@@ -597,135 +598,144 @@ apps/marketplace/                 # Module Marketplace
 
 ### 8.1 Docker
 
+> **참고**: `docker-compose.yml`은 프로젝트 루트에 위치합니다. Dockerfile들은 `infra/docker/`에 위치합니다.
+
 ```
+./docker-compose.yml              # 로컬 개발 환경 (루트)
+
 infra/docker/
-├── docker-compose.yml            # 로컬 개발 환경
-├── docker-compose.prod.yml       # 프로덕션
-│
-├── bundler/
-│   └── Dockerfile
-├── stealth-server/
-│   └── Dockerfile
-├── paymaster-proxy/
-│   └── Dockerfile
-├── order-router/
-│   └── Dockerfile
-├── subscription-executor/
-│   └── Dockerfile
-├── bridge-relayer/
-│   └── Dockerfile
-└── simulators/
-    ├── bank/Dockerfile
-    ├── pg/Dockerfile
-    └── onramp/Dockerfile
+├── Dockerfile.node               # TypeScript 서비스용 (bundler, paymaster-proxy)
+├── Dockerfile.go                 # Go 서비스용 (order-router, subscription-executor 등)
+├── init-db.sql                   # PostgreSQL 초기화
+└── ...
+
+services/stealth-server/
+└── Dockerfile                    # Rust 서비스 전용
 ```
 
-### 8.2 docker-compose.yml
+### 8.2 docker-compose.yml (루트 위치)
 
 ```yaml
-version: '3.8'
+# Service Ports:
+#   - 4337: Bundler (ERC-4337)
+#   - 4338: Paymaster Proxy (ERC-7677)
+#   - 4339: Stealth Server (Rust)
+#   - 4340: Order Router
+#   - 4341: Subscription Executor
+#   - 4342: Bridge Relayer
+#   - 4350-4352: Simulators (Bank, PG, OnRamp)
+#   - 5432: PostgreSQL
+#   - 6379: Redis
 
 services:
-  # DevNet Node
-  devnet:
-    image: go-stablenet:latest
-    ports:
-      - "8545:8545"
-      - "8546:8546"
-    volumes:
-      - devnet-data:/data
-
-  # Bundler
-  bundler:
-    build: ./bundler
-    ports:
-      - "4337:4337"
-    environment:
-      - RPC_URL=http://devnet:8545
-      - ENTRY_POINT=${ENTRY_POINT_ADDRESS}
-    depends_on:
-      - devnet
-
-  # Stealth Server
-  stealth-server:
-    build: ./stealth-server
-    ports:
-      - "3001:3001"
-    environment:
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/stealth
-      - RPC_URL=http://devnet:8545
-    depends_on:
-      - devnet
-      - postgres
-
-  # Paymaster Proxy
-  paymaster-proxy:
-    build: ./paymaster-proxy
-    ports:
-      - "3002:3002"
-    environment:
-      - RPC_URL=http://devnet:8545
-      - BUNDLER_URL=http://bundler:4337
-    depends_on:
-      - bundler
-
-  # Order Router
-  order-router:
-    build: ./order-router
-    ports:
-      - "3003:3003"
-    environment:
-      - RPC_URL=http://devnet:8545
-    depends_on:
-      - devnet
-
-  # Subscription Executor
-  subscription-executor:
-    build: ./subscription-executor
-    ports:
-      - "3004:3004"
-    environment:
-      - RPC_URL=http://devnet:8545
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - devnet
-      - redis
-
-  # Simulators
-  bank-simulator:
-    build: ./simulators/bank
-    ports:
-      - "4001:4001"
-
-  pg-simulator:
-    build: ./simulators/pg
-    ports:
-      - "4002:4002"
-
-  onramp-simulator:
-    build: ./simulators/onramp
-    ports:
-      - "4003:4003"
-
   # Infrastructure
   postgres:
-    image: postgres:15
+    image: postgres:16-alpine
     environment:
-      POSTGRES_DB: stealth
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: stablenet
+      POSTGRES_PASSWORD: stablenet
+      POSTGRES_DB: stablenet
+    ports:
+      - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
 
   redis:
-    image: redis:7
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
     volumes:
-      - redis-data:/data
+      - redis_data:/data
+
+  # TypeScript Services
+  bundler:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.node
+      args:
+        SERVICE: services/bundler
+    ports:
+      - "4337:4337"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  paymaster-proxy:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.node
+      args:
+        SERVICE: services/paymaster-proxy
+    ports:
+      - "4338:4338"
+    depends_on:
+      bundler:
+        condition: service_healthy
+
+  # Rust Services
+  stealth-server:
+    build:
+      context: ./services/stealth-server
+      dockerfile: Dockerfile
+    ports:
+      - "4339:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Go Services
+  order-router:
+    build:
+      context: ./services/order-router
+      dockerfile: ../../infra/docker/Dockerfile.go
+    ports:
+      - "4340:4340"
+
+  subscription-executor:
+    build:
+      context: ./services/subscription-executor
+      dockerfile: ../../infra/docker/Dockerfile.go
+    ports:
+      - "4341:4341"
+    depends_on:
+      redis:
+        condition: service_healthy
+      bundler:
+        condition: service_healthy
+
+  bridge-relayer:
+    build:
+      context: ./services/bridge-relayer
+      dockerfile: ../../infra/docker/Dockerfile.go
+    ports:
+      - "4342:4342"
+
+  # Simulators (Go)
+  simulator-bank:
+    build:
+      context: ./services/bank-simulator
+      dockerfile: ../../infra/docker/Dockerfile.go
+    ports:
+      - "4350:4350"
+
+  simulator-pg:
+    build:
+      context: ./services/pg-simulator
+      dockerfile: ../../infra/docker/Dockerfile.go
+    ports:
+      - "4351:4351"
+
+  simulator-onramp:
+    build:
+      context: ./services/onramp-simulator
+      dockerfile: ../../infra/docker/Dockerfile.go
+    ports:
+      - "4352:4352"
 
 volumes:
-  devnet-data:
-  postgres-data:
-  redis-data:
+  postgres_data:
+  redis_data:
 ```
 
 ---
@@ -737,24 +747,33 @@ volumes:
 ```json
 {
   "name": "stable-platform",
+  "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "packages/*",
-    "apps/*",
-    "services/*"
-  ],
+  "description": "StableNet PoC Platform - ERC-4337 Account Abstraction with Privacy Features",
+  "type": "module",
   "scripts": {
-    "build": "turbo run build",
-    "test": "turbo run test",
-    "lint": "turbo run lint",
-    "dev": "turbo run dev",
-    "clean": "turbo run clean",
-    "deploy:devnet": "turbo run deploy --filter=@stable/contracts -- --network devnet",
-    "start:services": "docker-compose up -d"
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "test": "turbo test",
+    "clean": "turbo clean && rm -rf node_modules",
+    "typecheck": "turbo typecheck"
   },
   "devDependencies": {
-    "turbo": "^2.0.0",
-    "typescript": "^5.3.0"
+    "@biomejs/biome": "^1.9.4",
+    "@changesets/cli": "^2.27.10",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "viem": "^2.21.0",
+    "vitest": "^2.1.9"
+  },
+  "packageManager": "pnpm@9.15.2",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
   }
 }
 ```
@@ -764,22 +783,33 @@ volumes:
 ```json
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [".env"],
-  "pipeline": {
+  "globalDependencies": ["**/.env.*local", ".env"],
+  "globalEnv": ["NODE_ENV", "STABLENET_RPC_URL", "BUNDLER_URL", "PAYMASTER_URL"],
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "build/**"],
+      "env": ["NODE_ENV"]
     },
-    "test": {
-      "dependsOn": ["build"]
-    },
-    "lint": {},
     "dev": {
       "cache": false,
       "persistent": true
     },
-    "deploy": {
-      "dependsOn": ["build", "test"]
+    "lint": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "outputs": ["coverage/**"],
+      "env": ["NODE_ENV"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "clean": {
+      "cache": false
     }
   }
 }
@@ -789,22 +819,22 @@ volumes:
 
 ```bash
 # Network
-RPC_URL=http://localhost:8545
-CHAIN_ID=8453
+STABLENET_RPC_URL=http://localhost:8545
+CHAIN_ID=31337
 
 # Contracts
 ENTRY_POINT_ADDRESS=0x...
 KERNEL_FACTORY_ADDRESS=0x...
-PAYMASTER_ADDRESS=0x...
+VERIFYING_PAYMASTER_ADDRESS=0x...
 
 # Services
 BUNDLER_URL=http://localhost:4337
-STEALTH_SERVER_URL=http://localhost:3001
-PAYMASTER_PROXY_URL=http://localhost:3002
-ORDER_ROUTER_URL=http://localhost:3003
+STEALTH_SERVER_URL=http://localhost:4339
+PAYMASTER_PROXY_URL=http://localhost:4338
+ORDER_ROUTER_URL=http://localhost:4340
 
 # Database
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/stealth
+DATABASE_URL=postgres://stablenet:stablenet@localhost:5432/stablenet
 
 # Redis
 REDIS_URL=redis://localhost:6379
@@ -812,7 +842,7 @@ REDIS_URL=redis://localhost:6379
 # Keys (개발용)
 DEPLOYER_PRIVATE_KEY=0x...
 BUNDLER_PRIVATE_KEY=0x...
-PAYMASTER_SIGNER_KEY=0x...
+PAYMASTER_SIGNER_PRIVATE_KEY=0x...
 ```
 
 ---

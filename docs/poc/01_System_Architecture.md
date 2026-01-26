@@ -42,18 +42,18 @@
 │  │                              BACKEND SERVICES LAYER                                  │ │
 │  ├─────────────────────────────────────────────────────────────────────────────────────┤ │
 │  │                                                                                      │ │
-│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │ │
-│  │  │  Bundler    │ │  Stealth    │ │ ERC-7677    │ │Smart Order  │ │Subscription │   │ │
-│  │  │  (4337)     │ │  Server     │ │ Proxy       │ │ Router      │ │ Executor    │   │ │
-│  │  │             │ │             │ │             │ │             │ │             │   │ │
-│  │  │ • UserOp    │ │ • Announce  │ │ • Sponsor   │ │ • Best Path │ │ • Scheduler │   │ │
-│  │  │   Pool      │ │   Indexer   │ │   Policy    │ │   Finding   │ │ • Payment   │   │ │
-│  │  │ • Bundle    │ │ • ViewTag   │ │ • Paymaster │ │ • Price     │ │   Trigger   │   │ │
-│  │  │ • Submit    │ │   Filter    │ │   Routing   │ │   Oracle    │ │ • History   │   │ │
-│  │  └──────┬──────┘ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘   │ │
-│  │         │               │               │               │               │          │ │
-│  │  ┌─────────────────────────────────────────────────────────────────────────────┐  │ │
-│  │  │                       COMPLIANCE LAYER (규제 준수)                           │  │ │
+│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ │ │
+│  │  │ Bundler   │ │ Stealth   │ │ ERC-7677  │ │Smart Order│ │Subscription│ │  Bridge   │ │ │
+│  │  │ (4337)    │ │ Server    │ │ Proxy     │ │ Router    │ │ Executor  │ │ Relayer   │ │ │
+│  │  │           │ │           │ │           │ │           │ │           │ │           │ │ │
+│  │  │ • UserOp  │ │ • Announce│ │ • Sponsor │ │ • Best    │ │ • Schedule│ │ • Source  │ │ │
+│  │  │   Pool    │ │   Indexer │ │   Policy  │ │   Path    │ │ • Payment │ │   Monitor │ │ │
+│  │  │ • Bundle  │ │ • ViewTag │ │ • Paymastr│ │ • Price   │ │   Trigger │ │ • MPC     │ │ │
+│  │  │ • Submit  │ │   Filter  │ │   Routing │ │   Oracle  │ │ • History │ │   Signing │ │ │
+│  │  └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ │ │
+│  │        │              │              │              │              │              │ │ │
+│  │  ┌─────────────────────────────────────────────────────────────────────────────────┐│ │
+│  │  │                       COMPLIANCE LAYER (규제 준수)                               ││ │
 │  │  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │  │ │
 │  │  │  │ Compliance  │ │    KYT      │ │    Tax      │ │   Proof of  │           │  │ │
 │  │  │  │ Server      │ │  Service    │ │  Reporter   │ │   Reserve   │           │  │ │
@@ -148,7 +148,7 @@
 ```
 
 **기술 스택:**
-- Framework: React 18 + TypeScript
+- Framework: React 19 + TypeScript
 - Build: Vite + CRXJS
 - State: Zustand
 - Crypto: @noble/curves, @noble/hashes
@@ -158,10 +158,10 @@
 
 | dApp | 기술 | 주요 기능 | 대상 사용자 |
 |------|------|----------|------------|
-| **Payment dApp** | Next.js 14 | 결제, QR 송금, 구독 설정 | 일반 사용자, 가맹점 |
-| **DeFi dApp** | Next.js 14 | Swap, Liquidity, Portfolio | 일반 사용자 |
-| **Enterprise dApp** | Next.js 14 | 급여 지급, 예산 관리, 보고서 | 기업 관리자 |
-| **Module Marketplace** | Next.js 14 | 모듈 탐색, 설치, 리뷰 | 개발자, 사용자 |
+| **Payment dApp** | Next.js 15 | 결제, QR 송금, 구독 설정 | 일반 사용자, 가맹점 |
+| **DeFi dApp** | Next.js 15 | Swap, Liquidity, Portfolio | 일반 사용자 |
+| **Enterprise dApp** | Next.js 15 | 급여 지급, 예산 관리, 보고서 | 기업 관리자 |
+| **Module Marketplace** | Next.js 15 | 모듈 탐색, 설치, 리뷰 | 개발자, 사용자 |
 
 ### 2.3 SDK
 
@@ -319,7 +319,7 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**기술 스택:** TypeScript, Fastify, Redis, PostgreSQL
+**기술 스택:** TypeScript, Hono, Redis, PostgreSQL
 
 ### 3.4 Smart Order Router
 
@@ -362,7 +362,7 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**기술 스택:** TypeScript, Fastify, @uniswap/smart-order-router
+**기술 스택:** Go, net/http
 
 ### 3.5 Subscription Executor
 
@@ -406,15 +406,49 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**기술 스택:** TypeScript, Bull (Redis Queue), PostgreSQL
+**기술 스택:** Go, Redis
 
-### 3.6 Simulators
+### 3.6 Bridge Relayer
 
-| Simulator | 기술 | API Endpoints |
-|-----------|------|---------------|
-| **Bank Simulator** | Go + Gin | `POST /deposit`, `POST /withdraw`, `GET /balance`, `GET /statement` |
-| **PG Simulator** | Go + Gin | `POST /pay`, `POST /recurring`, `POST /refund`, `GET /status` |
-| **On-Ramp Simulator** | Go + Gin | `POST /quote`, `POST /buy`, `GET /order/{id}`, `POST /kyc` |
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    Bridge Relayer Architecture                        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                    Source Chain Monitor                       │    │
+│  │  • Subscribe to bridge deposit events                        │    │
+│  │  • Parse lock transactions                                   │    │
+│  │  • Extract bridge request data                               │    │
+│  └──────────────────────────────┬────────────────────────────────┘    │
+│                                 │                                    │
+│                                 ▼                                    │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                    MPC Signer                                │    │
+│  │  • Coordinate multi-party signatures                         │    │
+│  │  • 5-of-7 threshold signing                                  │    │
+│  └──────────────────────────────┬────────────────────────────────┘    │
+│                                 │                                    │
+│                                 ▼                                    │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                    Target Chain Executor                      │    │
+│  │  • Submit release transactions                               │    │
+│  │  • Challenge period monitoring                               │    │
+│  │  • Alert on anomalies                                        │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**기술 스택:** Go, net/http
+
+### 3.7 Simulators
+
+| Simulator | 기술 | 위치 | API Endpoints |
+|-----------|------|------|---------------|
+| **Bank Simulator** | Go | services/bank-simulator | `POST /deposit`, `POST /withdraw`, `GET /balance`, `GET /statement` |
+| **PG Simulator** | Go | services/pg-simulator | `POST /pay`, `POST /recurring`, `POST /refund`, `GET /status` |
+| **On-Ramp Simulator** | Go | services/onramp-simulator | `POST /quote`, `POST /buy`, `GET /order/{id}`, `POST /kyc` |
 
 ---
 
@@ -604,7 +638,7 @@
 │              ▼                    ▼                    ▼               │
 │    ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐      │
 │    │  API Gateway    │  │   Bundler       │  │ Stealth Server  │      │
-│    │  :3001          │  │   :4337         │  │   :5564         │      │
+│    │  :3001          │  │   :4337         │  │   :4339         │      │
 │    └────────┬────────┘  └────────┬────────┘  └────────┬────────┘      │
 │             │                    │                    │                │
 │             └────────────────────┼────────────────────┘                │
