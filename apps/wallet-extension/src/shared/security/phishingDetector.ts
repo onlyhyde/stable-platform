@@ -266,14 +266,15 @@ export class PhishingDetector {
       }
     }
 
-    // Default: unknown domain, no specific threats detected
+    // Default: unknown domain - treat with caution
+    // Unknown domains should not be considered safe by default
     return {
       url,
       domain,
       baseDomain,
-      isSafe: true,
-      riskLevel: warnings.length > 0 ? RiskLevel.LOW : RiskLevel.SAFE,
-      warnings,
+      isSafe: false,
+      riskLevel: warnings.length > 0 ? RiskLevel.MEDIUM : RiskLevel.LOW,
+      warnings: warnings.length > 0 ? warnings : ['Unknown domain - proceed with caution'],
     }
   }
 
@@ -311,12 +312,13 @@ export class PhishingDetector {
       }
     }
 
+    // Unknown domains should not be considered safe by default
     return {
       domain,
       baseDomain,
-      isSafe: true,
-      riskLevel: warnings.length > 0 ? RiskLevel.LOW : RiskLevel.SAFE,
-      warnings,
+      isSafe: false,
+      riskLevel: warnings.length > 0 ? RiskLevel.MEDIUM : RiskLevel.LOW,
+      warnings: warnings.length > 0 ? warnings : ['Unknown domain - proceed with caution'],
     }
   }
 

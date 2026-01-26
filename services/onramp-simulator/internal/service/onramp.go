@@ -224,7 +224,15 @@ func (s *OnRampService) shouldSucceed() bool {
 	return s.rng.Intn(100) < s.cfg.SuccessRate
 }
 
-// sendWebhook sends a webhook notification
+// Webhook retry configuration
+const (
+	webhookMaxRetries     = 3
+	webhookInitialBackoff = 1 * time.Second
+	webhookMaxBackoff     = 10 * time.Second
+	webhookTimeout        = 10 * time.Second
+)
+
+// sendWebhook sends a webhook notification with exponential backoff retry
 func (s *OnRampService) sendWebhook(eventType string, data interface{}) {
 	if s.cfg.WebhookURL == "" {
 		return
@@ -242,25 +250,53 @@ func (s *OnRampService) sendWebhook(eventType string, data interface{}) {
 		return
 	}
 
-	req, err := http.NewRequest("POST", s.cfg.WebhookURL, bytes.NewBuffer(body))
-	if err != nil {
-		log.Printf("Failed to create webhook request: %v", err)
+	client := &http.Client{Timeout: webhookTimeout}
+	backoff := webhookInitialBackoff
+
+	for attempt := 1; attempt <= webhookMaxRetries; attempt++ {
+		req, err := http.NewRequest("POST", s.cfg.WebhookURL, bytes.NewBuffer(body))
+		if err != nil {
+			log.Printf("Failed to create webhook request: %v", err)
+			return
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		signature := computeHMAC(body, s.cfg.WebhookSecret)
+		req.Header.Set("X-Webhook-Signature", signature)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("Webhook attempt %d/%d failed: %v", attempt, webhookMaxRetries, err)
+			if attempt < webhookMaxRetries {
+				time.Sleep(backoff)
+				backoff = min(backoff*2, webhookMaxBackoff)
+			}
+			continue
+		}
+		resp.Body.Close()
+
+		// Success on 2xx status codes
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			log.Printf("Webhook sent: %s, status: %d (attempt %d)", eventType, resp.StatusCode, attempt)
+			return
+		}
+
+		// Retry on 5xx server errors
+		if resp.StatusCode >= 500 {
+			log.Printf("Webhook attempt %d/%d got server error: %d", attempt, webhookMaxRetries, resp.StatusCode)
+			if attempt < webhookMaxRetries {
+				time.Sleep(backoff)
+				backoff = min(backoff*2, webhookMaxBackoff)
+			}
+			continue
+		}
+
+		// Don't retry on 4xx client errors
+		log.Printf("Webhook failed with client error: %d, not retrying", resp.StatusCode)
 		return
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	signature := computeHMAC(body, s.cfg.WebhookSecret)
-	req.Header.Set("X-Webhook-Signature", signature)
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Printf("Failed to send webhook: %v", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	log.Printf("Webhook sent: %s, status: %d", eventType, resp.StatusCode)
+	log.Printf("Webhook failed after %d attempts: %s", webhookMaxRetries, eventType)
 }
 
 // generateTxHash generates a random transaction hash
