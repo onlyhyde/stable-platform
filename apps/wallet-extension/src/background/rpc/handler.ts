@@ -1,10 +1,17 @@
 import type { Address, Hex } from 'viem'
 import { createPublicClient, http, isAddress } from 'viem'
 import type { JsonRpcRequest, JsonRpcResponse, SupportedMethod } from '../../types'
-import { RPC_ERRORS } from '../../shared/constants'
+import { RPC_ERRORS, ENTRY_POINT_ADDRESSES } from '../../shared/constants'
 import { walletState } from '../state/store'
 import { approvalController } from '../controllers/approvalController'
 import { keyringController } from '../keyring'
+import { createBundlerClient } from '../../lib/bundler'
+import {
+  packUserOperation,
+  getUserOpHash,
+  type UserOperation,
+  type PackedUserOperation,
+} from '../../lib/userOp'
 
 type RpcHandler = (
   params: unknown[] | undefined,
@@ -329,36 +336,262 @@ const handlers: Record<string, RpcHandler> = {
    * Send a UserOperation (ERC-4337)
    */
   eth_sendUserOperation: async (params, origin) => {
-    const [_userOp, _entryPoint] = params as [unknown, Address]
+    const [userOpParam, entryPointParam] = params as [unknown, Address]
 
     // Verify connection
     if (!walletState.isConnected(origin)) {
       throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
     }
 
-    // TODO: Implement UserOperation submission
-    throw createRpcError({
-      code: -32000,
-      message: 'UserOperation submission not yet implemented',
-    })
+    // Validate entryPoint
+    const entryPoint = entryPointParam ?? ENTRY_POINT_ADDRESSES.V07
+    if (!isAddress(entryPoint)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid entryPoint address',
+      })
+    }
+
+    // Parse and validate UserOperation
+    const userOp = parseUserOperation(userOpParam)
+    if (!userOp) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid UserOperation format',
+      })
+    }
+
+    // Validate sender address
+    if (!isAddress(userOp.sender)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid sender address',
+      })
+    }
+
+    // Verify sender account is connected (case-insensitive)
+    const connectedAccounts = walletState.getConnectedAccounts(origin)
+    const normalizedSender = userOp.sender.toLowerCase()
+    const isAuthorized = connectedAccounts.some(
+      (a) => a.toLowerCase() === normalizedSender
+    )
+    if (!isAuthorized) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    // Check if wallet is unlocked
+    if (!keyringController.isUnlocked()) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: 'Wallet is locked',
+      })
+    }
+
+    // Check network and bundler URL
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!network.bundlerUrl) {
+      throw createRpcError({
+        code: RPC_ERRORS.RESOURCE_UNAVAILABLE.code,
+        message: 'Bundler not configured for this network',
+      })
+    }
+
+    // Calculate estimated gas cost for approval display
+    const estimatedGasCost =
+      (userOp.preVerificationGas +
+        userOp.verificationGasLimit +
+        userOp.callGasLimit) *
+      userOp.maxFeePerGas
+
+    // Request user approval
+    try {
+      await approvalController.requestTransaction(
+        origin,
+        userOp.sender,
+        userOp.sender, // Smart account is both from and to
+        BigInt(0), // UserOp value is in callData
+        userOp.callData,
+        estimatedGasCost,
+        'UserOperation',
+        undefined
+      )
+    } catch (error) {
+      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+    }
+
+    // Sign the UserOperation
+    let signedUserOp: UserOperation
+    try {
+      const hash = getUserOpHash(userOp, entryPoint, network.chainId)
+      const signature = await keyringController.signMessage(userOp.sender, hash)
+      signedUserOp = { ...userOp, signature }
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'UserOperation signing failed',
+      })
+    }
+
+    // Pack the UserOperation for bundler submission
+    const packedUserOp = packUserOperation(signedUserOp)
+
+    // Submit to bundler
+    try {
+      const bundlerClient = createBundlerClient(network.bundlerUrl)
+      const userOpHash = await bundlerClient.sendUserOperation(
+        packedUserOp,
+        entryPoint
+      )
+      return userOpHash
+    } catch (error) {
+      const err = error as Error & { code?: number; data?: unknown }
+      throw createRpcError({
+        code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+        message: err.message || 'UserOperation submission failed',
+        data: err.data,
+      })
+    }
   },
 
   /**
    * Estimate gas for a UserOperation
    */
   eth_estimateUserOperationGas: async (params) => {
-    const [_userOp, _entryPoint] = params as [unknown, Address]
+    const [userOpParam, entryPointParam] = params as [unknown, Address]
+    const network = walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!network.bundlerUrl) {
+      throw createRpcError({
+        code: RPC_ERRORS.RESOURCE_UNAVAILABLE.code,
+        message: 'Bundler not configured for this network',
+      })
+    }
+
+    // Validate entryPoint
+    const entryPoint = entryPointParam ?? ENTRY_POINT_ADDRESSES.V07
+    if (!isAddress(entryPoint)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid entryPoint address',
+      })
+    }
+
+    // Parse UserOperation (allow partial for estimation)
+    const userOp = parseUserOperation(userOpParam)
+    if (!userOp) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid UserOperation format',
+      })
+    }
+
+    // Pack the UserOperation
+    const packedUserOp = packUserOperation(userOp)
+
+    // Forward to bundler
+    try {
+      const bundlerClient = createBundlerClient(network.bundlerUrl)
+      const gasEstimate = await bundlerClient.estimateUserOperationGas(
+        packedUserOp,
+        entryPoint
+      )
+
+      // Return as hex values for JSON-RPC compatibility
+      return {
+        preVerificationGas: `0x${gasEstimate.preVerificationGas.toString(16)}`,
+        verificationGasLimit: `0x${gasEstimate.verificationGasLimit.toString(16)}`,
+        callGasLimit: `0x${gasEstimate.callGasLimit.toString(16)}`,
+        ...(gasEstimate.paymasterVerificationGasLimit && {
+          paymasterVerificationGasLimit: `0x${gasEstimate.paymasterVerificationGasLimit.toString(16)}`,
+        }),
+        ...(gasEstimate.paymasterPostOpGasLimit && {
+          paymasterPostOpGasLimit: `0x${gasEstimate.paymasterPostOpGasLimit.toString(16)}`,
+        }),
+      }
+    } catch (error) {
+      const err = error as Error & { code?: number; data?: unknown }
+      throw createRpcError({
+        code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+        message: err.message || 'Gas estimation failed',
+        data: err.data,
+      })
+    }
+  },
+
+  /**
+   * Get UserOperation by hash
+   */
+  eth_getUserOperationByHash: async (params) => {
+    const [userOpHash] = params as [Hex]
     const network = walletState.getCurrentNetwork()
 
     if (!network?.bundlerUrl) {
       throw createRpcError(RPC_ERRORS.RESOURCE_UNAVAILABLE)
     }
 
-    // TODO: Forward to bundler
-    throw createRpcError({
-      code: -32000,
-      message: 'Gas estimation not yet implemented',
-    })
+    try {
+      const bundlerClient = createBundlerClient(network.bundlerUrl)
+      return await bundlerClient.getUserOperationByHash(userOpHash)
+    } catch (error) {
+      const err = error as Error & { code?: number; data?: unknown }
+      throw createRpcError({
+        code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+        message: err.message || 'Failed to get UserOperation',
+        data: err.data,
+      })
+    }
+  },
+
+  /**
+   * Get UserOperation receipt
+   */
+  eth_getUserOperationReceipt: async (params) => {
+    const [userOpHash] = params as [Hex]
+    const network = walletState.getCurrentNetwork()
+
+    if (!network?.bundlerUrl) {
+      throw createRpcError(RPC_ERRORS.RESOURCE_UNAVAILABLE)
+    }
+
+    try {
+      const bundlerClient = createBundlerClient(network.bundlerUrl)
+      return await bundlerClient.getUserOperationReceipt(userOpHash)
+    } catch (error) {
+      const err = error as Error & { code?: number; data?: unknown }
+      throw createRpcError({
+        code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+        message: err.message || 'Failed to get UserOperation receipt',
+        data: err.data,
+      })
+    }
+  },
+
+  /**
+   * Get supported entry points
+   */
+  eth_supportedEntryPoints: async () => {
+    const network = walletState.getCurrentNetwork()
+
+    if (!network?.bundlerUrl) {
+      // Return default entry points if bundler not configured
+      return [ENTRY_POINT_ADDRESSES.V07]
+    }
+
+    try {
+      const bundlerClient = createBundlerClient(network.bundlerUrl)
+      return await bundlerClient.getSupportedEntryPoints()
+    } catch {
+      // Fallback to default entry points
+      return [ENTRY_POINT_ADDRESSES.V07]
+    }
   },
 
   /**
@@ -534,6 +767,72 @@ const handlers: Record<string, RpcHandler> = {
       })
     }
   },
+}
+
+/**
+ * Parse UserOperation from RPC params
+ * Handles both hex string and BigInt formats
+ */
+function parseUserOperation(param: unknown): UserOperation | null {
+  if (!param || typeof param !== 'object') {
+    return null
+  }
+
+  const obj = param as Record<string, unknown>
+
+  // Required fields
+  if (!obj.sender || !obj.callData) {
+    return null
+  }
+
+  try {
+    return {
+      sender: obj.sender as Address,
+      nonce: parseBigInt(obj.nonce, BigInt(0)),
+      factory: obj.factory as Address | undefined,
+      factoryData: obj.factoryData as Hex | undefined,
+      callData: obj.callData as Hex,
+      callGasLimit: parseBigInt(obj.callGasLimit, BigInt(100000)),
+      verificationGasLimit: parseBigInt(obj.verificationGasLimit, BigInt(100000)),
+      preVerificationGas: parseBigInt(obj.preVerificationGas, BigInt(21000)),
+      maxFeePerGas: parseBigInt(obj.maxFeePerGas, BigInt(0)),
+      maxPriorityFeePerGas: parseBigInt(obj.maxPriorityFeePerGas, BigInt(0)),
+      paymaster: obj.paymaster as Address | undefined,
+      paymasterVerificationGasLimit: obj.paymasterVerificationGasLimit
+        ? parseBigInt(obj.paymasterVerificationGasLimit, BigInt(0))
+        : undefined,
+      paymasterPostOpGasLimit: obj.paymasterPostOpGasLimit
+        ? parseBigInt(obj.paymasterPostOpGasLimit, BigInt(0))
+        : undefined,
+      paymasterData: obj.paymasterData as Hex | undefined,
+      signature: (obj.signature as Hex) ?? '0x',
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Parse a value to BigInt
+ * Handles hex strings, decimal strings, numbers, and BigInt
+ */
+function parseBigInt(value: unknown, defaultValue: bigint): bigint {
+  if (value === undefined || value === null) {
+    return defaultValue
+  }
+  if (typeof value === 'bigint') {
+    return value
+  }
+  if (typeof value === 'number') {
+    return BigInt(value)
+  }
+  if (typeof value === 'string') {
+    if (value.startsWith('0x')) {
+      return BigInt(value)
+    }
+    return BigInt(value)
+  }
+  return defaultValue
 }
 
 /**
