@@ -25,7 +25,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # Cryptography
-k256 = { version = "0.13", features = ["ecdh", "arithmetic"] }
+k256 = { version = "0.13", features = ["ecdh", "arithmetic", "ecdsa"] }
 sha3 = "0.10"
 hex = "0.4"
 elliptic-curve = "0.13"

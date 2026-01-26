@@ -1,7 +1,7 @@
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{generate_stealth_address, scheme, StealthMetaAddress};
+use crate::domain::{generate_stealth_address, scheme, verify_registration_signature, StealthMetaAddress};
 use crate::storage::Storage;
 
 /// Health check response
@@ -176,7 +176,16 @@ pub async fn register(
         }
     };
 
-    // TODO: Verify signature
+    // Verify signature - ensure the registration request was signed by the claimed address
+    if let Err(e) = verify_registration_signature(
+        &body.address,
+        &body.stealth_meta_address,
+        &body.signature,
+    ) {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": format!("Signature verification failed: {}", e)
+        }));
+    }
 
     // Save registration
     match storage
