@@ -264,6 +264,8 @@ services:
       - "${BANK_SIMULATOR_PORT:-4350}:4350"
     environment:
       PORT: 4350
+      # SECURITY: Set unique webhook secrets in production
+      WEBHOOK_SECRET: ${BANK_WEBHOOK_SECRET:-bank-webhook-secret-dev}
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:4350/health"]
       <<: *healthcheck-defaults
@@ -279,6 +281,8 @@ services:
       - "${PG_SIMULATOR_PORT:-4351}:4351"
     environment:
       PORT: 4351
+      # SECURITY: Set unique webhook secrets in production
+      WEBHOOK_SECRET: ${PG_WEBHOOK_SECRET:-pg-webhook-secret-dev}
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:4351/health"]
       <<: *healthcheck-defaults
@@ -294,6 +298,8 @@ services:
       - "${ONRAMP_SIMULATOR_PORT:-4352}:4352"
     environment:
       PORT: 4352
+      # SECURITY: Set unique webhook secrets in production
+      WEBHOOK_SECRET: ${ONRAMP_WEBHOOK_SECRET:-onramp-webhook-secret-dev}
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:4352/health"]
       <<: *healthcheck-defaults

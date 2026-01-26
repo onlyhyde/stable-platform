@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"os"
 )
 
@@ -23,13 +24,23 @@ type Config struct {
 // Load loads configuration from environment variables
 func Load() *Config {
 	return &Config{
-		Port:           getEnv("PORT", "8086"),
+		Port:           getEnv("PORT", "4352"),
 		WebhookURL:     getEnv("WEBHOOK_URL", ""),
-		WebhookSecret:  getEnv("WEBHOOK_SECRET", "onramp-webhook-secret"),
+		WebhookSecret:  getEnvWithWarning("WEBHOOK_SECRET", "onramp-webhook-secret-dev"),
 		ProcessingTime: getEnvInt("PROCESSING_TIME", 5),
 		SuccessRate:    getEnvInt("SUCCESS_RATE", 95),
 		USDToUSDC:      getEnv("USD_TO_USDC", "0.998"),
 	}
+}
+
+// getEnvWithWarning returns environment variable value with a warning if using default
+// SECURITY: Default values should only be used in development environments
+func getEnvWithWarning(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	log.Printf("WARNING: %s not set, using insecure default. Set this in production!", key)
+	return defaultValue
 }
 
 func getEnv(key, defaultValue string) string {
