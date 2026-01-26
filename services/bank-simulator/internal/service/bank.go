@@ -64,7 +64,7 @@ func (s *BankService) CreateAccount(req *model.CreateAccountRequest) (*model.Acc
 	}
 
 	s.accounts[account.AccountNo] = account
-	log.Printf("Created account: %s (%s)", account.AccountNo, account.Name)
+	log.Printf("Created account: %s (%s)", maskAccountNo(account.AccountNo), maskName(account.Name))
 
 	return account, nil
 }
@@ -154,7 +154,7 @@ func (s *BankService) Transfer(req *model.TransferRequest) (*model.Transfer, err
 	}
 
 	s.transfers[transfer.ID] = transfer
-	log.Printf("Transfer completed: %s -> %s, Amount: %s", req.FromAccountNo, req.ToAccountNo, req.Amount)
+	log.Printf("Transfer completed: %s -> %s, Amount: %s", maskAccountNo(req.FromAccountNo), maskAccountNo(req.ToAccountNo), req.Amount)
 
 	// Send webhook notification
 	go s.sendWebhook("transfer.completed", transfer)
@@ -200,7 +200,7 @@ func (s *BankService) FreezeAccount(accountNo string) error {
 
 	account.Status = model.AccountStatusFrozen
 	account.UpdatedAt = time.Now()
-	log.Printf("Account frozen: %s", accountNo)
+	log.Printf("Account frozen: %s", maskAccountNo(accountNo))
 
 	go s.sendWebhook("account.frozen", account)
 	return nil
@@ -222,7 +222,7 @@ func (s *BankService) UnfreezeAccount(accountNo string) error {
 
 	account.Status = model.AccountStatusActive
 	account.UpdatedAt = time.Now()
-	log.Printf("Account unfrozen: %s", accountNo)
+	log.Printf("Account unfrozen: %s", maskAccountNo(accountNo))
 
 	go s.sendWebhook("account.unfrozen", account)
 	return nil
@@ -313,4 +313,26 @@ func computeHMAC(data []byte, secret string) string {
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write(data)
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// maskAccountNo returns a masked representation of account number for logging
+// Shows prefix and last 4 characters (e.g., "BANK****1234")
+func maskAccountNo(accountNo string) string {
+	if len(accountNo) <= 8 {
+		return "****"
+	}
+	// Show first 4 chars (BANK) and last 4 digits
+	return accountNo[:4] + "****" + accountNo[len(accountNo)-4:]
+}
+
+// maskName returns a masked representation of account holder name for logging
+// Shows first character and asterisks (e.g., "J****")
+func maskName(name string) string {
+	if len(name) == 0 {
+		return "****"
+	}
+	if len(name) == 1 {
+		return name + "****"
+	}
+	return name[:1] + "****"
 }

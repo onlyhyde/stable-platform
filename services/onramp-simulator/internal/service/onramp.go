@@ -111,7 +111,7 @@ func (s *OnRampService) CreateOrder(req *model.CreateOrderRequest) (*model.Order
 	}
 
 	s.orders[order.ID] = order
-	log.Printf("Order created: %s (User: %s, Amount: %s %s)", order.ID, order.UserID, order.FiatAmount, order.FiatCurrency)
+	log.Printf("Order created: %s (User: %s, Amount: %s %s)", order.ID, maskUserID(order.UserID), order.FiatAmount, order.FiatCurrency)
 
 	// Create a copy of order for webhook to avoid race condition
 	// The webhook goroutine may execute while processOrder modifies the order
@@ -323,4 +323,33 @@ func computeHMAC(data []byte, secret string) string {
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write(data)
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// maskUserID returns a masked representation of user ID for logging
+// Handles both email and regular ID formats
+func maskUserID(userID string) string {
+	if len(userID) == 0 {
+		return "****"
+	}
+
+	// Check if it's an email address
+	atIndex := -1
+	for i, c := range userID {
+		if c == '@' {
+			atIndex = i
+			break
+		}
+	}
+
+	if atIndex > 0 {
+		// Email format: show first char + **** + @domain
+		// e.g., "john@example.com" -> "j****@example.com"
+		return userID[:1] + "****" + userID[atIndex:]
+	}
+
+	// Regular ID: show first 2 and last 2 characters
+	if len(userID) <= 4 {
+		return "****"
+	}
+	return userID[:2] + "****" + userID[len(userID)-2:]
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/stablenet/stable-platform/services/bank-simulator/internal/config"
 	"github.com/stablenet/stable-platform/services/bank-simulator/internal/handler"
+	"github.com/stablenet/stable-platform/services/bank-simulator/internal/middleware"
 	"github.com/stablenet/stable-platform/services/bank-simulator/internal/service"
 )
 
@@ -32,7 +33,8 @@ func main() {
 
 	// Add security middleware
 	r.Use(gin.Recovery())
-	r.Use(bodyLimitMiddleware(1024 * 1024)) // 1MB max body size
+	r.Use(middleware.DefaultRateLimiter().Middleware()) // Rate limiting: 100 req/min per IP
+	r.Use(bodyLimitMiddleware(1024 * 1024))             // 1MB max body size
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {

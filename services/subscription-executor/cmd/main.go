@@ -13,6 +13,7 @@ import (
 
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/config"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/handler"
+	"github.com/stablenet/stable-platform/services/subscription-executor/internal/middleware"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/repository"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/service"
 )
@@ -67,6 +68,9 @@ func main() {
 
 	// Create Gin router
 	r := gin.Default()
+
+	// Add security middleware
+	r.Use(middleware.DefaultRateLimiter().Middleware()) // Rate limiting: 100 req/min per IP
 
 	// Health check endpoint with database status
 	r.GET("/health", func(c *gin.Context) {

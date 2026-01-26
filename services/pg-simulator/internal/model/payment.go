@@ -52,12 +52,13 @@ type CardDetails struct {
 
 // CreatePaymentRequest represents a request to create a payment
 type CreatePaymentRequest struct {
-	MerchantID string       `json:"merchantId" binding:"required"`
-	OrderID    string       `json:"orderId" binding:"required"`
-	Amount     string       `json:"amount" binding:"required"`
-	Currency   string       `json:"currency" binding:"required"`
-	Card       *CardDetails `json:"card,omitempty"`
-	Method     PaymentMethod `json:"method" binding:"required"`
+	MerchantID     string        `json:"merchantId" binding:"required"`
+	OrderID        string        `json:"orderId" binding:"required"`
+	Amount         string        `json:"amount" binding:"required"`
+	Currency       string        `json:"currency" binding:"required"`
+	Card           *CardDetails  `json:"card,omitempty"`
+	Method         PaymentMethod `json:"method" binding:"required"`
+	IdempotencyKey string        `json:"idempotencyKey,omitempty"` // Optional key to prevent duplicate payments
 }
 
 // RefundRequest represents a request to refund a payment

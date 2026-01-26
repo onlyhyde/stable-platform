@@ -21,18 +21,20 @@ import (
 
 // PaymentService handles payment operations
 type PaymentService struct {
-	cfg      *config.Config
-	payments map[string]*model.Payment // paymentID -> Payment
-	mu       sync.RWMutex
-	rng      *rand.Rand
+	cfg             *config.Config
+	payments        map[string]*model.Payment // paymentID -> Payment
+	idempotencyKeys map[string]string         // idempotencyKey -> paymentID (for duplicate detection)
+	mu              sync.RWMutex
+	rng             *rand.Rand
 }
 
 // NewPaymentService creates a new payment service
 func NewPaymentService(cfg *config.Config) *PaymentService {
 	return &PaymentService{
-		cfg:      cfg,
-		payments: make(map[string]*model.Payment),
-		rng:      rand.New(rand.NewSource(time.Now().UnixNano())),
+		cfg:             cfg,
+		payments:        make(map[string]*model.Payment),
+		idempotencyKeys: make(map[string]string),
+		rng:             rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
@@ -40,6 +42,18 @@ func NewPaymentService(cfg *config.Config) *PaymentService {
 func (s *PaymentService) CreatePayment(req *model.CreatePaymentRequest) (*model.Payment, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	// Check for duplicate payment using idempotency key
+	if req.IdempotencyKey != "" {
+		if existingPaymentID, exists := s.idempotencyKeys[req.IdempotencyKey]; exists {
+			// Return existing payment to prevent duplicate processing
+			if existingPayment, ok := s.payments[existingPaymentID]; ok {
+				log.Printf("Duplicate payment detected (idempotency key: %s), returning existing payment: %s",
+					maskIdempotencyKey(req.IdempotencyKey), existingPaymentID)
+				return existingPayment, nil
+			}
+		}
+	}
 
 	now := time.Now()
 	payment := &model.Payment{
@@ -74,6 +88,11 @@ func (s *PaymentService) CreatePayment(req *model.CreatePaymentRequest) (*model.
 	}
 
 	s.payments[payment.ID] = payment
+
+	// Store idempotency key for duplicate detection
+	if req.IdempotencyKey != "" {
+		s.idempotencyKeys[req.IdempotencyKey] = payment.ID
+	}
 
 	// Send webhook notification
 	go s.sendWebhook("payment."+string(payment.Status), payment)
@@ -294,4 +313,13 @@ func maskCardInfo(last4, brand string) string {
 		return "****" + last4
 	}
 	return brand + ":****" + last4
+}
+
+// maskIdempotencyKey returns a masked representation of idempotency key for logging
+// Shows first 4 and last 4 characters with asterisks in between
+func maskIdempotencyKey(key string) string {
+	if len(key) <= 8 {
+		return "****"
+	}
+	return key[:4] + "****" + key[len(key)-4:]
 }
