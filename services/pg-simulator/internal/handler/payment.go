@@ -53,13 +53,13 @@ func (h *PaymentHandler) RegisterRoutes(r *gin.Engine) {
 func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 	var req model.CreatePaymentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
 		return
 	}
 
 	payment, err := h.paymentService.CreatePayment(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "payment")})
 		return
 	}
 
@@ -80,7 +80,7 @@ func (h *PaymentHandler) GetPayment(c *gin.Context) {
 
 	payment, err := h.paymentService.GetPayment(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "payment")})
 		return
 	}
 
@@ -104,13 +104,13 @@ func (h *PaymentHandler) RefundPayment(c *gin.Context) {
 
 	var req model.RefundRequest
 	if err := c.ShouldBindJSON(&req); err != nil && err.Error() != "EOF" {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
 		return
 	}
 
 	payment, err := h.paymentService.RefundPayment(id, &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "payment")})
 		return
 	}
 
@@ -132,7 +132,7 @@ func (h *PaymentHandler) CancelPayment(c *gin.Context) {
 
 	payment, err := h.paymentService.CancelPayment(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "payment")})
 		return
 	}
 
@@ -156,4 +156,32 @@ func (h *PaymentHandler) GetMerchantPayments(c *gin.Context) {
 // ErrorResponse represents an error response
 type ErrorResponse struct {
 	Error string `json:"error"`
+}
+
+// sanitizeError returns a user-safe error message without exposing internal details
+// This prevents information leakage about resource existence
+func sanitizeError(err error, resourceType string) string {
+	errMsg := err.Error()
+
+	// Map specific error patterns to generic messages
+	switch {
+	case contains(errMsg, "not found"):
+		return "The requested " + resourceType + " could not be processed"
+	case contains(errMsg, "cannot be refunded"), contains(errMsg, "cannot be cancelled"):
+		return "This operation is not available for the current " + resourceType + " state"
+	case contains(errMsg, "invalid"):
+		return "Invalid request parameters"
+	default:
+		return "An error occurred processing your request"
+	}
+}
+
+// contains checks if s contains substr
+func contains(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

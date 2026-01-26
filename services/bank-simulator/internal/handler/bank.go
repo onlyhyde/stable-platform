@@ -56,13 +56,13 @@ func (h *BankHandler) RegisterRoutes(r *gin.Engine) {
 func (h *BankHandler) CreateAccount(c *gin.Context) {
 	var req model.CreateAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
 		return
 	}
 
 	account, err := h.bankService.CreateAccount(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "account")})
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *BankHandler) GetAccount(c *gin.Context) {
 
 	account, err := h.bankService.GetAccount(accountNo)
 	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "account")})
 		return
 	}
 
@@ -115,13 +115,13 @@ func (h *BankHandler) GetAllAccounts(c *gin.Context) {
 func (h *BankHandler) CreateTransfer(c *gin.Context) {
 	var req model.TransferRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
 		return
 	}
 
 	transfer, err := h.bankService.Transfer(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "transfer")})
 		return
 	}
 
@@ -142,7 +142,7 @@ func (h *BankHandler) GetTransfer(c *gin.Context) {
 
 	transfer, err := h.bankService.GetTransfer(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "transfer")})
 		return
 	}
 
@@ -176,7 +176,7 @@ func (h *BankHandler) FreezeAccount(c *gin.Context) {
 	accountNo := c.Param("accountNo")
 
 	if err := h.bankService.FreezeAccount(accountNo); err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "account")})
 		return
 	}
 
@@ -197,7 +197,7 @@ func (h *BankHandler) UnfreezeAccount(c *gin.Context) {
 	accountNo := c.Param("accountNo")
 
 	if err := h.bankService.UnfreezeAccount(accountNo); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "account")})
 		return
 	}
 
@@ -212,4 +212,38 @@ type ErrorResponse struct {
 // SuccessResponse represents a success response
 type SuccessResponse struct {
 	Message string `json:"message"`
+}
+
+// sanitizeError returns a user-safe error message without exposing internal details
+// This prevents information leakage about resource existence
+func sanitizeError(err error, resourceType string) string {
+	errMsg := err.Error()
+
+	// Map specific error patterns to generic messages
+	switch {
+	case contains(errMsg, "not found"):
+		return "The requested " + resourceType + " could not be processed"
+	case contains(errMsg, "insufficient balance"):
+		return "Transaction could not be completed"
+	case contains(errMsg, "not active"), contains(errMsg, "frozen"):
+		return "Account is not available for this operation"
+	case contains(errMsg, "invalid"):
+		return "Invalid request parameters"
+	default:
+		return "An error occurred processing your request"
+	}
+}
+
+// contains checks if s contains substr (case-insensitive helper)
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
+}
+
+func containsHelper(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

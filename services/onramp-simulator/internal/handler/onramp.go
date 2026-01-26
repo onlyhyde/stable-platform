@@ -54,13 +54,13 @@ func (h *OnRampHandler) RegisterRoutes(r *gin.Engine) {
 func (h *OnRampHandler) GetQuote(c *gin.Context) {
 	var req model.QuoteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
 		return
 	}
 
 	quote, err := h.onrampService.GetQuote(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "quote")})
 		return
 	}
 
@@ -80,13 +80,13 @@ func (h *OnRampHandler) GetQuote(c *gin.Context) {
 func (h *OnRampHandler) CreateOrder(c *gin.Context) {
 	var req model.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
 		return
 	}
 
 	order, err := h.onrampService.CreateOrder(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "order")})
 		return
 	}
 
@@ -107,7 +107,7 @@ func (h *OnRampHandler) GetOrder(c *gin.Context) {
 
 	order, err := h.onrampService.GetOrder(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "order")})
 		return
 	}
 
@@ -129,7 +129,7 @@ func (h *OnRampHandler) CancelOrder(c *gin.Context) {
 
 	order, err := h.onrampService.CancelOrder(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "order")})
 		return
 	}
 
@@ -153,4 +153,32 @@ func (h *OnRampHandler) GetUserOrders(c *gin.Context) {
 // ErrorResponse represents an error response
 type ErrorResponse struct {
 	Error string `json:"error"`
+}
+
+// sanitizeError returns a user-safe error message without exposing internal details
+// This prevents information leakage about resource existence
+func sanitizeError(err error, resourceType string) string {
+	errMsg := err.Error()
+
+	// Map specific error patterns to generic messages
+	switch {
+	case contains(errMsg, "not found"):
+		return "The requested " + resourceType + " could not be processed"
+	case contains(errMsg, "cannot be cancelled"):
+		return "This operation is not available for the current " + resourceType + " state"
+	case contains(errMsg, "invalid"):
+		return "Invalid request parameters"
+	default:
+		return "An error occurred processing your request"
+	}
+}
+
+// contains checks if s contains substr
+func contains(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

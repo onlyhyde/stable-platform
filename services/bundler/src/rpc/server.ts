@@ -206,12 +206,18 @@ export class RpcServer {
 
       this.logger.error({ error, method }, 'RPC method error')
 
+      // In production, mask internal error details to prevent information leakage
+      // Only show generic message; detailed errors are logged server-side
+      const errorMessage = this.config.debug
+        ? (error instanceof Error ? error.message : 'Internal error')
+        : 'An internal error occurred. Please try again later.'
+
       return {
         jsonrpc: '2.0',
         id,
         error: {
           code: RPC_ERROR_CODES.INTERNAL_ERROR,
-          message: error instanceof Error ? error.message : 'Internal error',
+          message: errorMessage,
         },
       }
     }

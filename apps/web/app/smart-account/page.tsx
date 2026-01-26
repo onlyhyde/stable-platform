@@ -16,6 +16,7 @@ import {
   MetaMaskUnsupportedModal,
 } from '@/components/smart-account'
 import { getDelegatePresets } from '@/lib/eip7702'
+import { sanitizeErrorMessage } from '@/lib/utils'
 import type { Address, Hex } from 'viem'
 
 export default function SmartAccountPage() {
@@ -135,7 +136,7 @@ export default function SmartAccountPage() {
         updateToast(toastId, {
           type: 'error',
           title: 'Upgrade Failed',
-          message: result.error || 'Unknown error occurred',
+          message: sanitizeErrorMessage(result.error, 'Failed to upgrade account'),
           persistent: false,
         })
       }
@@ -143,7 +144,7 @@ export default function SmartAccountPage() {
       updateToast(toastId, {
         type: 'error',
         title: 'Upgrade Failed',
-        message: err instanceof Error ? err.message : 'Unknown error occurred',
+        message: sanitizeErrorMessage(err, 'Failed to upgrade account'),
         persistent: false,
       })
     }
@@ -190,7 +191,7 @@ export default function SmartAccountPage() {
         updateToast(toastId, {
           type: 'error',
           title: 'Revocation Failed',
-          message: result.error || 'Unknown error occurred',
+          message: sanitizeErrorMessage(result.error, 'Failed to revoke smart account'),
           persistent: false,
         })
       }
@@ -198,7 +199,7 @@ export default function SmartAccountPage() {
       updateToast(toastId, {
         type: 'error',
         title: 'Revocation Failed',
-        message: err instanceof Error ? err.message : 'Unknown error occurred',
+        message: sanitizeErrorMessage(err, 'Failed to revoke smart account'),
         persistent: false,
       })
     }
