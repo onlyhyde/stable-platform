@@ -14,6 +14,7 @@ import (
 type InMemoryRepository struct {
 	subscriptions    map[string]*model.Subscription
 	executionRecords map[string][]*model.ExecutionRecord
+	idempotencyKeys  map[string]*model.IdempotencyRecord
 	mu               sync.RWMutex
 	recordIDCounter  int64
 }
@@ -23,6 +24,7 @@ func NewInMemoryRepository() *InMemoryRepository {
 	return &InMemoryRepository{
 		subscriptions:    make(map[string]*model.Subscription),
 		executionRecords: make(map[string][]*model.ExecutionRecord),
+		idempotencyKeys:  make(map[string]*model.IdempotencyRecord),
 	}
 }
 
@@ -108,6 +110,15 @@ func (r *InMemoryRepository) CreateExecutionRecord(ctx context.Context, record *
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	// Enforce unique pending execution per subscription (mirrors DB partial unique index)
+	if record.Status == "pending" {
+		for _, rec := range r.executionRecords[record.SubscriptionID] {
+			if rec.Status == "pending" {
+				return fmt.Errorf("duplicate pending execution for subscription: %s", record.SubscriptionID)
+			}
+		}
+	}
+
 	r.recordIDCounter++
 	record.ID = fmt.Sprintf("%d", r.recordIDCounter)
 	r.executionRecords[record.SubscriptionID] = append(r.executionRecords[record.SubscriptionID], record)
@@ -141,6 +152,49 @@ func (r *InMemoryRepository) GetExecutionRecords(ctx context.Context, subscripti
 		return records[:limit], nil
 	}
 	return records, nil
+}
+
+func (r *InMemoryRepository) GetIdempotencyRecord(ctx context.Context, key, method, path string) (*model.IdempotencyRecord, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	compositeKey := key + "|" + method + "|" + path
+	rec, exists := r.idempotencyKeys[compositeKey]
+	if !exists {
+		return nil, nil
+	}
+	if time.Now().After(rec.ExpiresAt) {
+		return nil, nil
+	}
+	return rec, nil
+}
+
+func (r *InMemoryRepository) SaveIdempotencyRecord(ctx context.Context, record *model.IdempotencyRecord) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	compositeKey := record.Key + "|" + record.Method + "|" + record.Path
+	// First-writer-wins: do not overwrite existing record
+	if _, exists := r.idempotencyKeys[compositeKey]; exists {
+		return nil
+	}
+	r.idempotencyKeys[compositeKey] = record
+	return nil
+}
+
+func (r *InMemoryRepository) DeleteExpiredIdempotencyRecords(ctx context.Context) (int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	var deleted int64
+	now := time.Now()
+	for k, rec := range r.idempotencyKeys {
+		if now.After(rec.ExpiresAt) {
+			delete(r.idempotencyKeys, k)
+			deleted++
+		}
+	}
+	return deleted, nil
 }
 
 func (r *InMemoryRepository) Ping(ctx context.Context) error {

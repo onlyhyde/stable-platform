@@ -54,6 +54,9 @@ func (s *ExecutorService) Start(ctx context.Context) {
 	ticker := time.NewTicker(time.Duration(s.cfg.PollingInterval) * time.Second)
 	defer ticker.Stop()
 
+	cleanupTicker := time.NewTicker(1 * time.Hour)
+	defer cleanupTicker.Stop()
+
 	log.Printf("Starting executor service with polling interval: %d seconds", s.cfg.PollingInterval)
 
 	for {
@@ -66,7 +69,21 @@ func (s *ExecutorService) Start(ctx context.Context) {
 			return
 		case <-ticker.C:
 			s.processDueSubscriptions(ctx)
+		case <-cleanupTicker.C:
+			s.cleanupExpiredIdempotencyRecords(ctx)
 		}
+	}
+}
+
+// cleanupExpiredIdempotencyRecords removes expired idempotency records
+func (s *ExecutorService) cleanupExpiredIdempotencyRecords(ctx context.Context) {
+	deleted, err := s.repo.DeleteExpiredIdempotencyRecords(ctx)
+	if err != nil {
+		log.Printf("Failed to cleanup expired idempotency records: %v", err)
+		return
+	}
+	if deleted > 0 {
+		log.Printf("Cleaned up %d expired idempotency records", deleted)
 	}
 }
 
@@ -192,15 +209,16 @@ func (s *ExecutorService) processDueSubscriptions(ctx context.Context) {
 func (s *ExecutorService) executeSubscription(ctx context.Context, sub *model.Subscription) error {
 	log.Printf("Executing subscription: %s", sub.ID)
 
-	// Create execution record
+	// Create execution record — unique partial index on (subscription_id) WHERE status='pending'
+	// prevents duplicate concurrent executions for the same subscription
 	record := &model.ExecutionRecord{
 		SubscriptionID: sub.ID,
 		Status:         "pending",
 		CreatedAt:      time.Now(),
 	}
 	if err := s.repo.CreateExecutionRecord(ctx, record); err != nil {
-		log.Printf("Failed to create execution record: %v", err)
-		// Continue with execution even if record creation fails
+		log.Printf("Skipping duplicate execution for subscription %s: %v", sub.ID, err)
+		return nil
 	}
 
 	// Parse record ID for updates

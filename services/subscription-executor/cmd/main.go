@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,15 +13,23 @@ import (
 
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/config"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/handler"
+	"github.com/stablenet/stable-platform/services/subscription-executor/internal/logger"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/middleware"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/repository"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/service"
 )
 
 func main() {
+	// Initialize structured logger
+	log := logger.New(logger.Config{
+		Level:  getEnv("LOG_LEVEL", "info"),
+		Format: getEnv("LOG_FORMAT", "json"),
+		Name:   "subscription-executor",
+	})
+
 	// Load .env file
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found")
+		log.Info("No .env file found, using environment variables")
 	}
 
 	// Load configuration
@@ -34,10 +42,10 @@ func main() {
 	// Initialize repository
 	var repo repository.SubscriptionRepository
 	if cfg.Database.UseInMemory {
-		log.Println("Using in-memory repository (development mode)")
+		log.Info("Using in-memory repository (development mode)")
 		repo = repository.NewInMemoryRepository()
 	} else {
-		log.Println("Connecting to PostgreSQL database...")
+		log.Info("Connecting to PostgreSQL database")
 		pgConfig := &repository.PostgresConfig{
 			DatabaseURL:       cfg.Database.URL,
 			MaxConns:          cfg.Database.MaxConns,
@@ -51,8 +59,9 @@ func main() {
 
 		pgRepo, err := repository.NewPostgresRepository(ctx, pgConfig)
 		if err != nil {
-			log.Printf("Failed to connect to database: %v", err)
-			log.Println("Falling back to in-memory repository")
+			log.Warn("Failed to connect to database, falling back to in-memory repository",
+				slog.String("error", err.Error()),
+			)
 			repo = repository.NewInMemoryRepository()
 		} else {
 			repo = pgRepo
@@ -66,11 +75,18 @@ func main() {
 	// Start executor service in background
 	go executorService.Start(ctx)
 
+	// Set Gin mode
+	if getEnv("GIN_MODE", "") != "debug" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	// Create Gin router
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
 
 	// Add security middleware
-	r.Use(middleware.DefaultRateLimiter().Middleware()) // Rate limiting: 100 req/min per IP
+	r.Use(middleware.DefaultRateLimiter().Middleware())                  // Rate limiting: 100 req/min per IP
+	r.Use(middleware.NewIdempotencyMiddleware(repo).Middleware()) // API idempotency
 
 	// Health check endpoint with database status
 	r.GET("/health", func(c *gin.Context) {
@@ -102,14 +118,22 @@ func main() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 		<-sigCh
-		log.Println("Received shutdown signal")
+		log.Info("Received shutdown signal")
 		cancel()
 		executorService.Stop()
 	}()
 
 	// Start server
-	log.Printf("Starting subscription-executor on port %s", cfg.Port)
+	log.Info("Subscription Executor starting", slog.String("port", cfg.Port))
 	if err := r.Run(":" + cfg.Port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		log.Error("Failed to start server", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

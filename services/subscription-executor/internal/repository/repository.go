@@ -25,6 +25,11 @@ type SubscriptionRepository interface {
 	UpdateExecutionRecord(ctx context.Context, id int64, status, txHash, errMsg string, gasUsed string) error
 	GetExecutionRecords(ctx context.Context, subscriptionID string, limit int) ([]*model.ExecutionRecord, error)
 
+	// Idempotency
+	GetIdempotencyRecord(ctx context.Context, key, method, path string) (*model.IdempotencyRecord, error)
+	SaveIdempotencyRecord(ctx context.Context, record *model.IdempotencyRecord) error
+	DeleteExpiredIdempotencyRecords(ctx context.Context) (int64, error)
+
 	// Health check
 	Ping(ctx context.Context) error
 

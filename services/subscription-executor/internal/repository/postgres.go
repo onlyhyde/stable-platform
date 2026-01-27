@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -393,6 +394,64 @@ func (r *PostgresRepository) GetExecutionRecords(ctx context.Context, subscripti
 	}
 
 	return records, rows.Err()
+}
+
+// GetIdempotencyRecord retrieves a cached idempotency record that has not expired
+func (r *PostgresRepository) GetIdempotencyRecord(ctx context.Context, key, method, path string) (*model.IdempotencyRecord, error) {
+	query := `
+		SELECT key, method, path, status_code, response_body, response_headers, created_at, expires_at
+		FROM idempotency_keys
+		WHERE key = $1 AND method = $2 AND path = $3 AND expires_at > NOW()
+	`
+
+	var (
+		rec     model.IdempotencyRecord
+		headers []byte
+	)
+	err := r.pool.QueryRow(ctx, query, key, method, path).Scan(
+		&rec.Key, &rec.Method, &rec.Path, &rec.StatusCode,
+		&rec.ResponseBody, &headers, &rec.CreatedAt, &rec.ExpiresAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get idempotency record: %w", err)
+	}
+
+	if headers != nil {
+		_ = json.Unmarshal(headers, &rec.ResponseHeaders)
+	}
+
+	return &rec, nil
+}
+
+// SaveIdempotencyRecord saves a new idempotency record, ignoring conflicts (first-writer-wins)
+func (r *PostgresRepository) SaveIdempotencyRecord(ctx context.Context, record *model.IdempotencyRecord) error {
+	query := `
+		INSERT INTO idempotency_keys (key, method, path, status_code, response_body, response_headers, created_at, expires_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT (key, method, path) DO NOTHING
+	`
+
+	_, err := r.pool.Exec(ctx, query,
+		record.Key, record.Method, record.Path, record.StatusCode,
+		record.ResponseBody, record.ResponseHeaders,
+		record.CreatedAt, record.ExpiresAt,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to save idempotency record: %w", err)
+	}
+	return nil
+}
+
+// DeleteExpiredIdempotencyRecords removes expired idempotency records
+func (r *PostgresRepository) DeleteExpiredIdempotencyRecords(ctx context.Context) (int64, error) {
+	result, err := r.pool.Exec(ctx, `DELETE FROM idempotency_keys WHERE expires_at < NOW()`)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete expired idempotency records: %w", err)
+	}
+	return result.RowsAffected(), nil
 }
 
 // scanSubscription scans a single subscription row
