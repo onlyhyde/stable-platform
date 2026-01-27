@@ -18,6 +18,7 @@
     "dev": "tsup --watch",
     "lint": "biome lint src/",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "clean": "rm -rf dist"
   },
   "dependencies": {

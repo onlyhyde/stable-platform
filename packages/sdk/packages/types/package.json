@@ -1,5 +1,5 @@
 {
-  "name": "@stablenet/types",
+  "name": "@stablenet/sdk-types",
   "version": "0.1.0",
   "private": true,
   "description": "StableNet SDK - Shared Type Definitions",
