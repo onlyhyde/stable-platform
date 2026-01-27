@@ -5,6 +5,7 @@ packages:
   - "packages/types"
   - "packages/config"
   - "packages/contracts"
+  - "packages/registry-client"
 
   # Applications
   - "apps/*"
