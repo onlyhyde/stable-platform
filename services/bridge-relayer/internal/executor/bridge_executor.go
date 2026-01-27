@@ -11,8 +11,9 @@ import (
 	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/config"
 	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/domain"
 	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/ethereum"
-	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/mpc"
+	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/middleware"
 	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/monitor"
+	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/mpc"
 )
 
 // BridgeExecutor handles the execution of bridge requests
@@ -28,6 +29,9 @@ type BridgeExecutor struct {
 	processedCount  int
 	failedCount     int
 
+	// Event deduplication
+	eventTracker *middleware.ProcessedEventTracker
+
 	// State
 	isRunning bool
 	isPaused  bool
@@ -39,6 +43,7 @@ func NewBridgeExecutor(
 	mpcClient *mpc.SignerClient,
 	eventMonitor *monitor.EventMonitor,
 	contracts config.ContractConfig,
+	eventTracker *middleware.ProcessedEventTracker,
 ) *BridgeExecutor {
 	return &BridgeExecutor{
 		ethClient:       ethClient,
@@ -46,6 +51,7 @@ func NewBridgeExecutor(
 		monitor:         eventMonitor,
 		contracts:       contracts,
 		pendingRequests: make(map[[32]byte]*domain.BridgeRequest),
+		eventTracker:    eventTracker,
 	}
 }
 
@@ -103,6 +109,12 @@ func (e *BridgeExecutor) processBridgeInitiated(ctx context.Context) {
 
 // handleBridgeInitiated handles a BridgeInitiated event
 func (e *BridgeExecutor) handleBridgeInitiated(ctx context.Context, event domain.BridgeInitiatedEvent) error {
+	// Check for duplicate event processing
+	if e.eventTracker != nil && !e.eventTracker.MarkProcessed(event.RequestID, "BridgeInitiated") {
+		log.Printf("Skipping duplicate BridgeInitiated event: requestId=%x", event.RequestID[:8])
+		return nil
+	}
+
 	log.Printf("Processing BridgeInitiated: requestId=%x, amount=%s, sender=%s",
 		event.RequestID[:8], event.Amount.String(), event.Sender)
 
@@ -155,6 +167,12 @@ func (e *BridgeExecutor) processApprovedRequests(ctx context.Context) {
 
 // handleRequestApproved handles a RequestApproved event
 func (e *BridgeExecutor) handleRequestApproved(ctx context.Context, event domain.RequestApprovedEvent) error {
+	// Check for duplicate event processing
+	if e.eventTracker != nil && !e.eventTracker.MarkProcessed(event.RequestID, "RequestApproved") {
+		log.Printf("Skipping duplicate RequestApproved event: requestId=%x", event.RequestID[:8])
+		return nil
+	}
+
 	log.Printf("Processing RequestApproved: requestId=%x", event.RequestID[:8])
 
 	// Get pending request

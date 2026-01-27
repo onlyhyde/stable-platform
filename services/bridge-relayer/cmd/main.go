@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,21 +18,30 @@ import (
 	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/fraud"
 	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/guardian"
 	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/handler"
+	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/logger"
 	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/middleware"
 	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/monitor"
 	"github.com/stablenet/stable-platform/services/bridge-relayer/internal/mpc"
 )
 
 func main() {
+	// Initialize structured logger
+	log := logger.New(logger.Config{
+		Level:  getEnv("LOG_LEVEL", "info"),
+		Format: getEnv("LOG_FORMAT", "json"),
+		Name:   "bridge-relayer",
+	})
+
 	// Load .env file
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using environment variables")
+		log.Info("No .env file found, using environment variables")
 	}
 
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		log.Error("Failed to load configuration", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	// Set Gin mode
@@ -45,7 +54,8 @@ func main() {
 	// Initialize Ethereum client
 	ethClient, err := ethereum.NewClient(cfg.Ethereum)
 	if err != nil {
-		log.Fatalf("Failed to create Ethereum client: %v", err)
+		log.Error("Failed to create Ethereum client", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	// Initialize MPC signer client
@@ -60,38 +70,51 @@ func main() {
 	// Initialize guardian monitor
 	guardianMonitor := guardian.NewGuardianMonitor(ethClient, cfg.Contracts)
 
+	// Initialize event tracker for deduplication
+	eventTracker := middleware.NewProcessedEventTracker(middleware.DefaultIdempotencyTTL)
+
 	// Initialize bridge executor
-	bridgeExecutor := executor.NewBridgeExecutor(ethClient, mpcClient, eventMonitor, cfg.Contracts)
+	bridgeExecutor := executor.NewBridgeExecutor(ethClient, mpcClient, eventMonitor, cfg.Contracts, eventTracker)
 
 	// Start monitors
 	if err := eventMonitor.Start(ctx); err != nil {
-		log.Fatalf("Failed to start event monitor: %v", err)
+		log.Error("Failed to start event monitor", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	if err := fraudMonitor.Start(ctx); err != nil {
-		log.Fatalf("Failed to start fraud monitor: %v", err)
+		log.Error("Failed to start fraud monitor", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	if err := guardianMonitor.Start(ctx); err != nil {
-		log.Fatalf("Failed to start guardian monitor: %v", err)
+		log.Error("Failed to start guardian monitor", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	// Start executor
 	if err := bridgeExecutor.Start(ctx); err != nil {
-		log.Fatalf("Failed to start bridge executor: %v", err)
+		log.Error("Failed to start bridge executor", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	// Check MPC signer health
 	onlineSigners, err := mpcClient.HealthCheck(ctx)
 	if err != nil {
-		log.Printf("Warning: MPC health check failed: %v", err)
+		log.Warn("MPC health check failed", slog.String("error", err.Error()))
 	} else {
-		log.Printf("MPC signers online: %d/%d (threshold: %d)",
-			onlineSigners, mpcClient.GetTotalSigners(), mpcClient.GetThreshold())
+		log.Info("MPC signers online",
+			slog.Int("online", onlineSigners),
+			slog.Int("total", mpcClient.GetTotalSigners()),
+			slog.Int("threshold", mpcClient.GetThreshold()),
+		)
 	}
 
 	// Create Gin router
 	r := gin.New()
+
+	// Initialize idempotency store for API layer
+	idempotencyStore := middleware.NewIdempotencyStore(middleware.DefaultIdempotencyTTL)
 
 	// Apply middlewares
 	r.Use(middleware.RecoveryMiddleware())
@@ -101,6 +124,7 @@ func main() {
 	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.RateLimitMiddleware(cfg.RateLimit.RequestsPerSecond, cfg.RateLimit.Burst))
 	r.Use(middleware.BodyLimitMiddleware(1 << 20)) // 1MB limit
+	r.Use(middleware.IdempotencyMiddleware(idempotencyStore))
 
 	// Create handler and register routes
 	h := handler.NewHandler(bridgeExecutor, eventMonitor, fraudMonitor, guardianMonitor, mpcClient)
@@ -116,12 +140,15 @@ func main() {
 
 	// Start server in goroutine
 	go func() {
-		log.Printf("Starting bridge-relayer on port %s", cfg.Server.Port)
-		log.Printf("Source chain: %d, Target chain: %d",
-			cfg.Ethereum.SourceChainID, cfg.Ethereum.TargetChainID)
+		log.Info("Bridge Relayer starting",
+			slog.String("port", cfg.Server.Port),
+			slog.Uint64("sourceChain", cfg.Ethereum.SourceChainID),
+			slog.Uint64("targetChain", cfg.Ethereum.TargetChainID),
+		)
 
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
+			log.Error("Failed to start server", slog.String("error", err.Error()))
+			os.Exit(1)
 		}
 	}()
 
@@ -130,7 +157,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down bridge-relayer...")
+	log.Info("Shutting down bridge-relayer")
 
 	// Cancel context to stop all monitors
 	cancel()
@@ -146,8 +173,15 @@ func main() {
 	defer shutdownCancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Printf("Server forced to shutdown: %v", err)
+		log.Error("Server forced to shutdown", slog.String("error", err.Error()))
 	}
 
-	log.Println("Bridge-relayer stopped")
+	log.Info("Bridge-relayer stopped")
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
