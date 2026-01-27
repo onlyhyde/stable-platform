@@ -1,5 +1,8 @@
 import { useWalletStore } from '../hooks/useWalletStore'
 import { AccountSelector } from './common/AccountSelector'
+import { createLogger } from '../../shared/utils/logger'
+
+const logger = createLogger('Header')
 
 export function Header() {
   const {
@@ -17,10 +20,7 @@ export function Header() {
     try {
       await addAccount()
     } catch (error) {
-      // Log errors only in development mode
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[Header] Failed to add account:', error)
-      }
+      logger.error('Failed to add account', error)
     }
   }
 

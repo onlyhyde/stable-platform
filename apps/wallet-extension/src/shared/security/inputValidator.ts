@@ -125,7 +125,16 @@ export class InputValidator {
 
     // Validate EIP-55 checksum for mixed case addresses
     if (errors.length === 0) {
+      const hexPart = address.slice(2)
+      const lowerCase = hexPart.toLowerCase()
+      const upperCase = hexPart.toUpperCase()
+      const isMixedCase = hexPart !== lowerCase && hexPart !== upperCase
+
       if (!hasValidChecksum(address)) {
+        // Mixed case with invalid checksum - add warning
+        if (isMixedCase) {
+          warnings.push('Address has mixed case but invalid EIP-55 checksum')
+        }
         errors.push('Address has invalid EIP-55 checksum')
       }
     }

@@ -12,6 +12,10 @@
 
 import type { EIP1193Provider, ExtensionMessage, JsonRpcRequest, JsonRpcResponse } from '../types'
 import { MESSAGE_TYPES, PROVIDER_EVENTS } from '../shared/constants'
+import { createLogger } from '../shared/utils/logger'
+
+// Logger for inpage provider
+const logger = createLogger('InpageProvider')
 
 type EventListener = (...args: unknown[]) => void
 
@@ -24,6 +28,9 @@ try {
   appearAsMetaMask = false
 }
 
+// Track current mode for dynamic updates
+let currentMetaMaskMode = appearAsMetaMask
+
 /**
  * Generate a deterministic UUID for EIP-6963
  * Uses a fixed UUID for consistent wallet identification
@@ -32,12 +39,25 @@ const WALLET_UUID = 'd8f3b2a1-5c4e-4f6d-9a8b-7e1c2d3f4a5b'
 
 /**
  * Wallet info for EIP-6963 announcement
+ * Made mutable to support dynamic MetaMask mode switching
  */
-const walletInfo = {
+let walletInfo = {
   uuid: WALLET_UUID,
   name: appearAsMetaMask ? 'MetaMask' : 'StableNet Wallet',
   icon: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiM0RjQ2RTUiLz48dGV4dCB4PSIxNiIgeT0iMjEiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LXNpemU9IjE0IiBmb250LWZhbWlseT0iQXJpYWwiPjwvdGV4dD48cGF0aCBkPSJNOCAxMmgxNnYySDh6TTggMTZoMTJ2Mkg4ek04IDIwaDh2Mkg4eiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=',
   rdns: appearAsMetaMask ? 'io.metamask' : 'dev.stablenet.wallet',
+}
+
+/**
+ * Update wallet info for MetaMask mode change
+ */
+function updateWalletInfo(asMetaMask: boolean): void {
+  walletInfo = {
+    uuid: WALLET_UUID,
+    name: asMetaMask ? 'MetaMask' : 'StableNet Wallet',
+    icon: walletInfo.icon,
+    rdns: asMetaMask ? 'io.metamask' : 'dev.stablenet.wallet',
+  }
 }
 
 /**
@@ -73,6 +93,30 @@ class StableNetProvider implements EIP1193Provider {
 
     this.setupMessageListener()
     this.initialize()
+  }
+
+  /**
+   * Update MetaMask compatibility mode dynamically
+   * This allows changing the mode without page refresh
+   */
+  setMetaMaskMode(enabled: boolean): void {
+    this.isMetaMask = enabled
+
+    if (enabled) {
+      this._metamask = {
+        isUnlocked: () => Promise.resolve(true),
+      }
+    } else {
+      delete this._metamask
+    }
+
+    // Update global mode tracker
+    currentMetaMaskMode = enabled
+
+    // Update wallet info for EIP-6963
+    updateWalletInfo(enabled)
+
+    logger.info(`MetaMask mode ${enabled ? 'enabled' : 'disabled'}`)
   }
 
   /**
@@ -386,28 +430,21 @@ function shimWeb3(provider: StableNetProvider, asMetaMask: boolean): void {
 
   let loggedCurrentProvider = false
   let loggedWeb3Set = false
-  const isDev = process.env.NODE_ENV === 'development'
 
   const web3Shim = new Proxy(shim, {
     get: (target, property, ...args) => {
-      if (property === 'currentProvider' && !loggedCurrentProvider && isDev) {
+      if (property === 'currentProvider' && !loggedCurrentProvider) {
         loggedCurrentProvider = true
-        console.warn(
-          '[StableNet] window.web3.currentProvider is deprecated; use window.ethereum instead.'
-        )
-      } else if (property !== 'currentProvider' && property !== SHIM_IDENTIFIER && isDev) {
-        console.warn(
-          `[StableNet] window.web3.${String(property)} is not supported; use window.ethereum instead.`
-        )
+        logger.warn('window.web3.currentProvider is deprecated; use window.ethereum instead')
+      } else if (property !== 'currentProvider' && property !== SHIM_IDENTIFIER) {
+        logger.warn(`window.web3.${String(property)} is not supported; use window.ethereum instead`)
       }
       return Reflect.get(target, property, ...args)
     },
     set: (...args) => {
-      if (!loggedWeb3Set && isDev) {
+      if (!loggedWeb3Set) {
         loggedWeb3Set = true
-        console.warn(
-          '[StableNet] window.web3 is deprecated; use window.ethereum instead.'
-        )
+        logger.warn('window.web3 is deprecated; use window.ethereum instead')
       }
       return Reflect.set(...args)
     },
@@ -449,6 +486,39 @@ function announceEIP6963Provider(): void {
 
 // Announce via EIP-6963
 announceEIP6963Provider()
+
+/**
+ * Listen for MetaMask mode change from contentscript
+ * This enables dynamic mode switching without page refresh
+ */
+function listenForMetaMaskModeChange(): void {
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return
+    if (event.data?.target !== 'stablenet-inpage') return
+    if (event.data?.data?.type !== 'METAMASK_MODE_CHANGED') return
+
+    const { enabled } = event.data.data.payload as { enabled: boolean }
+
+    // Only update if mode actually changed
+    if (enabled !== currentMetaMaskMode) {
+      provider.setMetaMaskMode(enabled)
+
+      // Re-announce via EIP-6963 with updated info
+      announceEIP6963Provider()
+
+      // Update window.ethereum reference if needed
+      setProvider()
+
+      // Note: web3 shim's currentProvider already points to the same provider object,
+      // so it will automatically reflect the updated isMetaMask flag
+
+      logger.info(`MetaMask mode dynamically switched to: ${enabled}`)
+    }
+  })
+}
+
+// Start listening for mode changes
+listenForMetaMaskModeChange()
 
 /**
  * Handle embedded actions from extension

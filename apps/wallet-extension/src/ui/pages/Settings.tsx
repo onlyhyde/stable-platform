@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useWalletStore } from '../hooks/useWalletStore'
-import type { Network } from '../../types'
+import type { Network, ConnectedSite } from '../../types'
 
 const AUTO_LOCK_OPTIONS = [
   { value: 1, label: '1 minute' },
@@ -47,6 +47,18 @@ export function Settings() {
   const [isAddingNetwork, setIsAddingNetwork] = useState(false)
   const [networkError, setNetworkError] = useState<string | null>(null)
   const [networkSuccess, setNetworkSuccess] = useState<string | null>(null)
+
+  // Export Private Key state
+  const [showExportKey, setShowExportKey] = useState(false)
+  const [exportedKey, setExportedKey] = useState<string | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+  const [showKey, setShowKey] = useState(false)
+
+  // Connected Sites state
+  const [showConnectedSites, setShowConnectedSites] = useState(false)
+  const [connectedSites, setConnectedSites] = useState<ConnectedSite[]>([])
+  const [isLoadingSites, setIsLoadingSites] = useState(false)
 
   // Load settings on mount
   useEffect(() => {
@@ -223,6 +235,87 @@ export function Settings() {
     },
     [removeNetwork, syncWithBackground]
   )
+
+  // Export Private Key handler
+  const handleExportPrivateKey = useCallback(async () => {
+    const { selectedAccount } = useWalletStore.getState()
+    if (!selectedAccount) {
+      setExportError('No account selected')
+      return
+    }
+
+    setIsExporting(true)
+    setExportError(null)
+    setExportedKey(null)
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'EXPORT_PRIVATE_KEY',
+        id: `export-${Date.now()}`,
+        payload: { address: selectedAccount },
+      })
+
+      if (response?.payload?.success) {
+        setExportedKey(response.payload.privateKey)
+      } else {
+        setExportError(response?.payload?.error ?? 'Failed to export private key')
+      }
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Failed to export private key')
+    } finally {
+      setIsExporting(false)
+    }
+  }, [])
+
+  // Load Connected Sites handler
+  const loadConnectedSites = useCallback(async () => {
+    setIsLoadingSites(true)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_CONNECTED_SITES',
+        id: `sites-${Date.now()}`,
+        payload: {},
+      })
+
+      if (response?.payload?.sites) {
+        setConnectedSites(response.payload.sites)
+      }
+    } catch {
+      // Silent fail
+    } finally {
+      setIsLoadingSites(false)
+    }
+  }, [])
+
+  // Disconnect Site handler
+  const handleDisconnectSite = useCallback(async (origin: string) => {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'DISCONNECT_SITE',
+        id: `disconnect-${Date.now()}`,
+        payload: { origin },
+      })
+
+      // Refresh the list
+      await loadConnectedSites()
+    } catch {
+      // Silent fail
+    }
+  }, [loadConnectedSites])
+
+  // Open Connected Sites
+  const handleOpenConnectedSites = useCallback(() => {
+    setShowConnectedSites(true)
+    loadConnectedSites()
+  }, [loadConnectedSites])
+
+  // Close Export Key modal
+  const handleCloseExportKey = useCallback(() => {
+    setShowExportKey(false)
+    setExportedKey(null)
+    setExportError(null)
+    setShowKey(false)
+  }, [])
 
   return (
     <div className="p-4 overflow-y-auto max-h-[500px]">
@@ -432,6 +525,7 @@ export function Settings() {
             {/* Export Private Key */}
             <button
               type="button"
+              onClick={() => setShowExportKey(true)}
               className="w-full p-3 rounded-lg border border-gray-200 flex items-center justify-between hover:bg-gray-50"
             >
               <span>Export Private Key</span>
@@ -451,9 +545,84 @@ export function Settings() {
               </svg>
             </button>
 
+            {/* Export Private Key Modal */}
+            {showExportKey && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-4 w-80 max-h-[90vh] overflow-y-auto">
+                  <h3 className="text-lg font-bold mb-4">Export Private Key</h3>
+
+                  {!exportedKey ? (
+                    <>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Warning: Never share your private key. Anyone with your private key can
+                        steal your funds.
+                      </p>
+                      {exportError && <p className="text-sm text-red-600 mb-3">{exportError}</p>}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleCloseExportKey}
+                          className="flex-1 py-2 border border-gray-200 rounded-lg text-sm"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleExportPrivateKey}
+                          disabled={isExporting}
+                          className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {isExporting ? 'Exporting...' : 'Show Key'}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mb-4">
+                        <label className="text-xs text-gray-500 block mb-1">Private Key</label>
+                        <div className="relative">
+                          <input
+                            type={showKey ? 'text' : 'password'}
+                            readOnly
+                            value={exportedKey}
+                            className="w-full p-2 border border-gray-200 rounded-lg text-xs font-mono pr-16"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowKey(!showKey)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-indigo-600"
+                          >
+                            {showKey ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(exportedKey)
+                          alert('Copied to clipboard')
+                        }}
+                        className="w-full py-2 mb-2 border border-indigo-600 text-indigo-600 rounded-lg text-sm hover:bg-indigo-50"
+                      >
+                        Copy to Clipboard
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCloseExportKey}
+                        className="w-full py-2 bg-gray-100 rounded-lg text-sm"
+                      >
+                        Done
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Connected Sites */}
             <button
               type="button"
+              onClick={handleOpenConnectedSites}
               className="w-full p-3 rounded-lg border border-gray-200 flex items-center justify-between hover:bg-gray-50"
             >
               <span>Connected Sites</span>
@@ -472,6 +641,70 @@ export function Settings() {
                 />
               </svg>
             </button>
+
+            {/* Connected Sites Modal */}
+            {showConnectedSites && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-4 w-80 max-h-[90vh] overflow-y-auto">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold">Connected Sites</h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowConnectedSites(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {isLoadingSites ? (
+                    <p className="text-sm text-gray-500 text-center py-4">Loading...</p>
+                  ) : connectedSites.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No connected sites
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {connectedSites.map((site) => (
+                        <div
+                          key={site.origin}
+                          className="p-3 rounded-lg border border-gray-200 flex items-center justify-between"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{site.origin}</p>
+                            <p className="text-xs text-gray-400">
+                              {site.accounts.length} account{site.accounts.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDisconnectSite(site.origin)}
+                            className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                          >
+                            Disconnect
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowConnectedSites(false)}
+                    className="w-full mt-4 py-2 bg-gray-100 rounded-lg text-sm"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

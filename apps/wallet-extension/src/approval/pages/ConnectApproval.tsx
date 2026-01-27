@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import type { Address } from 'viem'
 import type { ConnectApprovalRequest } from '../../types'
 import { Button, Card, Spinner } from '../../ui/components/common'
+import { createLogger } from '../../shared/utils/logger'
+
+const logger = createLogger('ConnectApproval')
 
 interface WalletAccount {
   address: Address
@@ -49,10 +52,7 @@ export function ConnectApproval({
         }
       }
     } catch (err) {
-      // Log errors only in development mode
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[ConnectApproval] Failed to load accounts:', err)
-      }
+      logger.error('Failed to load accounts', err)
     } finally {
       setLoading(false)
     }

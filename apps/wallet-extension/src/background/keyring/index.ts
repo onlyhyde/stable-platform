@@ -457,13 +457,21 @@ export class KeyringController {
       throw new Error('Vault is locked')
     }
 
+    // Check HD keyrings first
+    for (const keyring of this.hdKeyrings) {
+      if (keyring.hasAccount(address)) {
+        return keyring.exportPrivateKey(address)
+      }
+    }
+
+    // Check simple keyrings
     for (const keyring of this.simpleKeyrings) {
       if (keyring.hasAccount(address)) {
         return keyring.exportPrivateKey(address)
       }
     }
 
-    throw new Error('Can only export private keys from imported accounts')
+    throw new Error('Account not found')
   }
 
   /**

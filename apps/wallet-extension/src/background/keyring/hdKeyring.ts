@@ -198,4 +198,25 @@ export class HDKeyring {
       (a) => a.address.toLowerCase() === address.toLowerCase()
     )
   }
+
+  /**
+   * Export private key for an account
+   */
+  exportPrivateKey(address: Address): Hex {
+    const account = this.getSigningAccount(address)
+    if (!account) {
+      throw new Error('Account not found in keyring')
+    }
+
+    // viem's mnemonicToAccount returns an account with getHdKey() method
+    // that provides access to the private key
+    const hdKey = account.getHdKey()
+    if (!hdKey.privateKey) {
+      throw new Error('Private key not available')
+    }
+
+    // Convert Uint8Array to hex string
+    const privateKeyHex = `0x${Buffer.from(hdKey.privateKey).toString('hex')}` as Hex
+    return privateKeyHex
+  }
 }

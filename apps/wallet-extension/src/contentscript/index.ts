@@ -125,7 +125,7 @@ function setupMessageRelay(): void {
 
 /**
  * Listen for MetaMask mode changes from background
- * When changed, notify the page that a reload is needed
+ * When changed, notify the inpage script to update dynamically
  */
 function listenForModeChanges(): void {
   chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -135,11 +135,22 @@ function listenForModeChanges(): void {
       // Update localStorage for next page load
       window.localStorage.setItem('__stablenetAppearAsMM__', JSON.stringify(newValue))
 
-      // Notify the page that MetaMask mode has changed
-      // dApps can listen to this custom event if they want to handle it
+      // Send message to inpage script to update dynamically (no page refresh needed)
+      window.postMessage(
+        {
+          target: 'stablenet-inpage',
+          data: {
+            type: 'METAMASK_MODE_CHANGED',
+            payload: { enabled: newValue },
+          },
+        },
+        window.location.origin
+      )
+
+      // Also dispatch custom event for dApps that want to listen
       window.dispatchEvent(
         new CustomEvent('stablenet:metamaskModeChanged', {
-          detail: { enabled: newValue, requiresReload: true },
+          detail: { enabled: newValue, requiresReload: false },
         })
       )
     }

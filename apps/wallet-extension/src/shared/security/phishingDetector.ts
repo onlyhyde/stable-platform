@@ -312,6 +312,17 @@ export class PhishingDetector {
       }
     }
 
+    // Check if it's a known trusted domain
+    if (this.trustedDomains.has(baseDomain) || this.trustedDomains.has(domain)) {
+      return {
+        domain,
+        baseDomain,
+        isSafe: true,
+        riskLevel: RiskLevel.SAFE,
+        warnings,
+      }
+    }
+
     // Unknown domains should not be considered safe by default
     return {
       domain,

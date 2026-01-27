@@ -20,6 +20,9 @@ import { approvalController } from './controllers/approvalController'
 import type { ExtensionMessage, JsonRpcRequest } from '../types'
 import type { Address, Hex } from 'viem'
 import { MESSAGE_TYPES } from '../shared/constants'
+import { createLogger } from '../shared/utils/logger'
+
+const logger = createLogger('Background')
 
 // =============================================================================
 // Tab Subscription Management
@@ -754,6 +757,49 @@ async function handleMessage(
       }
     }
 
+    case 'EXPORT_PRIVATE_KEY': {
+      const { address } = message.payload as { address: Address }
+
+      try {
+        const privateKey = keyringController.exportPrivateKey(address)
+        return {
+          type: 'PRIVATE_KEY_EXPORTED',
+          id: message.id,
+          payload: { success: true, privateKey },
+        }
+      } catch (err) {
+        return {
+          type: 'PRIVATE_KEY_ERROR',
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to export private key',
+          },
+        }
+      }
+    }
+
+    case 'GET_CONNECTED_SITES': {
+      const state = walletState.getState()
+      return {
+        type: 'CONNECTED_SITES',
+        id: message.id,
+        payload: { sites: state.connections.connectedSites },
+      }
+    }
+
+    case 'DISCONNECT_SITE': {
+      const { origin: siteOrigin } = message.payload as { origin: string }
+
+      await walletState.removeConnectedSite(siteOrigin)
+
+      return {
+        type: 'SITE_DISCONNECTED',
+        id: message.id,
+        payload: { success: true },
+      }
+    }
+
     default:
       return {
         type: MESSAGE_TYPES.RPC_RESPONSE,
@@ -902,10 +948,7 @@ async function initialize(): Promise<void> {
 
 // Initialize with proper error handling
 initialize().catch((error) => {
-  // Log initialization errors in development
-  if (process.env.NODE_ENV === 'development') {
-    console.error('[Background] Initialization failed:', error)
-  }
+  logger.error('Initialization failed', error)
   // Continue running - partial functionality may still work
 })
 

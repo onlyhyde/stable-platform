@@ -3,6 +3,10 @@
  * Manages gas fee estimation and EIP-1559 support
  */
 
+import { createLogger } from '../../shared/utils/logger'
+
+const logger = createLogger('GasFeeController')
+
 /**
  * Gas price history entry
  */
@@ -337,18 +341,14 @@ export class GasFeeController {
     // Initial fetch - errors are handled internally, polling continues on failure
     this.getGasPrice().catch((error) => {
       // Silently ignore polling errors - will retry on next interval
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('[GasFeeController] Gas price fetch failed:', error)
-      }
+      logger.debug('Gas price fetch failed', { error })
     })
 
     // Set up polling
     this.pollingTimer = setInterval(() => {
       this.getGasPrice().catch((error) => {
         // Silently ignore polling errors - will retry on next interval
-        if (process.env.NODE_ENV === 'development') {
-          console.debug('[GasFeeController] Gas price fetch failed:', error)
-        }
+        logger.debug('Gas price fetch failed', { error })
       })
     }, this.state.pollingInterval)
   }

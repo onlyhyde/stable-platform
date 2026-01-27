@@ -11,6 +11,9 @@ import type {
   ApprovalControllerState,
 } from '../../types'
 import { generateRandomHex } from '../keyring/crypto'
+import { createLogger } from '../../shared/utils/logger'
+
+const logger = createLogger('ApprovalController')
 
 /**
  * Approval Controller
@@ -386,10 +389,7 @@ export class ApprovalController {
         focused: true,
       })
     } catch (error) {
-      // Log errors only in development mode
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[ApprovalController] Failed to open approval popup:', error)
-      }
+      logger.error('Failed to open approval popup', error)
     }
   }
 

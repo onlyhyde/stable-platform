@@ -201,8 +201,9 @@ describe('PhishingDetector', () => {
       detector.removeFromAllowlist('temporary-allow.com')
       const result = detector.checkUrl('https://temporary-allow.com')
 
-      // Should be checked normally after removal
-      expect(result.isSafe).toBe(true) // Unknown domain, no threats detected
+      // Should be checked normally after removal - unknown domains are not safe
+      expect(result.isSafe).toBe(false)
+      expect(result.riskLevel).toBe(RiskLevel.LOW) // Unknown domain, low risk
     })
   })
 })
