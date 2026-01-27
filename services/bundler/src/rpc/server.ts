@@ -10,6 +10,7 @@ import { BundleExecutor } from '../executor/bundleExecutor'
 import { UserOperationValidator } from '../validation'
 import type { Logger } from '../utils/logger'
 import { unpackUserOperation, getUserOperationHash } from './utils'
+import { DEFAULT_CORS_ORIGINS } from '../cli/config'
 
 /**
  * JSON-RPC request
@@ -142,15 +143,7 @@ export class RpcServer {
         ? this.config.corsOrigins.includes('*')
           ? true // Explicit wildcard
           : this.config.corsOrigins // Whitelist
-        : [
-            // Default: localhost only
-            'http://localhost:3000',
-            'http://localhost:4173',
-            'http://localhost:5173',
-            'http://127.0.0.1:3000',
-            'http://127.0.0.1:4173',
-            'http://127.0.0.1:5173',
-          ]
+        : [...DEFAULT_CORS_ORIGINS] // Default: localhost only
 
     await this.app.register(cors, { origin: corsOrigin })
 

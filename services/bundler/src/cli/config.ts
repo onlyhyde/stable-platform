@@ -75,6 +75,19 @@ function parseCorsOriginsFromEnv(): string[] | undefined {
 }
 
 /**
+ * Default CORS origins for development
+ * These are common local development ports
+ */
+export const DEFAULT_CORS_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:4173',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:4173',
+  'http://127.0.0.1:5173',
+] as const
+
+/**
  * Default bundler configuration
  */
 export const DEFAULT_CONFIG: Partial<BundlerConfig> = {

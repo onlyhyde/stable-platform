@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use super::stealth::verify_registration_signature;
+
 /// Stealth meta-address as defined in EIP-5564
 /// Format: st:<chain>:0x<spendingPubKey><viewingPubKey>
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,6 +25,8 @@ pub enum RegistryError {
     InvalidKeyLength(usize),
     #[error("Hex decode error: {0}")]
     HexError(#[from] hex::FromHexError),
+    #[error("Signature verification failed: {0}")]
+    SignatureVerificationFailed(String),
 }
 
 impl StealthMetaAddress {
@@ -91,12 +95,14 @@ pub struct Registration {
 }
 
 impl Registration {
-    /// Verify the registration signature
+    /// Verify the registration signature using ecrecover
     /// The message to sign is: "Register stealth meta-address: <uri>"
     pub fn verify_signature(&self) -> Result<bool, RegistryError> {
-        // TODO: Implement signature verification using ecrecover
-        // For now, return true (placeholder)
-        Ok(true)
+        let meta_address_uri = self.stealth_meta_address.to_uri();
+
+        verify_registration_signature(&self.address, &meta_address_uri, &self.signature)
+            .map(|_| true)
+            .map_err(|e| RegistryError::SignatureVerificationFailed(e.to_string()))
     }
 
     /// Generate the message that should be signed for registration

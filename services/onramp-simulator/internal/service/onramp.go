@@ -141,9 +141,12 @@ func (s *OnRampService) processOrder(orderID string) {
 	// Update to processing
 	order.Status = model.OrderStatusProcessing
 	order.UpdatedAt = time.Now()
+
+	// Create a copy to avoid race condition with webhook goroutine
+	processingCopy := *order
 	s.mu.Unlock()
 
-	go s.sendWebhook("order.processing", order)
+	go s.sendWebhook("order.processing", &processingCopy)
 
 	// Simulate crypto transfer delay
 	time.Sleep(time.Duration(s.cfg.ProcessingTime) * time.Second)
@@ -166,7 +169,9 @@ func (s *OnRampService) processOrder(orderID string) {
 	}
 	order.UpdatedAt = now
 
-	go s.sendWebhook("order."+string(order.Status), order)
+	// Create a copy to avoid race condition with webhook goroutine
+	finalCopy := *order
+	go s.sendWebhook("order."+string(order.Status), &finalCopy)
 }
 
 // GetOrder returns an order by ID
@@ -214,7 +219,9 @@ func (s *OnRampService) CancelOrder(id string) (*model.Order, error) {
 
 	log.Printf("Order cancelled: %s", id)
 
-	go s.sendWebhook("order.cancelled", order)
+	// Create a copy to avoid race condition with webhook goroutine
+	orderCopy := *order
+	go s.sendWebhook("order.cancelled", &orderCopy)
 
 	return order, nil
 }

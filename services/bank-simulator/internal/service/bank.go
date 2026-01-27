@@ -202,7 +202,9 @@ func (s *BankService) FreezeAccount(accountNo string) error {
 	account.UpdatedAt = time.Now()
 	log.Printf("Account frozen: %s", maskAccountNo(accountNo))
 
-	go s.sendWebhook("account.frozen", account)
+	// Create a copy to avoid race condition with webhook goroutine
+	accountCopy := *account
+	go s.sendWebhook("account.frozen", &accountCopy)
 	return nil
 }
 
@@ -224,7 +226,9 @@ func (s *BankService) UnfreezeAccount(accountNo string) error {
 	account.UpdatedAt = time.Now()
 	log.Printf("Account unfrozen: %s", maskAccountNo(accountNo))
 
-	go s.sendWebhook("account.unfrozen", account)
+	// Create a copy to avoid race condition with webhook goroutine
+	accountCopy := *account
+	go s.sendWebhook("account.unfrozen", &accountCopy)
 	return nil
 }
 

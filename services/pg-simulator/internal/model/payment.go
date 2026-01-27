@@ -8,11 +8,25 @@ import (
 type PaymentStatus string
 
 const (
-	PaymentStatusPending   PaymentStatus = "pending"
-	PaymentStatusApproved  PaymentStatus = "approved"
-	PaymentStatusDeclined  PaymentStatus = "declined"
-	PaymentStatusRefunded  PaymentStatus = "refunded"
-	PaymentStatusCancelled PaymentStatus = "cancelled"
+	PaymentStatusPending            PaymentStatus = "pending"
+	PaymentStatusRequires3DS        PaymentStatus = "requires_3ds"
+	PaymentStatusPending3DSComplete PaymentStatus = "pending_3ds_complete"
+	PaymentStatusApproved           PaymentStatus = "approved"
+	PaymentStatusDeclined           PaymentStatus = "declined"
+	PaymentStatusRefunded           PaymentStatus = "refunded"
+	PaymentStatusCancelled          PaymentStatus = "cancelled"
+)
+
+// ThreeDSecureStatus represents the status of 3D Secure authentication
+type ThreeDSecureStatus string
+
+const (
+	ThreeDSecureStatusNotRequired ThreeDSecureStatus = "not_required"
+	ThreeDSecureStatusPending     ThreeDSecureStatus = "pending"
+	ThreeDSecureStatusChallenged  ThreeDSecureStatus = "challenged"
+	ThreeDSecureStatusSucceeded   ThreeDSecureStatus = "succeeded"
+	ThreeDSecureStatusFailed      ThreeDSecureStatus = "failed"
+	ThreeDSecureStatusAbandoned   ThreeDSecureStatus = "abandoned"
 )
 
 // PaymentMethod represents payment method type
@@ -39,6 +53,22 @@ type Payment struct {
 	RefundedAt    *time.Time    `json:"refundedAt,omitempty"`
 	CreatedAt     time.Time     `json:"createdAt"`
 	UpdatedAt     time.Time     `json:"updatedAt"`
+
+	// 3D Secure fields
+	ThreeDSecure *ThreeDSecureData `json:"threeDSecure,omitempty"`
+}
+
+// ThreeDSecureData contains 3D Secure authentication data
+type ThreeDSecureData struct {
+	Status            ThreeDSecureStatus `json:"status"`
+	Version           string             `json:"version"`             // "1.0" or "2.0"
+	ACSTransactionID  string             `json:"acsTransactionId"`    // Access Control Server transaction ID
+	DSTransactionID   string             `json:"dsTransactionId"`     // Directory Server transaction ID
+	AuthenticationURL string             `json:"authenticationUrl"`   // URL for cardholder authentication
+	ChallengeRequired bool               `json:"challengeRequired"`   // Whether challenge is required
+	ECI               string             `json:"eci,omitempty"`       // Electronic Commerce Indicator
+	CAVV              string             `json:"cavv,omitempty"`      // Cardholder Authentication Verification Value
+	AuthenticatedAt   *time.Time         `json:"authenticatedAt,omitempty"`
 }
 
 // CardDetails represents credit card details
@@ -72,4 +102,34 @@ type WebhookPayload struct {
 	EventType string      `json:"eventType"`
 	Timestamp time.Time   `json:"timestamp"`
 	Data      interface{} `json:"data"`
+}
+
+// ThreeDSecureInitiateRequest represents a request to initiate 3D Secure authentication
+type ThreeDSecureInitiateRequest struct {
+	ReturnURL string `json:"returnUrl" binding:"required"` // URL to redirect after authentication
+	UserAgent string `json:"userAgent,omitempty"`          // Browser user agent
+	IPAddress string `json:"ipAddress,omitempty"`          // Customer IP address
+}
+
+// ThreeDSecureInitiateResponse represents the response from 3D Secure initiation
+type ThreeDSecureInitiateResponse struct {
+	PaymentID         string             `json:"paymentId"`
+	Status            ThreeDSecureStatus `json:"status"`
+	ChallengeRequired bool               `json:"challengeRequired"`
+	AuthenticationURL string             `json:"authenticationUrl,omitempty"` // URL to redirect for challenge
+	ACSTransactionID  string             `json:"acsTransactionId,omitempty"`
+}
+
+// ThreeDSecureCompleteRequest represents a request to complete 3D Secure authentication
+type ThreeDSecureCompleteRequest struct {
+	ChallengeResponse string `json:"challengeResponse,omitempty"` // Response from the challenge (OTP, etc.)
+}
+
+// ThreeDSecureCompleteResponse represents the response from completing 3D Secure
+type ThreeDSecureCompleteResponse struct {
+	PaymentID   string             `json:"paymentId"`
+	Status      ThreeDSecureStatus `json:"status"`
+	PaymentStatus PaymentStatus    `json:"paymentStatus"`
+	ECI         string             `json:"eci,omitempty"`
+	CAVV        string             `json:"cavv,omitempty"`
 }

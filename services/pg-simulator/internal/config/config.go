@@ -8,7 +8,8 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	Port string
+	Port    string
+	BaseURL string // Base URL for 3DS challenge redirects
 
 	// Webhook settings
 	WebhookURL    string
@@ -20,8 +21,10 @@ type Config struct {
 
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
+	port := getEnv("PORT", "4351")
 	cfg := &Config{
-		Port:          getEnv("PORT", "4351"),
+		Port:          port,
+		BaseURL:       getEnv("BASE_URL", "http://localhost:"+port),
 		WebhookURL:    getEnv("WEBHOOK_URL", ""),
 		WebhookSecret: getEnvWithWarning("WEBHOOK_SECRET", "pg-webhook-secret-dev"),
 		SuccessRate:   getEnvInt("SUCCESS_RATE", 95),
