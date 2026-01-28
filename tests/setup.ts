@@ -15,28 +15,37 @@ export const TEST_CONFIG = {
   // Contract addresses (deployed to local Anvil)
   contracts: {
     // ERC-4337 Core
-    entryPoint: process.env.ENTRY_POINT_ADDRESS || '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+    entryPoint: process.env.ENTRY_POINT_ADDRESS || '0x4A679253410272dd5232B3Ff7cF5dbB88f295319',
 
     // Kernel Smart Account
-    kernelFactory: process.env.KERNEL_FACTORY_ADDRESS || '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
-    kernelImplementation: process.env.KERNEL_IMPLEMENTATION_ADDRESS || '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+    kernelFactory: process.env.KERNEL_FACTORY_ADDRESS || '0x09635F643e140090A9A8Dcd712eD6285858ceBef',
+    kernelImplementation: process.env.KERNEL_IMPLEMENTATION_ADDRESS || '0x7a2088a1bFc9d81c55368AE168C2C02570cB814F',
 
     // Validators
-    ecdsaValidator: process.env.ECDSA_VALIDATOR_ADDRESS || '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',
-    sessionKeyValidator: process.env.SESSION_KEY_VALIDATOR_ADDRESS || '',
+    ecdsaValidator: process.env.ECDSA_VALIDATOR_ADDRESS || '0x67d269191c92Caf3cD7723F116c85e6E9bf55933',
+    sessionKeyValidator: process.env.SESSION_KEY_VALIDATOR_ADDRESS || '0x95401dc811bb5740090279Ba06cfA8fcF6113778',
 
     // Paymasters
-    verifyingPaymaster: process.env.VERIFYING_PAYMASTER_ADDRESS || '0x0165878A594ca255338adfa4d48449f69242Eb8F',
+    verifyingPaymaster: process.env.VERIFYING_PAYMASTER_ADDRESS || '0x4c5859f0F772848b2D91F1D83E2Fe57935348029',
     subscriptionPaymaster: process.env.SUBSCRIPTION_PAYMASTER_ADDRESS || '',
 
     // Tokens
-    usdc: process.env.USDC_ADDRESS || '',
+    usdc: process.env.USDC_ADDRESS || '0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44',
     usdt: process.env.USDT_ADDRESS || '',
-    weth: process.env.WETH_ADDRESS || '',
+    weth: process.env.WETH_ADDRESS || '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1',
+
+    // Subscription
+    subscriptionManager: process.env.SUBSCRIPTION_MANAGER_ADDRESS || '0x9d4454B023096f34B160D6B654540c56A1F81688',
+    permissionManager: process.env.PERMISSION_MANAGER_ADDRESS || '0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf',
+    recurringPaymentExecutor: process.env.RECURRING_PAYMENT_EXECUTOR_ADDRESS || '0x998abeb3E57409262aE5b751f60747921B33613E',
 
     // DeFi
     uniswapV3Router: process.env.UNISWAP_V3_ROUTER_ADDRESS || '',
     uniswapV3Quoter: process.env.UNISWAP_V3_QUOTER_ADDRESS || '',
+
+    // Stealth (EIP-5564, EIP-6538)
+    stealthAnnouncer: process.env.STEALTH_ANNOUNCER_ADDRESS || '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+    stealthRegistry: process.env.STEALTH_REGISTRY_ADDRESS || '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
   },
 
   // Test accounts (Anvil default accounts)
