@@ -1,47 +1,108 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
 	"github.com/stablenet/stable-platform/services/bank-simulator/internal/config"
 	"github.com/stablenet/stable-platform/services/bank-simulator/internal/handler"
+	"github.com/stablenet/stable-platform/services/bank-simulator/internal/logger"
 	"github.com/stablenet/stable-platform/services/bank-simulator/internal/middleware"
 	"github.com/stablenet/stable-platform/services/bank-simulator/internal/service"
 )
 
 func main() {
+	// Initialize structured logger
+	log := logger.New(logger.Config{
+		Level:  getEnv("LOG_LEVEL", "info"),
+		Format: getEnv("LOG_FORMAT", "json"),
+		Name:   "bank-simulator",
+	})
+
 	// Load .env file
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found")
+		log.Info("No .env file found, using environment variables")
 	}
 
 	// Load and validate configuration
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		log.Error("Failed to load configuration", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	// Create bank service
 	bankService := service.NewBankService(cfg)
 
+	// Set Gin mode
+	if getEnv("GIN_MODE", "") != "debug" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	// Create Gin router
-	r := gin.Default()
+	r := gin.New()
 
 	// Add security middleware
 	r.Use(gin.Recovery())
 	r.Use(middleware.DefaultRateLimiter().Middleware()) // Rate limiting: 100 req/min per IP
 	r.Use(bodyLimitMiddleware(1024 * 1024))             // 1MB max body size
 
-	// Health check endpoint
+	// Health check endpoints (Kubernetes probes compatible)
+	startTime := time.Now()
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"status":  "ok",
+			"status":    "ok",
+			"service":   "bank-simulator",
+			"version":   "1.0.0",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+			"uptime":    time.Since(startTime).String(),
+		})
+	})
+	r.GET("/ready", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"ready":   true,
 			"service": "bank-simulator",
 		})
+	})
+	r.GET("/live", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"alive":   true,
+			"service": "bank-simulator",
+		})
+	})
+
+	// Prometheus metrics endpoint
+	var requestCount, errorCount int64
+	r.GET("/metrics", func(c *gin.Context) {
+		uptime := time.Since(startTime).Seconds()
+		c.Header("Content-Type", "text/plain; charset=utf-8")
+		c.String(200, `# HELP bank_simulator_up Service up status
+# TYPE bank_simulator_up gauge
+bank_simulator_up{service="bank-simulator"} 1
+# HELP bank_simulator_uptime_seconds Service uptime in seconds
+# TYPE bank_simulator_uptime_seconds gauge
+bank_simulator_uptime_seconds{service="bank-simulator"} %f
+# HELP bank_simulator_requests_total Total HTTP requests
+# TYPE bank_simulator_requests_total counter
+bank_simulator_requests_total{service="bank-simulator"} %d
+# HELP bank_simulator_errors_total Total HTTP errors
+# TYPE bank_simulator_errors_total counter
+bank_simulator_errors_total{service="bank-simulator"} %d
+`, uptime, requestCount, errorCount)
+	})
+
+	// Metrics middleware
+	r.Use(func(c *gin.Context) {
+		requestCount++
+		c.Next()
+		if c.Writer.Status() >= 400 {
+			errorCount++
+		}
 	})
 
 	// Register bank routes
@@ -49,9 +110,10 @@ func main() {
 	bankHandler.RegisterRoutes(r)
 
 	// Start server
-	log.Printf("Starting bank-simulator on port %s", cfg.Port)
+	log.Info("Bank Simulator starting", slog.String("port", cfg.Port))
 	if err := r.Run(":" + cfg.Port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		log.Error("Failed to start server", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 }
 
@@ -67,4 +129,11 @@ func bodyLimitMiddleware(maxBytes int64) gin.HandlerFunc {
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBytes)
 		c.Next()
 	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

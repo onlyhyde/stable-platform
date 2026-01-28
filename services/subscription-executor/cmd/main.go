@@ -70,7 +70,7 @@ func main() {
 	}
 
 	// Create executor service with repository
-	executorService := service.NewExecutorService(cfg, repo)
+	executorService := service.NewExecutorService(cfg, repo, log)
 
 	// Start executor service in background
 	go executorService.Start(ctx)
@@ -88,7 +88,8 @@ func main() {
 	r.Use(middleware.DefaultRateLimiter().Middleware())                  // Rate limiting: 100 req/min per IP
 	r.Use(middleware.NewIdempotencyMiddleware(repo).Middleware()) // API idempotency
 
-	// Health check endpoint with database status
+	// Health check endpoints (Kubernetes probes compatible)
+	startTime := time.Now()
 	r.GET("/health", func(c *gin.Context) {
 		status := "ok"
 		dbStatus := "connected"
@@ -103,10 +104,68 @@ func main() {
 		}
 
 		c.JSON(200, gin.H{
-			"status":   status,
-			"service":  "subscription-executor",
-			"database": dbStatus,
+			"status":    status,
+			"service":   "subscription-executor",
+			"version":   "1.0.0",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+			"uptime":    time.Since(startTime).String(),
+			"database":  dbStatus,
 		})
+	})
+	r.GET("/ready", func(c *gin.Context) {
+		// Check if database is ready
+		pingCtx, pingCancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer pingCancel()
+
+		ready := true
+		if err := repo.Ping(pingCtx); err != nil {
+			ready = false
+		}
+
+		statusCode := 200
+		if !ready {
+			statusCode = 503
+		}
+
+		c.JSON(statusCode, gin.H{
+			"ready":   ready,
+			"service": "subscription-executor",
+		})
+	})
+	r.GET("/live", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"alive":   true,
+			"service": "subscription-executor",
+		})
+	})
+
+	// Prometheus metrics endpoint
+	var requestCount, errorCount int64
+	r.GET("/metrics", func(c *gin.Context) {
+		uptime := time.Since(startTime).Seconds()
+		c.Header("Content-Type", "text/plain; charset=utf-8")
+		c.String(200, `# HELP subscription_executor_up Service up status
+# TYPE subscription_executor_up gauge
+subscription_executor_up{service="subscription-executor"} 1
+# HELP subscription_executor_uptime_seconds Service uptime in seconds
+# TYPE subscription_executor_uptime_seconds gauge
+subscription_executor_uptime_seconds{service="subscription-executor"} %f
+# HELP subscription_executor_requests_total Total HTTP requests
+# TYPE subscription_executor_requests_total counter
+subscription_executor_requests_total{service="subscription-executor"} %d
+# HELP subscription_executor_errors_total Total HTTP errors
+# TYPE subscription_executor_errors_total counter
+subscription_executor_errors_total{service="subscription-executor"} %d
+`, uptime, requestCount, errorCount)
+	})
+
+	// Metrics middleware
+	r.Use(func(c *gin.Context) {
+		requestCount++
+		c.Next()
+		if c.Writer.Status() >= 400 {
+			errorCount++
+		}
 	})
 
 	// Register subscription routes

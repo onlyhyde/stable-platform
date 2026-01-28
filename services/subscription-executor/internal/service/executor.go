@@ -3,29 +3,33 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"math/big"
 	"time"
 
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/client"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/config"
+	"github.com/stablenet/stable-platform/services/subscription-executor/internal/logger"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/model"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/repository"
 )
 
 // ExecutorService handles subscription execution
 type ExecutorService struct {
-	cfg             *config.Config
-	repo            repository.SubscriptionRepository
-	stopCh          chan struct{}
-	bundlerClient   *client.BundlerClient
-	paymasterClient *client.PaymasterClient
-	userOpBuilder   *client.UserOpBuilder
-	rpcClient       *client.RPCClient
+	cfg              *config.Config
+	repo             repository.SubscriptionRepository
+	log              *logger.Logger
+	stopCh           chan struct{}
+	bundlerClient    *client.BundlerClient
+	paymasterClient  *client.PaymasterClient
+	userOpBuilder    *client.UserOpBuilder
+	rpcClient        *client.RPCClient
+	signer           *client.UserOpSigner
+	permissionClient *client.PermissionClient
 }
 
 // NewExecutorService creates a new executor service with the given repository
-func NewExecutorService(cfg *config.Config, repo repository.SubscriptionRepository) *ExecutorService {
+func NewExecutorService(cfg *config.Config, repo repository.SubscriptionRepository, log *logger.Logger) *ExecutorService {
 	// Initialize bundler client
 	bundlerClient := client.NewBundlerClient(cfg.BundlerURL, cfg.EntryPointAddress)
 
@@ -38,14 +42,34 @@ func NewExecutorService(cfg *config.Config, repo repository.SubscriptionReposito
 	// Initialize RPC client for nonce queries
 	rpcClient := client.NewRPCClient(cfg.RPCURL)
 
+	// Initialize permission client
+	permissionClient := client.NewPermissionClient(rpcClient, cfg.SubscriptionManagerAddress)
+
+	// Initialize UserOp signer if private key is configured
+	var signer *client.UserOpSigner
+	if cfg.ExecutorPrivateKey != "" {
+		var err error
+		signer, err = client.NewUserOpSigner(cfg.ExecutorPrivateKey, int64(cfg.ChainID), cfg.EntryPointAddress)
+		if err != nil {
+			log.WithError(err).Warn("failed to initialize signer, using placeholder signatures")
+		} else {
+			log.Info("executor signer initialized", slog.String("address", signer.GetAddress()))
+		}
+	} else {
+		log.Warn("EXECUTOR_PRIVATE_KEY not set, using placeholder signatures")
+	}
+
 	return &ExecutorService{
-		cfg:             cfg,
-		repo:            repo,
-		stopCh:          make(chan struct{}),
-		bundlerClient:   bundlerClient,
-		paymasterClient: paymasterClient,
-		userOpBuilder:   userOpBuilder,
-		rpcClient:       rpcClient,
+		cfg:              cfg,
+		repo:             repo,
+		log:              log,
+		stopCh:           make(chan struct{}),
+		bundlerClient:    bundlerClient,
+		paymasterClient:  paymasterClient,
+		userOpBuilder:    userOpBuilder,
+		rpcClient:        rpcClient,
+		signer:           signer,
+		permissionClient: permissionClient,
 	}
 }
 
@@ -57,15 +81,15 @@ func (s *ExecutorService) Start(ctx context.Context) {
 	cleanupTicker := time.NewTicker(1 * time.Hour)
 	defer cleanupTicker.Stop()
 
-	log.Printf("Starting executor service with polling interval: %d seconds", s.cfg.PollingInterval)
+	s.log.Info("starting executor service", slog.Int("polling_interval_seconds", s.cfg.PollingInterval))
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("Executor service stopped due to context cancellation")
+			s.log.Info("executor service stopped due to context cancellation")
 			return
 		case <-s.stopCh:
-			log.Println("Executor service stopped")
+			s.log.Info("executor service stopped")
 			return
 		case <-ticker.C:
 			s.processDueSubscriptions(ctx)
@@ -79,11 +103,11 @@ func (s *ExecutorService) Start(ctx context.Context) {
 func (s *ExecutorService) cleanupExpiredIdempotencyRecords(ctx context.Context) {
 	deleted, err := s.repo.DeleteExpiredIdempotencyRecords(ctx)
 	if err != nil {
-		log.Printf("Failed to cleanup expired idempotency records: %v", err)
+		s.log.WithError(err).Error("failed to cleanup expired idempotency records")
 		return
 	}
 	if deleted > 0 {
-		log.Printf("Cleaned up %d expired idempotency records", deleted)
+		s.log.Info("cleaned up expired idempotency records", slog.Int64("deleted", deleted))
 	}
 }
 
@@ -119,7 +143,7 @@ func (s *ExecutorService) CreateSubscription(ctx context.Context, req *model.Cre
 		return nil, fmt.Errorf("failed to save subscription: %w", err)
 	}
 
-	log.Printf("Created subscription: %s for account: %s", sub.ID, sub.SmartAccount)
+	s.log.WithSubscription(sub.ID).Info("created subscription", slog.String("account", sub.SmartAccount))
 	return sub, nil
 }
 
@@ -149,7 +173,7 @@ func (s *ExecutorService) CancelSubscription(ctx context.Context, id string) err
 	if err := s.repo.UpdateStatus(ctx, id, model.StatusCancelled); err != nil {
 		return fmt.Errorf("failed to cancel subscription: %w", err)
 	}
-	log.Printf("Cancelled subscription: %s", id)
+	s.log.WithSubscription(id).Info("cancelled subscription")
 	return nil
 }
 
@@ -158,7 +182,7 @@ func (s *ExecutorService) PauseSubscription(ctx context.Context, id string) erro
 	if err := s.repo.UpdateStatus(ctx, id, model.StatusPaused); err != nil {
 		return fmt.Errorf("failed to pause subscription: %w", err)
 	}
-	log.Printf("Paused subscription: %s", id)
+	s.log.WithSubscription(id).Info("paused subscription")
 	return nil
 }
 
@@ -178,7 +202,7 @@ func (s *ExecutorService) ResumeSubscription(ctx context.Context, id string) err
 	if err := s.repo.UpdateStatus(ctx, id, model.StatusActive); err != nil {
 		return fmt.Errorf("failed to resume subscription: %w", err)
 	}
-	log.Printf("Resumed subscription: %s", id)
+	s.log.WithSubscription(id).Info("resumed subscription")
 	return nil
 }
 
@@ -188,7 +212,7 @@ func (s *ExecutorService) processDueSubscriptions(ctx context.Context) {
 	// In production, consider using GetDueSubscriptionsWithLock for concurrent workers
 	dueSubscriptions, err := s.repo.GetDueSubscriptions(ctx, 100)
 	if err != nil {
-		log.Printf("Failed to get due subscriptions: %v", err)
+		s.log.WithError(err).Error("failed to get due subscriptions")
 		return
 	}
 
@@ -196,18 +220,34 @@ func (s *ExecutorService) processDueSubscriptions(ctx context.Context) {
 		return
 	}
 
-	log.Printf("Found %d due subscriptions", len(dueSubscriptions))
+	s.log.Info("found due subscriptions", slog.Int("count", len(dueSubscriptions)))
 
 	for _, sub := range dueSubscriptions {
 		if err := s.executeSubscription(ctx, sub); err != nil {
-			log.Printf("Failed to execute subscription %s: %v", sub.ID, err)
+			s.log.WithSubscription(sub.ID).WithError(err).Error("failed to execute subscription")
 		}
 	}
 }
 
 // executeSubscription executes a single subscription payment
 func (s *ExecutorService) executeSubscription(ctx context.Context, sub *model.Subscription) error {
-	log.Printf("Executing subscription: %s", sub.ID)
+	s.log.WithSubscription(sub.ID).Info("executing subscription", slog.String("account", sub.SmartAccount))
+
+	// Validate ERC-7715 permission before execution
+	if sub.PermissionID != "" && s.permissionClient != nil {
+		hasPermission, err := s.permissionClient.IsPermissionValid(ctx, sub.PermissionID)
+		if err != nil {
+			s.log.WithSubscription(sub.ID).WithError(err).Warn("permission check failed, proceeding anyway")
+		} else if !hasPermission {
+			s.log.WithSubscription(sub.ID).Warn("permission revoked or expired")
+			sub.Status = model.StatusPermissionRevoked
+			sub.UpdatedAt = time.Now()
+			if updateErr := s.repo.Update(ctx, sub); updateErr != nil {
+				s.log.WithSubscription(sub.ID).WithError(updateErr).Error("failed to update subscription status")
+			}
+			return fmt.Errorf("subscription %s: permission revoked or expired", sub.ID)
+		}
+	}
 
 	// Create execution record — unique partial index on (subscription_id) WHERE status='pending'
 	// prevents duplicate concurrent executions for the same subscription
@@ -217,7 +257,7 @@ func (s *ExecutorService) executeSubscription(ctx context.Context, sub *model.Su
 		CreatedAt:      time.Now(),
 	}
 	if err := s.repo.CreateExecutionRecord(ctx, record); err != nil {
-		log.Printf("Skipping duplicate execution for subscription %s: %v", sub.ID, err)
+		s.log.WithSubscription(sub.ID).Info("skipping duplicate execution", slog.String("reason", err.Error()))
 		return nil
 	}
 
@@ -252,7 +292,7 @@ func (s *ExecutorService) executeSubscription(ctx context.Context, sub *model.Su
 	// Check if max executions reached
 	if sub.MaxExecutions > 0 && sub.ExecutionCount >= sub.MaxExecutions {
 		sub.Status = model.StatusExpired
-		log.Printf("Subscription %s reached max executions", sub.ID)
+		s.log.WithSubscription(sub.ID).Info("subscription reached max executions", slog.Int64("count", sub.ExecutionCount))
 	}
 
 	// Update subscription in database
@@ -260,7 +300,10 @@ func (s *ExecutorService) executeSubscription(ctx context.Context, sub *model.Su
 		return fmt.Errorf("failed to update subscription: %w", err)
 	}
 
-	log.Printf("Successfully executed subscription: %s (txHash: %s, count: %d)", sub.ID, txHash, sub.ExecutionCount)
+	s.log.WithSubscription(sub.ID).Info("successfully executed subscription",
+		slog.String("tx_hash", txHash),
+		slog.Int64("execution_count", sub.ExecutionCount),
+	)
 	return nil
 }
 
@@ -377,17 +420,23 @@ func (s *ExecutorService) submitUserOperation(ctx context.Context, sub *model.Su
 	)
 
 	// 8. Sign the UserOperation
-	// For subscription executor, we use a session key or pre-authorized signature
-	// The smart account should have pre-authorized this executor
-	// Using a placeholder signature - in production, implement proper signing
-	userOp.Signature = "0x" + fmt.Sprintf("%0130x", 1) // Placeholder
+	if s.signer != nil {
+		signature, err := s.signer.SignUserOp(userOp)
+		if err != nil {
+			return "", 0, fmt.Errorf("failed to sign userOp: %w", err)
+		}
+		userOp.Signature = signature
+	} else {
+		// Fallback: placeholder signature for development without a configured private key
+		userOp.Signature = "0x" + fmt.Sprintf("%0130x", 1)
+	}
 
 	// 9. Submit to bundler
 	userOpHash, err := s.bundlerClient.SendUserOperation(ctx, userOp)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to send user operation: %w", err)
 	}
-	log.Printf("UserOperation submitted: %s", userOpHash)
+	s.log.Info("UserOperation submitted", slog.String("userOpHash", userOpHash))
 
 	// 10. Wait for receipt
 	receipt, err := s.bundlerClient.WaitForReceipt(ctx, userOpHash, 60*time.Second)
@@ -418,7 +467,10 @@ func (s *ExecutorService) updateExecutionRecord(ctx context.Context, recordID in
 	}
 
 	if err := s.repo.UpdateExecutionRecord(ctx, recordID, status, txHash, errMsg, gasUsedStr); err != nil {
-		log.Printf("Failed to update execution record: %v", err)
+		s.log.WithError(err).Error("failed to update execution record",
+			slog.Int64("record_id", recordID),
+			slog.String("status", status),
+		)
 	}
 }
 

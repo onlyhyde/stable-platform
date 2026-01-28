@@ -7,19 +7,24 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/stablenet/stable-platform/services/pg-simulator/internal/config"
 	"github.com/stablenet/stable-platform/services/pg-simulator/internal/model"
 	"github.com/stablenet/stable-platform/services/pg-simulator/internal/service"
 )
 
 // PaymentHandler handles payment HTTP requests
 type PaymentHandler struct {
-	paymentService *service.PaymentService
+	paymentService    *service.PaymentService
+	settlementService *service.SettlementService
+	cfg               *config.Config
 }
 
 // NewPaymentHandler creates a new payment handler
-func NewPaymentHandler(paymentService *service.PaymentService) *PaymentHandler {
+func NewPaymentHandler(paymentService *service.PaymentService, settlementService *service.SettlementService, cfg *config.Config) *PaymentHandler {
 	return &PaymentHandler{
-		paymentService: paymentService,
+		paymentService:    paymentService,
+		settlementService: settlementService,
+		cfg:               cfg,
 	}
 }
 
@@ -42,8 +47,45 @@ func (h *PaymentHandler) RegisterRoutes(r *gin.Engine) {
 
 		merchants := api.Group("/merchants")
 		{
+			merchants.POST("", h.RegisterMerchant)
+			merchants.GET("/:merchantId", h.GetMerchant)
 			merchants.GET("/:merchantId/payments", h.GetMerchantPayments)
+			merchants.GET("/:merchantId/settlements", h.GetMerchantSettlements)
 		}
+
+		// Settlement endpoints (PG-05)
+		settlements := api.Group("/settlements")
+		{
+			settlements.POST("/process", h.ProcessSettlement)
+			settlements.GET("/:batchId", h.GetSettlementBatch)
+			settlements.POST("/:settlementId/adjustments", h.CreateAdjustment)
+			settlements.GET("/:settlementId/adjustments", h.GetAdjustments)
+		}
+
+		// Wallet endpoints
+		wallets := api.Group("/wallets")
+		{
+			wallets.POST("", h.CreateWallet)
+			wallets.GET("/:id", h.GetWallet)
+			wallets.DELETE("/:id", h.DeleteWallet)
+		}
+
+		// User endpoints
+		users := api.Group("/users")
+		{
+			users.GET("/:userId/wallets", h.GetUserWallets)
+		}
+
+		// Checkout session API endpoints (PG-04)
+		checkout := api.Group("/checkout-sessions")
+		{
+			checkout.POST("", h.CreateCheckoutSession)
+			checkout.GET("/:id", h.GetCheckoutSession)
+			checkout.POST("/:id/cancel", h.CancelCheckoutSession)
+		}
+
+		// Redirect URL endpoint (PG-03)
+		payments.GET("/:id/redirect", h.GetPaymentRedirect)
 
 		// 3D Secure challenge simulation page
 		threeds := api.Group("/3ds")
@@ -51,6 +93,14 @@ func (h *PaymentHandler) RegisterRoutes(r *gin.Engine) {
 			threeds.GET("/challenge/:acsTransactionId", h.RenderChallengePage)
 		}
 	}
+
+	// Checkout page (HTML) - outside /api/v1 for user-facing URLs
+	r.GET("/checkout/:id", h.RenderCheckoutPage)
+	r.POST("/checkout/:id/pay", h.ProcessCheckoutPayment)
+	r.GET("/checkout/:id/cancelled", h.RenderCancelledPage)
+
+	// Payment result page (HTML) - PG-03
+	r.GET("/result/:id", h.RenderPaymentResultPage)
 }
 
 // CreatePayment creates a new payment
@@ -336,6 +386,411 @@ func (h *PaymentHandler) RenderChallengePage(c *gin.Context) {
 	c.String(http.StatusOK, html)
 }
 
+// --- Wallet handlers ---
+
+// CreateWallet creates a new wallet
+// @Summary Create a wallet
+// @Description Register a new payment wallet
+// @Tags wallets
+// @Accept json
+// @Produce json
+// @Param request body model.CreateWalletRequest true "Wallet creation request"
+// @Success 201 {object} model.Wallet
+// @Failure 400 {object} ErrorResponse
+// @Router /api/v1/wallets [post]
+func (h *PaymentHandler) CreateWallet(c *gin.Context) {
+	var req model.CreateWalletRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
+		return
+	}
+
+	wallet, err := h.paymentService.CreateWallet(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "wallet")})
+		return
+	}
+
+	c.JSON(http.StatusCreated, wallet)
+}
+
+// GetWallet returns a wallet by ID
+// @Summary Get a wallet
+// @Description Get wallet details by ID
+// @Tags wallets
+// @Produce json
+// @Param id path string true "Wallet ID"
+// @Success 200 {object} model.Wallet
+// @Failure 404 {object} ErrorResponse
+// @Router /api/v1/wallets/{id} [get]
+func (h *PaymentHandler) GetWallet(c *gin.Context) {
+	id := c.Param("id")
+
+	wallet, err := h.paymentService.GetWallet(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "wallet")})
+		return
+	}
+
+	c.JSON(http.StatusOK, wallet)
+}
+
+// GetUserWallets returns all wallets for a user
+// @Summary Get user wallets
+// @Description Get all wallets for a specific user
+// @Tags wallets
+// @Produce json
+// @Param userId path string true "User ID"
+// @Success 200 {object} model.WalletListResponse
+// @Router /api/v1/users/{userId}/wallets [get]
+func (h *PaymentHandler) GetUserWallets(c *gin.Context) {
+	userID := c.Param("userId")
+	wallets := h.paymentService.GetWalletsByUser(userID)
+	c.JSON(http.StatusOK, model.WalletListResponse{Wallets: wallets})
+}
+
+// DeleteWallet deletes a wallet
+// @Summary Delete a wallet
+// @Description Deactivate a wallet
+// @Tags wallets
+// @Produce json
+// @Param id path string true "Wallet ID"
+// @Success 204
+// @Failure 404 {object} ErrorResponse
+// @Router /api/v1/wallets/{id} [delete]
+func (h *PaymentHandler) DeleteWallet(c *gin.Context) {
+	id := c.Param("id")
+
+	err := h.paymentService.DeleteWallet(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "wallet")})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// ========== Checkout Session Handlers (PG-04) ==========
+
+// CreateCheckoutSession creates a new checkout session
+func (h *PaymentHandler) CreateCheckoutSession(c *gin.Context) {
+	var req model.CreateCheckoutSessionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
+		return
+	}
+
+	session, err := h.paymentService.CreateCheckoutSession(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "checkout session")})
+		return
+	}
+
+	c.JSON(http.StatusCreated, session)
+}
+
+// GetCheckoutSession returns a checkout session by ID
+func (h *PaymentHandler) GetCheckoutSession(c *gin.Context) {
+	id := c.Param("id")
+
+	session, err := h.paymentService.GetCheckoutSession(id)
+	if err != nil {
+		if errors.Is(err, service.ErrCheckoutSessionNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "checkout session")})
+			return
+		}
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "checkout session")})
+		return
+	}
+
+	c.JSON(http.StatusOK, session)
+}
+
+// CancelCheckoutSession cancels a checkout session
+func (h *PaymentHandler) CancelCheckoutSession(c *gin.Context) {
+	id := c.Param("id")
+
+	session, err := h.paymentService.CancelCheckoutSession(id)
+	if err != nil {
+		if errors.Is(err, service.ErrCheckoutSessionNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "checkout session")})
+			return
+		}
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "checkout session")})
+		return
+	}
+
+	c.JSON(http.StatusOK, session)
+}
+
+// RenderCheckoutPage renders the checkout payment form HTML page
+func (h *PaymentHandler) RenderCheckoutPage(c *gin.Context) {
+	id := c.Param("id")
+
+	session, err := h.paymentService.GetCheckoutSession(id)
+	if err != nil {
+		c.HTML(http.StatusNotFound, "error.html", gin.H{"error": "Checkout session not found"})
+		return
+	}
+
+	if session.Status != model.CheckoutSessionStatusPending {
+		if session.Status == model.CheckoutSessionStatusExpired {
+			c.HTML(http.StatusGone, "cancelled.html", gin.H{
+				"title":   "Session Expired",
+				"message": "This checkout session has expired. Please create a new order.",
+			})
+			return
+		}
+		c.HTML(http.StatusGone, "cancelled.html", gin.H{
+			"title":   "Session Unavailable",
+			"message": "This checkout session is no longer available (status: " + string(session.Status) + ").",
+		})
+		return
+	}
+
+	c.HTML(http.StatusOK, "checkout.html", gin.H{
+		"sessionID": session.ID,
+		"orderID":   session.OrderID,
+		"orderName": session.OrderName,
+		"amount":    session.Amount,
+		"currency":  session.Currency,
+		"cancelURL": session.CancelURL,
+		"baseURL":   h.cfg.BaseURL,
+	})
+}
+
+// ProcessCheckoutPayment processes payment from the checkout form
+func (h *PaymentHandler) ProcessCheckoutPayment(c *gin.Context) {
+	id := c.Param("id")
+
+	var req model.CreatePaymentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
+		return
+	}
+
+	payment, err := h.paymentService.ProcessCheckoutPayment(id, &req)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrCheckoutSessionNotFound):
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "checkout session")})
+		case errors.Is(err, service.ErrCheckoutSessionExpired):
+			c.JSON(http.StatusGone, ErrorResponse{Error: "Checkout session has expired"})
+		case errors.Is(err, service.ErrCheckoutSessionNotPending):
+			c.JSON(http.StatusConflict, ErrorResponse{Error: "Checkout session already processed"})
+		default:
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "payment")})
+		}
+		return
+	}
+
+	// Generate redirect info
+	redirectInfo, _ := h.paymentService.GenerateRedirectURL(payment.ID)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"payment":  payment,
+		"redirect": redirectInfo,
+	})
+}
+
+// RenderCancelledPage renders the checkout cancelled page
+func (h *PaymentHandler) RenderCancelledPage(c *gin.Context) {
+	c.HTML(http.StatusOK, "cancelled.html", gin.H{
+		"title":   "Payment Cancelled",
+		"message": "Your payment has been cancelled. You can close this page.",
+	})
+}
+
+// ========== Redirect URL Handlers (PG-03) ==========
+
+// GetPaymentRedirect returns the redirect URL for a payment
+func (h *PaymentHandler) GetPaymentRedirect(c *gin.Context) {
+	id := c.Param("id")
+
+	redirectInfo, err := h.paymentService.GenerateRedirectURL(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "payment")})
+		return
+	}
+
+	c.JSON(http.StatusOK, redirectInfo)
+}
+
+// RenderPaymentResultPage renders the payment result page with auto-redirect
+func (h *PaymentHandler) RenderPaymentResultPage(c *gin.Context) {
+	id := c.Param("id")
+
+	payment, err := h.paymentService.GetPayment(id)
+	if err != nil {
+		c.HTML(http.StatusNotFound, "error.html", gin.H{"error": "Payment not found"})
+		return
+	}
+
+	redirectInfo, _ := h.paymentService.GenerateRedirectURL(id)
+	redirectURL := ""
+	if redirectInfo != nil {
+		redirectURL = redirectInfo.RedirectURL
+	}
+
+	statusText := "Processing"
+	statusClass := "pending"
+	switch payment.Status {
+	case model.PaymentStatusApproved:
+		statusText = "Payment Successful"
+		statusClass = "success"
+	case model.PaymentStatusDeclined:
+		statusText = "Payment Declined"
+		statusClass = "error"
+	case model.PaymentStatusCancelled:
+		statusText = "Payment Cancelled"
+		statusClass = "cancelled"
+	case model.PaymentStatusRefunded:
+		statusText = "Payment Refunded"
+		statusClass = "refunded"
+	}
+
+	c.HTML(http.StatusOK, "result.html", gin.H{
+		"paymentID":   payment.ID,
+		"orderID":     payment.OrderID,
+		"amount":      payment.Amount,
+		"currency":    payment.Currency,
+		"status":      string(payment.Status),
+		"statusText":  statusText,
+		"statusClass": statusClass,
+		"redirectURL": redirectURL,
+	})
+}
+
+// ========== Settlement Handlers (PG-05) ==========
+
+// RegisterMerchant registers a new merchant for settlements
+func (h *PaymentHandler) RegisterMerchant(c *gin.Context) {
+	var req model.CreateMerchantRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
+		return
+	}
+
+	merchant, err := h.settlementService.RegisterMerchant(&req)
+	if err != nil {
+		if errors.Is(err, service.ErrMerchantAlreadyExists) {
+			c.JSON(http.StatusConflict, ErrorResponse{Error: "Merchant already exists"})
+			return
+		}
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "merchant")})
+		return
+	}
+
+	c.JSON(http.StatusCreated, merchant)
+}
+
+// GetMerchant returns a merchant by ID
+func (h *PaymentHandler) GetMerchant(c *gin.Context) {
+	merchantID := c.Param("merchantId")
+
+	merchant, err := h.settlementService.GetMerchant(merchantID)
+	if err != nil {
+		if errors.Is(err, service.ErrMerchantNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "merchant")})
+			return
+		}
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "merchant")})
+		return
+	}
+
+	c.JSON(http.StatusOK, merchant)
+}
+
+// ProcessSettlement initiates a settlement batch
+func (h *PaymentHandler) ProcessSettlement(c *gin.Context) {
+	var req model.ProcessSettlementRequest
+	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
+		return
+	}
+
+	batch, err := h.settlementService.ProcessSettlementBatch(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "settlement")})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, batch)
+}
+
+// GetSettlementBatch returns a settlement batch by ID
+func (h *PaymentHandler) GetSettlementBatch(c *gin.Context) {
+	batchID := c.Param("batchId")
+
+	batch, err := h.settlementService.GetSettlementBatch(batchID)
+	if err != nil {
+		if errors.Is(err, service.ErrSettlementBatchNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "settlement batch")})
+			return
+		}
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "settlement batch")})
+		return
+	}
+
+	c.JSON(http.StatusOK, batch)
+}
+
+// GetMerchantSettlements returns settlement history for a merchant
+func (h *PaymentHandler) GetMerchantSettlements(c *gin.Context) {
+	merchantID := c.Param("merchantId")
+	status := c.Query("status")
+	fromDate := c.Query("fromDate")
+	toDate := c.Query("toDate")
+
+	result := h.settlementService.GetMerchantSettlements(merchantID, status, fromDate, toDate)
+	c.JSON(http.StatusOK, result)
+}
+
+// CreateAdjustment creates a settlement adjustment
+func (h *PaymentHandler) CreateAdjustment(c *gin.Context) {
+	settlementID := c.Param("settlementId")
+
+	var req model.CreateAdjustmentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid request format"})
+		return
+	}
+
+	adj, err := h.settlementService.CreateAdjustment(settlementID, &req)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrSettlementNotFound):
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "settlement")})
+		case errors.Is(err, service.ErrInvalidAdjustmentType):
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid adjustment type"})
+		case errors.Is(err, service.ErrInsufficientSettlementBalance):
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Deduction amount exceeds settlement balance"})
+		default:
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "adjustment")})
+		}
+		return
+	}
+
+	c.JSON(http.StatusCreated, adj)
+}
+
+// GetAdjustments returns adjustments for a settlement
+func (h *PaymentHandler) GetAdjustments(c *gin.Context) {
+	settlementID := c.Param("settlementId")
+
+	result, err := h.settlementService.GetAdjustments(settlementID)
+	if err != nil {
+		if errors.Is(err, service.ErrSettlementNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: sanitizeError(err, "settlement")})
+			return
+		}
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: sanitizeError(err, "settlement")})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // ErrorResponse represents an error response
 type ErrorResponse struct {
 	Error string `json:"error"`
@@ -352,6 +807,10 @@ func sanitizeError(err error, resourceType string) string {
 		return "The requested " + resourceType + " could not be processed"
 	case contains(errMsg, "cannot be refunded"), contains(errMsg, "cannot be cancelled"):
 		return "This operation is not available for the current " + resourceType + " state"
+	case contains(errMsg, "expired"):
+		return "The " + resourceType + " has expired"
+	case contains(errMsg, "not in pending"):
+		return "The " + resourceType + " is no longer available for this operation"
 	case contains(errMsg, "invalid"):
 		return "Invalid request parameters"
 	default:

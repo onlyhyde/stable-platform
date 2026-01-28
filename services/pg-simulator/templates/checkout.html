@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - PG Simulator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .checkout-container { background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 480px; width: 100%; overflow: hidden; }
+        .checkout-header { background: #1a1a2e; color: white; padding: 24px; text-align: center; }
+        .checkout-header h1 { font-size: 20px; margin-bottom: 4px; }
+        .checkout-header .amount { font-size: 32px; font-weight: bold; margin-top: 12px; }
+        .checkout-header .order-info { font-size: 14px; color: #a0a0b0; margin-top: 8px; }
+        .checkout-body { padding: 24px; }
+        .payment-methods { margin-bottom: 24px; }
+        .payment-methods h3 { font-size: 14px; color: #666; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .method-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+        .method-tab { flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; text-align: center; cursor: pointer; font-size: 14px; transition: all 0.2s; background: white; }
+        .method-tab.active { border-color: #4CAF50; background: #f0faf0; color: #4CAF50; font-weight: bold; }
+        .method-tab:hover { border-color: #999; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 600; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; transition: border-color 0.2s; }
+        .form-group input:focus { outline: none; border-color: #4CAF50; box-shadow: 0 0 0 3px rgba(76,175,80,0.1); }
+        .row { display: flex; gap: 12px; }
+        .row .form-group { flex: 1; }
+        .btn-pay { width: 100%; padding: 14px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+        .btn-pay:hover { background: #45a049; }
+        .btn-pay:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-cancel { width: 100%; padding: 12px; background: none; color: #666; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; cursor: pointer; margin-top: 12px; }
+        .btn-cancel:hover { background: #f5f5f5; }
+        .secure-badge { text-align: center; margin-top: 16px; font-size: 12px; color: #999; }
+        .error-msg { color: #f44336; font-size: 13px; margin-top: 8px; display: none; }
+        .loading { display: none; }
+        .loading.show { display: block; text-align: center; padding: 20px; }
+        .spinner { display: inline-block; width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #4CAF50; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .bank-form, .wallet-form { display: none; }
+    </style>
+</head>
+<body>
+    <div class="checkout-container">
+        <div class="checkout-header">
+            <h1>PG Simulator Checkout</h1>
+            {{if .orderName}}<div class="order-info">{{.orderName}}</div>{{end}}
+            <div class="order-info">Order: {{.orderID}}</div>
+            <div class="amount">{{.currency}} {{.amount}}</div>
+        </div>
+        <div class="checkout-body">
+            <div class="payment-methods">
+                <h3>Payment Method</h3>
+                <div class="method-tabs">
+                    <div class="method-tab active" data-method="card" onclick="selectMethod('card')">Card</div>
+                    <div class="method-tab" data-method="bank_transfer" onclick="selectMethod('bank_transfer')">Bank Transfer</div>
+                </div>
+            </div>
+
+            <form id="paymentForm">
+                <div class="card-form">
+                    <div class="form-group">
+                        <label>Card Number</label>
+                        <input type="text" id="cardNumber" placeholder="4111 1111 1111 1111" maxlength="19" autocomplete="cc-number">
+                    </div>
+                    <div class="form-group">
+                        <label>Cardholder Name</label>
+                        <input type="text" id="cardName" placeholder="HONG GILDONG" autocomplete="cc-name">
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Expiry Month</label>
+                            <input type="text" id="expMonth" placeholder="MM" maxlength="2" autocomplete="cc-exp-month">
+                        </div>
+                        <div class="form-group">
+                            <label>Expiry Year</label>
+                            <input type="text" id="expYear" placeholder="YY" maxlength="4" autocomplete="cc-exp-year">
+                        </div>
+                        <div class="form-group">
+                            <label>CVV</label>
+                            <input type="text" id="cvv" placeholder="123" maxlength="4" autocomplete="cc-csc">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bank-form">
+                    <div class="form-group">
+                        <label>Account Number</label>
+                        <input type="text" id="bankAccountNo" placeholder="1234567890">
+                    </div>
+                    <div class="form-group">
+                        <label>Account Holder Name</label>
+                        <input type="text" id="bankHolderName" placeholder="Hong Gildong">
+                    </div>
+                </div>
+
+                <div class="error-msg" id="errorMsg"></div>
+                <button type="submit" class="btn-pay" id="payBtn">Pay {{.currency}} {{.amount}}</button>
+            </form>
+
+            <button class="btn-cancel" onclick="cancelCheckout()">Cancel</button>
+            <div class="secure-badge">Secured by PG Simulator (PoC)</div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 12px; color: #666;">Processing payment...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var selectedMethod = 'card';
+        var sessionID = '{{.sessionID}}';
+        var cancelURL = '{{.cancelURL}}';
+        var baseURL = '{{.baseURL}}';
+
+        function selectMethod(method) {
+            selectedMethod = method;
+            document.querySelectorAll('.method-tab').forEach(function(tab) {
+                tab.classList.toggle('active', tab.dataset.method === method);
+            });
+            document.querySelector('.card-form').style.display = method === 'card' ? 'block' : 'none';
+            document.querySelector('.bank-form').style.display = method === 'bank_transfer' ? 'block' : 'none';
+        }
+
+        function cancelCheckout() {
+            if (cancelURL) {
+                window.location.href = cancelURL;
+            } else {
+                window.location.href = '/checkout/' + sessionID + '/cancelled';
+            }
+        }
+
+        document.getElementById('paymentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var errorEl = document.getElementById('errorMsg');
+            errorEl.style.display = 'none';
+
+            var payload = { method: selectedMethod };
+
+            if (selectedMethod === 'card') {
+                var num = document.getElementById('cardNumber').value.replace(/\s/g, '');
+                var name = document.getElementById('cardName').value;
+                var month = document.getElementById('expMonth').value;
+                var year = document.getElementById('expYear').value;
+                var cvv = document.getElementById('cvv').value;
+
+                if (!num || !name || !month || !year || !cvv) {
+                    errorEl.textContent = 'Please fill in all card details';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+                payload.card = { number: num, name: name, expMonth: month, expYear: year, cvv: cvv };
+            } else if (selectedMethod === 'bank_transfer') {
+                var accountNo = document.getElementById('bankAccountNo').value;
+                var holderName = document.getElementById('bankHolderName').value;
+
+                if (!accountNo || !holderName) {
+                    errorEl.textContent = 'Please fill in all bank account details';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+                payload.bankAccount = { accountNo: accountNo, holderName: holderName };
+            }
+
+            document.getElementById('payBtn').disabled = true;
+            document.getElementById('paymentForm').style.display = 'none';
+            document.querySelector('.btn-cancel').style.display = 'none';
+            document.getElementById('loading').classList.add('show');
+
+            fetch('/checkout/' + sessionID + '/pay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function(data) {
+                if (data.redirect && data.redirect.redirectUrl) {
+                    window.location.href = data.redirect.redirectUrl;
+                } else if (data.payment) {
+                    window.location.href = '/result/' + data.payment.id;
+                } else if (data.error) {
+                    document.getElementById('loading').classList.remove('show');
+                    document.getElementById('paymentForm').style.display = 'block';
+                    document.querySelector('.btn-cancel').style.display = 'block';
+                    document.getElementById('payBtn').disabled = false;
+                    errorEl.textContent = data.error;
+                    errorEl.style.display = 'block';
+                }
+            })
+            .catch(function(err) {
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('paymentForm').style.display = 'block';
+                document.querySelector('.btn-cancel').style.display = 'block';
+                document.getElementById('payBtn').disabled = false;
+                errorEl.textContent = 'Payment processing failed. Please try again.';
+                errorEl.style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>

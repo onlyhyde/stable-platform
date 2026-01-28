@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stablenet/stable-platform/services/pg-simulator/internal/config"
 	"github.com/stablenet/stable-platform/services/pg-simulator/internal/model"
 )
 
@@ -301,5 +302,441 @@ func intToStr(i int) string {
 		byte((i/100)%10) + '0',
 		byte((i/10)%10) + '0',
 		byte(i%10) + '0',
+	})
+}
+
+func TestMaskAccountNo(t *testing.T) {
+	tests := []struct {
+		name      string
+		accountNo string
+		want      string
+	}{
+		{"Normal account", "BANK1234567890", "BANK****7890"},
+		{"Short account (8 chars)", "BANK1234", "BANK1234"},
+		{"Very short", "BANK12", "BANK12"},
+		{"Long account", "BANK12345678901234", "BANK****1234"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := maskAccountNo(tt.accountNo)
+			if got != tt.want {
+				t.Errorf("maskAccountNo(%q) = %v, want %v", tt.accountNo, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMaskName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		want     string
+	}{
+		{"Korean 3 chars", "홍길동", "홍*동"},
+		{"Korean 2 chars", "홍길", "홍*"},
+		{"Korean 1 char", "홍", "홍"},
+		{"English name", "John", "J*n"},
+		{"Two chars", "AB", "A*"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := maskName(tt.input)
+			if got != tt.want {
+				t.Errorf("maskName(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestWalletCRUD(t *testing.T) {
+	cfg := &config.Config{
+		SuccessRate:      100,
+		BankSimulatorURL: "http://localhost:4350",
+	}
+	svc := NewPaymentService(cfg)
+
+	now := time.Now()
+	futureYear := intToStr(now.Year() + 1)
+
+	// Test Create Wallet
+	t.Run("Create Wallet", func(t *testing.T) {
+		req := &model.CreateWalletRequest{
+			UserID: "USER_001",
+			Name:   "내 카카오페이",
+			Type:   model.WalletTypeKakao,
+			DefaultCard: &model.CardDetails{
+				Number:   "4242424242424242",
+				ExpMonth: "12",
+				ExpYear:  futureYear,
+				CVV:      "123",
+				Name:     "홍길동",
+			},
+		}
+
+		wallet, err := svc.CreateWallet(req)
+		if err != nil {
+			t.Fatalf("CreateWallet failed: %v", err)
+		}
+
+		if wallet.ID == "" {
+			t.Error("Wallet ID should not be empty")
+		}
+		if wallet.UserID != "USER_001" {
+			t.Errorf("UserID = %v, want USER_001", wallet.UserID)
+		}
+		if wallet.Type != model.WalletTypeKakao {
+			t.Errorf("Type = %v, want kakao", wallet.Type)
+		}
+		if wallet.CardLast4 != "4242" {
+			t.Errorf("CardLast4 = %v, want 4242", wallet.CardLast4)
+		}
+		if wallet.CardBrand != "visa" {
+			t.Errorf("CardBrand = %v, want visa", wallet.CardBrand)
+		}
+		if wallet.Status != model.WalletStatusActive {
+			t.Errorf("Status = %v, want active", wallet.Status)
+		}
+	})
+
+	// Test Create Wallet with invalid card
+	t.Run("Create Wallet with invalid card", func(t *testing.T) {
+		req := &model.CreateWalletRequest{
+			UserID: "USER_002",
+			Name:   "잘못된 지갑",
+			Type:   model.WalletTypeNaver,
+			DefaultCard: &model.CardDetails{
+				Number:   "1234567890123456", // Invalid card number
+				ExpMonth: "12",
+				ExpYear:  futureYear,
+				CVV:      "123",
+				Name:     "홍길동",
+			},
+		}
+
+		_, err := svc.CreateWallet(req)
+		if err == nil {
+			t.Error("CreateWallet should fail with invalid card")
+		}
+	})
+
+	// Test Get Wallet
+	t.Run("Get Wallet", func(t *testing.T) {
+		// First create a wallet
+		req := &model.CreateWalletRequest{
+			UserID: "USER_003",
+			Name:   "테스트 지갑",
+			Type:   model.WalletTypeToss,
+			DefaultCard: &model.CardDetails{
+				Number:   "5555555555554444",
+				ExpMonth: "12",
+				ExpYear:  futureYear,
+				CVV:      "123",
+				Name:     "테스트",
+			},
+		}
+		created, _ := svc.CreateWallet(req)
+
+		// Get the wallet
+		wallet, err := svc.GetWallet(created.ID)
+		if err != nil {
+			t.Fatalf("GetWallet failed: %v", err)
+		}
+		if wallet.ID != created.ID {
+			t.Errorf("Wallet ID mismatch")
+		}
+	})
+
+	// Test Get Wallet - Not Found
+	t.Run("Get Wallet Not Found", func(t *testing.T) {
+		_, err := svc.GetWallet("nonexistent-id")
+		if err != ErrWalletNotFound {
+			t.Errorf("Expected ErrWalletNotFound, got %v", err)
+		}
+	})
+
+	// Test Get Wallets By User
+	t.Run("Get Wallets By User", func(t *testing.T) {
+		// Create multiple wallets for a user
+		for i := 0; i < 3; i++ {
+			req := &model.CreateWalletRequest{
+				UserID: "USER_MULTI",
+				Name:   "지갑",
+				Type:   model.WalletTypeKakao,
+				DefaultCard: &model.CardDetails{
+					Number:   "4242424242424242",
+					ExpMonth: "12",
+					ExpYear:  futureYear,
+					CVV:      "123",
+					Name:     "테스트",
+				},
+			}
+			svc.CreateWallet(req)
+		}
+
+		wallets := svc.GetWalletsByUser("USER_MULTI")
+		if len(wallets) != 3 {
+			t.Errorf("Expected 3 wallets, got %d", len(wallets))
+		}
+	})
+
+	// Test Delete Wallet
+	t.Run("Delete Wallet", func(t *testing.T) {
+		req := &model.CreateWalletRequest{
+			UserID: "USER_DELETE",
+			Name:   "삭제할 지갑",
+			Type:   model.WalletTypePayco,
+			DefaultCard: &model.CardDetails{
+				Number:   "4242424242424242",
+				ExpMonth: "12",
+				ExpYear:  futureYear,
+				CVV:      "123",
+				Name:     "테스트",
+			},
+		}
+		created, _ := svc.CreateWallet(req)
+
+		err := svc.DeleteWallet(created.ID)
+		if err != nil {
+			t.Fatalf("DeleteWallet failed: %v", err)
+		}
+
+		// Verify wallet is inactive
+		wallet, _ := svc.GetWallet(created.ID)
+		if wallet.Status != model.WalletStatusInactive {
+			t.Errorf("Status = %v, want inactive", wallet.Status)
+		}
+	})
+}
+
+func TestWalletPayment(t *testing.T) {
+	cfg := &config.Config{
+		SuccessRate:      100, // 100% success for testing
+		BankSimulatorURL: "http://localhost:4350",
+	}
+	svc := NewPaymentService(cfg)
+
+	now := time.Now()
+	futureYear := intToStr(now.Year() + 1)
+
+	// Create a wallet first
+	walletReq := &model.CreateWalletRequest{
+		UserID: "USER_PAY",
+		Name:   "결제용 지갑",
+		Type:   model.WalletTypeKakao,
+		DefaultCard: &model.CardDetails{
+			Number:   "4242424242424242",
+			ExpMonth: "12",
+			ExpYear:  futureYear,
+			CVV:      "123",
+			Name:     "홍길동",
+		},
+	}
+	wallet, _ := svc.CreateWallet(walletReq)
+
+	t.Run("Wallet Payment Success", func(t *testing.T) {
+		req := &model.CreatePaymentRequest{
+			MerchantID: "MERCHANT_001",
+			OrderID:    "ORDER_WALLET_001",
+			Amount:     "30000",
+			Currency:   "KRW",
+			Method:     model.PaymentMethodWallet,
+			WalletID:   wallet.ID,
+		}
+
+		payment, err := svc.CreatePayment(req)
+		if err != nil {
+			t.Fatalf("CreatePayment failed: %v", err)
+		}
+
+		if payment.Status != model.PaymentStatusApproved {
+			t.Errorf("Status = %v, want approved", payment.Status)
+		}
+		if payment.WalletID != wallet.ID {
+			t.Errorf("WalletID = %v, want %v", payment.WalletID, wallet.ID)
+		}
+		if payment.WalletType != model.WalletTypeKakao {
+			t.Errorf("WalletType = %v, want kakao", payment.WalletType)
+		}
+		if payment.CardLast4 != "4242" {
+			t.Errorf("CardLast4 = %v, want 4242", payment.CardLast4)
+		}
+	})
+
+	t.Run("Wallet Payment Without WalletID", func(t *testing.T) {
+		req := &model.CreatePaymentRequest{
+			MerchantID: "MERCHANT_001",
+			OrderID:    "ORDER_WALLET_002",
+			Amount:     "30000",
+			Currency:   "KRW",
+			Method:     model.PaymentMethodWallet,
+			// WalletID is missing
+		}
+
+		_, err := svc.CreatePayment(req)
+		if err != ErrWalletIDRequired {
+			t.Errorf("Expected ErrWalletIDRequired, got %v", err)
+		}
+	})
+
+	t.Run("Wallet Payment with Nonexistent Wallet", func(t *testing.T) {
+		req := &model.CreatePaymentRequest{
+			MerchantID: "MERCHANT_001",
+			OrderID:    "ORDER_WALLET_003",
+			Amount:     "30000",
+			Currency:   "KRW",
+			Method:     model.PaymentMethodWallet,
+			WalletID:   "nonexistent-wallet-id",
+		}
+
+		_, err := svc.CreatePayment(req)
+		if err != ErrWalletNotFound {
+			t.Errorf("Expected ErrWalletNotFound, got %v", err)
+		}
+	})
+
+	t.Run("Wallet Payment with Inactive Wallet", func(t *testing.T) {
+		// Create and delete a wallet
+		inactiveReq := &model.CreateWalletRequest{
+			UserID: "USER_INACTIVE",
+			Name:   "비활성 지갑",
+			Type:   model.WalletTypeToss,
+			DefaultCard: &model.CardDetails{
+				Number:   "4242424242424242",
+				ExpMonth: "12",
+				ExpYear:  futureYear,
+				CVV:      "123",
+				Name:     "테스트",
+			},
+		}
+		inactiveWallet, _ := svc.CreateWallet(inactiveReq)
+		svc.DeleteWallet(inactiveWallet.ID)
+
+		req := &model.CreatePaymentRequest{
+			MerchantID: "MERCHANT_001",
+			OrderID:    "ORDER_WALLET_004",
+			Amount:     "30000",
+			Currency:   "KRW",
+			Method:     model.PaymentMethodWallet,
+			WalletID:   inactiveWallet.ID,
+		}
+
+		_, err := svc.CreatePayment(req)
+		if err != ErrWalletInactive {
+			t.Errorf("Expected ErrWalletInactive, got %v", err)
+		}
+	})
+}
+
+func TestBankTransferPaymentValidation(t *testing.T) {
+	cfg := &config.Config{
+		SuccessRate:      100,
+		BankSimulatorURL: "http://localhost:4350",
+	}
+	svc := NewPaymentService(cfg)
+
+	t.Run("Bank Transfer Without BankAccount", func(t *testing.T) {
+		req := &model.CreatePaymentRequest{
+			MerchantID: "MERCHANT_001",
+			OrderID:    "ORDER_BANK_001",
+			Amount:     "50000",
+			Currency:   "KRW",
+			Method:     model.PaymentMethodBank,
+			// BankAccount is missing
+		}
+
+		_, err := svc.CreatePayment(req)
+		if err != ErrBankAccountRequired {
+			t.Errorf("Expected ErrBankAccountRequired, got %v", err)
+		}
+	})
+}
+
+func TestCardPaymentRouting(t *testing.T) {
+	cfg := &config.Config{
+		SuccessRate:      100,
+		BankSimulatorURL: "http://localhost:4350",
+	}
+	svc := NewPaymentService(cfg)
+
+	now := time.Now()
+	futureYear := intToStr(now.Year() + 1)
+
+	t.Run("Card Payment Success", func(t *testing.T) {
+		req := &model.CreatePaymentRequest{
+			MerchantID: "MERCHANT_001",
+			OrderID:    "ORDER_CARD_001",
+			Amount:     "10000",
+			Currency:   "KRW",
+			Method:     model.PaymentMethodCard,
+			Card: &model.CardDetails{
+				Number:   "4242424242424242",
+				ExpMonth: "12",
+				ExpYear:  futureYear,
+				CVV:      "123",
+				Name:     "홍길동",
+			},
+		}
+
+		payment, err := svc.CreatePayment(req)
+		if err != nil {
+			t.Fatalf("CreatePayment failed: %v", err)
+		}
+
+		if payment.Status != model.PaymentStatusApproved {
+			t.Errorf("Status = %v, want approved", payment.Status)
+		}
+		if payment.Method != model.PaymentMethodCard {
+			t.Errorf("Method = %v, want card", payment.Method)
+		}
+	})
+}
+
+func TestIdempotencyKey(t *testing.T) {
+	cfg := &config.Config{
+		SuccessRate:      100,
+		BankSimulatorURL: "http://localhost:4350",
+	}
+	svc := NewPaymentService(cfg)
+
+	now := time.Now()
+	futureYear := intToStr(now.Year() + 1)
+
+	t.Run("Idempotency Key Deduplication", func(t *testing.T) {
+		idempotencyKey := "unique-key-12345"
+
+		req := &model.CreatePaymentRequest{
+			MerchantID:     "MERCHANT_001",
+			OrderID:        "ORDER_IDEMP_001",
+			Amount:         "10000",
+			Currency:       "KRW",
+			Method:         model.PaymentMethodCard,
+			IdempotencyKey: idempotencyKey,
+			Card: &model.CardDetails{
+				Number:   "4242424242424242",
+				ExpMonth: "12",
+				ExpYear:  futureYear,
+				CVV:      "123",
+				Name:     "홍길동",
+			},
+		}
+
+		// First request
+		payment1, err := svc.CreatePayment(req)
+		if err != nil {
+			t.Fatalf("First CreatePayment failed: %v", err)
+		}
+
+		// Second request with same idempotency key
+		payment2, err := svc.CreatePayment(req)
+		if err != nil {
+			t.Fatalf("Second CreatePayment failed: %v", err)
+		}
+
+		// Should return the same payment
+		if payment1.ID != payment2.ID {
+			t.Errorf("Expected same payment ID, got %v and %v", payment1.ID, payment2.ID)
+		}
 	})
 }

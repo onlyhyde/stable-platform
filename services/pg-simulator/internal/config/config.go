@@ -17,17 +17,21 @@ type Config struct {
 
 	// Simulation settings
 	SuccessRate int // Percentage of successful payments (0-100)
+
+	// Bank simulator integration
+	BankSimulatorURL string
 }
 
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
 	port := getEnv("PORT", "4351")
 	cfg := &Config{
-		Port:          port,
-		BaseURL:       getEnv("BASE_URL", "http://localhost:"+port),
-		WebhookURL:    getEnv("WEBHOOK_URL", ""),
-		WebhookSecret: getEnvWithWarning("WEBHOOK_SECRET", "pg-webhook-secret-dev"),
-		SuccessRate:   getEnvInt("SUCCESS_RATE", 95),
+		Port:             port,
+		BaseURL:          getEnv("BASE_URL", "http://localhost:"+port),
+		WebhookURL:       getEnv("WEBHOOK_URL", ""),
+		WebhookSecret:    getEnvWithWarning("WEBHOOK_SECRET", "pg-webhook-secret-dev"),
+		SuccessRate:      getEnvInt("SUCCESS_RATE", 95),
+		BankSimulatorURL: getEnv("BANK_SIMULATOR_URL", "http://localhost:4350"),
 	}
 
 	// Validate configuration

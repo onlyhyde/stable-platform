@@ -9,10 +9,11 @@ import (
 type SubscriptionStatus string
 
 const (
-	StatusActive    SubscriptionStatus = "active"
-	StatusPaused    SubscriptionStatus = "paused"
-	StatusCancelled SubscriptionStatus = "cancelled"
-	StatusExpired   SubscriptionStatus = "expired"
+	StatusActive             SubscriptionStatus = "active"
+	StatusPaused             SubscriptionStatus = "paused"
+	StatusCancelled          SubscriptionStatus = "cancelled"
+	StatusExpired            SubscriptionStatus = "expired"
+	StatusPermissionRevoked  SubscriptionStatus = "permission_revoked"
 )
 
 // Subscription represents a recurring payment subscription
@@ -23,6 +24,7 @@ type Subscription struct {
 	Token           string             `json:"token" db:"token"`
 	Amount          *big.Int           `json:"amount" db:"amount"`
 	Interval        int64              `json:"interval" db:"interval_seconds"` // in seconds
+	PermissionID    string             `json:"permissionId,omitempty" db:"permission_id"` // ERC-7715 permission ID
 	NextExecution   time.Time          `json:"nextExecution" db:"next_execution"`
 	LastExecution   *time.Time         `json:"lastExecution,omitempty" db:"last_execution"`
 	ExecutionCount  int64              `json:"executionCount" db:"execution_count"`

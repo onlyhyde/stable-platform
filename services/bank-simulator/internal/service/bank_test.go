@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/stablenet/stable-platform/services/bank-simulator/internal/config"
 	"github.com/stablenet/stable-platform/services/bank-simulator/internal/model"
 )
@@ -921,6 +923,378 @@ func TestConcurrent_CreateAccount(t *testing.T) {
 	}
 }
 
+// --- Deposit ---
+
+func TestDeposit_Success(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "Depositor", "USD", "1000.00")
+
+	txn, err := svc.Deposit(acc.AccountNo, &model.DepositRequest{
+		Amount:      "500.00",
+		Reference:   "deposit-ref",
+		Description: "Test deposit",
+	})
+	if err != nil {
+		t.Fatalf("Deposit() error = %v", err)
+	}
+
+	if txn.Type != model.TransactionTypeDeposit {
+		t.Errorf("Type = %q, want %q", txn.Type, model.TransactionTypeDeposit)
+	}
+	if txn.Amount != "500.00" {
+		t.Errorf("Amount = %q, want %q", txn.Amount, "500.00")
+	}
+	if txn.BalanceBefore != "1000.00" {
+		t.Errorf("BalanceBefore = %q, want %q", txn.BalanceBefore, "1000.00")
+	}
+	if txn.BalanceAfter != "1500.00" {
+		t.Errorf("BalanceAfter = %q, want %q", txn.BalanceAfter, "1500.00")
+	}
+	if txn.Reference != "deposit-ref" {
+		t.Errorf("Reference = %q, want %q", txn.Reference, "deposit-ref")
+	}
+	if txn.Description != "Test deposit" {
+		t.Errorf("Description = %q, want %q", txn.Description, "Test deposit")
+	}
+
+	// Verify account balance updated
+	updatedAcc, _ := svc.GetAccount(acc.AccountNo)
+	if updatedAcc.Balance != "1500.00" {
+		t.Errorf("Account balance = %q, want %q", updatedAcc.Balance, "1500.00")
+	}
+}
+
+func TestDeposit_AccountNotFound(t *testing.T) {
+	svc := newTestService()
+
+	_, err := svc.Deposit("NONEXISTENT", &model.DepositRequest{
+		Amount: "100.00",
+	})
+	if err != ErrAccountNotFound {
+		t.Errorf("Deposit() error = %v, want ErrAccountNotFound", err)
+	}
+}
+
+func TestDeposit_FrozenAccount(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "Frozen", "USD", "1000.00")
+
+	if err := svc.FreezeAccount(acc.AccountNo); err != nil {
+		t.Fatalf("FreezeAccount() error: %v", err)
+	}
+	time.Sleep(10 * time.Millisecond)
+
+	_, err := svc.Deposit(acc.AccountNo, &model.DepositRequest{
+		Amount: "100.00",
+	})
+	if err != ErrAccountFrozen {
+		t.Errorf("Deposit() error = %v, want ErrAccountFrozen", err)
+	}
+}
+
+func TestDeposit_InvalidAmount(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "Test", "USD", "1000.00")
+
+	tests := []struct {
+		name   string
+		amount string
+	}{
+		{"non-numeric", "abc"},
+		{"zero", "0.00"},
+		{"negative", "-100.00"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := svc.Deposit(acc.AccountNo, &model.DepositRequest{
+				Amount: tt.amount,
+			})
+			if err != ErrInvalidAmount {
+				t.Errorf("Deposit(%q) error = %v, want ErrInvalidAmount", tt.amount, err)
+			}
+		})
+	}
+}
+
+func TestDeposit_BigFloatPrecision(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "Precise", "USD", "0.10")
+
+	_, err := svc.Deposit(acc.AccountNo, &model.DepositRequest{
+		Amount: "0.20",
+	})
+	if err != nil {
+		t.Fatalf("Deposit() error = %v", err)
+	}
+
+	updatedAcc, _ := svc.GetAccount(acc.AccountNo)
+	if updatedAcc.Balance != "0.30" {
+		t.Errorf("Balance = %q, want %q (precision issue)", updatedAcc.Balance, "0.30")
+	}
+}
+
+// --- Withdraw ---
+
+func TestWithdraw_Success(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "Withdrawer", "USD", "1000.00")
+
+	txn, err := svc.Withdraw(acc.AccountNo, &model.WithdrawRequest{
+		Amount:      "300.00",
+		Reference:   "withdraw-ref",
+		Description: "Test withdrawal",
+	})
+	if err != nil {
+		t.Fatalf("Withdraw() error = %v", err)
+	}
+
+	if txn.Type != model.TransactionTypeWithdraw {
+		t.Errorf("Type = %q, want %q", txn.Type, model.TransactionTypeWithdraw)
+	}
+	if txn.Amount != "300.00" {
+		t.Errorf("Amount = %q, want %q", txn.Amount, "300.00")
+	}
+	if txn.BalanceBefore != "1000.00" {
+		t.Errorf("BalanceBefore = %q, want %q", txn.BalanceBefore, "1000.00")
+	}
+	if txn.BalanceAfter != "700.00" {
+		t.Errorf("BalanceAfter = %q, want %q", txn.BalanceAfter, "700.00")
+	}
+
+	// Verify account balance updated
+	updatedAcc, _ := svc.GetAccount(acc.AccountNo)
+	if updatedAcc.Balance != "700.00" {
+		t.Errorf("Account balance = %q, want %q", updatedAcc.Balance, "700.00")
+	}
+}
+
+func TestWithdraw_AccountNotFound(t *testing.T) {
+	svc := newTestService()
+
+	_, err := svc.Withdraw("NONEXISTENT", &model.WithdrawRequest{
+		Amount: "100.00",
+	})
+	if err != ErrAccountNotFound {
+		t.Errorf("Withdraw() error = %v, want ErrAccountNotFound", err)
+	}
+}
+
+func TestWithdraw_FrozenAccount(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "Frozen", "USD", "1000.00")
+
+	if err := svc.FreezeAccount(acc.AccountNo); err != nil {
+		t.Fatalf("FreezeAccount() error: %v", err)
+	}
+	time.Sleep(10 * time.Millisecond)
+
+	_, err := svc.Withdraw(acc.AccountNo, &model.WithdrawRequest{
+		Amount: "100.00",
+	})
+	if err != ErrAccountFrozen {
+		t.Errorf("Withdraw() error = %v, want ErrAccountFrozen", err)
+	}
+}
+
+func TestWithdraw_InsufficientBalance(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "Poor", "USD", "100.00")
+
+	_, err := svc.Withdraw(acc.AccountNo, &model.WithdrawRequest{
+		Amount: "500.00",
+	})
+	if err != ErrInsufficientBalance {
+		t.Errorf("Withdraw() error = %v, want ErrInsufficientBalance", err)
+	}
+
+	// Verify balance unchanged
+	updatedAcc, _ := svc.GetAccount(acc.AccountNo)
+	if updatedAcc.Balance != "100.00" {
+		t.Errorf("Balance = %q, want unchanged %q", updatedAcc.Balance, "100.00")
+	}
+}
+
+func TestWithdraw_InvalidAmount(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "Test", "USD", "1000.00")
+
+	tests := []struct {
+		name   string
+		amount string
+	}{
+		{"non-numeric", "xyz"},
+		{"zero", "0"},
+		{"negative", "-50.00"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := svc.Withdraw(acc.AccountNo, &model.WithdrawRequest{
+				Amount: tt.amount,
+			})
+			if err != ErrInvalidAmount {
+				t.Errorf("Withdraw(%q) error = %v, want ErrInvalidAmount", tt.amount, err)
+			}
+		})
+	}
+}
+
+func TestWithdraw_ExactBalance(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "Exact", "USD", "500.00")
+
+	txn, err := svc.Withdraw(acc.AccountNo, &model.WithdrawRequest{
+		Amount: "500.00",
+	})
+	if err != nil {
+		t.Fatalf("Withdraw() error = %v", err)
+	}
+	if txn.BalanceAfter != "0.00" {
+		t.Errorf("BalanceAfter = %q, want %q", txn.BalanceAfter, "0.00")
+	}
+
+	updatedAcc, _ := svc.GetAccount(acc.AccountNo)
+	if updatedAcc.Balance != "0.00" {
+		t.Errorf("Balance = %q, want %q", updatedAcc.Balance, "0.00")
+	}
+}
+
+// --- GetTransaction ---
+
+func TestGetTransaction_Exists(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "Test", "USD", "1000.00")
+
+	created, _ := svc.Deposit(acc.AccountNo, &model.DepositRequest{Amount: "100.00"})
+	time.Sleep(10 * time.Millisecond) // let webhook complete
+
+	got, err := svc.GetTransaction(created.ID)
+	if err != nil {
+		t.Fatalf("GetTransaction() error = %v", err)
+	}
+	if got.ID != created.ID {
+		t.Errorf("ID = %q, want %q", got.ID, created.ID)
+	}
+	if got.Amount != "100.00" {
+		t.Errorf("Amount = %q, want %q", got.Amount, "100.00")
+	}
+}
+
+func TestGetTransaction_NotFound(t *testing.T) {
+	svc := newTestService()
+
+	_, err := svc.GetTransaction("nonexistent-txn-id")
+	if err == nil {
+		t.Fatal("GetTransaction() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "not found") {
+		t.Errorf("error = %q, want to contain 'not found'", err.Error())
+	}
+}
+
+// --- GetTransactionsByAccount ---
+
+func TestGetTransactionsByAccount(t *testing.T) {
+	svc := newTestService()
+	acc1 := createTestAccount(t, svc, "Acc1", "USD", "1000.00")
+	time.Sleep(time.Millisecond)
+	acc2 := createTestAccount(t, svc, "Acc2", "USD", "1000.00")
+
+	// acc1: 2 deposits, 1 withdraw
+	svc.Deposit(acc1.AccountNo, &model.DepositRequest{Amount: "100.00"})
+	time.Sleep(10 * time.Millisecond)
+	svc.Deposit(acc1.AccountNo, &model.DepositRequest{Amount: "200.00"})
+	time.Sleep(10 * time.Millisecond)
+	svc.Withdraw(acc1.AccountNo, &model.WithdrawRequest{Amount: "50.00"})
+	time.Sleep(10 * time.Millisecond)
+
+	// acc2: 1 deposit
+	svc.Deposit(acc2.AccountNo, &model.DepositRequest{Amount: "300.00"})
+	time.Sleep(10 * time.Millisecond)
+
+	acc1Txns := svc.GetTransactionsByAccount(acc1.AccountNo)
+	if len(acc1Txns) != 3 {
+		t.Errorf("acc1 transactions = %d, want 3", len(acc1Txns))
+	}
+
+	acc2Txns := svc.GetTransactionsByAccount(acc2.AccountNo)
+	if len(acc2Txns) != 1 {
+		t.Errorf("acc2 transactions = %d, want 1", len(acc2Txns))
+	}
+
+	// Unknown account
+	unknownTxns := svc.GetTransactionsByAccount("UNKNOWN")
+	if len(unknownTxns) != 0 {
+		t.Errorf("unknown transactions = %d, want 0", len(unknownTxns))
+	}
+}
+
+// --- Concurrent Deposit/Withdraw ---
+
+func TestConcurrent_Deposit(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "ConcurrentDeposit", "USD", "0.00")
+
+	var wg sync.WaitGroup
+	count := 100
+
+	for i := 0; i < count; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			svc.Deposit(acc.AccountNo, &model.DepositRequest{Amount: "10.00"})
+		}()
+	}
+
+	wg.Wait()
+	time.Sleep(50 * time.Millisecond) // allow webhooks
+
+	updatedAcc, _ := svc.GetAccount(acc.AccountNo)
+	expectedBalance := new(big.Float).SetFloat64(float64(count) * 10)
+	actualBalance, _ := new(big.Float).SetString(updatedAcc.Balance)
+
+	if actualBalance.Cmp(expectedBalance) != 0 {
+		t.Errorf("Balance = %s, want %s", updatedAcc.Balance, expectedBalance.Text('f', 2))
+	}
+}
+
+func TestConcurrent_Withdraw(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "ConcurrentWithdraw", "USD", "1000.00")
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	successCount := 0
+	count := 100
+
+	for i := 0; i < count; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := svc.Withdraw(acc.AccountNo, &model.WithdrawRequest{Amount: "50.00"})
+			if err == nil {
+				mu.Lock()
+				successCount++
+				mu.Unlock()
+			}
+		}()
+	}
+
+	wg.Wait()
+	time.Sleep(50 * time.Millisecond)
+
+	// Only 20 withdrawals should succeed (1000/50 = 20)
+	if successCount != 20 {
+		t.Errorf("successCount = %d, want 20 (only 20 x 50 can be withdrawn from 1000)", successCount)
+	}
+
+	updatedAcc, _ := svc.GetAccount(acc.AccountNo)
+	if updatedAcc.Balance != "0.00" {
+		t.Errorf("Balance = %q, want %q", updatedAcc.Balance, "0.00")
+	}
+}
+
 func TestConcurrent_Transfer(t *testing.T) {
 	svc := newTestService()
 
@@ -981,5 +1355,669 @@ func TestConcurrent_Transfer(t *testing.T) {
 	expected := new(big.Float).SetFloat64(10000)
 	if sum.Cmp(expected) != 0 {
 		t.Errorf("balance sum = %s, want 10000.00", sum.Text('f', 2))
+	}
+}
+
+// --- VerifyAccount ---
+
+func TestVerifyAccount_Match(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "1000.00")
+
+	resp, err := svc.VerifyAccount(&model.VerifyAccountRequest{
+		AccountNo:  acc.AccountNo,
+		HolderName: "홍길동",
+	})
+	if err != nil {
+		t.Fatalf("VerifyAccount() error = %v", err)
+	}
+	if !resp.Verified {
+		t.Error("Verified = false, want true")
+	}
+	if resp.AccountNo != acc.AccountNo {
+		t.Errorf("AccountNo = %q, want %q", resp.AccountNo, acc.AccountNo)
+	}
+	if resp.MaskedName != "홍*동" {
+		t.Errorf("MaskedName = %q, want %q", resp.MaskedName, "홍*동")
+	}
+	if resp.Status != "active" {
+		t.Errorf("Status = %q, want %q", resp.Status, "active")
+	}
+}
+
+func TestVerifyAccount_MatchWithSpaces(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍 길 동", "KRW", "1000.00")
+
+	resp, err := svc.VerifyAccount(&model.VerifyAccountRequest{
+		AccountNo:  acc.AccountNo,
+		HolderName: "홍길동",
+	})
+	if err != nil {
+		t.Fatalf("VerifyAccount() error = %v", err)
+	}
+	if !resp.Verified {
+		t.Error("Verified = false, want true (should match ignoring spaces)")
+	}
+}
+
+func TestVerifyAccount_Mismatch(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "1000.00")
+
+	resp, err := svc.VerifyAccount(&model.VerifyAccountRequest{
+		AccountNo:  acc.AccountNo,
+		HolderName: "김철수",
+	})
+	if err != nil {
+		t.Fatalf("VerifyAccount() error = %v", err)
+	}
+	if resp.Verified {
+		t.Error("Verified = true, want false")
+	}
+	if resp.Reason != "name_mismatch" {
+		t.Errorf("Reason = %q, want %q", resp.Reason, "name_mismatch")
+	}
+}
+
+func TestVerifyAccount_AccountNotFound(t *testing.T) {
+	svc := newTestService()
+
+	_, err := svc.VerifyAccount(&model.VerifyAccountRequest{
+		AccountNo:  "BANK0000000000",
+		HolderName: "홍길동",
+	})
+	if err != ErrAccountNotFound {
+		t.Errorf("VerifyAccount() error = %v, want ErrAccountNotFound", err)
+	}
+}
+
+func TestVerifyAccount_FrozenAccount(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "1000.00")
+
+	if err := svc.FreezeAccount(acc.AccountNo); err != nil {
+		t.Fatalf("FreezeAccount() error: %v", err)
+	}
+	time.Sleep(10 * time.Millisecond)
+
+	_, err := svc.VerifyAccount(&model.VerifyAccountRequest{
+		AccountNo:  acc.AccountNo,
+		HolderName: "홍길동",
+	})
+	if err != ErrAccountUnavailable {
+		t.Errorf("VerifyAccount() error = %v, want ErrAccountUnavailable", err)
+	}
+}
+
+// --- InitiateVerification ---
+
+func TestInitiateVerification_Success(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "1000.00")
+
+	resp, err := svc.InitiateVerification(&model.InitiateVerificationRequest{
+		AccountNo: acc.AccountNo,
+	})
+	if err != nil {
+		t.Fatalf("InitiateVerification() error = %v", err)
+	}
+
+	if resp.VerificationID == "" {
+		t.Error("VerificationID is empty")
+	}
+	if resp.AccountNo != acc.AccountNo {
+		t.Errorf("AccountNo = %q, want %q", resp.AccountNo, acc.AccountNo)
+	}
+	if resp.Amount != "1" {
+		t.Errorf("Amount = %q, want %q", resp.Amount, "1")
+	}
+	if !strings.HasPrefix(resp.DepositorName, "인증") {
+		t.Errorf("DepositorName = %q, want prefix '인증'", resp.DepositorName)
+	}
+	if resp.AttemptsRemaining != 3 {
+		t.Errorf("AttemptsRemaining = %d, want 3", resp.AttemptsRemaining)
+	}
+	if resp.ExpiresAt.Before(time.Now()) {
+		t.Error("ExpiresAt should be in the future")
+	}
+}
+
+func TestInitiateVerification_AccountNotFound(t *testing.T) {
+	svc := newTestService()
+
+	_, err := svc.InitiateVerification(&model.InitiateVerificationRequest{
+		AccountNo: "BANK0000000000",
+	})
+	if err != ErrAccountNotFound {
+		t.Errorf("InitiateVerification() error = %v, want ErrAccountNotFound", err)
+	}
+}
+
+func TestInitiateVerification_FrozenAccount(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "1000.00")
+
+	if err := svc.FreezeAccount(acc.AccountNo); err != nil {
+		t.Fatalf("FreezeAccount() error: %v", err)
+	}
+	time.Sleep(10 * time.Millisecond)
+
+	_, err := svc.InitiateVerification(&model.InitiateVerificationRequest{
+		AccountNo: acc.AccountNo,
+	})
+	if err != ErrAccountUnavailable {
+		t.Errorf("InitiateVerification() error = %v, want ErrAccountUnavailable", err)
+	}
+}
+
+// --- CompleteVerification ---
+
+func TestCompleteVerification_Success(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "1000.00")
+
+	// Initiate verification
+	initResp, _ := svc.InitiateVerification(&model.InitiateVerificationRequest{
+		AccountNo: acc.AccountNo,
+	})
+
+	// Get the verification to find the code
+	verification, _ := svc.GetVerification(initResp.VerificationID)
+
+	// Complete with correct code
+	resp, err := svc.CompleteVerification(&model.CompleteVerificationRequest{
+		VerificationID: initResp.VerificationID,
+		Code:           verification.Code,
+	})
+	if err != nil {
+		t.Fatalf("CompleteVerification() error = %v", err)
+	}
+
+	if !resp.Verified {
+		t.Error("Verified = false, want true")
+	}
+	if resp.VerificationID != initResp.VerificationID {
+		t.Errorf("VerificationID = %q, want %q", resp.VerificationID, initResp.VerificationID)
+	}
+	if resp.AccountNo != acc.AccountNo {
+		t.Errorf("AccountNo = %q, want %q", resp.AccountNo, acc.AccountNo)
+	}
+}
+
+func TestCompleteVerification_InvalidCode(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "1000.00")
+
+	// Initiate verification
+	initResp, _ := svc.InitiateVerification(&model.InitiateVerificationRequest{
+		AccountNo: acc.AccountNo,
+	})
+
+	// Complete with wrong code
+	resp, err := svc.CompleteVerification(&model.CompleteVerificationRequest{
+		VerificationID: initResp.VerificationID,
+		Code:           "0000", // Wrong code
+	})
+	if err != nil {
+		t.Fatalf("CompleteVerification() error = %v", err)
+	}
+
+	if resp.Verified {
+		t.Error("Verified = true, want false")
+	}
+	if resp.Reason != "invalid_code" {
+		t.Errorf("Reason = %q, want %q", resp.Reason, "invalid_code")
+	}
+	if resp.AttemptsRemaining != 2 {
+		t.Errorf("AttemptsRemaining = %d, want 2", resp.AttemptsRemaining)
+	}
+}
+
+func TestCompleteVerification_MaxAttempts(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "1000.00")
+
+	// Initiate verification
+	initResp, _ := svc.InitiateVerification(&model.InitiateVerificationRequest{
+		AccountNo: acc.AccountNo,
+	})
+
+	// Try 3 times with wrong code
+	for i := 0; i < 3; i++ {
+		svc.CompleteVerification(&model.CompleteVerificationRequest{
+			VerificationID: initResp.VerificationID,
+			Code:           "0000",
+		})
+	}
+
+	// 4th attempt should fail with max attempts exceeded
+	_, err := svc.CompleteVerification(&model.CompleteVerificationRequest{
+		VerificationID: initResp.VerificationID,
+		Code:           "0000",
+	})
+	if err != ErrMaxAttemptsExceeded {
+		t.Errorf("CompleteVerification() error = %v, want ErrMaxAttemptsExceeded", err)
+	}
+}
+
+func TestCompleteVerification_NotFound(t *testing.T) {
+	svc := newTestService()
+
+	_, err := svc.CompleteVerification(&model.CompleteVerificationRequest{
+		VerificationID: "nonexistent-id",
+		Code:           "1234",
+	})
+	if err != ErrVerificationNotFound {
+		t.Errorf("CompleteVerification() error = %v, want ErrVerificationNotFound", err)
+	}
+}
+
+func TestCompleteVerification_Expired(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "1000.00")
+
+	// Initiate verification
+	initResp, _ := svc.InitiateVerification(&model.InitiateVerificationRequest{
+		AccountNo: acc.AccountNo,
+	})
+
+	// Manually expire the verification
+	verification, _ := svc.GetVerification(initResp.VerificationID)
+	svc.mu.Lock()
+	verification.ExpiresAt = time.Now().Add(-1 * time.Minute)
+	svc.mu.Unlock()
+
+	// Try to complete
+	_, err := svc.CompleteVerification(&model.CompleteVerificationRequest{
+		VerificationID: initResp.VerificationID,
+		Code:           verification.Code,
+	})
+	if err != ErrVerificationExpired {
+		t.Errorf("CompleteVerification() error = %v, want ErrVerificationExpired", err)
+	}
+}
+
+// --- maskHolderName ---
+
+func TestMaskHolderName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"three chars", "홍길동", "홍*동"},
+		{"two chars", "홍길", "홍*"},
+		{"one char", "홍", "홍"},
+		{"empty", "", ""},
+		{"four chars", "김영수철", "김**철"},
+		{"english", "Alice", "A***e"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := maskHolderName(tt.input)
+			if got != tt.expected {
+				t.Errorf("maskHolderName(%q) = %q, want %q", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
+// --- CreateDebitRequest ---
+
+func TestCreateDebitRequest_Success(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "100000.00")
+
+	req := &model.CreateDebitRequestInput{
+		IdempotencyKey: "idem_" + uuid.New().String(),
+		AccountNo:      acc.AccountNo,
+		Amount:         "50000.00",
+		Currency:       "KRW",
+		CreditorID:     "PG_001",
+		CreditorName:   "온라인쇼핑몰",
+		Reference:      "ORDER_123",
+		Description:    "상품 결제",
+		AutoApprove:    false,
+	}
+
+	resp, err := svc.CreateDebitRequest(req)
+	if err != nil {
+		t.Fatalf("CreateDebitRequest() error = %v", err)
+	}
+
+	if resp.ID == "" {
+		t.Error("ID is empty")
+	}
+	if resp.Status != model.DebitRequestStatusPending {
+		t.Errorf("Status = %q, want %q", resp.Status, model.DebitRequestStatusPending)
+	}
+	if resp.Amount != "50000.00" {
+		t.Errorf("Amount = %q, want %q", resp.Amount, "50000.00")
+	}
+	if resp.CreditorID != "PG_001" {
+		t.Errorf("CreditorID = %q, want %q", resp.CreditorID, "PG_001")
+	}
+}
+
+func TestCreateDebitRequest_AutoApprove(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "100000.00")
+
+	req := &model.CreateDebitRequestInput{
+		IdempotencyKey: "idem_" + uuid.New().String(),
+		AccountNo:      acc.AccountNo,
+		Amount:         "50000.00",
+		Currency:       "KRW",
+		CreditorID:     "PG_001",
+		CreditorName:   "온라인쇼핑몰",
+		AutoApprove:    true,
+	}
+
+	resp, err := svc.CreateDebitRequest(req)
+	if err != nil {
+		t.Fatalf("CreateDebitRequest() error = %v", err)
+	}
+
+	// Wait for async processing
+	time.Sleep(100 * time.Millisecond)
+
+	// Get updated status
+	updated, _ := svc.GetDebitRequest(resp.ID)
+	if updated.Status != model.DebitRequestStatusCompleted {
+		t.Errorf("Status = %q, want %q (auto-approve)", updated.Status, model.DebitRequestStatusCompleted)
+	}
+	if updated.TransactionID == "" {
+		t.Error("TransactionID should be set after completion")
+	}
+
+	// Verify account balance deducted
+	updatedAcc, _ := svc.GetAccount(acc.AccountNo)
+	if updatedAcc.Balance != "50000.00" {
+		t.Errorf("Balance = %q, want %q", updatedAcc.Balance, "50000.00")
+	}
+}
+
+func TestCreateDebitRequest_Idempotency(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "100000.00")
+
+	idempotencyKey := "idem_" + uuid.New().String()
+	req := &model.CreateDebitRequestInput{
+		IdempotencyKey: idempotencyKey,
+		AccountNo:      acc.AccountNo,
+		Amount:         "10000.00",
+		Currency:       "KRW",
+		CreditorID:     "PG_001",
+		CreditorName:   "온라인쇼핑몰",
+		AutoApprove:    false,
+	}
+
+	// First request
+	resp1, err := svc.CreateDebitRequest(req)
+	if err != nil {
+		t.Fatalf("First CreateDebitRequest() error = %v", err)
+	}
+
+	// Second request with same idempotency key
+	resp2, err := svc.CreateDebitRequest(req)
+	if err != nil {
+		t.Fatalf("Second CreateDebitRequest() error = %v", err)
+	}
+
+	// Should return same debit request
+	if resp1.ID != resp2.ID {
+		t.Errorf("Idempotency failed: got different IDs %q and %q", resp1.ID, resp2.ID)
+	}
+}
+
+func TestCreateDebitRequest_AccountNotFound(t *testing.T) {
+	svc := newTestService()
+
+	req := &model.CreateDebitRequestInput{
+		IdempotencyKey: "idem_" + uuid.New().String(),
+		AccountNo:      "BANK0000000000",
+		Amount:         "10000.00",
+		Currency:       "KRW",
+		CreditorID:     "PG_001",
+		CreditorName:   "온라인쇼핑몰",
+	}
+
+	_, err := svc.CreateDebitRequest(req)
+	if err != ErrAccountNotFound {
+		t.Errorf("CreateDebitRequest() error = %v, want ErrAccountNotFound", err)
+	}
+}
+
+func TestCreateDebitRequest_FrozenAccount(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "100000.00")
+
+	if err := svc.FreezeAccount(acc.AccountNo); err != nil {
+		t.Fatalf("FreezeAccount() error: %v", err)
+	}
+	time.Sleep(10 * time.Millisecond)
+
+	req := &model.CreateDebitRequestInput{
+		IdempotencyKey: "idem_" + uuid.New().String(),
+		AccountNo:      acc.AccountNo,
+		Amount:         "10000.00",
+		Currency:       "KRW",
+		CreditorID:     "PG_001",
+		CreditorName:   "온라인쇼핑몰",
+	}
+
+	_, err := svc.CreateDebitRequest(req)
+	if err != ErrAccountUnavailable {
+		t.Errorf("CreateDebitRequest() error = %v, want ErrAccountUnavailable", err)
+	}
+}
+
+func TestCreateDebitRequest_InvalidAmount(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "100000.00")
+
+	tests := []struct {
+		name   string
+		amount string
+	}{
+		{"non-numeric", "abc"},
+		{"zero", "0"},
+		{"negative", "-1000"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := &model.CreateDebitRequestInput{
+				IdempotencyKey: "idem_" + uuid.New().String(),
+				AccountNo:      acc.AccountNo,
+				Amount:         tt.amount,
+				Currency:       "KRW",
+				CreditorID:     "PG_001",
+				CreditorName:   "온라인쇼핑몰",
+			}
+
+			_, err := svc.CreateDebitRequest(req)
+			if err != ErrInvalidAmount {
+				t.Errorf("CreateDebitRequest(%q) error = %v, want ErrInvalidAmount", tt.amount, err)
+			}
+		})
+	}
+}
+
+func TestCreateDebitRequest_InsufficientBalance(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "1000.00")
+
+	req := &model.CreateDebitRequestInput{
+		IdempotencyKey: "idem_" + uuid.New().String(),
+		AccountNo:      acc.AccountNo,
+		Amount:         "50000.00", // More than balance
+		Currency:       "KRW",
+		CreditorID:     "PG_001",
+		CreditorName:   "온라인쇼핑몰",
+		AutoApprove:    true,
+	}
+
+	resp, err := svc.CreateDebitRequest(req)
+	if err != nil {
+		t.Fatalf("CreateDebitRequest() error = %v", err)
+	}
+
+	// Wait for async processing
+	time.Sleep(100 * time.Millisecond)
+
+	// Check status
+	updated, _ := svc.GetDebitRequest(resp.ID)
+	if updated.Status != model.DebitRequestStatusRejected {
+		t.Errorf("Status = %q, want %q", updated.Status, model.DebitRequestStatusRejected)
+	}
+	if updated.FailureReason != "insufficient_balance" {
+		t.Errorf("FailureReason = %q, want %q", updated.FailureReason, "insufficient_balance")
+	}
+}
+
+// --- GetDebitRequest ---
+
+func TestGetDebitRequest_Exists(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "100000.00")
+
+	created, _ := svc.CreateDebitRequest(&model.CreateDebitRequestInput{
+		IdempotencyKey: "idem_" + uuid.New().String(),
+		AccountNo:      acc.AccountNo,
+		Amount:         "10000.00",
+		Currency:       "KRW",
+		CreditorID:     "PG_001",
+		CreditorName:   "온라인쇼핑몰",
+	})
+
+	got, err := svc.GetDebitRequest(created.ID)
+	if err != nil {
+		t.Fatalf("GetDebitRequest() error = %v", err)
+	}
+	if got.ID != created.ID {
+		t.Errorf("ID = %q, want %q", got.ID, created.ID)
+	}
+}
+
+func TestGetDebitRequest_NotFound(t *testing.T) {
+	svc := newTestService()
+
+	_, err := svc.GetDebitRequest("nonexistent-id")
+	if err != ErrDebitNotFound {
+		t.Errorf("GetDebitRequest() error = %v, want ErrDebitNotFound", err)
+	}
+}
+
+// --- CancelDebitRequest ---
+
+func TestCancelDebitRequest_Success(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "100000.00")
+
+	// Create a pending request (no auto-approve)
+	created, _ := svc.CreateDebitRequest(&model.CreateDebitRequestInput{
+		IdempotencyKey: "idem_" + uuid.New().String(),
+		AccountNo:      acc.AccountNo,
+		Amount:         "10000.00",
+		Currency:       "KRW",
+		CreditorID:     "PG_001",
+		CreditorName:   "온라인쇼핑몰",
+		AutoApprove:    false,
+	})
+
+	// Cancel immediately
+	resp, err := svc.CancelDebitRequest(created.ID)
+	if err != nil {
+		t.Fatalf("CancelDebitRequest() error = %v", err)
+	}
+
+	if resp.Status != string(model.DebitRequestStatusCancelled) {
+		t.Errorf("Status = %q, want %q", resp.Status, model.DebitRequestStatusCancelled)
+	}
+	if resp.CancelledAt == nil {
+		t.Error("CancelledAt should be set")
+	}
+}
+
+func TestCancelDebitRequest_NotFound(t *testing.T) {
+	svc := newTestService()
+
+	_, err := svc.CancelDebitRequest("nonexistent-id")
+	if err != ErrDebitNotFound {
+		t.Errorf("CancelDebitRequest() error = %v, want ErrDebitNotFound", err)
+	}
+}
+
+func TestCancelDebitRequest_InvalidStatus(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "100000.00")
+
+	// Create with auto-approve to get completed status
+	created, _ := svc.CreateDebitRequest(&model.CreateDebitRequestInput{
+		IdempotencyKey: "idem_" + uuid.New().String(),
+		AccountNo:      acc.AccountNo,
+		Amount:         "10000.00",
+		Currency:       "KRW",
+		CreditorID:     "PG_001",
+		CreditorName:   "온라인쇼핑몰",
+		AutoApprove:    true,
+	})
+
+	// Wait for processing
+	time.Sleep(100 * time.Millisecond)
+
+	// Try to cancel completed request
+	_, err := svc.CancelDebitRequest(created.ID)
+	if err != ErrDebitInvalidStatus {
+		t.Errorf("CancelDebitRequest() error = %v, want ErrDebitInvalidStatus", err)
+	}
+}
+
+// --- Transaction Created for Debit ---
+
+func TestDebitRequest_CreatesTransaction(t *testing.T) {
+	svc := newTestService()
+	acc := createTestAccount(t, svc, "홍길동", "KRW", "100000.00")
+
+	req := &model.CreateDebitRequestInput{
+		IdempotencyKey: "idem_" + uuid.New().String(),
+		AccountNo:      acc.AccountNo,
+		Amount:         "25000.00",
+		Currency:       "KRW",
+		CreditorID:     "PG_001",
+		CreditorName:   "온라인쇼핑몰",
+		Reference:      "ORDER_456",
+		AutoApprove:    true,
+	}
+
+	resp, _ := svc.CreateDebitRequest(req)
+	time.Sleep(100 * time.Millisecond)
+
+	// Get the completed debit request
+	debitReq, _ := svc.GetDebitRequest(resp.ID)
+
+	// Get the transaction
+	txn, err := svc.GetTransaction(debitReq.TransactionID)
+	if err != nil {
+		t.Fatalf("GetTransaction() error = %v", err)
+	}
+
+	if txn.Type != model.TransactionTypeDebit {
+		t.Errorf("Type = %q, want %q", txn.Type, model.TransactionTypeDebit)
+	}
+	if txn.Amount != "25000.00" {
+		t.Errorf("Amount = %q, want %q", txn.Amount, "25000.00")
+	}
+	if txn.BalanceBefore != "100000.00" {
+		t.Errorf("BalanceBefore = %q, want %q", txn.BalanceBefore, "100000.00")
+	}
+	if txn.BalanceAfter != "75000.00" {
+		t.Errorf("BalanceAfter = %q, want %q", txn.BalanceAfter, "75000.00")
+	}
+	if txn.Reference != "ORDER_456" {
+		t.Errorf("Reference = %q, want %q", txn.Reference, "ORDER_456")
 	}
 }

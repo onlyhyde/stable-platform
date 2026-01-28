@@ -31,9 +31,7 @@ func (h *RouterHandler) RegisterRoutes(r *gin.Engine) {
 		api.POST("/swap", h.BuildSwap)
 		api.GET("/protocols", h.GetProtocols)
 	}
-
-	// Health check
-	r.GET("/health", h.Health)
+	// Health check endpoints are now registered in main.go
 }
 
 // GetQuote returns the best quote for a swap
@@ -264,10 +262,4 @@ func (h *RouterHandler) GetProtocols(c *gin.Context) {
 	})
 }
 
-// Health returns service health status
-func (h *RouterHandler) Health(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "healthy",
-		"service": "order-router",
-	})
-}
+// Health check endpoints are now registered in main.go with unified format

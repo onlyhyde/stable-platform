@@ -10,6 +10,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -21,41 +22,76 @@ import (
 	"github.com/stablenet/stable-platform/services/pg-simulator/internal/model"
 )
 
+// Error definitions
+var (
+	ErrBankAccountRequired       = fmt.Errorf("bank account info required for bank_transfer")
+	ErrWalletIDRequired          = fmt.Errorf("wallet ID required for wallet payment")
+	ErrWalletNotFound            = fmt.Errorf("wallet not found")
+	ErrWalletInactive            = fmt.Errorf("wallet is inactive")
+	ErrUnsupportedPaymentMethod  = fmt.Errorf("unsupported payment method")
+	ErrBankCommunicationError    = fmt.Errorf("failed to communicate with bank")
+	ErrAccountVerificationFailed = fmt.Errorf("account verification failed")
+)
+
 // PaymentService handles payment operations
 type PaymentService struct {
-	cfg             *config.Config
-	payments        map[string]*model.Payment // paymentID -> Payment
-	idempotencyKeys map[string]string         // idempotencyKey -> paymentID (for duplicate detection)
-	mu              sync.RWMutex
-	rng             *rand.Rand
+	cfg              *config.Config
+	payments         map[string]*model.Payment          // paymentID -> Payment
+	idempotencyKeys  map[string]string                  // idempotencyKey -> paymentID (for duplicate detection)
+	wallets          map[string]*model.Wallet           // walletID -> Wallet
+	checkoutSessions map[string]*model.CheckoutSession  // sessionID -> CheckoutSession
+	bankClient       *BankClient
+	mu               sync.RWMutex
+	rng              *rand.Rand
 }
 
 // NewPaymentService creates a new payment service
 func NewPaymentService(cfg *config.Config) *PaymentService {
 	return &PaymentService{
-		cfg:             cfg,
-		payments:        make(map[string]*model.Payment),
-		idempotencyKeys: make(map[string]string),
-		rng:             rand.New(rand.NewSource(time.Now().UnixNano())),
+		cfg:              cfg,
+		payments:         make(map[string]*model.Payment),
+		idempotencyKeys:  make(map[string]string),
+		wallets:          make(map[string]*model.Wallet),
+		checkoutSessions: make(map[string]*model.CheckoutSession),
+		bankClient:       NewBankClient(cfg.BankSimulatorURL),
+		rng:              rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
 // CreatePayment creates a new payment
 func (s *PaymentService) CreatePayment(req *model.CreatePaymentRequest) (*model.Payment, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	// Check for duplicate payment using idempotency key
+	s.mu.RLock()
 	if req.IdempotencyKey != "" {
 		if existingPaymentID, exists := s.idempotencyKeys[req.IdempotencyKey]; exists {
 			// Return existing payment to prevent duplicate processing
 			if existingPayment, ok := s.payments[existingPaymentID]; ok {
+				s.mu.RUnlock()
 				log.Printf("Duplicate payment detected (idempotency key: %s), returning existing payment: %s",
 					maskIdempotencyKey(req.IdempotencyKey), existingPaymentID)
 				return existingPayment, nil
 			}
 		}
 	}
+	s.mu.RUnlock()
+
+	// Route by payment method
+	switch req.Method {
+	case model.PaymentMethodCard:
+		return s.processCardPayment(req)
+	case model.PaymentMethodBank:
+		return s.processBankTransfer(req)
+	case model.PaymentMethodWallet:
+		return s.processWalletPayment(req)
+	default:
+		return nil, ErrUnsupportedPaymentMethod
+	}
+}
+
+// processCardPayment processes card payment
+func (s *PaymentService) processCardPayment(req *model.CreatePaymentRequest) (*model.Payment, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	now := time.Now()
 	payment := &model.Payment{
@@ -66,6 +102,8 @@ func (s *PaymentService) CreatePayment(req *model.CreatePaymentRequest) (*model.
 		Currency:   req.Currency,
 		Method:     req.Method,
 		Status:     model.PaymentStatusPending,
+		ReturnURL:  req.ReturnURL,
+		CancelURL:  req.CancelURL,
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}
@@ -77,7 +115,7 @@ func (s *PaymentService) CreatePayment(req *model.CreatePaymentRequest) (*model.
 	}
 
 	// Validate card details before processing
-	if req.Method == model.PaymentMethodCard && req.Card != nil {
+	if req.Card != nil {
 		if err := validateCard(req.Card); err != nil {
 			payment.Status = model.PaymentStatusDeclined
 			if validationErr, ok := err.(*CardValidationError); ok {
@@ -122,6 +160,167 @@ func (s *PaymentService) CreatePayment(req *model.CreatePaymentRequest) (*model.
 	}
 
 	// Send webhook notification with copy to avoid race condition
+	paymentCopy := *payment
+	go s.sendWebhook("payment."+string(payment.Status), &paymentCopy)
+
+	return payment, nil
+}
+
+// processBankTransfer processes bank transfer payment via bank-simulator
+func (s *PaymentService) processBankTransfer(req *model.CreatePaymentRequest) (*model.Payment, error) {
+	// Validate bank account info
+	if req.BankAccount == nil {
+		return nil, ErrBankAccountRequired
+	}
+
+	s.mu.Lock()
+	now := time.Now()
+	payment := &model.Payment{
+		ID:             uuid.New().String(),
+		MerchantID:     req.MerchantID,
+		OrderID:        req.OrderID,
+		Amount:         req.Amount,
+		Currency:       req.Currency,
+		Method:         model.PaymentMethodBank,
+		Status:         model.PaymentStatusPending,
+		BankAccountNo:  maskAccountNo(req.BankAccount.AccountNo),
+		BankHolderName: maskName(req.BankAccount.HolderName),
+		ReturnURL:      req.ReturnURL,
+		CancelURL:      req.CancelURL,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+	s.payments[payment.ID] = payment
+	if req.IdempotencyKey != "" {
+		s.idempotencyKeys[req.IdempotencyKey] = payment.ID
+	}
+	s.mu.Unlock()
+
+	// Verify account with bank-simulator
+	verifyResp, err := s.bankClient.VerifyAccount(req.BankAccount.AccountNo, req.BankAccount.HolderName)
+	if err != nil || !verifyResp.Verified {
+		s.mu.Lock()
+		payment.Status = model.PaymentStatusDeclined
+		if verifyResp != nil && verifyResp.Reason != "" {
+			payment.FailureReason = verifyResp.Reason
+		} else {
+			payment.FailureReason = "account_verification_failed"
+		}
+		payment.UpdatedAt = time.Now()
+		s.mu.Unlock()
+
+		log.Printf("Bank transfer declined: %s (Reason: %s)", payment.ID, payment.FailureReason)
+		paymentCopy := *payment
+		go s.sendWebhook("payment.declined", &paymentCopy)
+		return payment, nil
+	}
+
+	// Request direct debit from bank-simulator (autoApprove=true for PoC)
+	debitResp, err := s.bankClient.RequestDebit(
+		req.BankAccount.AccountNo,
+		req.Amount,
+		req.Currency,
+		payment.ID,
+		true, // autoApprove
+	)
+	if err != nil {
+		s.mu.Lock()
+		payment.Status = model.PaymentStatusDeclined
+		payment.FailureReason = "bank_communication_error"
+		payment.UpdatedAt = time.Now()
+		s.mu.Unlock()
+
+		log.Printf("Bank transfer failed: %s (Error: %v)", payment.ID, err)
+		paymentCopy := *payment
+		go s.sendWebhook("payment.declined", &paymentCopy)
+		return payment, nil
+	}
+
+	s.mu.Lock()
+	payment.DebitRequestID = debitResp.ID
+
+	// Update status based on debit result
+	if debitResp.Status == "completed" {
+		payment.Status = model.PaymentStatusApproved
+		log.Printf("Bank transfer approved: %s (DebitID: %s, Amount: %s %s)",
+			payment.ID, debitResp.ID, payment.Amount, payment.Currency)
+		paymentCopy := *payment
+		go s.sendWebhook("payment.approved", &paymentCopy)
+	} else {
+		payment.Status = model.PaymentStatusDeclined
+		payment.FailureReason = debitResp.FailureReason
+		if payment.FailureReason == "" {
+			payment.FailureReason = "debit_" + debitResp.Status
+		}
+		log.Printf("Bank transfer declined: %s (Reason: %s)", payment.ID, payment.FailureReason)
+		paymentCopy := *payment
+		go s.sendWebhook("payment.declined", &paymentCopy)
+	}
+	payment.UpdatedAt = time.Now()
+	s.mu.Unlock()
+
+	return payment, nil
+}
+
+// processWalletPayment processes wallet payment
+func (s *PaymentService) processWalletPayment(req *model.CreatePaymentRequest) (*model.Payment, error) {
+	// Validate wallet ID
+	if req.WalletID == "" {
+		return nil, ErrWalletIDRequired
+	}
+
+	// Check wallet exists and is active
+	s.mu.RLock()
+	wallet, exists := s.wallets[req.WalletID]
+	s.mu.RUnlock()
+
+	if !exists {
+		return nil, ErrWalletNotFound
+	}
+
+	if wallet.Status != model.WalletStatusActive {
+		return nil, ErrWalletInactive
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := time.Now()
+	payment := &model.Payment{
+		ID:         uuid.New().String(),
+		MerchantID: req.MerchantID,
+		OrderID:    req.OrderID,
+		Amount:     req.Amount,
+		Currency:   req.Currency,
+		Method:     model.PaymentMethodWallet,
+		Status:     model.PaymentStatusPending,
+		WalletID:   wallet.ID,
+		WalletType: wallet.Type,
+		CardLast4:  wallet.CardLast4,
+		CardBrand:  wallet.CardBrand,
+		ReturnURL:  req.ReturnURL,
+		CancelURL:  req.CancelURL,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+
+	// Simulate wallet payment processing
+	if s.shouldSucceed() {
+		payment.Status = model.PaymentStatusApproved
+		log.Printf("Wallet payment approved: %s (WalletType: %s, Card: %s)",
+			payment.ID, wallet.Type, maskCardInfo(wallet.CardLast4, wallet.CardBrand))
+	} else {
+		payment.Status = model.PaymentStatusDeclined
+		payment.FailureReason = getRandomDeclineReason(s.rng)
+		log.Printf("Wallet payment declined: %s (Reason: %s)", payment.ID, payment.FailureReason)
+	}
+
+	s.payments[payment.ID] = payment
+	if req.IdempotencyKey != "" {
+		s.idempotencyKeys[req.IdempotencyKey] = payment.ID
+	}
+
+	// Send webhook notification
 	paymentCopy := *payment
 	go s.sendWebhook("payment."+string(payment.Status), &paymentCopy)
 
@@ -730,4 +929,335 @@ func (s *PaymentService) generateCAVV() string {
 func (s *PaymentService) shouldSucceedAfter3DS() bool {
 	// 95% success rate for 3DS authenticated transactions (vs normal success rate)
 	return s.rng.Intn(100) < 95
+}
+
+// --- Wallet methods ---
+
+// CreateWallet creates a new wallet
+func (s *PaymentService) CreateWallet(req *model.CreateWalletRequest) (*model.Wallet, error) {
+	// Validate card details
+	if req.DefaultCard == nil {
+		return nil, fmt.Errorf("default card is required")
+	}
+
+	if err := validateCard(req.DefaultCard); err != nil {
+		return nil, err
+	}
+
+	// Extract card info
+	cardBrand := detectCardBrand(req.DefaultCard.Number)
+	cardLast4 := ""
+	if len(req.DefaultCard.Number) >= 4 {
+		cardLast4 = req.DefaultCard.Number[len(req.DefaultCard.Number)-4:]
+	}
+
+	now := time.Now()
+	wallet := &model.Wallet{
+		ID:         uuid.New().String(),
+		UserID:     req.UserID,
+		Name:       req.Name,
+		Type:       req.Type,
+		CardLast4:  cardLast4,
+		CardBrand:  cardBrand,
+		CardNumber: req.DefaultCard.Number,
+		CardExpiry: fmt.Sprintf("%s/%s", req.DefaultCard.ExpMonth, req.DefaultCard.ExpYear),
+		CardCVV:    req.DefaultCard.CVV,
+		CardName:   req.DefaultCard.Name,
+		Status:     model.WalletStatusActive,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+
+	s.mu.Lock()
+	s.wallets[wallet.ID] = wallet
+	s.mu.Unlock()
+
+	log.Printf("Wallet created: %s (Type: %s, User: %s)", wallet.ID, wallet.Type, wallet.UserID)
+
+	return wallet, nil
+}
+
+// GetWallet returns a wallet by ID
+func (s *PaymentService) GetWallet(walletID string) (*model.Wallet, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	wallet, exists := s.wallets[walletID]
+	if !exists {
+		return nil, ErrWalletNotFound
+	}
+	return wallet, nil
+}
+
+// GetWalletsByUser returns all wallets for a user
+func (s *PaymentService) GetWalletsByUser(userID string) []*model.Wallet {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var wallets []*model.Wallet
+	for _, wallet := range s.wallets {
+		if wallet.UserID == userID {
+			wallets = append(wallets, wallet)
+		}
+	}
+	return wallets
+}
+
+// DeleteWallet deletes a wallet by setting it to inactive
+func (s *PaymentService) DeleteWallet(walletID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	wallet, exists := s.wallets[walletID]
+	if !exists {
+		return ErrWalletNotFound
+	}
+
+	wallet.Status = model.WalletStatusInactive
+	wallet.UpdatedAt = time.Now()
+
+	log.Printf("Wallet deleted: %s", walletID)
+
+	return nil
+}
+
+// --- Masking functions ---
+
+// maskAccountNo masks a bank account number
+// "BANK1234567890" → "BANK****7890"
+func maskAccountNo(accountNo string) string {
+	if len(accountNo) <= 8 {
+		return accountNo
+	}
+	prefix := accountNo[:4]
+	suffix := accountNo[len(accountNo)-4:]
+	return prefix + "****" + suffix
+}
+
+// maskName masks a name (for Korean names)
+// "홍길동" → "홍*동"
+func maskName(name string) string {
+	runes := []rune(name)
+	if len(runes) <= 1 {
+		return name
+	}
+	if len(runes) == 2 {
+		return string(runes[0]) + "*"
+	}
+	// "홍길동" → "홍*동"
+	return string(runes[0]) + "*" + string(runes[len(runes)-1])
+}
+
+// ========== Checkout Session (PG-04) ==========
+
+// Checkout session errors
+var (
+	ErrCheckoutSessionNotFound = fmt.Errorf("checkout session not found")
+	ErrCheckoutSessionExpired  = fmt.Errorf("checkout session has expired")
+	ErrCheckoutSessionNotPending = fmt.Errorf("checkout session is not in pending state")
+)
+
+const checkoutSessionExpiry = 3600 * time.Second // 1 hour
+
+// CreateCheckoutSession creates a new checkout session
+func (s *PaymentService) CreateCheckoutSession(req *model.CreateCheckoutSessionRequest) (*model.CheckoutSession, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := time.Now()
+	sessionID := uuid.New().String()
+
+	session := &model.CheckoutSession{
+		ID:         sessionID,
+		MerchantID: req.MerchantID,
+		OrderID:    req.OrderID,
+		OrderName:  req.OrderName,
+		Amount:     req.Amount,
+		Currency:   req.Currency,
+		ReturnURL:  req.ReturnURL,
+		CancelURL:  req.CancelURL,
+		CheckoutURL: fmt.Sprintf("%s/checkout/%s", s.cfg.BaseURL, sessionID),
+		Status:     model.CheckoutSessionStatusPending,
+		ExpiresAt:  now.Add(checkoutSessionExpiry),
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+
+	s.checkoutSessions[sessionID] = session
+
+	log.Printf("Checkout session created: %s (Order: %s, Amount: %s %s, Merchant: %s)",
+		sessionID, req.OrderID, req.Amount, req.Currency, req.MerchantID)
+
+	return session, nil
+}
+
+// GetCheckoutSession returns a checkout session by ID, checking expiry
+func (s *PaymentService) GetCheckoutSession(sessionID string) (*model.CheckoutSession, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	session, exists := s.checkoutSessions[sessionID]
+	if !exists {
+		return nil, ErrCheckoutSessionNotFound
+	}
+
+	// Check if session has expired
+	if session.Status == model.CheckoutSessionStatusPending && time.Now().After(session.ExpiresAt) {
+		// Don't modify under RLock; return expired status
+		sessionCopy := *session
+		sessionCopy.Status = model.CheckoutSessionStatusExpired
+		return &sessionCopy, nil
+	}
+
+	return session, nil
+}
+
+// ProcessCheckoutPayment processes payment from the checkout session page
+func (s *PaymentService) ProcessCheckoutPayment(sessionID string, req *model.CreatePaymentRequest) (*model.Payment, error) {
+	// Get and validate session
+	s.mu.Lock()
+	session, exists := s.checkoutSessions[sessionID]
+	if !exists {
+		s.mu.Unlock()
+		return nil, ErrCheckoutSessionNotFound
+	}
+
+	// Expire check
+	if time.Now().After(session.ExpiresAt) {
+		session.Status = model.CheckoutSessionStatusExpired
+		session.UpdatedAt = time.Now()
+		s.mu.Unlock()
+		return nil, ErrCheckoutSessionExpired
+	}
+
+	if session.Status != model.CheckoutSessionStatusPending {
+		s.mu.Unlock()
+		return nil, ErrCheckoutSessionNotPending
+	}
+
+	// Override request fields from session data
+	req.MerchantID = session.MerchantID
+	req.OrderID = session.OrderID
+	req.Amount = session.Amount
+	req.Currency = session.Currency
+	req.ReturnURL = session.ReturnURL
+	req.CancelURL = session.CancelURL
+	s.mu.Unlock()
+
+	// Create the actual payment (reuses existing payment logic)
+	payment, err := s.CreatePayment(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update session with payment ID and status
+	s.mu.Lock()
+	session.PaymentID = payment.ID
+	if payment.Status == model.PaymentStatusApproved {
+		session.Status = model.CheckoutSessionStatusCompleted
+	}
+	session.UpdatedAt = time.Now()
+	s.mu.Unlock()
+
+	log.Printf("Checkout session payment processed: session=%s, payment=%s, status=%s",
+		sessionID, payment.ID, payment.Status)
+
+	return payment, nil
+}
+
+// CancelCheckoutSession cancels a checkout session
+func (s *PaymentService) CancelCheckoutSession(sessionID string) (*model.CheckoutSession, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	session, exists := s.checkoutSessions[sessionID]
+	if !exists {
+		return nil, ErrCheckoutSessionNotFound
+	}
+
+	if session.Status != model.CheckoutSessionStatusPending {
+		return nil, ErrCheckoutSessionNotPending
+	}
+
+	session.Status = model.CheckoutSessionStatusCancelled
+	session.UpdatedAt = time.Now()
+
+	log.Printf("Checkout session cancelled: %s", sessionID)
+
+	return session, nil
+}
+
+// ========== Redirect URL (PG-03) ==========
+
+// RedirectInfo contains redirect URL details for a payment
+type RedirectInfo struct {
+	RedirectURL string `json:"redirectUrl"`
+	PaymentID   string `json:"paymentId"`
+	OrderID     string `json:"orderId"`
+	Status      string `json:"status"`
+}
+
+// GenerateRedirectURL generates a signed redirect URL for payment result
+func (s *PaymentService) GenerateRedirectURL(paymentID string) (*RedirectInfo, error) {
+	s.mu.RLock()
+	payment, exists := s.payments[paymentID]
+	if !exists {
+		s.mu.RUnlock()
+		return nil, fmt.Errorf("payment not found: %s", paymentID)
+	}
+
+	returnURL := payment.ReturnURL
+	orderID := payment.OrderID
+	status := string(payment.Status)
+	s.mu.RUnlock()
+
+	if returnURL == "" {
+		// Fallback to PG result page
+		returnURL = fmt.Sprintf("%s/result/%s", s.cfg.BaseURL, paymentID)
+	}
+
+	// Build signed redirect URL
+	redirectURL := s.buildSignedRedirectURL(returnURL, paymentID, orderID, status)
+
+	return &RedirectInfo{
+		RedirectURL: redirectURL,
+		PaymentID:   paymentID,
+		OrderID:     orderID,
+		Status:      status,
+	}, nil
+}
+
+// buildSignedRedirectURL builds a redirect URL with query params and HMAC signature
+func (s *PaymentService) buildSignedRedirectURL(baseURL, paymentID, orderID, status string) string {
+	// Compute HMAC signature: sign "paymentId:orderId:status"
+	signData := fmt.Sprintf("%s:%s:%s", paymentID, orderID, status)
+	h := hmac.New(sha256.New, []byte(s.cfg.WebhookSecret))
+	h.Write([]byte(signData))
+	signature := hex.EncodeToString(h.Sum(nil))
+
+	// Parse and append query parameters
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		// Fallback: construct URL manually
+		return fmt.Sprintf("%s?paymentId=%s&orderId=%s&status=%s&signature=%s",
+			baseURL, paymentID, orderID, status, signature)
+	}
+
+	q := u.Query()
+	q.Set("paymentId", paymentID)
+	q.Set("orderId", orderID)
+	q.Set("status", status)
+	q.Set("signature", signature)
+	u.RawQuery = q.Encode()
+
+	return u.String()
+}
+
+// VerifyRedirectSignature verifies the HMAC signature in a redirect URL
+func VerifyRedirectSignature(paymentID, orderID, status, signature, secret string) bool {
+	signData := fmt.Sprintf("%s:%s:%s", paymentID, orderID, status)
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(signData))
+	expectedSig := hex.EncodeToString(h.Sum(nil))
+	return hmac.Equal([]byte(signature), []byte(expectedSig))
 }

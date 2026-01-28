@@ -196,10 +196,10 @@ func TestCreateAccount_InvalidBalance(t *testing.T) {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 
-	var resp ErrorResponse
+	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
-	if resp.Error != "Invalid request parameters" {
-		t.Errorf("error = %q, want %q", resp.Error, "Invalid request parameters")
+	if resp["error"] != "Validation failed" {
+		t.Errorf("error = %q, want %q", resp["error"], "Validation failed")
 	}
 }
 
@@ -274,7 +274,7 @@ func TestGetAccount_NotFound(t *testing.T) {
 	router := newTestRouter(h)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/v1/accounts/NONEXISTENT", nil)
+	req, _ := http.NewRequest("GET", "/api/v1/accounts/BANK9999999999", nil)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusNotFound {
@@ -317,7 +317,7 @@ func TestFreezeAccount_NotFound(t *testing.T) {
 	router := newTestRouter(h)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/api/v1/accounts/NONEXISTENT/freeze", nil)
+	req, _ := http.NewRequest("POST", "/api/v1/accounts/BANK9999999999/freeze", nil)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusNotFound {
@@ -522,7 +522,7 @@ func TestGetTransfer_NotFound(t *testing.T) {
 	router := newTestRouter(h)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/v1/transfers/nonexistent-id", nil)
+	req, _ := http.NewRequest("GET", "/api/v1/transfers/00000000-0000-0000-0000-000000000000", nil)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusNotFound {
