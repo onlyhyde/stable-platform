@@ -14,6 +14,8 @@ interface PermissionModalProps {
   isLoading?: boolean
 }
 
+type PermissionStep = 'review' | 'requesting_permission' | 'subscribing' | 'success'
+
 export const PermissionModal: FC<PermissionModalProps> = ({
   isOpen,
   onClose,
@@ -21,20 +23,32 @@ export const PermissionModal: FC<PermissionModalProps> = ({
   onConfirm,
   isLoading = false,
 }) => {
-  const [step, setStep] = useState<'review' | 'signing' | 'success'>('review')
+  const [step, setStep] = useState<PermissionStep>('review')
   const [error, setError] = useState<string | null>(null)
 
   const handleConfirm = async () => {
     if (!plan) return
 
-    setStep('signing')
+    setStep('requesting_permission')
     setError(null)
 
     try {
+      // The onConfirm now handles:
+      // 1. ERC-7715 permission request (wallet_grantPermissions)
+      // 2. Subscribe transaction with permissionId
+      // We track this as two conceptual steps for better UX
+
+      // Short delay to show permission step before it transitions
+      setTimeout(() => {
+        if (step === 'requesting_permission') {
+          setStep('subscribing')
+        }
+      }, 1500)
+
       await onConfirm(plan.id)
       setStep('success')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to grant permission')
+      setError(err instanceof Error ? err.message : 'Failed to complete subscription')
       setStep('review')
     }
   }
@@ -159,8 +173,32 @@ export const PermissionModal: FC<PermissionModalProps> = ({
           </>
         )}
 
-        {step === 'signing' && (
+        {(step === 'requesting_permission' || step === 'subscribing') && (
           <div className="text-center py-8">
+            {/* Progress Steps */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                step === 'requesting_permission'
+                  ? "bg-primary-600 text-white"
+                  : "bg-green-600 text-white"
+              )}>
+                {step === 'requesting_permission' ? '1' : '✓'}
+              </div>
+              <div className={cn(
+                "w-12 h-1 rounded",
+                step === 'subscribing' ? "bg-primary-600" : "bg-gray-200"
+              )} />
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                step === 'subscribing'
+                  ? "bg-primary-600 text-white"
+                  : "bg-gray-200 text-gray-500"
+              )}>
+                2
+              </div>
+            </div>
+
             <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-primary-600 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle
@@ -178,8 +216,28 @@ export const PermissionModal: FC<PermissionModalProps> = ({
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Waiting for signature...</h3>
-            <p className="text-gray-500">Please confirm the transaction in your wallet</p>
+
+            {step === 'requesting_permission' && (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Requesting Permission (ERC-7715)
+                </h3>
+                <p className="text-gray-500">
+                  Please approve the permission request in your wallet to allow recurring payments
+                </p>
+              </>
+            )}
+
+            {step === 'subscribing' && (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Confirming Subscription
+                </h3>
+                <p className="text-gray-500">
+                  Please confirm the subscription transaction in your wallet
+                </p>
+              </>
+            )}
           </div>
         )}
 

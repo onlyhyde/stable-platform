@@ -1,0 +1,516 @@
+openapi: 3.0.3
+info:
+  title: Subscription Executor API
+  description: |
+    API for managing recurring payment subscriptions on EIP-7702 enabled smart accounts.
+
+    The Subscription Executor service handles:
+    - Creating and managing subscription plans
+    - Executing recurring payments using ERC-4337 User Operations
+    - Validating ERC-7715 permissions before payment execution
+    - Tracking payment history and status
+  version: 1.0.0
+  contact:
+    name: StableNet Team
+    email: support@stablenet.io
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8084
+    description: Local development server
+  - url: https://api.stablenet.io
+    description: Production server
+
+tags:
+  - name: subscriptions
+    description: Subscription management operations
+  - name: health
+    description: Health check endpoints
+  - name: metrics
+    description: Prometheus metrics
+
+paths:
+  /api/v1/subscriptions:
+    post:
+      tags:
+        - subscriptions
+      summary: Create a new subscription
+      description: |
+        Create a new recurring payment subscription for a smart account.
+        Requires an ERC-7715 permission to be granted before payments can be executed.
+      operationId: createSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionRequest'
+            examples:
+              daily_usdc:
+                summary: Daily USDC subscription
+                value:
+                  smartAccount: "0x1234567890123456789012345678901234567890"
+                  recipient: "0x0987654321098765432109876543210987654321"
+                  token: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44"
+                  amount: "10000000"
+                  intervalDays: 1
+                  maxExecutions: 30
+              monthly_eth:
+                summary: Monthly ETH subscription
+                value:
+                  smartAccount: "0x1234567890123456789012345678901234567890"
+                  recipient: "0x0987654321098765432109876543210987654321"
+                  token: "0x0000000000000000000000000000000000000000"
+                  amount: "100000000000000000"
+                  intervalDays: 30
+                  maxExecutions: 0
+      responses:
+        '201':
+          description: Subscription created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_address:
+                  summary: Invalid Ethereum address
+                  value:
+                    error: "smartAccount must be a valid Ethereum address"
+                invalid_amount:
+                  summary: Invalid amount
+                  value:
+                    error: "amount must be a positive number"
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/subscriptions/{id}:
+    get:
+      tags:
+        - subscriptions
+      summary: Get a subscription
+      description: Get subscription details by ID
+      operationId: getSubscription
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Subscription ID (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Subscription details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+        '404':
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/subscriptions/account/{account}:
+    get:
+      tags:
+        - subscriptions
+      summary: Get subscriptions by account
+      description: Get all subscriptions for a smart account address
+      operationId: getSubscriptionsByAccount
+      parameters:
+        - name: account
+          in: path
+          required: true
+          description: Smart account Ethereum address
+          schema:
+            type: string
+            pattern: '^0x[a-fA-F0-9]{40}$'
+            example: "0x1234567890123456789012345678901234567890"
+      responses:
+        '200':
+          description: List of subscriptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubscriptionResponse'
+        '400':
+          description: Invalid account address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/subscriptions/{id}/cancel:
+    post:
+      tags:
+        - subscriptions
+      summary: Cancel a subscription
+      description: |
+        Cancel a recurring payment subscription.
+        The subscription will be marked as cancelled and no further payments will be executed.
+      operationId: cancelSubscription
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Subscription ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subscription cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/subscriptions/{id}/pause:
+    post:
+      tags:
+        - subscriptions
+      summary: Pause a subscription
+      description: |
+        Pause a recurring payment subscription.
+        The subscription can be resumed later using the resume endpoint.
+      operationId: pauseSubscription
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Subscription ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subscription paused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/subscriptions/{id}/resume:
+    post:
+      tags:
+        - subscriptions
+      summary: Resume a subscription
+      description: |
+        Resume a paused subscription.
+        The next execution will be scheduled based on the current time and interval.
+      operationId: resumeSubscription
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Subscription ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subscription resumed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid operation (subscription not paused)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    get:
+      tags:
+        - health
+      summary: Health check
+      description: Check service health status
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /ready:
+    get:
+      tags:
+        - health
+      summary: Readiness check
+      description: Check if service is ready to accept requests
+      operationId: readinessCheck
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+        '503':
+          description: Service is not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+
+  /live:
+    get:
+      tags:
+        - health
+      summary: Liveness check
+      description: Check if service is alive
+      operationId: livenessCheck
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivenessResponse'
+
+  /metrics:
+    get:
+      tags:
+        - metrics
+      summary: Prometheus metrics
+      description: Get Prometheus metrics for monitoring
+      operationId: getMetrics
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  # HELP subscription_executor_executions_total Total number of subscription executions
+                  # TYPE subscription_executor_executions_total counter
+                  subscription_executor_executions_total{status="success"} 150
+                  subscription_executor_executions_total{status="failed"} 5
+
+components:
+  schemas:
+    CreateSubscriptionRequest:
+      type: object
+      required:
+        - smartAccount
+        - recipient
+        - token
+        - amount
+        - intervalDays
+      properties:
+        smartAccount:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+          description: EIP-7702 enabled smart account address
+          example: "0x1234567890123456789012345678901234567890"
+        recipient:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+          description: Payment recipient address
+          example: "0x0987654321098765432109876543210987654321"
+        token:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+          description: Token address (0x0 for native ETH)
+          example: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44"
+        amount:
+          type: string
+          description: Payment amount in wei (or token smallest unit)
+          example: "10000000"
+        intervalDays:
+          type: integer
+          minimum: 1
+          description: Payment interval in days
+          example: 30
+        maxExecutions:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Maximum number of executions (0 = unlimited)
+          example: 12
+
+    SubscriptionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Subscription ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        smartAccount:
+          type: string
+          description: Smart account address
+          example: "0x1234567890123456789012345678901234567890"
+        recipient:
+          type: string
+          description: Payment recipient address
+          example: "0x0987654321098765432109876543210987654321"
+        token:
+          type: string
+          description: Token address
+          example: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44"
+        amount:
+          type: string
+          description: Payment amount
+          example: "10000000"
+        intervalDays:
+          type: integer
+          description: Payment interval in days
+          example: 30
+        nextExecution:
+          type: string
+          format: date-time
+          description: Next scheduled execution time (RFC3339)
+          example: "2026-02-01T00:00:00Z"
+        lastExecution:
+          type: string
+          format: date-time
+          description: Last execution time (RFC3339)
+          example: "2026-01-01T00:00:00Z"
+        executionCount:
+          type: integer
+          description: Number of successful executions
+          example: 5
+        maxExecutions:
+          type: integer
+          description: Maximum number of executions (0 = unlimited)
+          example: 12
+        status:
+          type: string
+          enum:
+            - active
+            - paused
+            - cancelled
+            - expired
+            - permission_revoked
+          description: Subscription status
+          example: "active"
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp (RFC3339)
+          example: "2025-12-01T12:00:00Z"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "smartAccount must be a valid Ethereum address"
+
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message
+          example: "Subscription cancelled"
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - degraded
+          description: Overall health status
+          example: "ok"
+        service:
+          type: string
+          description: Service name
+          example: "subscription-executor"
+        version:
+          type: string
+          description: Service version
+          example: "1.0.0"
+        timestamp:
+          type: string
+          format: date-time
+          description: Current timestamp
+          example: "2026-01-28T12:00:00Z"
+        uptime:
+          type: string
+          description: Service uptime
+          example: "24h30m15s"
+        database:
+          type: string
+          enum:
+            - connected
+            - disconnected
+          description: Database connection status
+          example: "connected"
+
+    ReadinessResponse:
+      type: object
+      properties:
+        ready:
+          type: boolean
+          description: Whether service is ready
+          example: true
+        service:
+          type: string
+          description: Service name
+          example: "subscription-executor"
+
+    LivenessResponse:
+      type: object
+      properties:
+        alive:
+          type: boolean
+          description: Whether service is alive
+          example: true
+        service:
+          type: string
+          description: Service name
+          example: "subscription-executor"
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication (required in production)
+
+security: []

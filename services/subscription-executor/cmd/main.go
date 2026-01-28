@@ -14,6 +14,7 @@ import (
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/config"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/handler"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/logger"
+	"github.com/stablenet/stable-platform/services/subscription-executor/internal/metrics"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/middleware"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/repository"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/service"
@@ -80,9 +81,15 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// Initialize Prometheus metrics
+	m := metrics.NewMetrics()
+
 	// Create Gin router
 	r := gin.New()
 	r.Use(gin.Recovery())
+
+	// Add metrics middleware (before other middleware to capture all requests)
+	r.Use(metrics.HTTPMetricsMiddleware(m))
 
 	// Add security middleware
 	r.Use(middleware.DefaultRateLimiter().Middleware())                  // Rate limiting: 100 req/min per IP
@@ -139,34 +146,8 @@ func main() {
 		})
 	})
 
-	// Prometheus metrics endpoint
-	var requestCount, errorCount int64
-	r.GET("/metrics", func(c *gin.Context) {
-		uptime := time.Since(startTime).Seconds()
-		c.Header("Content-Type", "text/plain; charset=utf-8")
-		c.String(200, `# HELP subscription_executor_up Service up status
-# TYPE subscription_executor_up gauge
-subscription_executor_up{service="subscription-executor"} 1
-# HELP subscription_executor_uptime_seconds Service uptime in seconds
-# TYPE subscription_executor_uptime_seconds gauge
-subscription_executor_uptime_seconds{service="subscription-executor"} %f
-# HELP subscription_executor_requests_total Total HTTP requests
-# TYPE subscription_executor_requests_total counter
-subscription_executor_requests_total{service="subscription-executor"} %d
-# HELP subscription_executor_errors_total Total HTTP errors
-# TYPE subscription_executor_errors_total counter
-subscription_executor_errors_total{service="subscription-executor"} %d
-`, uptime, requestCount, errorCount)
-	})
-
-	// Metrics middleware
-	r.Use(func(c *gin.Context) {
-		requestCount++
-		c.Next()
-		if c.Writer.Status() >= 400 {
-			errorCount++
-		}
-	})
+	// Prometheus metrics endpoint - use the real Prometheus handler
+	r.GET("/metrics", metrics.GinMetricsHandler())
 
 	// Register subscription routes
 	subscriptionHandler := handler.NewSubscriptionHandler(executorService)

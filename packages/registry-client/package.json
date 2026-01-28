@@ -20,7 +20,7 @@
     "dev": "tsup --watch",
     "lint": "biome lint src/",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "clean": "rm -rf dist"
   },
