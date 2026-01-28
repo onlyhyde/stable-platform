@@ -1,50 +1,79 @@
 import type { Address } from 'viem'
+import {
+  getDevnetConfig,
+  getTestnetConfig,
+  getAppConfig as getAppConfigFromEnv,
+  getContractAddresses as getContractAddressesFromEnv,
+  getServiceUrls as getServiceUrlsFromEnv,
+} from './config'
 
 /**
- * Contract addresses by chain ID
+ * Contract addresses type
  */
-export const CONTRACT_ADDRESSES: Record<number, {
+export type ContractAddresses = {
   entryPoint: Address
   accountFactory: Address
   paymaster: Address
   stealthAnnouncer: Address
   stealthRegistry: Address
-}> = {
+}
+
+/**
+ * Service URLs type
+ */
+export type ServiceUrls = {
+  bundler: string
+  paymaster: string
+  stealthServer: string
+}
+
+/**
+ * Get contract addresses for a chain (with environment override support)
+ */
+export function getContractAddresses(chainId: number): ContractAddresses | undefined {
+  const addresses = getContractAddressesFromEnv(chainId)
+  if (addresses) {
+    return addresses as ContractAddresses
+  }
+  return undefined
+}
+
+/**
+ * Get service URLs for a chain (with environment override support)
+ */
+export function getServiceUrls(chainId: number): ServiceUrls | undefined {
+  const urls = getServiceUrlsFromEnv(chainId)
+  if (urls) {
+    return urls as ServiceUrls
+  }
+  return undefined
+}
+
+/**
+ * Contract addresses by chain ID
+ * @deprecated Use getContractAddresses(chainId) instead for environment override support
+ */
+export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
   // Devnet
-  31337: {
-    entryPoint: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-    accountFactory: '0xfaAddC93baf78e89DCf37bA67943E1bE8F37Bb8c',
-    paymaster: '0x2dd78fd9b8f40659af32ef98555b8b31bc97a351',
-    stealthAnnouncer: '0x8fc8cfb7f7362e44e472c690a6e025b80e406458',
-    stealthRegistry: '0xc7143d5ba86553c06f5730c8dc9f8187a621a8d4',
-  },
+  31337: getDevnetConfig().contracts,
   // Testnet
-  11155111: {
-    entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
-    accountFactory: '0x0000000000000000000000000000000000000000',
-    paymaster: '0x0000000000000000000000000000000000000000',
-    stealthAnnouncer: '0x0000000000000000000000000000000000000000',
-    stealthRegistry: '0x0000000000000000000000000000000000000000',
-  },
+  11155111: getTestnetConfig().contracts,
 }
 
 /**
  * Service URLs by chain ID
+ * @deprecated Use getServiceUrls(chainId) instead for environment override support
  */
-export const SERVICE_URLS: Record<number, {
-  bundler: string
-  paymaster: string
-  stealthServer: string
-}> = {
+export const SERVICE_URLS: Record<number, ServiceUrls> = {
   31337: {
-    bundler: 'http://localhost:4337',
-    paymaster: 'http://localhost:4338',
-    stealthServer: 'http://localhost:4339',
+    bundler: getDevnetConfig().bundlerUrl,
+    paymaster: getDevnetConfig().paymasterUrl,
+    stealthServer: getDevnetConfig().stealthServerUrl,
   },
   11155111: {
-    bundler: 'https://testnet.stablenet.io/bundler',
-    paymaster: 'https://testnet.stablenet.io/paymaster',
-    stealthServer: 'https://testnet.stablenet.io/stealth',
+    bundler: getTestnetConfig().bundlerUrl,
+    paymaster: getTestnetConfig().paymasterUrl,
+    stealthServer: getTestnetConfig().stealthServerUrl,
   },
 }
 
@@ -89,12 +118,14 @@ export const DEFAULT_TOKENS: Record<number, Array<{
 }
 
 /**
- * App configuration
+ * Get app configuration (with environment override support)
  */
-export const APP_CONFIG = {
-  name: 'StableNet',
-  description: 'StableNet Smart Account Platform',
-  defaultSlippage: 0.5, // 0.5%
-  maxSlippage: 50, // 50%
-  txTimeout: 60000, // 60 seconds
+export function getAppConfigValue() {
+  return getAppConfigFromEnv()
 }
+
+/**
+ * App configuration
+ * @deprecated Use getAppConfigValue() instead for environment override support
+ */
+export const APP_CONFIG = getAppConfigFromEnv()
