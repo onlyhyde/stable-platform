@@ -6,10 +6,12 @@
 |----------|------|------|------|
 | Phase 1: 문서 작성 | 27 | 0 | 27 |
 | Phase 2: 이슈 수정 (P0+P1+P2) | 13 | 0 | 13 |
-| Phase 3: 기능 구현 | 0 | 20 | 20 |
-| **총합** | **40** | **20** | **60** |
+| Phase 3: 기능 구현 (Sprint 1~3 P0) | 11 | 0 | 11 |
+| Phase 3: 기능 구현 (Sprint 4 P1) | 6 | 0 | 6 |
+| Phase 3: 기능 구현 (Sprint 5 P2+test) | 2 | 1 | 3 |
+| **총합** | **59** | **1** | **60** |
 
-**진행률**: 40/60 (67%) — Phase 1~2 완료, Phase 3 구현 대기
+**진행률**: 59/60 (98%) — Phase 1~2 완료, Sprint 1~5 P2 완료, CROSS-04 통합 테스트 대기
 
 ---
 
@@ -39,90 +41,58 @@
 
 ## Phase 3: 기능 구현 (20건 대기)
 
-### Sprint 1: Bank Simulator 핵심 — P0
+### Sprint 1: Bank Simulator 핵심 — P0 ✅
 
-| ID | 기능 | 우선순위 | 스펙 문서 | 구현 범위 | 의존성 |
-|----|------|----------|-----------|----------|--------|
-| BANK-01 | 입금/출금 API | P0 | [deposit-withdraw.md](./bank-simulator/feature-specs/deposit-withdraw.md) | handler, service, model | 없음 |
-| BANK-02 | 계좌 인증 API | P0 | [account-verification.md](./bank-simulator/feature-specs/account-verification.md) | handler, service, model | BANK-01 |
-| BANK-03 | Direct Debit API | P0 | [direct-debit.md](./bank-simulator/feature-specs/direct-debit.md) | handler, service, model, webhook | BANK-01 |
-
-**산출물**:
-```
-services/bank-simulator/internal/
-├── handler/bank.go          # +200 lines
-├── model/account.go         # +50 lines
-├── model/transaction.go     # 신규
-├── service/bank.go          # +300 lines
-└── service/bank_test.go     # +200 lines
-```
+| ID | 기능 | 우선순위 | 상태 | 스펙 문서 |
+|----|------|----------|------|-----------|
+| BANK-01 | 입금/출금 API | P0 | ✅ | [deposit-withdraw.md](./bank-simulator/feature-specs/deposit-withdraw.md) |
+| BANK-02 | 계좌 인증 API | P0 | ✅ | [account-verification.md](./bank-simulator/feature-specs/account-verification.md) |
+| BANK-03 | Direct Debit API | P0 | ✅ | [direct-debit.md](./bank-simulator/feature-specs/direct-debit.md) |
 
 ---
 
-### Sprint 2: PG-Bank 연동 — P0
+### Sprint 2: PG-Bank 연동 — P0 ✅
 
-| ID | 기능 | 우선순위 | 스펙 문서 | 구현 범위 | 의존성 |
-|----|------|----------|-----------|----------|--------|
-| PG-01 | Bank Transfer 플로우 | P0 | [bank-transfer-flow.md](./pg-simulator/feature-specs/bank-transfer-flow.md) | handler, service, bank_client | BANK-03 |
-| PG-02 | Wallet 결제 플로우 | P0 | [wallet-payment-flow.md](./pg-simulator/feature-specs/wallet-payment-flow.md) | handler, service | 없음 |
-| CROSS-03 | PG → Bank 연동 | - | [integration-specs.md](./cross-service/integration-specs.md) | HTTP client, webhook | PG-01, BANK-03 |
-
-**산출물**:
-```
-services/pg-simulator/internal/
-├── handler/payment.go       # +100 lines
-├── model/payment.go         # +30 lines
-├── service/payment.go       # +150 lines
-└── service/bank_client.go   # 신규
-```
+| ID | 기능 | 우선순위 | 상태 | 스펙 문서 |
+|----|------|----------|------|-----------|
+| PG-01 | Bank Transfer 플로우 | P0 | ✅ | [bank-transfer-flow.md](./pg-simulator/feature-specs/bank-transfer-flow.md) |
+| PG-02 | Wallet 결제 플로우 | P0 | ✅ | [wallet-payment-flow.md](./pg-simulator/feature-specs/wallet-payment-flow.md) |
+| CROSS-03 | PG → Bank 연동 | - | ✅ | [integration-specs.md](./cross-service/integration-specs.md) |
 
 ---
 
-### Sprint 3: Onramp 핵심 — P0
+### Sprint 3: Onramp 핵심 — P0 ✅
 
-| ID | 기능 | 우선순위 | 스펙 문서 | 구현 범위 | 의존성 |
-|----|------|----------|-----------|----------|--------|
-| ONRAMP-03 | KYC 플로우 | P0 | [kyc-flow.md](./onramp-simulator/feature-specs/kyc-flow.md) | handler, service, model | 없음 |
-| ONRAMP-01 | 결제 연동 (PG) | P0 | [payment-integration.md](./onramp-simulator/feature-specs/payment-integration.md) | pg_client, webhook_handler | PG-01, ONRAMP-03 |
-| ONRAMP-02 | 결제 연동 (Bank) | P0 | [payment-integration.md](./onramp-simulator/feature-specs/payment-integration.md) | bank_client, webhook_handler | BANK-03, ONRAMP-03 |
-| CROSS-01 | Onramp → PG 연동 | - | [integration-specs.md](./cross-service/integration-specs.md) | HTTP client, webhook | ONRAMP-01 |
-| CROSS-02 | Onramp → Bank 연동 | - | [integration-specs.md](./cross-service/integration-specs.md) | HTTP client, webhook | ONRAMP-02 |
-
-**산출물**:
-```
-services/onramp-simulator/internal/
-├── handler/onramp.go        # +150 lines
-├── handler/webhook.go       # 신규
-├── model/order.go           # +100 lines
-├── model/kyc.go             # 신규
-├── service/onramp.go        # +250 lines
-├── service/kyc.go           # 신규
-├── service/pg_client.go     # 신규
-└── service/bank_client.go   # 신규
-```
+| ID | 기능 | 우선순위 | 상태 | 스펙 문서 |
+|----|------|----------|------|-----------|
+| ONRAMP-03 | KYC 플로우 | P0 | ✅ | [kyc-flow.md](./onramp-simulator/feature-specs/kyc-flow.md) |
+| ONRAMP-01 | 결제 연동 (PG) | P0 | ✅ | [payment-integration.md](./onramp-simulator/feature-specs/payment-integration.md) |
+| ONRAMP-02 | 결제 연동 (Bank) | P0 | ✅ | [payment-integration.md](./onramp-simulator/feature-specs/payment-integration.md) |
+| CROSS-01 | Onramp → PG 연동 | - | ✅ | [integration-specs.md](./cross-service/integration-specs.md) |
+| CROSS-02 | Onramp → Bank 연동 | - | ✅ | [integration-specs.md](./cross-service/integration-specs.md) |
 
 ---
 
-### Sprint 4: 부가 기능 — P1
+### Sprint 4: 부가 기능 — P1 ✅
 
-| ID | 기능 | 우선순위 | 스펙 문서 | 구현 범위 | 의존성 |
-|----|------|----------|-----------|----------|--------|
-| BANK-04 | 거래 내역 조회 | P1 | [transaction-history.md](./bank-simulator/feature-specs/transaction-history.md) | handler, service | BANK-01 |
-| BANK-05 | 계좌 해지 | P1 | [account-close.md](./bank-simulator/feature-specs/account-close.md) | handler, service | BANK-01 |
-| PG-03 | Redirect URL | P1 | [redirect-url.md](./pg-simulator/feature-specs/redirect-url.md) | handler, callback | PG-01 |
-| PG-04 | Checkout Session | P1 | [checkout-session.md](./pg-simulator/feature-specs/checkout-session.md) | handler, service, template | PG-01 |
-| ONRAMP-04 | 지원 자산/네트워크 API | P1 | [supported-assets.md](./onramp-simulator/feature-specs/supported-assets.md) | handler, static_data | 없음 |
-| ONRAMP-05 | 다중 환율 지원 | P1 | [multi-currency-rates.md](./onramp-simulator/feature-specs/multi-currency-rates.md) | service, rate_manager | ONRAMP-04 |
+| ID | 기능 | 우선순위 | 상태 | 스펙 문서 | 구현 범위 | 의존성 |
+|----|------|----------|------|-----------|----------|--------|
+| BANK-04 | 거래 내역 조회 | P1 | ✅ | [transaction-history.md](./bank-simulator/feature-specs/transaction-history.md) | handler, service | BANK-01 |
+| BANK-05 | 계좌 해지 | P1 | ✅ | [account-close.md](./bank-simulator/feature-specs/account-close.md) | handler, service | BANK-01 |
+| PG-03 | Redirect URL | P1 | ✅ | [redirect-url.md](./pg-simulator/feature-specs/redirect-url.md) | handler, service, template | PG-01 |
+| PG-04 | Checkout Session | P1 | ✅ | [checkout-session.md](./pg-simulator/feature-specs/checkout-session.md) | handler, service, template | PG-01 |
+| ONRAMP-04 | 지원 자산/네트워크 API | P1 | ✅ | [supported-assets.md](./onramp-simulator/feature-specs/supported-assets.md) | handler, rate_manager | 없음 |
+| ONRAMP-05 | 다중 환율 지원 | P1 | ✅ | [multi-currency-rates.md](./onramp-simulator/feature-specs/multi-currency-rates.md) | service, rate_manager | ONRAMP-04 |
 
 ---
 
 ### Sprint 5: 완성도 — P2 + 테스트
 
-| ID | 기능 | 우선순위 | 스펙 문서 | 구현 범위 | 의존성 |
-|----|------|----------|-----------|----------|--------|
-| PG-05 | 정산 시뮬레이션 | P2 | [settlement.md](./pg-simulator/feature-specs/settlement.md) | handler, service, scheduler | PG-01 |
-| ONRAMP-06 | 월렛 주소 검증 | P2 | [wallet-validation.md](./onramp-simulator/feature-specs/wallet-validation.md) | service, validator | 없음 |
-| CROSS-04 | 통합 테스트 | - | - | e2e test scenarios | 전체 |
+| ID | 기능 | 우선순위 | 상태 | 스펙 문서 | 구현 범위 | 의존성 |
+|----|------|----------|------|-----------|----------|--------|
+| PG-05 | 정산 시뮬레이션 | P2 | ✅ | [settlement.md](./pg-simulator/feature-specs/settlement.md) | handler, service | PG-01 |
+| ONRAMP-06 | 월렛 주소 검증 | P2 | ✅ | [wallet-validation.md](./onramp-simulator/feature-specs/wallet-validation.md) | service, validator, handler | 없음 |
+| CROSS-04 | 통합 테스트 | - | 대기 | - | e2e test scenarios | 전체 |
 
 #### 테스트 시나리오
 
