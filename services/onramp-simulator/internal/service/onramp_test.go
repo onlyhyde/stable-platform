@@ -140,8 +140,8 @@ func TestGetQuote(t *testing.T) {
 			if resp.FiatAmount != tt.req.FiatAmount {
 				t.Errorf("GetQuote() FiatAmount = %v, want %v", resp.FiatAmount, tt.req.FiatAmount)
 			}
-			if resp.ExchangeRate != "0.998" {
-				t.Errorf("GetQuote() ExchangeRate = %v, want 0.998", resp.ExchangeRate)
+			if resp.ExchangeRate != "0.99800000" {
+				t.Errorf("GetQuote() ExchangeRate = %v, want 0.99800000", resp.ExchangeRate)
 			}
 			if resp.FeePercent != "1.5" {
 				t.Errorf("GetQuote() FeePercent = %v, want 1.5", resp.FeePercent)
@@ -519,7 +519,7 @@ func TestCancelOrder(t *testing.T) {
 	// Setup: create a pending order (set status directly since PG won't work)
 	pendingOrder, err := svc.CreateOrder(&model.CreateOrderRequest{
 		UserID:         "user-cancel",
-		WalletAddress:  "0xcccc",
+		WalletAddress:  "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
 		FiatAmount:     "100",
 		FiatCurrency:   "USD",
 		CryptoCurrency: "USDC",
@@ -537,7 +537,7 @@ func TestCancelOrder(t *testing.T) {
 	// Setup: create another order and force status to processing
 	processingOrder, err := svc.CreateOrder(&model.CreateOrderRequest{
 		UserID:         "user-cancel2",
-		WalletAddress:  "0xdddd",
+		WalletAddress:  "0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359",
 		FiatAmount:     "200",
 		FiatCurrency:   "USD",
 		CryptoCurrency: "USDC",
@@ -554,7 +554,7 @@ func TestCancelOrder(t *testing.T) {
 	// Setup: create another order and force status to completed
 	completedOrder, err := svc.CreateOrder(&model.CreateOrderRequest{
 		UserID:         "user-cancel3",
-		WalletAddress:  "0xeeee",
+		WalletAddress:  "0xdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb",
 		FiatAmount:     "300",
 		FiatCurrency:   "USD",
 		CryptoCurrency: "USDC",
