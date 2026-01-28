@@ -1,4 +1,5 @@
 import type { Address, Hex } from 'viem'
+import { recoverMessageAddress } from 'viem'
 import { getUserOpHash, packUserOperation } from './builder'
 import type { UserOperation, PackedUserOperation } from './types'
 import { keyringController } from '../../background/keyring'
@@ -51,13 +52,25 @@ export class UserOpSigner {
   /**
    * Verify a signature
    */
-  verifySignature(
+  async verifySignature(
     userOp: UserOperation,
     expectedSigner: Address
-  ): boolean {
-    // TODO: Implement signature verification
-    // This would require ecrecover
-    return true
+  ): Promise<boolean> {
+    try {
+      if (!userOp.signature || userOp.signature === '0x') {
+        return false
+      }
+
+      const hash = getUserOpHash(userOp, this.entryPoint, this.chainId)
+      const recoveredAddress = await recoverMessageAddress({
+        message: { raw: hash },
+        signature: userOp.signature,
+      })
+
+      return recoveredAddress.toLowerCase() === expectedSigner.toLowerCase()
+    } catch {
+      return false
+    }
   }
 }
 

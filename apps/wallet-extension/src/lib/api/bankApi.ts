@@ -1,4 +1,5 @@
 import { BaseApiClient } from './baseApi'
+import { getApiConfig } from '../../config'
 import type {
   BankAccount,
   BankTransfer,
@@ -16,10 +17,8 @@ import type {
  * Provides banking functionality for fiat on/off ramp
  */
 
-const DEFAULT_BANK_URL = 'http://localhost:8081/api/v1'
-
 export class BankApiClient extends BaseApiClient {
-  constructor(baseUrl: string = DEFAULT_BANK_URL) {
+  constructor(baseUrl: string = getApiConfig().bankApiUrl) {
     super(baseUrl)
   }
 

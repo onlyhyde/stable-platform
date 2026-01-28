@@ -1,5 +1,6 @@
 import type { Address } from 'viem'
 import { BaseApiClient } from './baseApi'
+import { getApiConfig } from '../../config'
 import type {
   OnRampQuote,
   OnRampOrder,
@@ -21,10 +22,8 @@ import type {
  * Provides crypto purchase functionality
  */
 
-const DEFAULT_ONRAMP_URL = 'http://localhost:8082/api/v1'
-
 export class OnRampApiClient extends BaseApiClient {
-  constructor(baseUrl: string = DEFAULT_ONRAMP_URL) {
+  constructor(baseUrl: string = getApiConfig().onrampApiUrl) {
     super(baseUrl)
   }
 

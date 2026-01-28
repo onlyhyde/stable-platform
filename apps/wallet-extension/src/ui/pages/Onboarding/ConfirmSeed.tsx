@@ -32,7 +32,7 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
       const correctWord = words[index]
       const otherWords = words.filter((_, i) => i !== index)
       const shuffled = otherWords.sort(() => Math.random() - 0.5).slice(0, 3)
-      options[index] = [...shuffled, correctWord].sort(() => Math.random() - 0.5)
+      options[index] = [...shuffled, correctWord ?? ''].filter((w): w is string => !!w).sort(() => Math.random() - 0.5)
     }
     return options
   }, [verificationIndices, words])
@@ -83,7 +83,7 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
               Word #{index + 1}
             </p>
             <div className="grid grid-cols-2 gap-2">
-              {wordOptions[index].map((word) => (
+              {(wordOptions[index] ?? []).map((word) => (
                 <button
                   key={word}
                   type="button"

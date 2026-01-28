@@ -538,8 +538,9 @@ window.addEventListener('message', async (event) => {
     window.self === window.top
   ) {
     const action = event.data.action as { type: string }
-    if (action && embeddedActions[action.type]) {
-      const res = await embeddedActions[action.type](action)
+    const handler = embeddedActions[action.type]
+    if (action && handler) {
+      const res = await handler(action)
       const payload = { method: 'embedded_action_res', params: [action, res] }
       window.postMessage(
         { target: 'stablenet-contentscript', data: { type: MESSAGE_TYPES.RPC_REQUEST, id: `embedded-${Date.now()}`, payload } },

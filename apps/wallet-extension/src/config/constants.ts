@@ -1,0 +1,248 @@
+/**
+ * Wallet Extension Configuration Constants
+ *
+ * Centralized configuration for the wallet extension.
+ * Values can be overridden via environment variables at build time.
+ *
+ * Environment variables follow the pattern:
+ * - VITE_WALLET_[CATEGORY]_[NAME]
+ */
+
+// Vite injects environment variables at build time
+// This gets the env object from Vite's import.meta.env or returns empty object
+declare const __VITE_ENV__: Record<string, string | undefined> | undefined
+
+// For build-time environment variable injection
+// Vite replaces import.meta.env.* with actual values at build time
+function getViteEnv(): Record<string, string | undefined> {
+  // This will be replaced by Vite at build time
+  // @ts-expect-error - Vite handles this at build time
+  if (typeof import.meta !== 'undefined' && typeof import.meta.env !== 'undefined') {
+    // @ts-expect-error - Vite handles this at build time
+    return import.meta.env as Record<string, string | undefined>
+  }
+  return {}
+}
+
+/**
+ * Environment variable names
+ */
+export const WALLET_ENV_VARS = {
+  // API URLs
+  BANK_API_URL: 'VITE_WALLET_BANK_API_URL',
+  ONRAMP_API_URL: 'VITE_WALLET_ONRAMP_API_URL',
+
+  // Network URLs (Devnet)
+  DEVNET_RPC_URL: 'VITE_WALLET_DEVNET_RPC_URL',
+  DEVNET_BUNDLER_URL: 'VITE_WALLET_DEVNET_BUNDLER_URL',
+  DEVNET_PAYMASTER_URL: 'VITE_WALLET_DEVNET_PAYMASTER_URL',
+  DEVNET_STEALTH_SERVER_URL: 'VITE_WALLET_DEVNET_STEALTH_SERVER_URL',
+
+  // Network URLs (Testnet/Sepolia)
+  TESTNET_RPC_URL: 'VITE_WALLET_TESTNET_RPC_URL',
+  TESTNET_BUNDLER_URL: 'VITE_WALLET_TESTNET_BUNDLER_URL',
+  TESTNET_PAYMASTER_URL: 'VITE_WALLET_TESTNET_PAYMASTER_URL',
+  TESTNET_STEALTH_SERVER_URL: 'VITE_WALLET_TESTNET_STEALTH_SERVER_URL',
+
+  // Timeouts and Intervals
+  API_TIMEOUT_MS: 'VITE_WALLET_API_TIMEOUT_MS',
+  GAS_POLLING_INTERVAL_MS: 'VITE_WALLET_GAS_POLLING_INTERVAL_MS',
+  APPROVAL_EXPIRY_MS: 'VITE_WALLET_APPROVAL_EXPIRY_MS',
+
+  // Security
+  AUTO_LOCK_MINUTES: 'VITE_WALLET_AUTO_LOCK_MINUTES',
+  PBKDF2_ITERATIONS: 'VITE_WALLET_PBKDF2_ITERATIONS',
+
+  // Limits
+  GAS_HISTORY_MAX_LENGTH: 'VITE_WALLET_GAS_HISTORY_MAX_LENGTH',
+  APPROVAL_HISTORY_MAX_LENGTH: 'VITE_WALLET_APPROVAL_HISTORY_MAX_LENGTH',
+} as const
+
+/**
+ * Default values
+ */
+const DEFAULTS = {
+  // API URLs
+  BANK_API_URL: 'http://localhost:8081/api/v1',
+  ONRAMP_API_URL: 'http://localhost:8082/api/v1',
+
+  // Network URLs (Devnet)
+  DEVNET_RPC_URL: 'http://localhost:8545',
+  DEVNET_BUNDLER_URL: 'http://localhost:4337',
+  DEVNET_PAYMASTER_URL: 'http://localhost:4338',
+  DEVNET_STEALTH_SERVER_URL: 'http://localhost:4339',
+
+  // Network URLs (Testnet/Sepolia)
+  TESTNET_RPC_URL: 'https://testnet.stablenet.io/rpc',
+  TESTNET_BUNDLER_URL: 'https://testnet.stablenet.io/bundler',
+  TESTNET_PAYMASTER_URL: 'https://testnet.stablenet.io/paymaster',
+  TESTNET_STEALTH_SERVER_URL: 'https://testnet.stablenet.io/stealth',
+
+  // Timeouts and Intervals
+  API_TIMEOUT_MS: 30000,
+  GAS_POLLING_INTERVAL_MS: 15000, // 15 seconds
+  APPROVAL_EXPIRY_MS: 5 * 60 * 1000, // 5 minutes
+
+  // Security
+  AUTO_LOCK_MINUTES: 5,
+  PBKDF2_ITERATIONS: 100000,
+
+  // Limits
+  GAS_HISTORY_MAX_LENGTH: 100,
+  APPROVAL_HISTORY_MAX_LENGTH: 50,
+} as const
+
+/**
+ * Get environment variable with fallback
+ */
+function getEnvString(name: string, defaultValue: string): string {
+  try {
+    const env = getViteEnv()
+    const value = env[name]
+    if (value !== undefined && value !== '') {
+      return value
+    }
+  } catch {
+    // Fallback to default in environments without Vite
+  }
+  return defaultValue
+}
+
+/**
+ * Get environment variable as number
+ */
+function getEnvNumber(name: string, defaultValue: number): number {
+  const strValue = getEnvString(name, String(defaultValue))
+  const num = Number.parseInt(strValue, 10)
+  return Number.isNaN(num) ? defaultValue : num
+}
+
+// =============================================================================
+// API Configuration
+// =============================================================================
+
+/**
+ * Get API configuration
+ */
+export function getApiConfig() {
+  return {
+    bankApiUrl: getEnvString(WALLET_ENV_VARS.BANK_API_URL, DEFAULTS.BANK_API_URL),
+    onrampApiUrl: getEnvString(WALLET_ENV_VARS.ONRAMP_API_URL, DEFAULTS.ONRAMP_API_URL),
+    timeoutMs: getEnvNumber(WALLET_ENV_VARS.API_TIMEOUT_MS, DEFAULTS.API_TIMEOUT_MS),
+  }
+}
+
+// =============================================================================
+// Network Configuration
+// =============================================================================
+
+/**
+ * Get Devnet network configuration
+ */
+export function getDevnetNetworkConfig() {
+  return {
+    rpcUrl: getEnvString(WALLET_ENV_VARS.DEVNET_RPC_URL, DEFAULTS.DEVNET_RPC_URL),
+    bundlerUrl: getEnvString(WALLET_ENV_VARS.DEVNET_BUNDLER_URL, DEFAULTS.DEVNET_BUNDLER_URL),
+    paymasterUrl: getEnvString(WALLET_ENV_VARS.DEVNET_PAYMASTER_URL, DEFAULTS.DEVNET_PAYMASTER_URL),
+    stealthServerUrl: getEnvString(WALLET_ENV_VARS.DEVNET_STEALTH_SERVER_URL, DEFAULTS.DEVNET_STEALTH_SERVER_URL),
+  }
+}
+
+/**
+ * Get Testnet network configuration
+ */
+export function getTestnetNetworkConfig() {
+  return {
+    rpcUrl: getEnvString(WALLET_ENV_VARS.TESTNET_RPC_URL, DEFAULTS.TESTNET_RPC_URL),
+    bundlerUrl: getEnvString(WALLET_ENV_VARS.TESTNET_BUNDLER_URL, DEFAULTS.TESTNET_BUNDLER_URL),
+    paymasterUrl: getEnvString(WALLET_ENV_VARS.TESTNET_PAYMASTER_URL, DEFAULTS.TESTNET_PAYMASTER_URL),
+    stealthServerUrl: getEnvString(WALLET_ENV_VARS.TESTNET_STEALTH_SERVER_URL, DEFAULTS.TESTNET_STEALTH_SERVER_URL),
+  }
+}
+
+/**
+ * Get network configuration by chain ID
+ */
+export function getNetworkConfigByChainId(chainId: number) {
+  switch (chainId) {
+    case 31337:
+      return getDevnetNetworkConfig()
+    case 11155111:
+      return getTestnetNetworkConfig()
+    default:
+      return undefined
+  }
+}
+
+// =============================================================================
+// Gas Fee Configuration
+// =============================================================================
+
+/**
+ * Get gas fee configuration
+ */
+export function getGasFeeConfig() {
+  return {
+    pollingIntervalMs: getEnvNumber(WALLET_ENV_VARS.GAS_POLLING_INTERVAL_MS, DEFAULTS.GAS_POLLING_INTERVAL_MS),
+    historyMaxLength: getEnvNumber(WALLET_ENV_VARS.GAS_HISTORY_MAX_LENGTH, DEFAULTS.GAS_HISTORY_MAX_LENGTH),
+  }
+}
+
+/**
+ * Gas unit constant (1 Gwei in Wei)
+ */
+export const GWEI = BigInt(1_000_000_000)
+
+// =============================================================================
+// Approval Configuration
+// =============================================================================
+
+/**
+ * Get approval configuration
+ */
+export function getApprovalConfig() {
+  return {
+    expiryMs: getEnvNumber(WALLET_ENV_VARS.APPROVAL_EXPIRY_MS, DEFAULTS.APPROVAL_EXPIRY_MS),
+    historyMaxLength: getEnvNumber(WALLET_ENV_VARS.APPROVAL_HISTORY_MAX_LENGTH, DEFAULTS.APPROVAL_HISTORY_MAX_LENGTH),
+  }
+}
+
+// =============================================================================
+// Security Configuration
+// =============================================================================
+
+/**
+ * Get security configuration
+ */
+export function getSecurityConfig() {
+  return {
+    autoLockMinutes: getEnvNumber(WALLET_ENV_VARS.AUTO_LOCK_MINUTES, DEFAULTS.AUTO_LOCK_MINUTES),
+    pbkdf2Iterations: getEnvNumber(WALLET_ENV_VARS.PBKDF2_ITERATIONS, DEFAULTS.PBKDF2_ITERATIONS),
+  }
+}
+
+/**
+ * Crypto configuration constants
+ * These are fixed for security reasons and should not be changed via environment
+ */
+export const CRYPTO_CONFIG = {
+  ALGORITHM: 'AES-GCM',
+  KEY_LENGTH: 256,
+  IV_LENGTH: 12,
+  SALT_LENGTH: 32,
+  TAG_LENGTH: 128,
+  VAULT_VERSION: 1,
+} as const
+
+// =============================================================================
+// Storage Keys
+// =============================================================================
+
+/**
+ * Chrome storage keys
+ */
+export const STORAGE_KEYS = {
+  AUTO_LOCK_MINUTES: 'stablenet_auto_lock_minutes',
+  AUTO_LOCK_ALARM: 'stablenet-auto-lock',
+  IDLE_CHECK_ALARM: 'stablenet-idle-check',
+} as const

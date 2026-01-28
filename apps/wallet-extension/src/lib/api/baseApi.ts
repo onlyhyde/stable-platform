@@ -2,6 +2,8 @@
  * Base API client with common functionality
  */
 
+import { getApiConfig } from '../../config'
+
 export interface ApiResponse<T> {
   success: boolean
   data?: T
@@ -21,7 +23,12 @@ export interface RequestOptions {
   timeout?: number
 }
 
-const DEFAULT_TIMEOUT = 30000
+/**
+ * Get default timeout from configuration
+ */
+function getDefaultTimeout(): number {
+  return getApiConfig().timeoutMs
+}
 
 export class BaseApiClient {
   protected baseUrl: string
@@ -41,7 +48,7 @@ export class BaseApiClient {
       method = 'GET',
       headers = {},
       body,
-      timeout = DEFAULT_TIMEOUT,
+      timeout = getDefaultTimeout(),
     } = options
 
     const url = `${this.baseUrl}${endpoint}`

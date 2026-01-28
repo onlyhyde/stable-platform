@@ -140,7 +140,7 @@ export function AccountSelector({
 
 function getAccountInitial(account: Account | undefined): string {
   if (!account) return 'A'
-  if (account.name) return account.name[0].toUpperCase()
+  if (account.name) return account.name[0]?.toUpperCase() ?? 'A'
   return account.address.slice(2, 4).toUpperCase()
 }
 

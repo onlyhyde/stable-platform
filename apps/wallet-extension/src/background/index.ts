@@ -21,6 +21,7 @@ import type { ExtensionMessage, JsonRpcRequest } from '../types'
 import type { Address, Hex } from 'viem'
 import { MESSAGE_TYPES } from '../shared/constants'
 import { createLogger } from '../shared/utils/logger'
+import { getSecurityConfig, STORAGE_KEYS } from '../config'
 
 const logger = createLogger('Background')
 
@@ -169,11 +170,7 @@ async function updateIconState(): Promise<void> {
 // Auto-Lock with Idle Detection
 // =============================================================================
 
-const AUTO_LOCK_ALARM_KEY = 'stablenet-auto-lock'
-const IDLE_CHECK_ALARM_KEY = 'stablenet-idle-check'
-const DEFAULT_AUTO_LOCK_MINUTES = 5
-
-let autoLockMinutes = DEFAULT_AUTO_LOCK_MINUTES
+let autoLockMinutes = getSecurityConfig().autoLockMinutes
 let lastActivityTime = Date.now()
 
 /**
@@ -182,18 +179,18 @@ let lastActivityTime = Date.now()
 async function setupAutoLockAlarm(): Promise<void> {
   // Load saved auto-lock preference
   try {
-    const stored = await chrome.storage.local.get('stablenet_auto_lock_minutes')
-    if (stored.stablenet_auto_lock_minutes) {
-      autoLockMinutes = stored.stablenet_auto_lock_minutes
+    const stored = await chrome.storage.local.get(STORAGE_KEYS.AUTO_LOCK_MINUTES)
+    if (stored[STORAGE_KEYS.AUTO_LOCK_MINUTES]) {
+      autoLockMinutes = stored[STORAGE_KEYS.AUTO_LOCK_MINUTES]
     }
   } catch {
     // Use default
   }
 
   // Create periodic idle check alarm (every 30 seconds)
-  const existingAlarm = await chrome.alarms.get(IDLE_CHECK_ALARM_KEY)
+  const existingAlarm = await chrome.alarms.get(STORAGE_KEYS.IDLE_CHECK_ALARM)
   if (!existingAlarm) {
-    await chrome.alarms.create(IDLE_CHECK_ALARM_KEY, {
+    await chrome.alarms.create(STORAGE_KEYS.IDLE_CHECK_ALARM, {
       delayInMinutes: 0.5,
       periodInMinutes: 0.5,
     })
@@ -247,7 +244,7 @@ function updateLastActivity(): void {
  */
 async function setAutoLockTimeout(minutes: number): Promise<void> {
   autoLockMinutes = minutes
-  await chrome.storage.local.set({ stablenet_auto_lock_minutes: minutes })
+  await chrome.storage.local.set({ [STORAGE_KEYS.AUTO_LOCK_MINUTES]: minutes })
 }
 
 // =============================================================================
@@ -868,7 +865,7 @@ async function broadcastChainChanged(chainId: number): Promise<void> {
 // =============================================================================
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === IDLE_CHECK_ALARM_KEY) {
+  if (alarm.name === STORAGE_KEYS.IDLE_CHECK_ALARM) {
     await checkAutoLock()
   }
 })

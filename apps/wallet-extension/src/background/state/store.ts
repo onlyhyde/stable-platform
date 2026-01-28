@@ -181,8 +181,9 @@ class WalletStateManager {
 
     // If removing the selected network, switch to first available
     let selectedChainId = this.state.networks.selectedChainId
-    if (selectedChainId === chainId && networks.length > 0) {
-      selectedChainId = networks[0].chainId
+    const firstNetwork = networks[0]
+    if (selectedChainId === chainId && networks.length > 0 && firstNetwork) {
+      selectedChainId = firstNetwork.chainId
     }
 
     await this.setState({
