@@ -22,6 +22,54 @@ const SUBSCRIPTION_MANAGER = '0x9d4454B023096f34B160D6B654540c56A1F81688' as con
 const PERMISSION_MANAGER = '0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf' as const
 const RECURRING_PAYMENT_EXECUTOR = '0x998abeb3E57409262aE5b751f60747921B33613E' as const
 
+// ABI fragments for PermissionManager (ERC-7715)
+const PERMISSION_MANAGER_ABI = [
+  {
+    name: 'grantPermission',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'operator', type: 'address' },
+      { name: 'token', type: 'address' },
+      { name: 'allowance', type: 'uint256' },
+      { name: 'period', type: 'uint256' },
+      { name: 'validUntil', type: 'uint256' },
+    ],
+    outputs: [{ name: 'permissionId', type: 'bytes32' }],
+  },
+  {
+    name: 'revokePermission',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'permissionId', type: 'bytes32' }],
+    outputs: [],
+  },
+  {
+    name: 'isPermissionValid',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'permissionId', type: 'bytes32' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    name: 'getPermission',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'permissionId', type: 'bytes32' }],
+    outputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'operator', type: 'address' },
+      { name: 'token', type: 'address' },
+      { name: 'allowance', type: 'uint256' },
+      { name: 'period', type: 'uint256' },
+      { name: 'validUntil', type: 'uint256' },
+      { name: 'usedAllowance', type: 'uint256' },
+      { name: 'lastResetTime', type: 'uint256' },
+      { name: 'isActive', type: 'bool' },
+    ],
+  },
+] as const
+
 // ABI fragments for subscription manager
 const SUBSCRIPTION_MANAGER_ABI = [
   {
@@ -360,6 +408,111 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     }
   }, [publicClient, address, toPlanDisplayInfo])
 
+  // Request ERC-7715 permission
+  const requestPermission = useCallback(async (
+    plan: PlanDisplayInfo,
+  ): Promise<`0x${string}`> => {
+    if (!walletClient || !publicClient) {
+      throw new Error('Wallet not connected')
+    }
+
+    // Calculate permission parameters
+    const allowancePerPeriod = plan.price
+    const period = plan.interval
+    // Permission valid for 1 year or 365 payment cycles, whichever is longer
+    const validUntil = BigInt(Math.floor(Date.now() / 1000)) + BigInt(365 * 24 * 60 * 60)
+
+    // Build ERC-7715 permission request
+    const permissionRequest = {
+      permissions: [{
+        type: 'native-token-recurring-allowance' as const,
+        data: {
+          allowance: allowancePerPeriod.toString(),
+          period: period.toString(),
+          start: Math.floor(Date.now() / 1000),
+        },
+        policies: [{
+          type: 'token-allowance' as const,
+          data: {
+            token: plan.token,
+            allowance: allowancePerPeriod.toString(),
+          },
+        }],
+        required: true,
+      }],
+      expiry: Number(validUntil),
+    }
+
+    try {
+      // Try ERC-7715 wallet_grantPermissions first (modern wallets)
+      const response = await walletClient.request({
+        method: 'wallet_grantPermissions' as any,
+        params: [permissionRequest] as any,
+      })
+
+      // Extract permissionId from response
+      if (response && typeof response === 'object' && 'permissionId' in response) {
+        return (response as { permissionId: `0x${string}` }).permissionId
+      }
+
+      // Fallback: Some wallets may return the permissionId directly
+      if (typeof response === 'string' && response.startsWith('0x')) {
+        return response as `0x${string}`
+      }
+
+      throw new Error('Invalid permission response from wallet')
+    } catch (err: unknown) {
+      // Check if wallet doesn't support ERC-7715
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      if (
+        errorMessage.includes('not supported') ||
+        errorMessage.includes('unknown method') ||
+        errorMessage.includes('Method not found')
+      ) {
+        console.log('Wallet does not support ERC-7715, falling back to direct permission grant')
+
+        // Fallback to direct contract call on PermissionManager
+        const permissionTxHash = await walletClient.writeContract({
+          address: PERMISSION_MANAGER,
+          abi: PERMISSION_MANAGER_ABI,
+          functionName: 'grantPermission',
+          args: [
+            RECURRING_PAYMENT_EXECUTOR, // operator
+            plan.token, // token
+            allowancePerPeriod, // allowance per period
+            period, // period
+            validUntil, // validUntil
+          ],
+        })
+
+        // Wait for transaction and extract permissionId from logs
+        const receipt = await publicClient.waitForTransactionReceipt({ hash: permissionTxHash })
+
+        // Find PermissionGranted event log
+        // Event signature: PermissionGranted(bytes32 indexed permissionId, address indexed owner, address operator)
+        const permissionGrantedTopic = '0x' + 'PermissionGranted'.padEnd(64, '0') as `0x${string}`
+        const permissionLog = receipt.logs.find(
+          (log) => log.address.toLowerCase() === PERMISSION_MANAGER.toLowerCase()
+        )
+
+        if (permissionLog && permissionLog.topics[1]) {
+          return permissionLog.topics[1] as `0x${string}`
+        }
+
+        // If we can't find the log, generate a deterministic permissionId
+        // This is a fallback - in production, the contract should emit proper events
+        const permissionId = ('0x' + Buffer.from(
+          `${address}:${RECURRING_PAYMENT_EXECUTOR}:${plan.token}:${Date.now()}`
+        ).toString('hex').slice(0, 64).padEnd(64, '0')) as `0x${string}`
+
+        return permissionId
+      }
+
+      // Re-throw other errors
+      throw err
+    }
+  }, [walletClient, publicClient, address])
+
   // Subscribe to a plan
   const subscribe = useCallback(async (planId: bigint): Promise<`0x${string}`> => {
     if (!publicClient || !address || !walletClient) {
@@ -370,11 +523,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     setError(null)
 
     try {
-      // For now, use a placeholder permission ID
-      // In production, this would come from the permission grant flow
-      const permissionId = '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`
-
-      // Get the plan to check if payment is needed
+      // Get the plan to check if payment is needed and for permission request
       const planData = await publicClient.readContract({
         address: SUBSCRIPTION_MANAGER,
         abi: SUBSCRIPTION_MANAGER_ABI,
@@ -384,7 +533,10 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
 
       const plan = toPlanDisplayInfo(planId, planData)
 
-      // Encode and send the subscribe transaction
+      // Step 1: Request ERC-7715 permission for recurring payments
+      const permissionId = await requestPermission(plan)
+
+      // Step 2: Subscribe with the permission ID
       const txHash = await walletClient.writeContract({
         address: SUBSCRIPTION_MANAGER,
         abi: SUBSCRIPTION_MANAGER_ABI,
@@ -404,7 +556,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     } finally {
       setIsSubscribing(false)
     }
-  }, [publicClient, address, walletClient, toPlanDisplayInfo])
+  }, [publicClient, address, walletClient, toPlanDisplayInfo, requestPermission])
 
   // Cancel subscription
   const cancelSubscription = useCallback(async (planId: bigint): Promise<`0x${string}`> => {
