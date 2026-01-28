@@ -162,6 +162,7 @@ export class ContractAddressWatcher extends EventEmitter {
     const paymastersData = data.paymasters as Record<string, string> | undefined
     const privacyData = data.privacy as Record<string, string> | undefined
     const complianceData = data.compliance as Record<string, string> | undefined
+    const subscriptionsData = data.subscriptions as Record<string, string> | undefined
 
     return {
       chainId,
@@ -192,6 +193,11 @@ export class ContractAddressWatcher extends EventEmitter {
       compliance: {
         kycRegistry: getAddr(data.kycRegistry, complianceData?.kycRegistry),
         complianceValidator: getAddr(data.complianceValidator, complianceData?.complianceValidator),
+      },
+      subscriptions: {
+        subscriptionManager: getAddr(data.subscriptionManager, subscriptionsData?.subscriptionManager),
+        recurringPaymentExecutor: getAddr(data.recurringPaymentExecutor, subscriptionsData?.recurringPaymentExecutor),
+        permissionManager: getAddr(data.erc7715PermissionManager, data.permissionManager, subscriptionsData?.permissionManager),
       },
       delegatePresets: (data.delegatePresets as ChainAddresses['delegatePresets']) || [],
     }

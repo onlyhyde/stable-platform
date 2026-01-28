@@ -138,6 +138,27 @@ export function getStealthRegistry(chainId: number): Address {
 }
 
 /**
+ * Get SubscriptionManager address for a chain
+ */
+export function getSubscriptionManager(chainId: number): Address {
+  return getChainAddresses(chainId).subscriptions.subscriptionManager
+}
+
+/**
+ * Get RecurringPaymentExecutor address for a chain
+ */
+export function getRecurringPaymentExecutor(chainId: number): Address {
+  return getChainAddresses(chainId).subscriptions.recurringPaymentExecutor
+}
+
+/**
+ * Get ERC7715 PermissionManager address for a chain
+ */
+export function getPermissionManager(chainId: number): Address {
+  return getChainAddresses(chainId).subscriptions.permissionManager
+}
+
+/**
  * Get delegate presets for EIP-7702
  */
 export function getDelegatePresets(chainId: number) {

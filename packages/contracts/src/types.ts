@@ -57,6 +57,15 @@ export interface ComplianceAddresses {
 }
 
 /**
+ * Subscription contract addresses
+ */
+export interface SubscriptionAddresses {
+  subscriptionManager: Address
+  recurringPaymentExecutor: Address
+  permissionManager: Address
+}
+
+/**
  * EIP-7702 delegate presets
  */
 export interface DelegatePreset {
@@ -78,6 +87,7 @@ export interface ChainAddresses {
   paymasters: PaymasterAddresses
   privacy: PrivacyAddresses
   compliance: ComplianceAddresses
+  subscriptions: SubscriptionAddresses
   delegatePresets: DelegatePreset[]
 }
 

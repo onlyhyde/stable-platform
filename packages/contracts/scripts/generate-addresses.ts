@@ -146,6 +146,11 @@ function generateAddressesTs(deployments: ChainDeployment[]): string {
     lines.push(`      kycRegistry: '${addresses.kycRegistry || addresses.KYCRegistry || ZERO_ADDRESS}',`)
     lines.push(`      complianceValidator: '${addresses.complianceValidator || addresses.ComplianceValidator || ZERO_ADDRESS}',`)
     lines.push('    },')
+    lines.push('    subscriptions: {')
+    lines.push(`      subscriptionManager: '${addresses.subscriptionManager || addresses.SubscriptionManager || ZERO_ADDRESS}',`)
+    lines.push(`      recurringPaymentExecutor: '${addresses.recurringPaymentExecutor || addresses.RecurringPaymentExecutor || ZERO_ADDRESS}',`)
+    lines.push(`      permissionManager: '${addresses.erc7715PermissionManager || addresses.ERC7715PermissionManager || addresses.permissionManager || ZERO_ADDRESS}',`)
+    lines.push('    },')
     lines.push('    delegatePresets: [')
 
     // Add delegate preset if Kernel is available

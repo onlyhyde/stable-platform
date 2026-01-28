@@ -1,4 +1,11 @@
 import type { Network, NativeCurrency } from '@stablenet/types'
+import {
+  getAnvilConfig,
+  getDevnetConfig,
+  getSepoliaConfig,
+  getMainnetConfig,
+  getDefaultChainId,
+} from './env'
 
 /**
  * Network Configuration
@@ -25,56 +32,107 @@ export const SEPOLIA_ETH_CURRENCY: NativeCurrency = {
 
 /**
  * Local Anvil network for development
+ * URLs configurable via environment variables:
+ * - STABLENET_ANVIL_RPC_URL
+ * - STABLENET_ANVIL_BUNDLER_URL
+ * - STABLENET_ANVIL_PAYMASTER_URL
  */
-export const ANVIL_NETWORK: Network = {
-  chainId: 31337,
-  name: 'Anvil (Local)',
-  rpcUrl: 'http://127.0.0.1:8545',
-  bundlerUrl: 'http://127.0.0.1:4337',
-  currency: ETH_CURRENCY,
-  isTestnet: true,
+export function getAnvilNetwork(): Network {
+  const config = getAnvilConfig()
+  return {
+    chainId: 31337,
+    name: 'Anvil (Local)',
+    rpcUrl: config.rpcUrl,
+    bundlerUrl: config.bundlerUrl,
+    paymasterUrl: config.paymasterUrl,
+    currency: ETH_CURRENCY,
+    isTestnet: true,
+  }
 }
+
+/**
+ * Static Anvil network (for backward compatibility)
+ */
+export const ANVIL_NETWORK: Network = getAnvilNetwork()
 
 /**
  * StableNet Devnet
+ * URLs configurable via environment variables:
+ * - STABLENET_DEVNET_RPC_URL
+ * - STABLENET_DEVNET_BUNDLER_URL
+ * - STABLENET_DEVNET_PAYMASTER_URL
  */
-export const DEVNET_NETWORK: Network = {
-  chainId: 1337,
-  name: 'StableNet Devnet',
-  rpcUrl: 'http://localhost:8545',
-  bundlerUrl: 'http://localhost:4337',
-  paymasterUrl: 'http://localhost:4338',
-  currency: ETH_CURRENCY,
-  isTestnet: true,
+export function getDevnetNetwork(): Network {
+  const config = getDevnetConfig()
+  return {
+    chainId: 1337,
+    name: 'StableNet Devnet',
+    rpcUrl: config.rpcUrl,
+    bundlerUrl: config.bundlerUrl,
+    paymasterUrl: config.paymasterUrl,
+    currency: ETH_CURRENCY,
+    isTestnet: true,
+  }
 }
+
+/**
+ * Static Devnet network (for backward compatibility)
+ */
+export const DEVNET_NETWORK: Network = getDevnetNetwork()
 
 /**
  * Sepolia testnet
+ * URLs configurable via environment variables:
+ * - STABLENET_SEPOLIA_RPC_URL
+ * - STABLENET_SEPOLIA_BUNDLER_URL
+ * - STABLENET_SEPOLIA_PAYMASTER_URL
+ * - STABLENET_SEPOLIA_EXPLORER_URL
  */
-export const SEPOLIA_NETWORK: Network = {
-  chainId: 11155111,
-  name: 'Sepolia',
-  rpcUrl: 'https://rpc.sepolia.org',
-  bundlerUrl: 'https://bundler.sepolia.stablenet.dev',
-  paymasterUrl: 'https://paymaster.sepolia.stablenet.dev',
-  explorerUrl: 'https://sepolia.etherscan.io',
-  currency: SEPOLIA_ETH_CURRENCY,
-  isTestnet: true,
+export function getSepoliaNetwork(): Network {
+  const config = getSepoliaConfig()
+  return {
+    chainId: 11155111,
+    name: 'Sepolia',
+    rpcUrl: config.rpcUrl,
+    bundlerUrl: config.bundlerUrl,
+    paymasterUrl: config.paymasterUrl,
+    explorerUrl: config.explorerUrl,
+    currency: SEPOLIA_ETH_CURRENCY,
+    isTestnet: true,
+  }
 }
 
 /**
- * Ethereum Mainnet (disabled by default in StableNet POC)
+ * Static Sepolia network (for backward compatibility)
  */
-export const MAINNET_NETWORK: Network = {
-  chainId: 1,
-  name: 'Ethereum',
-  rpcUrl: 'https://eth.llamarpc.com',
-  bundlerUrl: 'https://bundler.mainnet.stablenet.dev',
-  paymasterUrl: 'https://paymaster.mainnet.stablenet.dev',
-  explorerUrl: 'https://etherscan.io',
-  currency: ETH_CURRENCY,
-  isTestnet: false,
+export const SEPOLIA_NETWORK: Network = getSepoliaNetwork()
+
+/**
+ * Ethereum Mainnet (disabled by default in StableNet POC)
+ * URLs configurable via environment variables:
+ * - STABLENET_MAINNET_RPC_URL
+ * - STABLENET_MAINNET_BUNDLER_URL
+ * - STABLENET_MAINNET_PAYMASTER_URL
+ * - STABLENET_MAINNET_EXPLORER_URL
+ */
+export function getMainnetNetwork(): Network {
+  const config = getMainnetConfig()
+  return {
+    chainId: 1,
+    name: 'Ethereum',
+    rpcUrl: config.rpcUrl,
+    bundlerUrl: config.bundlerUrl,
+    paymasterUrl: config.paymasterUrl,
+    explorerUrl: config.explorerUrl,
+    currency: ETH_CURRENCY,
+    isTestnet: false,
+  }
 }
+
+/**
+ * Static Mainnet network (for backward compatibility)
+ */
+export const MAINNET_NETWORK: Network = getMainnetNetwork()
 
 /**
  * Default networks for wallet
@@ -117,5 +175,6 @@ export function isTestnet(chainId: number): boolean {
 
 /**
  * Default chain ID for new wallets
+ * Configurable via STABLENET_DEFAULT_CHAIN_ID environment variable
  */
-export const DEFAULT_CHAIN_ID = ANVIL_NETWORK.chainId
+export const DEFAULT_CHAIN_ID = getDefaultChainId()

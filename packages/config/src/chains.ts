@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import type { ChainAddresses, ChainConfig, ServiceUrls, TokenDefinition } from '@stablenet/types'
 import { ENTRY_POINT_V07 } from './entryPoints'
+import { getAnvilConfig, getSepoliaConfig } from './env'
 
 /**
  * Chain Configuration
@@ -50,13 +51,25 @@ export const ANVIL_ADDRESSES: ChainAddresses = {
 }
 
 /**
- * Anvil service URLs
+ * Get Anvil service URLs (with environment overrides)
  */
-export const ANVIL_SERVICES: ServiceUrls = {
-  bundler: 'http://127.0.0.1:4337',
-  paymaster: 'http://127.0.0.1:4338',
-  stealthServer: 'http://127.0.0.1:4339',
+export function getAnvilServices(): ServiceUrls {
+  const config = getAnvilConfig()
+  return {
+    bundler: config.bundlerUrl,
+    paymaster: config.paymasterUrl,
+    stealthServer: config.stealthServerUrl,
+  }
 }
+
+/**
+ * Anvil service URLs (for backward compatibility)
+ * Configurable via:
+ * - STABLENET_ANVIL_BUNDLER_URL
+ * - STABLENET_ANVIL_PAYMASTER_URL
+ * - STABLENET_ANVIL_STEALTH_SERVER_URL
+ */
+export const ANVIL_SERVICES: ServiceUrls = getAnvilServices()
 
 /**
  * Anvil tokens (for testing)
@@ -100,13 +113,25 @@ export const SEPOLIA_ADDRESSES: ChainAddresses = {
 }
 
 /**
- * Sepolia service URLs
+ * Get Sepolia service URLs (with environment overrides)
  */
-export const SEPOLIA_SERVICES: ServiceUrls = {
-  bundler: 'https://bundler.sepolia.stablenet.dev',
-  paymaster: 'https://paymaster.sepolia.stablenet.dev',
-  stealthServer: 'https://stealth.sepolia.stablenet.dev',
+export function getSepoliaServices(): ServiceUrls {
+  const config = getSepoliaConfig()
+  return {
+    bundler: config.bundlerUrl,
+    paymaster: config.paymasterUrl,
+    stealthServer: config.stealthServerUrl,
+  }
 }
+
+/**
+ * Sepolia service URLs (for backward compatibility)
+ * Configurable via:
+ * - STABLENET_SEPOLIA_BUNDLER_URL
+ * - STABLENET_SEPOLIA_PAYMASTER_URL
+ * - STABLENET_SEPOLIA_STEALTH_SERVER_URL
+ */
+export const SEPOLIA_SERVICES: ServiceUrls = getSepoliaServices()
 
 /**
  * Sepolia tokens
