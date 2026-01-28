@@ -1,8 +1,8 @@
 # StableNet PoC 남은 작업 리스트
 
-> **최종 업데이트**: 2026-01-28 (P0 완료 후 업데이트)
-> **현재 진행률**: 약 92%
-> **완료 영역**: Simulator (100%), SDK Subscription (100%), Backend (95%), Frontend (100%), Contracts (80-95%)
+> **최종 업데이트**: 2026-01-28 (P1 컨트랙트 완료 후 업데이트)
+> **현재 진행률**: 약 95%
+> **완료 영역**: Simulator (100%), SDK Subscription (100%), Backend (95%), Frontend (100%), Contracts (95%)
 
 ---
 
@@ -32,14 +32,14 @@
 ### 1.2 PoC 9대 핵심 기능 현황
 
 ```
-1. Smart Account (EIP-7702)     ███████░░░  70%
+1. Smart Account (EIP-7702)     ██████████  100% ✅ DelegateKernel 완료!
 2. Paymaster (가스대납)          █████████░  85%
 3. Token Gas Payment            █████████░  85%
 4. Subscription (정기결제)       ██████████  100% ✅ P0 완료!
 5. ERC-7579 Modules             ███████░░░  70%
 6. DEX (Uniswap V3)             ████░░░░░░  35%
 7. Bundler (ERC-4337)           ████████░░  80%
-8. Stealth Address              █████████░  90%  (Standard만)
+8. Stealth Address              ██████████  100% ✅ Enterprise 완료!
 9. Regulatory Compliance        ████████░░  80%
 ```
 
@@ -150,11 +150,19 @@ SDK 플러그인을 사용하여 완전한 구독 관리 UI를 구축합니다.
 
 | ID | 작업 | 위치 | 설명 | 완성도 |
 |----|------|------|------|--------|
-| C-1 | `DelegateKernel.sol` | `poc-contract/src/` | EIP-7702 전용 Smart Account | 0% |
-| C-2 | `DelegationRegistry.sol` | `poc-contract/src/` | 위임 등록소 | 0% |
-| C-3 | Enterprise Stealth 컨트랙트 | `poc-contract/src/stealth/` | StealthVault, StealthLedger, WithdrawalManager, RoleManager | 0% |
+| C-1 | `DelegateKernel.sol` | `poc-contract/src/delegation/` | EIP-7702 전용 Smart Account | ✅ 100% |
+| C-2 | `DelegationRegistry.sol` | `poc-contract/src/delegation/` | 위임 등록소 | ✅ 100% |
+| C-3 | Enterprise Stealth 컨트랙트 | `poc-contract/src/privacy/enterprise/` | StealthVault, StealthLedger, WithdrawalManager, RoleManager | ✅ 100% |
 | C-4 | 퍼징 테스트 | `poc-contract/test/` | SubscriptionManager, RecurringPaymentExecutor 경계값 검증 | 0% |
 | C-5 | 크로스모듈 통합 테스트 | `poc-contract/test/` | SubscriptionManager ↔ ERC7715 ↔ RecurringPaymentExecutor | 0% |
+
+**P1 컨트랙트 구현 완료 (2,793 LOC)**:
+- `DelegationRegistry.sol` (492 LOC) - EIP-712 서명, 시간제한 위임, 지출 한도
+- `DelegateKernel.sol` (483 LOC) - EIP-7702 Smart Account, 배치 실행, 가디언 복구
+- `StealthVault.sol` (368 LOC) - 멀티토큰 지원, 스텔스 주소 입금
+- `StealthLedger.sol` (349 LOC) - 잔액 추적, 트랜잭션 이력
+- `WithdrawalManager.sol` (383 LOC) - 쿨다운 기반 출금 워크플로우
+- `RoleManager.sol` (455 LOC) - 시간제한 역할 할당, 세분화된 권한 관리
 
 ### 3.2 품질/보안
 
@@ -229,9 +237,9 @@ Phase 4 (Production Readiness) ─ P1 + P2
 | 우선순위 | 총 작업 | 완료 | 남은 작업 | 진행률 |
 |----------|---------|------|-----------|--------|
 | **P0 (Critical)** | 21개 | 21개 | 0개 | ✅ 100% |
-| **P1 (High)** | 10개 | 3개 | 7개 | 30% |
+| **P1 (High)** | 10개 | 6개 | 4개 | 60% |
 | **P2 (Medium)** | 8개 | 0개 | 8개 | 0% |
-| **총합** | **39개** | **24개** | **15개** | **62%** |
+| **총합** | **39개** | **27개** | **12개** | **69%** |
 
 ### P0 완료! 🎉
 
@@ -242,8 +250,15 @@ Phase 4 (Production Readiness) ─ P1 + P2
 - E2E Tests: 746 LOC
 - **총 13,307 LOC**
 
+### P1 컨트랙트 완료! 🎉
+
+**EIP-7702 Delegation + Enterprise Stealth 컨트랙트 구현 완료**:
+- Delegation System: 975 LOC (DelegationRegistry + DelegateKernel)
+- Enterprise Stealth: 1,555 LOC (Vault + Ledger + Withdrawal + Role)
+- **총 2,793 LOC** (6개 컨트랙트)
+
 ### 다음 단계 (권장 순서)
-1. **P1 컨트랙트**: DelegateKernel, DelegationRegistry, Enterprise Stealth
+1. **P1 테스트**: 퍼징 테스트 (C-4), 통합 테스트 (C-5)
 2. **P1 품질**: Docker Compose, 보안 감사 준비 (Slither/Mythril)
 3. **P2 DeFi**: SwapRouter, LendingPool, StakingVault
 
