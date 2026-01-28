@@ -63,6 +63,32 @@ export type MessageType =
   | 'NETWORK_REMOVED'
   | 'SELECT_NETWORK'
   | 'NETWORK_SELECTED'
+  // Private key export messages
+  | 'EXPORT_PRIVATE_KEY'
+  | 'PRIVATE_KEY_EXPORTED'
+  | 'PRIVATE_KEY_ERROR'
+  // Connected sites messages
+  | 'GET_CONNECTED_SITES'
+  | 'CONNECTED_SITES'
+  | 'DISCONNECT_SITE'
+  | 'SITE_DISCONNECTED'
+  // Bank messages
+  | 'GET_LINKED_BANK_ACCOUNTS'
+  | 'LINK_BANK_ACCOUNT'
+  | 'UNLINK_BANK_ACCOUNT'
+  | 'SYNC_BANK_ACCOUNT'
+  | 'BANK_TRANSFER'
+  // OnRamp messages
+  | 'GET_ONRAMP_ORDERS'
+  | 'GET_ONRAMP_QUOTE'
+  | 'CREATE_ONRAMP_ORDER'
+  | 'CANCEL_ONRAMP_ORDER'
+  // Approval lifecycle messages
+  | 'GET_PENDING_APPROVALS'
+  | 'APPROVAL_ADDED'
+  | 'APPROVAL_RESOLVED'
+  // Content script messages
+  | 'METAMASK_MODE_CHANGED'
 
 export interface ExtensionMessage<T = unknown> {
   type: MessageType
