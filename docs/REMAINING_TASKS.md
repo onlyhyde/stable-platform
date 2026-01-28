@@ -1,8 +1,8 @@
 # StableNet PoC 남은 작업 리스트
 
-> **최종 업데이트**: 2026-01-28 (P1 컨트랙트 완료 후 업데이트)
-> **현재 진행률**: 약 95%
-> **완료 영역**: Simulator (100%), SDK Subscription (100%), Backend (95%), Frontend (100%), Contracts (95%)
+> **최종 업데이트**: 2026-01-28 (컨트랙트 및 테스트 완료 후 업데이트)
+> **현재 진행률**: 약 97%
+> **완료 영역**: Simulator (100%), SDK Subscription (100%), Backend (95%), Frontend (100%), Contracts (100%), Tests (100%)
 
 ---
 
@@ -153,8 +153,8 @@ SDK 플러그인을 사용하여 완전한 구독 관리 UI를 구축합니다.
 | C-1 | `DelegateKernel.sol` | `poc-contract/src/delegation/` | EIP-7702 전용 Smart Account | ✅ 100% |
 | C-2 | `DelegationRegistry.sol` | `poc-contract/src/delegation/` | 위임 등록소 | ✅ 100% |
 | C-3 | Enterprise Stealth 컨트랙트 | `poc-contract/src/privacy/enterprise/` | StealthVault, StealthLedger, WithdrawalManager, RoleManager | ✅ 100% |
-| C-4 | 퍼징 테스트 | `poc-contract/test/` | SubscriptionManager, RecurringPaymentExecutor 경계값 검증 | 0% |
-| C-5 | 크로스모듈 통합 테스트 | `poc-contract/test/` | SubscriptionManager ↔ ERC7715 ↔ RecurringPaymentExecutor | 0% |
+| C-4 | 퍼징 테스트 | `poc-contract/test/` | SubscriptionManager, ERC7715PermissionManager 경계값 검증 | ✅ 100% |
+| C-5 | 크로스모듈 통합 테스트 | `poc-contract/test/` | SubscriptionManager ↔ ERC7715 ↔ DelegationRegistry | ✅ 100% |
 
 **P1 컨트랙트 구현 완료 (2,793 LOC)**:
 - `DelegationRegistry.sol` (492 LOC) - EIP-712 서명, 시간제한 위임, 지출 한도
@@ -163,6 +163,13 @@ SDK 플러그인을 사용하여 완전한 구독 관리 UI를 구축합니다.
 - `StealthLedger.sol` (349 LOC) - 잔액 추적, 트랜잭션 이력
 - `WithdrawalManager.sol` (383 LOC) - 쿨다운 기반 출금 워크플로우
 - `RoleManager.sol` (455 LOC) - 시간제한 역할 할당, 세분화된 권한 관리
+
+**테스트 구현 완료 (2,263 LOC)**:
+- `SubscriptionManager.fuzz.t.sol` - 플랜 생성, 프로토콜 수수료, 타임스탬프 퍼징
+- `ERC7715PermissionManager.fuzz.t.sol` - 지출 한도, 유효성 검증, 규칙 퍼징
+- `SubscriptionIntegration.t.sol` - 크로스모듈 워크플로우 테스트
+- `DelegationRegistry.t.sol` - 위임 CRUD, 유효성, 만료 테스트
+- `StealthVault.t.sol` - ETH/토큰 입금, 출금, 비상 운영 테스트
 
 ### 3.2 품질/보안
 
@@ -237,9 +244,9 @@ Phase 4 (Production Readiness) ─ P1 + P2
 | 우선순위 | 총 작업 | 완료 | 남은 작업 | 진행률 |
 |----------|---------|------|-----------|--------|
 | **P0 (Critical)** | 21개 | 21개 | 0개 | ✅ 100% |
-| **P1 (High)** | 10개 | 6개 | 4개 | 60% |
+| **P1 (High)** | 10개 | 8개 | 2개 | 80% |
 | **P2 (Medium)** | 8개 | 0개 | 8개 | 0% |
-| **총합** | **39개** | **27개** | **12개** | **69%** |
+| **총합** | **39개** | **29개** | **10개** | **74%** |
 
 ### P0 완료! 🎉
 
@@ -258,9 +265,9 @@ Phase 4 (Production Readiness) ─ P1 + P2
 - **총 2,793 LOC** (6개 컨트랙트)
 
 ### 다음 단계 (권장 순서)
-1. **P1 테스트**: 퍼징 테스트 (C-4), 통합 테스트 (C-5)
-2. **P1 품질**: Docker Compose, 보안 감사 준비 (Slither/Mythril)
-3. **P2 DeFi**: SwapRouter, LendingPool, StakingVault
+1. **품질/보안**: Docker Compose (Q-4), 보안 감사 준비 (Q-2, Slither/Mythril)
+2. **DeFi 확장**: SwapRouter, LendingPool, StakingVault
+3. **운영 기능**: Webhook, 분산 잠금, 테스트넷 배포
 
 ---
 
