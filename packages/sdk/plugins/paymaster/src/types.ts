@@ -45,9 +45,29 @@ export interface SponsorPaymasterConfig {
 }
 
 /**
+ * Permit2 Paymaster configuration
+ */
+export interface Permit2PaymasterConfig {
+  /** The Permit2Paymaster contract address */
+  paymasterAddress: Address
+  /** The Permit2 contract address */
+  permit2Address: Address
+  /** The signer account for signing permits */
+  signer: LocalAccount
+  /** Chain ID */
+  chainId: bigint
+  /** The ERC20 token address for gas payment */
+  tokenAddress: Address
+  /** Optional: Permit validity in seconds (default: 3600) */
+  validitySeconds?: number
+  /** Optional: Custom nonce (auto-fetched if not provided) */
+  nonce?: bigint
+}
+
+/**
  * Paymaster type enum
  */
-export type PaymasterType = 'verifying' | 'erc20' | 'sponsor'
+export type PaymasterType = 'verifying' | 'erc20' | 'sponsor' | 'permit2'
 
 /**
  * Gas estimation response

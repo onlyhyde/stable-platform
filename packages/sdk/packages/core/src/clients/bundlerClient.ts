@@ -10,6 +10,7 @@ import type {
 } from '@stablenet/types'
 import { ENTRY_POINT_V07_ADDRESS } from '@stablenet/types'
 import { packUserOperation, unpackUserOperation } from '../utils/userOperation'
+import { createBundlerError, SdkError, SDK_ERROR_CODES } from '../errors'
 
 /**
  * Create a bundler client for sending UserOperations
@@ -37,7 +38,7 @@ export function createBundlerClient(config: BundlerClientConfig): BundlerClient 
     }
 
     if (data.error) {
-      throw new BundlerError(data.error.message, data.error.code, data.error.data)
+      throw createBundlerError(data.error.code, data.error.message, data.error.data)
     }
 
     return data.result as T
@@ -230,7 +231,11 @@ export function createBundlerClient(config: BundlerClientConfig): BundlerClient 
       await new Promise((resolve) => setTimeout(resolve, pollingInterval))
     }
 
-    throw new Error(`Timeout waiting for user operation receipt: ${hash}`)
+    throw new SdkError({
+      code: SDK_ERROR_CODES.USER_OP_TIMEOUT,
+      message: `Timeout waiting for user operation receipt: ${hash}`,
+      context: { hash, operation: 'waitForUserOperationReceipt' },
+    })
   }
 
   return {
@@ -241,20 +246,5 @@ export function createBundlerClient(config: BundlerClientConfig): BundlerClient 
     getSupportedEntryPoints,
     getChainId,
     waitForUserOperationReceipt,
-  }
-}
-
-/**
- * Bundler error class
- */
-export class BundlerError extends Error {
-  code: number
-  data?: unknown
-
-  constructor(message: string, code: number, data?: unknown) {
-    super(message)
-    this.name = 'BundlerError'
-    this.code = code
-    this.data = data
   }
 }

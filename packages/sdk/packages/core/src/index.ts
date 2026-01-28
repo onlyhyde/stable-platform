@@ -1,5 +1,42 @@
+// Errors
+export {
+  // Types
+  SDK_ERROR_CODES,
+  BUNDLER_ERROR_CODES,
+  type SdkErrorCode,
+  type BundlerErrorCode,
+  type ErrorContext,
+  type SdkErrorDetails,
+  type BundlerErrorDetails,
+  type UserOperationErrorDetails,
+  type TransactionErrorDetails,
+  type GasEstimationErrorDetails,
+  // Classes
+  SdkError,
+  BundlerError,
+  UserOperationError,
+  TransactionError,
+  GasEstimationError,
+  ConfigurationError,
+  ValidationError,
+  // Utilities
+  isSdkError,
+  isBundlerError,
+  isUserOperationError,
+  isTransactionError,
+  normalizeError,
+  createBundlerError,
+  createUserOperationError,
+  createTransactionError,
+  createConfigurationError,
+  createValidationError,
+  withErrorHandling,
+  assertCondition,
+  assertDefined,
+} from './errors'
+
 // Clients
-export { createBundlerClient, BundlerError } from './clients/bundlerClient'
+export { createBundlerClient } from './clients/bundlerClient'
 export {
   createSmartAccountClient,
   type SmartAccountClientActions,
@@ -70,5 +107,5 @@ export {
   MODULE_TYPE,
   EXEC_MODE,
   CALL_TYPE,
-  BUNDLER_ERROR_CODES,
+  // Note: BUNDLER_ERROR_CODES is exported from ./errors with extended SDK error codes
 } from '@stablenet/types'
