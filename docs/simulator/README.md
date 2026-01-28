@@ -24,22 +24,18 @@ PoC를 위한 시뮬레이터 서비스 문서입니다.
 ```
 docs/simulator/
 ├── README.md                      # 이 문서
-├── REVIEW_ISSUES.md               # 문서 검토 결과 (27개 이슈)
 ├── common/                        # 공통 스펙
 │   ├── types.md                   # 공통 타입 정의
 │   ├── status-mapping.md          # 서비스 간 상태 매핑
 │   └── webhook-spec.md            # 웹훅 통합 스펙
 ├── bank-simulator/
-│   ├── README.md                  # 현재 구현 상태
-│   ├── gap-analysis.md            # 누락 기능 분석
-│   └── feature-specs/             # 추가 기능 상세 스펙
+│   ├── README.md                  # 서비스 개요 및 API 스펙
+│   └── feature-specs/             # 기능별 상세 스펙
 ├── pg-simulator/
 │   ├── README.md
-│   ├── gap-analysis.md
 │   └── feature-specs/
 ├── onramp-simulator/
 │   ├── README.md
-│   ├── gap-analysis.md
 │   └── feature-specs/
 └── cross-service/
     ├── README.md                  # 서비스 간 연동 개요
@@ -91,8 +87,3 @@ docs/simulator/
 - [상태 매핑](./common/status-mapping.md) - 서비스 간 상태값 매핑
 - [웹훅 스펙](./common/webhook-spec.md) - 웹훅 페이로드, 서명, 재시도 정책
 
-### 검토 결과
-- [문서 검토 이슈](./REVIEW_ISSUES.md) - 27개 논리적 이슈 및 해결 방안
-
-### 작업 관리
-- [작업 리스트](./TASK_LIST.md) - 전체 작업 현황 및 구현 순서
