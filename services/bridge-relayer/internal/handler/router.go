@@ -44,8 +44,10 @@ func NewHandler(
 
 // RegisterRoutes registers all HTTP routes
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
-	// Health and status endpoints
+	// Health and status endpoints (Kubernetes probes compatible)
 	r.GET("/health", h.HealthCheck)
+	r.GET("/ready", h.ReadyCheck)
+	r.GET("/live", h.LiveCheck)
 	r.GET("/status", h.GetStatus)
 	r.GET("/metrics", h.GetMetrics)
 
@@ -91,8 +93,39 @@ func (h *Handler) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":    status,
 		"service":   "bridge-relayer",
+		"version":   "1.0.0",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 		"uptime":    time.Since(h.startTime).String(),
+	})
+}
+
+// ReadyCheck handles readiness probe requests
+func (h *Handler) ReadyCheck(c *gin.Context) {
+	// Service is ready if it has MPC quorum and is not paused by guardian
+	hasQuorum := h.mpcClient.HasQuorum()
+	isPaused := h.guardianMonitor.IsPaused()
+
+	ready := hasQuorum && !isPaused
+
+	statusCode := http.StatusOK
+	if !ready {
+		statusCode = http.StatusServiceUnavailable
+	}
+
+	c.JSON(statusCode, gin.H{
+		"ready":     ready,
+		"service":   "bridge-relayer",
+		"hasQuorum": hasQuorum,
+		"isPaused":  isPaused,
+	})
+}
+
+// LiveCheck handles liveness probe requests
+func (h *Handler) LiveCheck(c *gin.Context) {
+	// Service is alive if it can respond
+	c.JSON(http.StatusOK, gin.H{
+		"alive":   true,
+		"service": "bridge-relayer",
 	})
 }
 

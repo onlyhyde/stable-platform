@@ -7,8 +7,11 @@ use super::websocket;
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api/v1")
-            // Health & Stats
+            // Health & Stats (Kubernetes probes compatible)
             .route("/health", web::get().to(handlers::health))
+            .route("/ready", web::get().to(handlers::ready))
+            .route("/live", web::get().to(handlers::live))
+            .route("/metrics", web::get().to(handlers::metrics))
             .route("/stats", web::get().to(handlers::get_stats))
             // Announcements
             .route("/announcements", web::get().to(handlers::get_announcements))

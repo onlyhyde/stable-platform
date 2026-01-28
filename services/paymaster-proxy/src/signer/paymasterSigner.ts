@@ -8,6 +8,7 @@ import {
 } from 'viem'
 import { privateKeyToAccount, signMessage } from 'viem/accounts'
 import type { UserOperationRpc, PackedUserOperationRpc } from '../types'
+import { getSignerConfig } from '../config/constants'
 
 /**
  * Paymaster signature mode
@@ -51,17 +52,22 @@ export class PaymasterSigner {
 
   /**
    * Generate stub paymaster data (without signature)
+   * Configurable via:
+   * - PAYMASTER_VALIDITY_SECONDS: Signature validity (default: 3600 = 1 hour)
+   * - PAYMASTER_CLOCK_SKEW_SECONDS: Allowed clock skew (default: 60)
    */
   generateStubData(
-    validitySeconds = 3600 // 1 hour default
+    validitySeconds?: number
   ): {
     paymasterData: Hex
     validUntil: number
     validAfter: number
   } {
+    const signerConfig = getSignerConfig()
+    const validity = validitySeconds ?? signerConfig.validitySeconds
     const now = Math.floor(Date.now() / 1000)
-    const validUntil = now + validitySeconds
-    const validAfter = now - 60 // Allow 1 minute clock skew
+    const validUntil = now + validity
+    const validAfter = now - signerConfig.clockSkewSeconds // Allow clock skew
 
     // Encode paymaster data without signature
     // Format: mode (1 byte) + validUntil (6 bytes) + validAfter (6 bytes) + stub signature (65 bytes)
@@ -82,20 +88,25 @@ export class PaymasterSigner {
 
   /**
    * Generate signed paymaster data
+   * Configurable via:
+   * - PAYMASTER_VALIDITY_SECONDS: Signature validity (default: 3600 = 1 hour)
+   * - PAYMASTER_CLOCK_SKEW_SECONDS: Allowed clock skew (default: 60)
    */
   async generateSignedData(
     userOp: UserOperationRpc | PackedUserOperationRpc,
     entryPoint: Address,
     chainId: bigint,
-    validitySeconds = 3600
+    validitySeconds?: number
   ): Promise<{
     paymasterData: Hex
     validUntil: number
     validAfter: number
   }> {
+    const signerConfig = getSignerConfig()
+    const validity = validitySeconds ?? signerConfig.validitySeconds
     const now = Math.floor(Date.now() / 1000)
-    const validUntil = now + validitySeconds
-    const validAfter = now - 60
+    const validUntil = now + validity
+    const validAfter = now - signerConfig.clockSkewSeconds
 
     // Create hash for signing
     const hash = this.createPaymasterHash(

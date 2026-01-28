@@ -11,6 +11,7 @@ import { UserOperationValidator } from '../validation'
 import type { Logger } from '../utils/logger'
 import { unpackUserOperation, getUserOperationHash } from './utils'
 import { DEFAULT_CORS_ORIGINS } from '../cli/config'
+import { getServerConfig } from '../config/constants'
 
 /**
  * JSON-RPC request
@@ -102,10 +103,13 @@ export class RpcServer {
       logger
     )
 
-    // Initialize Fastify with body size limit (1MB max for JSON-RPC requests)
+    // Get server config from environment
+    const serverConfig = getServerConfig()
+
+    // Initialize Fastify with body size limit (configurable via BUNDLER_BODY_LIMIT)
     this.app = Fastify({
       logger: false, // We use our own logger
-      bodyLimit: 1024 * 1024, // 1MB - sufficient for UserOperation batches
+      bodyLimit: serverConfig.bodyLimit, // Default: 1MB - sufficient for UserOperation batches
     })
   }
 
@@ -120,10 +124,13 @@ export class RpcServer {
    * Setup routes
    */
   private async setupRoutes(): Promise<void> {
-    // Rate limiting: 100 requests per minute per IP
+    // Get server config for rate limiting (configurable via BUNDLER_RATE_LIMIT_*)
+    const serverConfig = getServerConfig()
+
+    // Rate limiting: configurable max requests per window per IP
     await this.app.register(rateLimit, {
-      max: 100,
-      timeWindow: '1 minute',
+      max: serverConfig.rateLimitMax, // Default: 100 requests
+      timeWindow: serverConfig.rateLimitWindowMs, // Default: 60000ms (1 minute)
       errorResponseBuilder: () => ({
         jsonrpc: '2.0',
         id: null,
@@ -147,14 +154,64 @@ export class RpcServer {
 
     await this.app.register(cors, { origin: corsOrigin })
 
-    // Health check
+    // Health check endpoints (Kubernetes probes compatible)
+    const startTime = new Date()
     this.app.get('/health', async () => ({
       status: 'ok',
+      service: 'bundler',
+      version: '1.0.0',
+      timestamp: new Date().toISOString(),
+      uptime: `${Math.floor((Date.now() - startTime.getTime()) / 1000)}s`,
       mempool: {
         size: this.mempool.size,
         pending: this.mempool.pendingCount,
       },
     }))
+
+    this.app.get('/ready', async () => ({
+      ready: true,
+      service: 'bundler',
+    }))
+
+    this.app.get('/live', async () => ({
+      alive: true,
+      service: 'bundler',
+    }))
+
+    // Prometheus metrics endpoint
+    let requestCount = 0
+    let errorCount = 0
+    this.app.get('/metrics', async () => {
+      const uptime = Math.floor((Date.now() - startTime.getTime()) / 1000)
+      return `# HELP bundler_up Service up status
+# TYPE bundler_up gauge
+bundler_up{service="bundler"} 1
+# HELP bundler_uptime_seconds Service uptime in seconds
+# TYPE bundler_uptime_seconds gauge
+bundler_uptime_seconds{service="bundler"} ${uptime}
+# HELP bundler_requests_total Total HTTP requests
+# TYPE bundler_requests_total counter
+bundler_requests_total{service="bundler"} ${requestCount}
+# HELP bundler_errors_total Total HTTP errors
+# TYPE bundler_errors_total counter
+bundler_errors_total{service="bundler"} ${errorCount}
+# HELP bundler_mempool_size Current mempool size
+# TYPE bundler_mempool_size gauge
+bundler_mempool_size{service="bundler"} ${this.mempool.size}
+# HELP bundler_mempool_pending Pending operations in mempool
+# TYPE bundler_mempool_pending gauge
+bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
+`
+    })
+
+    // Metrics tracking hook
+    this.app.addHook('onResponse', (request, reply, done) => {
+      requestCount++
+      if (reply.statusCode >= 400) {
+        errorCount++
+      }
+      done()
+    })
 
     // JSON-RPC endpoint
     this.app.post('/', async (request, reply) => {

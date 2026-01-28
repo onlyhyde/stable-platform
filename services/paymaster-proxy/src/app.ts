@@ -15,6 +15,7 @@ import {
 } from './handlers'
 import { PaymasterSigner } from './signer/paymasterSigner'
 import { SponsorPolicyManager } from './policy/sponsorPolicy'
+import { getServerConfig } from './config/constants'
 
 /**
  * Create the Paymaster Proxy application
@@ -26,13 +27,16 @@ export function createApp(config: PaymasterProxyConfig): Hono {
   const signer = new PaymasterSigner(config.signerPrivateKey, config.paymasterAddress)
   const policyManager = new SponsorPolicyManager()
 
+  // Get sponsor name from environment (configurable via PAYMASTER_SPONSOR_NAME)
+  const serverConfig = getServerConfig()
+
   // Handler configuration
   const handlerConfig = {
     paymasterAddress: config.paymasterAddress,
     signer,
     policyManager,
     supportedChainIds: config.supportedChainIds,
-    sponsorName: 'StableNet Paymaster',
+    sponsorName: serverConfig.sponsorName,
   }
 
   // Middleware
@@ -41,14 +45,62 @@ export function createApp(config: PaymasterProxyConfig): Hono {
     app.use('*', logger())
   }
 
-  // Health check
+  // Health check endpoints (Kubernetes probes compatible)
+  const startTime = new Date()
   app.get('/health', (c) => {
     return c.json({
       status: 'ok',
+      service: 'paymaster-proxy',
+      version: '1.0.0',
+      timestamp: new Date().toISOString(),
+      uptime: `${Math.floor((Date.now() - startTime.getTime()) / 1000)}s`,
       paymaster: config.paymasterAddress,
       signer: signer.getSignerAddress(),
       supportedChainIds: config.supportedChainIds,
     })
+  })
+
+  app.get('/ready', (c) => {
+    return c.json({
+      ready: true,
+      service: 'paymaster-proxy',
+    })
+  })
+
+  app.get('/live', (c) => {
+    return c.json({
+      alive: true,
+      service: 'paymaster-proxy',
+    })
+  })
+
+  // Prometheus metrics endpoint
+  let requestCount = 0
+  let errorCount = 0
+  app.get('/metrics', (c) => {
+    const uptime = Math.floor((Date.now() - startTime.getTime()) / 1000)
+    return c.text(`# HELP paymaster_proxy_up Service up status
+# TYPE paymaster_proxy_up gauge
+paymaster_proxy_up{service="paymaster-proxy"} 1
+# HELP paymaster_proxy_uptime_seconds Service uptime in seconds
+# TYPE paymaster_proxy_uptime_seconds gauge
+paymaster_proxy_uptime_seconds{service="paymaster-proxy"} ${uptime}
+# HELP paymaster_proxy_requests_total Total HTTP requests
+# TYPE paymaster_proxy_requests_total counter
+paymaster_proxy_requests_total{service="paymaster-proxy"} ${requestCount}
+# HELP paymaster_proxy_errors_total Total HTTP errors
+# TYPE paymaster_proxy_errors_total counter
+paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
+`, 200, { 'Content-Type': 'text/plain; charset=utf-8' })
+  })
+
+  // Metrics tracking middleware
+  app.use('*', async (c, next) => {
+    requestCount++
+    await next()
+    if (c.res.status >= 400) {
+      errorCount++
+    }
   })
 
   // Policy management endpoints (admin)

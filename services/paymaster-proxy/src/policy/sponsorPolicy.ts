@@ -1,17 +1,26 @@
 import type { Address, } from 'viem'
 import type { SponsorPolicy, SponsorTracker, UserOperationRpc } from '../types'
+import { getDefaultPolicyConfig } from '../config/constants'
 
 /**
- * Default policy configuration
+ * Get default policy configuration from environment
+ * Configurable via:
+ * - PAYMASTER_DEFAULT_MAX_GAS_LIMIT: Max gas limit per operation (default: 5000000)
+ * - PAYMASTER_DEFAULT_MAX_GAS_COST: Max gas cost in wei (default: 1 ETH)
+ * - PAYMASTER_DEFAULT_DAILY_LIMIT_PER_SENDER: Daily limit per sender (default: 0.1 ETH)
+ * - PAYMASTER_DEFAULT_GLOBAL_DAILY_LIMIT: Global daily limit (default: 10 ETH)
  */
-const DEFAULT_POLICY: SponsorPolicy = {
-  id: 'default',
-  name: 'Default Policy',
-  active: true,
-  maxGasLimit: 5000000n,
-  maxGasCost: 10n ** 18n, // 1 ETH
-  dailyLimitPerSender: 10n ** 17n, // 0.1 ETH
-  globalDailyLimit: 10n ** 19n, // 10 ETH
+function createDefaultPolicy(): SponsorPolicy {
+  const policyConfig = getDefaultPolicyConfig()
+  return {
+    id: 'default',
+    name: 'Default Policy',
+    active: true,
+    maxGasLimit: policyConfig.maxGasLimit,
+    maxGasCost: policyConfig.maxGasCost,
+    dailyLimitPerSender: policyConfig.dailyLimitPerSender,
+    globalDailyLimit: policyConfig.globalDailyLimit,
+  }
 }
 
 /**
@@ -39,8 +48,9 @@ export class SponsorPolicyManager {
   private globalDailySpent = 0n
   private lastResetDate = ''
 
-  constructor(policies: SponsorPolicy[] = [DEFAULT_POLICY]) {
-    for (const policy of policies) {
+  constructor(policies?: SponsorPolicy[]) {
+    const initialPolicies = policies ?? [createDefaultPolicy()]
+    for (const policy of initialPolicies) {
       this.policies.set(policy.id, policy)
     }
   }

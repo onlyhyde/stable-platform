@@ -39,20 +39,27 @@ export interface MempoolConfig {
 }
 
 /**
- * Default mempool configuration
+ * Get default mempool configuration from environment or defaults
+ * Import from config module for environment-aware configuration
  */
-const DEFAULT_CONFIG: Required<MempoolConfig> = {
-  maxSize: 10000,
-  maxOpsPerSender: 4,
-  ttlMs: 30 * 60 * 1000, // 30 minutes
-  minGasPriceIncrease: 10, // 10%
-  evictionIntervalMs: 60 * 1000, // 1 minute
-  validateNonceContinuity: false, // Disabled by default for backward compatibility
-  maxNonceGap: 0, // No gaps allowed by default when validation is enabled
-  priorityStrategy: 'gas_price', // Default strategy
-  ageWeightFactor: 0, // Disabled by default
-  maxAgeBoostMs: 0, // No limit by default
-}
+import { getMempoolConfig } from '../config/constants'
+
+/**
+ * Default mempool configuration (configurable via environment variables)
+ *
+ * Environment variables:
+ * - BUNDLER_MEMPOOL_MAX_SIZE: Max UserOps in mempool (default: 10000)
+ * - BUNDLER_MEMPOOL_MAX_OPS_PER_SENDER: Max pending ops per sender (default: 4)
+ * - BUNDLER_MEMPOOL_TTL_MS: TTL for pending ops in ms (default: 1800000 = 30 min)
+ * - BUNDLER_MEMPOOL_MIN_GAS_PRICE_INCREASE: Min gas price increase % for replacement (default: 10)
+ * - BUNDLER_MEMPOOL_EVICTION_INTERVAL_MS: Eviction interval in ms (default: 60000)
+ * - BUNDLER_MEMPOOL_VALIDATE_NONCE_CONTINUITY: Enable nonce continuity validation (default: false)
+ * - BUNDLER_MEMPOOL_MAX_NONCE_GAP: Max allowed nonce gap (default: 0)
+ * - BUNDLER_MEMPOOL_PRIORITY_STRATEGY: Priority strategy (default: gas_price)
+ * - BUNDLER_MEMPOOL_AGE_WEIGHT_FACTOR: Age weight factor (default: 0)
+ * - BUNDLER_MEMPOOL_MAX_AGE_BOOST_MS: Max age boost in ms (default: 0)
+ */
+const DEFAULT_CONFIG: Required<MempoolConfig> = getMempoolConfig()
 
 /**
  * In-memory UserOperation mempool with eviction policies

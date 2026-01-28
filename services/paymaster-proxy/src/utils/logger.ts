@@ -14,19 +14,20 @@ export interface LoggerOptions {
 /**
  * Create a structured logger instance using pino
  *
- * @param level - Log level (debug, info, warn, error)
- * @param pretty - Whether to use pretty printing (default: true)
+ * @param options - Logger configuration options
  * @returns Configured pino logger instance
  *
  * @example
  * ```ts
- * const logger = createLogger('debug', true)
- * logger.info({ userOp: '0x...' }, 'Processing UserOperation')
+ * const logger = createLogger({ level: 'debug', name: 'PaymasterProxy' })
+ * logger.info({ requestId: '123' }, 'Processing request')
  * ```
  */
-export function createLogger(level: LogLevel = 'info', pretty = true) {
+export function createLogger(options: LoggerOptions = {}) {
+  const { level = 'info', pretty = true, name = 'paymaster-proxy' } = options
+
   return pino({
-    name: 'bundler',
+    name,
     level,
     transport: pretty
       ? {
@@ -43,7 +44,7 @@ export function createLogger(level: LogLevel = 'info', pretty = true) {
     },
     // Redact sensitive fields
     redact: {
-      paths: ['privateKey', 'secret', 'password', 'authorization', 'mnemonic'],
+      paths: ['signerPrivateKey', 'privateKey', 'secret', 'password', 'authorization'],
       censor: '[REDACTED]',
     },
   })
@@ -63,10 +64,10 @@ let globalLogger: Logger | null = null
  */
 export function getGlobalLogger(): Logger {
   if (!globalLogger) {
-    globalLogger = createLogger(
-      (process.env.LOG_LEVEL as LogLevel) || 'info',
-      process.env.NODE_ENV !== 'production'
-    )
+    globalLogger = createLogger({
+      level: (process.env.LOG_LEVEL as LogLevel) || 'info',
+      pretty: process.env.NODE_ENV !== 'production',
+    })
   }
   return globalLogger
 }
@@ -77,8 +78,8 @@ export function getGlobalLogger(): Logger {
  * @example
  * ```ts
  * const logger = createLogger()
- * const opLogger = createChildLogger(logger, { userOpHash: '0x123...', sender: '0xabc...' })
- * opLogger.info('UserOperation validated')
+ * const requestLogger = createChildLogger(logger, { requestId: '123', method: 'pm_getPaymasterData' })
+ * requestLogger.info('Processing paymaster request')
  * ```
  */
 export function createChildLogger(

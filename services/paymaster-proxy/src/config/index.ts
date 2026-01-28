@@ -1,5 +1,6 @@
 import type { Address, Hex } from 'viem'
 import type { PaymasterProxyConfig } from '../types'
+import { getServerConfig } from './constants'
 
 /**
  * Environment variable names
@@ -9,28 +10,27 @@ const ENV_KEYS = {
   PAYMASTER_ADDRESS: 'PAYMASTER_ADDRESS',
   SIGNER_PRIVATE_KEY: 'SIGNER_PRIVATE_KEY',
   RPC_URL: 'RPC_URL',
-  SUPPORTED_CHAIN_IDS: 'SUPPORTED_CHAIN_IDS',
-  DEBUG: 'DEBUG',
+  SUPPORTED_CHAIN_IDS: 'PAYMASTER_SUPPORTED_CHAIN_IDS',
+  DEBUG: 'PAYMASTER_DEBUG',
 } as const
 
 /**
- * Default configuration values
+ * Get default configuration values from environment
  */
-const DEFAULTS: {
-  port: number
-  supportedChainIds: number[]
-  debug: boolean
-} = {
-  port: 3001,
-  supportedChainIds: [1, 11155111, 84532], // mainnet, sepolia, base-sepolia
-  debug: false,
+function getDefaults() {
+  const serverConfig = getServerConfig()
+  return {
+    port: serverConfig.port,
+    supportedChainIds: serverConfig.supportedChainIds,
+    debug: serverConfig.debug,
+  }
 }
 
 /**
  * Parse comma-separated chain IDs
  */
 function parseChainIds(value: string | undefined): number[] {
-  if (!value) return DEFAULTS.supportedChainIds
+  if (!value) return getDefaults().supportedChainIds
   return value.split(',').map((id) => Number.parseInt(id.trim(), 10)).filter((id) => !Number.isNaN(id))
 }
 
@@ -52,7 +52,8 @@ function isValidAddress(value: string): value is Address {
  * Load configuration from environment variables
  */
 export function loadConfig(): PaymasterProxyConfig {
-  const port = Number.parseInt(process.env[ENV_KEYS.PORT] || '', 10) || DEFAULTS.port
+  const defaults = getDefaults()
+  const port = Number.parseInt(process.env[ENV_KEYS.PORT] || '', 10) || defaults.port
 
   const paymasterAddress = process.env[ENV_KEYS.PAYMASTER_ADDRESS]
   if (!paymasterAddress || !isValidAddress(paymasterAddress)) {
@@ -101,12 +102,13 @@ export function createConfig(options: {
     throw new Error('Invalid signer private key')
   }
 
+  const defaults = getDefaults()
   return {
-    port: options.port || DEFAULTS.port,
+    port: options.port || defaults.port,
     paymasterAddress: options.paymasterAddress as Address,
     signerPrivateKey: options.signerPrivateKey as Hex,
     rpcUrl: options.rpcUrl,
     supportedChainIds: parseChainIds(options.chainIds),
-    debug: options.debug || false,
+    debug: options.debug || defaults.debug,
   }
 }

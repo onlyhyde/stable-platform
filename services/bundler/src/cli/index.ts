@@ -5,18 +5,18 @@ import { createPublicClient, createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { parseConfig, getEnvHelp } from './config'
 import { RpcServer } from '../rpc/server'
-import { createLogger } from '../utils/logger'
+import { createLogger, getGlobalLogger } from '../utils/logger'
+
+// Get early logger for error handling before full initialization
+const earlyLogger = getGlobalLogger()
 
 // Global error handlers for unhandled rejections and exceptions
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Promise Rejection:', reason)
-  console.error('Promise:', promise)
-  // Log but don't exit - allows graceful handling
+  earlyLogger.error({ reason, promise: String(promise) }, 'Unhandled Promise Rejection')
 })
 
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error)
-  // Exit with error code for uncaught exceptions
+  earlyLogger.fatal({ error: error.message, stack: error.stack }, 'Uncaught Exception')
   process.exit(1)
 })
 
@@ -206,6 +206,12 @@ async function runBundler(argv: {
 
 // Run main
 main().catch((err) => {
-  console.error('Fatal error:', err)
+  earlyLogger.fatal(
+    {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    },
+    'Fatal error during initialization'
+  )
   process.exit(1)
 })

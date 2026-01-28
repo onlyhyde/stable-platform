@@ -9,14 +9,82 @@ use crate::storage::Storage;
 pub struct HealthResponse {
     pub status: String,
     pub service: String,
+    pub version: String,
+    pub timestamp: String,
 }
 
-/// Health check endpoint
+/// Ready check response
+#[derive(Serialize)]
+pub struct ReadyResponse {
+    pub ready: bool,
+    pub service: String,
+}
+
+/// Live check response
+#[derive(Serialize)]
+pub struct LiveResponse {
+    pub alive: bool,
+    pub service: String,
+}
+
+/// Health check endpoint (Kubernetes probes compatible)
 pub async fn health() -> impl Responder {
     HttpResponse::Ok().json(HealthResponse {
         status: "ok".to_string(),
         service: "stealth-server".to_string(),
+        version: "1.0.0".to_string(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
     })
+}
+
+/// Ready check endpoint
+pub async fn ready(storage: web::Data<Storage>) -> impl Responder {
+    // Service is ready if we can access storage
+    let ready = storage.get_announcement_count().await.is_ok();
+
+    if ready {
+        HttpResponse::Ok().json(ReadyResponse {
+            ready: true,
+            service: "stealth-server".to_string(),
+        })
+    } else {
+        HttpResponse::ServiceUnavailable().json(ReadyResponse {
+            ready: false,
+            service: "stealth-server".to_string(),
+        })
+    }
+}
+
+/// Live check endpoint
+pub async fn live() -> impl Responder {
+    HttpResponse::Ok().json(LiveResponse {
+        alive: true,
+        service: "stealth-server".to_string(),
+    })
+}
+
+/// Prometheus metrics endpoint
+pub async fn metrics(storage: web::Data<Storage>) -> impl Responder {
+    let announcement_count = storage.get_announcement_count().await.unwrap_or(0);
+    let latest_block = storage.get_latest_block().await.unwrap_or(None).unwrap_or(0);
+
+    let metrics = format!(
+        r#"# HELP stealth_server_up Service up status
+# TYPE stealth_server_up gauge
+stealth_server_up{{service="stealth-server"}} 1
+# HELP stealth_server_announcements_total Total announcements indexed
+# TYPE stealth_server_announcements_total gauge
+stealth_server_announcements_total{{service="stealth-server"}} {}
+# HELP stealth_server_latest_block Latest processed block
+# TYPE stealth_server_latest_block gauge
+stealth_server_latest_block{{service="stealth-server"}} {}
+"#,
+        announcement_count, latest_block
+    );
+
+    HttpResponse::Ok()
+        .content_type("text/plain; charset=utf-8")
+        .body(metrics)
 }
 
 /// Stats response

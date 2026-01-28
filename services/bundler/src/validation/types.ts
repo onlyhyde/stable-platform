@@ -168,51 +168,49 @@ export interface UserOperationRevertReasonData {
 }
 
 /**
- * Constants for validation
+ * Get validation constants from environment or defaults
+ * Import from config module for environment-aware configuration
  */
-export const VALIDATION_CONSTANTS = {
-  /** Minimum callGasLimit */
-  MIN_CALL_GAS_LIMIT: 9000n,
-  /** Minimum verificationGasLimit */
-  MIN_VERIFICATION_GAS_LIMIT: 10000n,
-  /** Minimum preVerificationGas */
-  MIN_PRE_VERIFICATION_GAS: 21000n,
-  /** Minimum signature length (65 bytes = 0x + 130 chars) */
-  MIN_SIGNATURE_LENGTH: 132,
-  /** Maximum signature length (2KB = 0x + 4096 chars) */
-  MAX_SIGNATURE_LENGTH: 4098,
-  /** Maximum callData length (50KB = 0x + 102400 chars) */
-  MAX_CALLDATA_LENGTH: 102402,
-  /** Maximum factoryData length (50KB = 0x + 102400 chars) */
-  MAX_FACTORY_DATA_LENGTH: 102402,
-  /** Maximum paymasterData length (10KB = 0x + 20480 chars) */
-  MAX_PAYMASTER_DATA_LENGTH: 20482,
-  /** Maximum gas for a single operation */
-  MAX_VERIFICATION_GAS: 10_000_000n,
-  /** Maximum bundle gas */
-  MAX_BUNDLE_GAS: 30_000_000n,
-  /** Signature aggregator marker (0 address means no aggregator) */
-  SIG_VALIDATION_SUCCESS: '0x0000000000000000000000000000000000000000' as Address,
-  SIG_VALIDATION_FAILED: '0x0000000000000000000000000000000000000001' as Address,
-  /** Time range for validity window (30 seconds minimum remaining) */
-  MIN_VALID_UNTIL_BUFFER: 30n,
-  /** Zero address constant */
-  ZERO_ADDRESS: '0x0000000000000000000000000000000000000000' as Address,
-} as const
+import { getValidationConstants } from '../config/constants'
 
 /**
- * Default reputation configuration
+ * Constants for validation (configurable via environment variables)
+ *
+ * Environment variables:
+ * - BUNDLER_MIN_CALL_GAS_LIMIT: Min callGasLimit (default: 9000)
+ * - BUNDLER_MIN_VERIFICATION_GAS_LIMIT: Min verificationGasLimit (default: 10000)
+ * - BUNDLER_MIN_PRE_VERIFICATION_GAS: Min preVerificationGas (default: 21000)
+ * - BUNDLER_MIN_SIGNATURE_LENGTH: Min signature length in hex chars (default: 132)
+ * - BUNDLER_MAX_SIGNATURE_LENGTH: Max signature length in hex chars (default: 4098)
+ * - BUNDLER_MAX_CALLDATA_LENGTH: Max callData length in hex chars (default: 102402)
+ * - BUNDLER_MAX_FACTORY_DATA_LENGTH: Max factoryData length in hex chars (default: 102402)
+ * - BUNDLER_MAX_PAYMASTER_DATA_LENGTH: Max paymasterData length in hex chars (default: 20482)
+ * - BUNDLER_MAX_VERIFICATION_GAS: Max verification gas per op (default: 10000000)
+ * - BUNDLER_MAX_BUNDLE_GAS: Max gas per bundle (default: 30000000)
+ * - BUNDLER_MIN_VALID_UNTIL_BUFFER: Min seconds before validUntil (default: 30)
  */
-export const DEFAULT_REPUTATION_CONFIG: ReputationConfig = {
-  minInclusionDenominator: 10,
-  throttlingSlack: 10,
-  banSlack: 50,
-  minStake: 100000000000000000n, // 0.1 ETH
-  minUnstakeDelay: 86400, // 1 day
-  decayIntervalMs: 0, // disabled by default
-  decayAmount: 0, // disabled by default
-  throttleAutoReleaseDurationMs: 0, // disabled by default
-}
+export const VALIDATION_CONSTANTS = getValidationConstants()
+
+/**
+ * Get default reputation configuration from environment or defaults
+ * Import from config module for environment-aware configuration
+ */
+import { getReputationConfig } from '../config/constants'
+
+/**
+ * Default reputation configuration (configurable via environment variables)
+ *
+ * Environment variables:
+ * - BUNDLER_REP_MIN_INCLUSION_DENOMINATOR: Min inclusion ratio denominator (default: 10)
+ * - BUNDLER_REP_THROTTLING_SLACK: Slack before throttling (default: 10)
+ * - BUNDLER_REP_BAN_SLACK: Additional slack before banning (default: 50)
+ * - BUNDLER_REP_MIN_STAKE: Min stake in wei (default: 0.1 ETH)
+ * - BUNDLER_REP_MIN_UNSTAKE_DELAY: Min unstake delay in seconds (default: 86400 = 1 day)
+ * - BUNDLER_REP_DECAY_INTERVAL_MS: Decay interval in ms (default: 0 = disabled)
+ * - BUNDLER_REP_DECAY_AMOUNT: Decay amount per interval (default: 0)
+ * - BUNDLER_REP_THROTTLE_AUTO_RELEASE_MS: Throttle auto-release duration in ms (default: 0 = disabled)
+ */
+export const DEFAULT_REPUTATION_CONFIG: ReputationConfig = getReputationConfig()
 
 // ============================================================================
 // Validator Interfaces (for Dependency Injection)

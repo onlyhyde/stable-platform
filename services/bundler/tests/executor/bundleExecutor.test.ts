@@ -2,10 +2,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { Address, Hex, PublicClient, WalletClient, Account } from 'viem'
 import { BundleExecutor, type BundleExecutorConfig } from '../../src/executor/bundleExecutor'
 import { Mempool } from '../../src/mempool/mempool'
-import { UserOperationValidator } from '../../src/validation'
+import { UserOperationValidator, AggregatorValidator, type IAggregatorValidator, type PackedUserOperation } from '../../src/validation'
 import type { UserOperation, MempoolEntry } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
 import { EVENT_SIGNATURES } from '../../src/abi'
+
+/**
+ * Mock type for AggregatorValidator used in tests
+ * Only implements the methods actually used by BundleExecutor
+ */
+type MockAggregatorValidator = Pick<IAggregatorValidator, 'aggregateSignatures' | 'validateSignatures'>
 
 // Mock logger
 const mockLogger = createLogger('error', false)
@@ -725,7 +731,7 @@ describe('BundleExecutor', () => {
         validateSignatures: vi.fn().mockResolvedValue(undefined),
       }
 
-      executor.setAggregatorValidator(mockAggregatorValidator as any)
+      executor.setAggregatorValidator(mockAggregatorValidator as unknown as AggregatorValidator)
 
       const userOp = createTestUserOp()
       const hash = createHash(1)
@@ -749,7 +755,7 @@ describe('BundleExecutor', () => {
         validateSignatures: vi.fn().mockResolvedValue(undefined),
       }
 
-      executor.setAggregatorValidator(mockAggregatorValidator as any)
+      executor.setAggregatorValidator(mockAggregatorValidator as unknown as AggregatorValidator)
 
       const userOp1 = createTestUserOp(TEST_SENDER, 0n)
       const userOp2 = createTestUserOp(
@@ -784,7 +790,7 @@ describe('BundleExecutor', () => {
         validateSignatures: vi.fn().mockResolvedValue(undefined),
       }
 
-      executor.setAggregatorValidator(mockAggregatorValidator as any)
+      executor.setAggregatorValidator(mockAggregatorValidator as unknown as AggregatorValidator)
 
       const userOp1 = createTestUserOp(TEST_SENDER, 0n)
       const userOp2 = createTestUserOp(
@@ -817,7 +823,7 @@ describe('BundleExecutor', () => {
       }
 
       // Inject mock aggregator validator
-      executor.setAggregatorValidator(mockAggregatorValidator as any)
+      executor.setAggregatorValidator(mockAggregatorValidator as unknown as AggregatorValidator)
 
       const userOp1 = createTestUserOp(TEST_SENDER, 0n)
       const userOp2 = createTestUserOp(
@@ -846,7 +852,7 @@ describe('BundleExecutor', () => {
         validateSignatures: vi.fn().mockResolvedValue(undefined),
       }
 
-      executor.setAggregatorValidator(mockAggregatorValidator as any)
+      executor.setAggregatorValidator(mockAggregatorValidator as unknown as AggregatorValidator)
 
       const userOp = createTestUserOp()
       mempool.add(userOp, createHash(1), ENTRY_POINT)
@@ -866,7 +872,7 @@ describe('BundleExecutor', () => {
           .mockRejectedValue(new Error('Invalid aggregated signature')),
       }
 
-      executor.setAggregatorValidator(mockAggregatorValidator as any)
+      executor.setAggregatorValidator(mockAggregatorValidator as unknown as AggregatorValidator)
 
       const userOp = createTestUserOp()
       mempool.add(userOp, createHash(1), ENTRY_POINT)
@@ -881,7 +887,7 @@ describe('BundleExecutor', () => {
         validateSignatures: vi.fn().mockResolvedValue(undefined),
       }
 
-      executor.setAggregatorValidator(mockAggregatorValidator as any)
+      executor.setAggregatorValidator(mockAggregatorValidator as unknown as AggregatorValidator)
 
       const userOp = createTestUserOp()
       mempool.add(userOp, createHash(1), ENTRY_POINT)
