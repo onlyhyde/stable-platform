@@ -217,7 +217,7 @@ func TestCreateOrderWithoutKYC(t *testing.T) {
 	// Test order creation without KYC - should return kyc_required status
 	order, err := svc.CreateOrder(&model.CreateOrderRequest{
 		UserID:         "user-no-kyc",
-		WalletAddress:  "0x1234567890abcdef",
+		WalletAddress:  "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed", // Valid EVM address
 		FiatAmount:     "100",
 		FiatCurrency:   "USD",
 		CryptoCurrency: "USDC",
@@ -254,7 +254,7 @@ func TestCreateOrderWithKYC(t *testing.T) {
 			name: "Valid order with card (pending payment - PG unavailable)",
 			req: &model.CreateOrderRequest{
 				UserID:         "user-card",
-				WalletAddress:  "0x1234567890abcdef",
+				WalletAddress:  "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed", // Valid EVM address
 				FiatAmount:     "100",
 				FiatCurrency:   "USD",
 				CryptoCurrency: "USDC",
@@ -268,7 +268,7 @@ func TestCreateOrderWithKYC(t *testing.T) {
 			name: "Valid order with bank transfer (no bank account)",
 			req: &model.CreateOrderRequest{
 				UserID:         "user-bank",
-				WalletAddress:  "0xabcdef1234567890",
+				WalletAddress:  "0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359", // Valid EVM address
 				FiatAmount:     "100",
 				FiatCurrency:   "USD",
 				CryptoCurrency: "USDC",
@@ -281,7 +281,7 @@ func TestCreateOrderWithKYC(t *testing.T) {
 			name: "Invalid fiat amount",
 			req: &model.CreateOrderRequest{
 				UserID:         "user-err",
-				WalletAddress:  "0xfail",
+				WalletAddress:  "0xdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb", // Valid EVM address
 				FiatAmount:     "not-a-number",
 				FiatCurrency:   "USD",
 				CryptoCurrency: "USDC",
@@ -421,7 +421,7 @@ func TestGetOrder(t *testing.T) {
 	// Setup: create an order (will fail due to PG not available, but order is created)
 	order, err := svc.CreateOrder(&model.CreateOrderRequest{
 		UserID:         "user-get",
-		WalletAddress:  "0x1111111111111111",
+		WalletAddress:  "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed", // Valid EVM address
 		FiatAmount:     "50",
 		FiatCurrency:   "USD",
 		CryptoCurrency: "USDC",
@@ -465,7 +465,7 @@ func TestGetOrdersByUser(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		_, err := svc.CreateOrder(&model.CreateOrderRequest{
 			UserID:         "user-alpha",
-			WalletAddress:  "0xaaaa",
+			WalletAddress:  "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed", // Valid EVM address
 			FiatAmount:     "100",
 			FiatCurrency:   "USD",
 			CryptoCurrency: "USDC",
@@ -478,7 +478,7 @@ func TestGetOrdersByUser(t *testing.T) {
 	}
 	_, err := svc.CreateOrder(&model.CreateOrderRequest{
 		UserID:         "user-beta",
-		WalletAddress:  "0xbbbb",
+		WalletAddress:  "0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359", // Valid EVM address
 		FiatAmount:     "200",
 		FiatCurrency:   "USD",
 		CryptoCurrency: "USDC",
@@ -844,5 +844,212 @@ func TestGetRandomRejectionReason(t *testing.T) {
 	// With 50 calls and 5 options, we should see at least 2 distinct reasons
 	if len(seen) < 2 {
 		t.Errorf("getRandomRejectionReason() returned only %d distinct reasons in 50 calls", len(seen))
+	}
+}
+
+// ========== ONRAMP-06: Wallet Validation Tests ==========
+
+func TestValidateWallet(t *testing.T) {
+	svc := newTestService()
+
+	tests := []struct {
+		name      string
+		req       *ValidateWalletRequest
+		wantValid bool
+		wantError string
+	}{
+		{
+			name: "Valid address on Ethereum",
+			req: &ValidateWalletRequest{
+				Address: "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+				ChainID: 1,
+			},
+			wantValid: true,
+		},
+		{
+			name: "Valid address on Polygon",
+			req: &ValidateWalletRequest{
+				Address: "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+				ChainID: 137,
+			},
+			wantValid: true,
+		},
+		{
+			name: "Valid address on Arbitrum",
+			req: &ValidateWalletRequest{
+				Address: "0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359",
+				ChainID: 42161,
+			},
+			wantValid: true,
+		},
+		{
+			name: "Valid address on Optimism",
+			req: &ValidateWalletRequest{
+				Address: "0xdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb",
+				ChainID: 10,
+			},
+			wantValid: true,
+		},
+		{
+			name: "Valid address on Base",
+			req: &ValidateWalletRequest{
+				Address: "0xd1220a0cf47c7b9be7a2e6ba89f429762e7b9adb",
+				ChainID: 8453,
+			},
+			wantValid: true,
+		},
+		{
+			name: "Valid address on Sepolia testnet",
+			req: &ValidateWalletRequest{
+				Address: "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+				ChainID: 11155111,
+			},
+			wantValid: true,
+		},
+		{
+			name: "Valid uppercase address",
+			req: &ValidateWalletRequest{
+				Address: "0x5AAEB6053F3E94C9B9A09F33669435E7EF1BEAED",
+				ChainID: 1,
+			},
+			wantValid: true,
+		},
+		{
+			name: "Invalid address - too short",
+			req: &ValidateWalletRequest{
+				Address: "0x5aaeb6053f3e94c9b9a09f33669435e7ef1bea",
+				ChainID: 1,
+			},
+			wantValid: false,
+			wantError: "invalid wallet address format",
+		},
+		{
+			name: "Invalid address - too long",
+			req: &ValidateWalletRequest{
+				Address: "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed1",
+				ChainID: 1,
+			},
+			wantValid: false,
+			wantError: "invalid wallet address format",
+		},
+		{
+			name: "Invalid address - missing 0x prefix",
+			req: &ValidateWalletRequest{
+				Address: "5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+				ChainID: 1,
+			},
+			wantValid: false,
+			wantError: "invalid wallet address format",
+		},
+		{
+			name: "Invalid address - invalid hex characters",
+			req: &ValidateWalletRequest{
+				Address: "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaeg",
+				ChainID: 1,
+			},
+			wantValid: false,
+			wantError: "invalid wallet address format",
+		},
+		{
+			name: "Empty address",
+			req: &ValidateWalletRequest{
+				Address: "",
+				ChainID: 1,
+			},
+			wantValid: false,
+			wantError: "invalid wallet address format",
+		},
+		{
+			name: "Unsupported chain - BSC",
+			req: &ValidateWalletRequest{
+				Address: "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+				ChainID: 56,
+			},
+			wantValid: false,
+			wantError: "unsupported chain",
+		},
+		{
+			name: "Unsupported chain - Avalanche",
+			req: &ValidateWalletRequest{
+				Address: "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+				ChainID: 43114,
+			},
+			wantValid: false,
+			wantError: "unsupported chain",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := svc.ValidateWallet(tt.req)
+
+			if result.Valid != tt.wantValid {
+				t.Errorf("ValidateWallet() valid = %v, want %v", result.Valid, tt.wantValid)
+			}
+
+			if tt.wantError != "" && result.Error != tt.wantError {
+				t.Errorf("ValidateWallet() error = %v, want %v", result.Error, tt.wantError)
+			}
+
+			if tt.wantValid {
+				if result.ChecksumAddress == "" {
+					t.Error("ValidateWallet() ChecksumAddress should not be empty for valid address")
+				}
+				if result.ChainName == "" {
+					t.Error("ValidateWallet() ChainName should not be empty for valid address")
+				}
+				if result.ChainID != tt.req.ChainID {
+					t.Errorf("ValidateWallet() ChainID = %v, want %v", result.ChainID, tt.req.ChainID)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateWalletChecksumWarning(t *testing.T) {
+	svc := newTestService()
+
+	// Address with incorrect mixed case (valid format but wrong checksum)
+	req := &ValidateWalletRequest{
+		Address: "0x5aAeb6053f3e94C9b9a09F33669435E7eF1BeAed", // Wrong checksum
+		ChainID: 1,
+	}
+
+	result := svc.ValidateWallet(req)
+
+	if !result.Valid {
+		t.Error("Address should be valid despite wrong checksum")
+	}
+
+	// Should have checksum warning
+	if len(result.Warnings) == 0 {
+		t.Error("Should have checksum warning for mixed-case address with wrong checksum")
+	}
+
+	// Checksum address should be correct
+	expectedChecksum := "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+	if result.ChecksumAddress != expectedChecksum {
+		t.Errorf("ChecksumAddress = %v, want %v", result.ChecksumAddress, expectedChecksum)
+	}
+}
+
+func TestGetRateManager(t *testing.T) {
+	svc := newTestService()
+
+	rm := svc.GetRateManager()
+	if rm == nil {
+		t.Fatal("GetRateManager() returned nil")
+	}
+
+	// Verify it's the same instance
+	rm2 := svc.GetRateManager()
+	if rm != rm2 {
+		t.Error("GetRateManager() should return same instance")
+	}
+
+	// Verify rate manager is functional
+	_, err := rm.GetRate("USD", "USDC")
+	if err != nil {
+		t.Errorf("RateManager should have USD/USDC rate: %v", err)
 	}
 }
