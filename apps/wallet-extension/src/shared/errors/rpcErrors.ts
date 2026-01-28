@@ -81,7 +81,7 @@ export class ProviderRpcError extends RpcError {
 export function parseError(data?: unknown): RpcError {
   return new RpcError(
     JSON_RPC_ERROR_CODES.PARSE_ERROR,
-    ERROR_MESSAGES[JSON_RPC_ERROR_CODES.PARSE_ERROR],
+    ERROR_MESSAGES[JSON_RPC_ERROR_CODES.PARSE_ERROR] ?? 'Parse error',
     data
   )
 }
@@ -93,7 +93,7 @@ export function parseError(data?: unknown): RpcError {
 export function invalidRequest(data?: unknown): RpcError {
   return new RpcError(
     JSON_RPC_ERROR_CODES.INVALID_REQUEST,
-    ERROR_MESSAGES[JSON_RPC_ERROR_CODES.INVALID_REQUEST],
+    ERROR_MESSAGES[JSON_RPC_ERROR_CODES.INVALID_REQUEST] ?? 'Invalid request',
     data
   )
 }
@@ -117,7 +117,7 @@ export function methodNotFound(method: string, data?: unknown): RpcError {
 export function invalidParams(message?: string, data?: unknown): RpcError {
   return new RpcError(
     JSON_RPC_ERROR_CODES.INVALID_PARAMS,
-    message || ERROR_MESSAGES[JSON_RPC_ERROR_CODES.INVALID_PARAMS],
+    message ?? ERROR_MESSAGES[JSON_RPC_ERROR_CODES.INVALID_PARAMS] ?? 'Invalid params',
     data
   )
 }
@@ -129,7 +129,7 @@ export function invalidParams(message?: string, data?: unknown): RpcError {
 export function internalError(message?: string, data?: unknown): RpcError {
   return new RpcError(
     JSON_RPC_ERROR_CODES.INTERNAL_ERROR,
-    message || ERROR_MESSAGES[JSON_RPC_ERROR_CODES.INTERNAL_ERROR],
+    message ?? ERROR_MESSAGES[JSON_RPC_ERROR_CODES.INTERNAL_ERROR] ?? 'Internal error',
     data
   )
 }
@@ -145,7 +145,7 @@ export function internalError(message?: string, data?: unknown): RpcError {
 export function userRejectedRequest(data?: unknown): ProviderRpcError {
   return new ProviderRpcError(
     PROVIDER_ERROR_CODES.USER_REJECTED_REQUEST,
-    ERROR_MESSAGES[PROVIDER_ERROR_CODES.USER_REJECTED_REQUEST],
+    ERROR_MESSAGES[PROVIDER_ERROR_CODES.USER_REJECTED_REQUEST] ?? 'User rejected the request',
     data
   )
 }
@@ -157,7 +157,7 @@ export function userRejectedRequest(data?: unknown): ProviderRpcError {
 export function unauthorized(data?: unknown): ProviderRpcError {
   return new ProviderRpcError(
     PROVIDER_ERROR_CODES.UNAUTHORIZED,
-    ERROR_MESSAGES[PROVIDER_ERROR_CODES.UNAUTHORIZED],
+    ERROR_MESSAGES[PROVIDER_ERROR_CODES.UNAUTHORIZED] ?? 'Unauthorized',
     data
   )
 }
@@ -181,7 +181,7 @@ export function unsupportedMethod(method: string, data?: unknown): ProviderRpcEr
 export function disconnected(data?: unknown): ProviderRpcError {
   return new ProviderRpcError(
     PROVIDER_ERROR_CODES.DISCONNECTED,
-    ERROR_MESSAGES[PROVIDER_ERROR_CODES.DISCONNECTED],
+    ERROR_MESSAGES[PROVIDER_ERROR_CODES.DISCONNECTED] ?? 'Disconnected',
     data
   )
 }
@@ -193,7 +193,7 @@ export function disconnected(data?: unknown): ProviderRpcError {
 export function chainDisconnected(data?: unknown): ProviderRpcError {
   return new ProviderRpcError(
     PROVIDER_ERROR_CODES.CHAIN_DISCONNECTED,
-    ERROR_MESSAGES[PROVIDER_ERROR_CODES.CHAIN_DISCONNECTED],
+    ERROR_MESSAGES[PROVIDER_ERROR_CODES.CHAIN_DISCONNECTED] ?? 'Chain disconnected',
     data
   )
 }
@@ -209,7 +209,7 @@ export function chainDisconnected(data?: unknown): ProviderRpcError {
 export function transactionRejected(message?: string, data?: unknown): RpcError {
   return new RpcError(
     ETH_RPC_ERROR_CODES.TRANSACTION_REJECTED,
-    message || ERROR_MESSAGES[ETH_RPC_ERROR_CODES.TRANSACTION_REJECTED],
+    message ?? ERROR_MESSAGES[ETH_RPC_ERROR_CODES.TRANSACTION_REJECTED] ?? 'Transaction rejected',
     data
   )
 }
@@ -233,7 +233,7 @@ export function resourceNotFound(message: string, data?: unknown): RpcError {
 export function resourceUnavailable(message?: string, data?: unknown): RpcError {
   return new RpcError(
     ETH_RPC_ERROR_CODES.RESOURCE_UNAVAILABLE,
-    message || ERROR_MESSAGES[ETH_RPC_ERROR_CODES.RESOURCE_UNAVAILABLE],
+    message ?? ERROR_MESSAGES[ETH_RPC_ERROR_CODES.RESOURCE_UNAVAILABLE] ?? 'Resource unavailable',
     data
   )
 }
@@ -245,7 +245,7 @@ export function resourceUnavailable(message?: string, data?: unknown): RpcError 
 export function invalidInput(message?: string, data?: unknown): RpcError {
   return new RpcError(
     ETH_RPC_ERROR_CODES.INVALID_INPUT,
-    message || ERROR_MESSAGES[ETH_RPC_ERROR_CODES.INVALID_INPUT],
+    message ?? ERROR_MESSAGES[ETH_RPC_ERROR_CODES.INVALID_INPUT] ?? 'Invalid input',
     data
   )
 }
@@ -269,7 +269,7 @@ export function methodNotSupported(method: string, data?: unknown): RpcError {
 export function limitExceeded(message?: string, data?: unknown): RpcError {
   return new RpcError(
     ETH_RPC_ERROR_CODES.LIMIT_EXCEEDED,
-    message || ERROR_MESSAGES[ETH_RPC_ERROR_CODES.LIMIT_EXCEEDED],
+    message ?? ERROR_MESSAGES[ETH_RPC_ERROR_CODES.LIMIT_EXCEEDED] ?? 'Limit exceeded',
     data
   )
 }

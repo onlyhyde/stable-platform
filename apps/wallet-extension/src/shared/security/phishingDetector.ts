@@ -353,30 +353,39 @@ export class PhishingDetector {
 
     // Initialize first column
     for (let i = 0; i <= len1; i++) {
-      matrix[i][0] = i
+      const row = matrix[i]
+      if (row) row[0] = i
     }
 
     // Initialize first row
-    for (let j = 0; j <= len2; j++) {
-      matrix[0][j] = j
+    const firstRow = matrix[0]
+    if (firstRow) {
+      for (let j = 0; j <= len2; j++) {
+        firstRow[j] = j
+      }
     }
 
     // Fill in the rest of the matrix
     for (let i = 1; i <= len1; i++) {
       for (let j = 1; j <= len2; j++) {
         const cost = s1[i - 1] === s2[j - 1] ? 0 : 1
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j] + 1, // deletion
-          matrix[i][j - 1] + 1, // insertion
-          matrix[i - 1][j - 1] + cost // substitution
-        )
+        const currentRow = matrix[i]
+        const prevRow = matrix[i - 1]
+        if (currentRow && prevRow) {
+          currentRow[j] = Math.min(
+            (prevRow[j] ?? 0) + 1, // deletion
+            (currentRow[j - 1] ?? 0) + 1, // insertion
+            (prevRow[j - 1] ?? 0) + cost // substitution
+          )
+        }
       }
     }
 
-    const distance = matrix[len1][len2]
+    const lastRow = matrix[len1]
+    const distance = lastRow?.[len2] ?? 0
     const maxLen = Math.max(len1, len2)
 
-    return 1 - distance / maxLen
+    return maxLen === 0 ? 1 : 1 - distance / maxLen
   }
 
   /**
@@ -442,10 +451,10 @@ export class PhishingDetector {
   }
 
   private detectTyposquatting(domain: string): string | null {
-    const domainWithoutTld = domain.split('.')[0]
+    const domainWithoutTld = domain.split('.')[0] ?? ''
 
     for (const trustedDomain of this.trustedDomains) {
-      const trustedWithoutTld = trustedDomain.split('.')[0]
+      const trustedWithoutTld = trustedDomain.split('.')[0] ?? ''
 
       // Skip if it's the exact same name
       if (domainWithoutTld === trustedWithoutTld) continue

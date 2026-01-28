@@ -31,7 +31,7 @@ export function QuoteCard({ quote, onAccept, isExpired = false }: QuoteCardProps
   }
 
   return (
-    <Card padding="lg" variant={isExpired ? 'filled' : 'outlined'}>
+    <Card padding="lg" variant={isExpired ? 'filled' : 'outline'}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-gray-900">Price Quote</h3>
         {isExpired ? (

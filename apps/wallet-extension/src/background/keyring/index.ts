@@ -245,6 +245,9 @@ export class KeyringController {
     }
 
     const hdKeyring = this.hdKeyrings[0]
+    if (!hdKeyring) {
+      throw new Error('HD keyring not found')
+    }
     const account = hdKeyring.addAccount()
 
     // Update vault
@@ -286,8 +289,9 @@ export class KeyringController {
 
     // Add to existing simple keyring or create new one
     let simpleKeyring: SimpleKeyring
-    if (this.simpleKeyrings.length > 0) {
-      simpleKeyring = this.simpleKeyrings[0]
+    const existingSimple = this.simpleKeyrings[0]
+    if (this.simpleKeyrings.length > 0 && existingSimple) {
+      simpleKeyring = existingSimple
     } else {
       simpleKeyring = new SimpleKeyring()
       this.simpleKeyrings.push(simpleKeyring)
@@ -341,7 +345,9 @@ export class KeyringController {
     const keyrings = data.keyrings.map((k) => {
       if (k.type === 'simple') {
         const keyring = this.simpleKeyrings[0]
-        return { type: 'simple' as KeyringType, data: keyring.serialize() }
+        if (keyring) {
+          return { type: 'simple' as KeyringType, data: keyring.serialize() }
+        }
       }
       return k
     })
@@ -442,11 +448,12 @@ export class KeyringController {
       throw new Error('Vault is locked')
     }
 
-    if (this.hdKeyrings.length === 0) {
+    const hdKeyring = this.hdKeyrings[0]
+    if (!hdKeyring) {
       return null
     }
 
-    return this.hdKeyrings[0].getMnemonic()
+    return hdKeyring.getMnemonic()
   }
 
   /**

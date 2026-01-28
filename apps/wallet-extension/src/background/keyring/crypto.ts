@@ -39,7 +39,7 @@ export async function deriveKey(
   // Import as CryptoKey for Web Crypto API
   return crypto.subtle.importKey(
     'raw',
-    derivedKeyMaterial,
+    derivedKeyMaterial.buffer as ArrayBuffer,
     { name: ALGORITHM, length: KEY_LENGTH },
     false,
     ['encrypt', 'decrypt']
@@ -68,7 +68,7 @@ export async function encrypt(
   const encrypted = await crypto.subtle.encrypt(
     {
       name: ALGORITHM,
-      iv,
+      iv: iv.buffer as ArrayBuffer,
       tagLength: TAG_LENGTH,
     },
     key,
@@ -116,11 +116,11 @@ export async function decrypt(
   const decrypted = await crypto.subtle.decrypt(
     {
       name: ALGORITHM,
-      iv,
+      iv: iv.buffer as ArrayBuffer,
       tagLength: TAG_LENGTH,
     },
     key,
-    combined
+    combined.buffer as ArrayBuffer
   )
 
   const decoder = new TextDecoder()
@@ -162,7 +162,11 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
 
   let result = 0
   for (let i = 0; i < a.length; i++) {
-    result |= a[i] ^ b[i]
+    const aVal = a[i]
+    const bVal = b[i]
+    if (aVal !== undefined && bVal !== undefined) {
+      result |= aVal ^ bVal
+    }
   }
 
   return result === 0

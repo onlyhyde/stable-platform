@@ -4,6 +4,7 @@
  */
 
 import { createLogger } from '../../shared/utils/logger'
+import { getGasFeeConfig, GWEI } from '../../config'
 
 const logger = createLogger('GasFeeController')
 
@@ -129,9 +130,16 @@ interface FeeHistoryResponse {
   reward: string[][]
 }
 
-const DEFAULT_POLLING_INTERVAL = 15000 // 15 seconds
-const MAX_HISTORY_LENGTH = 100
-const GWEI = 1_000_000_000n
+/**
+ * Get default polling interval and history length from config
+ */
+function getDefaultPollingInterval(): number {
+  return getGasFeeConfig().pollingIntervalMs
+}
+
+function getMaxHistoryLength(): number {
+  return getGasFeeConfig().historyMaxLength
+}
 
 /**
  * GasFeeController
@@ -153,7 +161,7 @@ export class GasFeeController {
       maxFeePerGas: null,
       gasPriceHistory: [],
       isPolling: false,
-      pollingInterval: config.pollingInterval || DEFAULT_POLLING_INTERVAL,
+      pollingInterval: config.pollingInterval || getDefaultPollingInterval(),
       lastUpdated: null,
     }
   }
@@ -190,13 +198,13 @@ export class GasFeeController {
         params: ['0x5', 'latest', [25, 50, 75]],
       })) as FeeHistoryResponse
 
-      const baseFeePerGas = feeHistory.baseFeePerGas[feeHistory.baseFeePerGas.length - 1]
-      const rewards = feeHistory.reward[0] || ['0x0', '0x0', '0x0']
+      const baseFeePerGas = feeHistory.baseFeePerGas[feeHistory.baseFeePerGas.length - 1] ?? '0x0'
+      const rewards = feeHistory.reward[0] ?? ['0x0', '0x0', '0x0']
 
       // Calculate priority fees (25th, 50th, 75th percentile)
-      const slowPriorityFee = rewards[0]
-      const avgPriorityFee = rewards[1]
-      const fastPriorityFee = rewards[2]
+      const slowPriorityFee = rewards[0] ?? '0x0'
+      const avgPriorityFee = rewards[1] ?? '0x0'
+      const fastPriorityFee = rewards[2] ?? '0x0'
 
       // Calculate max fees (baseFee * 2 + priorityFee for buffer)
       const baseFee = BigInt(baseFeePerGas)
@@ -205,13 +213,13 @@ export class GasFeeController {
       const fastMaxFee = this.toHex(baseFee * 2n + BigInt(fastPriorityFee))
 
       // Update state
-      this.state.baseFeePerGas = baseFeePerGas
-      this.state.maxPriorityFeePerGas = avgPriorityFee
-      this.state.maxFeePerGas = avgMaxFee
+      this.state.baseFeePerGas = baseFeePerGas ?? null
+      this.state.maxPriorityFeePerGas = avgPriorityFee ?? null
+      this.state.maxFeePerGas = avgMaxFee ?? null
       this.state.lastUpdated = Date.now()
 
       return {
-        baseFeePerGas,
+        baseFeePerGas: baseFeePerGas,
         maxPriorityFeePerGas: avgPriorityFee,
         maxFeePerGas: avgMaxFee,
         slow: {
@@ -409,8 +417,9 @@ export class GasFeeController {
     })
 
     // Limit history length
-    if (this.state.gasPriceHistory.length > MAX_HISTORY_LENGTH) {
-      this.state.gasPriceHistory = this.state.gasPriceHistory.slice(-MAX_HISTORY_LENGTH)
+    const maxLength = getMaxHistoryLength()
+    if (this.state.gasPriceHistory.length > maxLength) {
+      this.state.gasPriceHistory = this.state.gasPriceHistory.slice(-maxLength)
     }
   }
 

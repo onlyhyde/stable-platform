@@ -12,6 +12,7 @@ import type {
 } from '../../types'
 import { generateRandomHex } from '../keyring/crypto'
 import { createLogger } from '../../shared/utils/logger'
+import { getApprovalConfig } from '../../config'
 
 const logger = createLogger('ApprovalController')
 
@@ -25,7 +26,12 @@ type ApprovalListener = (
   approval: ApprovalRequest
 ) => void
 
-const APPROVAL_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
+/**
+ * Get approval expiry time from config
+ */
+function getApprovalExpiryMs(): number {
+  return getApprovalConfig().expiryMs
+}
 
 export class ApprovalController {
   private pendingApprovals: Map<string, ApprovalRequest> = new Map()
@@ -43,7 +49,7 @@ export class ApprovalController {
   getState(): ApprovalControllerState {
     return {
       pendingApprovals: Array.from(this.pendingApprovals.values()),
-      approvalHistory: this.approvalHistory.slice(0, 50), // Keep last 50
+      approvalHistory: this.approvalHistory.slice(0, getApprovalConfig().historyMaxLength),
     }
   }
 
@@ -84,7 +90,7 @@ export class ApprovalController {
       origin,
       favicon,
       timestamp: Date.now(),
-      expiresAt: Date.now() + APPROVAL_EXPIRY_MS,
+      expiresAt: Date.now() + getApprovalExpiryMs(),
       data: {
         requestedPermissions: ['eth_accounts'],
       },
@@ -157,7 +163,7 @@ export class ApprovalController {
       origin,
       favicon,
       timestamp: Date.now(),
-      expiresAt: Date.now() + APPROVAL_EXPIRY_MS,
+      expiresAt: Date.now() + getApprovalExpiryMs(),
       data: {
         method,
         address,
@@ -194,7 +200,7 @@ export class ApprovalController {
       origin,
       favicon,
       timestamp: Date.now(),
-      expiresAt: Date.now() + APPROVAL_EXPIRY_MS,
+      expiresAt: Date.now() + getApprovalExpiryMs(),
       data: {
         from,
         to,
@@ -229,7 +235,7 @@ export class ApprovalController {
       origin,
       favicon,
       timestamp: Date.now(),
-      expiresAt: Date.now() + APPROVAL_EXPIRY_MS,
+      expiresAt: Date.now() + getApprovalExpiryMs(),
       data: {
         chainId,
         chainName,
@@ -258,7 +264,7 @@ export class ApprovalController {
       origin,
       favicon,
       timestamp: Date.now(),
-      expiresAt: Date.now() + APPROVAL_EXPIRY_MS,
+      expiresAt: Date.now() + getApprovalExpiryMs(),
       data: {
         chainId,
         chainName,

@@ -69,18 +69,17 @@ export function SignatureApproval({
           </p>
         </Card>
 
-        {/* Message */}
         <Card padding="md">
           <p className="text-xs text-gray-500 mb-2">Message</p>
           <div className="bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto">
             <pre className="text-sm text-gray-900 whitespace-pre-wrap break-all font-mono">
-              {data.displayMessage ?? data.message}
+              {data.displayMessage ?? String(data.message)}
             </pre>
           </div>
         </Card>
 
         {/* Typed Data (if EIP-712) */}
-        {data.typedData && (
+        {data.typedData !== undefined && (
           <Card padding="md">
             <p className="text-xs text-gray-500 mb-2">Typed Data</p>
             <div className="bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto">

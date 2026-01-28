@@ -3,7 +3,6 @@ import type { HTMLAttributes, ReactNode } from 'react'
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'outline' | 'filled' | 'gradient'
   padding?: 'none' | 'sm' | 'md' | 'lg'
-  children: ReactNode
 }
 
 const variantStyles = {
@@ -71,9 +70,7 @@ export function CardHeader({
   )
 }
 
-export interface CardContentProps extends HTMLAttributes<HTMLDivElement> {
-  children: ReactNode
-}
+export interface CardContentProps extends HTMLAttributes<HTMLDivElement> {}
 
 export function CardContent({
   children,
@@ -87,9 +84,7 @@ export function CardContent({
   )
 }
 
-export interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
-  children: ReactNode
-}
+export interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {}
 
 export function CardFooter({
   children,

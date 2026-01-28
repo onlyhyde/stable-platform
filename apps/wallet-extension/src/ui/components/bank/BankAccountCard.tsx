@@ -51,7 +51,7 @@ export function BankAccountCard({
 
   return (
     <Card
-      variant={isSelected ? 'gradient' : 'outlined'}
+      variant={isSelected ? 'gradient' : 'outline'}
       padding="md"
       className={`${onSelect ? 'cursor-pointer hover:border-indigo-300' : ''} ${
         isSelected ? 'ring-2 ring-indigo-500' : ''

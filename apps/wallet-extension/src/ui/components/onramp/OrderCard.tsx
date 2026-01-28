@@ -64,7 +64,7 @@ export function OrderCard({ order, onViewDetails, onCancel }: OrderCardProps) {
   }
 
   return (
-    <Card padding="md" variant="outlined">
+    <Card padding="md" variant="outline">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs text-gray-500">Order #{order.id.slice(0, 8)}</p>

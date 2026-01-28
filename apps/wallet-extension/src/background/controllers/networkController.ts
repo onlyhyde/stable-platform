@@ -59,7 +59,8 @@ export class NetworkController {
     }
 
     // Validate RPC URL
-    if (!params.rpcUrls.length || !this.validateRpcUrl(params.rpcUrls[0])) {
+    const rpcUrl = params.rpcUrls[0]
+    if (!params.rpcUrls.length || !rpcUrl || !this.validateRpcUrl(rpcUrl)) {
       throw new Error('Invalid RPC URL')
     }
 
@@ -67,7 +68,7 @@ export class NetworkController {
       chainId,
       chainIdHex: params.chainId,
       name: params.chainName,
-      rpcUrl: params.rpcUrls[0],
+      rpcUrl: rpcUrl,
       nativeCurrency: params.nativeCurrency,
       blockExplorerUrl: params.blockExplorerUrls?.[0],
       isCustom: true,
@@ -143,7 +144,11 @@ export class NetworkController {
    * Get the currently selected network
    */
   getSelectedNetwork(): NetworkState {
-    return this.state.networks[this.state.selectedChainId]
+    const network = this.state.networks[this.state.selectedChainId]
+    if (!network) {
+      throw new Error('Selected network not found')
+    }
+    return network
   }
 
   /**
@@ -157,7 +162,11 @@ export class NetworkController {
    * Get the selected chain ID as hex
    */
   getSelectedChainIdHex(): Hex {
-    return this.state.networks[this.state.selectedChainId].config.chainIdHex
+    const network = this.state.networks[this.state.selectedChainId]
+    if (!network) {
+      throw new Error('Selected network not found')
+    }
+    return network.config.chainIdHex
   }
 
   /**
@@ -171,7 +180,9 @@ export class NetworkController {
    * Get only custom networks
    */
   getCustomNetworks(): NetworkState[] {
-    return this.state.customNetworks.map((chainId) => this.state.networks[chainId])
+    return this.state.customNetworks
+      .map((chainId) => this.state.networks[chainId])
+      .filter((network): network is NetworkState => network !== undefined)
   }
 
   /**
