@@ -1,0 +1,92 @@
+# Prometheus configuration for StableNet services
+# Reference: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+  # External labels
+  external_labels:
+    monitor: 'stablenet'
+    environment: 'development'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Rule files
+rule_files:
+  - '/etc/prometheus/rules/*.yml'
+  - '/etc/prometheus/alerts/*.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Go Services - Simulators
+  - job_name: 'bank-simulator'
+    static_configs:
+      - targets: ['bank-simulator:8080']
+    metrics_path: '/metrics'
+
+  - job_name: 'onramp-simulator'
+    static_configs:
+      - targets: ['onramp-simulator:8081']
+    metrics_path: '/metrics'
+
+  - job_name: 'pg-simulator'
+    static_configs:
+      - targets: ['pg-simulator:8082']
+    metrics_path: '/metrics'
+
+  # Go Services - Core
+  - job_name: 'order-router'
+    static_configs:
+      - targets: ['order-router:8083']
+    metrics_path: '/metrics'
+
+  - job_name: 'subscription-executor'
+    static_configs:
+      - targets: ['subscription-executor:8084']
+    metrics_path: '/metrics'
+
+  - job_name: 'bridge-relayer'
+    static_configs:
+      - targets: ['bridge-relayer:8085']
+    metrics_path: '/metrics'
+
+  # TypeScript Services
+  - job_name: 'bundler'
+    static_configs:
+      - targets: ['bundler:4337']
+    metrics_path: '/metrics'
+
+  - job_name: 'paymaster-proxy'
+    static_configs:
+      - targets: ['paymaster-proxy:4338']
+    metrics_path: '/metrics'
+
+  - job_name: 'contract-registry'
+    static_configs:
+      - targets: ['contract-registry:4339']
+    metrics_path: '/metrics'
+
+  # Rust Service
+  - job_name: 'stealth-server'
+    static_configs:
+      - targets: ['stealth-server:8086']
+    metrics_path: '/api/v1/metrics'
+
+# Remote write configuration (optional - for long-term storage)
+# remote_write:
+#   - url: 'http://remote-storage:9201/write'
+
+# Remote read configuration (optional)
+# remote_read:
+#   - url: 'http://remote-storage:9201/read'

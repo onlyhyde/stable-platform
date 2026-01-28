@@ -1,0 +1,272 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "panels": [],
+      "title": "Service Health",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "options": { "0": { "color": "red", "text": "Down" }, "1": { "color": "green", "text": "Up" } }, "type": "value" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        { "expr": "bank_simulator_up", "legendFormat": "Bank Simulator", "refId": "A" },
+        { "expr": "onramp_simulator_up", "legendFormat": "OnRamp Simulator", "refId": "B" },
+        { "expr": "pg_simulator_up", "legendFormat": "PG Simulator", "refId": "C" },
+        { "expr": "order_router_up", "legendFormat": "Order Router", "refId": "D" },
+        { "expr": "subscription_executor_up", "legendFormat": "Subscription Executor", "refId": "E" },
+        { "expr": "bridge_relayer_up", "legendFormat": "Bridge Relayer", "refId": "F" },
+        { "expr": "bundler_up", "legendFormat": "Bundler", "refId": "G" },
+        { "expr": "paymaster_proxy_up", "legendFormat": "Paymaster Proxy", "refId": "H" },
+        { "expr": "contract_registry_up", "legendFormat": "Contract Registry", "refId": "I" },
+        { "expr": "stealth_server_up", "legendFormat": "Stealth Server", "refId": "J" }
+      ],
+      "title": "Service Status",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 3,
+      "panels": [],
+      "title": "Service Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "smooth", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 4,
+      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "bank_simulator_uptime_seconds", "legendFormat": "Bank Simulator", "refId": "A" },
+        { "expr": "onramp_simulator_uptime_seconds", "legendFormat": "OnRamp Simulator", "refId": "B" },
+        { "expr": "pg_simulator_uptime_seconds", "legendFormat": "PG Simulator", "refId": "C" },
+        { "expr": "order_router_uptime_seconds", "legendFormat": "Order Router", "refId": "D" },
+        { "expr": "subscription_executor_uptime_seconds", "legendFormat": "Subscription Executor", "refId": "E" },
+        { "expr": "bundler_uptime_seconds", "legendFormat": "Bundler", "refId": "F" },
+        { "expr": "paymaster_proxy_uptime_seconds", "legendFormat": "Paymaster Proxy", "refId": "G" },
+        { "expr": "contract_registry_uptime_seconds", "legendFormat": "Contract Registry", "refId": "H" }
+      ],
+      "title": "Service Uptime",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "smooth", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 5,
+      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "rate(bank_simulator_requests_total[5m])", "legendFormat": "Bank Simulator", "refId": "A" },
+        { "expr": "rate(onramp_simulator_requests_total[5m])", "legendFormat": "OnRamp Simulator", "refId": "B" },
+        { "expr": "rate(pg_simulator_requests_total[5m])", "legendFormat": "PG Simulator", "refId": "C" },
+        { "expr": "rate(order_router_requests_total[5m])", "legendFormat": "Order Router", "refId": "D" },
+        { "expr": "rate(subscription_executor_requests_total[5m])", "legendFormat": "Subscription Executor", "refId": "E" },
+        { "expr": "rate(bundler_requests_total[5m])", "legendFormat": "Bundler", "refId": "F" },
+        { "expr": "rate(paymaster_proxy_requests_total[5m])", "legendFormat": "Paymaster Proxy", "refId": "G" },
+        { "expr": "rate(contract_registry_requests_total[5m])", "legendFormat": "Contract Registry", "refId": "H" }
+      ],
+      "title": "Request Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "smooth", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.01 }] },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "id": 6,
+      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "rate(bank_simulator_errors_total[5m]) / rate(bank_simulator_requests_total[5m])", "legendFormat": "Bank Simulator", "refId": "A" },
+        { "expr": "rate(onramp_simulator_errors_total[5m]) / rate(onramp_simulator_requests_total[5m])", "legendFormat": "OnRamp Simulator", "refId": "B" },
+        { "expr": "rate(pg_simulator_errors_total[5m]) / rate(pg_simulator_requests_total[5m])", "legendFormat": "PG Simulator", "refId": "C" },
+        { "expr": "rate(order_router_errors_total[5m]) / rate(order_router_requests_total[5m])", "legendFormat": "Order Router", "refId": "D" },
+        { "expr": "rate(subscription_executor_errors_total[5m]) / rate(subscription_executor_requests_total[5m])", "legendFormat": "Subscription Executor", "refId": "E" },
+        { "expr": "rate(bundler_errors_total[5m]) / rate(bundler_requests_total[5m])", "legendFormat": "Bundler", "refId": "F" },
+        { "expr": "rate(paymaster_proxy_errors_total[5m]) / rate(paymaster_proxy_requests_total[5m])", "legendFormat": "Paymaster Proxy", "refId": "G" },
+        { "expr": "rate(contract_registry_errors_total[5m]) / rate(contract_registry_requests_total[5m])", "legendFormat": "Contract Registry", "refId": "H" }
+      ],
+      "title": "Error Rate",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "id": 7,
+      "panels": [],
+      "title": "Service-Specific Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "smooth", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+      "id": 8,
+      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "bundler_mempool_size", "legendFormat": "Mempool Size", "refId": "A" },
+        { "expr": "bundler_mempool_pending", "legendFormat": "Pending Operations", "refId": "B" }
+      ],
+      "title": "Bundler Mempool",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "smooth", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
+      "id": 9,
+      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "contract_registry_contracts_total", "legendFormat": "Contracts", "refId": "A" },
+        { "expr": "contract_registry_sets_total", "legendFormat": "Address Sets", "refId": "B" }
+      ],
+      "title": "Contract Registry",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "smooth", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 31 },
+      "id": 10,
+      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "stealth_server_announcements_total", "legendFormat": "Announcements", "refId": "A" },
+        { "expr": "stealth_server_latest_block", "legendFormat": "Latest Block", "refId": "B" }
+      ],
+      "title": "Stealth Server",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "smooth", "lineWidth": 1, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 31 },
+      "id": 11,
+      "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "bridge_relayer_pending_requests", "legendFormat": "Pending Requests", "refId": "A" },
+        { "expr": "bridge_relayer_processed_requests", "legendFormat": "Processed Requests", "refId": "B" },
+        { "expr": "bridge_relayer_failed_requests", "legendFormat": "Failed Requests", "refId": "C" },
+        { "expr": "bridge_relayer_mpc_signers_online", "legendFormat": "MPC Signers Online", "refId": "D" }
+      ],
+      "title": "Bridge Relayer",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["stablenet", "services", "monitoring"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "Prometheus", "value": "prometheus" },
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "StableNet Services",
+  "uid": "stablenet-services",
+  "version": 1,
+  "weekStart": ""
+}

@@ -1,0 +1,258 @@
+# Prometheus alerting rules for StableNet services
+# Reference: https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/
+
+groups:
+  - name: stablenet-service-health
+    rules:
+      # Service Down Alerts
+      - alert: ServiceDown
+        expr: up{job=~".*-simulator|bundler|paymaster-proxy|contract-registry|stealth-server|order-router|subscription-executor|bridge-relayer"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute."
+
+      - alert: BankSimulatorDown
+        expr: bank_simulator_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: bank-simulator
+        annotations:
+          summary: "Bank Simulator is down"
+          description: "Bank Simulator service has been unavailable for more than 1 minute."
+
+      - alert: OnRampSimulatorDown
+        expr: onramp_simulator_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: onramp-simulator
+        annotations:
+          summary: "OnRamp Simulator is down"
+          description: "OnRamp Simulator service has been unavailable for more than 1 minute."
+
+      - alert: PGSimulatorDown
+        expr: pg_simulator_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: pg-simulator
+        annotations:
+          summary: "PG Simulator is down"
+          description: "Payment Gateway Simulator service has been unavailable for more than 1 minute."
+
+      - alert: OrderRouterDown
+        expr: order_router_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: order-router
+        annotations:
+          summary: "Order Router is down"
+          description: "Order Router service has been unavailable for more than 1 minute."
+
+      - alert: SubscriptionExecutorDown
+        expr: subscription_executor_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: subscription-executor
+        annotations:
+          summary: "Subscription Executor is down"
+          description: "Subscription Executor service has been unavailable for more than 1 minute."
+
+      - alert: BridgeRelayerDown
+        expr: bridge_relayer_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: bridge-relayer
+        annotations:
+          summary: "Bridge Relayer is down"
+          description: "Bridge Relayer service has been unavailable for more than 1 minute."
+
+      - alert: BundlerDown
+        expr: bundler_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: bundler
+        annotations:
+          summary: "Bundler is down"
+          description: "ERC-4337 Bundler service has been unavailable for more than 1 minute."
+
+      - alert: PaymasterProxyDown
+        expr: paymaster_proxy_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: paymaster-proxy
+        annotations:
+          summary: "Paymaster Proxy is down"
+          description: "Paymaster Proxy service has been unavailable for more than 1 minute."
+
+      - alert: ContractRegistryDown
+        expr: contract_registry_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: contract-registry
+        annotations:
+          summary: "Contract Registry is down"
+          description: "Contract Registry service has been unavailable for more than 1 minute."
+
+      - alert: StealthServerDown
+        expr: stealth_server_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: stealth-server
+        annotations:
+          summary: "Stealth Server is down"
+          description: "Stealth Address Server has been unavailable for more than 1 minute."
+
+  - name: stablenet-error-rates
+    rules:
+      # High Error Rate Alerts
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(bank_simulator_errors_total[5m]) / rate(bank_simulator_requests_total[5m]) > 0.05
+            or
+            rate(onramp_simulator_errors_total[5m]) / rate(onramp_simulator_requests_total[5m]) > 0.05
+            or
+            rate(pg_simulator_errors_total[5m]) / rate(pg_simulator_requests_total[5m]) > 0.05
+            or
+            rate(order_router_errors_total[5m]) / rate(order_router_requests_total[5m]) > 0.05
+            or
+            rate(subscription_executor_errors_total[5m]) / rate(subscription_executor_requests_total[5m]) > 0.05
+            or
+            rate(bundler_errors_total[5m]) / rate(bundler_requests_total[5m]) > 0.05
+            or
+            rate(paymaster_proxy_errors_total[5m]) / rate(paymaster_proxy_requests_total[5m]) > 0.05
+            or
+            rate(contract_registry_errors_total[5m]) / rate(contract_registry_requests_total[5m]) > 0.05
+          )
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate exceeds 5% for more than 5 minutes."
+
+      - alert: CriticalErrorRate
+        expr: |
+          (
+            rate(bank_simulator_errors_total[5m]) / rate(bank_simulator_requests_total[5m]) > 0.20
+            or
+            rate(onramp_simulator_errors_total[5m]) / rate(onramp_simulator_requests_total[5m]) > 0.20
+            or
+            rate(pg_simulator_errors_total[5m]) / rate(pg_simulator_requests_total[5m]) > 0.20
+            or
+            rate(order_router_errors_total[5m]) / rate(order_router_requests_total[5m]) > 0.20
+            or
+            rate(subscription_executor_errors_total[5m]) / rate(subscription_executor_requests_total[5m]) > 0.20
+            or
+            rate(bundler_errors_total[5m]) / rate(bundler_requests_total[5m]) > 0.20
+            or
+            rate(paymaster_proxy_errors_total[5m]) / rate(paymaster_proxy_requests_total[5m]) > 0.20
+            or
+            rate(contract_registry_errors_total[5m]) / rate(contract_registry_requests_total[5m]) > 0.20
+          )
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical error rate detected"
+          description: "Error rate exceeds 20% for more than 2 minutes. Immediate attention required."
+
+  - name: stablenet-service-specific
+    rules:
+      # Bundler Mempool Alerts
+      - alert: BundlerMempoolHigh
+        expr: bundler_mempool_size > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: bundler
+        annotations:
+          summary: "Bundler mempool size is high"
+          description: "Bundler mempool has {{ $value }} pending operations, which is above threshold (100)."
+
+      - alert: BundlerMempoolCritical
+        expr: bundler_mempool_size > 500
+        for: 2m
+        labels:
+          severity: critical
+          service: bundler
+        annotations:
+          summary: "Bundler mempool size is critical"
+          description: "Bundler mempool has {{ $value }} pending operations, which is critical (>500)."
+
+      # Bridge Relayer Alerts
+      - alert: BridgeRelayerMPCQuorumLow
+        expr: bridge_relayer_mpc_signers_online < 2
+        for: 1m
+        labels:
+          severity: critical
+          service: bridge-relayer
+        annotations:
+          summary: "Bridge Relayer MPC quorum is low"
+          description: "Only {{ $value }} MPC signers online. Minimum 2 required for quorum."
+
+      - alert: BridgeRelayerHighFailedRequests
+        expr: rate(bridge_relayer_failed_requests[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: bridge-relayer
+        annotations:
+          summary: "Bridge Relayer has high failure rate"
+          description: "Bridge Relayer is experiencing {{ $value | humanize }} failed requests per second."
+
+      - alert: BridgeRelayerPendingRequestsHigh
+        expr: bridge_relayer_pending_requests > 50
+        for: 10m
+        labels:
+          severity: warning
+          service: bridge-relayer
+        annotations:
+          summary: "Bridge Relayer has many pending requests"
+          description: "Bridge Relayer has {{ $value }} pending requests for more than 10 minutes."
+
+      # Contract Registry Alerts
+      - alert: ContractRegistryEmpty
+        expr: contract_registry_contracts_total == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: contract-registry
+        annotations:
+          summary: "Contract Registry is empty"
+          description: "Contract Registry has no registered contracts."
+
+      # Stealth Server Alerts
+      - alert: StealthServerNoNewBlocks
+        expr: changes(stealth_server_latest_block[15m]) == 0
+        for: 15m
+        labels:
+          severity: warning
+          service: stealth-server
+        annotations:
+          summary: "Stealth Server not indexing new blocks"
+          description: "Stealth Server has not indexed any new blocks in the last 15 minutes."
+
+  - name: stablenet-latency
+    rules:
+      # Generic high latency alert (placeholder for when response time metrics are added)
+      - alert: HighLatencyDetected
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected"
+          description: "95th percentile latency is above 2 seconds for 5 minutes."
