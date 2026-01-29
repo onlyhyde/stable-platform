@@ -263,6 +263,7 @@ paths:
       summary: Health check
       description: Check service health status
       operationId: healthCheck
+      security: []  # Public endpoint - no auth required
       responses:
         '200':
           description: Service health status
@@ -278,6 +279,7 @@ paths:
       summary: Readiness check
       description: Check if service is ready to accept requests
       operationId: readinessCheck
+      security: []  # Public endpoint - no auth required
       responses:
         '200':
           description: Service is ready
@@ -299,6 +301,7 @@ paths:
       summary: Liveness check
       description: Check if service is alive
       operationId: livenessCheck
+      security: []  # Public endpoint - no auth required
       responses:
         '200':
           description: Service is alive
@@ -314,6 +317,7 @@ paths:
       summary: Prometheus metrics
       description: Get Prometheus metrics for monitoring
       operationId: getMetrics
+      security: []  # Public endpoint - no auth required
       responses:
         '200':
           description: Prometheus metrics
@@ -513,4 +517,7 @@ components:
       name: X-API-Key
       description: API key for authentication (required in production)
 
-security: []
+# Default security: API key required for subscription endpoints
+# Health and metrics endpoints are public (override with empty security)
+security:
+  - ApiKeyAuth: []

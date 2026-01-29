@@ -220,6 +220,7 @@ func hexToPadded32(hexStr string) ([]byte, error) {
 }
 
 // mustHexDecode decodes hex, returning empty bytes for "0x" or empty input.
+// Panics if the hex string is invalid (use tryHexDecode for error handling).
 func mustHexDecode(hexStr string) []byte {
 	hexStr = strings.TrimPrefix(hexStr, "0x")
 	if hexStr == "" {
@@ -227,7 +228,16 @@ func mustHexDecode(hexStr string) []byte {
 	}
 	b, err := hex.DecodeString(hexStr)
 	if err != nil {
-		return []byte{}
+		panic(fmt.Sprintf("mustHexDecode: invalid hex string %q: %v", hexStr, err))
 	}
 	return b
+}
+
+// tryHexDecode attempts to decode a hex string, returning an error if invalid.
+func tryHexDecode(hexStr string) ([]byte, error) {
+	hexStr = strings.TrimPrefix(hexStr, "0x")
+	if hexStr == "" {
+		return []byte{}, nil
+	}
+	return hex.DecodeString(hexStr)
 }

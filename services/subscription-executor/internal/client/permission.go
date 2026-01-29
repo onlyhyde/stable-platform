@@ -3,10 +3,14 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
 )
+
+// ErrInvalidHex indicates an invalid hexadecimal string format.
+var ErrInvalidHex = errors.New("invalid hexadecimal format")
 
 // PermissionClient validates ERC-7715 permissions via RPC calls.
 type PermissionClient struct {
@@ -34,9 +38,9 @@ func (c *PermissionClient) IsPermissionValid(ctx context.Context, permissionID s
 	// keccak256("isPermissionValid(bytes32)") = first 4 bytes
 	selector := "70897b23" // isPermissionValid(bytes32)
 
-	permIDPadded := strings.TrimPrefix(permissionID, "0x")
-	if len(permIDPadded) < 64 {
-		permIDPadded = fmt.Sprintf("%064s", permIDPadded)
+	permIDPadded, err := validatePermissionID(permissionID)
+	if err != nil {
+		return false, fmt.Errorf("invalid permission ID: %w", err)
 	}
 
 	callData := "0x" + selector + permIDPadded
@@ -85,9 +89,9 @@ func (c *PermissionClient) GetRemainingAllowance(ctx context.Context, permission
 	// Function selector: getRemainingAllowance(bytes32)
 	selector := "e271b0e4" // getRemainingAllowance(bytes32)
 
-	permIDPadded := strings.TrimPrefix(permissionID, "0x")
-	if len(permIDPadded) < 64 {
-		permIDPadded = fmt.Sprintf("%064s", permIDPadded)
+	permIDPadded, err := validatePermissionID(permissionID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid permission ID: %w", err)
 	}
 
 	callData := "0x" + selector + permIDPadded
@@ -119,4 +123,29 @@ func (c *PermissionClient) GetRemainingAllowance(ctx context.Context, permission
 	allowance := new(big.Int)
 	allowance.SetString(resultHex, 16)
 	return allowance, nil
+}
+
+// isValidHex checks if a string contains only valid hexadecimal characters.
+func isValidHex(s string) bool {
+	for _, c := range s {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
+// validatePermissionID validates and normalizes a permission ID.
+func validatePermissionID(permissionID string) (string, error) {
+	permIDPadded := strings.TrimPrefix(permissionID, "0x")
+	if permIDPadded == "" {
+		return "", fmt.Errorf("%w: empty permission ID", ErrInvalidHex)
+	}
+	if !isValidHex(permIDPadded) {
+		return "", fmt.Errorf("%w: permission ID contains invalid characters", ErrInvalidHex)
+	}
+	if len(permIDPadded) < 64 {
+		permIDPadded = fmt.Sprintf("%064s", permIDPadded)
+	}
+	return permIDPadded, nil
 }
