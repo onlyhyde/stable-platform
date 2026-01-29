@@ -7,6 +7,7 @@ import type {
   WalletState,
 } from '../../types'
 import { DEFAULT_NETWORKS, STORAGE_KEYS } from '../../shared/constants'
+import { deepMerge, normalizeOrigin, originsMatch } from './utils'
 
 /**
  * Initial wallet state
@@ -93,8 +94,12 @@ class WalletStateManager {
     return this.state
   }
 
+  /**
+   * Update state with deep merge
+   * Nested objects are merged recursively, arrays are replaced
+   */
   async setState(partial: Partial<WalletState>): Promise<void> {
-    this.state = { ...this.state, ...partial }
+    this.state = deepMerge(this.state, partial)
     await this.persist()
     this.notifyListeners()
   }
@@ -238,45 +243,86 @@ class WalletStateManager {
   }
 
   // Connection actions
+  /**
+   * Add or update a connected site
+   * Origin is normalized for consistent matching
+   */
   async addConnectedSite(site: ConnectedSite): Promise<void> {
-    const existing = this.state.connections.connectedSites.find(
-      (s) => s.origin === site.origin
+    // Normalize origin before storing
+    const normalizedSite = {
+      ...site,
+      origin: normalizeOrigin(site.origin),
+    }
+
+    const existing = this.state.connections.connectedSites.find((s) =>
+      originsMatch(s.origin, site.origin)
     )
+
     if (existing) {
       // Update existing
       const connectedSites = this.state.connections.connectedSites.map((s) =>
-        s.origin === site.origin ? { ...s, ...site } : s
+        originsMatch(s.origin, site.origin) ? { ...s, ...normalizedSite } : s
       )
       await this.setState({
         connections: { connectedSites },
       })
     } else {
       // Add new
-      const connectedSites = [...this.state.connections.connectedSites, site]
+      const connectedSites = [
+        ...this.state.connections.connectedSites,
+        normalizedSite,
+      ]
       await this.setState({
         connections: { connectedSites },
       })
     }
   }
 
+  /**
+   * Remove a connected site by origin
+   * Origin is normalized for consistent matching
+   */
   async removeConnectedSite(origin: string): Promise<void> {
     const connectedSites = this.state.connections.connectedSites.filter(
-      (s) => s.origin !== origin
+      (s) => !originsMatch(s.origin, origin)
     )
     await this.setState({
       connections: { connectedSites },
     })
   }
 
+  /**
+   * Check if an origin is connected
+   * Origin is normalized for consistent matching
+   */
   isConnected(origin: string): boolean {
-    return this.state.connections.connectedSites.some((s) => s.origin === origin)
+    return this.state.connections.connectedSites.some((s) =>
+      originsMatch(s.origin, origin)
+    )
   }
 
+  /**
+   * Get connected accounts for an origin
+   * Returns accounts with the currently selected account first
+   */
   getConnectedAccounts(origin: string): Address[] {
-    const site = this.state.connections.connectedSites.find(
-      (s) => s.origin === origin
+    const site = this.state.connections.connectedSites.find((s) =>
+      originsMatch(s.origin, origin)
     )
-    return site?.accounts ?? []
+
+    if (!site?.accounts || site.accounts.length === 0) {
+      return []
+    }
+
+    const accounts = [...site.accounts]
+    const selectedAccount = this.state.accounts.selectedAccount
+
+    // Move selected account to first position if it's connected to this site
+    if (selectedAccount && accounts.includes(selectedAccount)) {
+      return [selectedAccount, ...accounts.filter((a) => a !== selectedAccount)]
+    }
+
+    return accounts
   }
 
   // Keyring actions

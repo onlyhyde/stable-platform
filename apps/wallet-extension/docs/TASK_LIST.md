@@ -150,19 +150,21 @@ case 'selectAccount': {
 
 ---
 
-## Phase 3: 상태 관리 개선 (Medium)
+## Phase 3: 상태 관리 개선 (Medium) ✅ COMPLETED
 
 > **목표**: 상태 관리 안정성 향상
 > **예상 소요**: 1일
+> **실제 완료**: 2026-01-29
 
-### Task 3.1: WalletStateManager 개선
-- [ ] `src/background/state/store.ts` 수정
-- [ ] Deep merge 구현 또는 Immer 도입 검토
-- [ ] 상태 업데이트 시 불변성 보장
+### Task 3.1: WalletStateManager 개선 ✅
+- [x] `src/background/state/store.ts` 수정
+- [x] `src/background/state/utils.ts` 생성 (deepMerge, normalizeOrigin)
+- [x] Deep merge 구현으로 중첩 객체 손실 방지
+- [x] 상태 업데이트 시 불변성 보장
 
 ```typescript
-// 옵션 1: Deep merge 구현
-import { deepMerge } from '../utils/deepMerge'
+// 구현된 Deep merge
+import { deepMerge } from './utils'
 
 setState(newState: Partial<WalletState>) {
   this.state = deepMerge(this.state, newState)
@@ -178,20 +180,16 @@ setState(updater: (draft: WalletState) => void) {
 }
 ```
 
-### Task 3.2: Origin 정규화
-- [ ] Origin 비교 시 일관된 정규화 적용
-- [ ] 대소문자, trailing slash 처리
+### Task 3.2: Origin 정규화 ✅
+- [x] Origin 비교 시 일관된 정규화 적용
+- [x] `normalizeOrigin()`: 대소문자 변환, trailing slash 제거
+- [x] `originsMatch()`: 정규화된 비교 유틸리티
+- [x] `addConnectedSite`, `removeConnectedSite`, `isConnected` 업데이트
 
-```typescript
-function normalizeOrigin(origin: string): string {
-  return new URL(origin).origin.toLowerCase()
-}
-```
-
-### Task 3.3: 연결된 계정 조회 개선
-- [ ] `getConnectedAccounts(origin)` 메서드 검토
-- [ ] 선택된 계정이 첫 번째로 오도록 정렬
-- [ ] 연결되지 않은 계정 필터링
+### Task 3.3: 연결된 계정 조회 개선 ✅
+- [x] `getConnectedAccounts(origin)` 메서드 수정
+- [x] 선택된 계정이 첫 번째로 오도록 정렬
+- [x] 정규화된 origin 비교 적용
 
 ---
 
