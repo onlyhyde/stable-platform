@@ -1,10 +1,12 @@
 /**
  * GasFeeController
  * Manages gas fee estimation and EIP-1559 support
+ * Integrates with indexer-go for historical gas statistics
  */
 
 import { createLogger } from '../../shared/utils/logger'
 import { getGasFeeConfig, GWEI } from '../../config'
+import type { IndexerClient, GasStats } from '../services/IndexerClient'
 
 const logger = createLogger('GasFeeController')
 
@@ -119,6 +121,19 @@ export interface GasFeeControllerConfig {
   provider: Provider
   chainId: number
   pollingInterval?: number
+  indexerClient?: IndexerClient
+}
+
+/**
+ * Historical gas statistics from indexer
+ */
+export interface HistoricalGasStats {
+  averageGasPrice: string
+  averageGasUsed: string
+  blockCount: number
+  transactionCount: number
+  fromBlock: number
+  toBlock: number
 }
 
 /**
@@ -147,12 +162,14 @@ function getMaxHistoryLength(): number {
  */
 export class GasFeeController {
   private provider: Provider
+  private indexerClient: IndexerClient | null = null
   private pollingTimer: ReturnType<typeof setInterval> | null = null
 
   state: GasFeeState
 
   constructor(config: GasFeeControllerConfig) {
     this.provider = config.provider
+    this.indexerClient = config.indexerClient ?? null
     this.state = {
       chainId: config.chainId,
       gasPrice: null,
@@ -164,6 +181,13 @@ export class GasFeeController {
       pollingInterval: config.pollingInterval || getDefaultPollingInterval(),
       lastUpdated: null,
     }
+  }
+
+  /**
+   * Set indexer client (for deferred initialization)
+   */
+  setIndexerClient(client: IndexerClient): void {
+    this.indexerClient = client
   }
 
   /**
@@ -406,6 +430,92 @@ export class GasFeeController {
     }
 
     return gwei.toString()
+  }
+
+  // ============================================
+  // Indexer Integration Methods
+  // ============================================
+
+  /**
+   * Get historical gas statistics from indexer
+   * Useful for displaying gas price trends
+   */
+  async getHistoricalGasStats(blockCount: number = 100): Promise<HistoricalGasStats | null> {
+    if (!this.indexerClient) {
+      logger.debug('Indexer client not configured, skipping historical stats')
+      return null
+    }
+
+    try {
+      const latestHeight = await this.indexerClient.getLatestHeight()
+      const fromBlock = Math.max(0, latestHeight - blockCount)
+
+      const stats = await this.indexerClient.getGasStats(fromBlock, latestHeight)
+
+      return {
+        averageGasPrice: stats.averageGasPrice,
+        averageGasUsed: stats.averageGasUsed,
+        blockCount: stats.blockCount,
+        transactionCount: stats.transactionCount,
+        fromBlock,
+        toBlock: latestHeight,
+      }
+    } catch (error) {
+      logger.warn('Failed to fetch historical gas stats from indexer', { error })
+      return null
+    }
+  }
+
+  /**
+   * Get gas price with indexer fallback
+   * First tries RPC, then falls back to indexer average if RPC fails
+   */
+  async getGasPriceWithFallback(): Promise<string> {
+    try {
+      return await this.getGasPrice()
+    } catch (rpcError) {
+      logger.warn('RPC gas price failed, trying indexer fallback', { rpcError })
+
+      if (this.indexerClient) {
+        try {
+          const avgPrice = await this.indexerClient.getAverageGasPrice(50)
+          this.state.gasPrice = avgPrice
+          this.state.lastUpdated = Date.now()
+          return avgPrice
+        } catch (indexerError) {
+          logger.error('Indexer fallback also failed', { indexerError })
+        }
+      }
+
+      throw rpcError
+    }
+  }
+
+  /**
+   * Get suggested gas fees with historical context
+   * Enhances suggestions with indexer data when available
+   */
+  async getSuggestedGasFeesWithHistory(
+    gasLimit?: string
+  ): Promise<SuggestedGasFees & { historicalAverage?: string }> {
+    const fees = await this.getSuggestedGasFees(gasLimit)
+
+    // Try to add historical context from indexer
+    if (this.indexerClient) {
+      try {
+        const historicalStats = await this.getHistoricalGasStats(100)
+        if (historicalStats) {
+          return {
+            ...fees,
+            historicalAverage: historicalStats.averageGasPrice,
+          }
+        }
+      } catch {
+        // Ignore indexer errors, return base fees
+      }
+    }
+
+    return fees
   }
 
   // Private helpers

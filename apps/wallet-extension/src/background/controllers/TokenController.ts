@@ -1,7 +1,13 @@
 /**
  * TokenController
  * Manages ERC-20 token tracking, balances, and transfers
+ * Integrates with indexer-go for token discovery and transfer history
  */
+
+import { createLogger } from '../../shared/utils/logger'
+import type { IndexerClient, ERC20Transfer, IndexerTokenBalance } from '../services/IndexerClient'
+
+const logger = createLogger('TokenController')
 
 /**
  * Token interface
@@ -66,6 +72,35 @@ export interface Provider {
 export interface TokenControllerConfig {
   provider: Provider
   chainId: number
+  indexerClient?: IndexerClient
+}
+
+/**
+ * Token transfer history entry
+ */
+export interface TokenTransferEntry {
+  contractAddress: string
+  from: string
+  to: string
+  value: string
+  formattedValue?: string
+  transactionHash: string
+  blockNumber: number
+  timestamp: number
+  direction: 'in' | 'out'
+  token?: Token
+}
+
+/**
+ * Discovered token from indexer
+ */
+export interface DiscoveredToken {
+  address: string
+  balance: string
+  symbol?: string
+  name?: string
+  decimals?: number
+  needsMetadata: boolean
 }
 
 // ERC-20 function selectors
@@ -132,16 +167,25 @@ function decodeUint256(data: string): string {
  */
 export class TokenController {
   private provider: Provider
+  private indexerClient: IndexerClient | null = null
 
   state: TokenControllerState
 
   constructor(config: TokenControllerConfig) {
     this.provider = config.provider
+    this.indexerClient = config.indexerClient ?? null
     this.state = {
       chainId: config.chainId,
       tokens: {},
       balances: {},
     }
+  }
+
+  /**
+   * Set indexer client (for deferred initialization)
+   */
+  setIndexerClient(client: IndexerClient): void {
+    this.indexerClient = client
   }
 
   /**
@@ -373,5 +417,152 @@ export class TokenController {
     this.state.chainId = chainId
     this.state.tokens = {}
     this.state.balances = {}
+  }
+
+  // ============================================
+  // Indexer Integration Methods
+  // ============================================
+
+  /**
+   * Discover tokens held by an address using indexer
+   * Returns tokens that need metadata to be fetched from RPC
+   */
+  async discoverTokens(account: string): Promise<DiscoveredToken[]> {
+    if (!this.indexerClient) {
+      logger.debug('Indexer client not configured, skipping token discovery')
+      return []
+    }
+
+    try {
+      const balances = await this.indexerClient.getTokenBalances(account, 'ERC20')
+
+      const discovered: DiscoveredToken[] = balances
+        .filter((b) => BigInt(b.balance) > 0n)
+        .map((b) => ({
+          address: b.address,
+          balance: b.balance,
+          symbol: b.symbol,
+          name: b.name,
+          decimals: b.decimals,
+          needsMetadata: !b.symbol || !b.name || b.decimals === undefined,
+        }))
+
+      return discovered
+    } catch (error) {
+      logger.warn('Failed to discover tokens from indexer', { error })
+      return []
+    }
+  }
+
+  /**
+   * Auto-add discovered tokens
+   * Discovers tokens from indexer and adds them to tracking
+   */
+  async autoAddTokens(account: string): Promise<Token[]> {
+    const discovered = await this.discoverTokens(account)
+    const addedTokens: Token[] = []
+
+    for (const token of discovered) {
+      try {
+        // Check if already tracked
+        if (this.state.tokens[token.address.toLowerCase()]) {
+          continue
+        }
+
+        let metadata: TokenMetadata | undefined
+
+        // Use indexer metadata if complete
+        if (!token.needsMetadata && token.symbol && token.name && token.decimals !== undefined) {
+          metadata = {
+            name: token.name,
+            symbol: token.symbol,
+            decimals: token.decimals,
+          }
+        }
+
+        // Add token (will fetch metadata from RPC if not provided)
+        const addedToken = await this.addToken(token.address, metadata)
+        addedTokens.push(addedToken)
+
+        // Update balance from indexer data
+        const normalizedAddress = token.address.toLowerCase()
+        if (!this.state.balances[account]) {
+          this.state.balances[account] = {}
+        }
+        this.state.balances[account][normalizedAddress] = token.balance
+      } catch (error) {
+        logger.warn('Failed to add discovered token', { address: token.address, error })
+      }
+    }
+
+    return addedTokens
+  }
+
+  /**
+   * Get token transfer history for an account
+   */
+  async getTransferHistory(
+    account: string,
+    limit: number = 50
+  ): Promise<TokenTransferEntry[]> {
+    if (!this.indexerClient) {
+      logger.debug('Indexer client not configured, no transfer history available')
+      return []
+    }
+
+    try {
+      const transfers = await this.indexerClient.getAllERC20Transfers(account, limit)
+
+      return transfers.map((t) => {
+        const normalizedAccount = account.toLowerCase()
+        const direction = t.from.toLowerCase() === normalizedAccount ? 'out' : 'in'
+        const token = this.state.tokens[t.contractAddress.toLowerCase()]
+
+        return {
+          contractAddress: t.contractAddress,
+          from: t.from,
+          to: t.to,
+          value: t.value,
+          formattedValue: token
+            ? this.formatTokenAmount(t.value, token.decimals)
+            : undefined,
+          transactionHash: t.transactionHash,
+          blockNumber: t.blockNumber,
+          timestamp: t.timestamp,
+          direction,
+          token,
+        }
+      })
+    } catch (error) {
+      logger.warn('Failed to get transfer history from indexer', { error })
+      return []
+    }
+  }
+
+  /**
+   * Get transfer history for a specific token
+   */
+  async getTokenTransferHistory(
+    tokenAddress: string,
+    account: string,
+    limit: number = 50
+  ): Promise<TokenTransferEntry[]> {
+    const allHistory = await this.getTransferHistory(account, limit * 2)
+
+    return allHistory
+      .filter((t) => t.contractAddress.toLowerCase() === tokenAddress.toLowerCase())
+      .slice(0, limit)
+  }
+
+  /**
+   * Refresh all token balances using a combination of indexer and RPC
+   * Indexer provides quick discovery, RPC provides accurate current balance
+   */
+  async refreshAllBalances(account: string): Promise<TokenBalance[]> {
+    // First, discover any new tokens from indexer
+    await this.autoAddTokens(account)
+
+    // Then fetch accurate balances from RPC for all tracked tokens
+    return this.getAllTokenBalances(account)
   }
 }
