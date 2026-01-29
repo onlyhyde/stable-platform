@@ -386,16 +386,31 @@ export class ApprovalController {
         return
       }
 
-      // Create new popup
-      await chrome.windows.create({
-        url: `approval.html?id=${approval.id}`,
+      // Create new popup using chrome.runtime.getURL for proper extension URL
+      const popupUrl = chrome.runtime.getURL(`src/approval/approval.html?id=${approval.id}`)
+      logger.info('Opening approval popup', { url: popupUrl, approvalId: approval.id })
+
+      const popup = await chrome.windows.create({
+        url: popupUrl,
         type: 'popup',
         width: 400,
         height: 600,
         focused: true,
       })
+
+      if (!popup?.id) {
+        logger.error('Failed to create approval popup window')
+      }
     } catch (error) {
       logger.error('Failed to open approval popup', error)
+      // Reject the approval if popup fails to open
+      const resolver = this.resolvers.get(approval.id)
+      if (resolver) {
+        resolver.reject(new Error('Failed to open approval popup'))
+        this.resolvers.delete(approval.id)
+        this.pendingApprovals.delete(approval.id)
+        this.clearExpiryTimer(approval.id)
+      }
     }
   }
 
