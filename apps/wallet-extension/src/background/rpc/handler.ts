@@ -12,6 +12,7 @@ import {
   type UserOperation,
   type PackedUserOperation,
 } from '../../lib/userOp'
+import { eventBroadcaster } from '../utils/eventBroadcaster'
 
 type RpcHandler = (
   params: unknown[] | undefined,
@@ -85,6 +86,16 @@ const handlers: Record<string, RpcHandler> = {
         permissions: result.permissions,
         connectedAt: Date.now(),
       })
+
+      // Get current chain ID for connect event
+      const network = walletState.getCurrentNetwork()
+      const chainIdHex = network ? `0x${network.chainId.toString(16)}` : '0x1'
+
+      // Broadcast connect event (EIP-1193)
+      await eventBroadcaster.broadcastConnect(origin, chainIdHex)
+
+      // Broadcast accountsChanged with the connected accounts
+      await eventBroadcaster.broadcastAccountsChanged(origin, result.accounts)
 
       // Return accounts with selected account first
       const selectedAccount = state.accounts.selectedAccount

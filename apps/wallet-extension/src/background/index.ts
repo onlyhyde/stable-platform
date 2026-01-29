@@ -17,6 +17,7 @@ import { accountController } from './controller/accountController'
 import { networkController } from './controller/networkController'
 import { keyringController } from './keyring'
 import { approvalController } from './controllers/approvalController'
+import { eventBroadcaster } from './utils/eventBroadcaster'
 import type { ExtensionMessage, JsonRpcRequest } from '../types'
 import type { Address, Hex } from 'viem'
 import { MESSAGE_TYPES } from '../shared/constants'
@@ -347,12 +348,34 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendRes
 
 /**
  * Handle incoming messages
+ *
+ * Security: Origin is derived only from trusted sources (sender.tab.url or sender.origin)
+ * Never trust message.origin as it can be spoofed by malicious content scripts (SEC-3)
+ *
+ * @see TASK_LIST.md - SEC-3
  */
 async function handleMessage(
   message: ExtensionMessage,
   sender: chrome.runtime.MessageSender
 ): Promise<ExtensionMessage> {
-  const origin = message.origin ?? sender.origin ?? originFromUrl(sender.tab?.url) ?? 'unknown'
+  // SEC-3: Never trust message.origin - always derive from sender
+  // Priority: sender.tab.url (content script) > sender.origin (popup/extension pages)
+  let origin: string
+  if (sender.tab?.url) {
+    origin = originFromUrl(sender.tab.url)
+  } else if (sender.origin) {
+    origin = sender.origin
+  } else {
+    // Only allow internal extension messages without origin
+    origin = 'extension'
+  }
+
+  // Validate origin format for external requests
+  if (origin !== 'extension' && !origin.startsWith('http://') && !origin.startsWith('https://')) {
+    logger.warn('Invalid origin format', { origin, messageType: message.type })
+    origin = 'unknown'
+  }
+
   const tabId = sender.tab?.id
 
   switch (message.type) {
@@ -425,6 +448,9 @@ async function handleMessage(
     }
 
     case MESSAGE_TYPES.DISCONNECT: {
+      // Broadcast disconnect event before removing (EIP-1193)
+      await eventBroadcaster.broadcastDisconnect(origin)
+
       await walletState.removeConnectedSite(origin)
 
       return {
@@ -443,7 +469,24 @@ async function handleMessage(
         // Broadcast to all tabs
         await broadcastChainChanged(payload.chainId)
       } else if (payload?.action === 'selectAccount' && payload.address) {
-        await walletState.selectAccount(payload.address as `0x${string}`)
+        const newSelectedAccount = payload.address as `0x${string}`
+        await walletState.selectAccount(newSelectedAccount)
+
+        // Broadcast accountsChanged to all connected sites (Task 1.5)
+        // Each site receives their connected accounts with the new selection first
+        const state = walletState.getState()
+        for (const site of state.connections.connectedSites) {
+          // Only broadcast if the selected account is connected to this site
+          // Otherwise, send the same account list (order unchanged)
+          let accountsForOrigin = [...site.accounts]
+          if (accountsForOrigin.includes(newSelectedAccount)) {
+            accountsForOrigin = [
+              newSelectedAccount,
+              ...accountsForOrigin.filter((a) => a !== newSelectedAccount),
+            ]
+          }
+          await eventBroadcaster.broadcastAccountsChanged(site.origin, accountsForOrigin)
+        }
       }
 
       // Return current state
@@ -788,6 +831,9 @@ async function handleMessage(
     case 'DISCONNECT_SITE': {
       const { origin: siteOrigin } = message.payload as { origin: string }
 
+      // Broadcast disconnect event before removing (EIP-1193)
+      await eventBroadcaster.broadcastDisconnect(siteOrigin)
+
       await walletState.removeConnectedSite(siteOrigin)
 
       return {
@@ -816,48 +862,44 @@ async function handleMessage(
 // =============================================================================
 
 /**
- * Broadcast state changes to all connected tabs
+ * Broadcast state changes to all connected sites
+ * Uses origin-based filtering to prevent privacy leaks (SEC-1)
+ *
+ * @see TASK_LIST.md - Task 1.4, SEC-1
  */
 async function broadcastStateUpdate(): Promise<void> {
   const state = walletState.getState()
-  const tabs = await chrome.tabs.query({})
+  const selectedAccount = state.accounts.selectedAccount
 
-  for (const tab of tabs) {
-    if (tab.id) {
-      chrome.tabs.sendMessage(tab.id, {
-        type: MESSAGE_TYPES.STATE_UPDATE,
-        id: `state-${Date.now()}`,
-        payload: {
-          chainId: networkController.getChainIdHex(),
-          accounts: state.connections.connectedSites.flatMap((s) => s.accounts),
-        },
-      }).catch(() => {
-        // Tab might not have content script loaded
-      })
+  // Broadcast accountsChanged to each connected site with their specific accounts
+  // This fixes SEC-1: Privacy leak where all accounts were sent to all origins
+  for (const site of state.connections.connectedSites) {
+    // Get accounts for this origin, with selected account first if connected
+    let accountsForOrigin = [...site.accounts]
+    if (selectedAccount && accountsForOrigin.includes(selectedAccount)) {
+      accountsForOrigin = [
+        selectedAccount,
+        ...accountsForOrigin.filter((a) => a !== selectedAccount),
+      ]
     }
+
+    await eventBroadcaster.broadcastAccountsChanged(site.origin, accountsForOrigin)
   }
 }
 
 /**
- * Broadcast chain changed event to all tabs
+ * Broadcast chain changed event to all connected sites
+ * Uses eventBroadcaster for consistent origin-based messaging
  */
 async function broadcastChainChanged(chainId: number): Promise<void> {
   const chainIdHex = `0x${chainId.toString(16)}`
-  const tabs = await chrome.tabs.query({})
+  const state = walletState.getState()
 
-  for (const tab of tabs) {
-    if (tab.id) {
-      chrome.tabs.sendMessage(tab.id, {
-        type: MESSAGE_TYPES.STATE_UPDATE,
-        id: `chain-${Date.now()}`,
-        payload: {
-          chainId: chainIdHex,
-        },
-      }).catch(() => {
-        // Tab might not have content script loaded
-      })
-    }
-  }
+  // Get all connected origins
+  const connectedOrigins = state.connections.connectedSites.map((s) => s.origin)
+
+  // Broadcast to all connected sites
+  await eventBroadcaster.broadcastChainChanged(chainIdHex, connectedOrigins)
 }
 
 // =============================================================================
