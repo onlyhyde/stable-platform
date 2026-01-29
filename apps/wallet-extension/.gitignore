@@ -1,0 +1,24 @@
+# Build output
+dist/
+
+# Dependencies (managed by pnpm at root level)
+node_modules/
+
+# Test output
+coverage/
+
+# E2E Test artifacts
+e2e-report/
+e2e-results/
+playwright-report/
+test-results/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
