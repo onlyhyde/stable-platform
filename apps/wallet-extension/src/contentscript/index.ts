@@ -3,16 +3,19 @@
  *
  * This script runs in the context of web pages and acts as a bridge
  * between the inpage provider and the background service worker.
+ *
+ * Security: Uses chrome.storage.local instead of window.localStorage
+ * to prevent page scripts from reading/modifying wallet settings.
  */
 
 import type { ExtensionMessage } from '../types'
 import { MESSAGE_TYPES } from '../shared/constants'
 
-// Sync MetaMask mode setting before injecting inpage script
-syncMetaMaskMode()
-  .then(() => {
-    // Inject the inpage script into the page
-    injectScript()
+// Get MetaMask mode setting and inject inpage script
+getMetaMaskMode()
+  .then((enabled) => {
+    // Inject the inpage script with settings via data attribute
+    injectScript(enabled)
 
     // Set up message relay between page and background
     setupMessageRelay()
@@ -21,38 +24,38 @@ syncMetaMaskMode()
     listenForModeChanges()
   })
   .catch(() => {
-    // Still inject scripts even if sync fails, using default settings
-    injectScript()
+    // Still inject scripts even if fetch fails, using default settings
+    injectScript(false)
     setupMessageRelay()
     listenForModeChanges()
   })
 
 /**
- * Sync MetaMask mode from chrome.storage to localStorage
- * This must happen BEFORE the inpage script is injected
+ * Get MetaMask mode from chrome.storage.local
+ * SEC-2: Use chrome.storage instead of localStorage for security
  */
-async function syncMetaMaskMode(): Promise<void> {
+async function getMetaMaskMode(): Promise<boolean> {
   try {
     const result = await chrome.storage.local.get('stablenet_metamask_mode')
-    const enabled = result.stablenet_metamask_mode ?? false
-
-    // Sync to localStorage so inpage script can read it
-    // (inpage runs in page context and can't access chrome.storage)
-    window.localStorage.setItem('__stablenetAppearAsMM__', JSON.stringify(enabled))
+    return result.stablenet_metamask_mode ?? false
   } catch {
-    // If sync fails, use default (false)
-    window.localStorage.setItem('__stablenetAppearAsMM__', 'false')
+    return false
   }
 }
 
 /**
- * Inject the inpage script into the page
+ * Inject the inpage script into the page with configuration
+ * SEC-2: Pass settings via data attribute instead of localStorage
  */
-function injectScript(): void {
+function injectScript(metamaskModeEnabled: boolean): void {
   try {
     const script = document.createElement('script')
     script.src = chrome.runtime.getURL('inpage.js')
     script.async = false
+    // Pass configuration via data attribute (read-only from page perspective)
+    script.dataset.stablenetConfig = JSON.stringify({
+      metamaskMode: metamaskModeEnabled,
+    })
     ;(document.head || document.documentElement).appendChild(script)
     script.remove()
   } catch {
@@ -126,16 +129,15 @@ function setupMessageRelay(): void {
 /**
  * Listen for MetaMask mode changes from background
  * When changed, notify the inpage script to update dynamically
+ * SEC-2: Removed localStorage usage - settings are passed via postMessage only
  */
 function listenForModeChanges(): void {
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'local' && changes.stablenet_metamask_mode) {
       const newValue = changes.stablenet_metamask_mode.newValue ?? false
 
-      // Update localStorage for next page load
-      window.localStorage.setItem('__stablenetAppearAsMM__', JSON.stringify(newValue))
-
       // Send message to inpage script to update dynamically (no page refresh needed)
+      // SEC-2: Use postMessage instead of localStorage for secure communication
       window.postMessage(
         {
           target: 'stablenet-inpage',

@@ -387,7 +387,8 @@ export class ApprovalController {
       }
 
       // Create new popup using chrome.runtime.getURL for proper extension URL
-      const popupUrl = chrome.runtime.getURL(`src/approval/approval.html?id=${approval.id}`)
+      // SEC-12: URL encode the approval ID to prevent injection attacks
+      const popupUrl = chrome.runtime.getURL(`src/approval/approval.html?id=${encodeURIComponent(approval.id)}`)
       logger.info('Opening approval popup', { url: popupUrl, approvalId: approval.id })
 
       const popup = await chrome.windows.create({

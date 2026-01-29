@@ -57,6 +57,7 @@ export const WALLET_ENV_VARS = {
   // Security
   AUTO_LOCK_MINUTES: 'VITE_WALLET_AUTO_LOCK_MINUTES',
   PBKDF2_ITERATIONS: 'VITE_WALLET_PBKDF2_ITERATIONS',
+  ENFORCE_HTTPS_RPC_URLS: 'VITE_WALLET_ENFORCE_HTTPS_RPC_URLS',
 
   // Limits
   GAS_HISTORY_MAX_LENGTH: 'VITE_WALLET_GAS_HISTORY_MAX_LENGTH',
@@ -95,6 +96,7 @@ const DEFAULTS = {
   // Security
   AUTO_LOCK_MINUTES: 5,
   PBKDF2_ITERATIONS: 100000,
+  ENFORCE_HTTPS_RPC_URLS: false, // Set to true in production to enforce HTTPS for RPC URLs
 
   // Limits
   GAS_HISTORY_MAX_LENGTH: 100,
@@ -128,6 +130,14 @@ function getEnvNumber(name: string, defaultValue: number): number {
   const strValue = getEnvString(name, String(defaultValue))
   const num = Number.parseInt(strValue, 10)
   return Number.isNaN(num) ? defaultValue : num
+}
+
+/**
+ * Get environment variable as boolean
+ */
+function getEnvBoolean(name: string, defaultValue: boolean): boolean {
+  const strValue = getEnvString(name, String(defaultValue))
+  return strValue === 'true' || strValue === '1'
 }
 
 // =============================================================================
@@ -231,6 +241,12 @@ export function getSecurityConfig() {
   return {
     autoLockMinutes: getEnvNumber(WALLET_ENV_VARS.AUTO_LOCK_MINUTES, DEFAULTS.AUTO_LOCK_MINUTES),
     pbkdf2Iterations: getEnvNumber(WALLET_ENV_VARS.PBKDF2_ITERATIONS, DEFAULTS.PBKDF2_ITERATIONS),
+    /**
+     * When enabled, enforces HTTPS for all RPC URLs in production.
+     * Set to false by default for local development/testing with HTTP URLs.
+     * Enable via VITE_WALLET_ENFORCE_HTTPS_RPC_URLS=true for production builds.
+     */
+    enforceHttpsRpcUrls: getEnvBoolean(WALLET_ENV_VARS.ENFORCE_HTTPS_RPC_URLS, DEFAULTS.ENFORCE_HTTPS_RPC_URLS),
   }
 }
 
@@ -312,4 +328,63 @@ export function chainIdToHex(chainId: number): string {
  */
 export function hexToChainId(hex: string): number {
   return Number.parseInt(hex, 16)
+}
+
+// =============================================================================
+// URL Security Validation
+// =============================================================================
+
+/**
+ * Validate RPC URL for security requirements
+ * When enforceHttpsRpcUrls is enabled, rejects HTTP URLs (except localhost)
+ *
+ * @param url - The RPC URL to validate
+ * @returns Object with valid status and optional error message
+ */
+export function validateRpcUrl(url: string): { valid: boolean; error?: string } {
+  try {
+    const parsed = new URL(url)
+
+    // Always allow localhost/127.0.0.1 for development
+    const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+
+    // Check HTTPS enforcement when enabled
+    const securityConfig = getSecurityConfig()
+    if (securityConfig.enforceHttpsRpcUrls && !isLocalhost) {
+      if (parsed.protocol !== 'https:') {
+        return {
+          valid: false,
+          error: `HTTPS is required for RPC URLs in production. Got: ${parsed.protocol}`,
+        }
+      }
+    }
+
+    // Validate protocol is http or https
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return {
+        valid: false,
+        error: `Invalid protocol for RPC URL. Expected http: or https:, got: ${parsed.protocol}`,
+      }
+    }
+
+    return { valid: true }
+  } catch {
+    return {
+      valid: false,
+      error: `Invalid URL format: ${url}`,
+    }
+  }
+}
+
+/**
+ * Assert that an RPC URL is valid, throwing an error if not
+ *
+ * @param url - The RPC URL to validate
+ * @throws Error if URL is invalid or fails security requirements
+ */
+export function assertValidRpcUrl(url: string): void {
+  const result = validateRpcUrl(url)
+  if (!result.valid) {
+    throw new Error(result.error)
+  }
 }

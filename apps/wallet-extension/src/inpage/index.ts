@@ -8,6 +8,10 @@
  * - EIP-1193 Ethereum Provider
  * - EIP-6963 Provider Announcement for multi-wallet discovery
  * - MetaMask Compatibility Mode for legacy dApp support
+ *
+ * Security:
+ * - SEC-2: Configuration passed via data attribute instead of localStorage
+ *   to prevent page scripts from reading/modifying wallet settings
  */
 
 import type { EIP1193Provider, ExtensionMessage, JsonRpcRequest, JsonRpcResponse } from '../types'
@@ -19,14 +23,29 @@ const logger = createLogger('InpageProvider')
 
 type EventListener = (...args: unknown[]) => void
 
-// Read MetaMask appearance mode from localStorage
-let appearAsMetaMask = false
-try {
-  const stored = window.localStorage.getItem('__stablenetAppearAsMM__')
-  appearAsMetaMask = stored ? JSON.parse(stored) : false
-} catch {
-  appearAsMetaMask = false
+/**
+ * Read configuration from the injected script's data attribute
+ * SEC-2: Use data attribute instead of localStorage for security
+ */
+function getInjectedConfig(): { metamaskMode: boolean } {
+  try {
+    // Find the script element that was injected with our configuration
+    const scripts = document.querySelectorAll('script[data-stablenet-config]')
+    for (const script of scripts) {
+      const configStr = (script as HTMLScriptElement).dataset.stablenetConfig
+      if (configStr) {
+        return JSON.parse(configStr)
+      }
+    }
+  } catch {
+    // Configuration parsing failed
+  }
+  return { metamaskMode: false }
 }
+
+// Read MetaMask appearance mode from injected script data attribute
+const injectedConfig = getInjectedConfig()
+let appearAsMetaMask = injectedConfig.metamaskMode
 
 // Track current mode for dynamic updates
 let currentMetaMaskMode = appearAsMetaMask
