@@ -7,25 +7,43 @@ interface WelcomeProps {
 
 export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
   return (
-    <div className="min-h-full flex flex-col items-center justify-center p-6">
+    <div
+      className="min-h-full flex flex-col items-center justify-center p-6"
+      style={{ backgroundColor: 'rgb(var(--background))' }}
+    >
       {/* Logo */}
-      <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6">
+      <div
+        className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg"
+        style={{
+          background: 'linear-gradient(135deg, rgb(var(--primary)), rgb(var(--accent)))',
+        }}
+      >
         <span className="text-3xl font-bold text-white">S</span>
       </div>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">
+      <h1
+        className="text-2xl font-bold mb-2"
+        style={{ color: 'rgb(var(--foreground))' }}
+      >
         Welcome to StableNet
       </h1>
-      <p className="text-gray-500 text-center mb-8">
+      <p
+        className="text-center mb-8"
+        style={{ color: 'rgb(var(--muted-foreground))' }}
+      >
         Your gateway to the decentralized future
       </p>
 
       <div className="w-full space-y-4">
-        <Card padding="lg" className="hover:border-indigo-200 transition-colors">
+        <Card padding="lg" className="transition-colors hover:border-opacity-50">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+            >
               <svg
-                className="w-6 h-6 text-indigo-600"
+                className="w-6 h-6"
+                style={{ color: 'rgb(var(--primary))' }}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -40,10 +58,16 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-1">
+              <h3
+                className="font-semibold mb-1"
+                style={{ color: 'rgb(var(--foreground))' }}
+              >
                 Create a new wallet
               </h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <p
+                className="text-sm mb-4"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
                 Generate a new seed phrase and set up your wallet
               </p>
               <Button onClick={onCreateNew} fullWidth>
@@ -53,11 +77,15 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
           </div>
         </Card>
 
-        <Card padding="lg" className="hover:border-indigo-200 transition-colors">
+        <Card padding="lg" className="transition-colors hover:border-opacity-50">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}
+            >
               <svg
-                className="w-6 h-6 text-green-600"
+                className="w-6 h-6"
+                style={{ color: 'rgb(var(--success))' }}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -72,10 +100,16 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-1">
+              <h3
+                className="font-semibold mb-1"
+                style={{ color: 'rgb(var(--foreground))' }}
+              >
                 Import existing wallet
               </h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <p
+                className="text-sm mb-4"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
                 Restore your wallet using a seed phrase
               </p>
               <Button onClick={onImport} variant="secondary" fullWidth>
@@ -86,7 +120,10 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
         </Card>
       </div>
 
-      <p className="text-xs text-gray-400 mt-8 text-center">
+      <p
+        className="text-xs mt-8 text-center"
+        style={{ color: 'rgb(var(--foreground-tertiary))' }}
+      >
         By continuing, you agree to our Terms of Service and Privacy Policy
       </p>
     </div>

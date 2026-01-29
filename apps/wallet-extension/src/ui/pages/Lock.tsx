@@ -29,14 +29,32 @@ export function Lock({ onUnlock, error }: LockProps) {
   }
 
   return (
-    <div className="min-h-full flex flex-col items-center justify-center p-6 bg-gray-50">
+    <div
+      className="min-h-full flex flex-col items-center justify-center p-6"
+      style={{ backgroundColor: 'rgb(var(--background))' }}
+    >
       {/* Logo */}
-      <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+      <div
+        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg"
+        style={{
+          background: 'linear-gradient(135deg, rgb(var(--primary)), rgb(var(--accent)))',
+        }}
+      >
         <span className="text-2xl font-bold text-white">S</span>
       </div>
 
-      <h1 className="text-xl font-bold text-gray-900 mb-1">Welcome Back</h1>
-      <p className="text-sm text-gray-500 mb-8">Enter your password to unlock</p>
+      <h1
+        className="text-xl font-bold mb-1"
+        style={{ color: 'rgb(var(--foreground))' }}
+      >
+        Welcome Back
+      </h1>
+      <p
+        className="text-sm mb-8"
+        style={{ color: 'rgb(var(--muted-foreground))' }}
+      >
+        Enter your password to unlock
+      </p>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm">
         <div className="mb-4">
@@ -51,7 +69,7 @@ export function Lock({ onUnlock, error }: LockProps) {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-gray-400 hover:text-gray-600"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
               >
                 {showPassword ? (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -80,13 +98,17 @@ export function Lock({ onUnlock, error }: LockProps) {
 
       <button
         type="button"
-        className="mt-6 text-sm text-indigo-600 hover:text-indigo-700"
+        className="mt-6 text-sm"
+        style={{ color: 'rgb(var(--primary))' }}
       >
         Forgot password?
       </button>
 
       <Card variant="filled" padding="sm" className="mt-8 max-w-sm">
-        <p className="text-xs text-gray-500 text-center">
+        <p
+          className="text-xs text-center"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+        >
           If you forgot your password, you can restore your wallet using your
           recovery phrase.
         </p>

@@ -11,9 +11,9 @@ const sizeStyles = {
 }
 
 const colorStyles = {
-  primary: 'text-indigo-600',
-  white: 'text-white',
-  gray: 'text-gray-400',
+  primary: 'spinner-primary',
+  white: 'spinner-white',
+  gray: 'spinner-muted',
 }
 
 export function Spinner({
@@ -51,10 +51,13 @@ export interface LoadingOverlayProps {
 
 export function LoadingOverlay({ message }: LoadingOverlayProps) {
   return (
-    <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-50">
+    <div
+      className="absolute inset-0 flex flex-col items-center justify-center z-50 backdrop-blur-sm"
+      style={{ backgroundColor: 'rgb(var(--background) / 0.8)' }}
+    >
       <Spinner size="lg" />
       {message && (
-        <p className="mt-3 text-sm text-gray-600">{message}</p>
+        <p className="mt-3 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{message}</p>
       )}
     </div>
   )

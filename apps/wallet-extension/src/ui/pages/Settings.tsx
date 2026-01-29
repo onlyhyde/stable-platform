@@ -318,18 +318,32 @@ export function Settings() {
   }, [])
 
   return (
-    <div className="p-4 overflow-y-auto max-h-[500px]">
-      <h2 className="text-xl font-bold mb-6">Settings</h2>
+    <div
+      className="p-4 overflow-y-auto max-h-[500px]"
+      style={{ backgroundColor: 'rgb(var(--background))' }}
+    >
+      <h2
+        className="text-xl font-bold mb-6"
+        style={{ color: 'rgb(var(--foreground))' }}
+      >
+        Settings
+      </h2>
 
       <div className="space-y-6">
         {/* Network Settings */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-700">Network</h3>
+            <h3
+              className="text-sm font-medium"
+              style={{ color: 'rgb(var(--foreground-secondary))' }}
+            >
+              Network
+            </h3>
             <button
               type="button"
               onClick={() => setShowAddNetwork(!showAddNetwork)}
-              className="text-sm text-indigo-600 hover:text-indigo-700"
+              className="text-sm"
+              style={{ color: 'rgb(var(--primary))' }}
             >
               {showAddNetwork ? 'Cancel' : '+ Add Network'}
             </button>
@@ -337,36 +351,47 @@ export function Settings() {
 
           {/* Add Network Form */}
           {showAddNetwork && (
-            <div className="mb-4 p-3 rounded-lg border border-indigo-200 bg-indigo-50">
-              <h4 className="text-sm font-medium mb-3">Add Custom Network</h4>
+            <div
+              className="mb-4 p-3 rounded-lg"
+              style={{
+                backgroundColor: 'rgb(var(--primary) / 0.1)',
+                border: '1px solid rgb(var(--primary) / 0.2)',
+              }}
+            >
+              <h4
+                className="text-sm font-medium mb-3"
+                style={{ color: 'rgb(var(--foreground))' }}
+              >
+                Add Custom Network
+              </h4>
               <div className="space-y-3">
                 <input
                   type="text"
                   placeholder="Network Name"
                   value={networkForm.name}
                   onChange={(e) => setNetworkForm({ ...networkForm, name: e.target.value })}
-                  className="w-full p-2 border border-gray-200 rounded-lg text-sm"
+                  className="input-base w-full p-2 rounded-lg text-sm"
                 />
                 <input
                   type="text"
                   placeholder="Chain ID (e.g., 1, 137, 42161)"
                   value={networkForm.chainId}
                   onChange={(e) => setNetworkForm({ ...networkForm, chainId: e.target.value })}
-                  className="w-full p-2 border border-gray-200 rounded-lg text-sm"
+                  className="input-base w-full p-2 rounded-lg text-sm"
                 />
                 <input
                   type="text"
                   placeholder="RPC URL"
                   value={networkForm.rpcUrl}
                   onChange={(e) => setNetworkForm({ ...networkForm, rpcUrl: e.target.value })}
-                  className="w-full p-2 border border-gray-200 rounded-lg text-sm"
+                  className="input-base w-full p-2 rounded-lg text-sm"
                 />
                 <input
                   type="text"
                   placeholder="Bundler URL (optional, defaults to RPC URL)"
                   value={networkForm.bundlerUrl}
                   onChange={(e) => setNetworkForm({ ...networkForm, bundlerUrl: e.target.value })}
-                  className="w-full p-2 border border-gray-200 rounded-lg text-sm"
+                  className="input-base w-full p-2 rounded-lg text-sm"
                 />
                 <input
                   type="text"
@@ -375,22 +400,30 @@ export function Settings() {
                   onChange={(e) =>
                     setNetworkForm({ ...networkForm, currencySymbol: e.target.value })
                   }
-                  className="w-full p-2 border border-gray-200 rounded-lg text-sm"
+                  className="input-base w-full p-2 rounded-lg text-sm"
                 />
                 <input
                   type="text"
                   placeholder="Block Explorer URL (optional)"
                   value={networkForm.explorerUrl}
                   onChange={(e) => setNetworkForm({ ...networkForm, explorerUrl: e.target.value })}
-                  className="w-full p-2 border border-gray-200 rounded-lg text-sm"
+                  className="input-base w-full p-2 rounded-lg text-sm"
                 />
-                {networkError && <p className="text-xs text-red-600">{networkError}</p>}
-                {networkSuccess && <p className="text-xs text-green-600">{networkSuccess}</p>}
+                {networkError && (
+                  <p className="text-xs" style={{ color: 'rgb(var(--destructive))' }}>
+                    {networkError}
+                  </p>
+                )}
+                {networkSuccess && (
+                  <p className="text-xs" style={{ color: 'rgb(var(--success))' }}>
+                    {networkSuccess}
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={handleAddNetwork}
                   disabled={isAddingNetwork}
-                  className="w-full py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="btn-primary w-full py-2 rounded-lg text-sm disabled:opacity-50"
                 >
                   {isAddingNetwork ? 'Adding...' : 'Add Network'}
                 </button>
@@ -403,11 +436,17 @@ export function Settings() {
             {networks.map((network) => (
               <div
                 key={network.chainId}
-                className={`w-full p-3 rounded-lg border flex items-center justify-between ${
-                  network.chainId === selectedChainId
-                    ? 'border-indigo-600 bg-indigo-50'
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}
+                className="w-full p-3 rounded-lg border flex items-center justify-between transition-colors"
+                style={{
+                  borderColor:
+                    network.chainId === selectedChainId
+                      ? 'rgb(var(--primary))'
+                      : 'rgb(var(--border))',
+                  backgroundColor:
+                    network.chainId === selectedChainId
+                      ? 'rgb(var(--primary) / 0.1)'
+                      : 'transparent',
+                }}
               >
                 <button
                   type="button"
@@ -415,24 +454,44 @@ export function Settings() {
                   className="flex items-center gap-3 flex-1 text-left"
                 >
                   <div
-                    className={`w-3 h-3 rounded-full ${
-                      network.chainId === selectedChainId ? 'bg-indigo-600' : 'bg-gray-300'
-                    }`}
+                    className="w-3 h-3 rounded-full"
+                    style={{
+                      backgroundColor:
+                        network.chainId === selectedChainId
+                          ? 'rgb(var(--primary))'
+                          : 'rgb(var(--border))',
+                    }}
                   />
                   <div>
-                    <span className="font-medium">{network.name}</span>
+                    <span
+                      className="font-medium"
+                      style={{ color: 'rgb(var(--foreground))' }}
+                    >
+                      {network.name}
+                    </span>
                     {network.isCustom && (
-                      <span className="ml-2 text-xs text-gray-400">(Custom)</span>
+                      <span
+                        className="ml-2 text-xs"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
+                        (Custom)
+                      </span>
                     )}
                   </div>
                 </button>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Chain {network.chainId}</span>
+                  <span
+                    className="text-sm"
+                    style={{ color: 'rgb(var(--muted-foreground))' }}
+                  >
+                    Chain {network.chainId}
+                  </span>
                   {network.isCustom && (
                     <button
                       type="button"
                       onClick={() => handleRemoveNetwork(network.chainId)}
-                      className="text-red-500 hover:text-red-700 p-1"
+                      className="p-1"
+                      style={{ color: 'rgb(var(--destructive))' }}
                       title="Remove network"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -454,11 +513,17 @@ export function Settings() {
         {/* Account Management */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-700">Accounts</h3>
+            <h3
+              className="text-sm font-medium"
+              style={{ color: 'rgb(var(--foreground-secondary))' }}
+            >
+              Accounts
+            </h3>
             <button
               type="button"
               onClick={() => setShowImportKey(!showImportKey)}
-              className="text-sm text-indigo-600 hover:text-indigo-700"
+              className="text-sm"
+              style={{ color: 'rgb(var(--primary))' }}
             >
               {showImportKey ? 'Cancel' : '+ Import Account'}
             </button>
@@ -466,19 +531,41 @@ export function Settings() {
 
           {/* Import Private Key Form */}
           {showImportKey && (
-            <div className="mb-4 p-3 rounded-lg border border-indigo-200 bg-indigo-50">
-              <h4 className="text-sm font-medium mb-3">Import Private Key</h4>
+            <div
+              className="mb-4 p-3 rounded-lg"
+              style={{
+                backgroundColor: 'rgb(var(--primary) / 0.1)',
+                border: '1px solid rgb(var(--primary) / 0.2)',
+              }}
+            >
+              <h4
+                className="text-sm font-medium mb-3"
+                style={{ color: 'rgb(var(--foreground))' }}
+              >
+                Import Private Key
+              </h4>
               <div className="space-y-3">
                 <input
                   type="password"
                   placeholder="Enter private key (with or without 0x prefix)"
                   value={privateKeyInput}
                   onChange={(e) => setPrivateKeyInput(e.target.value)}
-                  className="w-full p-2 border border-gray-200 rounded-lg text-sm font-mono"
+                  className="input-base w-full p-2 rounded-lg text-sm font-mono"
                 />
-                {importError && <p className="text-xs text-red-600">{importError}</p>}
-                {importSuccess && <p className="text-xs text-green-600">{importSuccess}</p>}
-                <p className="text-xs text-gray-500">
+                {importError && (
+                  <p className="text-xs" style={{ color: 'rgb(var(--destructive))' }}>
+                    {importError}
+                  </p>
+                )}
+                {importSuccess && (
+                  <p className="text-xs" style={{ color: 'rgb(var(--success))' }}>
+                    {importSuccess}
+                  </p>
+                )}
+                <p
+                  className="text-xs"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                >
                   Warning: Never share your private key with anyone. StableNet will never ask for
                   your private key.
                 </p>
@@ -486,7 +573,7 @@ export function Settings() {
                   type="button"
                   onClick={handleImportPrivateKey}
                   disabled={isImporting}
-                  className="w-full py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="btn-primary w-full py-2 rounded-lg text-sm disabled:opacity-50"
                 >
                   {isImporting ? 'Importing...' : 'Import Account'}
                 </button>
@@ -497,21 +584,37 @@ export function Settings() {
 
         {/* Security Settings */}
         <section>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Security</h3>
+          <h3
+            className="text-sm font-medium mb-3"
+            style={{ color: 'rgb(var(--foreground-secondary))' }}
+          >
+            Security
+          </h3>
           <div className="space-y-3">
             {/* Auto-Lock Setting */}
-            <div className="p-3 rounded-lg border border-gray-200">
+            <div
+              className="p-3 rounded-lg"
+              style={{ border: '1px solid rgb(var(--border))' }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">Auto-Lock</span>
+                <span
+                  className="font-medium"
+                  style={{ color: 'rgb(var(--foreground))' }}
+                >
+                  Auto-Lock
+                </span>
               </div>
-              <p className="text-xs text-gray-500 mb-3">
+              <p
+                className="text-xs mb-3"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
                 Automatically lock wallet after being idle
               </p>
               {!isLoadingSettings && (
                 <select
                   value={autoLockMinutes}
                   onChange={(e) => handleAutoLockChange(Number(e.target.value))}
-                  className="w-full p-2 border border-gray-200 rounded-lg text-sm"
+                  className="input-base w-full p-2 rounded-lg text-sm"
                 >
                   {AUTO_LOCK_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -526,11 +629,13 @@ export function Settings() {
             <button
               type="button"
               onClick={() => setShowExportKey(true)}
-              className="w-full p-3 rounded-lg border border-gray-200 flex items-center justify-between hover:bg-gray-50"
+              className="w-full p-3 rounded-lg flex items-center justify-between transition-colors"
+              style={{ border: '1px solid rgb(var(--border))' }}
             >
-              <span>Export Private Key</span>
+              <span style={{ color: 'rgb(var(--foreground))' }}>Export Private Key</span>
               <svg
-                className="w-5 h-5 text-gray-400"
+                className="w-5 h-5"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -547,22 +652,46 @@ export function Settings() {
 
             {/* Export Private Key Modal */}
             {showExportKey && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-4 w-80 max-h-[90vh] overflow-y-auto">
-                  <h3 className="text-lg font-bold mb-4">Export Private Key</h3>
+              <div
+                className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm"
+                style={{ backgroundColor: 'rgb(var(--overlay) / 0.6)' }}
+              >
+                <div
+                  className="rounded-lg p-4 w-80 max-h-[90vh] overflow-y-auto"
+                  style={{
+                    backgroundColor: 'rgb(var(--card-hover))',
+                    border: '1px solid rgb(var(--border))',
+                  }}
+                >
+                  <h3
+                    className="text-lg font-bold mb-4"
+                    style={{ color: 'rgb(var(--foreground))' }}
+                  >
+                    Export Private Key
+                  </h3>
 
                   {!exportedKey ? (
                     <>
-                      <p className="text-sm text-gray-600 mb-4">
+                      <p
+                        className="text-sm mb-4"
+                        style={{ color: 'rgb(var(--foreground-secondary))' }}
+                      >
                         Warning: Never share your private key. Anyone with your private key can
                         steal your funds.
                       </p>
-                      {exportError && <p className="text-sm text-red-600 mb-3">{exportError}</p>}
+                      {exportError && (
+                        <p
+                          className="text-sm mb-3"
+                          style={{ color: 'rgb(var(--destructive))' }}
+                        >
+                          {exportError}
+                        </p>
+                      )}
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={handleCloseExportKey}
-                          className="flex-1 py-2 border border-gray-200 rounded-lg text-sm"
+                          className="btn-secondary flex-1 py-2 rounded-lg text-sm"
                         >
                           Cancel
                         </button>
@@ -570,7 +699,7 @@ export function Settings() {
                           type="button"
                           onClick={handleExportPrivateKey}
                           disabled={isExporting}
-                          className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50"
+                          className="btn-danger flex-1 py-2 rounded-lg text-sm disabled:opacity-50"
                         >
                           {isExporting ? 'Exporting...' : 'Show Key'}
                         </button>
@@ -579,18 +708,24 @@ export function Settings() {
                   ) : (
                     <>
                       <div className="mb-4">
-                        <label className="text-xs text-gray-500 block mb-1">Private Key</label>
+                        <label
+                          className="text-xs block mb-1"
+                          style={{ color: 'rgb(var(--muted-foreground))' }}
+                        >
+                          Private Key
+                        </label>
                         <div className="relative">
                           <input
                             type={showKey ? 'text' : 'password'}
                             readOnly
                             value={exportedKey}
-                            className="w-full p-2 border border-gray-200 rounded-lg text-xs font-mono pr-16"
+                            className="input-base w-full p-2 rounded-lg text-xs font-mono pr-16"
                           />
                           <button
                             type="button"
                             onClick={() => setShowKey(!showKey)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-indigo-600"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs"
+                            style={{ color: 'rgb(var(--primary))' }}
                           >
                             {showKey ? 'Hide' : 'Show'}
                           </button>
@@ -602,14 +737,14 @@ export function Settings() {
                           navigator.clipboard.writeText(exportedKey)
                           alert('Copied to clipboard')
                         }}
-                        className="w-full py-2 mb-2 border border-indigo-600 text-indigo-600 rounded-lg text-sm hover:bg-indigo-50"
+                        className="btn-outline w-full py-2 mb-2 rounded-lg text-sm"
                       >
                         Copy to Clipboard
                       </button>
                       <button
                         type="button"
                         onClick={handleCloseExportKey}
-                        className="w-full py-2 bg-gray-100 rounded-lg text-sm"
+                        className="btn-secondary w-full py-2 rounded-lg text-sm"
                       >
                         Done
                       </button>
@@ -623,11 +758,13 @@ export function Settings() {
             <button
               type="button"
               onClick={handleOpenConnectedSites}
-              className="w-full p-3 rounded-lg border border-gray-200 flex items-center justify-between hover:bg-gray-50"
+              className="w-full p-3 rounded-lg flex items-center justify-between transition-colors"
+              style={{ border: '1px solid rgb(var(--border))' }}
             >
-              <span>Connected Sites</span>
+              <span style={{ color: 'rgb(var(--foreground))' }}>Connected Sites</span>
               <svg
-                className="w-5 h-5 text-gray-400"
+                className="w-5 h-5"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -644,14 +781,28 @@ export function Settings() {
 
             {/* Connected Sites Modal */}
             {showConnectedSites && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-4 w-80 max-h-[90vh] overflow-y-auto">
+              <div
+                className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm"
+                style={{ backgroundColor: 'rgb(var(--overlay) / 0.6)' }}
+              >
+                <div
+                  className="rounded-lg p-4 w-80 max-h-[90vh] overflow-y-auto"
+                  style={{
+                    backgroundColor: 'rgb(var(--card-hover))',
+                    border: '1px solid rgb(var(--border))',
+                  }}
+                >
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold">Connected Sites</h3>
+                    <h3
+                      className="text-lg font-bold"
+                      style={{ color: 'rgb(var(--foreground))' }}
+                    >
+                      Connected Sites
+                    </h3>
                     <button
                       type="button"
                       onClick={() => setShowConnectedSites(false)}
-                      className="text-gray-400 hover:text-gray-600"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
                     >
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path
@@ -665,9 +816,17 @@ export function Settings() {
                   </div>
 
                   {isLoadingSites ? (
-                    <p className="text-sm text-gray-500 text-center py-4">Loading...</p>
+                    <p
+                      className="text-sm text-center py-4"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
+                      Loading...
+                    </p>
                   ) : connectedSites.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">
+                    <p
+                      className="text-sm text-center py-4"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
                       No connected sites
                     </p>
                   ) : (
@@ -675,18 +834,28 @@ export function Settings() {
                       {connectedSites.map((site) => (
                         <div
                           key={site.origin}
-                          className="p-3 rounded-lg border border-gray-200 flex items-center justify-between"
+                          className="p-3 rounded-lg flex items-center justify-between"
+                          style={{ border: '1px solid rgb(var(--border))' }}
                         >
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{site.origin}</p>
-                            <p className="text-xs text-gray-400">
+                            <p
+                              className="text-sm font-medium truncate"
+                              style={{ color: 'rgb(var(--foreground))' }}
+                            >
+                              {site.origin}
+                            </p>
+                            <p
+                              className="text-xs"
+                              style={{ color: 'rgb(var(--muted-foreground))' }}
+                            >
                               {site.accounts.length} account{site.accounts.length !== 1 ? 's' : ''}
                             </p>
                           </div>
                           <button
                             type="button"
                             onClick={() => handleDisconnectSite(site.origin)}
-                            className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                            className="ml-2 text-xs"
+                            style={{ color: 'rgb(var(--destructive))' }}
                           >
                             Disconnect
                           </button>
@@ -698,7 +867,7 @@ export function Settings() {
                   <button
                     type="button"
                     onClick={() => setShowConnectedSites(false)}
-                    className="w-full mt-4 py-2 bg-gray-100 rounded-lg text-sm"
+                    className="btn-secondary w-full mt-4 py-2 rounded-lg text-sm"
                   >
                     Close
                   </button>
@@ -710,14 +879,30 @@ export function Settings() {
 
         {/* Advanced Settings */}
         <section>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Advanced</h3>
+          <h3
+            className="text-sm font-medium mb-3"
+            style={{ color: 'rgb(var(--foreground-secondary))' }}
+          >
+            Advanced
+          </h3>
           <div className="space-y-3">
             {/* MetaMask Compatibility Mode */}
-            <div className="p-3 rounded-lg border border-gray-200">
+            <div
+              className="p-3 rounded-lg"
+              style={{ border: '1px solid rgb(var(--border))' }}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <span className="font-medium">MetaMask Mode</span>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <span
+                    className="font-medium"
+                    style={{ color: 'rgb(var(--foreground))' }}
+                  >
+                    MetaMask Mode
+                  </span>
+                  <p
+                    className="text-xs mt-1"
+                    style={{ color: 'rgb(var(--muted-foreground))' }}
+                  >
                     Appear as MetaMask for legacy dApp compatibility
                   </p>
                 </div>
@@ -725,9 +910,12 @@ export function Settings() {
                   <button
                     type="button"
                     onClick={handleMetaMaskModeChange}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 ${
-                      metaMaskMode ? 'bg-indigo-600' : 'bg-gray-200'
-                    }`}
+                    className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out"
+                    style={{
+                      backgroundColor: metaMaskMode
+                        ? 'rgb(var(--primary))'
+                        : 'rgb(var(--border))',
+                    }}
                     role="switch"
                     aria-checked={metaMaskMode}
                   >
@@ -740,25 +928,54 @@ export function Settings() {
                   </button>
                 )}
               </div>
-              {metaMaskMode && (
-                <p className="text-xs text-amber-600 mt-2">Requires page reload to take effect</p>
-              )}
             </div>
           </div>
         </section>
 
         {/* About */}
         <section>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">About</h3>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-gray-600">StableNet Wallet</p>
-            <p className="text-xs text-gray-400 mt-1">Version 0.1.0</p>
-            <p className="text-xs text-gray-400 mt-2">
+          <h3
+            className="text-sm font-medium mb-3"
+            style={{ color: 'rgb(var(--foreground-secondary))' }}
+          >
+            About
+          </h3>
+          <div
+            className="rounded-lg p-4"
+            style={{ backgroundColor: 'rgb(var(--surface))' }}
+          >
+            <p
+              className="text-sm"
+              style={{ color: 'rgb(var(--foreground-secondary))' }}
+            >
+              StableNet Wallet
+            </p>
+            <p
+              className="text-xs mt-1"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
+              Version 0.1.0
+            </p>
+            <p
+              className="text-xs mt-2"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
               ERC-4337 Smart Account Wallet with stealth address support.
             </p>
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <p className="text-xs text-gray-400">Features:</p>
-              <ul className="text-xs text-gray-400 mt-1 list-disc list-inside">
+            <div
+              className="mt-3 pt-3"
+              style={{ borderTop: '1px solid rgb(var(--border))' }}
+            >
+              <p
+                className="text-xs"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
+                Features:
+              </p>
+              <ul
+                className="text-xs mt-1 list-disc list-inside"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
                 <li>EIP-6963 Multi-Wallet Discovery</li>
                 <li>MetaMask Compatibility Mode</li>
                 <li>Auto-Lock Protection</li>
@@ -773,7 +990,7 @@ export function Settings() {
         <button
           type="button"
           onClick={handleLockWallet}
-          className="w-full py-3 rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
+          className="btn-danger w-full py-3 rounded-lg"
         >
           Lock Wallet
         </button>

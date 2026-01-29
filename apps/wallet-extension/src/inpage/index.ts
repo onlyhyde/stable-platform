@@ -41,10 +41,22 @@ const WALLET_UUID = 'd8f3b2a1-5c4e-4f6d-9a8b-7e1c2d3f4a5b'
  * Wallet info for EIP-6963 announcement
  * Made mutable to support dynamic MetaMask mode switching
  */
+// StableNet shield logo SVG (base64 encoded)
+const STABLENET_ICON_SVG = 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366F1"/>
+      <stop offset="100%" style="stop-color:#4F46E5"/>
+    </linearGradient>
+  </defs>
+  <path d="M16 18 Q16 12 22 12 L106 12 Q112 12 112 18 L112 76 Q112 86 104 94 L64 116 L24 94 Q16 86 16 76 Z" fill="url(#g)"/>
+  <path d="M48 32 L80 32 A16 16 0 0 1 80 64 L48 64 A16 16 0 0 0 48 96 L80 96" stroke="white" stroke-width="10" stroke-linecap="round" fill="none"/>
+</svg>`)
+
 let walletInfo = {
   uuid: WALLET_UUID,
   name: appearAsMetaMask ? 'MetaMask' : 'StableNet Wallet',
-  icon: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiM0RjQ2RTUiLz48dGV4dCB4PSIxNiIgeT0iMjEiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LXNpemU9IjE0IiBmb250LWZhbWlseT0iQXJpYWwiPjwvdGV4dD48cGF0aCBkPSJNOCAxMmgxNnYySDh6TTggMTZoMTJ2Mkg4ek04IDIwaDh2Mkg4eiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=',
+  icon: STABLENET_ICON_SVG,
   rdns: appearAsMetaMask ? 'io.metamask' : 'dev.stablenet.wallet',
 }
 

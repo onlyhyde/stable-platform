@@ -89,7 +89,10 @@ export function ApprovalApp() {
 
   if (loading) {
     return (
-      <div className="w-full h-screen flex items-center justify-center bg-gray-50">
+      <div
+        className="w-full h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'rgb(var(--background))' }}
+      >
         <Spinner size="lg" />
       </div>
     )
@@ -97,18 +100,45 @@ export function ApprovalApp() {
 
   if (error) {
     return (
-      <div className="w-full h-screen flex flex-col items-center justify-center bg-gray-50 p-6">
-        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-          <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <div
+        className="w-full h-screen flex flex-col items-center justify-center p-6"
+        style={{ backgroundColor: 'rgb(var(--background))' }}
+      >
+        <div
+          className="w-12 h-12 rounded-full flex items-center justify-center mb-4"
+          style={{ backgroundColor: 'rgb(var(--destructive) / 0.1)' }}
+        >
+          <svg
+            className="w-6 h-6"
+            style={{ color: 'rgb(var(--destructive))' }}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        <p className="text-gray-900 font-medium mb-2">Error</p>
-        <p className="text-gray-500 text-sm text-center">{error}</p>
+        <p
+          className="font-medium mb-2"
+          style={{ color: 'rgb(var(--foreground))' }}
+        >
+          Error
+        </p>
+        <p
+          className="text-sm text-center"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+        >
+          {error}
+        </p>
         <button
           type="button"
           onClick={() => window.close()}
-          className="mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          className="mt-4 px-4 py-2 rounded-lg transition-colors"
+          style={{
+            backgroundColor: 'rgb(var(--surface))',
+            color: 'rgb(var(--foreground-secondary))',
+          }}
         >
           Close
         </button>
@@ -151,8 +181,11 @@ export function ApprovalApp() {
 
     default:
       return (
-        <div className="w-full h-screen flex items-center justify-center bg-gray-50">
-          <p className="text-gray-500">Unknown approval type</p>
+        <div
+          className="w-full h-screen flex items-center justify-center"
+          style={{ backgroundColor: 'rgb(var(--background))' }}
+        >
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>Unknown approval type</p>
         </div>
       )
   }

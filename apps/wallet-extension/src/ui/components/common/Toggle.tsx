@@ -35,10 +35,10 @@ export function Toggle({
       {(label || description) && (
         <div className="flex-1 mr-4">
           {label && (
-            <span className="text-sm font-medium text-gray-900">{label}</span>
+            <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>{label}</span>
           )}
           {description && (
-            <p className="text-sm text-gray-500">{description}</p>
+            <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{description}</p>
           )}
         </div>
       )}
@@ -50,19 +50,21 @@ export function Toggle({
         disabled={disabled}
         className={`
           relative inline-flex shrink-0 cursor-pointer rounded-full
-          border-2 border-transparent transition-colors duration-200 ease-in-out
-          focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
-          ${enabled ? 'bg-indigo-600' : 'bg-gray-200'}
+          border-2 border-transparent transition-all-fast
+          focus-ring-primary
           ${disabled ? 'cursor-not-allowed opacity-50' : ''}
           ${styles.track}
         `}
+        style={{
+          backgroundColor: enabled ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+        }}
       >
         <span className="sr-only">{label ?? 'Toggle'}</span>
         <span
           aria-hidden="true"
           className={`
             pointer-events-none inline-block rounded-full bg-white shadow
-            ring-0 transition duration-200 ease-in-out
+            ring-0 transition-all-fast
             ${enabled ? styles.translate : 'translate-x-0'}
             ${styles.thumb}
           `}

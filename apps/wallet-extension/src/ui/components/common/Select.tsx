@@ -38,14 +38,18 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-sm font-medium text-gray-700 mb-1.5"
+            className="block text-sm font-medium mb-1.5"
+            style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
             {label}
           </label>
         )}
         <div className="relative">
           {leftElement && (
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+            <div
+              className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
               {leftElement}
             </div>
           )}
@@ -53,15 +57,16 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={selectId}
             className={`
-              block w-full rounded-lg border appearance-none
-              ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}
+              block w-full rounded-lg appearance-none input-base
               px-3 py-2 text-sm
-              focus:outline-none focus:ring-2 focus:ring-offset-0
-              disabled:bg-gray-50 disabled:text-gray-500
+              focus:outline-none
               ${leftElement ? 'pl-10' : ''}
               pr-10
               ${className}
             `}
+            style={{
+              borderColor: error ? 'rgb(var(--destructive))' : undefined,
+            }}
             {...props}
           >
             {placeholder && (
@@ -79,7 +84,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               </option>
             ))}
           </select>
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+          <div
+            className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"
+            style={{ color: 'rgb(var(--muted-foreground))' }}
+          >
             <svg
               className="w-4 h-4"
               fill="none"
@@ -96,9 +104,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </svg>
           </div>
         </div>
-        {error && <p className="mt-1.5 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error}</p>}
         {hint && !error && (
-          <p className="mt-1.5 text-sm text-gray-500">{hint}</p>
+          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{hint}</p>
         )}
       </div>
     )

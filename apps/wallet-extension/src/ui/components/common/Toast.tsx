@@ -11,28 +11,28 @@ export interface ToastProps {
 
 const typeStyles = {
   success: {
-    bg: 'bg-green-50 border-green-200',
-    icon: 'text-green-500',
-    title: 'text-green-800',
-    message: 'text-green-700',
+    bg: 'toast-success',
+    icon: 'toast-icon-success',
+    title: 'toast-title-success',
+    message: 'toast-message-success',
   },
   error: {
-    bg: 'bg-red-50 border-red-200',
-    icon: 'text-red-500',
-    title: 'text-red-800',
-    message: 'text-red-700',
+    bg: 'toast-error',
+    icon: 'toast-icon-error',
+    title: 'toast-title-error',
+    message: 'toast-message-error',
   },
   warning: {
-    bg: 'bg-yellow-50 border-yellow-200',
-    icon: 'text-yellow-500',
-    title: 'text-yellow-800',
-    message: 'text-yellow-700',
+    bg: 'toast-warning',
+    icon: 'toast-icon-warning',
+    title: 'toast-title-warning',
+    message: 'toast-message-warning',
   },
   info: {
-    bg: 'bg-blue-50 border-blue-200',
-    icon: 'text-blue-500',
-    title: 'text-blue-800',
-    message: 'text-blue-700',
+    bg: 'toast-info',
+    icon: 'toast-icon-info',
+    title: 'toast-title-info',
+    message: 'toast-message-info',
   },
 }
 

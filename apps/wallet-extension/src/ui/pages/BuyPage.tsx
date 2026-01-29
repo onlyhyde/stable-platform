@@ -189,19 +189,26 @@ export function BuyPage({ onBack }: BuyPageProps) {
   ]
 
   return (
-    <div className="min-h-full bg-gray-50">
+    <div className="min-h-full" style={{ backgroundColor: 'rgb(var(--background))' }}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
+      <div
+        className="px-4 py-3"
+        style={{
+          backgroundColor: 'rgb(var(--background-raised))',
+          borderBottom: '1px solid rgb(var(--border))',
+        }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {onBack && (
               <button
                 type="button"
                 onClick={onBack}
-                className="p-1 rounded-lg hover:bg-gray-100"
+                className="p-1 rounded-lg"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
               >
                 <svg
-                  className="w-5 h-5 text-gray-600"
+                  className="w-5 h-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -211,7 +218,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
                 </svg>
               </button>
             )}
-            <h1 className="text-lg font-semibold text-gray-900">Buy Crypto</h1>
+            <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>Buy Crypto</h1>
           </div>
         </div>
 
@@ -220,26 +227,32 @@ export function BuyPage({ onBack }: BuyPageProps) {
           <button
             type="button"
             onClick={() => setActiveView('buy')}
-            className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-              activeView === 'buy'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+            className="pb-2 text-sm font-medium border-b-2 transition-colors"
+            style={{
+              borderColor: activeView === 'buy' ? 'rgb(var(--primary))' : 'transparent',
+              color: activeView === 'buy' ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
+            }}
           >
             Buy
           </button>
           <button
             type="button"
             onClick={() => setActiveView('orders')}
-            className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-              activeView === 'orders'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+            className="pb-2 text-sm font-medium border-b-2 transition-colors"
+            style={{
+              borderColor: activeView === 'orders' ? 'rgb(var(--primary))' : 'transparent',
+              color: activeView === 'orders' ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
+            }}
           >
             Orders
             {orders.filter((o) => o.status === 'pending' || o.status === 'processing').length > 0 && (
-              <span className="ml-1 bg-indigo-100 text-indigo-600 text-xs px-1.5 py-0.5 rounded-full">
+              <span
+                className="ml-1 text-xs px-1.5 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: 'rgb(var(--primary) / 0.1)',
+                  color: 'rgb(var(--primary))',
+                }}
+              >
                 {orders.filter((o) => o.status === 'pending' || o.status === 'processing').length}
               </span>
             )}
@@ -318,7 +331,15 @@ export function BuyPage({ onBack }: BuyPageProps) {
             </Card>
 
             {quoteError && (
-              <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg">{quoteError}</div>
+              <div
+                className="p-3 text-sm rounded-lg"
+                style={{
+                  backgroundColor: 'rgb(var(--destructive) / 0.1)',
+                  color: 'rgb(var(--destructive))',
+                }}
+              >
+                {quoteError}
+              </div>
             )}
 
             {/* Quote Display */}

@@ -60,7 +60,8 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Overlay */}
       <div
-        className="absolute inset-0 bg-black/50 transition-opacity"
+        className="absolute inset-0 backdrop-blur-sm animate-fade-in"
+        style={{ backgroundColor: 'rgb(var(--overlay) / 0.6)' }}
         onClick={closeOnOverlayClick ? onClose : undefined}
         onKeyDown={undefined}
         aria-hidden="true"
@@ -69,11 +70,15 @@ export function Modal({
       {/* Modal */}
       <div
         className={`
-          relative bg-white rounded-xl shadow-xl
+          relative rounded-xl shadow-xl
           w-full ${sizeStyles[size]}
           max-h-[90vh] overflow-hidden
-          animate-in fade-in zoom-in-95 duration-200
+          animate-scale-in
         `}
+        style={{
+          backgroundColor: 'rgb(var(--card-hover))',
+          border: '1px solid rgb(var(--border))',
+        }}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}
@@ -81,12 +86,16 @@ export function Modal({
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-start justify-between p-4 border-b border-gray-100">
+          <div
+            className="flex items-start justify-between p-4"
+            style={{ borderBottom: '1px solid rgb(var(--border))' }}
+          >
             <div>
               {title && (
                 <h2
                   id="modal-title"
-                  className="text-lg font-semibold text-gray-900"
+                  className="text-lg font-semibold"
+                  style={{ color: 'rgb(var(--foreground))' }}
                 >
                   {title}
                 </h2>
@@ -94,7 +103,8 @@ export function Modal({
               {description && (
                 <p
                   id="modal-description"
-                  className="text-sm text-gray-500 mt-1"
+                  className="text-sm mt-1"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
                 >
                   {description}
                 </p>
@@ -104,7 +114,8 @@ export function Modal({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1 rounded-lg transition-all-fast hover:opacity-70"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
                 aria-label="Close modal"
               >
                 <svg
@@ -143,7 +154,8 @@ export interface ModalFooterProps {
 export function ModalFooter({ children, className = '' }: ModalFooterProps) {
   return (
     <div
-      className={`flex items-center justify-end gap-3 p-4 border-t border-gray-100 ${className}`}
+      className={`flex items-center justify-end gap-3 p-4 ${className}`}
+      style={{ borderTop: '1px solid rgb(var(--border))' }}
     >
       {children}
     </div>

@@ -15,11 +15,16 @@ declare const __VITE_ENV__: Record<string, string | undefined> | undefined
 // For build-time environment variable injection
 // Vite replaces import.meta.env.* with actual values at build time
 function getViteEnv(): Record<string, string | undefined> {
-  // This will be replaced by Vite at build time
-  // @ts-expect-error - Vite handles this at build time
-  if (typeof import.meta !== 'undefined' && typeof import.meta.env !== 'undefined') {
-    // @ts-expect-error - Vite handles this at build time
-    return import.meta.env as Record<string, string | undefined>
+  // Use globalThis to access import.meta.env in a way that Jest can handle
+  // Vite will replace this at build time
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const meta = (globalThis as any).import?.meta?.env
+    if (meta) {
+      return meta as Record<string, string | undefined>
+    }
+  } catch {
+    // Fallback for test environments
   }
   return {}
 }

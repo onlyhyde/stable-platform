@@ -119,7 +119,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   }, [step])
 
   return (
-    <div className="h-full bg-white">
+    <div className="h-full" style={{ backgroundColor: 'rgb(var(--background))' }}>
       {step === 'welcome' && (
         <Welcome onCreateNew={handleCreateNew} onImport={handleImport} />
       )}

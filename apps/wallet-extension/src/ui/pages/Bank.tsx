@@ -135,19 +135,26 @@ export function Bank({ onBack }: BankPageProps) {
   ]
 
   return (
-    <div className="min-h-full bg-gray-50">
+    <div className="min-h-full" style={{ backgroundColor: 'rgb(var(--background))' }}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
+      <div
+        className="px-4 py-3"
+        style={{
+          backgroundColor: 'rgb(var(--background-raised))',
+          borderBottom: '1px solid rgb(var(--border))',
+        }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {onBack && (
               <button
                 type="button"
                 onClick={onBack}
-                className="p-1 rounded-lg hover:bg-gray-100"
+                className="p-1 rounded-lg"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
               >
                 <svg
-                  className="w-5 h-5 text-gray-600"
+                  className="w-5 h-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -157,7 +164,7 @@ export function Bank({ onBack }: BankPageProps) {
                 </svg>
               </button>
             )}
-            <h1 className="text-lg font-semibold text-gray-900">Bank Accounts</h1>
+            <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>Bank Accounts</h1>
           </div>
           <Button size="sm" onClick={() => setShowLinkModal(true)}>
             Link Account
@@ -166,27 +173,38 @@ export function Bank({ onBack }: BankPageProps) {
 
         {/* Tabs */}
         <div className="flex gap-4 mt-4">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className="pb-2 text-sm font-medium border-b-2 transition-colors"
+                style={{
+                  borderColor: isActive ? 'rgb(var(--primary))' : 'transparent',
+                  color: isActive ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
+                }}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
         </div>
       </div>
 
       {/* Content */}
       <div className="p-4">
         {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg">{error}</div>
+          <div
+            className="mb-4 p-3 text-sm rounded-lg"
+            style={{
+              backgroundColor: 'rgb(var(--destructive) / 0.1)',
+              color: 'rgb(var(--destructive))',
+            }}
+          >
+            {error}
+          </div>
         )}
 
         {isLoading ? (

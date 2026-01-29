@@ -92,16 +92,28 @@ export function ConnectApproval({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'rgb(var(--background))' }}
+      >
         <Spinner size="lg" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ backgroundColor: 'rgb(var(--background))' }}
+    >
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div
+        className="px-6 py-4"
+        style={{
+          backgroundColor: 'rgb(var(--background-raised))',
+          borderBottom: '1px solid rgb(var(--border))',
+        }}
+      >
         <div className="flex items-center gap-3">
           {approval.favicon ? (
             <img
@@ -110,17 +122,35 @@ export function ConnectApproval({
               className="w-10 h-10 rounded-lg"
             />
           ) : (
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: 'rgb(var(--surface))' }}
+            >
+              <svg
+                className="w-5 h-5"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
               </svg>
             </div>
           )}
           <div>
-            <p className="font-medium text-gray-900 break-all">
+            <p
+              className="font-medium break-all"
+              style={{ color: 'rgb(var(--foreground))' }}
+            >
               {new URL(approval.origin).hostname}
             </p>
-            <p className="text-sm text-gray-500">wants to connect</p>
+            <p
+              className="text-sm"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
+              wants to connect
+            </p>
           </div>
         </div>
       </div>
@@ -129,24 +159,57 @@ export function ConnectApproval({
       <div className="flex-1 p-6 space-y-4 overflow-y-auto">
         {/* Permissions */}
         <Card padding="md">
-          <p className="text-sm font-medium text-gray-700 mb-3">
+          <p
+            className="text-sm font-medium mb-3"
+            style={{ color: 'rgb(var(--foreground-secondary))' }}
+          >
             This site will be able to:
           </p>
           <ul className="space-y-2">
-            <li className="flex items-center gap-2 text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <li
+              className="flex items-center gap-2 text-sm"
+              style={{ color: 'rgb(var(--foreground-secondary))' }}
+            >
+              <svg
+                className="w-4 h-4"
+                style={{ color: 'rgb(var(--success))' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               View your wallet address
             </li>
-            <li className="flex items-center gap-2 text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <li
+              className="flex items-center gap-2 text-sm"
+              style={{ color: 'rgb(var(--foreground-secondary))' }}
+            >
+              <svg
+                className="w-4 h-4"
+                style={{ color: 'rgb(var(--success))' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Request transaction approval
             </li>
-            <li className="flex items-center gap-2 text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <li
+              className="flex items-center gap-2 text-sm"
+              style={{ color: 'rgb(var(--foreground-secondary))' }}
+            >
+              <svg
+                className="w-4 h-4"
+                style={{ color: 'rgb(var(--success))' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Request message signatures
@@ -157,14 +220,18 @@ export function ConnectApproval({
         {/* Accounts to connect */}
         <Card padding="md">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-gray-700">
+            <p
+              className="text-sm font-medium"
+              style={{ color: 'rgb(var(--foreground-secondary))' }}
+            >
               Select accounts to connect
             </p>
             {accounts.length > 1 && (
               <button
                 type="button"
                 onClick={selectAll}
-                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                className="text-xs font-medium"
+                style={{ color: 'rgb(var(--primary))' }}
               >
                 Select all
               </button>
@@ -178,19 +245,19 @@ export function ConnectApproval({
                   key={account.address}
                   type="button"
                   onClick={() => toggleAccount(account.address)}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-colors ${
-                    isSelected
-                      ? 'border-indigo-500 bg-indigo-50'
-                      : 'border-gray-200 bg-gray-50 hover:border-gray-300'
-                  }`}
+                  className="w-full flex items-center justify-between p-3 rounded-lg border-2 transition-colors"
+                  style={{
+                    borderColor: isSelected ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                    backgroundColor: isSelected ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--surface))',
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        isSelected
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-200 text-gray-600'
-                      }`}
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
+                      style={{
+                        backgroundColor: isSelected ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                        color: isSelected ? 'white' : 'rgb(var(--foreground-secondary))',
+                      }}
                     >
                       <span className="text-xs font-bold">
                         {account.name.charAt(0).toUpperCase()}
@@ -198,20 +265,25 @@ export function ConnectApproval({
                     </div>
                     <div className="text-left">
                       <p
-                        className={`text-sm font-medium ${
-                          isSelected ? 'text-indigo-700' : 'text-gray-900'
-                        }`}
+                        className="text-sm font-medium"
+                        style={{
+                          color: isSelected ? 'rgb(var(--primary))' : 'rgb(var(--foreground))',
+                        }}
                       >
                         {account.name}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p
+                        className="text-xs"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
                         {formatAddress(account.address)}
                       </p>
                     </div>
                   </div>
                   {isSelected && (
                     <svg
-                      className="w-5 h-5 text-indigo-600"
+                      className="w-5 h-5"
+                      style={{ color: 'rgb(var(--primary))' }}
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -226,18 +298,38 @@ export function ConnectApproval({
               )
             })}
           </div>
-          <p className="mt-2 text-xs text-gray-500">
+          <p
+            className="mt-2 text-xs"
+            style={{ color: 'rgb(var(--muted-foreground))' }}
+          >
             {selectedAccounts.size} of {accounts.length} account{accounts.length > 1 ? 's' : ''} selected
           </p>
         </Card>
 
         {/* Warning */}
-        <Card variant="filled" padding="sm" className="bg-amber-50 border-amber-100">
+        <Card
+          variant="filled"
+          padding="sm"
+          style={{
+            backgroundColor: 'rgb(var(--warning) / 0.1)',
+            border: '1px solid rgb(var(--warning) / 0.2)',
+          }}
+        >
           <div className="flex items-start gap-2">
-            <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <svg
+              className="w-4 h-4 mt-0.5 shrink-0"
+              style={{ color: 'rgb(var(--warning))' }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <p className="text-xs text-amber-700">
+            <p
+              className="text-xs"
+              style={{ color: 'rgb(234 179 8)' }}
+            >
               Only connect to sites you trust. Malicious sites can phish your
               assets by requesting misleading signatures.
             </p>
@@ -246,7 +338,13 @@ export function ConnectApproval({
       </div>
 
       {/* Actions */}
-      <div className="p-6 bg-white border-t border-gray-200 space-y-3">
+      <div
+        className="p-6 space-y-3"
+        style={{
+          backgroundColor: 'rgb(var(--background-raised))',
+          borderTop: '1px solid rgb(var(--border))',
+        }}
+      >
         <Button
           onClick={handleApprove}
           fullWidth

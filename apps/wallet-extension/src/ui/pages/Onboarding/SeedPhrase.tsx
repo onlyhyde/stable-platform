@@ -25,34 +25,66 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
   }
 
   return (
-    <div className="min-h-full flex flex-col p-6">
+    <div
+      className="min-h-full flex flex-col p-6"
+      style={{ backgroundColor: 'rgb(var(--background))' }}
+    >
       {/* Header */}
       <div className="mb-6">
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center text-gray-500 hover:text-gray-700 mb-4"
+          className="flex items-center mb-4 transition-colors"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
         >
           <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back
         </button>
-        <h1 className="text-xl font-bold text-gray-900">Secret Recovery Phrase</h1>
-        <p className="text-gray-500 mt-1">
+        <h1
+          className="text-xl font-bold"
+          style={{ color: 'rgb(var(--foreground))' }}
+        >
+          Secret Recovery Phrase
+        </h1>
+        <p
+          className="mt-1"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+        >
           Write down these {words.length} words in order and keep them safe
         </p>
       </div>
 
       {/* Warning */}
-      <Card variant="filled" padding="md" className="mb-4 bg-red-50 border-red-100">
+      <Card
+        variant="filled"
+        padding="md"
+        className="mb-4"
+        style={{
+          backgroundColor: 'rgb(var(--destructive) / 0.1)',
+          border: '1px solid rgb(var(--destructive) / 0.2)',
+        }}
+      >
         <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <svg
+            className="w-5 h-5 shrink-0 mt-0.5"
+            style={{ color: 'rgb(var(--destructive))' }}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <div className="text-sm">
-            <p className="font-medium text-red-800">NEVER share your recovery phrase</p>
-            <p className="text-red-700">
+            <p
+              className="font-medium"
+              style={{ color: 'rgb(var(--destructive))' }}
+            >
+              NEVER share your recovery phrase
+            </p>
+            <p style={{ color: 'rgb(var(--destructive) / 0.8)' }}>
               Anyone with these words can access your wallet and steal your funds.
             </p>
           </div>
@@ -63,17 +95,32 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
       <div className="flex-1">
         <div className="relative">
           <div
-            className={`grid grid-cols-3 gap-2 p-4 bg-gray-50 rounded-xl ${
+            className={`grid grid-cols-3 gap-2 p-4 rounded-xl ${
               !revealed ? 'filter blur-sm select-none' : ''
             }`}
+            style={{ backgroundColor: 'rgb(var(--surface))' }}
           >
             {words.map((word, index) => (
               <div
                 key={index}
-                className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-gray-200"
+                className="flex items-center gap-2 rounded-lg px-3 py-2"
+                style={{
+                  backgroundColor: 'rgb(var(--background-raised))',
+                  border: '1px solid rgb(var(--border))',
+                }}
               >
-                <span className="text-xs text-gray-400 w-4">{index + 1}.</span>
-                <span className="text-sm font-medium text-gray-900">{word}</span>
+                <span
+                  className="text-xs w-4"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                >
+                  {index + 1}.
+                </span>
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: 'rgb(var(--foreground))' }}
+                >
+                  {word}
+                </span>
               </div>
             ))}
           </div>
@@ -102,11 +149,12 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
           <button
             type="button"
             onClick={handleCopy}
-            className="mt-3 flex items-center justify-center gap-2 w-full py-2 text-sm text-indigo-600 hover:text-indigo-700"
+            className="mt-3 flex items-center justify-center gap-2 w-full py-2 text-sm transition-colors"
+            style={{ color: copied ? 'rgb(var(--success))' : 'rgb(var(--primary))' }}
           >
             {copied ? (
               <>
-                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 Copied!

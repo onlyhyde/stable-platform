@@ -30,14 +30,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-gray-700 mb-1.5"
+            className="block text-sm font-medium mb-1.5"
+            style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
             {label}
           </label>
         )}
         <div className="relative">
           {leftElement && (
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+            <div
+              className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
               {leftElement}
             </div>
           )}
@@ -45,16 +49,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={`
-              block w-full rounded-lg border
-              ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}
+              block w-full rounded-lg input-base
               px-3 py-2 text-sm
-              placeholder:text-gray-400
-              focus:outline-none focus:ring-2 focus:ring-offset-0
-              disabled:bg-gray-50 disabled:text-gray-500
+              transition-all-fast
+              focus:outline-none
               ${leftElement ? 'pl-10' : ''}
               ${rightElement ? 'pr-10' : ''}
               ${className}
             `}
+            style={{
+              borderColor: error ? 'rgb(var(--destructive))' : undefined,
+            }}
             {...props}
           />
           {rightElement && (
@@ -64,10 +69,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <p className="mt-1.5 text-sm text-red-600">{error}</p>
+          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error}</p>
         )}
         {hint && !error && (
-          <p className="mt-1.5 text-sm text-gray-500">{hint}</p>
+          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{hint}</p>
         )}
       </div>
     )
@@ -92,7 +97,8 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
         {label && (
           <label
             htmlFor={textareaId}
-            className="block text-sm font-medium text-gray-700 mb-1.5"
+            className="block text-sm font-medium mb-1.5"
+            style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
             {label}
           </label>
@@ -101,20 +107,21 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
           ref={ref}
           id={textareaId}
           className={`
-            block w-full rounded-lg border
-            ${error ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'}
+            block w-full rounded-lg input-base
             px-3 py-2 text-sm
-            placeholder:text-gray-400
-            focus:outline-none focus:ring-2 focus:ring-offset-0
-            disabled:bg-gray-50 disabled:text-gray-500
+            transition-all-fast
+            focus:outline-none
             resize-none
             ${className}
           `}
+          style={{
+            borderColor: error ? 'rgb(var(--destructive))' : undefined,
+          }}
           {...props}
         />
-        {error && <p className="mt-1.5 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error}</p>}
         {hint && !error && (
-          <p className="mt-1.5 text-sm text-gray-500">{hint}</p>
+          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{hint}</p>
         )}
       </div>
     )

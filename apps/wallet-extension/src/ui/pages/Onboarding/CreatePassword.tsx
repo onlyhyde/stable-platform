@@ -64,25 +64,37 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
     return strength
   })()
 
-  const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-lime-500', 'bg-green-500']
+  // Strength colors are now handled inline with CSS variables
   const strengthLabels = ['Very Weak', 'Weak', 'Fair', 'Strong', 'Very Strong']
 
   return (
-    <div className="min-h-full flex flex-col p-6">
+    <div
+      className="min-h-full flex flex-col p-6"
+      style={{ backgroundColor: 'rgb(var(--background))' }}
+    >
       {/* Header */}
       <div className="mb-6">
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center text-gray-500 hover:text-gray-700 mb-4"
+          className="flex items-center mb-4 transition-colors"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
         >
           <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back
         </button>
-        <h1 className="text-xl font-bold text-gray-900">Create Password</h1>
-        <p className="text-gray-500 mt-1">
+        <h1
+          className="text-xl font-bold"
+          style={{ color: 'rgb(var(--foreground))' }}
+        >
+          Create Password
+        </h1>
+        <p
+          className="mt-1"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+        >
           This password will unlock your wallet
         </p>
       </div>
@@ -101,7 +113,7 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-gray-400 hover:text-gray-600"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -124,13 +136,20 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
                   {[...Array(5)].map((_, i) => (
                     <div
                       key={i}
-                      className={`flex-1 rounded-full ${
-                        i < passwordStrength ? strengthColors[passwordStrength - 1] : 'bg-gray-200'
-                      }`}
+                      className="flex-1 rounded-full"
+                      style={{
+                        backgroundColor:
+                          i < passwordStrength
+                            ? ['rgb(var(--destructive))', 'rgb(239 68 68)', 'rgb(var(--warning))', 'rgb(132 204 22)', 'rgb(var(--success))'][passwordStrength - 1]
+                            : 'rgb(var(--border))',
+                      }}
                     />
                   ))}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p
+                  className="text-xs mt-1"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                >
                   {strengthLabels[passwordStrength - 1] ?? 'Enter password'}
                 </p>
               </div>
@@ -148,12 +167,24 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
 
           <Card variant="filled" padding="md">
             <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <svg
+                className="w-5 h-5 shrink-0 mt-0.5"
+                style={{ color: 'rgb(var(--warning))' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <div className="text-sm">
-                <p className="font-medium text-gray-900">Remember your password</p>
-                <p className="text-gray-500">
+                <p
+                  className="font-medium"
+                  style={{ color: 'rgb(var(--foreground))' }}
+                >
+                  Remember your password
+                </p>
+                <p style={{ color: 'rgb(var(--muted-foreground))' }}>
                   StableNet cannot recover your password. Make sure to store it safely.
                 </p>
               </div>
@@ -168,7 +199,12 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
           />
 
           {error && (
-            <p className="text-sm text-red-600">{error}</p>
+            <p
+              className="text-sm"
+              style={{ color: 'rgb(var(--destructive))' }}
+            >
+              {error}
+            </p>
           )}
         </div>
 

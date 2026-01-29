@@ -6,10 +6,10 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles = {
-  default: 'bg-white border border-gray-200 shadow-sm',
-  outline: 'bg-transparent border border-gray-200',
-  filled: 'bg-gray-50 border border-gray-100',
-  gradient: 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white',
+  default: 'card',
+  outline: 'card-outline',
+  filled: 'card-filled',
+  gradient: 'card-gradient',
 }
 
 const paddingStyles = {
@@ -29,7 +29,7 @@ export function Card({
   return (
     <div
       className={`
-        rounded-xl
+        rounded-xl transition-all-fast
         ${variantStyles[variant]}
         ${paddingStyles[padding]}
         ${className}
@@ -60,9 +60,9 @@ export function CardHeader({
       {...props}
     >
       <div>
-        <h3 className="font-semibold text-gray-900">{title}</h3>
+        <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{title}</h3>
         {subtitle && (
-          <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>
+          <p className="text-sm mt-0.5" style={{ color: 'rgb(var(--muted-foreground))' }}>{subtitle}</p>
         )}
       </div>
       {action && <div>{action}</div>}
@@ -93,7 +93,8 @@ export function CardFooter({
 }: CardFooterProps) {
   return (
     <div
-      className={`mt-4 pt-4 border-t border-gray-100 ${className}`}
+      className={`mt-4 pt-4 ${className}`}
+      style={{ borderTop: '1px solid rgb(var(--border))' }}
       {...props}
     >
       {children}

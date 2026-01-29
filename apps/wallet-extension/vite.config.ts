@@ -19,13 +19,16 @@ function copyManifestPlugin() {
       if (!existsSync(iconsDir)) {
         mkdirSync(iconsDir, { recursive: true })
       }
-      // Copy icons if they exist
+      // Copy all icons (including state variants)
       const iconSizes = ['16', '32', '48', '128']
+      const iconStates = ['', '-locked', '-gray', '-pending']
       for (const size of iconSizes) {
-        const srcIcon = resolve(__dirname, `public/icons/icon-${size}.png`)
-        const destIcon = resolve(__dirname, `dist/icons/icon-${size}.png`)
-        if (existsSync(srcIcon)) {
-          copyFileSync(srcIcon, destIcon)
+        for (const state of iconStates) {
+          const srcIcon = resolve(__dirname, `public/icons/icon-${size}${state}.png`)
+          const destIcon = resolve(__dirname, `dist/icons/icon-${size}${state}.png`)
+          if (existsSync(srcIcon)) {
+            copyFileSync(srcIcon, destIcon)
+          }
         }
       }
     },
@@ -40,6 +43,10 @@ function buildIIFEScripts() {
       // Build content script as IIFE
       await build({
         configFile: false,
+        define: {
+          'process.env': '{}',
+          'process.env.NODE_ENV': JSON.stringify('production'),
+        },
         build: {
           emptyOutDir: false,
           outDir: 'dist',
@@ -62,6 +69,10 @@ function buildIIFEScripts() {
       // Build inpage script as IIFE
       await build({
         configFile: false,
+        define: {
+          'process.env': '{}',
+          'process.env.NODE_ENV': JSON.stringify('production'),
+        },
         build: {
           emptyOutDir: false,
           outDir: 'dist',

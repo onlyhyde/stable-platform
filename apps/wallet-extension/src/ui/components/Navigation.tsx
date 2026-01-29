@@ -92,23 +92,49 @@ export function Navigation() {
   const { currentPage, setPage } = useWalletStore()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-20"
+      style={{
+        backgroundColor: 'rgb(var(--background-raised))',
+        borderTop: '1px solid rgb(var(--border))',
+      }}
+    >
       <div className="flex justify-around items-center h-16">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setPage(item.id)}
-            className={`flex flex-col items-center justify-center w-full h-full ${
-              currentPage === item.id
-                ? 'text-indigo-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {item.icon}
-            <span className="text-xs mt-1">{item.label}</span>
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const isActive = currentPage === item.id
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setPage(item.id)}
+              className={`relative flex flex-col items-center justify-center w-full h-full transition-all-fast ${
+                isActive ? 'nav-active-glow' : ''
+              }`}
+              style={{
+                color: isActive
+                  ? 'rgb(var(--primary))'
+                  : 'rgb(var(--muted-foreground))',
+              }}
+            >
+              <span
+                className="transition-all-fast"
+                style={{
+                  transform: isActive ? 'scale(1.1)' : 'scale(1)',
+                }}
+              >
+                {item.icon}
+              </span>
+              <span
+                className="text-xs mt-1 transition-all-fast"
+                style={{
+                  fontWeight: isActive ? 600 : 400,
+                }}
+              >
+                {item.label}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </nav>
   )

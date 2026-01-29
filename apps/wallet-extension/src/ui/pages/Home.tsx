@@ -47,11 +47,11 @@ export function Home() {
     return (
       <div className="p-4">
         <div className="text-center py-8">
-          <p className="text-gray-500 mb-4">No account found</p>
+          <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>No account found</p>
           <button
             type="button"
             onClick={() => setPage('settings')}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg"
+            className="btn-primary px-4 py-2 rounded-lg"
           >
             Create Account
           </button>
@@ -63,7 +63,12 @@ export function Home() {
   return (
     <div className="p-4">
       {/* Balance Card */}
-      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white mb-6">
+      <div
+        className="rounded-2xl p-6 text-white mb-6"
+        style={{
+          background: 'linear-gradient(135deg, rgb(var(--primary)), rgb(var(--accent)))',
+        }}
+      >
         <p className="text-sm opacity-80">Total Balance</p>
         <h2 className="text-3xl font-bold mt-1">
           {isLoadingBalance ? (
@@ -85,11 +90,15 @@ export function Home() {
         <button
           type="button"
           onClick={() => setPage('send')}
-          className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col items-center hover:bg-gray-50"
+          className="card rounded-xl p-4 flex flex-col items-center transition-colors"
         >
-          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center mb-2">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center mb-2"
+            style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+          >
             <svg
-              className="w-5 h-5 text-indigo-600"
+              className="w-5 h-5"
+              style={{ color: 'rgb(var(--primary))' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -103,17 +112,21 @@ export function Home() {
               />
             </svg>
           </div>
-          <span className="text-sm font-medium">Send</span>
+          <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>Send</span>
         </button>
 
         <button
           type="button"
           onClick={() => setPage('receive')}
-          className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col items-center hover:bg-gray-50"
+          className="card rounded-xl p-4 flex flex-col items-center transition-colors"
         >
-          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mb-2">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center mb-2"
+            style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}
+          >
             <svg
-              className="w-5 h-5 text-green-600"
+              className="w-5 h-5"
+              style={{ color: 'rgb(var(--success))' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -127,19 +140,27 @@ export function Home() {
               />
             </svg>
           </div>
-          <span className="text-sm font-medium">Receive</span>
+          <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>Receive</span>
         </button>
       </div>
 
       {/* Account Address */}
-      <div className="bg-gray-50 rounded-xl p-4">
-        <p className="text-xs text-gray-500 mb-1">Account Address</p>
+      <div
+        className="rounded-xl p-4"
+        style={{ backgroundColor: 'rgb(var(--secondary))' }}
+      >
+        <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>Account Address</p>
         <div className="flex items-center gap-2">
-          <code className="text-sm text-gray-700 break-all">{currentAccount.address}</code>
+          <code
+            className="text-sm break-all"
+            style={{ color: 'rgb(var(--foreground-secondary))' }}
+          >
+            {currentAccount.address}
+          </code>
           <button
             type="button"
             onClick={() => navigator.clipboard.writeText(currentAccount.address)}
-            className="text-indigo-600 hover:text-indigo-700"
+            style={{ color: 'rgb(var(--primary))' }}
             title="Copy address"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">

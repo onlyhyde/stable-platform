@@ -47,22 +47,27 @@ export function AccountSelector({
       {/* Current Account Display (Clickable) */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 w-full text-left hover:bg-indigo-500/30 rounded-lg p-2 -m-2 transition-colors"
+        className="flex items-center gap-2 w-full text-left rounded-lg p-2 -m-2 transition-colors"
+        style={{ backgroundColor: isOpen ? 'rgb(var(--primary) / 0.1)' : 'transparent' }}
       >
-        <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-medium">
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-medium"
+          style={{ backgroundColor: 'rgb(var(--primary))' }}
+        >
           {getAccountInitial(currentAccount)}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-white truncate">
+          <p className="font-medium truncate" style={{ color: 'rgb(var(--foreground))' }}>
             {currentAccount?.name ?? 'Account'}
           </p>
-          <p className="text-xs text-indigo-200 truncate">
+          <p className="text-xs truncate" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {currentAccount ? formatAddress(currentAccount.address) : ''}
           </p>
         </div>
         {/* Dropdown Arrow */}
         <svg
-          className={`w-4 h-4 text-indigo-200 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          style={{ color: 'rgb(var(--muted-foreground))' }}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -73,59 +78,77 @@ export function AccountSelector({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-64 overflow-y-auto">
+        <div
+          className="absolute left-0 right-0 mt-2 rounded-lg shadow-lg py-1 z-50 max-h-64 overflow-y-auto"
+          style={{
+            backgroundColor: 'rgb(var(--card))',
+            border: '1px solid rgb(var(--border))',
+          }}
+        >
           {/* Account List */}
-          {accounts.map((account) => (
-            <button
-              key={account.address}
-              onClick={() => handleSelect(account.address)}
-              className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors ${
-                account.address === selectedAccount ? 'bg-indigo-50' : ''
-              }`}
-            >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  account.address === selectedAccount
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-600'
-                }`}
+          {accounts.map((account) => {
+            const isSelected = account.address === selectedAccount
+            return (
+              <button
+                key={account.address}
+                onClick={() => handleSelect(account.address)}
+                className="w-full flex items-center gap-3 px-3 py-2 transition-colors"
+                style={{
+                  backgroundColor: isSelected ? 'rgb(var(--primary) / 0.1)' : 'transparent',
+                }}
               >
-                {getAccountInitial(account)}
-              </div>
-              <div className="flex-1 min-w-0 text-left">
-                <p
-                  className={`font-medium truncate ${
-                    account.address === selectedAccount ? 'text-indigo-600' : 'text-gray-900'
-                  }`}
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
+                  style={{
+                    backgroundColor: isSelected ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                    color: isSelected ? 'white' : 'rgb(var(--foreground-secondary))',
+                  }}
                 >
-                  {account.name ?? 'Account'}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {formatAddress(account.address)}
-                </p>
-              </div>
-              {/* Checkmark for selected */}
-              {account.address === selectedAccount && (
-                <svg className="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
-            </button>
-          ))}
+                  {getAccountInitial(account)}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p
+                    className="font-medium truncate"
+                    style={{ color: isSelected ? 'rgb(var(--primary))' : 'rgb(var(--foreground))' }}
+                  >
+                    {account.name ?? 'Account'}
+                  </p>
+                  <p className="text-xs truncate" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                    {formatAddress(account.address)}
+                  </p>
+                </div>
+                {/* Checkmark for selected */}
+                {isSelected && (
+                  <svg
+                    className="w-5 h-5"
+                    style={{ color: 'rgb(var(--primary))' }}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+              </button>
+            )
+          })}
 
           {/* Divider */}
-          <div className="border-t border-gray-200 my-1" />
+          <div style={{ borderTop: '1px solid rgb(var(--border))', margin: '4px 0' }} />
 
           {/* Add Account Button */}
           <button
             onClick={handleAddAccount}
-            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors text-indigo-600"
+            className="w-full flex items-center gap-3 px-3 py-2 transition-colors"
+            style={{ color: 'rgb(var(--primary))' }}
           >
-            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>

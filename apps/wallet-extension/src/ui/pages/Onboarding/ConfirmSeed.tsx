@@ -56,21 +56,33 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
   const allSelected = verificationIndices.every((i) => selectedWords[i])
 
   return (
-    <div className="min-h-full flex flex-col p-6">
+    <div
+      className="min-h-full flex flex-col p-6"
+      style={{ backgroundColor: 'rgb(var(--background))' }}
+    >
       {/* Header */}
       <div className="mb-6">
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center text-gray-500 hover:text-gray-700 mb-4"
+          className="flex items-center mb-4 transition-colors"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
         >
           <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back
         </button>
-        <h1 className="text-xl font-bold text-gray-900">Confirm Your Seed Phrase</h1>
-        <p className="text-gray-500 mt-1">
+        <h1
+          className="text-xl font-bold"
+          style={{ color: 'rgb(var(--foreground))' }}
+        >
+          Confirm Your Seed Phrase
+        </h1>
+        <p
+          className="mt-1"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+        >
           Select the correct word for each position
         </p>
       </div>
@@ -79,7 +91,10 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
       <div className="flex-1 space-y-6">
         {verificationIndices.map((index) => (
           <div key={index}>
-            <p className="text-sm font-medium text-gray-700 mb-2">
+            <p
+              className="text-sm font-medium mb-2"
+              style={{ color: 'rgb(var(--foreground-secondary))' }}
+            >
               Word #{index + 1}
             </p>
             <div className="grid grid-cols-2 gap-2">
@@ -88,14 +103,21 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
                   key={word}
                   type="button"
                   onClick={() => handleSelectWord(index, word)}
-                  className={`
-                    px-4 py-3 rounded-lg border text-sm font-medium transition-colors
-                    ${
+                  className="px-4 py-3 rounded-lg border text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor:
                       selectedWords[index] === word
-                        ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                        : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
-                    }
-                  `}
+                        ? 'rgb(var(--primary) / 0.1)'
+                        : 'rgb(var(--background-raised))',
+                    borderColor:
+                      selectedWords[index] === word
+                        ? 'rgb(var(--primary))'
+                        : 'rgb(var(--border))',
+                    color:
+                      selectedWords[index] === word
+                        ? 'rgb(var(--primary))'
+                        : 'rgb(var(--foreground-secondary))',
+                  }}
                 >
                   {word}
                 </button>
@@ -105,8 +127,18 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
         ))}
 
         {error && (
-          <Card variant="filled" padding="sm" className="bg-red-50 border-red-100">
-            <div className="flex items-center gap-2 text-red-700">
+          <Card
+            variant="filled"
+            padding="sm"
+            style={{
+              backgroundColor: 'rgb(var(--destructive) / 0.1)',
+              border: '1px solid rgb(var(--destructive) / 0.2)',
+            }}
+          >
+            <div
+              className="flex items-center gap-2"
+              style={{ color: 'rgb(var(--destructive))' }}
+            >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>

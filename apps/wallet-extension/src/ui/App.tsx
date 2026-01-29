@@ -42,7 +42,10 @@ export function App() {
   // Show loading spinner while checking initialization
   if (isLoading && !isInitialized) {
     return (
-      <div className="w-[360px] h-[600px] bg-gray-50 flex items-center justify-center">
+      <div
+        className="w-[360px] h-[600px] flex items-center justify-center"
+        style={{ backgroundColor: 'rgb(var(--background))' }}
+      >
         <Spinner size="lg" />
       </div>
     )
@@ -51,7 +54,10 @@ export function App() {
   // Show onboarding if wallet is not initialized
   if (!isInitialized) {
     return (
-      <div className="w-[360px] h-[600px] bg-gray-50">
+      <div
+        className="w-[360px] h-[600px]"
+        style={{ backgroundColor: 'rgb(var(--background))' }}
+      >
         <Onboarding onComplete={() => syncWithBackground()} />
       </div>
     )
@@ -60,7 +66,10 @@ export function App() {
   // Show lock screen if wallet is locked
   if (!isUnlocked) {
     return (
-      <div className="w-[360px] h-[600px] bg-gray-50">
+      <div
+        className="w-[360px] h-[600px]"
+        style={{ backgroundColor: 'rgb(var(--background))' }}
+      >
         <Lock
           onUnlock={async (password) => {
             const success = await unlockWallet(password)
@@ -96,17 +105,29 @@ export function App() {
   }
 
   return (
-    <div className="w-[360px] h-[600px] bg-gray-50 flex flex-col">
+    <div
+      className="w-[360px] h-[600px] flex flex-col ambient-glow"
+      style={{ backgroundColor: 'rgb(var(--background))' }}
+    >
       <Header />
 
       {/* Error Banner */}
       {error && (
-        <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex items-center justify-between">
-          <p className="text-sm text-red-600">{error}</p>
+        <div
+          className="px-4 py-2 flex items-center justify-between transition-all-fast"
+          style={{
+            backgroundColor: 'rgb(var(--destructive) / 0.1)',
+            borderBottom: '1px solid rgb(var(--destructive) / 0.2)',
+          }}
+        >
+          <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
+            {error}
+          </p>
           <button
             type="button"
             onClick={() => setError(null)}
-            className="text-red-600 hover:text-red-700"
+            className="transition-all-fast hover:opacity-80"
+            style={{ color: 'rgb(var(--destructive))' }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path
@@ -122,13 +143,19 @@ export function App() {
 
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-600 border-t-transparent" />
+        <div
+          className="absolute inset-0 flex items-center justify-center z-50"
+          style={{ backgroundColor: 'rgb(var(--background) / 0.8)' }}
+        >
+          <div
+            className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent"
+            style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
+          />
         </div>
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-16">{renderPage()}</main>
+      <main className="flex-1 overflow-y-auto pb-16 relative z-10">{renderPage()}</main>
 
       <Navigation />
     </div>
