@@ -1,0 +1,51 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files: []
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'bank-simulator'
+    static_configs:
+      - targets: ['bank-simulator:4350']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: 'pg-simulator'
+    static_configs:
+      - targets: ['pg-simulator:4351']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: 'onramp-simulator'
+    static_configs:
+      - targets: ['onramp-simulator:4352']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: 'subscription-executor'
+    static_configs:
+      - targets: ['subscription-executor:8083']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: 'order-router'
+    static_configs:
+      - targets: ['order-router:8087']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: 'bridge-relayer'
+    static_configs:
+      - targets: ['bridge-relayer:8080']
+    metrics_path: /metrics
+    scrape_interval: 30s
