@@ -47,35 +47,29 @@
 
 ## 남은 작업
 
-### 🟡 기능 확장 (우선순위: Medium)
+### ✅ 기능 확장 (우선순위: Medium) - 완료
 
-#### 4.1 GasFeeController
-- [ ] 가스 추정 로직
-- [ ] EIP-1559 지원
-- [ ] 가스 가격 히스토리
+#### 4.1 GasFeeController ✅
+- [x] 가스 추정 로직 (`estimateGas`)
+- [x] EIP-1559 지원 (`getEIP1559GasFees`)
+- [x] 가스 가격 히스토리 (`getGasPriceHistory`)
+- [x] Indexer 통합 (`getHistoricalGasStats`)
 
-```typescript
-describe('GasFeeController', () => {
-  it('should estimate gas for transactions')
-  it('should support EIP-1559 fee parameters')
-  it('should track gas price history')
-})
-```
+#### 4.2 TokenController ✅
+- [x] ERC-20 토큰 추적 (`addToken`, `getTokens`)
+- [x] 토큰 잔액 조회 (`getTokenBalance`, `getAllTokenBalances`)
+- [x] 토큰 전송 빌드 (`buildTransferTransaction`)
+- [x] Indexer 통합:
+  - [x] 자동 토큰 발견 (`discoverTokens`, `autoAddTokens`)
+  - [x] 전송 히스토리 (`getTransferHistory`)
 
-#### 4.2 토큰 관리
-- [ ] ERC-20 토큰 추적
-- [ ] 토큰 잔액 조회
-- [ ] 토큰 전송 UI
+#### 4.3 IndexerClient ✅ (신규)
+- [x] GraphQL/JSON-RPC 클라이언트
+- [x] Gas 통계 조회 (`getGasStats`, `getAverageGasPrice`)
+- [x] 토큰 잔액 조회 (`getTokenBalances`)
+- [x] 토큰 전송 조회 (`getERC20Transfers`)
 
-```typescript
-describe('TokenController', () => {
-  it('should track ERC-20 tokens')
-  it('should fetch token balances')
-  it('should support token transfers')
-})
-```
-
-#### 4.3 E2E 테스트
+#### 4.4 E2E 테스트
 - [ ] Playwright 설정
 - [ ] 온보딩 플로우 테스트
 - [ ] 트랜잭션 서명 테스트
@@ -102,8 +96,9 @@ describe('TokenController', () => {
 | 피싱 감지 | 중 | 높음 | High | ✅ 완료 |
 | 서명 위험도 분석 | 중 | 높음 | High | ✅ 완료 |
 | 입력 검증 강화 | 낮음 | 높음 | High | ✅ 완료 |
-| GasFeeController | 중 | 중간 | Medium | 🟡 대기 |
-| 토큰 관리 | 높음 | 중간 | Medium | 🟡 대기 |
+| GasFeeController | 중 | 중간 | Medium | ✅ 완료 |
+| 토큰 관리 | 높음 | 중간 | Medium | ✅ 완료 |
+| IndexerClient | 중 | 높음 | Medium | ✅ 완료 |
 | E2E 테스트 | 중 | 중간 | Medium | 🟡 대기 |
 | 하드웨어 지갑 | 높음 | 낮음 | Low | 🟢 대기 |
 | WalletConnect | 중 | 낮음 | Low | 🟢 대기 |
@@ -116,10 +111,10 @@ describe('TokenController', () => {
 기초 인프라:     ████████████████████ 100%
 아키텍처 개선:   ████████████████████ 100%
 보안 강화:       ████████████████████ 100%
-기능 확장:       ░░░░░░░░░░░░░░░░░░░░   0%
+기능 확장:       ████████████████░░░░  80%
 ```
 
-**전체 진행률: 75% (3/4 단계 완료)**
+**전체 진행률: 95% (기능 확장 80% 완료, E2E 테스트 미완)**
 
 ---
 
