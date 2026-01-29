@@ -124,41 +124,29 @@ case 'selectAccount': {
 
 ---
 
-## Phase 2: Inpage Provider 개선 (High)
+## Phase 2: Inpage Provider 개선 (High) ✅ COMPLETED
 
 > **목표**: 페이지 로드 시 연결 상태 복원
 > **예상 소요**: 1-2일
+> **실제 완료**: 2026-01-29
 
-### Task 2.1: 초기 연결 상태 확인
-- [ ] `src/inpage/index.ts` 수정
-- [ ] 프로바이더 초기화 시 기존 연결 확인 로직 추가
-- [ ] 연결되어 있으면 `connect` 이벤트 발생
+### Task 2.1: 초기 연결 상태 확인 ✅
+- [x] `src/inpage/index.ts` 수정
+- [x] 프로바이더 초기화 시 기존 연결 확인 로직 추가
+- [x] 연결되어 있으면 `connect` + `accountsChanged` 이벤트 발생
+- [x] `_isConnected` 상태 추적 추가
 
-```typescript
-// 추가: 초기화 시 연결 상태 확인
-private async checkExistingConnection(): Promise<void> {
-  try {
-    const accounts = await this.request({ method: 'eth_accounts' })
-    if (accounts.length > 0) {
-      this.isConnected = true
-      this.selectedAddress = accounts[0]
-      this.emit('connect', { chainId: this.chainId })
-      this.emit('accountsChanged', accounts)
-    }
-  } catch (error) {
-    // 연결되지 않은 상태
-  }
-}
-```
+### Task 2.2: 이벤트 수신 개선 ✅
+- [x] `PROVIDER_EVENT` 메시지 타입 처리 추가
+- [x] `handleProviderEvent()` 메서드로 이벤트 타입별 핸들링
+- [x] 중복 이벤트 방지 (상태 변경 시에만 emit)
 
-### Task 2.2: 이벤트 수신 개선
-- [ ] Content script로부터 받는 이벤트 처리 로직 검토
-- [ ] 이벤트 타입별 핸들링 명확화
-- [ ] 중복 이벤트 방지 로직 추가
-
-### Task 2.3: Provider 상태 동기화
-- [ ] `chainId`, `selectedAddress`, `isConnected` 상태 일관성 유지
-- [ ] 이벤트 수신 시 내부 상태 업데이트
+### Task 2.3: Provider 상태 동기화 ✅
+- [x] `chainId`, `selectedAddress`, `_isConnected` 상태 일관성 유지
+- [x] `connect` 이벤트: chainId 업데이트, isConnected = true
+- [x] `disconnect` 이벤트: selectedAddress = null, isConnected = false
+- [x] `accountsChanged` 이벤트: selectedAddress 업데이트
+- [x] `chainChanged` 이벤트: chainId 업데이트
 
 ---
 

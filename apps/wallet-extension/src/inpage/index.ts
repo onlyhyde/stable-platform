@@ -132,7 +132,20 @@ class StableNetProvider implements EIP1193Provider {
   }
 
   /**
+   * Track connection state
+   */
+  private _isConnected = false
+
+  /**
+   * Get connection state (EIP-1193)
+   */
+  get isConnected(): boolean {
+    return this._isConnected
+  }
+
+  /**
    * Initialize provider state
+   * Checks existing connection and emits connect event if already connected
    */
   private async initialize(): Promise<void> {
     try {
@@ -144,14 +157,26 @@ class StableNetProvider implements EIP1193Provider {
       const accounts = await this.request({ method: 'eth_accounts' })
       if (Array.isArray(accounts) && accounts.length > 0) {
         this.selectedAddress = accounts[0] as string
+        this._isConnected = true
+
+        // Emit connect event for dApps that listen on page load
+        this.emit(PROVIDER_EVENTS.CONNECT, { chainId: this.chainId })
+        this.emit(PROVIDER_EVENTS.ACCOUNTS_CHANGED, accounts)
+
+        logger.info('Provider initialized with existing connection', {
+          chainId: this.chainId,
+          account: this.selectedAddress,
+        })
       }
     } catch {
       // Initialization might fail if not connected
+      this._isConnected = false
     }
   }
 
   /**
    * Set up message listener for responses from content script
+   * Handles RPC responses, state updates, and provider events
    */
   private setupMessageListener(): void {
     window.addEventListener('message', (event) => {
@@ -197,8 +222,71 @@ class StableNetProvider implements EIP1193Provider {
           }
           break
         }
+
+        // Handle EIP-1193 provider events from EventBroadcaster
+        case 'PROVIDER_EVENT': {
+          this.handleProviderEvent(message)
+          break
+        }
       }
     })
+  }
+
+  /**
+   * Handle provider events from EventBroadcaster
+   * Routes events to appropriate handlers and updates internal state
+   */
+  private handleProviderEvent(message: ExtensionMessage): void {
+    const { event, data } = message as {
+      event: string
+      data: unknown
+    }
+
+    switch (event) {
+      case PROVIDER_EVENTS.CONNECT: {
+        const connectInfo = data as { chainId: string }
+        this._isConnected = true
+        if (connectInfo.chainId) {
+          this.chainId = connectInfo.chainId
+        }
+        this.emit(PROVIDER_EVENTS.CONNECT, connectInfo)
+        logger.info('Provider connected', connectInfo)
+        break
+      }
+
+      case PROVIDER_EVENTS.DISCONNECT: {
+        const error = data as { code: number; message: string }
+        this._isConnected = false
+        this.selectedAddress = null
+        this.emit(PROVIDER_EVENTS.DISCONNECT, error)
+        logger.info('Provider disconnected', error)
+        break
+      }
+
+      case PROVIDER_EVENTS.ACCOUNTS_CHANGED: {
+        const accounts = data as string[]
+        const newSelectedAddress = accounts[0] ?? null
+
+        // Only emit if accounts actually changed
+        if (newSelectedAddress !== this.selectedAddress || accounts.length === 0) {
+          this.selectedAddress = newSelectedAddress
+          this._isConnected = accounts.length > 0
+          this.emit(PROVIDER_EVENTS.ACCOUNTS_CHANGED, accounts)
+          logger.debug('Accounts changed', { accounts })
+        }
+        break
+      }
+
+      case PROVIDER_EVENTS.CHAIN_CHANGED: {
+        const chainId = data as string
+        if (chainId !== this.chainId) {
+          this.chainId = chainId
+          this.emit(PROVIDER_EVENTS.CHAIN_CHANGED, chainId)
+          logger.debug('Chain changed', { chainId })
+        }
+        break
+      }
+    }
   }
 
   /**
