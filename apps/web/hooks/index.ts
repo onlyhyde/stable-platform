@@ -1,5 +1,7 @@
 export { useWallet } from './useWallet'
 export { useBalance } from './useBalance'
+export { useStableNetWallet } from './useStableNetWallet'
+export { useChainInfo } from './useChainInfo'
 export { useUserOp } from './useUserOp'
 export { useStealth } from './useStealth'
 export { useSwap } from './useSwap'
