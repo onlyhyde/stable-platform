@@ -11,7 +11,7 @@
  */
 
 import type { EIP1193Provider, ExtensionMessage, JsonRpcRequest, JsonRpcResponse } from '../types'
-import { MESSAGE_TYPES, PROVIDER_EVENTS } from '../shared/constants'
+import { MESSAGE_TYPES, PROVIDER_EVENTS, TIMING } from '../shared/constants'
 import { createLogger } from '../shared/utils/logger'
 
 // Logger for inpage provider
@@ -224,7 +224,7 @@ class StableNetProvider implements EIP1193Provider {
         }
 
         // Handle EIP-1193 provider events from EventBroadcaster
-        case 'PROVIDER_EVENT': {
+        case MESSAGE_TYPES.PROVIDER_EVENT: {
           this.handleProviderEvent(message)
           break
         }
@@ -237,10 +237,11 @@ class StableNetProvider implements EIP1193Provider {
    * Routes events to appropriate handlers and updates internal state
    */
   private handleProviderEvent(message: ExtensionMessage): void {
-    const { event, data } = message as {
-      event: string
-      data: unknown
-    }
+    // PROVIDER_EVENT messages have event and data in payload
+    const payload = message.payload as { event?: string; data?: unknown } | undefined
+    if (!payload || typeof payload.event !== 'string') return
+
+    const { event, data } = payload
 
     switch (event) {
       case PROVIDER_EVENTS.CONNECT: {
@@ -322,13 +323,13 @@ class StableNetProvider implements EIP1193Provider {
         window.location.origin
       )
 
-      // Timeout after 60 seconds
+      // Timeout after configured duration
       setTimeout(() => {
         if (this.pendingRequests.has(id)) {
           this.pendingRequests.delete(id)
           reject(new ProviderError('Request timeout', -32000))
         }
-      }, 60000)
+      }, TIMING.RPC_REQUEST_TIMEOUT_MS)
     })
   }
 

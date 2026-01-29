@@ -2,6 +2,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import type { Address, Hex } from 'viem'
 
 // Mock the hooks
 vi.mock('@/hooks/usePools', () => ({
@@ -116,9 +117,9 @@ describe('Page Integration with Data Hooks', () => {
     it('should display pools from hook', async () => {
       const mockPools = [
         {
-          address: '0x1234567890123456789012345678901234567890',
-          token0: { address: '0x0', symbol: 'ETH', name: 'Ethereum', decimals: 18 },
-          token1: { address: '0x1', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+          address: '0x1234567890123456789012345678901234567890' as Address,
+          token0: { address: '0x0000000000000000000000000000000000000000' as Address, symbol: 'ETH', name: 'Ethereum', decimals: 18 },
+          token1: { address: '0x0000000000000000000000000000000000000001' as Address, symbol: 'USDC', name: 'USD Coin', decimals: 6 },
           reserve0: BigInt('1000000000000000000'),
           reserve1: BigInt('2000000000'),
           fee: 0.3,
@@ -152,8 +153,8 @@ describe('Page Integration with Data Hooks', () => {
 
     it('should display tokens from hook in swap UI', async () => {
       const mockTokens = [
-        { address: '0x0', symbol: 'ETH', name: 'Ethereum', decimals: 18 },
-        { address: '0x1', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+        { address: '0x0000000000000000000000000000000000000000' as Address, symbol: 'ETH', name: 'Ethereum', decimals: 18 },
+        { address: '0x0000000000000000000000000000000000000001' as Address, symbol: 'USDC', name: 'USD Coin', decimals: 6 },
       ]
 
       vi.mocked(useTokens).mockReturnValue({
@@ -242,8 +243,8 @@ describe('Page Integration with Data Hooks', () => {
         {
           id: '1',
           action: 'payroll_processed',
-          actor: '0x1234567890123456789012345678901234567890',
-          target: '0x2345678901234567890123456789012345678901',
+          actor: '0x1234567890123456789012345678901234567890' as Address,
+          target: '0x2345678901234567890123456789012345678901' as Address,
           details: 'Processed payroll payment',
           timestamp: new Date(),
         },
@@ -291,9 +292,9 @@ describe('Page Integration with Data Hooks', () => {
           id: '1',
           description: 'AWS Cloud Services',
           amount: BigInt('1500000000'),
-          token: { address: '0x1', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+          token: { address: '0x0000000000000000000000000000000000000001' as Address, symbol: 'USDC', name: 'USD Coin', decimals: 6 },
           category: 'infrastructure',
-          submitter: '0x1234567890123456789012345678901234567890',
+          submitter: '0x1234567890123456789012345678901234567890' as Address,
           submittedAt: new Date(),
           status: 'pending' as const,
         },
@@ -338,11 +339,12 @@ describe('Page Integration with Data Hooks', () => {
     it('should display transactions from hook', async () => {
       const mockTransactions = [
         {
-          hash: '0xabc123',
-          from: '0x1234567890123456789012345678901234567890',
-          to: '0x2345678901234567890123456789012345678901',
+          hash: '0xabc1230000000000000000000000000000000000000000000000000000000000' as Hex,
+          from: '0x1234567890123456789012345678901234567890' as Address,
+          to: '0x2345678901234567890123456789012345678901' as Address,
           value: BigInt('1000000000000000000'),
-          timestamp: new Date(),
+          chainId: 1,
+          timestamp: Date.now(),
           status: 'confirmed' as const,
         },
       ]

@@ -76,6 +76,7 @@ export const MESSAGE_TYPES = {
   CONNECT_RESPONSE: 'CONNECT_RESPONSE',
   DISCONNECT: 'DISCONNECT',
   APPROVAL_RESPONSE: 'APPROVAL_RESPONSE',
+  PROVIDER_EVENT: 'PROVIDER_EVENT',
 } as const
 
 /**
@@ -124,4 +125,16 @@ export const ENTRY_POINT_ADDRESSES = {
 export const POPUP_DIMENSIONS = {
   WIDTH: 360,
   HEIGHT: 600,
+} as const
+
+/**
+ * Timing constants
+ */
+export const TIMING = {
+  /** RPC request timeout in milliseconds (60 seconds) */
+  RPC_REQUEST_TIMEOUT_MS: 60000,
+  /** Toast notification duration in milliseconds (5 seconds) */
+  TOAST_DURATION_MS: 5000,
+  /** API request timeout in milliseconds (30 seconds) */
+  API_TIMEOUT_MS: 30000,
 } as const

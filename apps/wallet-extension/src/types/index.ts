@@ -89,6 +89,8 @@ export type MessageType =
   | 'APPROVAL_RESOLVED'
   // Content script messages
   | 'METAMASK_MODE_CHANGED'
+  // Provider events (EIP-1193)
+  | 'PROVIDER_EVENT'
 
 export interface ExtensionMessage<T = unknown> {
   type: MessageType

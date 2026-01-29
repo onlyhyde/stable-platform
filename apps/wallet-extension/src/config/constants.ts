@@ -61,6 +61,10 @@ export const WALLET_ENV_VARS = {
   // Limits
   GAS_HISTORY_MAX_LENGTH: 'VITE_WALLET_GAS_HISTORY_MAX_LENGTH',
   APPROVAL_HISTORY_MAX_LENGTH: 'VITE_WALLET_APPROVAL_HISTORY_MAX_LENGTH',
+
+  // RPC Configuration
+  RPC_REQUEST_TIMEOUT_MS: 'VITE_WALLET_RPC_REQUEST_TIMEOUT_MS',
+  TOAST_DURATION_MS: 'VITE_WALLET_TOAST_DURATION_MS',
 } as const
 
 /**
@@ -95,6 +99,10 @@ const DEFAULTS = {
   // Limits
   GAS_HISTORY_MAX_LENGTH: 100,
   APPROVAL_HISTORY_MAX_LENGTH: 50,
+
+  // RPC Configuration
+  RPC_REQUEST_TIMEOUT_MS: 60000, // 60 seconds for RPC requests
+  TOAST_DURATION_MS: 5000, // 5 seconds for toast notifications
 } as const
 
 /**
@@ -251,3 +259,57 @@ export const STORAGE_KEYS = {
   AUTO_LOCK_ALARM: 'stablenet-auto-lock',
   IDLE_CHECK_ALARM: 'stablenet-idle-check',
 } as const
+
+// =============================================================================
+// RPC Configuration
+// =============================================================================
+
+/**
+ * Get RPC configuration
+ */
+export function getRpcConfig() {
+  return {
+    requestTimeoutMs: getEnvNumber(WALLET_ENV_VARS.RPC_REQUEST_TIMEOUT_MS, DEFAULTS.RPC_REQUEST_TIMEOUT_MS),
+  }
+}
+
+// =============================================================================
+// UI Configuration
+// =============================================================================
+
+/**
+ * Get UI configuration
+ */
+export function getUiConfig() {
+  return {
+    toastDurationMs: getEnvNumber(WALLET_ENV_VARS.TOAST_DURATION_MS, DEFAULTS.TOAST_DURATION_MS),
+  }
+}
+
+// =============================================================================
+// Chain IDs
+// =============================================================================
+
+/**
+ * Well-known chain IDs
+ */
+export const CHAIN_IDS = {
+  MAINNET: 1,
+  SEPOLIA: 11155111,
+  HARDHAT: 31337,
+  LOCALHOST: 1337,
+} as const
+
+/**
+ * Convert chain ID to hex string
+ */
+export function chainIdToHex(chainId: number): string {
+  return `0x${chainId.toString(16)}`
+}
+
+/**
+ * Parse hex chain ID to number
+ */
+export function hexToChainId(hex: string): number {
+  return Number.parseInt(hex, 16)
+}

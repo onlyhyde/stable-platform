@@ -3,6 +3,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { Address, Hex } from 'viem'
 
 // ============================================
 // 1. IncomingPaymentsCard Tests
@@ -10,10 +11,14 @@ import userEvent from '@testing-library/user-event'
 describe('IncomingPaymentsCard', () => {
   const mockAnnouncements = [
     {
-      stealthAddress: '0x1234567890123456789012345678901234567890',
-      ephemeralPubKey: '0xabcd',
-      value: BigInt('1000000000000000000'), // 1 ETH
+      schemeId: 1,
+      stealthAddress: '0x1234567890123456789012345678901234567890' as Address,
+      ephemeralPubKey: '0xabcd000000000000000000000000000000000000000000000000000000000000' as Hex,
+      viewTag: 0,
+      caller: '0x2345678901234567890123456789012345678901' as Address,
       blockNumber: BigInt(12345),
+      transactionHash: '0x0000000000000000000000000000000000000000000000000000000000000001' as Hex,
+      value: BigInt('1000000000000000000'), // 1 ETH
     },
   ]
 
@@ -41,10 +46,22 @@ describe('IncomingPaymentsCard', () => {
   it('should show loading state during withdrawal', async () => {
     const { IncomingPaymentsCard } = await import('@/components/stealth/cards/IncomingPaymentsCard')
     const onWithdraw = vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
+    const loadingAnnouncements = [
+      {
+        schemeId: 1,
+        stealthAddress: '0x1234567890123456789012345678901234567890' as Address,
+        ephemeralPubKey: '0xabcd000000000000000000000000000000000000000000000000000000000000' as Hex,
+        viewTag: 0,
+        caller: '0x2345678901234567890123456789012345678901' as Address,
+        blockNumber: BigInt(12345),
+        transactionHash: '0x0000000000000000000000000000000000000000000000000000000000000001' as Hex,
+        value: BigInt('1000000000000000000'),
+      },
+    ]
 
     render(
       <IncomingPaymentsCard
-        announcements={mockAnnouncements}
+        announcements={loadingAnnouncements}
         isScanning={false}
         onScan={vi.fn()}
         onWithdraw={onWithdraw}
@@ -107,9 +124,9 @@ describe('StealthMetaAddressCard', () => {
 describe('YourPositionsCard', () => {
   const mockPositions = [
     {
-      poolAddress: '0x1234567890123456789012345678901234567890',
-      token0: { address: '0x0', symbol: 'ETH', name: 'Ethereum', decimals: 18 },
-      token1: { address: '0x1', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+      poolAddress: '0x1234567890123456789012345678901234567890' as Address,
+      token0: { address: '0x0000000000000000000000000000000000000000' as Address, symbol: 'ETH', name: 'Ethereum', decimals: 18 },
+      token1: { address: '0x0000000000000000000000000000000000000001' as Address, symbol: 'USDC', name: 'USD Coin', decimals: 6 },
       liquidity: BigInt('1000000000000000000'),
       token0Amount: BigInt('500000000000000000'),
       token1Amount: BigInt('1000000000'),
