@@ -25,7 +25,7 @@ export default function PayrollPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-gray-500">Loading payroll...</p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Loading payroll...</p>
       </div>
     )
   }
@@ -33,7 +33,7 @@ export default function PayrollPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-red-500">Error: {error.message}</p>
+        <p style={{ color: 'rgb(var(--destructive))' }}>Error: {error.message}</p>
       </div>
     )
   }

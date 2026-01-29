@@ -36,21 +36,18 @@ export function CategoryFilter({
     <div className="space-y-4">
       {/* Categories */}
       <div>
-        <h3 className="text-sm font-medium text-gray-500 mb-2">Category</h3>
+        <h3 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>Category</h3>
         <div className="flex flex-wrap gap-2">
           {categories.map(cat => (
             <button
               key={cat.key}
               onClick={() => onCategoryChange(cat.key)}
-              className={`
-                flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
-                transition-all duration-200
-                ${
-                  selectedCategory === cat.key
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }
-              `}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-150"
+              style={{
+                backgroundColor: selectedCategory === cat.key ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                color: selectedCategory === cat.key ? 'white' : 'rgb(var(--foreground))',
+                boxShadow: selectedCategory === cat.key ? '0 0 16px -4px rgba(16, 185, 129, 0.3)' : 'none',
+              }}
             >
               <span>{cat.icon}</span>
               <span>{cat.label}</span>
@@ -61,20 +58,17 @@ export function CategoryFilter({
 
       {/* Module Types */}
       <div>
-        <h3 className="text-sm font-medium text-gray-500 mb-2">Module Type</h3>
+        <h3 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>Module Type</h3>
         <div className="flex flex-wrap gap-2">
           {moduleTypes.map(type => (
             <button
               key={type.key}
               onClick={() => onTypeChange(type.key)}
-              className={`
-                px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200
-                ${
-                  selectedType === type.key
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }
-              `}
+              className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-150"
+              style={{
+                backgroundColor: selectedType === type.key ? 'rgb(var(--foreground))' : 'rgb(var(--secondary))',
+                color: selectedType === type.key ? 'rgb(var(--background))' : 'rgb(var(--foreground))',
+              }}
             >
               {type.label}
             </button>

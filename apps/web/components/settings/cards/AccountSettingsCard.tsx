@@ -30,20 +30,21 @@ export function AccountSettingsCard({ isConnected, address, onDisconnect }: Acco
 
           {isConnected && address ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-4 p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                   <span className="text-white font-bold text-lg">
                     {accountName.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">{accountName}</p>
-                  <p className="text-sm text-gray-500 font-mono">{formatAddress(address)}</p>
+                  <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{accountName}</p>
+                  <p className="text-sm font-mono" style={{ color: 'rgb(var(--muted-foreground))' }}>{formatAddress(address)}</p>
                 </div>
                 <button
                   type="button"
                   onClick={copyAddress}
-                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="p-2 transition-colors"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
                   title="Copy address"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -66,16 +67,16 @@ export function AccountSettingsCard({ isConnected, address, onDisconnect }: Acco
                 />
               </div>
 
-              <div className="pt-4 border-t border-gray-200">
-                <Button variant="secondary" onClick={onDisconnect} className="text-red-600 hover:text-red-700">
+              <div className="pt-4 border-t" style={{ borderColor: 'rgb(var(--border))' }}>
+                <Button variant="secondary" onClick={onDisconnect} style={{ color: 'rgb(var(--destructive))' }}>
                   Disconnect Wallet
                 </Button>
               </div>
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+                <svg className="w-8 h-8" style={{ color: 'rgb(var(--muted-foreground))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -84,8 +85,8 @@ export function AccountSettingsCard({ isConnected, address, onDisconnect }: Acco
                   />
                 </svg>
               </div>
-              <p className="text-gray-500 mb-4">No wallet connected</p>
-              <p className="text-sm text-gray-400">
+              <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>No wallet connected</p>
+              <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}>
                 Connect a wallet to manage your account settings
               </p>
             </div>
@@ -101,17 +102,17 @@ export function AccountSettingsCard({ isConnected, address, onDisconnect }: Acco
           </CardDescription>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm text-gray-600">Account Type</span>
-              <span className="text-sm font-medium text-gray-900">Kernel v3 (ERC-4337)</span>
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Account Type</span>
+              <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>Kernel v3 (ERC-4337)</span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm text-gray-600">Deployment Status</span>
-              <span className="text-sm font-medium text-green-600">Deployed</span>
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Deployment Status</span>
+              <span className="text-sm font-medium" style={{ color: 'rgb(var(--success))' }}>Deployed</span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm text-gray-600">Modules</span>
-              <span className="text-sm font-medium text-gray-900">ECDSA Validator</span>
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Modules</span>
+              <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>ECDSA Validator</span>
             </div>
           </div>
         </CardContent>

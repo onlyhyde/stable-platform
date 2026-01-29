@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useAccount, useChainId, useWalletClient, usePublicClient } from 'wagmi'
 import type { Address, Hex, Hash } from 'viem'
+import { getContractAddresses } from '../lib/config'
 
-// Contract address - should come from @stablenet/contracts
-const SESSION_KEY_MANAGER = '0x4a679253410272dd5232B3Ff7cF5dbB88f295319' as const
+// Default fallback address for development
+const DEFAULT_sessionKeyManager = '0x4a679253410272dd5232B3Ff7cF5dbB88f295319' as const
 
 // Session key states
 export type SessionKeyState = 'active' | 'expired' | 'revoked' | 'unknown'
@@ -62,7 +63,7 @@ export interface Permission {
 }
 
 // ABI fragments for SessionKeyManager
-const SESSION_KEY_MANAGER_ABI = [
+const sessionKeyManager_ABI = [
   {
     name: 'createSessionKey',
     type: 'function',
@@ -214,6 +215,12 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
   // Use provided account or connected address
   const targetAccount = account || connectedAddress
 
+  // Get contract address from config based on chain ID
+  const sessionKeyManager = useMemo(() => {
+    const contracts = getContractAddresses(chainId)
+    return (contracts?.sessionKeyManager ?? DEFAULT_sessionKeyManager) as Address
+  }, [chainId])
+
   // State
   const [sessionKeys, setSessionKeys] = useState<SessionKeyInfo[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -234,8 +241,8 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
 
       try {
         const result = await publicClient.readContract({
-          address: SESSION_KEY_MANAGER,
-          abi: SESSION_KEY_MANAGER_ABI,
+          address: sessionKeyManager,
+          abi: sessionKeyManager_ABI,
           functionName: 'getSessionKeyState',
           args: [targetAccount, sessionKey],
         })
@@ -250,8 +257,8 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
 
         // Fetch permissions for this session key
         const permResult = await publicClient.readContract({
-          address: SESSION_KEY_MANAGER,
-          abi: SESSION_KEY_MANAGER_ABI,
+          address: sessionKeyManager,
+          abi: sessionKeyManager_ABI,
           functionName: 'getPermissions',
           args: [targetAccount, sessionKey],
         })
@@ -283,8 +290,8 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
           permissions,
           createdAt,
         }
-      } catch (err) {
-        console.error('Failed to get session key state:', err)
+      } catch {
+        // Session key state fetch failed, return null
         return null
       }
     },
@@ -298,15 +305,15 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
 
       try {
         const result = await publicClient.readContract({
-          address: SESSION_KEY_MANAGER,
-          abi: SESSION_KEY_MANAGER_ABI,
+          address: sessionKeyManager,
+          abi: sessionKeyManager_ABI,
           functionName: 'hasPermission',
           args: [targetAccount, sessionKey, target, selector],
         })
 
         return result as boolean
-      } catch (err) {
-        console.error('Failed to check permission:', err)
+      } catch {
+        // Permission check failed, assume no permission
         return false
       }
     },
@@ -326,8 +333,8 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
     try {
       // Get all session keys for the account
       const result = await publicClient.readContract({
-        address: SESSION_KEY_MANAGER,
-        abi: SESSION_KEY_MANAGER_ABI,
+        address: sessionKeyManager,
+        abi: sessionKeyManager_ABI,
         functionName: 'getSessionKeys',
         args: [targetAccount],
       })
@@ -376,17 +383,19 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
       setError(null)
 
       try {
-        // Generate a new session key address (in production, this would be a new keypair)
-        // For now, we use a deterministic address based on timestamp
-        const sessionKey = `0x${Date.now().toString(16).padStart(40, '0')}` as Address
+        // Generate a cryptographically secure random session key address
+        // In production, this would be a full keypair with the private key stored securely
+        const randomBytes = new Uint8Array(20)
+        crypto.getRandomValues(randomBytes)
+        const sessionKey = `0x${Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('')}` as Address
 
         const expiry = params.expiry ?? BigInt(0)
         const spendingLimit = params.spendingLimit ?? BigInt(0)
 
         // Create session key transaction using writeContract
         const txHash = await walletClient.writeContract({
-          address: SESSION_KEY_MANAGER,
-          abi: SESSION_KEY_MANAGER_ABI,
+          address: sessionKeyManager,
+          abi: sessionKeyManager_ABI,
           functionName: 'createSessionKey',
           args: [sessionKey, expiry, spendingLimit],
         })
@@ -395,8 +404,8 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
         if (params.permissions && params.permissions.length > 0) {
           for (const perm of params.permissions) {
             await walletClient.writeContract({
-              address: SESSION_KEY_MANAGER,
-              abi: SESSION_KEY_MANAGER_ABI,
+              address: sessionKeyManager,
+              abi: sessionKeyManager_ABI,
               functionName: 'grantPermission',
               args: [sessionKey, perm.target, perm.selector, BigInt(0)],
             })
@@ -431,8 +440,8 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
 
       try {
         const txHash = await walletClient.writeContract({
-          address: SESSION_KEY_MANAGER,
-          abi: SESSION_KEY_MANAGER_ABI,
+          address: sessionKeyManager,
+          abi: sessionKeyManager_ABI,
           functionName: 'revokeSessionKey',
           args: [sessionKey],
         })
@@ -468,8 +477,8 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
 
       try {
         const txHash = await walletClient.writeContract({
-          address: SESSION_KEY_MANAGER,
-          abi: SESSION_KEY_MANAGER_ABI,
+          address: sessionKeyManager,
+          abi: sessionKeyManager_ABI,
           functionName: 'grantPermission',
           args: [
             sessionKey,
@@ -511,8 +520,8 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
 
       try {
         const txHash = await walletClient.writeContract({
-          address: SESSION_KEY_MANAGER,
-          abi: SESSION_KEY_MANAGER_ABI,
+          address: sessionKeyManager,
+          abi: sessionKeyManager_ABI,
           functionName: 'revokePermission',
           args: [sessionKey, target, selector],
         })

@@ -12,9 +12,11 @@ export default function DashboardPage() {
   if (!isConnected) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center mb-6">
+        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
+             style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}>
           <svg
-            className="w-10 h-10 text-primary-600"
+            className="w-10 h-10"
+            style={{ color: 'rgb(var(--primary))' }}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -28,8 +30,8 @@ export default function DashboardPage() {
             />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to StableNet</h1>
-        <p className="text-gray-500 mb-6 max-w-md">
+        <h1 className="text-2xl font-bold mb-2" style={{ color: 'rgb(var(--foreground))' }}>Welcome to StableNet</h1>
+        <p className="mb-6 max-w-md" style={{ color: 'rgb(var(--muted-foreground))' }}>
           Connect your wallet to access smart account features, send payments, trade tokens, and more.
         </p>
         <Button onClick={() => connect()} size="lg">
@@ -43,18 +45,19 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500">Overview of your StableNet account</p>
+        <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>Dashboard</h1>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Overview of your StableNet account</p>
       </div>
 
       {/* Balance Card */}
-      <Card className="bg-gradient-to-r from-primary-600 to-primary-700">
-        <CardContent className="py-8">
-          <p className="text-primary-100 text-sm font-medium">Total Balance</p>
+      <Card className="overflow-hidden">
+        <CardContent className="py-8 relative"
+                     style={{ background: 'linear-gradient(135deg, rgb(var(--primary)), rgb(var(--primary-hover)), rgb(var(--accent)))' }}>
+          <p className="text-sm font-medium text-white/80">Total Balance</p>
           <h2 className="text-4xl font-bold text-white mt-2">
             {formatTokenAmount(balance, decimals)} {symbol}
           </h2>
-          <p className="text-primary-200 text-sm mt-2">
+          <p className="text-sm mt-2 text-white/70">
             {address && formatAddress(address, 6)}
           </p>
         </CardContent>
@@ -110,9 +113,10 @@ export default function DashboardPage() {
           <CardTitle>Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8">
             <svg
-              className="w-12 h-12 mx-auto text-gray-300 mb-4"
+              className="w-12 h-12 mx-auto mb-4"
+              style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -125,8 +129,9 @@ export default function DashboardPage() {
                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
               />
             </svg>
-            <p>No recent transactions</p>
-            <Link href="/payment/history" className="text-primary-600 hover:text-primary-700 font-medium mt-2 inline-block">
+            <p style={{ color: 'rgb(var(--muted-foreground))' }}>No recent transactions</p>
+            <Link href="/payment/history" className="font-medium mt-2 inline-block"
+                  style={{ color: 'rgb(var(--primary))' }}>
               View all activity
             </Link>
           </div>
@@ -146,14 +151,18 @@ interface QuickActionCardProps {
 function QuickActionCard({ title, description, href, icon }: QuickActionCardProps) {
   return (
     <Link href={href}>
-      <Card className="hover:shadow-md hover:border-primary-200 transition-all cursor-pointer h-full">
+      <Card className="hover:shadow-md transition-all cursor-pointer h-full" hover>
         <CardContent className="flex items-center gap-4 py-4">
-          <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center text-primary-600">
+          <div className="w-12 h-12 rounded-lg flex items-center justify-center"
+               style={{
+                 backgroundColor: 'rgb(var(--primary) / 0.1)',
+                 color: 'rgb(var(--primary))'
+               }}>
             {icon}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-500">{description}</p>
+            <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{title}</h3>
+            <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{description}</p>
           </div>
         </CardContent>
       </Card>

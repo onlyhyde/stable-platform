@@ -38,7 +38,8 @@ export function IncomingPaymentsCard({
         {announcements.length === 0 ? (
           <div className="text-center py-8">
             <svg
-              className="w-16 h-16 text-gray-300 mx-auto mb-4"
+              className="w-16 h-16 mx-auto mb-4"
+              style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -51,13 +52,13 @@ export function IncomingPaymentsCard({
                 d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
               />
             </svg>
-            <p className="text-gray-500">No incoming payments detected</p>
-            <p className="text-sm text-gray-400 mt-1">
+            <p style={{ color: 'rgb(var(--muted-foreground))' }}>No incoming payments detected</p>
+            <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}>
               Click &quot;Scan&quot; to check for new announcements
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
             {announcements.map((announcement) => (
               <AnnouncementItem
                 key={announcement.stealthAddress}
@@ -111,20 +112,20 @@ function AnnouncementItem({ announcement, onWithdraw }: AnnouncementItemProps) {
           </svg>
         </div>
         <div>
-          <p className="font-medium text-gray-900">
+          <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
             Stealth Payment
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             To: {formatAddress(announcement.stealthAddress)}
           </p>
         </div>
       </div>
       <div className="text-right flex items-center gap-4">
         <div>
-          <p className="font-medium text-gray-900">
+          <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
             {(Number(announcement.value) / 1e18).toFixed(4)} ETH
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Block #{announcement.blockNumber.toString()}
           </p>
         </div>

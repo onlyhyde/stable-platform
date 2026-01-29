@@ -8,12 +8,12 @@ interface SummaryStatCardProps {
   valueClassName?: string
 }
 
-export function SummaryStatCard({ label, value, valueClassName = 'text-gray-900' }: SummaryStatCardProps) {
+export function SummaryStatCard({ label, value, valueClassName }: SummaryStatCardProps) {
   return (
     <Card>
       <CardContent className="py-6">
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className={`text-2xl font-bold ${valueClassName}`}>{value}</p>
+        <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{label}</p>
+        <p className={`text-2xl font-bold ${valueClassName || ''}`} style={!valueClassName ? { color: 'rgb(var(--foreground))' } : undefined}>{value}</p>
       </CardContent>
     </Card>
   )

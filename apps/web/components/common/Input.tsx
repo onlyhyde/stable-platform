@@ -9,6 +9,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string
   leftElement?: ReactNode
   rightElement?: ReactNode
+  variant?: 'default' | 'glass' | 'filled'
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -20,6 +21,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       hint,
       leftElement,
       rightElement,
+      variant = 'default',
       id,
       ...props
     },
@@ -32,14 +34,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-gray-700 mb-1.5"
+            className="block text-sm font-semibold mb-2"
+            style={{ color: 'rgb(var(--foreground))' }}
           >
             {label}
           </label>
         )}
-        <div className="relative">
+        <div className="relative group">
           {leftElement && (
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors"
+                 style={{ color: 'rgb(var(--muted-foreground))' }}>
               {leftElement}
             </div>
           )}
@@ -47,26 +51,41 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full px-4 py-2.5 border rounded-lg transition-colors',
-              'focus:outline-none focus:ring-2 focus:ring-offset-0',
-              error
-                ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                : 'border-gray-300 focus:ring-primary-500 focus:border-primary-500',
-              leftElement ? 'pl-10' : undefined,
-              rightElement ? 'pr-10' : undefined,
-              'disabled:bg-gray-100 disabled:cursor-not-allowed',
+              'w-full px-4 py-3 rounded-xl transition-all duration-150',
+              'placeholder:text-[rgb(var(--muted-foreground))]',
+              'focus:outline-none focus:ring-2',
+              'disabled:cursor-not-allowed disabled:opacity-60',
+              leftElement ? 'pl-11' : '',
+              rightElement ? 'pr-11' : '',
               className
             )}
+            style={{
+              backgroundColor: error ? 'rgb(var(--destructive) / 0.05)' : 'rgb(var(--background))',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: error ? 'rgb(var(--destructive))' : 'rgb(var(--border))',
+              color: 'rgb(var(--foreground))',
+            }}
             {...props}
           />
           {rightElement && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <div className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                 style={{ color: 'rgb(var(--muted-foreground))' }}>
               {rightElement}
             </div>
           )}
         </div>
-        {error && <p className="mt-1.5 text-sm text-red-500">{error}</p>}
-        {hint && !error && <p className="mt-1.5 text-sm text-gray-500">{hint}</p>}
+        {error && (
+          <p className="mt-2 text-sm flex items-center gap-1.5" style={{ color: 'rgb(var(--destructive))' }}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {error}
+          </p>
+        )}
+        {hint && !error && (
+          <p className="mt-2 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{hint}</p>
+        )}
       </div>
     )
   }

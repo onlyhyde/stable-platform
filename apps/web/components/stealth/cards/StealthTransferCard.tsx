@@ -51,9 +51,9 @@ export function StealthTransferCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Balance */}
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <p className="text-sm text-gray-500">Available Balance</p>
-          <p className="text-xl font-semibold text-gray-900">
+        <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Available Balance</p>
+          <p className="text-xl font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
             {formatTokenAmount(balance, decimals)} {symbol}
           </p>
         </div>
@@ -80,7 +80,8 @@ export function StealthTransferCard({
             <button
               type="button"
               onClick={() => onAmountChange(formatTokenAmount(balance, decimals))}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              className="text-sm font-medium hover:opacity-80"
+              style={{ color: 'rgb(var(--primary))' }}
             >
               MAX
             </button>
@@ -120,8 +121,8 @@ export function StealthTransferCard({
         </div>
 
         {/* Gas Info */}
-        <div className="p-3 bg-gray-50 rounded-lg">
-          <p className="text-sm text-gray-500">
+        <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Gas fees will be sponsored by the Paymaster
           </p>
         </div>

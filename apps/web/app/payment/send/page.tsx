@@ -32,7 +32,7 @@ export default function SendPage() {
   if (!isConnected) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-gray-500">Please connect your wallet to send payments</p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Please connect your wallet to send payments</p>
       </div>
     )
   }
@@ -40,8 +40,8 @@ export default function SendPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Send</h1>
-        <p className="text-gray-500">Transfer tokens to another address</p>
+        <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>Send</h1>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Transfer tokens to another address</p>
       </div>
 
       <Card>
@@ -50,9 +50,9 @@ export default function SendPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Balance */}
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">Available Balance</p>
-            <p className="text-xl font-semibold text-gray-900">
+          <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+            <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Available Balance</p>
+            <p className="text-xl font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
               {formatTokenAmount(balance, decimals)} {symbol}
             </p>
           </div>
@@ -78,7 +78,8 @@ export default function SendPage() {
               <button
                 type="button"
                 onClick={() => setAmount(formatTokenAmount(balance, decimals))}
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                className="text-sm font-medium transition-colors"
+                style={{ color: 'rgb(var(--primary))' }}
               >
                 MAX
               </button>
@@ -86,16 +87,22 @@ export default function SendPage() {
           />
 
           {/* Gas Info */}
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">
+          <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+            <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Gas fees will be sponsored by the Paymaster
             </p>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error.message}</p>
+            <div
+              className="p-3 rounded-lg border"
+              style={{
+                backgroundColor: 'rgb(var(--destructive) / 0.1)',
+                borderColor: 'rgb(var(--destructive) / 0.3)',
+              }}
+            >
+              <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error.message}</p>
             </div>
           )}
 

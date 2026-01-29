@@ -93,11 +93,15 @@ export function DelegateAddressInput({
           disabled={disabled}
           className={cn(
             'flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors',
-            mode === 'preset'
-              ? 'bg-primary-100 text-primary-700 border-2 border-primary-500'
-              : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
+          style={{
+            backgroundColor: mode === 'preset' ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
+            color: mode === 'preset' ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
+            borderWidth: '2px',
+            borderStyle: 'solid',
+            borderColor: mode === 'preset' ? 'rgb(var(--primary))' : 'transparent',
+          }}
         >
           Preset Contracts
         </button>
@@ -107,11 +111,15 @@ export function DelegateAddressInput({
           disabled={disabled}
           className={cn(
             'flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors',
-            mode === 'custom'
-              ? 'bg-primary-100 text-primary-700 border-2 border-primary-500'
-              : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
+          style={{
+            backgroundColor: mode === 'custom' ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
+            color: mode === 'custom' ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
+            borderWidth: '2px',
+            borderStyle: 'solid',
+            borderColor: mode === 'custom' ? 'rgb(var(--primary))' : 'transparent',
+          }}
         >
           Custom Address
         </button>
@@ -131,8 +139,16 @@ export function DelegateAddressInput({
               />
             ))
           ) : (
-            <div className="p-4 rounded-lg bg-yellow-50 border border-yellow-200">
-              <p className="text-sm text-yellow-700">
+            <div
+              className="p-4 rounded-lg"
+              style={{
+                backgroundColor: 'rgb(var(--warning) / 0.1)',
+                borderWidth: '1px',
+                borderStyle: 'solid',
+                borderColor: 'rgb(var(--warning) / 0.3)',
+              }}
+            >
+              <p className="text-sm" style={{ color: 'rgb(var(--warning))' }}>
                 No preset contracts available for this network.
                 Please use a custom address.
               </p>
@@ -174,20 +190,30 @@ export function DelegateAddressInput({
       )}
 
       {/* Selected Address Display */}
-      <div className="p-3 rounded-lg bg-gray-50 border border-gray-200">
+      <div
+        className="p-3 rounded-lg"
+        style={{
+          backgroundColor: 'rgb(var(--secondary))',
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          borderColor: 'rgb(var(--border))',
+        }}
+      >
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-500">Selected Delegate:</span>
-          <span className="font-mono text-sm text-gray-900">
+          <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            Selected Delegate:
+          </span>
+          <span className="font-mono text-sm" style={{ color: 'rgb(var(--foreground))' }}>
             {formatAddress(value, 8)}
           </span>
         </div>
         {selectedPreset && (
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {selectedPreset.name} - {selectedPreset.description}
           </p>
         )}
         {value === ZERO_ADDRESS && (
-          <p className="text-xs text-orange-600 mt-1">
+          <p className="text-xs mt-1" style={{ color: 'rgb(var(--warning))' }}>
             Zero address selected - This will revoke the delegation
           </p>
         )}
@@ -211,25 +237,38 @@ function PresetCard({ preset, selected, onSelect, disabled }: PresetCardProps) {
       onClick={onSelect}
       disabled={disabled}
       className={cn(
-        'w-full p-4 rounded-lg border-2 text-left transition-all',
-        selected
-          ? 'border-primary-500 bg-primary-50'
-          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50',
+        'w-full p-4 rounded-lg text-left transition-all',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
+      style={{
+        backgroundColor: selected ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--card))',
+        borderWidth: '2px',
+        borderStyle: 'solid',
+        borderColor: selected ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+      }}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-gray-900">{preset.name}</h4>
+            <h4 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+              {preset.name}
+            </h4>
             {selected && (
-              <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">
+              <span
+                className="px-2 py-0.5 text-xs font-medium rounded-full"
+                style={{
+                  backgroundColor: 'rgb(var(--primary) / 0.1)',
+                  color: 'rgb(var(--primary))',
+                }}
+              >
                 Selected
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500 mt-1">{preset.description}</p>
-          <p className="font-mono text-xs text-gray-400 mt-2">
+          <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {preset.description}
+          </p>
+          <p className="font-mono text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}>
             {formatAddress(preset.address, 8)}
           </p>
         </div>
@@ -240,7 +279,11 @@ function PresetCard({ preset, selected, onSelect, disabled }: PresetCardProps) {
         {preset.features.map((feature) => (
           <span
             key={feature}
-            className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full"
+            className="px-2 py-0.5 text-xs rounded-full"
+            style={{
+              backgroundColor: 'rgb(var(--secondary))',
+              color: 'rgb(var(--muted-foreground))',
+            }}
           >
             {feature}
           </span>

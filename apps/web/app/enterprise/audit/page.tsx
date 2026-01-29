@@ -79,7 +79,7 @@ export default function AuditPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-gray-500">Loading audit logs...</p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Loading audit logs...</p>
       </div>
     )
   }
@@ -87,7 +87,7 @@ export default function AuditPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-red-500">Error: {error.message}</p>
+        <p style={{ color: 'rgb(var(--destructive))' }}>Error: {error.message}</p>
       </div>
     )
   }

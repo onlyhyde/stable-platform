@@ -29,9 +29,10 @@ export const SubscriptionList: FC<SubscriptionListProps> = ({
     return (
       <Card className={className}>
         <CardContent className="py-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
             <svg
-              className="w-8 h-8 text-gray-400"
+              className="w-8 h-8"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -44,7 +45,7 @@ export const SubscriptionList: FC<SubscriptionListProps> = ({
               />
             </svg>
           </div>
-          <p className="text-gray-500">{emptyMessage}</p>
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>{emptyMessage}</p>
         </CardContent>
       </Card>
     )
@@ -80,12 +81,22 @@ const SubscriptionListItem: FC<SubscriptionListItemProps> = ({
 }) => {
   const { plan, status, statusLabel, statusColor, nextPaymentFormatted } = subscription
 
-  const statusClasses: Record<string, string> = {
-    green: 'bg-green-100 text-green-800',
-    blue: 'bg-blue-100 text-blue-800',
-    yellow: 'bg-yellow-100 text-yellow-800',
-    gray: 'bg-gray-100 text-gray-800',
-    red: 'bg-red-100 text-red-800',
+  // Status colors using CSS variables for dark mode compatibility
+  const getStatusStyles = (color: string): React.CSSProperties => {
+    switch (color) {
+      case 'green':
+        return { backgroundColor: 'rgb(var(--success) / 0.1)', color: 'rgb(var(--success))' }
+      case 'blue':
+        return { backgroundColor: 'rgb(var(--primary) / 0.1)', color: 'rgb(var(--primary))' }
+      case 'yellow':
+        return { backgroundColor: 'rgb(255 193 7 / 0.1)', color: 'rgb(202 138 4)' }
+      case 'gray':
+        return { backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--muted-foreground))' }
+      case 'red':
+        return { backgroundColor: 'rgb(var(--destructive) / 0.1)', color: 'rgb(var(--destructive))' }
+      default:
+        return { backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--muted-foreground))' }
+    }
   }
 
   return (
@@ -94,8 +105,8 @@ const SubscriptionListItem: FC<SubscriptionListItemProps> = ({
         <div className="flex items-center justify-between">
           {/* Left: Plan info */}
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}>
+              <svg className="w-6 h-6" style={{ color: 'rgb(var(--primary))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -105,8 +116,8 @@ const SubscriptionListItem: FC<SubscriptionListItemProps> = ({
               </svg>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">{plan.name}</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{plan.name}</h3>
+              <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {plan.priceFormatted} / {plan.intervalFormatted.toLowerCase()}
               </p>
             </div>
@@ -115,15 +126,13 @@ const SubscriptionListItem: FC<SubscriptionListItemProps> = ({
           {/* Center: Status & Next payment */}
           <div className="hidden md:flex flex-col items-center gap-1">
             <span
-              className={cn(
-                'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                statusClasses[statusColor]
-              )}
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+              style={getStatusStyles(statusColor)}
             >
               {statusLabel}
             </span>
             {status !== 'cancelled' && status !== 'expired' && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Next: {nextPaymentFormatted}
               </span>
             )}
@@ -142,7 +151,7 @@ const SubscriptionListItem: FC<SubscriptionListItemProps> = ({
                 size="sm"
                 onClick={() => onCancel(subscription.planId)}
                 isLoading={isCancelling}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                style={{ color: 'rgb(var(--destructive))' }}
               >
                 Cancel
               </Button>
@@ -151,17 +160,15 @@ const SubscriptionListItem: FC<SubscriptionListItemProps> = ({
         </div>
 
         {/* Mobile: Status row */}
-        <div className="flex md:hidden items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+        <div className="flex md:hidden items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'rgb(var(--border) / 0.5)' }}>
           <span
-            className={cn(
-              'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-              statusClasses[statusColor]
-            )}
+            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+            style={getStatusStyles(statusColor)}
           >
             {statusLabel}
           </span>
           {status !== 'cancelled' && status !== 'expired' && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Next payment: {nextPaymentFormatted}
             </span>
           )}

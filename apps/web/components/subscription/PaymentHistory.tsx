@@ -33,12 +33,12 @@ export const PaymentHistory: FC<PaymentHistoryProps> = ({
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="animate-pulse flex items-center gap-4">
-                <div className="w-10 h-10 bg-gray-200 rounded-full" />
+                <div className="w-10 h-10 rounded-full" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-1/3" />
-                  <div className="h-3 bg-gray-200 rounded w-1/4" />
+                  <div className="h-4 rounded w-1/3" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                  <div className="h-3 rounded w-1/4" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
                 </div>
-                <div className="h-4 bg-gray-200 rounded w-20" />
+                <div className="h-4 rounded w-20" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
               </div>
             ))}
           </div>
@@ -54,9 +54,10 @@ export const PaymentHistory: FC<PaymentHistoryProps> = ({
           <CardTitle>Payment History</CardTitle>
         </CardHeader>
         <CardContent className="py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
             <svg
-              className="w-6 h-6 text-gray-400"
+              className="w-6 h-6"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -69,7 +70,7 @@ export const PaymentHistory: FC<PaymentHistoryProps> = ({
               />
             </svg>
           </div>
-          <p className="text-gray-500">No payment history yet</p>
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>No payment history yet</p>
         </CardContent>
       </Card>
     )
@@ -81,7 +82,7 @@ export const PaymentHistory: FC<PaymentHistoryProps> = ({
         <CardTitle>Payment History</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y" style={{ borderColor: 'rgb(var(--border) / 0.5)' }}>
           {payments.map((payment, index) => (
             <PaymentHistoryItem key={`${payment.txHash}-${index}`} payment={payment} />
           ))}
@@ -101,36 +102,35 @@ const PaymentHistoryItem: FC<PaymentHistoryItemProps> = ({ payment }) => {
   const date = new Date(Number(payment.timestamp) * 1000)
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors">
+    <div className="flex items-center justify-between px-6 py-4 transition-colors hover:opacity-80">
       <div className="flex items-center gap-4">
         <div
-          className={cn(
-            'w-10 h-10 rounded-full flex items-center justify-center',
-            payment.status === 'success' ? 'bg-green-100' : 'bg-red-100'
-          )}
+          className="w-10 h-10 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: payment.status === 'success' ? 'rgb(var(--success) / 0.1)' : 'rgb(var(--destructive) / 0.1)' }}
         >
           {payment.status === 'success' ? (
-            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" style={{ color: 'rgb(var(--success))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           ) : (
-            <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" style={{ color: 'rgb(var(--destructive))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           )}
         </div>
         <div>
-          <p className="font-medium text-gray-900">
+          <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
             Subscription Payment #{payment.subscriptionId.toString()}
           </p>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center gap-2 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             <span>{date.toLocaleDateString()}</span>
             <span>&middot;</span>
             <a
               href={`https://etherscan.io/tx/${payment.txHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary-600 hover:underline"
+              className="hover:underline"
+              style={{ color: 'rgb(var(--primary))' }}
             >
               {formatAddress(payment.txHash, 8)}
             </a>
@@ -138,10 +138,10 @@ const PaymentHistoryItem: FC<PaymentHistoryItemProps> = ({ payment }) => {
         </div>
       </div>
       <div className="text-right">
-        <p className={cn('font-semibold', payment.status === 'success' ? 'text-gray-900' : 'text-red-600')}>
+        <p className="font-semibold" style={{ color: payment.status === 'success' ? 'rgb(var(--foreground))' : 'rgb(var(--destructive))' }}>
           {payment.status === 'success' ? '-' : ''}{amountFormatted} {tokenInfo.symbol}
         </p>
-        <p className="text-sm text-gray-500 capitalize">{payment.status}</p>
+        <p className="text-sm capitalize" style={{ color: 'rgb(var(--muted-foreground))' }}>{payment.status}</p>
       </div>
     </div>
   )

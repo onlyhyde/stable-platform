@@ -44,7 +44,6 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
   const handleViewDetails = (sessionKey: SessionKeyInfo) => {
     setSelectedKey(sessionKey)
     // In a full implementation, this would open a details modal
-    console.log('View details for:', sessionKey)
   }
 
   const activeKeys = sessionKeys.filter((k) => k.state === 'active')
@@ -55,8 +54,8 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Session Keys</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>Session Keys</h2>
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Manage session keys for delegated transaction signing
           </p>
         </div>
@@ -88,7 +87,7 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-600">
+        <div className="rounded-lg p-4 text-sm" style={{ backgroundColor: 'rgb(var(--destructive) / 0.1)', borderWidth: '1px', borderColor: 'rgb(var(--destructive) / 0.2)', color: 'rgb(var(--destructive))' }}>
           {error}
         </div>
       )}
@@ -96,15 +95,16 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
       {/* Loading */}
       {isLoading && sessionKeys.length === 0 && (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'rgb(var(--primary))' }} />
         </div>
       )}
 
       {/* Empty state */}
       {!isLoading && sessionKeys.length === 0 && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+        <div className="text-center py-12 rounded-lg border-2 border-dashed" style={{ backgroundColor: 'rgb(var(--secondary))', borderColor: 'rgb(var(--border))' }}>
           <svg
-            className="w-12 h-12 text-gray-400 mx-auto mb-4"
+            className="w-12 h-12 mx-auto mb-4"
+            style={{ color: 'rgb(var(--muted-foreground))' }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -116,8 +116,8 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
               d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
             />
           </svg>
-          <h3 className="text-sm font-medium text-gray-900 mb-1">No session keys</h3>
-          <p className="text-sm text-gray-500 mb-4">
+          <h3 className="text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground))' }}>No session keys</h3>
+          <p className="text-sm mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Create a session key to delegate transaction signing
           </p>
           <Button variant="primary" size="sm" onClick={() => setIsModalOpen(true)}>
@@ -129,7 +129,7 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
       {/* Active Keys */}
       {activeKeys.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">
+          <h3 className="text-sm font-medium mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Active ({activeKeys.length})
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -149,7 +149,7 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
       {/* Inactive Keys */}
       {inactiveKeys.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-3">
+          <h3 className="text-sm font-medium mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Inactive ({inactiveKeys.length})
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60">

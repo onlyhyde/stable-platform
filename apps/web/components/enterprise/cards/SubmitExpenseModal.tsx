@@ -103,13 +103,14 @@ export function SubmitExpenseModal({ isOpen, onClose, onSubmit }: SubmitExpenseM
           )}
         </div>
         <div>
-          <label htmlFor="category-select" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="category-select" className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
             Category
           </label>
           <select
             id="category-select"
             aria-label="Category"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+            className="w-full px-3 py-2 border rounded-lg"
+            style={{ borderColor: 'rgb(var(--border))' }}
             value={formData.category}
             onChange={handleChange('category')}
           >

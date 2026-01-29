@@ -5,12 +5,12 @@ import { EmptyState } from '../EmptyState'
 import { formatAddress, formatUSD } from '@/lib/utils'
 import type { Expense } from '@/types'
 
-const categoryColors: Record<string, string> = {
-  infrastructure: 'bg-blue-100 text-blue-800',
-  travel: 'bg-purple-100 text-purple-800',
-  software: 'bg-green-100 text-green-800',
-  marketing: 'bg-orange-100 text-orange-800',
-  other: 'bg-gray-100 text-gray-800',
+const categoryColors: Record<string, { bg: string; text: string }> = {
+  infrastructure: { bg: 'rgb(219 234 254)', text: 'rgb(30 64 175)' },
+  travel: { bg: 'rgb(243 232 255)', text: 'rgb(107 33 168)' },
+  software: { bg: 'rgb(220 252 231)', text: 'rgb(22 101 52)' },
+  marketing: { bg: 'rgb(255 237 213)', text: 'rgb(154 52 18)' },
+  other: { bg: 'rgb(var(--secondary))', text: 'rgb(var(--foreground))' },
 }
 
 const statusColors: Record<string, string> = {
@@ -44,7 +44,8 @@ export function ExpenseListCard({
         <select
           value={filterStatus}
           onChange={(e) => onFilterChange(e.target.value)}
-          className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm"
+          className="px-3 py-1.5 border rounded-lg text-sm"
+          style={{ borderColor: 'rgb(var(--border))' }}
           aria-label="Filter by status"
         >
           <option value="all">All Status</option>
@@ -79,7 +80,7 @@ export function ExpenseListCard({
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-sm text-gray-500 border-b border-gray-200">
+                <tr className="text-left text-sm border-b" style={{ color: 'rgb(var(--muted-foreground))', borderColor: 'rgb(var(--border))' }}>
                   <th className="pb-3 font-medium">Description</th>
                   <th className="pb-3 font-medium">Amount</th>
                   <th className="pb-3 font-medium">Category</th>
@@ -89,28 +90,34 @@ export function ExpenseListCard({
                   <th className="pb-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
                 {expenses.map((expense) => (
                   <tr key={expense.id}>
                     <td className="py-4">
-                      <span className="font-medium text-gray-900">{expense.description}</span>
+                      <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{expense.description}</span>
                     </td>
                     <td className="py-4">
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                         {formatUSD(Number(expense.amount) / 10 ** expense.token.decimals)}
                       </span>
                     </td>
                     <td className="py-4">
-                      <span className={`text-xs px-2 py-1 rounded-full capitalize ${categoryColors[expense.category] || categoryColors.other}`}>
+                      <span
+                        className="text-xs px-2 py-1 rounded-full capitalize"
+                        style={{
+                          backgroundColor: (categoryColors[expense.category] || categoryColors.other).bg,
+                          color: (categoryColors[expense.category] || categoryColors.other).text,
+                        }}
+                      >
                         {expense.category}
                       </span>
                     </td>
                     <td className="py-4">
-                      <code className="text-sm text-gray-500">
+                      <code className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                         {formatAddress(expense.submitter)}
                       </code>
                     </td>
-                    <td className="py-4 text-gray-500">
+                    <td className="py-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
                       {expense.submittedAt.toLocaleDateString()}
                     </td>
                     <td className="py-4">
@@ -124,7 +131,7 @@ export function ExpenseListCard({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-green-600"
+                            style={{ color: 'rgb(var(--success))' }}
                             onClick={() => onApprove?.(expense.id)}
                           >
                             Approve
@@ -132,7 +139,7 @@ export function ExpenseListCard({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-600"
+                            style={{ color: 'rgb(var(--destructive))' }}
                             onClick={() => onReject?.(expense.id)}
                           >
                             Reject

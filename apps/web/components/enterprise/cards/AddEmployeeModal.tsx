@@ -108,13 +108,14 @@ export function AddEmployeeModal({ isOpen, onClose, onSubmit }: AddEmployeeModal
           )}
         </div>
         <div>
-          <label htmlFor="frequency-select" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="frequency-select" className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
             Payment Frequency
           </label>
           <select
             id="frequency-select"
             aria-label="Payment Frequency"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+            className="w-full px-3 py-2 border rounded-lg"
+            style={{ borderColor: 'rgb(var(--border))' }}
             value={formData.frequency}
             onChange={handleChange('frequency')}
           >

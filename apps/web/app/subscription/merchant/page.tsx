@@ -42,8 +42,11 @@ export default function MerchantDashboardPage() {
       <div className="min-h-[60vh] flex items-center justify-center">
         <Card className="max-w-md w-full text-center">
           <CardContent className="py-12">
-            <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+            >
+              <svg className="w-8 h-8" style={{ color: 'rgb(var(--primary))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -52,8 +55,8 @@ export default function MerchantDashboardPage() {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Connect to Continue</h2>
-            <p className="text-gray-500 mb-6">
+            <h2 className="text-xl font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>Connect to Continue</h2>
+            <p className="mb-6" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Connect your wallet to access the merchant dashboard
             </p>
           </CardContent>
@@ -67,8 +70,8 @@ export default function MerchantDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Merchant Dashboard</h1>
-          <p className="text-gray-500">Create and manage your subscription plans</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>Merchant Dashboard</h1>
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>Create and manage your subscription plans</p>
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" onClick={() => router.push('/subscription')}>
@@ -103,8 +106,8 @@ export default function MerchantDashboardPage() {
           <Card>
             <CardContent className="py-4">
               <div className="text-center">
-                <p className="text-sm text-gray-500">Total Plans</p>
-                <p className="text-3xl font-bold text-gray-900">{merchantStats.totalPlans}</p>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Total Plans</p>
+                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>{merchantStats.totalPlans}</p>
               </div>
             </CardContent>
           </Card>
@@ -112,8 +115,8 @@ export default function MerchantDashboardPage() {
           <Card>
             <CardContent className="py-4">
               <div className="text-center">
-                <p className="text-sm text-gray-500">Total Subscribers</p>
-                <p className="text-3xl font-bold text-gray-900">{merchantStats.totalSubscribers}</p>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Total Subscribers</p>
+                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>{merchantStats.totalSubscribers}</p>
               </div>
             </CardContent>
           </Card>
@@ -121,8 +124,8 @@ export default function MerchantDashboardPage() {
           <Card>
             <CardContent className="py-4">
               <div className="text-center">
-                <p className="text-sm text-gray-500">Active Subscribers</p>
-                <p className="text-3xl font-bold text-green-600">{merchantStats.activeSubscribers}</p>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Active Subscribers</p>
+                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--success))' }}>{merchantStats.activeSubscribers}</p>
               </div>
             </CardContent>
           </Card>
@@ -130,8 +133,8 @@ export default function MerchantDashboardPage() {
           <Card>
             <CardContent className="py-4">
               <div className="text-center">
-                <p className="text-sm text-gray-500">Monthly Revenue</p>
-                <p className="text-3xl font-bold text-primary-600">-</p>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Monthly Revenue</p>
+                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--primary))' }}>-</p>
               </div>
             </CardContent>
           </Card>
@@ -155,10 +158,10 @@ export default function MerchantDashboardPage() {
               <div className="space-y-4">
                 {[1, 2].map((i) => (
                   <div key={i} className="animate-pulse flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                    <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
                     <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-1/3" />
-                      <div className="h-3 bg-gray-200 rounded w-1/4" />
+                      <div className="h-4 rounded w-1/3" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                      <div className="h-3 rounded w-1/4" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
                     </div>
                   </div>
                 ))}
@@ -166,8 +169,11 @@ export default function MerchantDashboardPage() {
             </div>
           ) : merchantPlans.length === 0 ? (
             <div className="py-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ backgroundColor: 'rgb(var(--secondary))' }}
+              >
+                <svg className="w-8 h-8" style={{ color: 'rgb(var(--muted-foreground))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -176,13 +182,13 @@ export default function MerchantDashboardPage() {
                   />
                 </svg>
               </div>
-              <p className="text-gray-500 mb-4">You haven&apos;t created any plans yet</p>
+              <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>You haven&apos;t created any plans yet</p>
               <Button variant="primary" onClick={() => setShowCreateForm(true)}>
                 Create Your First Plan
               </Button>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
               {merchantPlans.map((plan) => (
                 <MerchantPlanRow key={plan.id.toString()} plan={plan} />
               ))}
@@ -192,7 +198,14 @@ export default function MerchantDashboardPage() {
       </Card>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-600">
+        <div
+          className="rounded-lg p-4 text-sm border"
+          style={{
+            backgroundColor: 'rgb(var(--destructive) / 0.1)',
+            borderColor: 'rgb(var(--destructive) / 0.3)',
+            color: 'rgb(var(--destructive))',
+          }}
+        >
           {error.message}
         </div>
       )}
@@ -206,14 +219,22 @@ interface MerchantPlanRowProps {
 
 function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
   return (
-    <div className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors">
+    <div
+      className="flex items-center justify-between px-6 py-4 transition-colors"
+      style={{ backgroundColor: 'transparent' }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgb(var(--secondary))')}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+    >
       <div className="flex items-center gap-4">
-        <div className={cn(
-          'w-12 h-12 rounded-lg flex items-center justify-center',
-          plan.isActive ? 'bg-green-100' : 'bg-gray-100'
-        )}>
+        <div
+          className="w-12 h-12 rounded-lg flex items-center justify-center"
+          style={{
+            backgroundColor: plan.isActive ? 'rgb(var(--success) / 0.1)' : 'rgb(var(--secondary))',
+          }}
+        >
           <svg
-            className={cn('w-6 h-6', plan.isActive ? 'text-green-600' : 'text-gray-400')}
+            className="w-6 h-6"
+            style={{ color: plan.isActive ? 'rgb(var(--success))' : 'rgb(var(--muted-foreground))' }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -227,8 +248,8 @@ function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
           </svg>
         </div>
         <div>
-          <h3 className="font-semibold text-gray-900">{plan.name}</h3>
-          <p className="text-sm text-gray-500">
+          <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{plan.name}</h3>
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {plan.priceFormatted} / {plan.intervalFormatted.toLowerCase()}
           </p>
         </div>
@@ -236,15 +257,16 @@ function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
 
       <div className="hidden md:flex items-center gap-8">
         <div className="text-center">
-          <p className="text-sm text-gray-500">Subscribers</p>
-          <p className="font-semibold text-gray-900">{Number(plan.subscriberCount)}</p>
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Subscribers</p>
+          <p className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{Number(plan.subscriberCount)}</p>
         </div>
 
         <span
-          className={cn(
-            'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-            plan.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-          )}
+          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+          style={{
+            backgroundColor: plan.isActive ? 'rgb(var(--success) / 0.1)' : 'rgb(var(--secondary))',
+            color: plan.isActive ? 'rgb(var(--success))' : 'rgb(var(--muted-foreground))',
+          }}
         >
           {plan.isActive ? 'Active' : 'Inactive'}
         </span>
@@ -254,7 +276,7 @@ function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
         <Button variant="ghost" size="sm">
           Edit
         </Button>
-        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+        <Button variant="ghost" size="sm" style={{ color: 'rgb(var(--destructive))' }}>
           {plan.isActive ? 'Deactivate' : 'Activate'}
         </Button>
       </div>

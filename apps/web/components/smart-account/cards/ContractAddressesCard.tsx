@@ -38,19 +38,29 @@ export function ContractAddressesCard({
   return (
     <Card>
       <CardContent className="py-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Contract Addresses</h3>
+        <h3 className="text-lg font-semibold mb-4" style={{ color: 'rgb(var(--foreground))' }}>
+          Contract Addresses
+        </h3>
         <div className="space-y-3 text-sm">
           {addressList.map((item, index) => (
             <div
               key={item.label}
-              className={`flex justify-between items-center py-2 ${
-                index < addressList.length - 1 ? 'border-b border-gray-100' : ''
-              } ${item.highlight ? 'bg-green-50 -mx-4 px-4 rounded' : ''}`}
+              className="flex justify-between items-center py-2 -mx-4 px-4 rounded"
+              style={{
+                borderBottom: index < addressList.length - 1 ? '1px solid rgb(var(--border))' : 'none',
+                backgroundColor: item.highlight ? 'rgb(var(--success) / 0.1)' : 'transparent',
+              }}
             >
-              <span className={item.highlight ? 'text-green-700 font-medium' : 'text-gray-500'}>
+              <span
+                className={item.highlight ? 'font-medium' : ''}
+                style={{ color: item.highlight ? 'rgb(var(--success))' : 'rgb(var(--muted-foreground))' }}
+              >
                 {item.label}
               </span>
-              <span className={`font-mono ${item.highlight ? 'text-green-800' : 'text-gray-900'}`}>
+              <span
+                className="font-mono"
+                style={{ color: item.highlight ? 'rgb(var(--success))' : 'rgb(var(--foreground))' }}
+              >
                 {formatAddress(item.address, 6)}
               </span>
             </div>

@@ -40,9 +40,9 @@ export function StealthMetaAddressCard({
       <CardContent className="space-y-4">
         {stealthMetaAddress ? (
           <>
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 mb-2">Share this address to receive private payments</p>
-              <code className="text-sm text-gray-700 break-all block">
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+              <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>Share this address to receive private payments</p>
+              <code className="text-sm break-all block" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
                 st:eth:{stealthMetaAddress.spendingPubKey.slice(0, 20)}...{stealthMetaAddress.viewingPubKey.slice(-16)}
               </code>
             </div>
@@ -79,14 +79,15 @@ export function StealthMetaAddressCard({
               </Button>
             </div>
 
-            <p className="text-xs text-gray-500 text-center">
+            <p className="text-xs text-center" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Registering on-chain allows senders to look up your address automatically
             </p>
           </>
         ) : (
           <div className="text-center py-8">
             <svg
-              className="w-16 h-16 text-gray-300 mx-auto mb-4"
+              className="w-16 h-16 mx-auto mb-4"
+              style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -99,7 +100,7 @@ export function StealthMetaAddressCard({
                 d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
               />
             </svg>
-            <p className="text-gray-500 mb-4">No stealth meta-address generated</p>
+            <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>No stealth meta-address generated</p>
             <Button isLoading={isLoading} onClick={onGenerate} disabled={isLoading}>
               Generate Meta-Address
             </Button>

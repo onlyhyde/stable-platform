@@ -46,7 +46,7 @@ export default function ExpensesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-gray-500">Loading expenses...</p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Loading expenses...</p>
       </div>
     )
   }
@@ -54,7 +54,7 @@ export default function ExpensesPage() {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-red-500">Error: {error.message}</p>
+        <p style={{ color: 'rgb(var(--destructive))' }}>Error: {error.message}</p>
       </div>
     )
   }

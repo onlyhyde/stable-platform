@@ -96,48 +96,58 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
 
   const icons: Record<ToastType, ReactNode> = {
     success: (
-      <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5" style={{ color: 'rgb(var(--success))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
       </svg>
     ),
     error: (
-      <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5" style={{ color: 'rgb(var(--destructive))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
       </svg>
     ),
     info: (
-      <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5" style={{ color: 'rgb(var(--info))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
     loading: (
-      <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      <div className="w-5 h-5 border-2 rounded-full animate-spin"
+           style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }} />
     ),
   }
 
-  const bgColors: Record<ToastType, string> = {
-    success: 'bg-green-50 border-green-200',
-    error: 'bg-red-50 border-red-200',
-    info: 'bg-blue-50 border-blue-200',
-    loading: 'bg-gray-50 border-gray-200',
+  const bgStyles: Record<ToastType, React.CSSProperties> = {
+    success: {
+      backgroundColor: 'rgb(var(--success) / 0.1)',
+      borderColor: 'rgb(var(--success) / 0.2)',
+    },
+    error: {
+      backgroundColor: 'rgb(var(--destructive) / 0.1)',
+      borderColor: 'rgb(var(--destructive) / 0.2)',
+    },
+    info: {
+      backgroundColor: 'rgb(var(--info) / 0.1)',
+      borderColor: 'rgb(var(--info) / 0.2)',
+    },
+    loading: {
+      backgroundColor: 'rgb(var(--card))',
+      borderColor: 'rgb(var(--border))',
+    },
   }
 
   return (
     <div
-      className={`
-        pointer-events-auto flex items-start gap-3 p-4 rounded-lg border shadow-lg
-        ${bgColors[toast.type]}
-        animate-in slide-in-from-right-full duration-300
-      `}
+      className="pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-lg animate-in slide-in-from-right-full duration-300"
+      style={bgStyles[toast.type]}
     >
       <div className="flex-shrink-0 mt-0.5">{icons[toast.type]}</div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-900">{toast.title}</p>
+        <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{toast.title}</p>
         {toast.message && (
-          <p className="text-sm text-gray-600 mt-1">{toast.message}</p>
+          <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>{toast.message}</p>
         )}
         {toast.txHash && (
-          <p className="text-xs text-gray-500 mt-2 font-mono truncate">
+          <p className="text-xs mt-2 font-mono truncate" style={{ color: 'rgb(var(--muted-foreground))' }}>
             TX: {toast.txHash.slice(0, 10)}...{toast.txHash.slice(-8)}
           </p>
         )}
@@ -146,7 +156,8 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
         <button
           type="button"
           onClick={onClose}
-          className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex-shrink-0 transition-colors"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

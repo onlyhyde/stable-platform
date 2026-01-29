@@ -15,16 +15,20 @@ export function SigningMethodCard({
   return (
     <Card>
       <CardContent className="py-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Signing Method</h3>
+        <h3 className="text-lg font-semibold mb-4" style={{ color: 'rgb(var(--foreground))' }}>
+          Signing Method
+        </h3>
 
         <div className="space-y-3">
           {/* Private Key Option */}
           <label
-            className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-              signingMethod === 'privateKey'
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
+            className="flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-colors"
+            style={{
+              backgroundColor: signingMethod === 'privateKey' ? 'rgb(var(--primary) / 0.1)' : 'transparent',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: signingMethod === 'privateKey' ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+            }}
           >
             <input
               type="radio"
@@ -33,10 +37,13 @@ export function SigningMethodCard({
               checked={signingMethod === 'privateKey'}
               onChange={() => onSigningMethodChange('privateKey')}
               className="mt-1"
+              style={{ accentColor: 'rgb(var(--primary))' }}
             />
             <div className="flex-1">
-              <div className="font-medium text-gray-900">Private Key</div>
-              <div className="text-sm text-gray-500 mt-1">
+              <div className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                Private Key
+              </div>
+              <div className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Enter your private key directly. Best for development with Anvil test accounts.
               </div>
             </div>
@@ -44,11 +51,13 @@ export function SigningMethodCard({
 
           {/* MetaMask eth_sign Option */}
           <label
-            className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-              signingMethod === 'metamask'
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
+            className="flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-colors"
+            style={{
+              backgroundColor: signingMethod === 'metamask' ? 'rgb(var(--primary) / 0.1)' : 'transparent',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: signingMethod === 'metamask' ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+            }}
           >
             <input
               type="radio"
@@ -57,26 +66,46 @@ export function SigningMethodCard({
               checked={signingMethod === 'metamask'}
               onChange={() => onSigningMethodChange('metamask')}
               className="mt-1"
+              style={{ accentColor: 'rgb(var(--primary))' }}
             />
             <div className="flex-1">
-              <div className="font-medium text-gray-900">
+              <div className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                 MetaMask (eth_sign)
-                <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
+                <span
+                  className="ml-2 text-xs px-2 py-0.5 rounded"
+                  style={{
+                    backgroundColor: 'rgb(var(--warning) / 0.1)',
+                    color: 'rgb(var(--warning))',
+                  }}
+                >
                   Experimental
                 </span>
               </div>
-              <div className="text-sm text-gray-500 mt-1">
+              <div className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Sign with MetaMask using eth_sign. Requires enabling in MetaMask Settings → Advanced.
               </div>
               {signingMethod === 'metamask' && (
-                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
-                  <div className="font-medium text-yellow-800 mb-1">Setup Required:</div>
-                  <ol className="text-yellow-700 space-y-1 list-decimal list-inside">
+                <div
+                  className="mt-3 p-3 rounded text-sm"
+                  style={{
+                    backgroundColor: 'rgb(var(--warning) / 0.1)',
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    borderColor: 'rgb(var(--warning) / 0.3)',
+                  }}
+                >
+                  <div className="font-medium mb-1" style={{ color: 'rgb(var(--warning))' }}>
+                    Setup Required:
+                  </div>
+                  <ol
+                    className="space-y-1 list-decimal list-inside"
+                    style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+                  >
                     <li>Open MetaMask Settings</li>
                     <li>Go to Advanced</li>
                     <li>Enable "Toggle eth_sign requests"</li>
                   </ol>
-                  <div className="mt-2 text-yellow-600 text-xs">
+                  <div className="mt-2 text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                     Note: A relayer account (Anvil Account #0) will pay the gas fee.
                   </div>
                 </div>

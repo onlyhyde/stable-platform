@@ -192,7 +192,7 @@ export function ErrorFallback({
             <summary className={cn('cursor-pointer text-sm', styles.message)}>
               Show technical details
             </summary>
-            <pre className="mt-2 overflow-auto rounded bg-gray-900 p-4 text-xs text-gray-100">
+            <pre className="mt-2 overflow-auto rounded p-4 text-xs" style={{ backgroundColor: 'rgb(17 24 39)', color: 'rgb(243 244 246)' }}>
               <code>
                 {error.name}: {error.message}
                 {error.stack && `\n\n${error.stack}`}

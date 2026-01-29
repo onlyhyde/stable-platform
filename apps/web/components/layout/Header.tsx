@@ -2,20 +2,21 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useWallet, useBalance } from '@/hooks'
+import { useWallet, useBalance, useChainInfo } from '@/hooks'
 import { Button, WalletSelectorModal } from '@/components/common'
+import { ThemeToggle } from '@/providers'
 import { formatAddress, formatTokenAmount } from '@/lib/utils'
 
 export function Header() {
-  const { address, isConnected, isConnecting, connect, disconnect, connectors } = useWallet()
+  const { address, isConnected, isConnecting, connect, disconnect, connectors, switchNetwork } = useWallet()
   const { balance, symbol, decimals } = useBalance({ address, watch: true })
+  const chainInfo = useChainInfo()
   const [showWalletModal, setShowWalletModal] = useState(false)
   const [pendingConnector, setPendingConnector] = useState<string>()
 
   const handleSelectWallet = (connectorId: string) => {
     setPendingConnector(connectorId)
     connect(connectorId)
-    // Close modal after a short delay to show connecting state
     setTimeout(() => {
       setShowWalletModal(false)
       setPendingConnector(undefined)
@@ -23,44 +24,113 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-gray-200 bg-white/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 w-full border-b bg-[rgb(var(--card)/0.8)] backdrop-blur-xl"
+            style={{ borderColor: 'rgb(var(--border))' }}>
       <div className="flex h-16 items-center justify-between px-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">S</span>
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[rgb(var(--primary))] to-[rgb(var(--primary-hover))] flex items-center justify-center shadow-lg group-hover:shadow-[0_0_20px_-5px_rgb(var(--primary)/0.5)] transition-shadow duration-300">
+            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            {/* Animated ring */}
+            <div className="absolute inset-0 rounded-xl border-2 border-[rgb(var(--primary))] opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
           </div>
-          <span className="font-semibold text-xl text-gray-900">StableNet</span>
+          <div className="flex flex-col">
+            <span className="font-bold text-xl tracking-tight" style={{ color: 'rgb(var(--foreground))' }}>
+              StableNet
+            </span>
+            <span className="text-2xs font-medium -mt-0.5" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              Smart Account Platform
+            </span>
+          </div>
         </Link>
 
         {/* Right Section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
+          {/* Network Badge - Shows connected chain info from wallet */}
+          {chainInfo && (
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+                 style={{
+                   backgroundColor: chainInfo.isTestnet ? 'rgb(var(--success-muted))' : 'rgb(var(--info-muted))',
+                   border: `1px solid ${chainInfo.iconColor}33`
+                 }}
+                 title={`Chain ID: ${chainInfo.id}${chainInfo.isTestnet ? ' (Testnet)' : ''}`}>
+              <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: chainInfo.iconColor }} />
+              <span className="text-xs font-medium" style={{ color: chainInfo.iconColor }}>
+                {chainInfo.name}
+              </span>
+              {chainInfo.isTestnet && (
+                <span className="text-2xs px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10"
+                      style={{ color: chainInfo.iconColor }}>
+                  Test
+                </span>
+              )}
+            </div>
+          )}
+          {!chainInfo && !isConnected && (
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full"
+                 style={{
+                   backgroundColor: 'rgb(var(--muted))',
+                   border: '1px solid rgb(var(--border))'
+                 }}>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'rgb(var(--muted-foreground))' }} />
+              <span className="text-xs font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>Not Connected</span>
+            </div>
+          )}
+
           {isConnected && address ? (
             <>
               {/* Balance */}
-              <div className="hidden sm:block px-3 py-1.5 bg-gray-100 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">
-                  {formatTokenAmount(balance, decimals)} {symbol}
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl"
+                   style={{
+                     backgroundColor: 'rgb(var(--secondary))',
+                     border: '1px solid rgb(var(--border))'
+                   }}>
+                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[rgb(var(--info))] to-[rgb(var(--info-muted))] flex items-center justify-center">
+                  <span className="text-2xs font-bold text-white">Ξ</span>
+                </div>
+                <span className="text-sm font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+                  {formatTokenAmount(balance, decimals)}
                 </span>
+                <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>{symbol}</span>
               </div>
 
-              {/* Account */}
+              {/* Account Button */}
               <button
                 type="button"
                 onClick={() => disconnect()}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 group"
+                style={{
+                  backgroundColor: 'rgb(var(--secondary))',
+                  border: '1px solid rgb(var(--border))'
+                }}
               >
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-400 to-primary-600" />
-                <span className="text-sm font-medium text-gray-700">
-                  {formatAddress(address)}
-                </span>
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[rgb(var(--primary))] via-[rgb(var(--accent))] to-[rgb(var(--info))] ring-2 ring-white dark:ring-[rgb(var(--card))] shadow-sm" />
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+                    {formatAddress(address)}
+                  </span>
+                  <span className="text-2xs" style={{ color: 'rgb(var(--muted-foreground))' }}>Connected</span>
+                </div>
+                <svg className="w-4 h-4 ml-1" style={{ color: 'rgb(var(--muted-foreground))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
               </button>
             </>
           ) : (
             <Button
               onClick={() => setShowWalletModal(true)}
               isLoading={isConnecting}
-              size="sm"
+              size="md"
+              leftIcon={
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              }
             >
               Connect Wallet
             </Button>

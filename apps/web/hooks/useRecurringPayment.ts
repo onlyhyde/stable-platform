@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useAccount, useChainId, useWalletClient, usePublicClient } from 'wagmi'
 import type { Address, Hex, Hash } from 'viem'
+import { getContractAddresses } from '../lib/config'
 
-// Contract address - should come from @stablenet/contracts
-const RECURRING_PAYMENT_MANAGER = '0x5678901234567890123456789012345678901234' as const
+// Default fallback address for development
+const DEFAULT_recurringPaymentManager = '0x5678901234567890123456789012345678901234' as const
 
 // Payment schedule status
 export type PaymentScheduleStatus = 'active' | 'paused' | 'cancelled' | 'completed'
@@ -63,7 +64,7 @@ export interface CreateScheduleParams {
 }
 
 // ABI fragments for RecurringPaymentManager
-const RECURRING_PAYMENT_MANAGER_ABI = [
+const recurringPaymentManager_ABI = [
   {
     name: 'createSchedule',
     type: 'function',
@@ -228,6 +229,12 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
   // Use provided account or connected address
   const targetAccount = account || connectedAddress
 
+  // Get contract address from config based on chain ID
+  const recurringPaymentManager = useMemo(() => {
+    const contracts = getContractAddresses(chainId)
+    return (contracts?.recurringPaymentManager ?? DEFAULT_recurringPaymentManager) as Address
+  }, [chainId])
+
   // State
   const [schedules, setSchedules] = useState<PaymentScheduleInfo[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -280,8 +287,8 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
           symbol: symbol as string,
           decimals: decimals as number,
         }
-      } catch (err) {
-        console.error('Failed to get token info:', err)
+      } catch {
+        // Token info unavailable, return defaults
         return {
           address: tokenAddress,
           symbol: 'UNKNOWN',
@@ -299,8 +306,8 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
 
       try {
         const result = await publicClient.readContract({
-          address: RECURRING_PAYMENT_MANAGER,
-          abi: RECURRING_PAYMENT_MANAGER_ABI,
+          address: recurringPaymentManager,
+          abi: recurringPaymentManager_ABI,
           functionName: 'getSchedule',
           args: [scheduleId],
         })
@@ -333,8 +340,8 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
           status: parseStatus(status),
           createdAt,
         }
-      } catch (err) {
-        console.error('Failed to get schedule:', err)
+      } catch {
+        // Schedule fetch failed, return null
         return null
       }
     },
@@ -348,15 +355,15 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
 
       try {
         const result = await publicClient.readContract({
-          address: RECURRING_PAYMENT_MANAGER,
-          abi: RECURRING_PAYMENT_MANAGER_ABI,
+          address: recurringPaymentManager,
+          abi: recurringPaymentManager_ABI,
           functionName: 'isPaymentDue',
           args: [scheduleId],
         })
 
         return result as boolean
-      } catch (err) {
-        console.error('Failed to check if payment is due:', err)
+      } catch {
+        // Payment due check failed, assume not due
         return false
       }
     },
@@ -370,15 +377,15 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
 
       try {
         const result = await publicClient.readContract({
-          address: RECURRING_PAYMENT_MANAGER,
-          abi: RECURRING_PAYMENT_MANAGER_ABI,
+          address: recurringPaymentManager,
+          abi: recurringPaymentManager_ABI,
           functionName: 'getNextPaymentTime',
           args: [scheduleId],
         })
 
         return result as bigint
-      } catch (err) {
-        console.error('Failed to get next payment time:', err)
+      } catch {
+        // Next payment time fetch failed, return null
         return null
       }
     },
@@ -398,8 +405,8 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
     try {
       // Get all schedule IDs for the payer
       const result = await publicClient.readContract({
-        address: RECURRING_PAYMENT_MANAGER,
-        abi: RECURRING_PAYMENT_MANAGER_ABI,
+        address: recurringPaymentManager,
+        abi: recurringPaymentManager_ABI,
         functionName: 'getSchedulesByPayer',
         args: [targetAccount],
       })
@@ -452,8 +459,8 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
         const startTime = params.startTime ?? BigInt(0)
 
         const txHash = await walletClient.writeContract({
-          address: RECURRING_PAYMENT_MANAGER,
-          abi: RECURRING_PAYMENT_MANAGER_ABI,
+          address: recurringPaymentManager,
+          abi: recurringPaymentManager_ABI,
           functionName: 'createSchedule',
           args: [
             params.recipient,
@@ -497,8 +504,8 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
 
       try {
         const txHash = await walletClient.writeContract({
-          address: RECURRING_PAYMENT_MANAGER,
-          abi: RECURRING_PAYMENT_MANAGER_ABI,
+          address: recurringPaymentManager,
+          abi: recurringPaymentManager_ABI,
           functionName: 'cancelSchedule',
           args: [scheduleId],
         })
@@ -531,8 +538,8 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
 
       try {
         const txHash = await walletClient.writeContract({
-          address: RECURRING_PAYMENT_MANAGER,
-          abi: RECURRING_PAYMENT_MANAGER_ABI,
+          address: recurringPaymentManager,
+          abi: recurringPaymentManager_ABI,
           functionName: 'pauseSchedule',
           args: [scheduleId],
         })
@@ -565,8 +572,8 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
 
       try {
         const txHash = await walletClient.writeContract({
-          address: RECURRING_PAYMENT_MANAGER,
-          abi: RECURRING_PAYMENT_MANAGER_ABI,
+          address: recurringPaymentManager,
+          abi: recurringPaymentManager_ABI,
           functionName: 'resumeSchedule',
           args: [scheduleId],
         })
@@ -599,8 +606,8 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
 
       try {
         const txHash = await walletClient.writeContract({
-          address: RECURRING_PAYMENT_MANAGER,
-          abi: RECURRING_PAYMENT_MANAGER_ABI,
+          address: recurringPaymentManager,
+          abi: recurringPaymentManager_ABI,
           functionName: 'updateAmount',
           args: [scheduleId, newAmount],
         })

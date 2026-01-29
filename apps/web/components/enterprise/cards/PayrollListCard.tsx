@@ -42,7 +42,7 @@ export function PayrollListCard({ entries, onEdit }: PayrollListCardProps) {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-sm text-gray-500 border-b border-gray-200">
+                <tr className="text-left text-sm border-b" style={{ color: 'rgb(var(--muted-foreground))', borderColor: 'rgb(var(--border))' }}>
                   <th className="pb-3 font-medium">Employee</th>
                   <th className="pb-3 font-medium">Amount</th>
                   <th className="pb-3 font-medium">Frequency</th>
@@ -51,37 +51,39 @@ export function PayrollListCard({ entries, onEdit }: PayrollListCardProps) {
                   <th className="pb-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
                 {entries.map((entry) => (
                   <tr key={entry.id}>
                     <td className="py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
                           {entry.recipient.slice(2, 4).toUpperCase()}
                         </div>
-                        <code className="text-sm text-gray-700">
+                        <code className="text-sm" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
                           {formatAddress(entry.recipient)}
                         </code>
                       </div>
                     </td>
                     <td className="py-4">
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                         {formatUSD(Number(entry.amount) / 10 ** entry.token.decimals)}
                       </span>
-                      <span className="text-gray-500 ml-1">{entry.token.symbol}</span>
+                      <span className="ml-1" style={{ color: 'rgb(var(--muted-foreground))' }}>{entry.token.symbol}</span>
                     </td>
-                    <td className="py-4 text-gray-500 capitalize">
+                    <td className="py-4 capitalize" style={{ color: 'rgb(var(--muted-foreground))' }}>
                       {entry.frequency}
                     </td>
-                    <td className="py-4 text-gray-500">
+                    <td className="py-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
                       {entry.nextPaymentDate.toLocaleDateString()}
                     </td>
                     <td className="py-4">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        entry.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span
+                        className="text-xs px-2 py-1 rounded-full"
+                        style={entry.status === 'active'
+                          ? { backgroundColor: 'rgb(var(--success) / 0.1)', color: 'rgb(var(--success))' }
+                          : { backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--foreground) / 0.8)' }
+                        }
+                      >
                         {entry.status}
                       </span>
                     </td>

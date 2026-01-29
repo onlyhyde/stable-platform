@@ -57,8 +57,8 @@ export default function PlansPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Browse Plans</h1>
-          <p className="text-gray-500">Discover subscription services powered by ERC-7715</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>Browse Plans</h1>
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>Discover subscription services powered by ERC-7715</p>
         </div>
         <Button variant="secondary" onClick={() => router.push('/subscription')}>
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,10 +69,13 @@ export default function PlansPage() {
       </div>
 
       {/* Info Banner */}
-      <Card className="bg-gradient-to-r from-primary-500 to-primary-600 border-0">
+      <Card
+        className="border-0"
+        style={{ background: 'linear-gradient(to right, rgb(var(--primary)), rgb(var(--primary-hover)))' }}
+      >
         <CardContent className="py-6">
           <div className="flex items-center gap-6">
-            <div className="hidden md:flex w-16 h-16 rounded-full bg-white/20 items-center justify-center">
+            <div className="hidden md:flex w-16 h-16 rounded-full items-center justify-center bg-white/20">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
@@ -99,10 +102,10 @@ export default function PlansPage() {
           {[1, 2, 3].map((i) => (
             <Card key={i} className="h-96 animate-pulse">
               <CardContent className="h-full flex flex-col items-center justify-center gap-4">
-                <div className="w-24 h-24 bg-gray-200 rounded-full" />
-                <div className="h-6 bg-gray-200 rounded w-1/2" />
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
-                <div className="h-10 bg-gray-200 rounded w-2/3 mt-auto" />
+                <div className="w-24 h-24 rounded-full" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                <div className="h-6 rounded w-1/2" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                <div className="h-4 rounded w-3/4" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                <div className="h-10 rounded w-2/3 mt-auto" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
               </CardContent>
             </Card>
           ))}
@@ -110,8 +113,11 @@ export default function PlansPage() {
       ) : plans.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
-            <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: 'rgb(var(--secondary))' }}
+            >
+              <svg className="w-10 h-10" style={{ color: 'rgb(var(--muted-foreground))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -120,8 +126,8 @@ export default function PlansPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Plans Available</h3>
-            <p className="text-gray-500 mb-6">
+            <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>No Plans Available</h3>
+            <p className="mb-6" style={{ color: 'rgb(var(--muted-foreground))' }}>
               There are no subscription plans available at the moment.
               Check back later or create your own as a merchant!
             </p>
@@ -147,7 +153,14 @@ export default function PlansPage() {
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-600">
+        <div
+          className="rounded-lg p-4 text-sm border"
+          style={{
+            backgroundColor: 'rgb(var(--destructive) / 0.1)',
+            borderColor: 'rgb(var(--destructive) / 0.3)',
+            color: 'rgb(var(--destructive))',
+          }}
+        >
           {error.message}
         </div>
       )}

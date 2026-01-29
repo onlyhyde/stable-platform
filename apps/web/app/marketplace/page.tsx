@@ -182,20 +182,20 @@ export default function MarketplacePage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{stats.totalModules}</div>
-            <div className="text-sm text-gray-500">Available Modules</div>
+            <div className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>{stats.totalModules}</div>
+            <div className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Available Modules</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{stats.totalInstalls.toLocaleString()}</div>
-            <div className="text-sm text-gray-500">Total Installs</div>
+            <div className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>{stats.totalInstalls.toLocaleString()}</div>
+            <div className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Total Installs</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-emerald-600">{stats.verifiedModules}</div>
-            <div className="text-sm text-gray-500">Audited / Verified</div>
+            <div className="text-2xl font-bold" style={{ color: 'rgb(var(--primary))' }}>{stats.verifiedModules}</div>
+            <div className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Audited / Verified</div>
           </CardContent>
         </Card>
       </div>
@@ -209,7 +209,8 @@ export default function MarketplacePage() {
           className="w-full pl-10"
         />
         <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+          className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -229,7 +230,7 @@ export default function MarketplacePage() {
       {/* Featured Section (only when no filters active) */}
       {!searchQuery && selectedCategory === 'all' && selectedType === 'all' && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Featured Modules</h2>
+          <h2 className="text-lg font-semibold mb-3" style={{ color: 'rgb(var(--foreground))' }}>Featured Modules</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {featuredModules.map(module => (
               <ModuleCard
@@ -247,10 +248,10 @@ export default function MarketplacePage() {
       {/* All Modules */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
             {searchQuery ? 'Search Results' : 'All Modules'}
           </h2>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {filteredModules.length} module{filteredModules.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -258,9 +259,10 @@ export default function MarketplacePage() {
         {filteredModules.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-gray-500">No modules found matching your criteria.</p>
+              <p style={{ color: 'rgb(var(--muted-foreground))' }}>No modules found matching your criteria.</p>
               <button
-                className="mt-2 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                className="mt-2 text-sm font-medium"
+                style={{ color: 'rgb(var(--primary))' }}
                 onClick={() => {
                   setSearchQuery('')
                   setSelectedCategory('all')

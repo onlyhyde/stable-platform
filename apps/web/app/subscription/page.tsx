@@ -48,8 +48,11 @@ export default function SubscriptionPage() {
       <div className="min-h-[60vh] flex items-center justify-center">
         <Card className="max-w-md w-full text-center">
           <CardContent className="py-12">
-            <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+            >
+              <svg className="w-8 h-8" style={{ color: 'rgb(var(--primary))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -58,8 +61,8 @@ export default function SubscriptionPage() {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Connect Your Wallet</h2>
-            <p className="text-gray-500 mb-6">
+            <h2 className="text-xl font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>Connect Your Wallet</h2>
+            <p className="mb-6" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Connect your wallet to view and manage your subscriptions
             </p>
           </CardContent>
@@ -73,8 +76,8 @@ export default function SubscriptionPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Subscriptions</h1>
-          <p className="text-gray-500">Manage your active subscriptions and payment history</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>My Subscriptions</h1>
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>Manage your active subscriptions and payment history</p>
         </div>
         <Button variant="primary" onClick={() => router.push('/subscription/plans')}>
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,8 +92,11 @@ export default function SubscriptionPage() {
         <Card>
           <CardContent className="py-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div
+                className="w-12 h-12 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}
+              >
+                <svg className="w-6 h-6" style={{ color: 'rgb(var(--success))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -100,8 +106,8 @@ export default function SubscriptionPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Active Subscriptions</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Active Subscriptions</p>
+                <p className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
                   {mySubscriptions.filter((s) => s.status === 'active' || s.status === 'trial').length}
                 </p>
               </div>
@@ -112,8 +118,11 @@ export default function SubscriptionPage() {
         <Card>
           <CardContent className="py-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div
+                className="w-12 h-12 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'rgb(var(--warning) / 0.1)' }}
+              >
+                <svg className="w-6 h-6" style={{ color: 'rgb(var(--warning))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -123,8 +132,8 @@ export default function SubscriptionPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Upcoming Payments</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Upcoming Payments</p>
+                <p className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
                   {mySubscriptions.filter((s) => s.status === 'active').length}
                 </p>
               </div>
@@ -135,8 +144,11 @@ export default function SubscriptionPage() {
         <Card>
           <CardContent className="py-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div
+                className="w-12 h-12 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+              >
+                <svg className="w-6 h-6" style={{ color: 'rgb(var(--primary))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -146,8 +158,8 @@ export default function SubscriptionPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Total Spent</p>
-                <p className="text-2xl font-bold text-gray-900">-</p>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Total Spent</p>
+                <p className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>-</p>
               </div>
             </div>
           </CardContent>
@@ -169,10 +181,10 @@ export default function SubscriptionPage() {
                   <div className="space-y-4">
                     {[1, 2].map((i) => (
                       <div key={i} className="animate-pulse flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                        <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
                         <div className="flex-1 space-y-2">
-                          <div className="h-4 bg-gray-200 rounded w-1/3" />
-                          <div className="h-3 bg-gray-200 rounded w-1/4" />
+                          <div className="h-4 rounded w-1/3" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                          <div className="h-3 rounded w-1/4" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
                         </div>
                       </div>
                     ))}
@@ -193,7 +205,14 @@ export default function SubscriptionPage() {
           </Card>
 
           {error && (
-            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-600">
+            <div
+              className="mt-4 rounded-lg p-4 text-sm border"
+              style={{
+                backgroundColor: 'rgb(var(--destructive) / 0.1)',
+                borderColor: 'rgb(var(--destructive) / 0.3)',
+                color: 'rgb(var(--destructive))',
+              }}
+            >
               {error.message}
             </div>
           )}
@@ -207,12 +226,15 @@ export default function SubscriptionPage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="hover:shadow-md hover:border-primary-200 transition-all cursor-pointer"
+        <Card className="hover:shadow-md transition-all cursor-pointer" hover
           onClick={() => router.push('/subscription/plans')}>
           <CardContent className="py-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div
+                className="w-12 h-12 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+              >
+                <svg className="w-6 h-6" style={{ color: 'rgb(var(--primary))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -222,19 +244,22 @@ export default function SubscriptionPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Browse Plans</h3>
-                <p className="text-sm text-gray-500">Discover new subscription services</p>
+                <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>Browse Plans</h3>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Discover new subscription services</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md hover:border-primary-200 transition-all cursor-pointer"
+        <Card className="hover:shadow-md transition-all cursor-pointer" hover
           onClick={() => router.push('/subscription/merchant')}>
           <CardContent className="py-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div
+                className="w-12 h-12 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}
+              >
+                <svg className="w-6 h-6" style={{ color: 'rgb(var(--success))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -244,8 +269,8 @@ export default function SubscriptionPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Merchant Dashboard</h3>
-                <p className="text-sm text-gray-500">Create and manage subscription plans</p>
+                <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>Merchant Dashboard</h3>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Create and manage subscription plans</p>
               </div>
             </div>
           </CardContent>

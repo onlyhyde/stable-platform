@@ -21,7 +21,7 @@ export default function ReceivePage() {
   if (!isConnected) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-gray-500">Please connect your wallet to receive payments</p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Please connect your wallet to receive payments</p>
       </div>
     )
   }
@@ -29,8 +29,8 @@ export default function ReceivePage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Receive</h1>
-        <p className="text-gray-500">Share your address to receive payments</p>
+        <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>Receive</h1>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Share your address to receive payments</p>
       </div>
 
       <Card>
@@ -40,25 +40,32 @@ export default function ReceivePage() {
         <CardContent className="space-y-6">
           {/* QR Code Placeholder */}
           <div className="flex justify-center">
-            <div className="w-48 h-48 bg-white border-2 border-gray-200 rounded-2xl flex items-center justify-center">
+            <div
+              className="w-48 h-48 border-2 rounded-2xl flex items-center justify-center"
+              style={{
+                backgroundColor: 'rgb(var(--card))',
+                borderColor: 'rgb(var(--border))',
+              }}
+            >
               <div className="text-center p-4">
                 <svg
-                  className="w-24 h-24 text-gray-300 mx-auto"
+                  className="w-24 h-24 mx-auto"
+                  style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
                   fill="currentColor"
                   viewBox="0 0 24 24"
                   aria-hidden="true"
                 >
                   <path d="M3 11V3h8v8H3zm2-6v4h4V5H5zM3 21v-8h8v8H3zm2-6v4h4v-4H5zm8-10h8v8h-8V3zm2 6h4V5h-4v4zm-2 10h2v-2h-2v2zm0-4h2v-2h-2v2zm2 4h2v-2h-2v2zm2-4h2v-2h-2v2zm2 4h2v-2h-2v2zm-2-8h2v-2h-2v2zm2 0h2v-2h-2v2z" />
                 </svg>
-                <p className="text-xs text-gray-400 mt-2">QR Code</p>
+                <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>QR Code</p>
               </div>
             </div>
           </div>
 
           {/* Address */}
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 mb-2">Wallet Address</p>
-            <code className="text-sm text-gray-700 break-all block">
+          <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+            <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>Wallet Address</p>
+            <code className="text-sm break-all block" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
               {address}
             </code>
           </div>
@@ -87,7 +94,7 @@ export default function ReceivePage() {
           </Button>
 
           {/* Warning */}
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-xs text-center" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Only send assets on the same network. Sending to a different network may result in loss of funds.
           </p>
         </CardContent>

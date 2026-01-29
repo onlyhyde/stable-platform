@@ -4,11 +4,12 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
-  size?: 'sm' | 'md' | 'lg'
+  variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'danger' | 'outline'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   isLoading?: boolean
   leftIcon?: ReactNode
   rightIcon?: ReactNode
+  fullWidth?: boolean
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -20,36 +21,74 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       isLoading = false,
       leftIcon,
       rightIcon,
+      fullWidth = false,
       disabled,
       children,
       ...props
     },
     ref
   ) => {
+    // Using CSS variable-based styles for theme support
+    const variantStyles: Record<string, React.CSSProperties> = {
+      primary: {
+        background: 'linear-gradient(135deg, rgb(var(--primary)), rgb(var(--primary-hover)))',
+        color: 'rgb(var(--primary-foreground))',
+      },
+      secondary: {
+        backgroundColor: 'rgb(var(--secondary))',
+        color: 'rgb(var(--secondary-foreground))',
+        border: '1px solid rgb(var(--border))',
+      },
+      accent: {
+        background: 'linear-gradient(135deg, rgb(var(--accent)), rgb(var(--accent-hover)))',
+        color: 'rgb(var(--accent-foreground))',
+      },
+      ghost: {
+        backgroundColor: 'transparent',
+        color: 'rgb(var(--muted-foreground))',
+      },
+      danger: {
+        background: 'linear-gradient(135deg, rgb(var(--error)), rgb(var(--error-hover)))',
+        color: 'white',
+      },
+      outline: {
+        backgroundColor: 'transparent',
+        color: 'rgb(var(--primary))',
+        border: '2px solid rgb(var(--primary))',
+      },
+    }
+
     const variants = {
-      primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500',
-      secondary: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-primary-500',
-      ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500',
-      danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+      primary: 'hover:shadow-glow-primary active:opacity-90',
+      secondary: 'hover:opacity-80',
+      accent: 'hover:shadow-glow-accent active:opacity-90',
+      ghost: 'hover:bg-dark-100 dark:hover:bg-dark-800',
+      danger: 'hover:shadow-[0_0_20px_-5px_rgba(239,68,68,0.4)] active:opacity-90',
+      outline: 'hover:bg-[rgb(var(--primary))] hover:text-white',
     }
 
     const sizes = {
-      sm: 'px-3 py-1.5 text-sm',
-      md: 'px-4 py-2.5 text-sm',
-      lg: 'px-6 py-3 text-base',
+      sm: 'px-3 py-2 text-sm gap-1.5',
+      md: 'px-5 py-2.5 text-sm gap-2',
+      lg: 'px-6 py-3 text-base gap-2',
+      xl: 'px-8 py-4 text-lg gap-2.5',
     }
 
     return (
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors',
+          'inline-flex items-center justify-center font-semibold',
+          'rounded-xl transition-all duration-200',
           'focus:outline-none focus:ring-2 focus:ring-offset-2',
-          'disabled:opacity-50 disabled:cursor-not-allowed',
+          'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
+          'active:scale-[0.98]',
           variants[variant],
           sizes[size],
+          fullWidth && 'w-full',
           className
         )}
+        style={variantStyles[variant]}
         disabled={disabled || isLoading}
         {...props}
       >

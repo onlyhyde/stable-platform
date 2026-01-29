@@ -215,8 +215,11 @@ export default function SmartAccountPage() {
         <PageHeader title="Smart Account" description="Manage your EIP-7702 Smart Account" />
         <Card>
           <CardContent className="py-12 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4" />
-            <p className="text-gray-500">Reconnecting wallet...</p>
+            <div
+              className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4"
+              style={{ borderColor: 'rgb(var(--primary))' }}
+            />
+            <p style={{ color: 'rgb(var(--muted-foreground))' }}>Reconnecting wallet...</p>
           </CardContent>
         </Card>
       </div>

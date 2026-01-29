@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { type Address, formatUnits, parseUnits } from 'viem'
-import { useWalletClient } from 'wagmi'
+import { type Address, formatUnits, parseUnits, keccak256, toBytes } from 'viem'
+import { useWalletClient, useChainId } from 'wagmi'
 import { useWallet } from './useWallet'
 import { useStableNetContext } from '../providers/StableNetProvider'
 import type {
@@ -16,14 +16,15 @@ import type {
   SubscriptionStatus,
 } from '../types/subscription'
 import { getIntervalLabel, getStatusInfo } from '../types/subscription'
+import { getContractAddresses } from '../lib/config'
 
-// Contract addresses - these should come from @stablenet/contracts
-const SUBSCRIPTION_MANAGER = '0x9d4454B023096f34B160D6B654540c56A1F81688' as const
-const PERMISSION_MANAGER = '0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf' as const
-const RECURRING_PAYMENT_EXECUTOR = '0x998abeb3E57409262aE5b751f60747921B33613E' as const
+// Default fallback addresses for development
+const DEFAULT_subscriptionManager = '0x9d4454B023096f34B160D6B654540c56A1F81688' as const
+const DEFAULT_permissionManager = '0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf' as const
+const DEFAULT_recurringPaymentExecutor = '0x998abeb3E57409262aE5b751f60747921B33613E' as const
 
 // ABI fragments for PermissionManager (ERC-7715)
-const PERMISSION_MANAGER_ABI = [
+const permissionManager_ABI = [
   {
     name: 'grantPermission',
     type: 'function',
@@ -71,7 +72,7 @@ const PERMISSION_MANAGER_ABI = [
 ] as const
 
 // ABI fragments for subscription manager
-const SUBSCRIPTION_MANAGER_ABI = [
+const subscriptionManager_ABI = [
   {
     name: 'planCount',
     type: 'function',
@@ -211,6 +212,17 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
   const { address, isConnected } = useWallet()
   const { publicClient } = useStableNetContext()
   const { data: walletClient } = useWalletClient()
+  const chainId = useChainId()
+
+  // Get contract addresses from config based on chain ID
+  const { subscriptionManager, permissionManager, recurringPaymentExecutor } = useMemo(() => {
+    const contracts = getContractAddresses(chainId)
+    return {
+      subscriptionManager: (contracts?.subscriptionManager ?? DEFAULT_subscriptionManager) as Address,
+      permissionManager: (contracts?.permissionManager ?? DEFAULT_permissionManager) as Address,
+      recurringPaymentExecutor: DEFAULT_recurringPaymentExecutor as Address, // Not in config yet
+    }
+  }, [chainId])
 
   // State
   const [plans, setPlans] = useState<PlanDisplayInfo[]>([])
@@ -273,8 +285,8 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
 
     try {
       const planCount = await publicClient.readContract({
-        address: SUBSCRIPTION_MANAGER,
-        abi: SUBSCRIPTION_MANAGER_ABI,
+        address: subscriptionManager,
+        abi: subscriptionManager_ABI,
         functionName: 'planCount',
       }) as bigint
 
@@ -282,8 +294,8 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
       for (let i = 1n; i <= planCount; i++) {
         planPromises.push(
           publicClient.readContract({
-            address: SUBSCRIPTION_MANAGER,
-            abi: SUBSCRIPTION_MANAGER_ABI,
+            address: subscriptionManager,
+            abi: subscriptionManager_ABI,
             functionName: 'plans',
             args: [i],
           }).then((data) => toPlanDisplayInfo(i, data as readonly unknown[]))
@@ -308,8 +320,8 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
 
     try {
       const planIds = await publicClient.readContract({
-        address: SUBSCRIPTION_MANAGER,
-        abi: SUBSCRIPTION_MANAGER_ABI,
+        address: subscriptionManager,
+        abi: subscriptionManager_ABI,
         functionName: 'getSubscriberSubscriptions',
         args: [address],
       }) as bigint[]
@@ -317,14 +329,14 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
       const subscriptionPromises = planIds.map(async (planId) => {
         const [planData, subData] = await Promise.all([
           publicClient.readContract({
-            address: SUBSCRIPTION_MANAGER,
-            abi: SUBSCRIPTION_MANAGER_ABI,
+            address: subscriptionManager,
+            abi: subscriptionManager_ABI,
             functionName: 'plans',
             args: [planId],
           }),
           publicClient.readContract({
-            address: SUBSCRIPTION_MANAGER,
-            abi: SUBSCRIPTION_MANAGER_ABI,
+            address: subscriptionManager,
+            abi: subscriptionManager_ABI,
             functionName: 'getSubscription',
             args: [address, planId],
           }),
@@ -371,16 +383,16 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
 
     try {
       const planIds = await publicClient.readContract({
-        address: SUBSCRIPTION_MANAGER,
-        abi: SUBSCRIPTION_MANAGER_ABI,
+        address: subscriptionManager,
+        abi: subscriptionManager_ABI,
         functionName: 'getMerchantPlans',
         args: [address],
       }) as bigint[]
 
       const planPromises = planIds.map(async (planId) => {
         const planData = await publicClient.readContract({
-          address: SUBSCRIPTION_MANAGER,
-          abi: SUBSCRIPTION_MANAGER_ABI,
+          address: subscriptionManager,
+          abi: subscriptionManager_ABI,
           functionName: 'plans',
           args: [planId],
         })
@@ -469,15 +481,13 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         errorMessage.includes('unknown method') ||
         errorMessage.includes('Method not found')
       ) {
-        console.log('Wallet does not support ERC-7715, falling back to direct permission grant')
-
-        // Fallback to direct contract call on PermissionManager
+        // Wallet does not support ERC-7715, fallback to direct contract call on PermissionManager
         const permissionTxHash = await walletClient.writeContract({
-          address: PERMISSION_MANAGER,
-          abi: PERMISSION_MANAGER_ABI,
+          address: permissionManager,
+          abi: permissionManager_ABI,
           functionName: 'grantPermission',
           args: [
-            RECURRING_PAYMENT_EXECUTOR, // operator
+            recurringPaymentExecutor, // operator
             plan.token, // token
             allowancePerPeriod, // allowance per period
             period, // period
@@ -490,9 +500,12 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
 
         // Find PermissionGranted event log
         // Event signature: PermissionGranted(bytes32 indexed permissionId, address indexed owner, address operator)
-        const permissionGrantedTopic = '0x' + 'PermissionGranted'.padEnd(64, '0') as `0x${string}`
+        // Use keccak256 hash of event signature for proper topic matching
+        const permissionGrantedTopic = keccak256(toBytes('PermissionGranted(bytes32,address,address)'))
         const permissionLog = receipt.logs.find(
-          (log) => log.address.toLowerCase() === PERMISSION_MANAGER.toLowerCase()
+          (log) =>
+            log.address.toLowerCase() === permissionManager.toLowerCase() &&
+            log.topics[0] === permissionGrantedTopic
         )
 
         if (permissionLog && permissionLog.topics[1]) {
@@ -502,7 +515,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         // If we can't find the log, generate a deterministic permissionId
         // This is a fallback - in production, the contract should emit proper events
         const permissionId = ('0x' + Buffer.from(
-          `${address}:${RECURRING_PAYMENT_EXECUTOR}:${plan.token}:${Date.now()}`
+          `${address}:${recurringPaymentExecutor}:${plan.token}:${Date.now()}`
         ).toString('hex').slice(0, 64).padEnd(64, '0')) as `0x${string}`
 
         return permissionId
@@ -525,8 +538,8 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     try {
       // Get the plan to check if payment is needed and for permission request
       const planData = await publicClient.readContract({
-        address: SUBSCRIPTION_MANAGER,
-        abi: SUBSCRIPTION_MANAGER_ABI,
+        address: subscriptionManager,
+        abi: subscriptionManager_ABI,
         functionName: 'plans',
         args: [planId],
       }) as readonly unknown[]
@@ -538,8 +551,8 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
 
       // Step 2: Subscribe with the permission ID
       const txHash = await walletClient.writeContract({
-        address: SUBSCRIPTION_MANAGER,
-        abi: SUBSCRIPTION_MANAGER_ABI,
+        address: subscriptionManager,
+        abi: subscriptionManager_ABI,
         functionName: 'subscribe',
         args: [planId, permissionId],
         value: plan.token === '0x0000000000000000000000000000000000000000' ? plan.price : 0n,
@@ -570,8 +583,8 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     try {
       // Send cancel subscription transaction
       const txHash = await walletClient.writeContract({
-        address: SUBSCRIPTION_MANAGER,
-        abi: SUBSCRIPTION_MANAGER_ABI,
+        address: subscriptionManager,
+        abi: subscriptionManager_ABI,
         functionName: 'cancelSubscription',
         args: [planId],
       })
@@ -601,8 +614,8 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     try {
       // Send create plan transaction
       const txHash = await walletClient.writeContract({
-        address: SUBSCRIPTION_MANAGER,
-        abi: SUBSCRIPTION_MANAGER_ABI,
+        address: subscriptionManager,
+        abi: subscriptionManager_ABI,
         functionName: 'createPlan',
         args: [
           params.name,
@@ -620,8 +633,8 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
 
       // Get the new plan count (the plan ID is planCount - 1 since it's 0-indexed after creation)
       const planCount = await publicClient.readContract({
-        address: SUBSCRIPTION_MANAGER,
-        abi: SUBSCRIPTION_MANAGER_ABI,
+        address: subscriptionManager,
+        abi: subscriptionManager_ABI,
         functionName: 'planCount',
       }) as bigint
 
@@ -687,9 +700,10 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
   }
 }
 
-// Export contract addresses for external use
+// Export default contract addresses for external use
+// For chain-specific addresses, use getContractAddresses(chainId)
 export const SUBSCRIPTION_CONTRACTS = {
-  subscriptionManager: SUBSCRIPTION_MANAGER,
-  permissionManager: PERMISSION_MANAGER,
-  recurringPaymentExecutor: RECURRING_PAYMENT_EXECUTOR,
+  subscriptionManager: DEFAULT_subscriptionManager,
+  permissionManager: DEFAULT_permissionManager,
+  recurringPaymentExecutor: DEFAULT_recurringPaymentExecutor,
 } as const

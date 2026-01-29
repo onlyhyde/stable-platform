@@ -32,7 +32,7 @@ export function ConnectWalletCard({
   if (message && !onConnect) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-gray-500">{message}</p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>{message}</p>
       </div>
     )
   }
@@ -58,8 +58,9 @@ export function ConnectWalletCard({
     <>
       <Card>
         <CardContent className="py-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+               style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+            <svg className="w-8 h-8" style={{ color: 'rgb(var(--muted-foreground))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>

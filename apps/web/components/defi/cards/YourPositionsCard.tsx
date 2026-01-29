@@ -23,7 +23,7 @@ export function YourPositionsCard({
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-gray-500">Loading positions...</p>
+            <p style={{ color: 'rgb(var(--muted-foreground))' }}>Loading positions...</p>
           </div>
         </CardContent>
       </Card>
@@ -68,7 +68,7 @@ export function YourPositionsCard({
         <CardTitle>Your Positions</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
           {positions.map((position) => (
             <PositionItem
               key={position.poolAddress}
@@ -97,28 +97,28 @@ function PositionItem({ position, onRemove }: PositionItemProps) {
     <div className="py-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <div className="flex -space-x-2">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-600 border-2 border-white">
+          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium border-2 border-white" style={{ color: 'rgb(var(--primary))' }}>
             {position.token0.symbol.slice(0, 2)}
           </div>
-          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-600 border-2 border-white">
+          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium border-2 border-white" style={{ color: 'rgb(var(--success))' }}>
             {position.token1.symbol.slice(0, 2)}
           </div>
         </div>
         <div>
-          <p className="font-medium text-gray-900">
+          <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
             {position.token0.symbol} / {position.token1.symbol}
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {(position.shareOfPool * 100).toFixed(2)}% share
           </p>
         </div>
       </div>
       <div className="text-right flex items-center gap-4">
         <div>
-          <p className="text-sm text-gray-900">
+          <p className="text-sm" style={{ color: 'rgb(var(--foreground))' }}>
             {formatAmount(position.token0Amount, position.token0.decimals)} {position.token0.symbol}
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {formatAmount(position.token1Amount, position.token1.decimals)} {position.token1.symbol}
           </p>
         </div>

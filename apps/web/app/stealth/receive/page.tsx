@@ -59,8 +59,14 @@ export default function StealthReceivePage() {
       />
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error.message}</p>
+        <div
+          className="p-3 rounded-lg border"
+          style={{
+            backgroundColor: 'rgb(var(--destructive) / 0.1)',
+            borderColor: 'rgb(var(--destructive) / 0.3)',
+          }}
+        >
+          <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error.message}</p>
         </div>
       )}
     </div>

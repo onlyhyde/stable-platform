@@ -18,18 +18,18 @@ export interface ModuleCardData {
   tags: string[]
 }
 
-const moduleTypeColors: Record<string, string> = {
-  validator: 'bg-blue-100 text-blue-800',
-  executor: 'bg-green-100 text-green-800',
-  hook: 'bg-purple-100 text-purple-800',
-  fallback: 'bg-amber-100 text-amber-800',
+const moduleTypeStyles: Record<string, { bg: string; color: string }> = {
+  validator: { bg: 'rgb(var(--info) / 0.1)', color: 'rgb(var(--info))' },
+  executor: { bg: 'rgb(var(--success) / 0.1)', color: 'rgb(var(--success))' },
+  hook: { bg: 'rgb(var(--accent) / 0.1)', color: 'rgb(var(--accent))' },
+  fallback: { bg: 'rgb(var(--warning) / 0.1)', color: 'rgb(var(--warning))' },
 }
 
-const auditBadges: Record<string, { label: string; color: string }> = {
-  verified: { label: 'Verified', color: 'bg-emerald-100 text-emerald-800' },
-  audited: { label: 'Audited', color: 'bg-blue-100 text-blue-800' },
-  'community-reviewed': { label: 'Community', color: 'bg-yellow-100 text-yellow-800' },
-  unaudited: { label: 'Unaudited', color: 'bg-gray-100 text-gray-600' },
+const auditBadges: Record<string, { label: string; bg: string; color: string }> = {
+  verified: { label: 'Verified', bg: 'rgb(var(--primary) / 0.1)', color: 'rgb(var(--primary))' },
+  audited: { label: 'Audited', bg: 'rgb(var(--info) / 0.1)', color: 'rgb(var(--info))' },
+  'community-reviewed': { label: 'Community', bg: 'rgb(var(--warning) / 0.1)', color: 'rgb(var(--warning))' },
+  unaudited: { label: 'Unaudited', bg: 'rgb(var(--secondary))', color: 'rgb(var(--muted-foreground))' },
 }
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
@@ -42,19 +42,19 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
         {Array.from({ length: 5 }, (_, i) => (
           <span
             key={i}
-            className={
-              i < fullStars
-                ? 'text-yellow-500'
+            style={{
+              color: i < fullStars
+                ? 'rgb(var(--warning))'
                 : i === fullStars && hasHalf
-                  ? 'text-yellow-300'
-                  : 'text-gray-300'
-            }
+                  ? 'rgb(var(--warning) / 0.5)'
+                  : 'rgb(var(--muted-foreground) / 0.3)'
+            }}
           >
             ★
           </span>
         ))}
       </div>
-      <span className="text-xs text-gray-500">({count})</span>
+      <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>({count})</span>
     </div>
   )
 }
@@ -67,38 +67,44 @@ interface ModuleCardProps {
 }
 
 export function ModuleCard({ module, onInstall, onViewDetails, installed }: ModuleCardProps) {
-  const typeColor = moduleTypeColors[module.moduleType] ?? 'bg-gray-100 text-gray-800'
+  const typeStyle = moduleTypeStyles[module.moduleType] ?? { bg: 'rgb(var(--secondary))', color: 'rgb(var(--muted-foreground))' }
   const audit = auditBadges[module.auditStatus] ?? auditBadges.unaudited
 
   return (
-    <Card className="flex flex-col h-full hover:shadow-md transition-shadow duration-200">
+    <Card className="flex flex-col h-full hover:shadow-md transition-shadow duration-150">
       <CardContent className="flex-1 p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-gray-900">{module.name}</h3>
+            <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{module.name}</h3>
             {module.featured && (
-              <span className="text-xs bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded-full font-medium">
+              <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                    style={{
+                      backgroundColor: 'rgb(var(--primary) / 0.1)',
+                      color: 'rgb(var(--primary))'
+                    }}>
                 Featured
               </span>
             )}
           </div>
-          <span className="text-xs text-gray-400">v{module.version}</span>
+          <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>v{module.version}</span>
         </div>
 
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{module.description}</p>
+        <p className="text-sm mb-3 line-clamp-2" style={{ color: 'rgb(var(--muted-foreground))' }}>{module.description}</p>
 
         <div className="flex flex-wrap gap-1.5 mb-3">
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeColor}`}>
+          <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{ backgroundColor: typeStyle.bg, color: typeStyle.color }}>
             {module.moduleType}
           </span>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${audit.color}`}>
+          <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{ backgroundColor: audit.bg, color: audit.color }}>
             {audit.label}
           </span>
         </div>
 
         <div className="flex items-center justify-between text-sm">
           <StarRating rating={module.rating} count={module.ratingCount} />
-          <span className="text-xs text-gray-500">
+          <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {module.installCount.toLocaleString()} installs
           </span>
         </div>
@@ -106,7 +112,11 @@ export function ModuleCard({ module, onInstall, onViewDetails, installed }: Modu
         {module.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {module.tags.slice(0, 4).map(tag => (
-              <span key={tag} className="text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">
+              <span key={tag} className="text-xs px-1.5 py-0.5 rounded"
+                    style={{
+                      backgroundColor: 'rgb(var(--secondary))',
+                      color: 'rgb(var(--muted-foreground))'
+                    }}>
                 {tag}
               </span>
             ))}

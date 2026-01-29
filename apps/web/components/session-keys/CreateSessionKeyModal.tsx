@@ -167,23 +167,28 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
             {['configure', 'permissions', 'confirm'].map((s, i) => (
               <div key={s} className="flex items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step === s
-                      ? 'bg-primary-600 text-white'
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
+                  style={{
+                    backgroundColor: step === s
+                      ? 'rgb(var(--primary))'
                       : ['configure', 'permissions', 'confirm'].indexOf(step) > i
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-200 text-gray-500'
-                  }`}
+                      ? 'rgb(var(--success))'
+                      : 'rgb(var(--secondary))',
+                    color: step === s || ['configure', 'permissions', 'confirm'].indexOf(step) > i
+                      ? 'white'
+                      : 'rgb(var(--muted-foreground))',
+                  }}
                 >
                   {['configure', 'permissions', 'confirm'].indexOf(step) > i ? '✓' : i + 1}
                 </div>
                 {i < 2 && (
                   <div
-                    className={`w-12 h-1 mx-1 rounded ${
-                      ['configure', 'permissions', 'confirm'].indexOf(step) > i
-                        ? 'bg-primary-600'
-                        : 'bg-gray-200'
-                    }`}
+                    className="w-12 h-1 mx-1 rounded"
+                    style={{
+                      backgroundColor: ['configure', 'permissions', 'confirm'].indexOf(step) > i
+                        ? 'rgb(var(--primary))'
+                        : 'rgb(var(--secondary))',
+                    }}
                   />
                 )}
               </div>
@@ -196,18 +201,19 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
           <div className="space-y-4">
             {/* Expiry */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Expiry</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>Expiry</label>
               <div className="grid grid-cols-3 gap-2">
                 {EXPIRY_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     type="button"
                     onClick={() => setExpiryOption(option.value)}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      expiryOption === option.value
-                        ? 'border-primary-600 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                    }`}
+                    className="px-3 py-2 text-sm rounded-lg border transition-colors hover:opacity-80"
+                    style={{
+                      borderColor: expiryOption === option.value ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                      backgroundColor: expiryOption === option.value ? 'rgb(var(--primary) / 0.1)' : 'transparent',
+                      color: expiryOption === option.value ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
+                    }}
                   >
                     {option.label}
                   </button>
@@ -215,11 +221,12 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setExpiryOption('custom')}
-                  className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                    expiryOption === 'custom'
-                      ? 'border-primary-600 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                  }`}
+                  className="px-3 py-2 text-sm rounded-lg border transition-colors hover:opacity-80"
+                  style={{
+                    borderColor: expiryOption === 'custom' ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                    backgroundColor: expiryOption === 'custom' ? 'rgb(var(--primary) / 0.1)' : 'transparent',
+                    color: expiryOption === 'custom' ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
+                  }}
                 >
                   Custom
                 </button>
@@ -229,14 +236,15 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
                   type="datetime-local"
                   value={customExpiry}
                   onChange={(e) => setCustomExpiry(e.target.value)}
-                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="mt-2 w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none"
+                  style={{ borderColor: 'rgb(var(--border))' }}
                 />
               )}
             </div>
 
             {/* Spending Limit */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Spending Limit (ETH)
               </label>
               <input
@@ -244,9 +252,10 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
                 placeholder="0 = unlimited"
                 value={spendingLimit}
                 onChange={(e) => setSpendingLimit(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none"
+                style={{ borderColor: 'rgb(var(--border))' }}
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Leave empty or set to 0 for unlimited spending
               </p>
             </div>
@@ -256,7 +265,7 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
         {/* Step 2: Permissions */}
         {step === 'permissions' && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Add permissions to restrict which contracts and functions this session key can call.
             </p>
 
@@ -266,16 +275,18 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
                 {permissions.map((perm, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between p-3 rounded-lg"
+                    style={{ backgroundColor: 'rgb(var(--secondary))' }}
                   >
                     <div className="font-mono text-xs">
-                      <div className="text-gray-900">{perm.target.slice(0, 10)}...</div>
-                      <div className="text-gray-500">{perm.selector}</div>
+                      <div style={{ color: 'rgb(var(--foreground))' }}>{perm.target.slice(0, 10)}...</div>
+                      <div style={{ color: 'rgb(var(--muted-foreground))' }}>{perm.selector}</div>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemovePermission(idx)}
-                      className="text-red-600 hover:text-red-700"
+                      className="hover:opacity-80"
+                      style={{ color: 'rgb(var(--destructive))' }}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
@@ -292,27 +303,29 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
             )}
 
             {/* Add permission */}
-            <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
+            <div className="space-y-2 p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
               <input
                 type="text"
                 placeholder="Target contract address (0x...)"
                 value={newPermission.target}
                 onChange={(e) => setNewPermission({ ...newPermission, target: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none text-sm"
+                style={{ borderColor: 'rgb(var(--border))' }}
               />
               <input
                 type="text"
                 placeholder="Function selector (e.g., 0x12345678)"
                 value={newPermission.selector}
                 onChange={(e) => setNewPermission({ ...newPermission, selector: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none text-sm"
+                style={{ borderColor: 'rgb(var(--border))' }}
               />
               <Button variant="secondary" size="sm" onClick={handleAddPermission} className="w-full">
                 Add Permission
               </Button>
             </div>
 
-            <p className="text-xs text-gray-500">
+            <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
               {permissions.length === 0
                 ? 'No permissions added. The session key will have full access.'
                 : `${permissions.length} permission(s) configured.`}
@@ -323,10 +336,10 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
         {/* Step 3: Confirm */}
         {step === 'confirm' && (
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <div className="rounded-lg p-4 space-y-3" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Expiry</span>
-                <span className="text-gray-900">
+                <span style={{ color: 'rgb(var(--muted-foreground))' }}>Expiry</span>
+                <span style={{ color: 'rgb(var(--foreground))' }}>
                   {expiryOption === 'never'
                     ? 'No expiry'
                     : expiryOption === 'custom'
@@ -335,14 +348,14 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Spending Limit</span>
-                <span className="text-gray-900">
+                <span style={{ color: 'rgb(var(--muted-foreground))' }}>Spending Limit</span>
+                <span style={{ color: 'rgb(var(--foreground))' }}>
                   {spendingLimit ? `${spendingLimit} ETH` : 'Unlimited'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Permissions</span>
-                <span className="text-gray-900">
+                <span style={{ color: 'rgb(var(--muted-foreground))' }}>Permissions</span>
+                <span style={{ color: 'rgb(var(--foreground))' }}>
                   {permissions.length === 0
                     ? 'Full access'
                     : `${permissions.length} restriction(s)`}
@@ -362,9 +375,10 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
         {/* Success */}
         {step === 'success' && (
           <div className="text-center py-4">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}>
               <svg
-                className="w-8 h-8 text-green-600"
+                className="w-8 h-8"
+                style={{ color: 'rgb(var(--success))' }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -377,20 +391,20 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Session Key Created!</h3>
-            <p className="text-sm text-gray-500 mb-4">
+            <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>Session Key Created!</h3>
+            <p className="text-sm mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Your new session key is ready to use.
             </p>
             {createdSessionKey && (
-              <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                <p className="text-xs text-gray-500 mb-1">Session Key Address</p>
-                <p className="font-mono text-sm text-gray-900 break-all">{createdSessionKey}</p>
+              <div className="rounded-lg p-3 mb-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+                <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>Session Key Address</p>
+                <p className="font-mono text-sm break-all" style={{ color: 'rgb(var(--foreground))' }}>{createdSessionKey}</p>
               </div>
             )}
             {txHash && (
-              <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                <p className="text-xs text-gray-500 mb-1">Transaction Hash</p>
-                <p className="font-mono text-xs text-gray-900 break-all">{txHash}</p>
+              <div className="rounded-lg p-3 mb-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+                <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>Transaction Hash</p>
+                <p className="font-mono text-xs break-all" style={{ color: 'rgb(var(--foreground))' }}>{txHash}</p>
               </div>
             )}
           </div>
@@ -398,7 +412,7 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+          <div className="rounded-lg p-3 text-sm" style={{ backgroundColor: 'rgb(var(--destructive) / 0.1)', borderWidth: '1px', borderColor: 'rgb(var(--destructive) / 0.2)', color: 'rgb(var(--destructive))' }}>
             {error}
           </div>
         )}

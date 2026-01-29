@@ -102,20 +102,34 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
                 key={chain.id}
                 type="button"
                 onClick={() => onSwitchChain(chain.id)}
-                className={`w-full flex items-center justify-between p-4 rounded-lg border-2 transition-colors ${
-                  currentChainId === chain.id
-                    ? 'border-primary-500 bg-primary-50'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                }`}
+                className="w-full flex items-center justify-between p-4 rounded-lg border-2 transition-colors"
+                style={{
+                  borderColor: currentChainId === chain.id ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                  backgroundColor: currentChainId === chain.id ? 'rgb(var(--primary) / 0.1)' : 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  if (currentChainId !== chain.id) {
+                    e.currentTarget.style.backgroundColor = 'rgb(var(--secondary))'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentChainId !== chain.id) {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }
+                }}
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      currentChainId === chain.id ? 'bg-primary-500' : 'bg-gray-200'
-                    }`}
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{
+                      backgroundColor: currentChainId === chain.id ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                    }}
                   >
                     <svg
-                      className={`w-5 h-5 ${currentChainId === chain.id ? 'text-white' : 'text-gray-500'}`}
+                      className="w-5 h-5"
+                      style={{
+                        color: currentChainId === chain.id ? 'white' : 'rgb(var(--muted-foreground))',
+                      }}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -130,12 +144,12 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
                     </svg>
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-gray-900">{chain.name}</p>
-                    <p className="text-sm text-gray-500">Chain ID: {chain.id}</p>
+                    <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{chain.name}</p>
+                    <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Chain ID: {chain.id}</p>
                   </div>
                 </div>
                 {currentChainId === chain.id && (
-                  <span className="text-sm font-medium text-primary-600">Connected</span>
+                  <span className="text-sm font-medium" style={{ color: 'rgb(var(--primary))' }}>Connected</span>
                 )}
               </button>
             ))}

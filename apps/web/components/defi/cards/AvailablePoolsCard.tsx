@@ -18,7 +18,7 @@ export function AvailablePoolsCard({ pools, onAddLiquidity }: AvailablePoolsCard
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="text-left text-sm text-gray-500 border-b border-gray-200">
+              <tr className="text-left text-sm border-b" style={{ color: 'rgb(var(--muted-foreground))', borderColor: 'rgb(var(--border))' }}>
                 <th className="pb-3 font-medium">Pool</th>
                 <th className="pb-3 font-medium">TVL</th>
                 <th className="pb-3 font-medium">APR</th>
@@ -26,33 +26,33 @@ export function AvailablePoolsCard({ pools, onAddLiquidity }: AvailablePoolsCard
                 <th className="pb-3 font-medium text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
               {pools.map((pool) => (
                 <tr key={pool.address} className="group">
                   <td className="py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex -space-x-2">
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
                           {pool.token0.symbol[0]}
                         </div>
-                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-medium">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
                           {pool.token1.symbol[0]}
                         </div>
                       </div>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                         {pool.token0.symbol}/{pool.token1.symbol}
                       </span>
                     </div>
                   </td>
-                  <td className="py-4 text-gray-900">
+                  <td className="py-4" style={{ color: 'rgb(var(--foreground))' }}>
                     ${pool.tvl.toLocaleString()}
                   </td>
                   <td className="py-4">
-                    <span className="text-green-600 font-medium">
+                    <span className="font-medium" style={{ color: 'rgb(var(--success))' }}>
                       {pool.apr.toFixed(2)}%
                     </span>
                   </td>
-                  <td className="py-4 text-gray-500">
+                  <td className="py-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
                     {pool.fee}%
                   </td>
                   <td className="py-4 text-right">

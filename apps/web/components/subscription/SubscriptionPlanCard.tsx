@@ -34,15 +34,20 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
   return (
     <Card
       className={cn(
-        'flex flex-col h-full transition-all',
-        featured && 'border-primary-500 shadow-md ring-2 ring-primary-100',
-        !isSubscribed && 'hover:shadow-md hover:border-primary-200',
+        'flex flex-col h-full transition-all hover:shadow-md',
         className
       )}
+      style={{
+        borderColor: featured ? 'rgb(var(--primary))' : undefined,
+        boxShadow: featured ? '0 0 0 2px rgb(var(--primary) / 0.1)' : undefined,
+      }}
     >
       <CardHeader className="text-center pb-2">
         {featured && (
-          <div className="inline-flex items-center justify-center px-3 py-1 mb-2 text-xs font-medium text-primary-700 bg-primary-100 rounded-full">
+          <div
+            className="inline-flex items-center justify-center px-3 py-1 mb-2 text-xs font-medium rounded-full"
+            style={{ backgroundColor: 'rgb(var(--primary) / 0.1)', color: 'rgb(var(--primary))' }}
+          >
             Popular
           </div>
         )}
@@ -54,10 +59,10 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
         {/* Price */}
         <div className="text-center mb-6">
           <div className="flex items-baseline justify-center gap-1">
-            <span className="text-4xl font-bold text-gray-900">{plan.priceFormatted.split(' ')[0]}</span>
-            <span className="text-lg text-gray-500">{plan.tokenSymbol}</span>
+            <span className="text-4xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>{plan.priceFormatted.split(' ')[0]}</span>
+            <span className="text-lg" style={{ color: 'rgb(var(--muted-foreground))' }}>{plan.tokenSymbol}</span>
           </div>
-          <p className="text-sm text-gray-500 mt-1">{plan.intervalFormatted}</p>
+          <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>{plan.intervalFormatted}</p>
         </div>
 
         {/* Features */}
@@ -65,14 +70,15 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
           {plan.trialPeriod > 0n && (
             <div className="flex items-center gap-2 text-sm">
               <svg
-                className="w-5 h-5 text-green-500 flex-shrink-0"
+                className="w-5 h-5 flex-shrink-0"
+                style={{ color: 'rgb(var(--success))' }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span className="text-gray-600">
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {Number(plan.trialPeriod) / 86400} day free trial
               </span>
             </div>
@@ -81,14 +87,15 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
           {plan.gracePeriod > 0n && (
             <div className="flex items-center gap-2 text-sm">
               <svg
-                className="w-5 h-5 text-green-500 flex-shrink-0"
+                className="w-5 h-5 flex-shrink-0"
+                style={{ color: 'rgb(var(--success))' }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span className="text-gray-600">
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {Number(plan.gracePeriod) / 86400} day grace period
               </span>
             </div>
@@ -96,38 +103,40 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
 
           <div className="flex items-center gap-2 text-sm">
             <svg
-              className="w-5 h-5 text-green-500 flex-shrink-0"
+              className="w-5 h-5 flex-shrink-0"
+              style={{ color: 'rgb(var(--success))' }}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            <span className="text-gray-600">Cancel anytime</span>
+            <span style={{ color: 'rgb(var(--muted-foreground))' }}>Cancel anytime</span>
           </div>
 
           <div className="flex items-center gap-2 text-sm">
             <svg
-              className="w-5 h-5 text-green-500 flex-shrink-0"
+              className="w-5 h-5 flex-shrink-0"
+              style={{ color: 'rgb(var(--success))' }}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            <span className="text-gray-600">Automatic payments via ERC-7715</span>
+            <span style={{ color: 'rgb(var(--muted-foreground))' }}>Automatic payments via ERC-7715</span>
           </div>
         </div>
 
         {/* Subscriber count */}
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          <p className="text-xs text-gray-400 text-center">
+        <div className="mt-4 pt-4 border-t" style={{ borderColor: 'rgb(var(--border) / 0.5)' }}>
+          <p className="text-xs text-center" style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}>
             {Number(plan.subscriberCount).toLocaleString()} subscribers
           </p>
         </div>
 
         {showMerchant && (
-          <div className="mt-2 text-xs text-gray-400 text-center font-mono">
+          <div className="mt-2 text-xs text-center font-mono" style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}>
             by {plan.merchant.slice(0, 6)}...{plan.merchant.slice(-4)}
           </div>
         )}

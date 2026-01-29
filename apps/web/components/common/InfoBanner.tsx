@@ -11,30 +11,34 @@ interface InfoBannerProps {
   className?: string
 }
 
-const variantStyles: Record<BannerVariant, { card: string; icon: string; title: string; text: string }> = {
+const variantStyles: Record<BannerVariant, { bg: string; border: string; iconColor: string; titleColor: string; textColor: string }> = {
   info: {
-    card: 'bg-blue-50 border-blue-200',
-    icon: 'text-blue-600',
-    title: 'text-blue-900',
-    text: 'text-blue-700',
+    bg: 'rgb(var(--info) / 0.1)',
+    border: 'rgb(var(--info) / 0.2)',
+    iconColor: 'rgb(var(--info))',
+    titleColor: 'rgb(var(--foreground))',
+    textColor: 'rgb(var(--muted-foreground))',
   },
   warning: {
-    card: 'bg-yellow-50 border-yellow-200',
-    icon: 'text-yellow-600',
-    title: 'text-yellow-900',
-    text: 'text-yellow-700',
+    bg: 'rgb(var(--warning) / 0.1)',
+    border: 'rgb(var(--warning) / 0.2)',
+    iconColor: 'rgb(var(--warning))',
+    titleColor: 'rgb(var(--foreground))',
+    textColor: 'rgb(var(--muted-foreground))',
   },
   success: {
-    card: 'bg-green-50 border-green-200',
-    icon: 'text-green-600',
-    title: 'text-green-900',
-    text: 'text-green-700',
+    bg: 'rgb(var(--success) / 0.1)',
+    border: 'rgb(var(--success) / 0.2)',
+    iconColor: 'rgb(var(--success))',
+    titleColor: 'rgb(var(--foreground))',
+    textColor: 'rgb(var(--muted-foreground))',
   },
   error: {
-    card: 'bg-red-50 border-red-200',
-    icon: 'text-red-600',
-    title: 'text-red-900',
-    text: 'text-red-700',
+    bg: 'rgb(var(--destructive) / 0.1)',
+    border: 'rgb(var(--destructive) / 0.2)',
+    iconColor: 'rgb(var(--destructive))',
+    titleColor: 'rgb(var(--foreground))',
+    textColor: 'rgb(var(--muted-foreground))',
   },
 }
 
@@ -57,15 +61,19 @@ export function InfoBanner({ title, description, variant = 'info', className }: 
   const styles = variantStyles[variant]
 
   return (
-    <Card className={cn(styles.card, className)}>
+    <Card className={cn('rounded-xl', className)}
+          style={{
+            backgroundColor: styles.bg,
+            borderColor: styles.border,
+          }}>
       <CardContent className="py-4">
         <div className="flex gap-3">
-          <svg className={cn('w-6 h-6 flex-shrink-0', styles.icon)} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <svg className="w-6 h-6 flex-shrink-0" style={{ color: styles.iconColor }} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             {variantIcons[variant]}
           </svg>
           <div>
-            <p className={cn('font-medium', styles.title)}>{title}</p>
-            {description && <p className={cn('text-sm mt-1', styles.text)}>{description}</p>}
+            <p className="font-medium" style={{ color: styles.titleColor }}>{title}</p>
+            {description && <p className="text-sm mt-1" style={{ color: styles.textColor }}>{description}</p>}
           </div>
         </div>
       </CardContent>
