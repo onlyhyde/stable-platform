@@ -6,6 +6,7 @@ packages:
   - "packages/config"
   - "packages/contracts"
   - "packages/registry-client"
+  - "packages/wallet-sdk"
 
   # Applications
   - "apps/*"
