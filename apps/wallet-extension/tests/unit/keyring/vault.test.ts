@@ -8,6 +8,27 @@ import { STORAGE_KEYS, SESSION_KEYS } from '../../../src/shared/constants'
 import { mockChrome } from '../../utils/mockChrome'
 import { TEST_PASSWORD, TEST_PASSWORD_WEAK } from '../../utils/testUtils'
 import type { SerializedKeyring, VaultData, VaultSessionData } from '../../../src/types'
+import {
+  isEncryptedSessionData,
+  decryptSessionData,
+  type EncryptedSessionData,
+} from '../../../src/background/keyring/sessionCrypto'
+
+/**
+ * Helper to get vault salt from local storage for test decryption
+ */
+async function getVaultSalt(): Promise<Uint8Array | null> {
+  const stored = await mockChrome.storage.local.get(STORAGE_KEYS.ENCRYPTED_VAULT)
+  const vault = stored[STORAGE_KEYS.ENCRYPTED_VAULT]
+  if (!vault || !vault.salt) return null
+
+  const hex = vault.salt
+  const bytes = new Uint8Array(hex.length / 2)
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substr(i, 2), 16)
+  }
+  return bytes
+}
 
 // Test keyring data
 const createTestKeyring = (): SerializedKeyring => ({
@@ -92,13 +113,24 @@ describe('Vault', () => {
       expect(encryptedVault.tag).toBeDefined()
     })
 
-    it('should save to session storage without password', async () => {
+    it('should save to session storage without password (SEC-6: encrypted)', async () => {
       await vault.initialize(TEST_PASSWORD, [createTestKeyring()])
 
       const stored = await mockChrome.storage.session.get(SESSION_KEYS.VAULT_SESSION)
-      const sessionData = stored[SESSION_KEYS.VAULT_SESSION] as VaultSessionData
+      const encryptedSession = stored[SESSION_KEYS.VAULT_SESSION]
 
-      expect(sessionData).toBeDefined()
+      // SEC-6: Session data should be encrypted
+      expect(encryptedSession).toBeDefined()
+      expect(isEncryptedSessionData(encryptedSession)).toBe(true)
+
+      // Decrypt to verify contents
+      const salt = await getVaultSalt()
+      expect(salt).not.toBeNull()
+      const sessionData = await decryptSessionData<VaultSessionData>(
+        encryptedSession as EncryptedSessionData,
+        salt!
+      )
+
       expect(sessionData.vaultData).toBeDefined()
       // SECURITY: Password should NOT be stored in session
       expect((sessionData as Record<string, unknown>).password).toBeUndefined()
@@ -146,16 +178,27 @@ describe('Vault', () => {
       )
     })
 
-    it('should save to session storage after unlock without password', async () => {
+    it('should save to session storage after unlock without password (SEC-6: encrypted)', async () => {
       // Clear session storage first
       await mockChrome.storage.session.clear()
 
       await vault.unlock(TEST_PASSWORD)
 
       const stored = await mockChrome.storage.session.get(SESSION_KEYS.VAULT_SESSION)
-      const sessionData = stored[SESSION_KEYS.VAULT_SESSION] as VaultSessionData
+      const encryptedSession = stored[SESSION_KEYS.VAULT_SESSION]
 
-      expect(sessionData).toBeDefined()
+      // SEC-6: Session data should be encrypted
+      expect(encryptedSession).toBeDefined()
+      expect(isEncryptedSessionData(encryptedSession)).toBe(true)
+
+      // Decrypt to verify contents
+      const salt = await getVaultSalt()
+      expect(salt).not.toBeNull()
+      const sessionData = await decryptSessionData<VaultSessionData>(
+        encryptedSession as EncryptedSessionData,
+        salt!
+      )
+
       expect(sessionData.vaultData).toBeDefined()
       // SECURITY: Password should NOT be stored in session
       expect((sessionData as Record<string, unknown>).password).toBeUndefined()
@@ -238,13 +281,24 @@ describe('Vault', () => {
       expect(data.keyrings[0].data.accounts).toHaveLength(2)
     })
 
-    it('should update session storage', async () => {
+    it('should update session storage (SEC-6: encrypted)', async () => {
       await vault.updateData({
         selectedAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
       })
 
       const stored = await mockChrome.storage.session.get(SESSION_KEYS.VAULT_SESSION)
-      const sessionData = stored[SESSION_KEYS.VAULT_SESSION] as VaultSessionData
+      const encryptedSession = stored[SESSION_KEYS.VAULT_SESSION]
+
+      // SEC-6: Session data should be encrypted
+      expect(isEncryptedSessionData(encryptedSession)).toBe(true)
+
+      // Decrypt to verify contents
+      const salt = await getVaultSalt()
+      expect(salt).not.toBeNull()
+      const sessionData = await decryptSessionData<VaultSessionData>(
+        encryptedSession as EncryptedSessionData,
+        salt!
+      )
 
       expect(sessionData.vaultData.selectedAddress).toBe(
         '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
@@ -287,16 +341,27 @@ describe('Vault', () => {
       expect(newVault.isUnlocked()).toBe(false)
     })
 
-    it('should return null when session has expired', async () => {
+    it('should return null when session has expired (SEC-6: encrypted)', async () => {
       // Initialize with 0.001 minute auto-lock (effectively immediate)
       const shortLockVault = new Vault(0.001)
       await shortLockVault.initialize(TEST_PASSWORD, [createTestKeyring()])
 
-      // Manually set old timestamp
+      // Get the salt for encrypting modified session data
+      const salt = await getVaultSalt()
+      expect(salt).not.toBeNull()
+
+      // Get and decrypt current session data
       const stored = await mockChrome.storage.session.get(SESSION_KEYS.VAULT_SESSION)
-      const sessionData = stored[SESSION_KEYS.VAULT_SESSION] as VaultSessionData
+      const encryptedSession = stored[SESSION_KEYS.VAULT_SESSION] as EncryptedSessionData
+      const sessionData = await decryptSessionData<VaultSessionData>(encryptedSession, salt!)
+
+      // Modify to have old timestamp
       sessionData.createdAt = Date.now() - 1000000 // Old timestamp
-      await mockChrome.storage.session.set({ [SESSION_KEYS.VAULT_SESSION]: sessionData })
+
+      // Re-encrypt and save (SEC-6 compliant)
+      const { encryptSessionData } = await import('../../../src/background/keyring/sessionCrypto')
+      const newEncryptedSession = await encryptSessionData(sessionData, salt!)
+      await mockChrome.storage.session.set({ [SESSION_KEYS.VAULT_SESSION]: newEncryptedSession })
 
       // Try restore with new vault
       const newVault = new Vault(0.001)
@@ -305,17 +370,28 @@ describe('Vault', () => {
       expect(restored).toBeNull()
     })
 
-    it('should not expire session when autoLockMinutes is 0', async () => {
+    it('should not expire session when autoLockMinutes is 0 (SEC-6: encrypted)', async () => {
       // Initialize with 0 auto-lock (disabled)
       const noLockVault = new Vault(0)
       await noLockVault.initialize(TEST_PASSWORD, [createTestKeyring()])
 
-      // Set old timestamp
+      // Get the salt for encrypting modified session data
+      const salt = await getVaultSalt()
+      expect(salt).not.toBeNull()
+
+      // Get and decrypt current session data
       const stored = await mockChrome.storage.session.get(SESSION_KEYS.VAULT_SESSION)
-      const sessionData = stored[SESSION_KEYS.VAULT_SESSION] as VaultSessionData
+      const encryptedSession = stored[SESSION_KEYS.VAULT_SESSION] as EncryptedSessionData
+      const sessionData = await decryptSessionData<VaultSessionData>(encryptedSession, salt!)
+
+      // Modify to have very old timestamp
       sessionData.createdAt = Date.now() - 100000000 // Very old timestamp
       sessionData.autoLockMinutes = 0
-      await mockChrome.storage.session.set({ [SESSION_KEYS.VAULT_SESSION]: sessionData })
+
+      // Re-encrypt and save (SEC-6 compliant)
+      const { encryptSessionData } = await import('../../../src/background/keyring/sessionCrypto')
+      const newEncryptedSession = await encryptSessionData(sessionData, salt!)
+      await mockChrome.storage.session.set({ [SESSION_KEYS.VAULT_SESSION]: newEncryptedSession })
 
       // Try restore
       const newVault = new Vault(0)

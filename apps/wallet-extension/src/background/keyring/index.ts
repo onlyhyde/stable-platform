@@ -441,7 +441,22 @@ export class KeyringController {
   }
 
   /**
-   * Get mnemonic (for backup)
+   * Verify password without changing vault state
+   * Used for re-authentication before sensitive operations
+   */
+  async verifyPassword(password: string): Promise<boolean> {
+    try {
+      // Use vault's reauthenticate which verifies password
+      await vault.reauthenticate(password)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * Get mnemonic (for backup) - DEPRECATED: Use getMnemonicWithPassword instead
+   * @deprecated This method is deprecated. Use getMnemonicWithPassword for secure access.
    */
   getMnemonic(): string | null {
     if (!vault.isUnlocked()) {
@@ -454,6 +469,47 @@ export class KeyringController {
     }
 
     return hdKeyring.getMnemonic()
+  }
+
+  /**
+   * Get mnemonic with password verification (secure method)
+   * Requires password re-entry for security
+   */
+  async getMnemonicWithPassword(password: string): Promise<string | null> {
+    if (!vault.isUnlocked()) {
+      throw new Error('Vault is locked')
+    }
+
+    // Verify password before returning sensitive data
+    const isValid = await this.verifyPassword(password)
+    if (!isValid) {
+      throw new Error('Incorrect password')
+    }
+
+    const hdKeyring = this.hdKeyrings[0]
+    if (!hdKeyring) {
+      return null
+    }
+
+    return hdKeyring.getMnemonic()
+  }
+
+  /**
+   * Export private key with password verification (secure method)
+   * Requires password re-entry for security
+   */
+  async exportPrivateKeyWithPassword(address: Address, password: string): Promise<Hex> {
+    if (!vault.isUnlocked()) {
+      throw new Error('Vault is locked')
+    }
+
+    // Verify password before returning sensitive data
+    const isValid = await this.verifyPassword(password)
+    if (!isValid) {
+      throw new Error('Incorrect password')
+    }
+
+    return this.exportPrivateKey(address)
   }
 
   /**

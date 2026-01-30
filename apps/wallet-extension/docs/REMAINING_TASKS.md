@@ -1,8 +1,10 @@
 # StableNet Wallet - 작업 현황
 
 > 작성일: 2026-01-23
-> 최종 업데이트: 2026-01-29
-> 현재 테스트: 563개 Unit + 27개 E2E
+> 최종 업데이트: 2026-01-30
+> 현재 테스트: 758개 Unit + 27개 E2E
+>
+> **관련 문서**: [ARCHITECTURE.md](./ARCHITECTURE.md) - 기술 아키텍처
 
 ---
 
@@ -110,6 +112,41 @@
 
 ---
 
+## 보안 검토 현황
+
+> **검토일**: 2026-01-29
+> **상태**: Phase 0 완료, 나머지 추후 진행
+
+### 해결된 이슈
+
+| ID | 심각도 | 이슈 | 상태 |
+|----|--------|------|------|
+| SEC-1 | 🔴 Critical | Origin별 계정 필터링 누락 | ✅ EventBroadcaster로 해결 |
+| SEC-2 | 🔴 Critical | Content Script localStorage 노출 | ✅ data attribute로 해결 |
+| SEC-3 | 🔴 Critical | Origin 검증 부족 | ✅ sender.tab.url에서만 추출 |
+| SEC-12 | 🟡 Medium | 승인 팝업 URL 인코딩 누락 | ✅ encodeURIComponent 적용 |
+| SEC-13 | 🟡 Medium | RPC URL HTTPS 강제 없음 | ✅ 설정 가능한 플래그로 구현 |
+
+### 미해결 이슈 (추후 진행)
+
+| ID | 심각도 | 이슈 | 우선순위 |
+|----|--------|------|----------|
+| SEC-4 | 🟠 High | Rate Limiting 부재 | ✅ 완료 |
+| SEC-5 | 🟠 High | Typed Data Domain 검증 없음 | ✅ 완료 |
+| SEC-6 | 🟠 High | Session Storage 비암호화 | ✅ 완료 |
+| SEC-7 | 🟠 High | RPC 입력 검증 미적용 | ✅ 완료 |
+| SEC-8 | 🟠 High | Mnemonic 접근 재인증 없음 | ✅ 완료 |
+| SEC-9 | 🟠 High | connect/disconnect 이벤트 | ✅ Phase 1에서 해결 |
+| SEC-10 | 🟡 Medium | 상태 Shallow Merge | ✅ deepMerge로 해결 |
+| SEC-11 | 🟡 Medium | Origin 정규화 없음 | ✅ normalizeOrigin으로 해결 |
+| SEC-14 | 🟡 Medium | 트랜잭션 위험 평가 불충분 | ✅ 완료 |
+| SEC-15 | 🟢 Low | 에러 메시지 내부 정보 노출 | ✅ 완료 |
+| SEC-16 | 🟢 Low | 감사 로깅 없음 | ✅ 완료 |
+| SEC-17 | 🟢 Low | CSP 미설정 | ✅ 완료 |
+| SEC-18 | 🟢 Low | 레거시 API 경고 없음 | ✅ 완료 |
+
+---
+
 ## 남은 작업
 
 ### 🟢 추가 기능 (우선순위: Low)
@@ -174,9 +211,9 @@ E2E 테스트:      ████████████████████
 
 | 카테고리 | 테스트 수 | 상태 |
 |----------|----------|------|
-| Unit Tests | 563개 | ✅ 통과 |
+| Unit Tests | 758개 | ✅ 통과 |
 | E2E Tests | 27개 | ✅ 작성 완료 |
-| **합계** | **590개** | |
+| **합계** | **785개** | |
 
 ### Unit 테스트 상세
 
@@ -197,13 +234,20 @@ PASS tests/unit/setup.test.ts
 PASS tests/unit/controllers/networkController.test.ts
 PASS tests/unit/security/phishingDetector.test.ts
 PASS tests/unit/security/signatureRiskAnalyzer.test.ts
+PASS tests/unit/security/rateLimiter.test.ts
+PASS tests/unit/security/typedDataValidator.test.ts
 PASS tests/unit/errors/rpcErrors.test.ts
 PASS tests/unit/utils/eventBroadcaster.test.ts
 PASS tests/unit/keyring/hdKeyring.test.ts
 PASS tests/unit/keyring/vault.test.ts
+PASS tests/unit/keyring/sessionCrypto.test.ts
+PASS tests/unit/security/transactionRiskAnalyzer.test.ts
+PASS tests/unit/security/errorSanitizer.test.ts
+PASS tests/unit/security/auditLogger.test.ts
+PASS tests/unit/security/legacyApiWarning.test.ts
 
-Test Suites: 20 passed, 20 total
-Tests:       563 passed, 563 total
+Test Suites: 27 passed, 27 total
+Tests:       758 passed, 758 total
 ```
 
 ### E2E 테스트 상세

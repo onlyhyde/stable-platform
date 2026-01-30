@@ -1,6 +1,15 @@
 import { encrypt, decrypt, bufferToHex, getRandomBytes } from './crypto'
+import {
+  encryptSessionData,
+  decryptSessionData,
+  isEncryptedSessionData,
+  type EncryptedSessionData,
+} from './sessionCrypto'
 import type { EncryptedVault, VaultData, SerializedKeyring, VaultSessionData } from '../../types'
 import { STORAGE_KEYS, SESSION_KEYS } from '../../shared/constants'
+import { createLogger } from '../../shared/utils/logger'
+
+const logger = createLogger('Vault')
 
 /**
  * Vault for secure storage of encrypted keyring data
@@ -211,6 +220,7 @@ export class Vault {
    *
    * SECURITY: Password is NOT restored from session.
    * Session-restored vaults are read-only until re-authenticated via reauthenticate().
+   * SEC-6: Session data is encrypted and must be decrypted using vault salt.
    *
    * @returns VaultData if session is valid and not expired, null otherwise
    */
@@ -222,9 +232,42 @@ export class Vault {
       }
 
       const stored = await chrome.storage.session.get(SESSION_KEYS.VAULT_SESSION)
-      const sessionData = stored[SESSION_KEYS.VAULT_SESSION] as VaultSessionData | undefined
+      const encryptedOrLegacy = stored[SESSION_KEYS.VAULT_SESSION]
 
-      if (!sessionData) {
+      if (!encryptedOrLegacy) {
+        return null
+      }
+
+      // Get vault salt for decryption
+      const salt = await this.getVaultSalt()
+      if (!salt) {
+        logger.warn('Cannot restore from session: vault salt not available')
+        return null
+      }
+
+      let sessionData: VaultSessionData
+
+      // SEC-6: Check if data is encrypted (new format) or legacy (unencrypted)
+      if (isEncryptedSessionData(encryptedOrLegacy)) {
+        // Decrypt session data
+        try {
+          sessionData = await decryptSessionData<VaultSessionData>(encryptedOrLegacy, salt)
+        } catch (error) {
+          logger.error('Failed to decrypt session data', error)
+          await this.clearSession()
+          return null
+        }
+      } else {
+        // Legacy unencrypted format - migrate to encrypted
+        logger.info('Migrating legacy unencrypted session data')
+        sessionData = encryptedOrLegacy as VaultSessionData
+        // Re-save with encryption
+        if (sessionData.vaultData) {
+          await this.saveToSession(sessionData.vaultData)
+        }
+      }
+
+      if (!sessionData || !sessionData.vaultData) {
         return null
       }
 
@@ -246,7 +289,8 @@ export class Vault {
       this.resetAutoLock()
 
       return sessionData.vaultData
-    } catch {
+    } catch (error) {
+      logger.error('Session restore failed', error)
       // Session storage access failed
       return null
     }
@@ -293,11 +337,19 @@ export class Vault {
   /**
    * Save vault data to session storage
    * SECURITY: Password is NOT saved to session storage
+   * SEC-6: Session data is encrypted using a key derived from the vault salt
    */
   private async saveToSession(data: VaultData): Promise<void> {
     try {
       // Check if chrome.storage.session is available (MV3)
       if (!chrome.storage.session) {
+        return
+      }
+
+      // Get vault salt for encryption key derivation
+      const salt = await this.getVaultSalt()
+      if (!salt) {
+        logger.warn('Cannot save to session: vault salt not available')
         return
       }
 
@@ -308,10 +360,14 @@ export class Vault {
         autoLockMinutes: this.autoLockMinutes,
       }
 
+      // SEC-6: Encrypt session data before storing
+      const encryptedSession = await encryptSessionData(sessionData, salt)
+
       await chrome.storage.session.set({
-        [SESSION_KEYS.VAULT_SESSION]: sessionData,
+        [SESSION_KEYS.VAULT_SESSION]: encryptedSession,
       })
-    } catch {
+    } catch (error) {
+      logger.error('Failed to save to session', error)
       // Silent fail for session save
     }
   }
@@ -388,6 +444,25 @@ export class Vault {
   private async getStoredVault(): Promise<EncryptedVault | null> {
     const stored = await chrome.storage.local.get(STORAGE_KEYS.ENCRYPTED_VAULT)
     return stored[STORAGE_KEYS.ENCRYPTED_VAULT] ?? null
+  }
+
+  /**
+   * Get vault salt for session encryption
+   * SEC-6: The salt is used to derive the session encryption key
+   */
+  private async getVaultSalt(): Promise<Uint8Array | null> {
+    const vault = await this.getStoredVault()
+    if (!vault || !vault.salt) {
+      return null
+    }
+
+    // Convert hex string to Uint8Array
+    const hex = vault.salt
+    const bytes = new Uint8Array(hex.length / 2)
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes[i / 2] = parseInt(hex.substr(i, 2), 16)
+    }
+    return bytes
   }
 
   /**
