@@ -42,6 +42,7 @@ export type MessageType =
   | 'ACCOUNT_ADDED'
   | 'GET_MNEMONIC'
   | 'MNEMONIC'
+  | 'MNEMONIC_ERROR'
   // Settings messages
   | 'SET_AUTO_LOCK_TIMEOUT'
   | 'AUTO_LOCK_TIMEOUT_SET'

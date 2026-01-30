@@ -629,11 +629,30 @@ async function handleMessage(
     }
 
     case 'GET_MNEMONIC': {
-      const mnemonic = keyringController.getMnemonic()
-      return {
-        type: 'MNEMONIC',
-        id: message.id,
-        payload: { mnemonic },
+      const { password } = message.payload as { password?: string }
+
+      // Password is required for mnemonic access (SEC-8)
+      if (!password) {
+        return {
+          type: 'MNEMONIC_ERROR',
+          id: message.id,
+          payload: { error: 'Password is required to view recovery phrase' },
+        }
+      }
+
+      try {
+        const mnemonic = await keyringController.getMnemonicWithPassword(password)
+        return {
+          type: 'MNEMONIC',
+          id: message.id,
+          payload: { mnemonic },
+        }
+      } catch (error) {
+        return {
+          type: 'MNEMONIC_ERROR',
+          id: message.id,
+          payload: { error: (error as Error).message },
+        }
       }
     }
 
@@ -798,10 +817,22 @@ async function handleMessage(
     }
 
     case 'EXPORT_PRIVATE_KEY': {
-      const { address } = message.payload as { address: Address }
+      const { address, password } = message.payload as { address: Address; password?: string }
+
+      // Password is required for private key export (SEC-8)
+      if (!password) {
+        return {
+          type: 'PRIVATE_KEY_ERROR',
+          id: message.id,
+          payload: {
+            success: false,
+            error: 'Password is required to export private key',
+          },
+        }
+      }
 
       try {
-        const privateKey = keyringController.exportPrivateKey(address)
+        const privateKey = await keyringController.exportPrivateKeyWithPassword(address, password)
         return {
           type: 'PRIVATE_KEY_EXPORTED',
           id: message.id,

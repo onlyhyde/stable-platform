@@ -131,6 +131,11 @@ export class ApprovalController {
     typedData: unknown
     method: 'eth_signTypedData_v4'
     favicon?: string
+    domainValidation?: {
+      warnings: Array<{ type: string; message: string; severity: string }>
+      riskLevel: 'low' | 'medium' | 'high' | 'critical'
+      warningMessages: string[]
+    }
   }): Promise<{ approved: boolean }> {
     return this.requestSignature(
       params.origin,
@@ -138,7 +143,8 @@ export class ApprovalController {
       params.address,
       '', // No plain message for typed data
       params.typedData,
-      params.favicon
+      params.favicon,
+      params.domainValidation
     ).then(() => ({ approved: true })).catch(() => ({ approved: false }))
   }
 
@@ -151,10 +157,29 @@ export class ApprovalController {
     address: Address,
     message: string,
     typedData?: unknown,
-    favicon?: string
+    favicon?: string,
+    domainValidation?: {
+      warnings: Array<{ type: string; message: string; severity: string }>
+      riskLevel: 'low' | 'medium' | 'high' | 'critical'
+      warningMessages: string[]
+    }
   ): Promise<{ signature: string }> {
     const displayMessage = this.formatMessageForDisplay(message, method)
-    const riskWarnings = this.assessSignatureRisk(message, typedData)
+    const signatureRiskWarnings = this.assessSignatureRisk(message, typedData)
+
+    // Merge signature risk warnings with domain validation warnings (SEC-5)
+    const allWarnings = [
+      ...signatureRiskWarnings,
+      ...(domainValidation?.warningMessages ?? []),
+    ]
+
+    // Determine overall risk level (domain validation takes precedence if critical)
+    let riskLevel: 'low' | 'medium' | 'high' = 'low'
+    if (domainValidation?.riskLevel === 'critical' || domainValidation?.riskLevel === 'high') {
+      riskLevel = 'high'
+    } else if (domainValidation?.riskLevel === 'medium' || signatureRiskWarnings.length > 0) {
+      riskLevel = signatureRiskWarnings.length > 0 ? 'high' : 'medium'
+    }
 
     const approval: SignatureApprovalRequest = {
       id: generateRandomHex(16),
@@ -170,8 +195,8 @@ export class ApprovalController {
         message,
         typedData,
         displayMessage,
-        riskLevel: riskWarnings.length > 0 ? 'high' : 'low',
-        riskWarnings,
+        riskLevel,
+        riskWarnings: allWarnings,
       },
     }
 
