@@ -167,10 +167,10 @@
 - [ ] E2E 테스트 CI 통합
 - [ ] 자동 빌드/배포
 
-#### 문서화
-- [ ] API 레퍼런스
-- [ ] 아키텍처 다이어그램
-- [ ] dApp 개발자 가이드
+#### 문서화 ✅
+- [x] API 레퍼런스 (`docs/API_REFERENCE.md`)
+- [x] 아키텍처 다이어그램 (`docs/ARCHITECTURE_DIAGRAM.md`)
+- [x] dApp 개발자 가이드 (`docs/DAPP_DEVELOPER_GUIDE.md`)
 
 ---
 
@@ -190,6 +190,7 @@
 | 하드웨어 지갑 | 높음 | 낮음 | Low | 🟢 대기 |
 | WalletConnect | 중 | 낮음 | Low | 🟢 대기 |
 | CI/CD | 중 | 중간 | Low | 🟢 대기 |
+| 문서화 | 낮음 | 중간 | Low | ✅ 완료 |
 
 ---
 
@@ -290,9 +291,17 @@ apps/wallet-extension/
 ## 다음 단계 제안
 
 1. **CI/CD 구축** - GitHub Actions로 테스트/빌드 자동화
-2. **문서화** - API 레퍼런스 및 개발자 가이드 작성
+2. ~~**문서화** - API 레퍼런스 및 개발자 가이드 작성~~ ✅ 완료
 3. **하드웨어 지갑** - Ledger 연동 (사용자 요구 시)
 4. **WalletConnect** - 모바일 dApp 연결 지원 (사용자 요구 시)
+
+### 작성된 문서
+
+| 문서 | 설명 |
+|------|------|
+| [API_REFERENCE.md](./API_REFERENCE.md) | RPC 메서드, 이벤트, 에러 코드 레퍼런스 |
+| [ARCHITECTURE_DIAGRAM.md](./ARCHITECTURE_DIAGRAM.md) | 시스템 아키텍처 다이어그램 |
+| [DAPP_DEVELOPER_GUIDE.md](./DAPP_DEVELOPER_GUIDE.md) | dApp 통합 가이드 및 예제 코드 |
 
 ---
 
