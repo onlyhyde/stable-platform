@@ -3,6 +3,7 @@ import type { ApprovalRequest } from '../types'
 import { ConnectApproval } from './pages/ConnectApproval'
 import { SignatureApproval } from './pages/SignatureApproval'
 import { TransactionApproval } from './pages/TransactionApproval'
+import { AuthorizationApproval } from './pages/AuthorizationApproval'
 import { Spinner } from '../ui/components/common'
 import { MESSAGE_TYPES } from '../shared/constants'
 
@@ -173,6 +174,15 @@ export function ApprovalApp() {
     case 'transaction':
       return (
         <TransactionApproval
+          approval={approval}
+          onApprove={handleApprove}
+          onReject={handleReject}
+        />
+      )
+
+    case 'authorization':
+      return (
+        <AuthorizationApproval
           approval={approval}
           onApprove={handleApprove}
           onReject={handleReject}

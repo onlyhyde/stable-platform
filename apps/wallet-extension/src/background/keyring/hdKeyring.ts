@@ -167,6 +167,19 @@ export class HDKeyring {
   }
 
   /**
+   * Sign a raw hash directly (without message prefix)
+   * Used for EIP-7702 authorization signatures
+   */
+  async signRawHash(address: Address, hash: Hex): Promise<Hex> {
+    const account = this.getSigningAccount(address)
+    if (!account) {
+      throw new Error('Account not found in keyring')
+    }
+
+    return account.sign({ hash })
+  }
+
+  /**
    * Serialize keyring data for storage
    */
   serialize(): HDKeyringData {

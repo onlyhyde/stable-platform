@@ -13,7 +13,6 @@ import {
   FeatureComparisonCard,
   ContractAddressesCard,
   SigningMethodCard,
-  MetaMaskUnsupportedModal,
 } from '@/components/smart-account'
 import { getDelegatePresets } from '@/lib/eip7702'
 import { sanitizeErrorMessage } from '@/lib/utils'
@@ -34,8 +33,9 @@ export default function SmartAccountPage() {
     lastTxHash,
     upgradeToSmartAccount,
     revokeSmartAccount,
-    upgradeWithMetaMask,
-    revokeWithMetaMask,
+    upgradeWithStableNet,
+    revokeWithStableNet,
+    isStableNetWallet,
     refreshStatus,
     contracts,
     anvilAccounts,
@@ -77,8 +77,6 @@ export default function SmartAccountPage() {
     }
   }, [])
 
-  // State for MetaMask unsupported modal
-  const [showMetaMaskModal, setShowMetaMaskModal] = useState(false)
 
   // Find matching Anvil account based on connected address
   const matchingAnvilAccount = useMemo(() => {
@@ -106,13 +104,8 @@ export default function SmartAccountPage() {
 
     try {
       let result
-      if (signingMethod === 'metamask') {
-        result = await upgradeWithMetaMask(selectedDelegate)
-        if (!result.success && result.error?.includes('eth_sign')) {
-          removeToast(toastId)
-          setShowMetaMaskModal(true)
-          return
-        }
+      if (signingMethod === 'stablenet') {
+        result = await upgradeWithStableNet(selectedDelegate)
       } else {
         const key = privateKeyRef.current
         if (!key) {
@@ -161,13 +154,8 @@ export default function SmartAccountPage() {
 
     try {
       let result
-      if (signingMethod === 'metamask') {
-        result = await revokeWithMetaMask()
-        if (!result.success && result.error?.includes('eth_sign')) {
-          removeToast(toastId)
-          setShowMetaMaskModal(true)
-          return
-        }
+      if (signingMethod === 'stablenet') {
+        result = await revokeWithStableNet()
       } else {
         const key = privateKeyRef.current
         if (!key) {
@@ -206,7 +194,7 @@ export default function SmartAccountPage() {
   }
 
   // Check if action is allowed
-  const canPerformAction = signingMethod === 'metamask' || hasPrivateKey
+  const canPerformAction = signingMethod === 'stablenet' || hasPrivateKey
 
   // Show loading while reconnecting
   if (isReconnecting) {
@@ -255,6 +243,7 @@ export default function SmartAccountPage() {
           <SigningMethodCard
             signingMethod={signingMethod}
             onSigningMethodChange={setSigningMethod}
+            isStableNetWallet={isStableNetWallet}
           />
 
           {signingMethod === 'privateKey' && (
@@ -305,11 +294,6 @@ export default function SmartAccountPage() {
         </>
       )}
 
-      {/* MetaMask Unsupported Modal */}
-      <MetaMaskUnsupportedModal
-        isOpen={showMetaMaskModal}
-        onClose={() => setShowMetaMaskModal(false)}
-      />
     </div>
   )
 }

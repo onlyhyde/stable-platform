@@ -11,6 +11,7 @@ export type ApprovalType =
   | 'permission'
   | 'switchNetwork'
   | 'addNetwork'
+  | 'authorization'
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired'
 
@@ -158,6 +159,48 @@ export interface AddNetworkApprovalRequest extends BaseApprovalRequest {
 }
 
 /**
+ * Authorization approval (wallet_signAuthorization) - EIP-7702
+ */
+export interface AuthorizationApprovalRequest extends BaseApprovalRequest {
+  type: 'authorization'
+  data: {
+    /** Account that will be delegated */
+    account: Address
+    /** Contract to delegate to */
+    contractAddress: Address
+    /** Chain ID for the authorization */
+    chainId: number
+    /** Nonce for replay protection */
+    nonce: bigint
+    /** Whether this is a revocation (delegating to zero address) */
+    isRevocation: boolean
+    /** Risk level assessment */
+    riskLevel: 'low' | 'medium' | 'high' | 'critical'
+    /** Risk warnings */
+    warnings: string[]
+    /** Known contract info (if available) */
+    contractInfo?: {
+      name: string
+      description: string
+      features: string[]
+    }
+  }
+  result?: {
+    /** Signed authorization */
+    signedAuthorization: {
+      chainId: bigint
+      address: Address
+      nonce: bigint
+      v: number
+      r: Hex
+      s: Hex
+    }
+    /** Authorization hash that was signed */
+    authorizationHash: Hex
+  }
+}
+
+/**
  * Union type for all approval requests
  */
 export type ApprovalRequest =
@@ -167,6 +210,7 @@ export type ApprovalRequest =
   | PermissionApprovalRequest
   | SwitchNetworkApprovalRequest
   | AddNetworkApprovalRequest
+  | AuthorizationApprovalRequest
 
 /**
  * Approval controller state

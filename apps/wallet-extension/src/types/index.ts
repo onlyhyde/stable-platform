@@ -9,6 +9,7 @@ export * from './approval'
 export * from './bank'
 export * from './onramp'
 export * from './rpc'
+export * from './eip7702'
 
 /**
  * Message types for extension communication

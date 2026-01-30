@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useAccount, useChainId, useWalletClient } from 'wagmi'
 import { getPublicClient } from 'wagmi/actions'
-import { createWalletClient, http, type Chain, serializeTransaction, keccak256, concat, toHex, toRlp, numberToHex } from 'viem'
+import { createWalletClient, http, type Chain } from 'viem'
 import type { Address, Hex, SignedAuthorization as ViemSignedAuthorization } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { anvil, sepolia, mainnet } from 'viem/chains'
@@ -13,8 +13,6 @@ import {
   extractDelegateAddress,
   getDelegatePresets,
   ZERO_ADDRESS,
-  createAuthorizationHash,
-  parseSignature,
 } from '@/lib/eip7702'
 
 // Contract addresses (local devnet) - can be overridden by user selection
@@ -63,10 +61,7 @@ export interface UpgradeResult {
 }
 
 // Signing method for EIP-7702 authorization
-export type SigningMethod = 'privateKey' | 'metamask'
-
-// EIP-7702 Magic byte
-const EIP7702_MAGIC = 0x05
+export type SigningMethod = 'privateKey' | 'stablenet'
 
 // Get chain configuration based on chainId
 function getChainConfig(chainId: number): Chain {
@@ -91,9 +86,9 @@ function getChainConfig(chainId: number): Chain {
  * Hook for EIP-7702 Smart Account management
  * Allows EOA to delegate to Smart Account and revoke delegation
  *
- * Note: EIP-7702 requires private key access for authorization signing.
- * This is because wallets like MetaMask don't yet support the
- * wallet_signAuthorization RPC method.
+ * Signing methods:
+ * - privateKey: Direct signing with private key (for development/testing)
+ * - stablenet: Native wallet_signAuthorization via StableNet wallet (recommended)
  */
 export function useSmartAccount() {
   const { address, isConnected, isReconnecting } = useAccount()
@@ -112,8 +107,14 @@ export function useSmartAccount() {
   const [lastAuthorization, setLastAuthorization] = useState<AuthorizationInfo | null>(null)
   const [lastTxHash, setLastTxHash] = useState<Hex | null>(null)
 
-  // Get wagmi wallet client for MetaMask signing
+  // Get wagmi wallet client for MetaMask/StableNet signing
   const { data: wagmiWalletClient } = useWalletClient()
+
+  // Check if connected wallet is StableNet (supports wallet_signAuthorization)
+  const isStableNetWallet = Boolean(
+    wagmiWalletClient?.transport &&
+    (wagmiWalletClient as unknown as { transport?: { isStableNet?: boolean } })?.transport?.isStableNet
+  )
 
   // Get default delegate address for current chain
   const getDefaultDelegateAddress = useCallback((): Address => {
@@ -260,14 +261,13 @@ export function useSmartAccount() {
   )
 
   /**
-   * Upgrade EOA to Smart Account using MetaMask eth_sign
-   * This method uses eth_sign to sign the authorization hash,
-   * then uses a relayer account to send the EIP-7702 transaction.
+   * Upgrade EOA to Smart Account using StableNet wallet's wallet_signAuthorization
+   * This is the most secure method as the private key never leaves the wallet.
    *
    * @param delegateAddress - Smart contract address to delegate to
    * @param relayerPrivateKey - Private key of the relayer account (pays gas)
    */
-  const upgradeWithMetaMask = useCallback(
+  const upgradeWithStableNet = useCallback(
     async (delegateAddress?: Address, relayerPrivateKey?: Hex): Promise<UpgradeResult> => {
       if (!isConnected || !address) {
         setError('Wallet not connected')
@@ -284,7 +284,6 @@ export function useSmartAccount() {
         return { success: false, error: 'Wallet client not available' }
       }
 
-      // Use first Anvil account as default relayer
       const relayerKey = relayerPrivateKey || ANVIL_ACCOUNTS[0].privateKey
       const targetDelegate = delegateAddress || getDefaultDelegateAddress()
 
@@ -299,53 +298,48 @@ export function useSmartAccount() {
           throw new Error('Public client not available')
         }
 
-        // Get current nonce for authorization
-        const nonce = await publicClient.getTransactionCount({ address })
-
-        // Create authorization hash according to EIP-7702 spec
-        // hash = keccak256(0x05 || rlp([chainId, address, nonce]))
-        const authHash = createAuthorizationHash({
-          chainId: BigInt(chainId),
-          address: targetDelegate,
-          nonce: BigInt(nonce),
-        })
-
-        // Request signature from MetaMask using eth_sign
-        // This requires eth_sign to be enabled in MetaMask settings
-        let signature: Hex
-        try {
-          signature = await wagmiWalletClient.request({
-            method: 'eth_sign',
-            params: [address, authHash],
-          }) as Hex
-        } catch (signError: unknown) {
-          const errorMsg = signError instanceof Error ? signError.message : String(signError)
-          if (errorMsg.includes('eth_sign') || errorMsg.includes('disabled')) {
-            throw new Error(
-              'eth_sign is disabled in MetaMask. Please enable it in Settings > Advanced > "Toggle eth_sign requests"'
-            )
-          }
-          throw signError
+        // Request authorization signature from StableNet wallet
+        // Use raw transport request to bypass wagmi's strict typing
+        const transport = wagmiWalletClient.transport as { request?: (args: unknown) => Promise<unknown> }
+        if (!transport?.request) {
+          throw new Error('Wallet transport not available')
         }
 
-        // Parse signature into v, r, s
-        const { v, r, s } = parseSignature(signature)
+        const result = await transport.request({
+          method: 'wallet_signAuthorization',
+          params: [{
+            account: address,
+            contractAddress: targetDelegate,
+            chainId,
+          }],
+        }) as {
+          signedAuthorization: {
+            chainId: bigint
+            address: Address
+            nonce: bigint
+            v: number
+            r: Hex
+            s: Hex
+          }
+          authorizationHash: Hex
+        }
 
-        // Create signed authorization in viem-compatible format
-        // viem expects chainId and nonce as number, v as bigint (legacy format)
-        const signedAuthorization: ViemSignedAuthorization = {
-          chainId: chainId,
-          address: targetDelegate,
-          nonce: Number(nonce),
-          r,
-          s,
-          v: BigInt(v === 0 ? 27 : v === 1 ? 28 : v), // Convert yParity back to v
+        const { signedAuthorization } = result
+
+        // Convert to viem-compatible format
+        const viemAuthorization: ViemSignedAuthorization = {
+          chainId: Number(signedAuthorization.chainId),
+          address: signedAuthorization.address,
+          nonce: Number(signedAuthorization.nonce),
+          r: signedAuthorization.r,
+          s: signedAuthorization.s,
+          v: BigInt(signedAuthorization.v === 0 ? 27 : signedAuthorization.v === 1 ? 28 : signedAuthorization.v),
         }
 
         const authInfo: AuthorizationInfo = {
           chainId,
           contractAddress: targetDelegate,
-          nonce: Number(nonce),
+          nonce: Number(signedAuthorization.nonce),
         }
         setLastAuthorization(authInfo)
 
@@ -358,11 +352,10 @@ export function useSmartAccount() {
         })
 
         // Send EIP-7702 transaction with the authorization
-        // The relayer pays gas, but the authorization is for the user's EOA
         const hash = await relayerWalletClient.sendTransaction({
-          to: address, // Send to the EOA being upgraded
+          to: address,
           data: '0x',
-          authorizationList: [signedAuthorization],
+          authorizationList: [viemAuthorization],
         })
 
         setLastTxHash(hash)
@@ -376,7 +369,7 @@ export function useSmartAccount() {
 
         throw new Error('Transaction failed')
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to upgrade with MetaMask'
+        const errorMessage = err instanceof Error ? err.message : 'Failed to upgrade with StableNet'
         setError(errorMessage.split('\n')[0])
         return { success: false, error: errorMessage }
       } finally {
@@ -387,10 +380,10 @@ export function useSmartAccount() {
   )
 
   /**
-   * Revoke Smart Account delegation using MetaMask eth_sign
+   * Revoke Smart Account delegation using StableNet wallet's wallet_signAuthorization
    * @param relayerPrivateKey - Private key of the relayer account (pays gas)
    */
-  const revokeWithMetaMask = useCallback(
+  const revokeWithStableNet = useCallback(
     async (relayerPrivateKey?: Hex): Promise<UpgradeResult> => {
       if (!isConnected || !address) {
         setError('Wallet not connected')
@@ -420,49 +413,47 @@ export function useSmartAccount() {
           throw new Error('Public client not available')
         }
 
-        const nonce = await publicClient.getTransactionCount({ address })
-
-        // Create revocation authorization hash (delegate to zero address)
-        const authHash = createAuthorizationHash({
-          chainId: BigInt(chainId),
-          address: ZERO_ADDRESS,
-          nonce: BigInt(nonce),
-        })
-
-        // Request signature from MetaMask
-        let signature: Hex
-        try {
-          signature = await wagmiWalletClient.request({
-            method: 'eth_sign',
-            params: [address, authHash],
-          }) as Hex
-        } catch (signError: unknown) {
-          const errorMsg = signError instanceof Error ? signError.message : String(signError)
-          if (errorMsg.includes('eth_sign') || errorMsg.includes('disabled')) {
-            throw new Error(
-              'eth_sign is disabled in MetaMask. Please enable it in Settings > Advanced > "Toggle eth_sign requests"'
-            )
-          }
-          throw signError
+        // Request revocation signature from StableNet wallet
+        // Use raw transport request to bypass wagmi's strict typing
+        const transport = wagmiWalletClient.transport as { request?: (args: unknown) => Promise<unknown> }
+        if (!transport?.request) {
+          throw new Error('Wallet transport not available')
         }
 
-        const { v, r, s } = parseSignature(signature)
+        const result = await transport.request({
+          method: 'wallet_signAuthorization',
+          params: [{
+            account: address,
+            contractAddress: ZERO_ADDRESS,
+            chainId,
+          }],
+        }) as {
+          signedAuthorization: {
+            chainId: bigint
+            address: Address
+            nonce: bigint
+            v: number
+            r: Hex
+            s: Hex
+          }
+          authorizationHash: Hex
+        }
 
-        // Create signed authorization in viem-compatible format
-        // viem expects chainId and nonce as number, v as bigint (legacy format)
-        const signedAuthorization: ViemSignedAuthorization = {
-          chainId: chainId,
-          address: ZERO_ADDRESS,
-          nonce: Number(nonce),
-          r,
-          s,
-          v: BigInt(v === 0 ? 27 : v === 1 ? 28 : v), // Convert yParity back to v
+        const { signedAuthorization } = result
+
+        const viemAuthorization: ViemSignedAuthorization = {
+          chainId: Number(signedAuthorization.chainId),
+          address: signedAuthorization.address,
+          nonce: Number(signedAuthorization.nonce),
+          r: signedAuthorization.r,
+          s: signedAuthorization.s,
+          v: BigInt(signedAuthorization.v === 0 ? 27 : signedAuthorization.v === 1 ? 28 : signedAuthorization.v),
         }
 
         const authInfo: AuthorizationInfo = {
           chainId,
           contractAddress: ZERO_ADDRESS,
-          nonce: Number(nonce),
+          nonce: Number(signedAuthorization.nonce),
         }
         setLastAuthorization(authInfo)
 
@@ -476,7 +467,7 @@ export function useSmartAccount() {
         const hash = await relayerWalletClient.sendTransaction({
           to: address,
           data: '0x',
-          authorizationList: [signedAuthorization],
+          authorizationList: [viemAuthorization],
         })
 
         setLastTxHash(hash)
@@ -490,7 +481,7 @@ export function useSmartAccount() {
 
         throw new Error('Revocation failed')
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to revoke with MetaMask'
+        const errorMessage = err instanceof Error ? err.message : 'Failed to revoke with StableNet'
         setError(errorMessage.split('\n')[0])
         return { success: false, error: errorMessage }
       } finally {
@@ -609,9 +600,10 @@ export function useSmartAccount() {
     upgradeToSmartAccount,
     revokeSmartAccount,
 
-    // Actions - MetaMask eth_sign method
-    upgradeWithMetaMask,
-    revokeWithMetaMask,
+    // Actions - StableNet wallet_signAuthorization method
+    upgradeWithStableNet,
+    revokeWithStableNet,
+    isStableNetWallet,
 
     // Common actions
     refreshStatus: checkSmartAccountStatus,

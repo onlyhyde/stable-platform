@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import type { Address, Hex } from 'viem'
 import type {
   ApprovalRequest,
   ApprovalType,
@@ -8,8 +8,11 @@ import type {
   TransactionApprovalRequest,
   SwitchNetworkApprovalRequest,
   AddNetworkApprovalRequest,
+  AuthorizationApprovalRequest,
   ApprovalControllerState,
 } from '../../types'
+import { analyzeAuthorizationRisk } from '../../shared/security/authorizationRiskAnalyzer'
+import { isRevocationAddress } from '../../types/eip7702'
 import { generateRandomHex } from '../keyring/crypto'
 import { createLogger } from '../../shared/utils/logger'
 import { getApprovalConfig } from '../../config'
@@ -300,6 +303,68 @@ export class ApprovalController {
     }
 
     return this.addApprovalAndWait(approval) as Promise<{ added: boolean }>
+  }
+
+  /**
+   * Request EIP-7702 authorization approval
+   */
+  async requestAuthorization(
+    origin: string,
+    account: Address,
+    contractAddress: Address,
+    chainId: number,
+    nonce: bigint,
+    favicon?: string
+  ): Promise<{
+    signedAuthorization: {
+      chainId: bigint
+      address: Address
+      nonce: bigint
+      v: number
+      r: Hex
+      s: Hex
+    }
+    authorizationHash: Hex
+  }> {
+    // Analyze authorization risk
+    const riskResult = analyzeAuthorizationRisk({
+      account,
+      contractAddress,
+      chainId,
+      origin,
+    })
+
+    const approval: AuthorizationApprovalRequest = {
+      id: generateRandomHex(16),
+      type: 'authorization',
+      status: 'pending',
+      origin,
+      favicon,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + getApprovalExpiryMs(),
+      data: {
+        account,
+        contractAddress,
+        chainId,
+        nonce,
+        isRevocation: isRevocationAddress(contractAddress),
+        riskLevel: riskResult.riskLevel,
+        warnings: riskResult.warnings,
+        contractInfo: riskResult.contractInfo,
+      },
+    }
+
+    return this.addApprovalAndWait(approval) as Promise<{
+      signedAuthorization: {
+        chainId: bigint
+        address: Address
+        nonce: bigint
+        v: number
+        r: Hex
+        s: Hex
+      }
+      authorizationHash: Hex
+    }>
   }
 
   /**

@@ -19,6 +19,11 @@ import {
 } from '../../shared/security/inputValidator'
 import { rateLimiter } from '../../shared/security/rateLimiter'
 import { typedDataValidator } from '../../shared/security/typedDataValidator'
+import {
+  createAuthorization,
+  createAuthorizationHash,
+  createSignedAuthorization,
+} from '../../shared/utils/eip7702'
 
 // Singleton validator instance
 const inputValidator = new InputValidator()
@@ -376,6 +381,144 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError({
         code: RPC_ERRORS.INTERNAL_ERROR.code,
         message: (error as Error).message || 'Signing failed',
+      })
+    }
+  },
+
+  /**
+   * Sign EIP-7702 Authorization (wallet_signAuthorization)
+   * Allows EOAs to delegate to smart contract implementations
+   */
+  wallet_signAuthorization: async (params, origin) => {
+    const [authRequest] = params as [{
+      account: Address
+      contractAddress: Address
+      chainId?: number | string
+      nonce?: number | string
+    }]
+
+    if (!authRequest || !authRequest.account || !authRequest.contractAddress) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Missing required parameters: account and contractAddress',
+      })
+    }
+
+    const { account, contractAddress } = authRequest
+
+    // Validate address formats
+    if (!isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid account address format',
+      })
+    }
+
+    if (!isAddress(contractAddress)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid contract address format',
+      })
+    }
+
+    // Verify account is connected
+    const connectedAccounts = walletState.getConnectedAccounts(origin)
+    const normalizedAccount = account.toLowerCase()
+    const isAuthorized = connectedAccounts.some(
+      (a) => a.toLowerCase() === normalizedAccount
+    )
+    if (!isAuthorized) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    // Check if wallet is unlocked
+    if (!keyringController.isUnlocked()) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: 'Wallet is locked',
+      })
+    }
+
+    // Get chain ID (use current network if not specified)
+    const currentNetwork = walletState.getCurrentNetwork()
+    let chainId: number
+    if (authRequest.chainId !== undefined) {
+      chainId = typeof authRequest.chainId === 'string'
+        ? parseInt(authRequest.chainId, authRequest.chainId.startsWith('0x') ? 16 : 10)
+        : authRequest.chainId
+    } else {
+      chainId = currentNetwork?.chainId ?? 1
+    }
+
+    // Get nonce (use current transaction count if not specified)
+    let nonce: bigint
+    if (authRequest.nonce !== undefined) {
+      nonce = BigInt(authRequest.nonce)
+    } else {
+      // Get current nonce from the network
+      const network = walletState.getState().networks.networks.find(n => n.chainId === chainId)
+      if (network) {
+        const client = createPublicClient({
+          transport: http(network.rpcUrl),
+        })
+        const transactionCount = await client.getTransactionCount({ address: account })
+        nonce = BigInt(transactionCount)
+      } else {
+        nonce = 0n
+      }
+    }
+
+    // Request user approval
+    try {
+      await approvalController.requestAuthorization(
+        origin,
+        account,
+        contractAddress,
+        chainId,
+        nonce
+      )
+    } catch (error) {
+      if ((error as { code?: number }).code) {
+        throw error
+      }
+      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+    }
+
+    // After approval, sign the authorization
+    try {
+      // Create the authorization structure
+      const authorization = createAuthorization(chainId, contractAddress, nonce)
+
+      // Create the authorization hash
+      const authorizationHash = createAuthorizationHash(authorization)
+
+      // Sign the hash with the account's private key
+      const signatureResult = await keyringController.signAuthorizationHash(
+        account,
+        authorizationHash
+      )
+
+      // Create the signed authorization
+      const signedAuthorization = createSignedAuthorization(
+        authorization,
+        signatureResult.signature
+      )
+
+      return {
+        signedAuthorization: {
+          chainId: signedAuthorization.chainId,
+          address: signedAuthorization.address,
+          nonce: signedAuthorization.nonce,
+          v: signedAuthorization.v,
+          r: signedAuthorization.r,
+          s: signedAuthorization.s,
+        },
+        authorizationHash,
+      }
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'Authorization signing failed',
       })
     }
   },

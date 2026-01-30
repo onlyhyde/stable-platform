@@ -441,6 +441,63 @@ export class KeyringController {
   }
 
   /**
+   * Sign an EIP-7702 authorization hash
+   * Returns the signature components (v, r, s) for the authorization
+   */
+  async signAuthorizationHash(address: Address, hash: Hex): Promise<{ v: number; r: Hex; s: Hex; signature: Hex }> {
+    if (!vault.isUnlocked()) {
+      throw new Error('Vault is locked')
+    }
+
+    // Sign the hash using signMessage (which uses personal_sign internally)
+    // For EIP-7702, we need to sign the raw hash directly
+    const signature = await this.signRawHash(address, hash)
+
+    // Parse signature into v, r, s components
+    const sig = signature.slice(2) // Remove 0x prefix
+
+    if (sig.length !== 130) {
+      throw new Error(`Invalid signature length: expected 130 hex chars, got ${sig.length}`)
+    }
+
+    const r = `0x${sig.slice(0, 64)}` as Hex
+    const s = `0x${sig.slice(64, 128)}` as Hex
+    let v = parseInt(sig.slice(128, 130), 16)
+
+    // Normalize v to 0 or 1 (EIP-7702 uses 0/1, not 27/28)
+    if (v >= 27) {
+      v -= 27
+    }
+
+    return { v, r, s, signature }
+  }
+
+  /**
+   * Sign a raw hash (without personal_sign prefix)
+   * Used for EIP-7702 authorization signatures
+   */
+  private async signRawHash(address: Address, hash: Hex): Promise<Hex> {
+    if (!vault.isUnlocked()) {
+      throw new Error('Vault is locked')
+    }
+
+    // Find keyring with this address and use its sign capability
+    for (const keyring of this.hdKeyrings) {
+      if (keyring.hasAccount(address)) {
+        return keyring.signRawHash(address, hash)
+      }
+    }
+
+    for (const keyring of this.simpleKeyrings) {
+      if (keyring.hasAccount(address)) {
+        return keyring.signRawHash(address, hash)
+      }
+    }
+
+    throw new Error('Account not found')
+  }
+
+  /**
    * Verify password without changing vault state
    * Used for re-authentication before sensitive operations
    */
