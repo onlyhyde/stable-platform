@@ -1,5 +1,4 @@
-
-import { useWalletStore } from '../hooks/useWalletStore'
+import { useWalletStore, useNetworkCurrency } from '../hooks'
 import { formatEther } from 'viem'
 
 export function Activity() {
@@ -71,6 +70,7 @@ interface TransactionItemProps {
 }
 
 function TransactionItem({ transaction }: TransactionItemProps) {
+  const { symbol: currencySymbol } = useNetworkCurrency()
   const statusStyles: Record<string, { bg: string; color: string }> = {
     pending: { bg: 'rgb(var(--warning) / 0.1)', color: 'rgb(var(--warning))' },
     submitted: { bg: 'rgb(var(--info) / 0.1)', color: 'rgb(var(--info))' },
@@ -116,7 +116,7 @@ function TransactionItem({ transaction }: TransactionItemProps) {
         </div>
         <div className="text-right">
           <p className="font-medium text-sm" style={{ color: 'rgb(var(--foreground))' }}>
-            -{Number(formatEther(transaction.value)).toFixed(4)} ETH
+            -{Number(formatEther(transaction.value)).toFixed(4)} {currencySymbol}
           </p>
           <span
             className="text-xs px-2 py-0.5 rounded"

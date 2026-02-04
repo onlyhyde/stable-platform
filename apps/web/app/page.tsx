@@ -1,13 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { useWallet, useBalance } from '@/hooks'
+import { useWallet, useWalletAssets } from '@/hooks'
+import type { WalletToken } from '@/hooks'
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/common'
 import { formatTokenAmount, formatAddress } from '@/lib/utils'
 
 export default function DashboardPage() {
   const { address, isConnected, connect } = useWallet()
-  const { balance, decimals, symbol } = useBalance({ address, watch: true })
+  const { native, tokens, isLoading, isSupported, refetch, addToken } = useWalletAssets()
+
+  // For backward compatibility
+  const balance = native?.balance ? BigInt(native.balance) : BigInt(0)
+  const decimals = native?.decimals ?? 18
+  const symbol = native?.symbol ?? 'ETH'
 
   if (!isConnected) {
     return (
@@ -53,15 +59,58 @@ export default function DashboardPage() {
       <Card className="overflow-hidden">
         <CardContent className="py-8 relative"
                      style={{ background: 'linear-gradient(135deg, rgb(var(--primary)), rgb(var(--primary-hover)), rgb(var(--accent)))' }}>
-          <p className="text-sm font-medium text-white/80">Total Balance</p>
-          <h2 className="text-4xl font-bold text-white mt-2">
-            {formatTokenAmount(balance, decimals)} {symbol}
-          </h2>
-          <p className="text-sm mt-2 text-white/70">
-            {address && formatAddress(address, 6)}
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-white/80">Total Balance</p>
+              <h2 className="text-4xl font-bold text-white mt-2">
+                {isLoading ? '...' : formatTokenAmount(balance, decimals)} {symbol}
+              </h2>
+              <p className="text-sm mt-2 text-white/70">
+                {address && formatAddress(address, 6)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isLoading}
+              className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              title="Refresh balance"
+            >
+              <svg
+                className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Token List (StableNet wallet only) */}
+      {isSupported && tokens.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Tokens</CardTitle>
+            {isSupported && (
+              <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: 'rgb(var(--success) / 0.1)', color: 'rgb(var(--success))' }}>
+                StableNet
+              </span>
+            )}
+          </CardHeader>
+          <CardContent className="p-0">
+            <TokenList tokens={tokens} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -167,5 +216,68 @@ function QuickActionCard({ title, description, href, icon }: QuickActionCardProp
         </CardContent>
       </Card>
     </Link>
+  )
+}
+
+/**
+ * Token list component
+ */
+function TokenList({ tokens }: { tokens: WalletToken[] }) {
+  if (tokens.length === 0) {
+    return (
+      <div className="text-center py-6">
+        <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          No tokens found
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
+      {tokens.map((token) => (
+        <div
+          key={token.address}
+          className="flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            {/* Token Icon */}
+            {token.logoURI ? (
+              <img
+                src={token.logoURI}
+                alt={token.symbol}
+                className="w-8 h-8 rounded-full"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none'
+                }}
+              />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+                style={{
+                  backgroundColor: 'rgb(var(--muted))',
+                  color: 'rgb(var(--foreground))',
+                }}
+              >
+                {token.symbol?.charAt(0) || '?'}
+              </div>
+            )}
+            <div>
+              <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                {token.symbol || 'Unknown'}
+              </p>
+              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {token.name || formatAddress(token.address, 4)}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              {token.formattedBalance || '0'}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

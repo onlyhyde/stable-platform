@@ -43,6 +43,7 @@ export function Settings() {
     bundlerUrl: '',
     currencySymbol: 'ETH',
     explorerUrl: '',
+    indexerUrl: '',
   })
   const [isAddingNetwork, setIsAddingNetwork] = useState(false)
   const [networkError, setNetworkError] = useState<string | null>(null)
@@ -194,6 +195,7 @@ export function Settings() {
         rpcUrl: networkForm.rpcUrl.trim(),
         bundlerUrl: networkForm.bundlerUrl.trim() || networkForm.rpcUrl.trim(),
         explorerUrl: networkForm.explorerUrl.trim() || undefined,
+        indexerUrl: networkForm.indexerUrl.trim() || undefined,
         currency: {
           name: networkForm.currencySymbol.trim() || 'ETH',
           symbol: networkForm.currencySymbol.trim() || 'ETH',
@@ -211,6 +213,7 @@ export function Settings() {
         bundlerUrl: '',
         currencySymbol: 'ETH',
         explorerUrl: '',
+        indexerUrl: '',
       })
       setShowAddNetwork(false)
     } catch (err) {
@@ -407,6 +410,13 @@ export function Settings() {
                   placeholder="Block Explorer URL (optional)"
                   value={networkForm.explorerUrl}
                   onChange={(e) => setNetworkForm({ ...networkForm, explorerUrl: e.target.value })}
+                  className="input-base w-full p-2 rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder="Indexer URL (optional, for token balances)"
+                  value={networkForm.indexerUrl}
+                  onChange={(e) => setNetworkForm({ ...networkForm, indexerUrl: e.target.value })}
                   className="input-base w-full p-2 rounded-lg text-sm"
                 />
                 {networkError && (

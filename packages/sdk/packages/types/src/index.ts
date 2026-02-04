@@ -9,6 +9,20 @@ export type {
   TransactionReceipt,
 } from './userOperation'
 
+// Network types
+export type {
+  Network,
+  NetworkCurrency,
+  NetworkState,
+  ChainId,
+} from './network'
+
+export {
+  CHAIN_IDS,
+  DEFAULT_CURRENCIES,
+  getDefaultCurrency,
+} from './network'
+
 // Smart Account types
 export type {
   SmartAccount,

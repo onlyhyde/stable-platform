@@ -44,6 +44,20 @@ export {
   type SendTransactionArgs,
 } from './clients/smartAccountClient'
 
+// Indexer Client
+export {
+  IndexerClient,
+  createIndexerClient,
+  formatTokenBalance,
+  parseTokenAmount,
+  type IndexerClientConfig,
+  type GasStats,
+  type TokenBalance,
+  type TokenTransfer,
+  type IndexedTransaction,
+  type PaginatedResult,
+} from './clients/indexerClient'
+
 // Utils
 export {
   packUserOperation,
@@ -97,6 +111,11 @@ export type {
   Validator,
   BundlerClient,
   BundlerClientConfig,
+  // Network types
+  Network,
+  NetworkCurrency,
+  NetworkState,
+  ChainId,
 } from '@stablenet/types'
 
 export {
@@ -107,5 +126,9 @@ export {
   MODULE_TYPE,
   EXEC_MODE,
   CALL_TYPE,
+  // Network constants
+  CHAIN_IDS,
+  DEFAULT_CURRENCIES,
+  getDefaultCurrency,
   // Note: BUNDLER_ERROR_CODES is exported from ./errors with extended SDK error codes
 } from '@stablenet/types'

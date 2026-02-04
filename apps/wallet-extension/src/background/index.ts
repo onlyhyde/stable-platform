@@ -18,13 +18,66 @@ import { networkController } from './controller/networkController'
 import { keyringController } from './keyring'
 import { approvalController } from './controllers/approvalController'
 import { eventBroadcaster } from './utils/eventBroadcaster'
-import type { ExtensionMessage, JsonRpcRequest } from '../types'
+import { createIndexerClient, type IndexerClient } from './services/IndexerClient'
+import type { ExtensionMessage, JsonRpcRequest, Network } from '../types'
 import type { Address, Hex } from 'viem'
 import { MESSAGE_TYPES } from '../shared/constants'
 import { createLogger } from '../shared/utils/logger'
 import { getSecurityConfig, STORAGE_KEYS } from '../config'
 
 const logger = createLogger('Background')
+
+// =============================================================================
+// Indexer Client Management
+// =============================================================================
+
+let currentIndexerClient: IndexerClient | null = null
+let currentIndexerChainId: number | null = null
+
+/**
+ * Get or create IndexerClient for the current network
+ */
+function getIndexerClient(): IndexerClient | null {
+  const state = walletState.getState()
+  const selectedChainId = state.networks.selectedChainId
+  const network = state.networks.networks.find((n: Network) => n.chainId === selectedChainId)
+
+  if (!network?.indexerUrl) {
+    return null
+  }
+
+  // Reuse existing client if network hasn't changed
+  if (currentIndexerClient && currentIndexerChainId === selectedChainId) {
+    return currentIndexerClient
+  }
+
+  // Create new client for the network
+  currentIndexerClient = createIndexerClient(network.indexerUrl)
+  currentIndexerChainId = selectedChainId
+
+  return currentIndexerClient
+}
+
+/**
+ * Format token balance with decimals
+ */
+function formatTokenBalance(balance: string, decimals: number): string {
+  if (balance === '0') return '0'
+
+  const bn = BigInt(balance)
+  const divisor = BigInt(10 ** decimals)
+  const whole = bn / divisor
+  const remainder = bn % divisor
+
+  if (remainder === 0n) {
+    return whole.toString()
+  }
+
+  const remainderStr = remainder.toString().padStart(decimals, '0')
+  const trimmed = remainderStr.replace(/0+$/, '')
+
+  return `${whole}.${trimmed}`
+}
 
 // =============================================================================
 // Tab Subscription Management
@@ -871,6 +924,294 @@ async function handleMessage(
         type: 'SITE_DISCONNECTED',
         id: message.id,
         payload: { success: true },
+      }
+    }
+
+    case 'GET_TOKEN_BALANCES': {
+      const { address } = message.payload as { address: Address }
+
+      const indexerClient = getIndexerClient()
+      if (!indexerClient) {
+        return {
+          type: 'TOKEN_BALANCES',
+          id: message.id,
+          payload: {
+            success: false,
+            error: 'Indexer not configured for this network',
+            balances: [],
+          },
+        }
+      }
+
+      try {
+        const rawBalances = await indexerClient.getTokenBalances(address, 'ERC20')
+
+        const balances = rawBalances
+          .filter((b) => BigInt(b.balance) > 0n)
+          .map((b) => ({
+            address: b.address,
+            symbol: b.symbol ?? 'UNKNOWN',
+            name: b.name ?? 'Unknown Token',
+            decimals: b.decimals ?? 18,
+            balance: b.balance,
+            formattedBalance: formatTokenBalance(b.balance, b.decimals ?? 18),
+          }))
+
+        return {
+          type: 'TOKEN_BALANCES',
+          id: message.id,
+          payload: { success: true, balances },
+        }
+      } catch (err) {
+        return {
+          type: 'TOKEN_BALANCES',
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to fetch token balances',
+            balances: [],
+          },
+        }
+      }
+    }
+
+    case 'GET_TRANSACTION_HISTORY': {
+      const { address, limit = 50 } = message.payload as { address: Address; limit?: number }
+
+      const indexerClient = getIndexerClient()
+      if (!indexerClient) {
+        return {
+          type: 'TRANSACTION_HISTORY',
+          id: message.id,
+          payload: {
+            success: false,
+            error: 'Indexer not configured for this network',
+            transactions: [],
+            tokenTransfers: [],
+          },
+        }
+      }
+
+      try {
+        // Fetch native transactions and token transfers in parallel
+        const [txResult, transfers] = await Promise.all([
+          indexerClient.getTransactionsByAddress(address, limit),
+          indexerClient.getAllERC20Transfers(address, limit),
+        ])
+
+        const normalizedAddress = address.toLowerCase()
+
+        // Map native transactions
+        const transactions = txResult.nodes.map((tx) => ({
+          hash: tx.hash,
+          from: tx.from,
+          to: tx.to,
+          value: tx.value,
+          gasPrice: tx.gasPrice,
+          gasUsed: tx.gasUsed,
+          blockNumber: tx.blockNumber,
+          timestamp: tx.timestamp,
+          status: tx.status === 1 ? 'success' : tx.status === 0 ? 'failed' : 'pending',
+          direction: tx.from.toLowerCase() === normalizedAddress ? 'out' : 'in',
+        }))
+
+        // Map token transfers
+        const tokenTransfers = transfers.map((t) => ({
+          contractAddress: t.contractAddress,
+          from: t.from,
+          to: t.to,
+          value: t.value,
+          formattedValue: formatTokenBalance(t.value, 18), // Default to 18 decimals
+          symbol: 'TOKEN', // Would need token metadata lookup
+          transactionHash: t.transactionHash,
+          blockNumber: t.blockNumber,
+          timestamp: t.timestamp,
+          direction: t.from.toLowerCase() === normalizedAddress ? 'out' : 'in',
+        }))
+
+        return {
+          type: 'TRANSACTION_HISTORY',
+          id: message.id,
+          payload: { success: true, transactions, tokenTransfers },
+        }
+      } catch (err) {
+        return {
+          type: 'TRANSACTION_HISTORY',
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to fetch transaction history',
+            transactions: [],
+            tokenTransfers: [],
+          },
+        }
+      }
+    }
+
+    case 'CHECK_INDEXER_STATUS': {
+      const indexerClient = getIndexerClient()
+
+      if (!indexerClient) {
+        return {
+          type: 'INDEXER_STATUS',
+          id: message.id,
+          payload: { available: false, configured: false },
+        }
+      }
+
+      try {
+        const available = await indexerClient.isAvailable()
+        return {
+          type: 'INDEXER_STATUS',
+          id: message.id,
+          payload: { available, configured: true },
+        }
+      } catch {
+        return {
+          type: 'INDEXER_STATUS',
+          id: message.id,
+          payload: { available: false, configured: true },
+        }
+      }
+    }
+
+    // ==========================================================================
+    // Asset Management Messages
+    // ==========================================================================
+
+    case 'GET_ASSETS': {
+      const { chainId, account } = message.payload as { chainId: number; account: Address }
+
+      const tokens = walletState.getTokensForChain(chainId)
+
+      // Get balances for all tokens
+      const tokensWithBalances = tokens.map((token) => {
+        const balance = walletState.getCachedBalance(chainId, account, token.address as Address) || '0'
+        return {
+          ...token,
+          balance,
+          formattedBalance: formatTokenBalance(balance, token.decimals),
+        }
+      })
+
+      return {
+        type: 'ASSETS',
+        id: message.id,
+        payload: { tokens: tokensWithBalances },
+      }
+    }
+
+    case 'ADD_TOKEN': {
+      const { chainId, token } = message.payload as {
+        chainId: number
+        token: {
+          address: Address
+          symbol?: string
+          name?: string
+          decimals?: number
+          logoURI?: string
+        }
+      }
+
+      try {
+        // Add token to wallet state
+        const newToken = {
+          address: token.address.toLowerCase() as Address,
+          symbol: token.symbol ?? 'UNKNOWN',
+          name: token.name ?? 'Unknown Token',
+          decimals: token.decimals ?? 18,
+          chainId,
+          logoURI: token.logoURI,
+          isVisible: true,
+          addedAt: Date.now(),
+        }
+
+        await walletState.addToken(chainId, newToken)
+
+        // Broadcast assetsChanged event
+        const state = walletState.getState()
+        const connectedOrigins = state.connections.connectedSites.map((s) => s.origin)
+        await eventBroadcaster.broadcastAssetsChanged(
+          chainId,
+          state.accounts.selectedAccount ?? ('' as Address),
+          'token_added',
+          connectedOrigins
+        )
+
+        return {
+          type: 'TOKEN_ADDED',
+          id: message.id,
+          payload: { success: true, token: newToken },
+        }
+      } catch (err) {
+        return {
+          type: 'TOKEN_ADDED',
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to add token',
+          },
+        }
+      }
+    }
+
+    case 'REMOVE_TOKEN': {
+      const { chainId, address } = message.payload as { chainId: number; address: Address }
+
+      try {
+        await walletState.removeToken(chainId, address)
+
+        // Broadcast assetsChanged event
+        const state = walletState.getState()
+        const connectedOrigins = state.connections.connectedSites.map((s) => s.origin)
+        await eventBroadcaster.broadcastAssetsChanged(
+          chainId,
+          state.accounts.selectedAccount ?? ('' as Address),
+          'token_removed',
+          connectedOrigins
+        )
+
+        return {
+          type: 'TOKEN_REMOVED',
+          id: message.id,
+          payload: { success: true },
+        }
+      } catch (err) {
+        return {
+          type: 'TOKEN_REMOVED',
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to remove token',
+          },
+        }
+      }
+    }
+
+    case 'SET_TOKEN_VISIBILITY': {
+      const { chainId, address, isVisible } = message.payload as {
+        chainId: number
+        address: Address
+        isVisible: boolean
+      }
+
+      try {
+        await walletState.setTokenVisibility(chainId, address, isVisible)
+
+        return {
+          type: 'TOKEN_VISIBILITY_SET',
+          id: message.id,
+          payload: { success: true },
+        }
+      } catch (err) {
+        return {
+          type: 'TOKEN_VISIBILITY_SET',
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to update token visibility',
+          },
+        }
       }
     }
 

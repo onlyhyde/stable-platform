@@ -5,9 +5,20 @@ import type {
   PendingTransaction,
   ConnectedSite,
   WalletState,
+  WalletToken,
+  AssetState,
 } from '../../types'
 import { DEFAULT_NETWORKS, STORAGE_KEYS } from '../../shared/constants'
 import { deepMerge, normalizeOrigin, originsMatch } from './utils'
+
+/**
+ * Initial asset state
+ */
+const initialAssetState: AssetState = {
+  tokensByChain: {},
+  balanceCache: {},
+  lastRefresh: {},
+}
 
 /**
  * Initial wallet state
@@ -34,6 +45,7 @@ const initialState: WalletState = {
     accounts: [],
     selectedAddress: null,
   },
+  assets: initialAssetState,
   ui: {
     isLoading: false,
     error: null,
@@ -76,6 +88,10 @@ class WalletStateManager {
           keyring: {
             ...initialState.keyring,
             ...(storedState.keyring ?? {}),
+          },
+          assets: {
+            ...initialAssetState,
+            ...(storedState.assets ?? {}),
           },
           ui: {
             ...initialState.ui,
@@ -369,6 +385,171 @@ class WalletStateManager {
     return this.state.accounts.accounts.find(
       (a) => a.address === this.state.accounts.selectedAccount
     )
+  }
+
+  // Asset actions
+
+  /**
+   * Add a token to the tracked tokens for a chain
+   */
+  async addToken(chainId: number, token: WalletToken): Promise<void> {
+    const normalizedAddress = token.address.toLowerCase() as Address
+    const tokensByChain = { ...this.state.assets.tokensByChain }
+
+    if (!tokensByChain[chainId]) {
+      tokensByChain[chainId] = {}
+    }
+
+    tokensByChain[chainId] = {
+      ...tokensByChain[chainId],
+      [normalizedAddress]: {
+        ...token,
+        address: normalizedAddress,
+      },
+    }
+
+    await this.setState({
+      assets: {
+        ...this.state.assets,
+        tokensByChain,
+      },
+    })
+  }
+
+  /**
+   * Remove a token from tracked tokens
+   */
+  async removeToken(chainId: number, tokenAddress: Address): Promise<void> {
+    const normalizedAddress = tokenAddress.toLowerCase()
+    const tokensByChain = { ...this.state.assets.tokensByChain }
+
+    if (tokensByChain[chainId]) {
+      const chainTokens = { ...tokensByChain[chainId] }
+      delete chainTokens[normalizedAddress]
+      tokensByChain[chainId] = chainTokens
+    }
+
+    await this.setState({
+      assets: {
+        ...this.state.assets,
+        tokensByChain,
+      },
+    })
+  }
+
+  /**
+   * Get all tokens for a chain
+   */
+  getTokensForChain(chainId: number): WalletToken[] {
+    const chainTokens = this.state.assets.tokensByChain[chainId]
+    if (!chainTokens) return []
+    return Object.values(chainTokens).filter((t) => t.isVisible)
+  }
+
+  /**
+   * Get a specific token
+   */
+  getToken(chainId: number, tokenAddress: Address): WalletToken | undefined {
+    const normalizedAddress = tokenAddress.toLowerCase()
+    return this.state.assets.tokensByChain[chainId]?.[normalizedAddress]
+  }
+
+  /**
+   * Update token visibility
+   */
+  async setTokenVisibility(
+    chainId: number,
+    tokenAddress: Address,
+    isVisible: boolean
+  ): Promise<void> {
+    const normalizedAddress = tokenAddress.toLowerCase()
+    const token = this.state.assets.tokensByChain[chainId]?.[normalizedAddress]
+
+    if (!token) return
+
+    await this.addToken(chainId, { ...token, isVisible })
+  }
+
+  /**
+   * Update cached balance for a token
+   */
+  async updateTokenBalance(
+    chainId: number,
+    account: Address,
+    tokenAddress: Address,
+    balance: string
+  ): Promise<void> {
+    const normalizedToken = tokenAddress.toLowerCase()
+    const normalizedAccount = account.toLowerCase()
+
+    const balanceCache = { ...this.state.assets.balanceCache }
+    if (!balanceCache[chainId]) {
+      balanceCache[chainId] = {}
+    }
+    if (!balanceCache[chainId][normalizedAccount]) {
+      balanceCache[chainId][normalizedAccount] = {}
+    }
+    balanceCache[chainId][normalizedAccount] = {
+      ...balanceCache[chainId][normalizedAccount],
+      [normalizedToken]: balance,
+    }
+
+    const lastRefresh = { ...this.state.assets.lastRefresh }
+    if (!lastRefresh[chainId]) {
+      lastRefresh[chainId] = {}
+    }
+    lastRefresh[chainId][normalizedAccount] = Date.now()
+
+    await this.setState({
+      assets: {
+        ...this.state.assets,
+        balanceCache,
+        lastRefresh,
+      },
+    })
+  }
+
+  /**
+   * Get cached balance for a token
+   */
+  getCachedBalance(
+    chainId: number,
+    account: Address,
+    tokenAddress: Address
+  ): string | undefined {
+    const normalizedToken = tokenAddress.toLowerCase()
+    const normalizedAccount = account.toLowerCase()
+    return this.state.assets.balanceCache[chainId]?.[normalizedAccount]?.[
+      normalizedToken
+    ]
+  }
+
+  /**
+   * Clear balance cache for a chain (e.g., on chain switch)
+   */
+  async clearBalanceCache(chainId?: number): Promise<void> {
+    if (chainId !== undefined) {
+      const balanceCache = { ...this.state.assets.balanceCache }
+      delete balanceCache[chainId]
+      const lastRefresh = { ...this.state.assets.lastRefresh }
+      delete lastRefresh[chainId]
+
+      await this.setState({
+        assets: {
+          ...this.state.assets,
+          balanceCache,
+          lastRefresh,
+        },
+      })
+    } else {
+      await this.setState({
+        assets: {
+          ...this.state.assets,
+          balanceCache: {},
+          lastRefresh: {},
+        },
+      })
+    }
   }
 }
 

@@ -6,8 +6,7 @@
  */
 
 import type { Address } from 'viem'
-import { EIP7702_CONSTANTS, isRevocationAddress } from '../../types/eip7702'
-import { DELEGATE_PRESETS } from '../utils/eip7702'
+import { ZERO_ADDRESS, isRevocationAddress, DELEGATE_PRESETS } from '../utils/eip7702'
 
 export type AuthorizationRiskLevel = 'low' | 'medium' | 'high' | 'critical'
 
@@ -97,7 +96,7 @@ export function analyzeAuthorizationRisk(params: {
   }
 
   // Check for zero address (should not happen but catch it)
-  if (contractAddress === EIP7702_CONSTANTS.ZERO_ADDRESS) {
+  if (contractAddress === ZERO_ADDRESS) {
     return {
       riskLevel: 'low',
       warnings: ['This will revoke your smart account delegation.'],

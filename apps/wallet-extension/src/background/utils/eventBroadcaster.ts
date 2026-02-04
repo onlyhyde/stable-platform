@@ -9,19 +9,20 @@
  */
 
 import type { Address } from 'viem'
-import { PROVIDER_EVENTS } from '../../shared/constants'
+import { PROVIDER_EVENTS, RPC_ERRORS, DEFAULT_VALUES } from '../../shared/constants'
 import { createLogger } from '../../shared/utils/logger'
 
 const logger = createLogger('EventBroadcaster')
 
 /**
- * Provider event types (EIP-1193)
+ * Provider event types (EIP-1193 + StableNet custom)
  */
 export type ProviderEventType =
   | typeof PROVIDER_EVENTS.CONNECT
   | typeof PROVIDER_EVENTS.DISCONNECT
   | typeof PROVIDER_EVENTS.ACCOUNTS_CHANGED
   | typeof PROVIDER_EVENTS.CHAIN_CHANGED
+  | 'assetsChanged'
 
 /**
  * Provider event message structure
@@ -47,6 +48,25 @@ export interface ConnectInfo {
 export interface ProviderRpcError {
   code: number
   message: string
+}
+
+/**
+ * Asset change reason
+ */
+export type AssetChangeReason =
+  | 'token_added'
+  | 'token_removed'
+  | 'balance_changed'
+  | 'chain_switched'
+
+/**
+ * Assets changed event data (StableNet custom)
+ */
+export interface AssetsChangedEventData {
+  chainId: number
+  account: Address
+  reason: AssetChangeReason
+  timestamp: number
 }
 
 /**
@@ -149,8 +169,8 @@ class EventBroadcaster {
    */
   async broadcastDisconnect(origin: string): Promise<void> {
     const error: ProviderRpcError = {
-      code: 4900,
-      message: 'The provider is disconnected from all chains',
+      code: RPC_ERRORS.DISCONNECTED.code,
+      message: RPC_ERRORS.DISCONNECTED.message,
     }
     await this.broadcastToOrigin(origin, PROVIDER_EVENTS.DISCONNECT, error)
   }
@@ -211,6 +231,35 @@ class EventBroadcaster {
   }
 
   /**
+   * Broadcast assets changed event to all connected origins
+   * Called when tokens are added/removed or when significant balance changes occur
+   */
+  async broadcastAssetsChanged(
+    chainId: number,
+    account: Address,
+    reason: AssetChangeReason,
+    connectedOrigins: string[]
+  ): Promise<void> {
+    if (!isValidAddress(account)) {
+      logger.warn('Invalid account address for assetsChanged', { account })
+      return
+    }
+
+    const eventData: AssetsChangedEventData = {
+      chainId,
+      account,
+      reason,
+      timestamp: Date.now(),
+    }
+
+    await Promise.all(
+      connectedOrigins.map((origin) =>
+        this.broadcastToOrigin(origin, 'assetsChanged', eventData)
+      )
+    )
+  }
+
+  /**
    * Sanitize event data based on event type
    * Prevents unexpected data from being broadcast
    */
@@ -230,28 +279,49 @@ class EventBroadcaster {
       case PROVIDER_EVENTS.CONNECT:
         // Ensure valid connect info
         if (typeof data !== 'object' || data === null) {
-          return { chainId: '0x1' }
+          return { chainId: DEFAULT_VALUES.CHAIN_ID_HEX }
         }
         const connectData = data as Record<string, unknown>
         return {
           chainId:
             typeof connectData.chainId === 'string'
               ? connectData.chainId
-              : '0x1',
+              : DEFAULT_VALUES.CHAIN_ID_HEX,
         }
 
       case PROVIDER_EVENTS.DISCONNECT:
         // Ensure valid error object
         if (typeof data !== 'object' || data === null) {
-          return { code: 4900, message: 'Disconnected' }
+          return { code: RPC_ERRORS.DISCONNECTED.code, message: RPC_ERRORS.DISCONNECTED.message }
         }
         const errorData = data as Record<string, unknown>
         return {
-          code: typeof errorData.code === 'number' ? errorData.code : 4900,
+          code: typeof errorData.code === 'number' ? errorData.code : RPC_ERRORS.DISCONNECTED.code,
           message:
             typeof errorData.message === 'string'
               ? errorData.message
-              : 'Disconnected',
+              : RPC_ERRORS.DISCONNECTED.message,
+        }
+
+      case 'assetsChanged':
+        // Ensure valid assetsChanged event data
+        if (typeof data !== 'object' || data === null) {
+          return null
+        }
+        const assetsData = data as Record<string, unknown>
+        if (
+          typeof assetsData.chainId !== 'number' ||
+          !isValidAddress(assetsData.account) ||
+          typeof assetsData.reason !== 'string' ||
+          typeof assetsData.timestamp !== 'number'
+        ) {
+          return null
+        }
+        return {
+          chainId: assetsData.chainId,
+          account: assetsData.account,
+          reason: assetsData.reason,
+          timestamp: assetsData.timestamp,
         }
 
       default:

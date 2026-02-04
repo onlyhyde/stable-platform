@@ -256,11 +256,12 @@ class StableNetProvider implements EIP1193Provider {
    * Routes events to appropriate handlers and updates internal state
    */
   private handleProviderEvent(message: ExtensionMessage): void {
-    // PROVIDER_EVENT messages have event and data in payload
-    const payload = message.payload as { event?: string; data?: unknown } | undefined
-    if (!payload || typeof payload.event !== 'string') return
+    // PROVIDER_EVENT messages from EventBroadcaster have event and data
+    // directly on the message object (not nested in payload)
+    const providerMsg = message as unknown as { event?: string; data?: unknown }
+    if (!providerMsg.event || typeof providerMsg.event !== 'string') return
 
-    const { event, data } = payload
+    const { event, data } = providerMsg
 
     switch (event) {
       case PROVIDER_EVENTS.CONNECT: {
@@ -304,6 +305,13 @@ class StableNetProvider implements EIP1193Provider {
           this.emit(PROVIDER_EVENTS.CHAIN_CHANGED, chainId)
           logger.debug('Chain changed', { chainId })
         }
+        break
+      }
+
+      case 'assetsChanged': {
+        // StableNet custom event for asset changes
+        this.emit('assetsChanged', data)
+        logger.debug('Assets changed', { data })
         break
       }
     }

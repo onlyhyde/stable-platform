@@ -19,13 +19,20 @@ jest.mock('../../../src/shared/utils/logger', () => ({
   }),
 }))
 
-// Mock PROVIDER_EVENTS constant
+// Mock constants
 jest.mock('../../../src/shared/constants', () => ({
   PROVIDER_EVENTS: {
     CONNECT: 'connect',
     DISCONNECT: 'disconnect',
     ACCOUNTS_CHANGED: 'accountsChanged',
     CHAIN_CHANGED: 'chainChanged',
+  },
+  RPC_ERRORS: {
+    DISCONNECTED: { code: 4900, message: 'The provider is disconnected from all chains' },
+    CHAIN_DISCONNECTED: { code: 4901, message: 'The provider is disconnected from the specified chain' },
+  },
+  DEFAULT_VALUES: {
+    CHAIN_ID_HEX: '0x1',
   },
 }))
 
@@ -310,7 +317,7 @@ describe('EventBroadcaster', () => {
       expect(mockChrome.tabs.sendMessage).toHaveBeenCalledWith(
         1,
         expect.objectContaining({
-          data: { code: 4900, message: 'Disconnected' },
+          data: { code: 4900, message: 'The provider is disconnected from all chains' },
         })
       )
     })

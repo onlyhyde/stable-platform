@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { useAccount, useDisconnect, useSwitchChain } from 'wagmi'
 import { useWallet } from '@/hooks'
 import { PageHeader } from '@/components/common'
-import { NetworkSettingsCard, AccountSettingsCard, SecuritySettingsCard } from '@/components/settings'
+import { NetworkSettingsCard, AccountSettingsCard, SecuritySettingsCard, DeveloperSettingsCard } from '@/components/settings'
 import { defaultChain } from '@/lib/chains'
 
-type SettingsTab = 'network' | 'account' | 'security'
+type SettingsTab = 'network' | 'account' | 'security' | 'developer'
 
 const tabs: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   {
@@ -34,6 +34,15 @@ const tabs: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'developer',
+    label: 'Developer',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
       </svg>
     ),
   },
@@ -92,6 +101,8 @@ export default function SettingsPage() {
         )}
 
         {activeTab === 'security' && <SecuritySettingsCard />}
+
+        {activeTab === 'developer' && <DeveloperSettingsCard />}
       </div>
     </div>
   )

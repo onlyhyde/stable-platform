@@ -2,15 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useWallet, useBalance, useChainInfo } from '@/hooks'
-import { Button, WalletSelectorModal } from '@/components/common'
+import { useWallet, useBalance } from '@/hooks'
+import { Button, WalletSelectorModal, NetworkSelector } from '@/components/common'
 import { ThemeToggle } from '@/providers'
 import { formatAddress, formatTokenAmount } from '@/lib/utils'
 
 export function Header() {
-  const { address, isConnected, isConnecting, connect, disconnect, connectors, switchNetwork } = useWallet()
+  const { address, isConnected, isConnecting, connect, disconnect, connectors } = useWallet()
   const { balance, symbol, decimals } = useBalance({ address, watch: true })
-  const chainInfo = useChainInfo()
   const [showWalletModal, setShowWalletModal] = useState(false)
   const [pendingConnector, setPendingConnector] = useState<string>()
 
@@ -51,36 +50,8 @@ export function Header() {
           {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* Network Badge - Shows connected chain info from wallet */}
-          {chainInfo && (
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer hover:opacity-80 transition-opacity"
-                 style={{
-                   backgroundColor: chainInfo.isTestnet ? 'rgb(var(--success-muted))' : 'rgb(var(--info-muted))',
-                   border: `1px solid ${chainInfo.iconColor}33`
-                 }}
-                 title={`Chain ID: ${chainInfo.id}${chainInfo.isTestnet ? ' (Testnet)' : ''}`}>
-              <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: chainInfo.iconColor }} />
-              <span className="text-xs font-medium" style={{ color: chainInfo.iconColor }}>
-                {chainInfo.name}
-              </span>
-              {chainInfo.isTestnet && (
-                <span className="text-2xs px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10"
-                      style={{ color: chainInfo.iconColor }}>
-                  Test
-                </span>
-              )}
-            </div>
-          )}
-          {!chainInfo && !isConnected && (
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full"
-                 style={{
-                   backgroundColor: 'rgb(var(--muted))',
-                   border: '1px solid rgb(var(--border))'
-                 }}>
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'rgb(var(--muted-foreground))' }} />
-              <span className="text-xs font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>Not Connected</span>
-            </div>
-          )}
+          {/* Network Selector - Shows connected chain and allows switching */}
+          <NetworkSelector className="hidden md:flex" />
 
           {isConnected && address ? (
             <>

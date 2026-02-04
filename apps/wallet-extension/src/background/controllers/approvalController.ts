@@ -12,7 +12,7 @@ import type {
   ApprovalControllerState,
 } from '../../types'
 import { analyzeAuthorizationRisk } from '../../shared/security/authorizationRiskAnalyzer'
-import { isRevocationAddress } from '../../types/eip7702'
+import { isRevocationAddress } from '../../shared/utils/eip7702'
 import { generateRandomHex } from '../keyring/crypto'
 import { createLogger } from '../../shared/utils/logger'
 import { getApprovalConfig } from '../../config'

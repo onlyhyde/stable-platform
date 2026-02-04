@@ -1,19 +1,40 @@
 import { defineChain } from 'viem'
 import type { Chain } from 'viem'
-import { getDevnetConfig, getTestnetConfig, getAppConfig } from './config'
+import { getLocalConfig, getTestnetConfig, getAppConfig } from './config'
 
 /**
- * Get StableNet Devnet chain definition (with environment override support)
+ * Anvil (Local) chain definition - chainId 31337
  */
-export function getStablenetDevnet(): Chain {
-  const config = getDevnetConfig()
+export function getAnvilLocal(): Chain {
   return defineChain({
     id: 31337,
-    name: 'StableNet Devnet',
+    name: 'Anvil (Local)',
     nativeCurrency: {
       decimals: 18,
       name: 'Ether',
       symbol: 'ETH',
+    },
+    rpcUrls: {
+      default: {
+        http: ['http://127.0.0.1:8545'],
+      },
+    },
+    testnet: true,
+  })
+}
+
+/**
+ * StableNet Local chain definition - chainId 8283
+ */
+export function getStablenetLocal(): Chain {
+  const config = getLocalConfig()
+  return defineChain({
+    id: 8283,
+    name: 'StableNet Local',
+    nativeCurrency: {
+      decimals: 18,
+      name: 'Wrapped KRW Coin',
+      symbol: 'WKRC',
     },
     rpcUrls: {
       default: {
@@ -31,17 +52,17 @@ export function getStablenetDevnet(): Chain {
 }
 
 /**
- * Get StableNet Testnet chain definition (with environment override support)
+ * StableNet Testnet chain definition - chainId 82830
  */
 export function getStablenetTestnet(): Chain {
   const config = getTestnetConfig()
   return defineChain({
-    id: 11155111, // Using Sepolia ID for now
+    id: 82830,
     name: 'StableNet Testnet',
     nativeCurrency: {
       decimals: 18,
-      name: 'Ether',
-      symbol: 'ETH',
+      name: 'Wrapped KRW Coin',
+      symbol: 'WKRC',
     },
     rpcUrls: {
       default: {
@@ -59,31 +80,39 @@ export function getStablenetTestnet(): Chain {
 }
 
 /**
- * StableNet Devnet chain definition
- * @deprecated Use getStablenetDevnet() instead for environment override support
+ * Anvil (Local) chain definition
  */
-export const stablenetDevnet = getStablenetDevnet()
+export const anvilLocal = getAnvilLocal()
+
+/**
+ * StableNet Local chain definition
+ */
+export const stablenetLocal = getStablenetLocal()
 
 /**
  * StableNet Testnet chain definition
- * @deprecated Use getStablenetTestnet() instead for environment override support
  */
 export const stablenetTestnet = getStablenetTestnet()
+
+/**
+ * @deprecated Use stablenetLocal instead
+ */
+export const stablenetDevnet = stablenetLocal
 
 /**
  * Get supported chains (with environment override support)
  */
 export function getSupportedChains(): readonly [Chain, ...Chain[]] {
-  return [getStablenetDevnet(), getStablenetTestnet()]
+  return [getAnvilLocal(), getStablenetLocal(), getStablenetTestnet()]
 }
 
 /**
- * Supported chains
- * @deprecated Use getSupportedChains() instead for environment override support
+ * Supported chains - includes all networks supported by wallet
  */
 export const supportedChains: readonly [Chain, ...Chain[]] = [
-  stablenetDevnet,
-  stablenetTestnet,
+  anvilLocal,        // chainId 31337
+  stablenetLocal,    // chainId 8283
+  stablenetTestnet,  // chainId 82830
 ]
 
 /**
@@ -93,14 +122,14 @@ export function getDefaultChain(): Chain {
   const appConfig = getAppConfig()
   const chainId = appConfig.defaultChainId
 
-  if (chainId === 11155111) {
+  if (chainId === 82830) {
     return getStablenetTestnet()
   }
-  return getStablenetDevnet()
+  return getStablenetLocal()
 }
 
 /**
  * Default chain
  * @deprecated Use getDefaultChain() instead for environment override support
  */
-export const defaultChain = stablenetDevnet
+export const defaultChain = stablenetLocal

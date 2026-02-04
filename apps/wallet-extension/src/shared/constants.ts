@@ -17,28 +17,31 @@ export const DEFAULT_NETWORKS: Network[] = [
     isTestnet: true,
   },
   {
-    chainId: 1337,
-    name: 'StableNet Devnet',
-    rpcUrl: 'http://localhost:8545',
-    bundlerUrl: 'http://localhost:4337',
-    paymasterUrl: 'http://localhost:4338',
+    chainId: 8283,
+    name: 'StableNet Local',
+    rpcUrl: 'http://127.0.0.1:8501',
+    bundlerUrl: 'http://127.0.0.1:4337',
+    paymasterUrl: 'http://127.0.0.1:4338',
+    explorerUrl: 'http://127.0.0.1:3001',
+    indexerUrl: 'http://127.0.0.1:8080',
     currency: {
-      name: 'Ether',
-      symbol: 'ETH',
+      name: 'WKRC Coin',
+      symbol: 'WKRC',
       decimals: 18,
     },
     isTestnet: true,
   },
   {
-    chainId: 11155111,
-    name: 'Sepolia',
-    rpcUrl: 'https://rpc.sepolia.org',
-    bundlerUrl: 'https://bundler.sepolia.stablenet.dev',
-    paymasterUrl: 'https://paymaster.sepolia.stablenet.dev',
-    explorerUrl: 'https://sepolia.etherscan.io',
+    chainId: 82830,
+    name: 'StableNet Testnet',
+    rpcUrl: 'https://rpc.testnet.stablenet.dev',
+    bundlerUrl: 'https://bundler.testnet.stablenet.dev',
+    paymasterUrl: 'https://paymaster.testnet.stablenet.dev',
+    explorerUrl: 'https://explorer.testnet.stablenet.dev',
+    indexerUrl: 'https://indexer.testnet.stablenet.dev',
     currency: {
-      name: 'Sepolia Ether',
-      symbol: 'ETH',
+      name: 'WKRC Coin',
+      symbol: 'WKRC',
       decimals: 18,
     },
     isTestnet: true,
@@ -137,4 +140,18 @@ export const TIMING = {
   TOAST_DURATION_MS: 5000,
   /** API request timeout in milliseconds (30 seconds) */
   API_TIMEOUT_MS: 30000,
+} as const
+
+/**
+ * Default values for various operations
+ */
+export const DEFAULT_VALUES = {
+  /** Default gas limit for simple transfers */
+  GAS_LIMIT: 21000n,
+  /** Default chain ID (Ethereum mainnet) */
+  CHAIN_ID_HEX: '0x1',
+  /** Wallet UUID for EIP-6963 */
+  WALLET_UUID: 'd8f3b2a1-5c4e-4f6d-9a8b-7e1c2d3f4a5b',
+  /** StableNet provider RDNS identifier */
+  PROVIDER_RDNS: 'dev.stablenet.wallet',
 } as const

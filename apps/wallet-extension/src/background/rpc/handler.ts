@@ -1,7 +1,7 @@
 import type { Address, Hex } from 'viem'
 import { createPublicClient, http, isAddress } from 'viem'
 import type { JsonRpcRequest, JsonRpcResponse, SupportedMethod } from '../../types'
-import { RPC_ERRORS, ENTRY_POINT_ADDRESSES } from '../../shared/constants'
+import { RPC_ERRORS, ENTRY_POINT_ADDRESSES, DEFAULT_VALUES } from '../../shared/constants'
 import { walletState } from '../state/store'
 import { approvalController } from '../controllers/approvalController'
 import { keyringController } from '../keyring'
@@ -150,7 +150,324 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     await walletState.selectNetwork(targetChainId)
+
+    // Broadcast chainChanged event to all connected sites (EIP-1193)
+    const chainIdHex = `0x${targetChainId.toString(16)}`
+    const connectedOrigins = state.connections.connectedSites.map((s) => s.origin)
+    await eventBroadcaster.broadcastChainChanged(chainIdHex, connectedOrigins)
+
     return null
+  },
+
+  /**
+   * Add a new Ethereum chain (EIP-3085)
+   * Prompts user to approve adding a new network
+   */
+  wallet_addEthereumChain: async (params, origin) => {
+    const [chainParams] = params as [
+      {
+        chainId: string
+        chainName: string
+        nativeCurrency: { name: string; symbol: string; decimals: number }
+        rpcUrls: string[]
+        blockExplorerUrls?: string[]
+      }
+    ]
+
+    const chainId = Number.parseInt(chainParams.chainId, 16)
+
+    // Check if chain already exists
+    const state = walletState.getState()
+    const existingNetwork = state.networks.networks.find((n) => n.chainId === chainId)
+
+    if (existingNetwork) {
+      // Chain already exists, switch to it
+      await walletState.selectNetwork(chainId)
+      const chainIdHex = `0x${chainId.toString(16)}`
+      const connectedOrigins = state.connections.connectedSites.map((s) => s.origin)
+      await eventBroadcaster.broadcastChainChanged(chainIdHex, connectedOrigins)
+      return null
+    }
+
+    // Request user approval
+    const result = await approvalController.requestAddNetwork(
+      origin,
+      chainId,
+      chainParams.chainName,
+      chainParams.rpcUrls[0],
+      chainParams.nativeCurrency,
+      chainParams.blockExplorerUrls?.[0]
+    )
+
+    if (!result.added) {
+      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+    }
+
+    // Add network to wallet
+    await walletState.addNetwork({
+      chainId,
+      name: chainParams.chainName,
+      rpcUrl: chainParams.rpcUrls[0],
+      currency: chainParams.nativeCurrency,
+      explorerUrl: chainParams.blockExplorerUrls?.[0],
+      isCustom: true,
+    })
+
+    return null
+  },
+
+  /**
+   * Get transaction receipt by hash
+   */
+  eth_getTransactionReceipt: async (params) => {
+    const [txHash] = params as [Hex]
+    const network = walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = createPublicClient({
+      transport: http(network.rpcUrl),
+    })
+
+    try {
+      const receipt = await client.getTransactionReceipt({ hash: txHash })
+      if (!receipt) return null
+
+      // Convert to standard JSON-RPC format
+      return {
+        transactionHash: receipt.transactionHash,
+        transactionIndex: `0x${receipt.transactionIndex.toString(16)}`,
+        blockHash: receipt.blockHash,
+        blockNumber: `0x${receipt.blockNumber.toString(16)}`,
+        from: receipt.from,
+        to: receipt.to,
+        cumulativeGasUsed: `0x${receipt.cumulativeGasUsed.toString(16)}`,
+        gasUsed: `0x${receipt.gasUsed.toString(16)}`,
+        contractAddress: receipt.contractAddress,
+        logs: receipt.logs.map((log) => ({
+          address: log.address,
+          topics: log.topics,
+          data: log.data,
+          blockNumber: `0x${log.blockNumber.toString(16)}`,
+          transactionHash: log.transactionHash,
+          transactionIndex: `0x${log.transactionIndex.toString(16)}`,
+          blockHash: log.blockHash,
+          logIndex: `0x${log.logIndex.toString(16)}`,
+          removed: log.removed,
+        })),
+        logsBloom: receipt.logsBloom,
+        status: receipt.status === 'success' ? '0x1' : '0x0',
+        effectiveGasPrice: receipt.effectiveGasPrice
+          ? `0x${receipt.effectiveGasPrice.toString(16)}`
+          : undefined,
+        type: `0x${receipt.type.toString(16)}`,
+      }
+    } catch {
+      return null
+    }
+  },
+
+  /**
+   * Get transaction by hash
+   */
+  eth_getTransactionByHash: async (params) => {
+    const [txHash] = params as [Hex]
+    const network = walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = createPublicClient({
+      transport: http(network.rpcUrl),
+    })
+
+    try {
+      const tx = await client.getTransaction({ hash: txHash })
+      if (!tx) return null
+
+      // Convert to standard JSON-RPC format
+      return {
+        hash: tx.hash,
+        nonce: `0x${tx.nonce.toString(16)}`,
+        blockHash: tx.blockHash,
+        blockNumber: tx.blockNumber ? `0x${tx.blockNumber.toString(16)}` : null,
+        transactionIndex: tx.transactionIndex !== null
+          ? `0x${tx.transactionIndex.toString(16)}`
+          : null,
+        from: tx.from,
+        to: tx.to,
+        value: `0x${tx.value.toString(16)}`,
+        gas: `0x${tx.gas.toString(16)}`,
+        gasPrice: tx.gasPrice ? `0x${tx.gasPrice.toString(16)}` : undefined,
+        maxFeePerGas: tx.maxFeePerGas
+          ? `0x${tx.maxFeePerGas.toString(16)}`
+          : undefined,
+        maxPriorityFeePerGas: tx.maxPriorityFeePerGas
+          ? `0x${tx.maxPriorityFeePerGas.toString(16)}`
+          : undefined,
+        input: tx.input,
+        v: `0x${tx.v.toString(16)}`,
+        r: tx.r,
+        s: tx.s,
+        type: `0x${tx.type.toString(16)}`,
+        chainId: tx.chainId ? `0x${tx.chainId.toString(16)}` : undefined,
+      }
+    } catch {
+      return null
+    }
+  },
+
+  /**
+   * Get code at address
+   */
+  eth_getCode: async (params) => {
+    const [address, block] = params as [Address, string]
+    const network = walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = createPublicClient({
+      transport: http(network.rpcUrl),
+    })
+
+    const code = await client.getCode({
+      address,
+      blockTag: block === 'latest' ? 'latest' : undefined,
+    })
+
+    return code ?? '0x'
+  },
+
+  /**
+   * Get logs matching filter
+   */
+  eth_getLogs: async (params) => {
+    const [filter] = params as [
+      {
+        fromBlock?: string
+        toBlock?: string
+        address?: Address | Address[]
+        topics?: (Hex | Hex[] | null)[]
+        blockHash?: Hex
+      }
+    ]
+    const network = walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = createPublicClient({
+      transport: http(network.rpcUrl),
+    })
+
+    const logs = await client.getLogs({
+      address: filter.address,
+      fromBlock: filter.fromBlock
+        ? filter.fromBlock === 'latest'
+          ? 'latest'
+          : BigInt(filter.fromBlock)
+        : undefined,
+      toBlock: filter.toBlock
+        ? filter.toBlock === 'latest'
+          ? 'latest'
+          : BigInt(filter.toBlock)
+        : undefined,
+      blockHash: filter.blockHash,
+    })
+
+    return logs.map((log) => ({
+      address: log.address,
+      topics: log.topics,
+      data: log.data,
+      blockNumber: `0x${log.blockNumber.toString(16)}`,
+      transactionHash: log.transactionHash,
+      transactionIndex: `0x${log.transactionIndex.toString(16)}`,
+      blockHash: log.blockHash,
+      logIndex: `0x${log.logIndex.toString(16)}`,
+      removed: log.removed,
+    }))
+  },
+
+  /**
+   * Get block by number
+   */
+  eth_getBlockByNumber: async (params) => {
+    const [blockNumber, includeTransactions] = params as [string, boolean]
+    const network = walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = createPublicClient({
+      transport: http(network.rpcUrl),
+    })
+
+    const block = await client.getBlock({
+      blockNumber: blockNumber === 'latest' ? undefined : BigInt(blockNumber),
+      blockTag: blockNumber === 'latest' ? 'latest' : undefined,
+      includeTransactions,
+    })
+
+    if (!block) return null
+
+    return formatBlock(block, includeTransactions)
+  },
+
+  /**
+   * Get block by hash
+   */
+  eth_getBlockByHash: async (params) => {
+    const [blockHash, includeTransactions] = params as [Hex, boolean]
+    const network = walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = createPublicClient({
+      transport: http(network.rpcUrl),
+    })
+
+    const block = await client.getBlock({
+      blockHash,
+      includeTransactions,
+    })
+
+    if (!block) return null
+
+    return formatBlock(block, includeTransactions)
+  },
+
+  /**
+   * Get list of supported networks
+   * Custom RPC method for dApps to discover wallet's networks
+   */
+  wallet_getNetworks: async () => {
+    const state = walletState.getState()
+    const networks = state.networks.networks
+
+    return networks.map((network) => ({
+      chainId: `0x${network.chainId.toString(16)}`,
+      chainIdDecimal: network.chainId,
+      name: network.name,
+      rpcUrl: network.rpcUrl,
+      currency: {
+        name: network.currency.name,
+        symbol: network.currency.symbol,
+        decimals: network.currency.decimals,
+      },
+      explorerUrl: network.explorerUrl,
+      isTestnet: network.isTestnet ?? false,
+      isCustom: network.isCustom ?? false,
+      isSelected: network.chainId === state.networks.selectedChainId,
+    }))
   },
 
   /**
@@ -878,7 +1195,7 @@ const handlers: Record<string, RpcHandler> = {
           data: txParams.data,
         })
       } catch {
-        gas = BigInt(21000) // Default gas for simple transfers
+        gas = DEFAULT_VALUES.GAS_LIMIT // Default gas for simple transfers
       }
     }
 
@@ -956,6 +1273,231 @@ const handlers: Record<string, RpcHandler> = {
         code: RPC_ERRORS.INTERNAL_ERROR.code,
         message: (error as Error).message || 'Transaction broadcast failed',
       })
+    }
+  },
+
+  /**
+   * Get all assets (native + tokens) for the connected account
+   * Custom RPC method for dApps to get wallet's complete asset list
+   */
+  wallet_getAssets: async (_params, origin) => {
+    // Verify site is connected
+    if (!walletState.isConnected(origin)) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    const state = walletState.getState()
+    const network = walletState.getCurrentNetwork()
+    const selectedAccount = state.accounts.selectedAccount
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!selectedAccount) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    // Verify account is connected to this origin
+    const connectedAccounts = walletState.getConnectedAccounts(origin)
+    if (!connectedAccounts.includes(selectedAccount)) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    // Get native balance
+    const client = createPublicClient({
+      transport: http(network.rpcUrl),
+    })
+
+    let nativeBalance: bigint
+    try {
+      nativeBalance = await client.getBalance({ address: selectedAccount })
+    } catch {
+      nativeBalance = BigInt(0)
+    }
+
+    // Format native balance
+    const nativeDecimals = network.currency.decimals
+    const formattedNativeBalance = formatBalance(nativeBalance.toString(), nativeDecimals)
+
+    // Get tracked tokens and their balances
+    const trackedTokens = walletState.getTokensForChain(network.chainId)
+    const tokenBalances = await Promise.all(
+      trackedTokens.map(async (token) => {
+        // Try to get cached balance first
+        let balance = walletState.getCachedBalance(
+          network.chainId,
+          selectedAccount,
+          token.address
+        )
+
+        // Fetch fresh balance if not cached
+        if (!balance) {
+          try {
+            const data = `0x70a08231${selectedAccount.slice(2).padStart(64, '0').toLowerCase()}`
+            const result = await client.call({
+              to: token.address,
+              data: data as Hex,
+            })
+            balance = result.data ? BigInt(result.data).toString() : '0'
+            // Cache the balance
+            await walletState.updateTokenBalance(
+              network.chainId,
+              selectedAccount,
+              token.address,
+              balance
+            )
+          } catch {
+            balance = '0'
+          }
+        }
+
+        return {
+          address: token.address,
+          symbol: token.symbol,
+          name: token.name,
+          decimals: token.decimals,
+          balance,
+          formattedBalance: formatBalance(balance, token.decimals),
+          logoURI: token.logoURI,
+        }
+      })
+    )
+
+    return {
+      chainId: network.chainId,
+      account: selectedAccount,
+      native: {
+        symbol: network.currency.symbol,
+        name: network.currency.name,
+        decimals: nativeDecimals,
+        balance: nativeBalance.toString(),
+        formattedBalance: formattedNativeBalance,
+      },
+      tokens: tokenBalances,
+      updatedAt: Date.now(),
+    }
+  },
+
+  /**
+   * Add a token to the wallet's tracked tokens
+   * Custom RPC method for dApps to request adding a token
+   */
+  wallet_addToken: async (params, origin) => {
+    // Verify site is connected
+    if (!walletState.isConnected(origin)) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    const [tokenParams] = params as [
+      {
+        address: Address
+        symbol?: string
+        name?: string
+        decimals?: number
+        logoURI?: string
+      }
+    ]
+
+    if (!tokenParams?.address) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Token address is required',
+      })
+    }
+
+    if (!isAddress(tokenParams.address)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid token address',
+      })
+    }
+
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const normalizedAddress = tokenParams.address.toLowerCase() as Address
+
+    // Check if token already exists
+    const existingToken = walletState.getToken(network.chainId, normalizedAddress)
+    if (existingToken) {
+      return {
+        success: true,
+        token: existingToken,
+      }
+    }
+
+    // Fetch token metadata from contract if not provided
+    let symbol = tokenParams.symbol
+    let name = tokenParams.name
+    let decimals = tokenParams.decimals
+
+    if (!symbol || !name || decimals === undefined) {
+      const client = createPublicClient({
+        transport: http(network.rpcUrl),
+      })
+
+      try {
+        // Fetch missing metadata
+        if (!symbol) {
+          const symbolResult = await client.call({
+            to: normalizedAddress,
+            data: '0x95d89b41' as Hex, // symbol()
+          })
+          symbol = decodeStringResult(symbolResult.data)
+        }
+
+        if (!name) {
+          const nameResult = await client.call({
+            to: normalizedAddress,
+            data: '0x06fdde03' as Hex, // name()
+          })
+          name = decodeStringResult(nameResult.data)
+        }
+
+        if (decimals === undefined) {
+          const decimalsResult = await client.call({
+            to: normalizedAddress,
+            data: '0x313ce567' as Hex, // decimals()
+          })
+          decimals = decimalsResult.data ? Number(BigInt(decimalsResult.data)) : 18
+        }
+      } catch (error) {
+        return {
+          success: false,
+          error: 'Failed to fetch token metadata: ' + (error as Error).message,
+        }
+      }
+    }
+
+    // Create and store the token
+    const newToken = {
+      address: normalizedAddress,
+      symbol: symbol ?? 'UNKNOWN',
+      name: name ?? 'Unknown Token',
+      decimals: decimals ?? 18,
+      chainId: network.chainId,
+      logoURI: tokenParams.logoURI,
+      isVisible: true,
+      addedAt: Date.now(),
+    }
+
+    await walletState.addToken(network.chainId, newToken)
+
+    // Broadcast assetsChanged event to all connected sites
+    const connectedOrigins = walletState.getState().connections.connectedSites.map((s) => s.origin)
+    await eventBroadcaster.broadcastAssetsChanged(
+      network.chainId,
+      walletState.getState().accounts.selectedAccount ?? ('' as Address),
+      'token_added',
+      connectedOrigins
+    )
+
+    return {
+      success: true,
+      token: newToken,
     }
   },
 }
@@ -1037,6 +1579,59 @@ function createRpcError(error: { code: number; message: string; data?: unknown }
   err.code = error.code
   err.data = error.data
   return err
+}
+
+/**
+ * Format balance with decimals
+ */
+function formatBalance(balance: string, decimals: number): string {
+  if (balance === '0') return '0'
+
+  const bn = BigInt(balance)
+  const divisor = BigInt(10 ** decimals)
+  const whole = bn / divisor
+  const remainder = bn % divisor
+
+  if (remainder === 0n) {
+    return whole.toString()
+  }
+
+  const remainderStr = remainder.toString().padStart(decimals, '0')
+  const trimmed = remainderStr.replace(/0+$/, '')
+
+  return `${whole}.${trimmed}`
+}
+
+/**
+ * Decode string result from ABI-encoded data
+ */
+function decodeStringResult(data: Hex | undefined): string {
+  if (!data || data === '0x') return ''
+
+  const hex = data.replace('0x', '')
+
+  // Check if it's a dynamic string (starts with offset)
+  if (hex.length >= 128) {
+    // Dynamic string: offset (32 bytes) + length (32 bytes) + data
+    const lengthHex = hex.slice(64, 128)
+    const length = parseInt(lengthHex, 16)
+    const stringHex = hex.slice(128, 128 + length * 2)
+    try {
+      // Convert hex to UTF-8 string
+      const bytes = new Uint8Array(stringHex.match(/.{2}/g)?.map((b) => parseInt(b, 16)) ?? [])
+      return new TextDecoder().decode(bytes).replace(/\0/g, '')
+    } catch {
+      return ''
+    }
+  }
+
+  // Static bytes32 string
+  try {
+    const bytes = new Uint8Array(hex.match(/.{2}/g)?.map((b) => parseInt(b, 16)) ?? [])
+    return new TextDecoder().decode(bytes).replace(/\0/g, '')
+  } catch {
+    return ''
+  }
 }
 
 /**
@@ -1351,6 +1946,66 @@ function validateRpcParams(method: string, params: unknown[] | undefined): void 
     default:
       // Unknown method - let handler deal with it
       break
+  }
+}
+
+/**
+ * Format block for JSON-RPC response
+ */
+function formatBlock(
+  block: {
+    number: bigint | null
+    hash: Hex | null
+    parentHash: Hex
+    nonce: Hex | null
+    sha3Uncles: Hex
+    logsBloom: Hex | null
+    transactionsRoot: Hex
+    stateRoot: Hex
+    receiptsRoot: Hex
+    miner: Address
+    difficulty: bigint
+    totalDifficulty: bigint | null
+    extraData: Hex
+    size: bigint
+    gasLimit: bigint
+    gasUsed: bigint
+    timestamp: bigint
+    transactions: readonly (Hex | { hash: Hex })[]
+    uncles: readonly Hex[]
+    baseFeePerGas?: bigint | null
+  },
+  includeTransactions: boolean
+): Record<string, unknown> {
+  return {
+    number: block.number ? `0x${block.number.toString(16)}` : null,
+    hash: block.hash,
+    parentHash: block.parentHash,
+    nonce: block.nonce,
+    sha3Uncles: block.sha3Uncles,
+    logsBloom: block.logsBloom,
+    transactionsRoot: block.transactionsRoot,
+    stateRoot: block.stateRoot,
+    receiptsRoot: block.receiptsRoot,
+    miner: block.miner,
+    difficulty: `0x${block.difficulty.toString(16)}`,
+    totalDifficulty: block.totalDifficulty
+      ? `0x${block.totalDifficulty.toString(16)}`
+      : null,
+    extraData: block.extraData,
+    size: `0x${block.size.toString(16)}`,
+    gasLimit: `0x${block.gasLimit.toString(16)}`,
+    gasUsed: `0x${block.gasUsed.toString(16)}`,
+    timestamp: `0x${block.timestamp.toString(16)}`,
+    transactions: includeTransactions
+      ? block.transactions
+      : block.transactions.map((tx) =>
+          typeof tx === 'string' ? tx : tx.hash
+        ),
+    uncles: block.uncles,
+    baseFeePerGas: block.baseFeePerGas
+      ? `0x${block.baseFeePerGas.toString(16)}`
+      : null,
   }
 }
 

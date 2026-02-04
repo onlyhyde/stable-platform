@@ -1,10 +1,32 @@
 import { useEffect, useState } from 'react'
-import { useWalletStore } from '../hooks/useWalletStore'
+import { useWalletStore, useNetworkCurrency, useIndexerData, useAssets } from '../hooks'
+import { TokenList } from '../components/TokenList'
+import { AddTokenModal } from '../components/AddTokenModal'
+import type { TokenBalance } from '../hooks/useIndexerData'
+import type { AssetToken } from '../hooks/useAssets'
 import { formatEther } from 'viem'
 
 export function Home() {
   const { selectedAccount, accounts, balances, updateBalance, setPage } = useWalletStore()
+  const { symbol: currencySymbol } = useNetworkCurrency()
   const [isLoadingBalance, setIsLoadingBalance] = useState(false)
+  const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false)
+
+  // Token balances from indexer
+  const {
+    tokenBalances,
+    isLoadingTokens,
+    refreshTokenBalances,
+    isIndexerAvailable,
+  } = useIndexerData()
+
+  // Asset management (custom tokens, visibility)
+  const {
+    tokens: assetTokens,
+    isLoading: isLoadingAssets,
+    refresh: refreshAssets,
+    toggleTokenVisibility,
+  } = useAssets()
 
   const currentAccount = accounts.find((a) => a.address === selectedAccount)
   const balance = selectedAccount ? balances[selectedAccount] : undefined
@@ -43,6 +65,32 @@ export function Home() {
     }
   }
 
+  function handleRefreshAll() {
+    loadBalance()
+    refreshTokenBalances()
+    refreshAssets()
+  }
+
+  function handleTokenClick(token: TokenBalance | AssetToken | 'native') {
+    if (token === 'native') {
+      // Navigate to send page for native token
+      setPage('send')
+    } else {
+      // Navigate to send page with selected token
+      // Store selected token in session storage for Send page to pick up
+      sessionStorage.setItem('selectedToken', JSON.stringify(token))
+      setPage('send')
+    }
+  }
+
+  function handleAddToken() {
+    setIsAddTokenModalOpen(true)
+  }
+
+  function handleToggleVisibility(address: string) {
+    toggleTokenVisibility(address as `0x${string}`)
+  }
+
   if (!currentAccount) {
     return (
       <div className="p-4">
@@ -74,9 +122,9 @@ export function Home() {
           {isLoadingBalance ? (
             <span className="animate-pulse">Loading...</span>
           ) : balance !== undefined ? (
-            `${Number(formatEther(balance)).toFixed(4)} ETH`
+            `${Number(formatEther(balance)).toFixed(4)} ${currencySymbol}`
           ) : (
-            '-- ETH'
+            `-- ${currencySymbol}`
           )}
         </h2>
         <p className="text-sm opacity-80 mt-2">
@@ -86,7 +134,7 @@ export function Home() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4">
         <button
           type="button"
           onClick={() => setPage('send')}
@@ -144,9 +192,31 @@ export function Home() {
         </button>
       </div>
 
+      {/* Token List */}
+      <TokenList
+        nativeBalance={balance}
+        tokenBalances={tokenBalances}
+        assetTokens={assetTokens}
+        isLoading={isLoadingTokens || isLoadingBalance || isLoadingAssets}
+        onRefresh={handleRefreshAll}
+        onTokenClick={handleTokenClick}
+        onAddToken={handleAddToken}
+        onToggleVisibility={handleToggleVisibility}
+      />
+
+      {/* Indexer Status */}
+      {!isIndexerAvailable && !isLoadingTokens && (
+        <p
+          className="text-xs text-center mt-4"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+        >
+          Token discovery unavailable. Configure indexer URL in settings.
+        </p>
+      )}
+
       {/* Account Address */}
       <div
-        className="rounded-xl p-4"
+        className="rounded-xl p-4 mt-6"
         style={{ backgroundColor: 'rgb(var(--secondary))' }}
       >
         <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>Account Address</p>
@@ -174,6 +244,12 @@ export function Home() {
           </button>
         </div>
       </div>
+
+      {/* Add Token Modal */}
+      <AddTokenModal
+        isOpen={isAddTokenModalOpen}
+        onClose={() => setIsAddTokenModalOpen(false)}
+      />
     </div>
   )
 }

@@ -25,11 +25,56 @@ export {
 
 // Types
 export type {
-  EIP1193Provider,
+  // Network types
+  NativeCurrency,
+  BlockExplorer,
+  NetworkConfig,
+  NetworkInfo,
+  // Account types
+  AccountInfo,
+  BalanceInfo,
+  TokenInfo,
+  // Wallet types
+  ConnectionStatus,
+  WalletState,
+  ExtendedWalletState,
+  // Transaction types
+  TransactionRequest,
+  TransactionStatus,
+  TransactionRecord,
+  // Provider types
+  ProviderEvent,
   ConnectInfo,
   ProviderRpcError,
-  WalletState,
-  ProviderEvent,
-  TransactionRequest,
+  ProviderMessage,
+  EIP1193Provider,
+  EIP6963ProviderInfo,
+  EIP6963ProviderDetail,
+  // SDK types
   WalletSDKConfig,
+  // Utility types
+  Result,
+  AsyncState,
+  RpcErrorCode,
+  // Re-exported viem types
+  Address,
+  Hash,
+  Hex,
 } from './types'
+
+// Constants
+export { RPC_ERROR_CODES } from './types'
+
+// Config
+export {
+  DEFAULT_NETWORKS,
+  NATIVE_CURRENCY_SYMBOLS,
+  getNativeCurrencySymbol,
+  toNetworkInfo,
+  toNetworkConfig,
+  NetworkRegistry,
+  networkRegistry,
+  LocalStorage,
+  type NetworkStorage,
+  type NetworkRegistryConfig,
+} from './config'

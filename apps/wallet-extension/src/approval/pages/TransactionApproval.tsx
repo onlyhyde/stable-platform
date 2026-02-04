@@ -1,6 +1,7 @@
 import { formatEther } from 'viem'
 import type { TransactionApprovalRequest } from '../../types'
 import { Button, Card, Badge } from '../../ui/components/common'
+import { useNetworkCurrency } from '../../ui/hooks'
 
 interface TransactionApprovalProps {
   approval: TransactionApprovalRequest
@@ -14,6 +15,7 @@ export function TransactionApproval({
   onReject,
 }: TransactionApprovalProps) {
   const { data } = approval
+  const { symbol: currencySymbol } = useNetworkCurrency()
 
   const getRiskColor = (level?: string) => {
     switch (level) {
@@ -98,7 +100,7 @@ export function TransactionApproval({
             {data.methodName ?? 'Send'}
           </p>
           <p className="text-2xl font-bold">
-            {formatEther(data.value)} ETH
+            {formatEther(data.value)} {currencySymbol}
           </p>
         </Card>
 
@@ -168,7 +170,7 @@ export function TransactionApproval({
                 className="text-sm font-medium"
                 style={{ color: 'rgb(var(--foreground))' }}
               >
-                ~{formatEther(data.estimatedGasCost)} ETH
+                ~{formatEther(data.estimatedGasCost)} {currencySymbol}
               </span>
             </div>
             {data.estimatedTotalCost && (
@@ -186,7 +188,7 @@ export function TransactionApproval({
                   className="text-sm font-bold"
                   style={{ color: 'rgb(var(--foreground))' }}
                 >
-                  ~{formatEther(data.estimatedTotalCost)} ETH
+                  ~{formatEther(data.estimatedTotalCost)} {currencySymbol}
                 </span>
               </div>
             )}

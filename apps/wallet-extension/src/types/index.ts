@@ -10,6 +10,7 @@ export * from './bank'
 export * from './onramp'
 export * from './rpc'
 export * from './eip7702'
+export * from './asset'
 
 /**
  * Message types for extension communication
@@ -93,6 +94,22 @@ export type MessageType =
   | 'METAMASK_MODE_CHANGED'
   // Provider events (EIP-1193)
   | 'PROVIDER_EVENT'
+  // Indexer messages
+  | 'GET_TOKEN_BALANCES'
+  | 'TOKEN_BALANCES'
+  | 'GET_TRANSACTION_HISTORY'
+  | 'TRANSACTION_HISTORY'
+  | 'CHECK_INDEXER_STATUS'
+  | 'INDEXER_STATUS'
+  // Asset management messages
+  | 'GET_ASSETS'
+  | 'ASSETS'
+  | 'ADD_TOKEN'
+  | 'TOKEN_ADDED'
+  | 'REMOVE_TOKEN'
+  | 'TOKEN_REMOVED'
+  | 'SET_TOKEN_VISIBILITY'
+  | 'TOKEN_VISIBILITY_SET'
 
 export interface ExtensionMessage<T = unknown> {
   type: MessageType
@@ -147,6 +164,7 @@ export interface WalletState {
   transactions: import('./transaction').TransactionState
   connections: ConnectionState
   keyring: import('./keyring').KeyringControllerState
+  assets: import('./asset').AssetState
   ui: UIState
   isInitialized: boolean
 }

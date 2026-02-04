@@ -7,7 +7,8 @@
 
 export {
   WEB_ENV_VARS,
-  getDevnetConfig,
+  getLocalConfig,
+  getDevnetConfig, // @deprecated - use getLocalConfig
   getTestnetConfig,
   getAppConfig,
   getConfigByChainId,

@@ -216,7 +216,7 @@ services:
       dockerfile: Dockerfile
     container_name: stablenet-bridge-relayer
     environment:
-      PORT: "8080"
+      PORT: "8081"
       SOURCE_RPC_URL: http://anvil:8545
       TARGET_RPC_URL: http://anvil:8545
       SOURCE_CHAIN_ID: "31337"
@@ -248,12 +248,12 @@ services:
       LOG_FORMAT: json
       GIN_MODE: debug
     ports:
-      - "8080:8080"
+      - "8081:8081"
     depends_on:
       anvil:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/health"]
       interval: 30s
       timeout: 10s
       retries: 3

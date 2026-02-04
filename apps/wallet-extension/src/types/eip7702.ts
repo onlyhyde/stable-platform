@@ -1,41 +1,38 @@
 /**
  * EIP-7702 Authorization Types
  *
- * EIP-7702 allows EOAs to set their code for a transaction,
- * enabling smart contract functionality for regular accounts.
+ * Re-exports SDK types with wallet-specific additions.
  */
 
 import type { Address, Hex } from 'viem'
 
-/**
- * EIP-7702 Authorization structure
- * Used to delegate an EOA to a smart contract implementation
- */
-export interface Authorization {
-  /** Chain ID where the authorization is valid */
-  chainId: bigint
-  /** Address of the contract to delegate to (or zero address for revocation) */
-  address: Address
-  /** Nonce for replay protection */
-  nonce: bigint
-}
+// Re-export core types from SDK
+export type {
+  Authorization,
+  SignedAuthorization,
+  DelegatePreset,
+  DelegationStatus,
+} from '@stablenet/core'
 
-/**
- * Signed EIP-7702 Authorization
- * Includes ECDSA signature components
- */
-export interface SignedAuthorization extends Authorization {
-  /** ECDSA recovery id (0 or 1) */
-  v: number
-  /** ECDSA r component */
-  r: Hex
-  /** ECDSA s component */
-  s: Hex
-}
+// Re-export constants from SDK
+export {
+  EIP7702_MAGIC,
+  SETCODE_TX_TYPE,
+  DELEGATION_PREFIX,
+  ZERO_ADDRESS,
+} from '@stablenet/core'
+
+// Re-export functions from SDK
+export {
+  isRevocationAuthorization,
+  isDelegatedAccount,
+  extractDelegateAddress,
+} from '@stablenet/core'
 
 /**
  * Authorization signature request parameters
  * Used for wallet_signAuthorization RPC method
+ * (Wallet-specific type)
  */
 export interface AuthorizationRequest {
   /** Address of the account to sign with */
@@ -53,73 +50,57 @@ export interface AuthorizationRequest {
 
 /**
  * Authorization signature result
+ * (Wallet-specific type)
  */
 export interface AuthorizationSignatureResult {
   /** The signed authorization */
-  signedAuthorization: SignedAuthorization
+  signedAuthorization: {
+    chainId: bigint
+    address: Address
+    nonce: bigint
+    v: number
+    r: Hex
+    s: Hex
+  }
   /** Authorization hash that was signed */
   authorizationHash: Hex
 }
 
 /**
- * Delegation status for an account
+ * Legacy EIP7702_CONSTANTS for backwards compatibility
+ * @deprecated Use individual exports (ZERO_ADDRESS, DELEGATION_PREFIX, etc.) instead
  */
-export interface DelegationStatus {
-  /** Whether the account has active delegation */
-  isDelegated: boolean
-  /** Address of the delegate contract (if delegated) */
-  delegateAddress: Address | null
-  /** Current bytecode of the account */
-  code: Hex | null
-}
-
-/**
- * Known delegate contract presets
- */
-export interface DelegatePreset {
-  /** Display name */
-  name: string
-  /** Description of the contract */
-  description: string
-  /** Contract address */
-  address: Address
-  /** Supported features */
-  features: string[]
-  /** Chain IDs where this preset is available */
-  chainIds: number[]
-}
-
-/**
- * EIP-7702 Constants
- */
+import { EIP7702_MAGIC, DELEGATION_PREFIX, ZERO_ADDRESS } from '@stablenet/core'
 export const EIP7702_CONSTANTS = {
   /** Magic byte for authorization hash (0x05) */
-  MAGIC_BYTE: 0x05,
+  MAGIC_BYTE: EIP7702_MAGIC,
   /** SetCode transaction type */
   TX_TYPE: 0x04,
   /** Delegation prefix in bytecode */
-  DELEGATION_PREFIX: '0xef0100',
+  DELEGATION_PREFIX: DELEGATION_PREFIX,
   /** Zero address for revocation */
-  ZERO_ADDRESS: '0x0000000000000000000000000000000000000000' as Address,
+  ZERO_ADDRESS: ZERO_ADDRESS,
 } as const
 
 /**
  * Check if an address is the zero address (revocation)
  */
 export function isRevocationAddress(address: Address): boolean {
-  return address.toLowerCase() === EIP7702_CONSTANTS.ZERO_ADDRESS.toLowerCase()
+  return address.toLowerCase() === ZERO_ADDRESS.toLowerCase()
 }
 
 /**
  * Check if bytecode indicates a delegated account
+ * @deprecated Use isDelegatedAccount from @stablenet/core
  */
 export function isDelegatedBytecode(code: Hex | null): boolean {
   if (!code || code === '0x') return false
-  return code.toLowerCase().startsWith(EIP7702_CONSTANTS.DELEGATION_PREFIX)
+  return code.toLowerCase().startsWith(DELEGATION_PREFIX.toLowerCase())
 }
 
 /**
  * Extract delegate address from delegated account bytecode
+ * @deprecated Use extractDelegateAddress from @stablenet/core
  */
 export function extractDelegateFromBytecode(code: Hex): Address | null {
   if (!isDelegatedBytecode(code)) return null

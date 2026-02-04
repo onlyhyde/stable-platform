@@ -12,7 +12,7 @@
     "tabs"
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-ancestors 'none';"
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:*; frame-ancestors 'none';"
   },
   "host_permissions": [
     "<all_urls>"

@@ -1,7 +1,19 @@
 export { useWallet } from './useWallet'
 export { useBalance } from './useBalance'
+export { useWalletAssets } from './useWalletAssets'
+export type {
+  WalletToken,
+  NativeAsset,
+  WalletAssetsResponse,
+  AddTokenParams,
+  AddTokenResult,
+  UseWalletAssetsResult,
+} from './useWalletAssets'
 export { useStableNetWallet } from './useStableNetWallet'
 export { useChainInfo } from './useChainInfo'
+export type { ChainInfo } from './useChainInfo'
+export { useWalletNetworks } from './useWalletNetworks'
+export type { WalletNetwork } from './useWalletNetworks'
 export { useUserOp } from './useUserOp'
 export { useStealth } from './useStealth'
 export { useSwap } from './useSwap'

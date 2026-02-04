@@ -9,6 +9,9 @@ const config = {
   // Module path aliases (match tsconfig paths)
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@stablenet/core$': '<rootDir>/../../packages/sdk/packages/core/dist/index.js',
+    '^@stablenet/plugin-stealth$': '<rootDir>/../../packages/sdk/plugins/stealth/dist/index.js',
+    '^@stablenet/wallet-sdk$': '<rootDir>/../../packages/wallet-sdk/dist/index.js',
   },
 
   // Setup files
@@ -43,7 +46,7 @@ const config = {
   // Ignore patterns
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   transformIgnorePatterns: [
-    'node_modules/(?!(viem|@noble)/)',
+    'node_modules/(?!(viem|@noble|@stablenet)/)',
   ],
 
   // Clear mocks between tests

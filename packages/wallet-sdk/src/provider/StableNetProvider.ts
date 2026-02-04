@@ -253,4 +253,19 @@ export class StableNetProvider {
   getProvider(): EIP1193Provider {
     return this.provider
   }
+
+  /**
+   * Generic RPC request method
+   */
+  async request<T = unknown>(args: { method: string; params?: unknown[] | object }): Promise<T> {
+    return this.provider.request(args) as Promise<T>
+  }
+
+  /**
+   * Remove event listener
+   */
+  removeListener(event: string, listener: (...args: unknown[]) => void): void {
+    this.eventListeners.get(event)?.delete(listener as EventListener)
+    this.provider.removeListener(event, listener)
+  }
 }

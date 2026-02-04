@@ -9,7 +9,7 @@
  */
 
 import type { ExtensionMessage } from '../types'
-import { MESSAGE_TYPES } from '../shared/constants'
+import { MESSAGE_TYPES, RPC_ERRORS } from '../shared/constants'
 
 // Get MetaMask mode setting and inject inpage script
 getMetaMaskMode()
@@ -102,8 +102,8 @@ function setupMessageRelay(): void {
             id: message.id,
             payload: {
               error: {
-                code: -32603,
-                message: error instanceof Error ? error.message : 'Internal error',
+                code: RPC_ERRORS.INTERNAL_ERROR.code,
+                message: error instanceof Error ? error.message : RPC_ERRORS.INTERNAL_ERROR.message,
               },
             },
           },

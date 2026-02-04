@@ -9,6 +9,8 @@ export interface Network {
   bundlerUrl: string
   paymasterUrl?: string
   explorerUrl?: string
+  /** Indexer GraphQL/RPC endpoint URL for token balances and transaction history */
+  indexerUrl?: string
   currency: {
     name: string
     symbol: string
