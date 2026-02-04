@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardTitle, CardDescription, Button, Input, InfoBanner } from '@/components/common'
 import { supportedChains } from '@/lib/chains'
-import { getRpcSettings, type RpcSettings } from '@/lib/utils'
+import { type RpcSettings } from '@/lib/utils'
 
 interface NetworkSettingsCardProps {
   currentChainId: number
@@ -64,12 +64,12 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
 
-      setSaveMessage({ type: 'success', text: 'RPC settings saved successfully!' })
-      
-      // Clear message after 3 seconds
+      setSaveMessage({ type: 'success', text: 'RPC settings saved! Refresh the page to apply changes.' })
+
+      // Clear message after 5 seconds
       setTimeout(() => {
         setSaveMessage(null)
-      }, 3000)
+      }, 5000)
     } catch {
       setSaveMessage({ type: 'error', text: 'Failed to save settings. Please try again.' })
     } finally {

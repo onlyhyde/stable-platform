@@ -3,8 +3,8 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useAccount, useChainId } from 'wagmi'
 import { createPublicClient, http, type PublicClient } from 'viem'
-import { CONTRACT_ADDRESSES, SERVICE_URLS } from '@/lib/constants'
-import { stablenetDevnet } from '@/lib/chains'
+import { getContractAddresses, getServiceUrls } from '@/lib/constants'
+import { getStablenetLocal, getConfigByChainId } from '@/lib/chains'
 
 interface StableNetContextValue {
   publicClient: PublicClient
@@ -31,26 +31,36 @@ export function StableNetProvider({ children }: StableNetProviderProps) {
   const { isConnected } = useAccount()
 
   const value = useMemo<StableNetContextValue>(() => {
-    const currentChainId = chainId || stablenetDevnet.id
-    const contracts = CONTRACT_ADDRESSES[currentChainId] || CONTRACT_ADDRESSES[31337]
-    const services = SERVICE_URLS[currentChainId] || SERVICE_URLS[31337]
+    // Default to StableNet Local (8283) if no chain connected
+    const currentChainId = chainId || 8283
 
+    // Use dynamic functions that check user's custom RPC settings
+    const contracts = getContractAddresses(currentChainId)
+    const services = getServiceUrls(currentChainId)
+    const networkConfig = getConfigByChainId(currentChainId)
+
+    // Fallback values for unsupported chains
+    const defaultContracts = getContractAddresses(8283)!
+    const defaultServices = getServiceUrls(8283)!
+
+    // Create public client with user's custom RPC URL if set
+    const chain = getStablenetLocal()
     const publicClient = createPublicClient({
-      chain: stablenetDevnet,
-      transport: http(),
+      chain,
+      transport: http(networkConfig?.rpcUrl),
     })
 
     return {
       publicClient,
       chainId: currentChainId,
-      bundlerUrl: services.bundler,
-      paymasterUrl: services.paymaster,
-      stealthServerUrl: services.stealthServer,
-      entryPoint: contracts.entryPoint,
-      accountFactory: contracts.accountFactory,
-      paymaster: contracts.paymaster,
-      stealthAnnouncer: contracts.stealthAnnouncer,
-      stealthRegistry: contracts.stealthRegistry,
+      bundlerUrl: services?.bundler ?? defaultServices.bundler,
+      paymasterUrl: services?.paymaster ?? defaultServices.paymaster,
+      stealthServerUrl: services?.stealthServer ?? defaultServices.stealthServer,
+      entryPoint: contracts?.entryPoint ?? defaultContracts.entryPoint,
+      accountFactory: contracts?.accountFactory ?? defaultContracts.accountFactory,
+      paymaster: contracts?.paymaster ?? defaultContracts.paymaster,
+      stealthAnnouncer: contracts?.stealthAnnouncer ?? defaultContracts.stealthAnnouncer,
+      stealthRegistry: contracts?.stealthRegistry ?? defaultContracts.stealthRegistry,
       isReady: isConnected,
     }
   }, [chainId, isConnected])

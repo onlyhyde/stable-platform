@@ -14,6 +14,7 @@ import {
   getDelegatePresets,
   ZERO_ADDRESS,
 } from '@/lib/eip7702'
+import { getConfigByChainId } from '@/lib/config'
 
 // Contract addresses (local devnet) - can be overridden by user selection
 const DEFAULT_KERNEL_IMPLEMENTATION = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9' as const
@@ -64,13 +65,36 @@ export interface UpgradeResult {
 export type SigningMethod = 'privateKey' | 'stablenet'
 
 // Get chain configuration based on chainId
+// Uses user's custom RPC settings from Settings page if available
 function getChainConfig(chainId: number): Chain {
+  // Try to get user's custom RPC settings
+  const networkConfig = getConfigByChainId(chainId)
+  const customRpcUrl = networkConfig?.rpcUrl
+
   switch (chainId) {
     case 31337:
       return {
         ...anvil,
         rpcUrls: {
-          default: { http: ['http://localhost:8545'] },
+          default: { http: [customRpcUrl || 'http://localhost:8545'] },
+        },
+      }
+    case 8283: // StableNet Local
+      return {
+        id: 8283,
+        name: 'StableNet Local',
+        nativeCurrency: { decimals: 18, name: 'Wrapped KRW Coin', symbol: 'WKRC' },
+        rpcUrls: {
+          default: { http: [customRpcUrl || 'http://127.0.0.1:8501'] },
+        },
+      }
+    case 82830: // StableNet Testnet
+      return {
+        id: 82830,
+        name: 'StableNet Testnet',
+        nativeCurrency: { decimals: 18, name: 'Wrapped KRW Coin', symbol: 'WKRC' },
+        rpcUrls: {
+          default: { http: [customRpcUrl || 'https://rpc.testnet.stablenet.dev'] },
         },
       }
     case 11155111:

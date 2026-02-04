@@ -1,6 +1,9 @@
 import { defineChain } from 'viem'
 import type { Chain } from 'viem'
-import { getLocalConfig, getTestnetConfig, getAppConfig } from './config'
+import { getLocalConfig, getTestnetConfig, getAppConfig, getConfigByChainId } from './config'
+
+// Re-export for convenience
+export { getConfigByChainId }
 
 /**
  * Anvil (Local) chain definition - chainId 31337

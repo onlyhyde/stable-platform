@@ -4,10 +4,18 @@
  * Environment variables for the Next.js web application.
  * All client-side variables must be prefixed with NEXT_PUBLIC_
  *
+ * Priority order for RPC/Bundler/Paymaster URLs:
+ * 1. User settings from localStorage (Settings page)
+ * 2. Environment variables
+ * 3. Default values
+ *
  * Usage:
  * - Set in .env.local for local development
  * - Set in deployment environment for production
+ * - Override via Settings > Network > RPC Configuration
  */
+
+import { getRpcSettings } from '../utils'
 
 /**
  * Environment variable names
@@ -130,13 +138,25 @@ function getEnvNumber(name: string, defaultValue: number): number {
 }
 
 /**
+ * Get user's custom RPC settings from localStorage (if any)
+ * Returns null on server-side or if no settings saved
+ */
+function getUserRpcSettings() {
+  return getRpcSettings()
+}
+
+/**
  * Get Local configuration (StableNet Local - chainId 8283)
+ * User settings from Settings page take priority over env vars and defaults
  */
 export function getLocalConfig() {
+  const userSettings = getUserRpcSettings()
+
   return {
-    rpcUrl: getEnvString(WEB_ENV_VARS.LOCAL_RPC_URL, DEFAULTS.LOCAL_RPC_URL),
-    bundlerUrl: getEnvString(WEB_ENV_VARS.LOCAL_BUNDLER_URL, DEFAULTS.LOCAL_BUNDLER_URL),
-    paymasterUrl: getEnvString(WEB_ENV_VARS.LOCAL_PAYMASTER_URL, DEFAULTS.LOCAL_PAYMASTER_URL),
+    // User settings > Environment variables > Defaults
+    rpcUrl: userSettings?.rpcUrl || getEnvString(WEB_ENV_VARS.LOCAL_RPC_URL, DEFAULTS.LOCAL_RPC_URL),
+    bundlerUrl: userSettings?.bundlerUrl || getEnvString(WEB_ENV_VARS.LOCAL_BUNDLER_URL, DEFAULTS.LOCAL_BUNDLER_URL),
+    paymasterUrl: userSettings?.paymasterUrl || getEnvString(WEB_ENV_VARS.LOCAL_PAYMASTER_URL, DEFAULTS.LOCAL_PAYMASTER_URL),
     stealthServerUrl: getEnvString(WEB_ENV_VARS.LOCAL_STEALTH_SERVER_URL, DEFAULTS.LOCAL_STEALTH_SERVER_URL),
     explorerUrl: getEnvString(WEB_ENV_VARS.LOCAL_EXPLORER_URL, DEFAULTS.LOCAL_EXPLORER_URL),
     indexerUrl: getEnvString(WEB_ENV_VARS.LOCAL_INDEXER_URL, DEFAULTS.LOCAL_INDEXER_URL),
@@ -161,12 +181,16 @@ export const getDevnetConfig = getLocalConfig
 
 /**
  * Get Testnet configuration (StableNet Testnet - chainId 82830)
+ * User settings from Settings page take priority over env vars and defaults
  */
 export function getTestnetConfig() {
+  const userSettings = getUserRpcSettings()
+
   return {
-    rpcUrl: getEnvString(WEB_ENV_VARS.TESTNET_RPC_URL, DEFAULTS.TESTNET_RPC_URL),
-    bundlerUrl: getEnvString(WEB_ENV_VARS.TESTNET_BUNDLER_URL, DEFAULTS.TESTNET_BUNDLER_URL),
-    paymasterUrl: getEnvString(WEB_ENV_VARS.TESTNET_PAYMASTER_URL, DEFAULTS.TESTNET_PAYMASTER_URL),
+    // User settings > Environment variables > Defaults
+    rpcUrl: userSettings?.rpcUrl || getEnvString(WEB_ENV_VARS.TESTNET_RPC_URL, DEFAULTS.TESTNET_RPC_URL),
+    bundlerUrl: userSettings?.bundlerUrl || getEnvString(WEB_ENV_VARS.TESTNET_BUNDLER_URL, DEFAULTS.TESTNET_BUNDLER_URL),
+    paymasterUrl: userSettings?.paymasterUrl || getEnvString(WEB_ENV_VARS.TESTNET_PAYMASTER_URL, DEFAULTS.TESTNET_PAYMASTER_URL),
     stealthServerUrl: getEnvString(WEB_ENV_VARS.TESTNET_STEALTH_SERVER_URL, DEFAULTS.TESTNET_STEALTH_SERVER_URL),
     explorerUrl: getEnvString(WEB_ENV_VARS.TESTNET_EXPLORER_URL, DEFAULTS.TESTNET_EXPLORER_URL),
     indexerUrl: getEnvString(WEB_ENV_VARS.TESTNET_INDEXER_URL, DEFAULTS.TESTNET_INDEXER_URL),

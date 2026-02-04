@@ -1,5 +1,6 @@
 import type { Address } from 'viem'
 import {
+  getLocalConfig,
   getDevnetConfig,
   getTestnetConfig,
   getAppConfig as getAppConfigFromEnv,
@@ -54,9 +55,13 @@ export function getServiceUrls(chainId: number): ServiceUrls | undefined {
  * @deprecated Use getContractAddresses(chainId) instead for environment override support
  */
 export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
-  // Devnet
+  // Anvil (Local)
   31337: getDevnetConfig().contracts,
-  // Testnet
+  // StableNet Local
+  8283: getLocalConfig().contracts,
+  // StableNet Testnet
+  82830: getTestnetConfig().contracts,
+  // Sepolia (legacy)
   11155111: getTestnetConfig().contracts,
 }
 
@@ -65,11 +70,25 @@ export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
  * @deprecated Use getServiceUrls(chainId) instead for environment override support
  */
 export const SERVICE_URLS: Record<number, ServiceUrls> = {
+  // Anvil (Local)
   31337: {
     bundler: getDevnetConfig().bundlerUrl,
     paymaster: getDevnetConfig().paymasterUrl,
     stealthServer: getDevnetConfig().stealthServerUrl,
   },
+  // StableNet Local - uses user's custom RPC settings if set
+  8283: {
+    bundler: getLocalConfig().bundlerUrl,
+    paymaster: getLocalConfig().paymasterUrl,
+    stealthServer: getLocalConfig().stealthServerUrl,
+  },
+  // StableNet Testnet - uses user's custom RPC settings if set
+  82830: {
+    bundler: getTestnetConfig().bundlerUrl,
+    paymaster: getTestnetConfig().paymasterUrl,
+    stealthServer: getTestnetConfig().stealthServerUrl,
+  },
+  // Sepolia (legacy)
   11155111: {
     bundler: getTestnetConfig().bundlerUrl,
     paymaster: getTestnetConfig().paymasterUrl,
