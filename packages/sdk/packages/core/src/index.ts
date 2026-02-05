@@ -157,6 +157,20 @@ export {
   BUILT_IN_MODULES,
 } from './modules'
 
+// Contract ABIs
+export {
+  // Kernel Smart Account
+  KERNEL_ABI,
+  // Entry Point
+  ENTRY_POINT_ABI,
+  // Validators
+  ECDSA_VALIDATOR_ABI,
+  WEBAUTHN_VALIDATOR_ABI,
+  MULTISIG_VALIDATOR_ABI,
+  // Hooks
+  SPENDING_LIMIT_HOOK_ABI,
+} from './abis'
+
 // Re-export types for convenience
 export type {
   UserOperation,
