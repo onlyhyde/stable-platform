@@ -62,25 +62,76 @@ export const KERNEL_ABI = [
     stateMutability: 'view',
   },
 
+  /**
+   * Set the root validator
+   * @param validator - Validator address
+   * @param validatorData - Validator initialization data
+   */
+  {
+    type: 'function',
+    name: 'setRootValidator',
+    inputs: [
+      { name: 'validator', type: 'address' },
+      { name: 'validatorData', type: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+
+  /**
+   * Get the root validator address
+   */
+  {
+    type: 'function',
+    name: 'rootValidator',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+  },
+
+  // ============================================================================
+  // Initialization
+  // ============================================================================
+
+  /**
+   * Initialize the account
+   * @param rootValidator - Root validator (bytes21: MODULE_TYPE + address)
+   * @param hook - Hook address (0x0 for no hook)
+   * @param validatorData - Validator initialization data
+   * @param hookData - Hook initialization data
+   * @param initConfig - Additional initialization config
+   */
+  {
+    type: 'function',
+    name: 'initialize',
+    inputs: [
+      { name: 'rootValidator', type: 'bytes21' },
+      { name: 'hook', type: 'address' },
+      { name: 'validatorData', type: 'bytes' },
+      { name: 'hookData', type: 'bytes' },
+      { name: 'initConfig', type: 'bytes[]' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+
   // ============================================================================
   // Execution
   // ============================================================================
 
   /**
-   * Execute a single call
-   * @param target - Target contract address
-   * @param value - ETH value to send
-   * @param callData - Calldata for the call
+   * Execute with mode and calldata (ERC-7579)
+   * @param mode - Execution mode (bytes32)
+   * @param executionCalldata - Encoded execution data
    */
   {
     type: 'function',
     name: 'execute',
     inputs: [
-      { name: 'target', type: 'address' },
-      { name: 'value', type: 'uint256' },
-      { name: 'callData', type: 'bytes' },
+      { name: 'mode', type: 'bytes32' },
+      { name: 'executionCalldata', type: 'bytes' },
     ],
-    outputs: [{ name: 'result', type: 'bytes' }],
+    outputs: [],
     stateMutability: 'payable',
   },
 
@@ -123,8 +174,38 @@ export const KERNEL_ABI = [
   },
 
   // ============================================================================
-  // Account Info
+  // Account Info & EIP-712
   // ============================================================================
+
+  /**
+   * Get EIP-712 domain
+   */
+  {
+    type: 'function',
+    name: 'eip712Domain',
+    inputs: [],
+    outputs: [
+      { name: 'fields', type: 'bytes1' },
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'chainId', type: 'uint256' },
+      { name: 'verifyingContract', type: 'address' },
+      { name: 'salt', type: 'bytes32' },
+      { name: 'extensions', type: 'uint256[]' },
+    ],
+    stateMutability: 'view',
+  },
+
+  /**
+   * Validate a signature (EIP-1271)
+   */
+  {
+    type: 'function',
+    name: 'isValidSignature',
+    inputs: [{ name: 'hash', type: 'bytes32' }],
+    outputs: [{ name: '', type: 'bytes4' }],
+    stateMutability: 'view',
+  },
 
   /**
    * Get account implementation ID

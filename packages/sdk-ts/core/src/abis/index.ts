@@ -1,18 +1,54 @@
-// Kernel Smart Account
-export { KERNEL_ABI } from './kernel'
+// ============================================================================
+// ERC-7579 Module Interface
+// ============================================================================
+export { MODULE_INTERFACE_ABI } from './module'
 
-// Entry Point
+// ============================================================================
+// ERC-4337 Entry Point
+// ============================================================================
 export { ENTRY_POINT_ABI } from './entryPoint'
 
-// Validators
+// ============================================================================
+// Kernel Smart Account & Factory
+// ============================================================================
+export { KERNEL_ABI } from './kernel'
+export { KERNEL_FACTORY_ABI } from './factory'
+
+// ============================================================================
+// Validators (ERC-7579 Module Type 1)
+// ============================================================================
 export {
   ECDSA_VALIDATOR_ABI,
   WEBAUTHN_VALIDATOR_ABI,
   MULTISIG_VALIDATOR_ABI,
 } from './validators'
 
-// Hooks
-export { SPENDING_LIMIT_HOOK_ABI } from './hooks'
+// ============================================================================
+// Executors (ERC-7579 Module Type 2)
+// ============================================================================
+export {
+  SESSION_KEY_EXECUTOR_ABI,
+  SWAP_EXECUTOR_ABI,
+  LENDING_EXECUTOR_ABI,
+  STAKING_EXECUTOR_ABI,
+} from './executors'
 
-// Re-export common types
+// ============================================================================
+// Hooks (ERC-7579 Module Type 4)
+// ============================================================================
+export { SPENDING_LIMIT_HOOK_ABI, HEALTH_FACTOR_HOOK_ABI } from './hooks'
+
+// ============================================================================
+// Stealth Addresses (EIP-5564 & EIP-6538)
+// ============================================================================
+export { ERC5564_ANNOUNCER_ABI, ERC6538_REGISTRY_ABI } from './stealth'
+
+// ============================================================================
+// DeFi Infrastructure
+// ============================================================================
+export { MERCHANT_REGISTRY_ABI } from './defi'
+
+// ============================================================================
+// Type Re-exports
+// ============================================================================
 export type { Abi } from 'viem'

@@ -244,16 +244,30 @@ export {
 
 // Contract ABIs
 export {
-  // Kernel Smart Account
-  KERNEL_ABI,
-  // Entry Point
+  // ERC-7579 Module Interface
+  MODULE_INTERFACE_ABI,
+  // ERC-4337 Entry Point
   ENTRY_POINT_ABI,
-  // Validators
+  // Kernel Smart Account & Factory
+  KERNEL_ABI,
+  KERNEL_FACTORY_ABI,
+  // Validators (ERC-7579 Module Type 1)
   ECDSA_VALIDATOR_ABI,
   WEBAUTHN_VALIDATOR_ABI,
   MULTISIG_VALIDATOR_ABI,
-  // Hooks
+  // Executors (ERC-7579 Module Type 2)
+  SESSION_KEY_EXECUTOR_ABI,
+  SWAP_EXECUTOR_ABI,
+  LENDING_EXECUTOR_ABI,
+  STAKING_EXECUTOR_ABI,
+  // Hooks (ERC-7579 Module Type 4)
   SPENDING_LIMIT_HOOK_ABI,
+  HEALTH_FACTOR_HOOK_ABI,
+  // Stealth Addresses (EIP-5564 & EIP-6538)
+  ERC5564_ANNOUNCER_ABI,
+  ERC6538_REGISTRY_ABI,
+  // DeFi Infrastructure
+  MERCHANT_REGISTRY_ABI,
 } from './abis'
 
 // Re-export types for convenience
