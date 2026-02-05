@@ -21,3 +21,12 @@ export {
   type DelegationRequest,
   type BuiltEIP7702Transaction,
 } from './eip7702Transaction'
+
+// Transaction Router
+export {
+  createTransactionRouter,
+  type TransactionRouter,
+  type TransactionRouterConfig,
+  type PreparedTransaction,
+  type ExecuteOptions,
+} from './transactionRouter'

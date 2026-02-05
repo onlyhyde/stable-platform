@@ -109,6 +109,12 @@ export {
   type AuthorizationSigner,
   type DelegationRequest,
   type BuiltEIP7702Transaction,
+  // Router
+  createTransactionRouter,
+  type TransactionRouter,
+  type TransactionRouterConfig,
+  type PreparedTransaction,
+  type ExecuteOptions,
 } from './transaction'
 
 // Gas Module
