@@ -1,0 +1,9 @@
+[submodule "packages/foundry/lib/account-abstraction"]
+	path = packages/foundry/lib/account-abstraction
+	url = https://github.com/eth-infinitism/account-abstraction
+[submodule "packages/foundry/lib/solady"]
+	path = packages/foundry/lib/solady
+	url = https://github.com/vectorized/solady
+[submodule "packages/foundry/lib/openzeppelin-contracts"]
+	path = packages/foundry/lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts

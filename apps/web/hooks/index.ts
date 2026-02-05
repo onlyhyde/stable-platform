@@ -20,3 +20,20 @@ export { useSwap } from './useSwap'
 export { useSmartAccount } from './useSmartAccount'
 export { useSessionKey } from './useSessionKey'
 export { useRecurringPayment } from './useRecurringPayment'
+export { usePaymaster } from './usePaymaster'
+export type {
+  PaymasterType,
+  PaymasterConfig,
+  PaymasterStubData,
+  PaymasterData,
+  SponsorshipPolicy,
+  PaymasterBalance,
+} from './usePaymaster'
+export { useModule, MODULE_TYPES } from './useModule'
+export type {
+  ModuleType,
+  ModuleInfo,
+  InstallModuleParams,
+  UninstallModuleParams,
+  ModuleCallData,
+} from './useModule'
