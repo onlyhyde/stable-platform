@@ -19,3 +19,11 @@ export {
   TOKEN_RECEIVER_FALLBACK,
   BUILT_IN_MODULES,
 } from './moduleRegistry'
+
+export {
+  createModuleClient,
+  type ModuleClient,
+  type ModuleClientConfig,
+  type ModuleInstallResult,
+  type ModuleCalldata,
+} from './moduleClient'
