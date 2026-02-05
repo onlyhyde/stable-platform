@@ -34,10 +34,10 @@ importers:
         version: 1.8.0
       '@stablenet/core':
         specifier: workspace:*
-        version: link:../../packages/sdk/packages/core
+        version: link:../../packages/sdk-ts/core
       '@stablenet/plugin-stealth':
         specifier: workspace:*
-        version: link:../../packages/sdk/plugins/stealth
+        version: link:../../packages/sdk-ts/plugins/stealth
       bip39:
         specifier: ^3.1.0
         version: 3.1.0
@@ -122,10 +122,10 @@ importers:
     dependencies:
       '@stablenet/core':
         specifier: workspace:*
-        version: link:../../packages/sdk/packages/core
+        version: link:../../packages/sdk-ts/core
       '@stablenet/plugin-stealth':
         specifier: workspace:*
-        version: link:../../packages/sdk/plugins/stealth
+        version: link:../../packages/sdk-ts/plugins/stealth
       '@stablenet/wallet-sdk':
         specifier: workspace:*
         version: link:../../packages/wallet-sdk
@@ -263,14 +263,14 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.19.7)(jsdom@27.4.0(@noble/hashes@2.0.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
 
-  packages/sdk/packages/accounts:
+  packages/sdk-ts/accounts:
     dependencies:
       '@stablenet/core':
         specifier: workspace:*
         version: link:../core
-      '@stablenet/types':
+      '@stablenet/sdk-types':
         specifier: workspace:*
-        version: link:../../../types
+        version: link:../types
       viem:
         specifier: ^2.21.0
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -291,11 +291,27 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.19.7)(jsdom@27.4.0(@noble/hashes@2.0.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
 
-  packages/sdk/packages/core:
+  packages/sdk-ts/addresses:
     dependencies:
-      '@stablenet/types':
+      viem:
+        specifier: ^2.21.0
+        version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+    devDependencies:
+      '@biomejs/biome':
+        specifier: ^1.9.4
+        version: 1.9.4
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/sdk-ts/core:
+    dependencies:
+      '@stablenet/sdk-types':
         specifier: workspace:*
-        version: link:../../../types
+        version: link:../types
       viem:
         specifier: ^2.21.0
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -316,7 +332,7 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.19.7)(jsdom@27.4.0(@noble/hashes@2.0.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
 
-  packages/sdk/packages/types:
+  packages/sdk-ts/crypto:
     dependencies:
       viem:
         specifier: ^2.21.0
@@ -332,42 +348,14 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
-  packages/sdk/plugins/ecdsa:
+  packages/sdk-ts/plugins/defi:
     dependencies:
       '@stablenet/core':
         specifier: workspace:*
-        version: link:../../packages/core
-      '@stablenet/types':
+        version: link:../../core
+      '@stablenet/sdk-types':
         specifier: workspace:*
-        version: link:../../../types
-      viem:
-        specifier: ^2.21.0
-        version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
-    devDependencies:
-      '@biomejs/biome':
-        specifier: ^1.9.4
-        version: 1.9.4
-      '@types/node':
-        specifier: ^22.10.2
-        version: 22.19.7
-      tsup:
-        specifier: ^8.3.5
-        version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
-      vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@types/node@22.19.7)(jsdom@27.4.0(@noble/hashes@2.0.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
-
-  packages/sdk/plugins/paymaster:
-    dependencies:
-      '@stablenet/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@stablenet/types':
-        specifier: workspace:*
-        version: link:../../../types
+        version: link:../../types
       viem:
         specifier: ^2.21.0
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -385,14 +373,42 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@25.0.10)(jsdom@27.4.0(@noble/hashes@2.0.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
 
-  packages/sdk/plugins/session-keys:
+  packages/sdk-ts/plugins/ecdsa:
     dependencies:
       '@stablenet/core':
         specifier: workspace:*
-        version: link:../../packages/core
-      '@stablenet/types':
+        version: link:../../core
+      '@stablenet/sdk-types':
         specifier: workspace:*
-        version: link:../../../types
+        version: link:../../types
+      viem:
+        specifier: ^2.21.0
+        version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+    devDependencies:
+      '@biomejs/biome':
+        specifier: ^1.9.4
+        version: 1.9.4
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.7
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.7)(jsdom@27.4.0(@noble/hashes@2.0.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
+
+  packages/sdk-ts/plugins/modules:
+    dependencies:
+      '@stablenet/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@stablenet/sdk-types':
+        specifier: workspace:*
+        version: link:../../types
       viem:
         specifier: ^2.21.0
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -410,7 +426,57 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@25.0.10)(jsdom@27.4.0(@noble/hashes@2.0.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
 
-  packages/sdk/plugins/stealth:
+  packages/sdk-ts/plugins/paymaster:
+    dependencies:
+      '@stablenet/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@stablenet/sdk-types':
+        specifier: workspace:*
+        version: link:../../types
+      viem:
+        specifier: ^2.21.0
+        version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+    devDependencies:
+      '@biomejs/biome':
+        specifier: ^1.9.4
+        version: 1.9.4
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@25.0.10)(jsdom@27.4.0(@noble/hashes@2.0.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
+
+  packages/sdk-ts/plugins/session-keys:
+    dependencies:
+      '@stablenet/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@stablenet/sdk-types':
+        specifier: workspace:*
+        version: link:../../types
+      viem:
+        specifier: ^2.21.0
+        version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+    devDependencies:
+      '@biomejs/biome':
+        specifier: ^1.9.4
+        version: 1.9.4
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@25.0.10)(jsdom@27.4.0(@noble/hashes@2.0.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
+
+  packages/sdk-ts/plugins/stealth:
     dependencies:
       '@noble/curves':
         specifier: ^1.7.0
@@ -435,14 +501,14 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@25.0.10)(jsdom@27.4.0(@noble/hashes@1.8.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
 
-  packages/sdk/plugins/subscription:
+  packages/sdk-ts/plugins/subscription:
     dependencies:
       '@stablenet/core':
         specifier: workspace:*
-        version: link:../../packages/core
-      '@stablenet/types':
+        version: link:../../core
+      '@stablenet/sdk-types':
         specifier: workspace:*
-        version: link:../../../types
+        version: link:../../types
       viem:
         specifier: ^2.21.0
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -459,6 +525,22 @@ importers:
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@25.0.10)(jsdom@27.4.0(@noble/hashes@2.0.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
+
+  packages/sdk-ts/types:
+    dependencies:
+      viem:
+        specifier: ^2.21.0
+        version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
+    devDependencies:
+      '@biomejs/biome':
+        specifier: ^1.9.4
+        version: 1.9.4
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/types:
     dependencies:

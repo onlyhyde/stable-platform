@@ -1,7 +1,13 @@
 packages:
-  # SDK packages
-  - "packages/sdk/packages/*"
-  - "packages/sdk/plugins/*"
+  # SDK-TS packages (extractable to separate repo)
+  - "packages/sdk-ts/types"
+  - "packages/sdk-ts/addresses"
+  - "packages/sdk-ts/crypto"
+  - "packages/sdk-ts/core"
+  - "packages/sdk-ts/accounts"
+  - "packages/sdk-ts/plugins/*"
+
+  # Platform shared packages
   - "packages/types"
   - "packages/config"
   - "packages/contracts"
