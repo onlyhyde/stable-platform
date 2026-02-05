@@ -111,6 +111,15 @@ export {
   type BuiltEIP7702Transaction,
 } from './transaction'
 
+// Gas Module
+export {
+  createGasEstimator,
+  type GasEstimator,
+  type GasEstimatorConfig,
+  type GasPriceInfo,
+  type ERC20GasEstimate,
+} from './gas'
+
 // Re-export types for convenience
 export type {
   UserOperation,
