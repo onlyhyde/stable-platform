@@ -177,6 +177,25 @@ export type {
   SupportedToken,
   SponsorPolicy,
   PaymasterClientConfig,
+  // Module types
+  ModuleType,
+  ModuleStatus,
+  ModuleMetadata,
+  ModuleConfigSchema,
+  ModuleConfigField,
+  SolidityType,
+  FieldValidation,
+  InstalledModule,
+  ModuleInstallRequest,
+  ModuleUninstallRequest,
+  ECDSAValidatorConfig,
+  WebAuthnValidatorConfig,
+  MultiSigValidatorConfig,
+  SessionKeyConfig,
+  RecurringPaymentConfig,
+  SpendingLimitHookConfig,
+  AuditHookConfig,
+  ModuleABI,
 } from '@stablenet/types'
 
 export {
@@ -210,5 +229,16 @@ export {
   canInstallModules,
   // Paymaster constants
   PAYMASTER_RPC_METHODS,
+  // Module constants
+  MODULE_TYPE_NAMES,
+  MODULE_STATUS,
+  // Module type guards
+  isValidator,
+  isExecutor,
+  isHook,
+  isFallback,
+  isPolicy,
+  isSigner,
+  getModuleTypeName,
   // Note: BUNDLER_ERROR_CODES is exported from ./errors with extended SDK error codes
 } from '@stablenet/types'

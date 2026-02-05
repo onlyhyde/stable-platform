@@ -28,15 +28,7 @@ export const KERNEL_ADDRESSES = {
   KERNEL_V3_0: '0xd3082872F8B06073A021b4602e022d5A070d7cfC' as Address,
 } as const
 
-/**
- * Module type IDs (ERC-7579)
- */
-export const MODULE_TYPE = {
-  VALIDATOR: 1n,
-  EXECUTOR: 2n,
-  FALLBACK: 3n,
-  HOOK: 4n,
-} as const
+// Note: MODULE_TYPE is now defined in module.ts with full ERC-7579 support
 
 /**
  * Kernel execution modes
