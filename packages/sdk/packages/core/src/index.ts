@@ -102,6 +102,13 @@ export {
   type EOATransactionConfig,
   type TransactionSigner,
   type BuiltEOATransaction,
+  // EIP-7702
+  createEIP7702TransactionBuilder,
+  type EIP7702TransactionBuilder,
+  type EIP7702TransactionConfig,
+  type AuthorizationSigner,
+  type DelegationRequest,
+  type BuiltEIP7702Transaction,
 } from './transaction'
 
 // Re-export types for convenience
