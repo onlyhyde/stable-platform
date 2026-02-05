@@ -101,4 +101,33 @@ export {
   type HookValidationResult,
   type SpendingLimitStatus,
   type AuditLogEntry,
+  // Fallback Utilities
+  // Token Receiver
+  encodeTokenReceiverInit,
+  decodeTokenReceiverFlags,
+  validateTokenReceiverConfig,
+  getTokenReceiverHandlers,
+  encodeERC721ReceivedReturn,
+  encodeERC1155ReceivedReturn,
+  encodeERC1155BatchReceivedReturn,
+  // Flash Loan
+  encodeFlashLoanInit,
+  validateFlashLoanConfig,
+  isFlashLoanAuthorized,
+  // Generic Fallback
+  encodeFallbackHandlerRegistration,
+  encodeBatchFallbackRegistration,
+  calculateSelector,
+  encodeSupportsInterfaceCall,
+  getSupportedInterfaceIds,
+  // Constants
+  INTERFACE_SELECTORS,
+  INTERFACE_IDS,
+  // Aggregated
+  fallbackUtils,
+  // Types
+  type FallbackValidationResult,
+  type TokenReceiverCapability,
+  type FlashLoanCallbackConfig,
+  type FallbackHandlerRegistration,
 } from './utils'

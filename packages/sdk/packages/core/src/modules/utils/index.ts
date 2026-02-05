@@ -80,3 +80,34 @@ export {
   type SpendingLimitStatus,
   type AuditLogEntry,
 } from './hookUtils'
+
+export {
+  // Token Receiver
+  encodeTokenReceiverInit,
+  decodeTokenReceiverFlags,
+  validateTokenReceiverConfig,
+  getTokenReceiverHandlers,
+  encodeERC721ReceivedReturn,
+  encodeERC1155ReceivedReturn,
+  encodeERC1155BatchReceivedReturn,
+  // Flash Loan
+  encodeFlashLoanInit,
+  validateFlashLoanConfig,
+  isFlashLoanAuthorized,
+  // Generic Fallback
+  encodeFallbackHandlerRegistration,
+  encodeBatchFallbackRegistration,
+  calculateSelector,
+  encodeSupportsInterfaceCall,
+  getSupportedInterfaceIds,
+  // Constants
+  INTERFACE_SELECTORS,
+  INTERFACE_IDS,
+  // Aggregated export
+  fallbackUtils,
+  // Types
+  type FallbackValidationResult,
+  type TokenReceiverCapability,
+  type FlashLoanCallbackConfig,
+  type FallbackHandlerRegistration,
+} from './fallbackUtils'
