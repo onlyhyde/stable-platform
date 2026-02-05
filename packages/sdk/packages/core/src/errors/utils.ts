@@ -12,6 +12,7 @@ import {
   TransactionError,
   ConfigurationError,
   ValidationError,
+  PaymasterError,
 } from './SdkError'
 
 /**
@@ -40,6 +41,13 @@ export function isUserOperationError(error: unknown): error is UserOperationErro
  */
 export function isTransactionError(error: unknown): error is TransactionError {
   return error instanceof TransactionError
+}
+
+/**
+ * Check if an error is a PaymasterError
+ */
+export function isPaymasterError(error: unknown): error is PaymasterError {
+  return error instanceof PaymasterError
 }
 
 /**
@@ -270,6 +278,25 @@ export function createValidationError(
   context?: ErrorContext
 ): ValidationError {
   return new ValidationError(message, field, value, context)
+}
+
+/**
+ * Create a paymaster error
+ */
+export function createPaymasterError(
+  code: string,
+  message: string,
+  options?: {
+    rpcCode?: number
+    reason?: string
+    context?: ErrorContext
+  }
+): PaymasterError {
+  return new PaymasterError(code, message, {
+    rpcCode: options?.rpcCode,
+    reason: options?.reason,
+    context: options?.context,
+  })
 }
 
 /**

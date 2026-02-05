@@ -12,6 +12,7 @@ import type {
   UserOperationErrorDetails,
   TransactionErrorDetails,
   GasEstimationErrorDetails,
+  PaymasterErrorDetails,
 } from './types'
 import { SDK_ERROR_CODES, BUNDLER_ERROR_CODES } from './types'
 
@@ -267,5 +268,61 @@ export class ValidationError extends SdkError {
     this.name = 'ValidationError'
     this.field = field
     this.value = value
+  }
+}
+
+/**
+ * Paymaster Error class
+ * For errors from paymaster services
+ */
+export class PaymasterError extends SdkError {
+  readonly paymasterCode: string
+  readonly rpcCode?: number
+  readonly reason?: string
+
+  constructor(
+    paymasterCode: string,
+    message: string,
+    details?: Omit<PaymasterErrorDetails, 'paymasterCode'> & { context?: ErrorContext }
+  ) {
+    super({
+      code: SDK_ERROR_CODES.PAYMASTER_ERROR,
+      message,
+      context: details?.context,
+    })
+    this.name = 'PaymasterError'
+    this.paymasterCode = paymasterCode
+    this.rpcCode = details?.rpcCode
+    this.reason = details?.reason
+  }
+
+  /**
+   * Check if paymaster error is retryable
+   */
+  override isRetryable(): boolean {
+    const retryableCodes = ['TIMEOUT', 'HTTP_ERROR']
+    return retryableCodes.includes(this.paymasterCode)
+  }
+
+  /**
+   * Get user-friendly message for paymaster errors
+   */
+  override getUserMessage(): string {
+    switch (this.paymasterCode) {
+      case 'SPONSOR_NOT_AVAILABLE':
+        return 'Gas sponsorship is not available for this transaction.'
+      case 'INSUFFICIENT_SPONSOR_BALANCE':
+        return 'The sponsor does not have sufficient balance.'
+      case 'TOKEN_NOT_SUPPORTED':
+        return 'This token is not supported for gas payment.'
+      case 'INSUFFICIENT_TOKEN_ALLOWANCE':
+        return 'Please approve the token for gas payment.'
+      case 'TIMEOUT':
+        return 'Paymaster service timed out. Please try again.'
+      case 'HTTP_ERROR':
+        return 'Could not connect to paymaster service.'
+      default:
+        return this.message || 'Paymaster error occurred.'
+    }
   }
 }

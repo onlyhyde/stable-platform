@@ -155,3 +155,12 @@ export interface GasEstimationErrorDetails {
   availableGas?: bigint
   reason?: string
 }
+
+/**
+ * Paymaster error details
+ */
+export interface PaymasterErrorDetails {
+  paymasterCode: string
+  rpcCode?: number
+  reason?: string
+}

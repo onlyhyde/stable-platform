@@ -15,6 +15,7 @@ export {
   type UserOperationErrorDetails,
   type TransactionErrorDetails,
   type GasEstimationErrorDetails,
+  type PaymasterErrorDetails,
 } from './types'
 
 // Error classes
@@ -26,6 +27,7 @@ export {
   GasEstimationError,
   ConfigurationError,
   ValidationError,
+  PaymasterError,
 } from './SdkError'
 
 // Utilities
@@ -34,12 +36,14 @@ export {
   isBundlerError,
   isUserOperationError,
   isTransactionError,
+  isPaymasterError,
   normalizeError,
   createBundlerError,
   createUserOperationError,
   createTransactionError,
   createConfigurationError,
   createValidationError,
+  createPaymasterError,
   withErrorHandling,
   assertCondition,
   assertDefined,

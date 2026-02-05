@@ -11,6 +11,7 @@ export {
   type UserOperationErrorDetails,
   type TransactionErrorDetails,
   type GasEstimationErrorDetails,
+  type PaymasterErrorDetails,
   // Classes
   SdkError,
   BundlerError,
@@ -19,17 +20,20 @@ export {
   GasEstimationError,
   ConfigurationError,
   ValidationError,
+  PaymasterError,
   // Utilities
   isSdkError,
   isBundlerError,
   isUserOperationError,
   isTransactionError,
+  isPaymasterError,
   normalizeError,
   createBundlerError,
   createUserOperationError,
   createTransactionError,
   createConfigurationError,
   createValidationError,
+  createPaymasterError,
   withErrorHandling,
   assertCondition,
   assertDefined,
@@ -126,6 +130,15 @@ export {
   type ERC20GasEstimate,
 } from './gas'
 
+// Paymaster Client
+export {
+  createPaymasterClient,
+  type PaymasterClientInstance,
+  type PartialUserOperationForPaymaster,
+  type PaymasterResponse,
+  type ERC20PaymentEstimate,
+} from './paymasterClient'
+
 // Re-export types for convenience
 export type {
   UserOperation,
@@ -159,6 +172,11 @@ export type {
   KeyringType,
   Account,
   AccountState,
+  // Paymaster types
+  ExtendedPaymasterData,
+  SupportedToken,
+  SponsorPolicy,
+  PaymasterClientConfig,
 } from '@stablenet/types'
 
 export {
@@ -190,5 +208,7 @@ export {
   getDefaultTransactionMode,
   supportsSmartAccount,
   canInstallModules,
+  // Paymaster constants
+  PAYMASTER_RPC_METHODS,
   // Note: BUNDLER_ERROR_CODES is exported from ./errors with extended SDK error codes
 } from '@stablenet/types'
