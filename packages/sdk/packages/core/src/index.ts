@@ -95,6 +95,15 @@ export {
   formatAuthorization,
 } from './eip7702'
 
+// Transaction Module
+export {
+  createEOATransactionBuilder,
+  type EOATransactionBuilder,
+  type EOATransactionConfig,
+  type TransactionSigner,
+  type BuiltEOATransaction,
+} from './transaction'
+
 // Re-export types for convenience
 export type {
   UserOperation,
@@ -116,6 +125,18 @@ export type {
   NetworkCurrency,
   NetworkState,
   ChainId,
+  // Transaction types
+  TransactionMode,
+  GasPaymentType,
+  GasPaymentConfig,
+  MultiModeTransactionRequest,
+  GasEstimate,
+  TransactionResult,
+  // Account types
+  AccountType,
+  KeyringType,
+  Account,
+  AccountState,
 } from '@stablenet/types'
 
 export {
@@ -130,5 +151,22 @@ export {
   CHAIN_IDS,
   DEFAULT_CURRENCIES,
   getDefaultCurrency,
+  // Transaction constants
+  TRANSACTION_MODE,
+  GAS_PAYMENT_TYPE,
+  // Transaction type guards
+  isEOAMode,
+  isEIP7702Mode,
+  isSmartAccountMode,
+  isSponsoredGas,
+  isERC20Gas,
+  // Account constants
+  ACCOUNT_TYPE,
+  KEYRING_TYPE,
+  // Account utilities
+  getAvailableTransactionModes,
+  getDefaultTransactionMode,
+  supportsSmartAccount,
+  canInstallModules,
   // Note: BUNDLER_ERROR_CODES is exported from ./errors with extended SDK error codes
 } from '@stablenet/types'

@@ -7,6 +7,9 @@
  * - RPC error codes and types
  * - Smart Account types
  * - Bundler client types
+ * - Multi-mode transaction types
+ * - Account types
+ * - Paymaster types
  */
 
 // Re-export viem types for convenience
@@ -68,3 +71,65 @@ export {
 } from './constants'
 
 export { BUNDLER_ERROR_CODES } from './bundler'
+
+// ============================================================================
+// Transaction types (new)
+// ============================================================================
+export {
+  // Constants
+  TRANSACTION_MODE,
+  GAS_PAYMENT_TYPE,
+  // Types
+  type TransactionMode,
+  type GasPaymentType,
+  type GasPaymentConfig,
+  type MultiModeTransactionRequest,
+  type GasEstimate,
+  type TransactionResult,
+  // EIP-7702 types
+  type Authorization,
+  type SignedAuthorization,
+  // Type guards
+  isEOAMode,
+  isEIP7702Mode,
+  isSmartAccountMode,
+  isSponsoredGas,
+  isERC20Gas,
+} from './transaction'
+
+// ============================================================================
+// Account types (new)
+// ============================================================================
+export {
+  // Constants
+  ACCOUNT_TYPE,
+  KEYRING_TYPE,
+  // Types
+  type AccountType,
+  type KeyringType,
+  type Account,
+  type AccountState,
+  // Utilities
+  getAvailableTransactionModes,
+  getDefaultTransactionMode,
+  supportsSmartAccount,
+  canInstallModules,
+} from './account'
+
+// ============================================================================
+// Paymaster types (new)
+// ============================================================================
+export {
+  // Types
+  type ExtendedPaymasterData,
+  type SupportedToken,
+  type SponsorPolicy,
+  type PaymasterClientConfig,
+  // Constants
+  PAYMASTER_RPC_METHODS,
+} from './paymaster'
+
+// ============================================================================
+// Module types (will be added in 07-MODULE-TYPES.md)
+// ============================================================================
+// export * from './module'
