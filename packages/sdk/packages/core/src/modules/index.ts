@@ -55,4 +55,26 @@ export {
   // Types
   type ValidatorValidationResult,
   type WebAuthnSignatureData,
+  // Executor Utilities
+  // Session Key
+  encodeSessionKeyInit,
+  validateSessionKeyConfig,
+  checkSessionKeyPermission,
+  createDAppSessionKey,
+  // Recurring Payment
+  encodeRecurringPaymentInit,
+  validateRecurringPaymentConfig,
+  calculateRecurringPaymentStatus,
+  calculateTotalRecurringCost,
+  encodeExecuteRecurringPayment,
+  // Common Executor
+  encodeExecutorCall,
+  encodeBatchExecutorCalls,
+  generatePaymentId,
+  // Aggregated
+  executorUtils,
+  // Types
+  type ExecutorValidationResult,
+  type PermissionCheckResult,
+  type RecurringPaymentStatus,
 } from './utils'

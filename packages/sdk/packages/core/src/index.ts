@@ -181,6 +181,23 @@ export {
   validatorUtils,
   type ValidatorValidationResult,
   type WebAuthnSignatureData,
+  // Executor Utilities
+  encodeSessionKeyInit,
+  validateSessionKeyConfig,
+  checkSessionKeyPermission,
+  createDAppSessionKey,
+  encodeRecurringPaymentInit,
+  validateRecurringPaymentConfig,
+  calculateRecurringPaymentStatus,
+  calculateTotalRecurringCost,
+  encodeExecuteRecurringPayment,
+  encodeExecutorCall,
+  encodeBatchExecutorCalls,
+  generatePaymentId,
+  executorUtils,
+  type ExecutorValidationResult,
+  type PermissionCheckResult,
+  type RecurringPaymentStatus,
 } from './modules'
 
 // Contract ABIs
