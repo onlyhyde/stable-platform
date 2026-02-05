@@ -198,6 +198,25 @@ export {
   type ExecutorValidationResult,
   type PermissionCheckResult,
   type RecurringPaymentStatus,
+  // Hook Utilities
+  encodeSpendingLimitInit,
+  encodeMultipleSpendingLimitsInit,
+  validateSpendingLimitConfig,
+  calculateSpendingLimitStatus,
+  wouldExceedLimit,
+  formatSpendingLimit,
+  encodeSetLimit,
+  encodeAuditHookInit,
+  decodeAuditEventFlags,
+  validateAuditHookConfig,
+  formatAuditLogEntry,
+  getPeriodName,
+  suggestSpendingLimit,
+  PERIOD_PRESETS,
+  hookUtils,
+  type HookValidationResult,
+  type SpendingLimitStatus,
+  type AuditLogEntry,
 } from './modules'
 
 // Contract ABIs

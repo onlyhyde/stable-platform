@@ -54,3 +54,29 @@ export {
   type PermissionCheckResult,
   type RecurringPaymentStatus,
 } from './executorUtils'
+
+export {
+  // Spending Limit
+  encodeSpendingLimitInit,
+  encodeMultipleSpendingLimitsInit,
+  validateSpendingLimitConfig,
+  calculateSpendingLimitStatus,
+  wouldExceedLimit,
+  formatSpendingLimit,
+  encodeSetLimit,
+  // Audit
+  encodeAuditHookInit,
+  decodeAuditEventFlags,
+  validateAuditHookConfig,
+  formatAuditLogEntry,
+  // Common Hook
+  getPeriodName,
+  suggestSpendingLimit,
+  PERIOD_PRESETS,
+  // Aggregated export
+  hookUtils,
+  // Types
+  type HookValidationResult,
+  type SpendingLimitStatus,
+  type AuditLogEntry,
+} from './hookUtils'
