@@ -59,7 +59,7 @@ export {
   KERNEL_V3_1_FACTORY_ADDRESS,
   ECDSA_VALIDATOR_ADDRESS,
   KERNEL_ADDRESSES,
-  MODULE_TYPE,
+  // MODULE_TYPE is exported from ./module with complete 6 types
   EXEC_MODE,
   CALL_TYPE,
 } from './constants'
@@ -122,6 +122,45 @@ export {
 } from './paymaster'
 
 // ============================================================================
-// Module types (will be added in 07-MODULE-TYPES.md)
+// Module types
 // ============================================================================
-// export * from './module'
+export {
+  // Constants
+  MODULE_TYPE,
+  MODULE_TYPE_NAMES,
+  MODULE_STATUS,
+  // Types
+  type ModuleType,
+  type ModuleStatus,
+  type ModuleMetadata,
+  type ModuleConfigSchema,
+  type ModuleConfigField,
+  type SolidityType,
+  type FieldValidation,
+  type InstalledModule,
+  type ModuleInstallRequest,
+  type ModuleUninstallRequest,
+  // Validator configs
+  type ECDSAValidatorConfig,
+  type WebAuthnValidatorConfig,
+  type MultiSigValidatorConfig,
+  // Executor configs
+  type SessionKeyConfig,
+  type RecurringPaymentConfig,
+  // Hook configs
+  type SpendingLimitHookConfig,
+  type AuditHookConfig,
+  // Fallback configs
+  type TokenReceiverConfig,
+  type FlashLoanConfig,
+  // Type guards
+  isValidator,
+  isExecutor,
+  isHook,
+  isFallback,
+  isPolicy,
+  isSigner,
+  getModuleTypeName,
+  // ABI types
+  type ModuleABI,
+} from './module'
