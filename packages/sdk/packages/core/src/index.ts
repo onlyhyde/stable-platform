@@ -161,6 +161,26 @@ export {
   type ModuleClientConfig,
   type ModuleInstallResult,
   type ModuleCalldata,
+  // Validator Utilities
+  encodeECDSAValidatorInit,
+  decodeECDSAValidatorInit,
+  validateECDSAValidatorConfig,
+  encodeECDSASignature,
+  encodeWebAuthnValidatorInit,
+  decodeWebAuthnValidatorInit,
+  validateWebAuthnValidatorConfig,
+  encodeWebAuthnSignature,
+  parseWebAuthnCredential,
+  encodeMultiSigValidatorInit,
+  decodeMultiSigValidatorInit,
+  validateMultiSigValidatorConfig,
+  encodeMultiSigSignature,
+  generateSignerChangeHash,
+  identifyValidatorType,
+  isValidSignatureFormat,
+  validatorUtils,
+  type ValidatorValidationResult,
+  type WebAuthnSignatureData,
 } from './modules'
 
 // Contract ABIs

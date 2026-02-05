@@ -27,3 +27,32 @@ export {
   type ModuleInstallResult,
   type ModuleCalldata,
 } from './moduleClient'
+
+// Validator Utilities
+export {
+  // ECDSA
+  encodeECDSAValidatorInit,
+  decodeECDSAValidatorInit,
+  validateECDSAValidatorConfig,
+  encodeECDSASignature,
+  // WebAuthn
+  encodeWebAuthnValidatorInit,
+  decodeWebAuthnValidatorInit,
+  validateWebAuthnValidatorConfig,
+  encodeWebAuthnSignature,
+  parseWebAuthnCredential,
+  // MultiSig
+  encodeMultiSigValidatorInit,
+  decodeMultiSigValidatorInit,
+  validateMultiSigValidatorConfig,
+  encodeMultiSigSignature,
+  generateSignerChangeHash,
+  // Common
+  identifyValidatorType,
+  isValidSignatureFormat,
+  // Aggregated
+  validatorUtils,
+  // Types
+  type ValidatorValidationResult,
+  type WebAuthnSignatureData,
+} from './utils'
