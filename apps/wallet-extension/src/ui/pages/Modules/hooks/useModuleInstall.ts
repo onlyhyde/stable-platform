@@ -1,0 +1,127 @@
+import { useState, useCallback } from 'react'
+import type { Address, Hash } from 'viem'
+import type { ModuleRegistryEntry } from '@stablenet/core'
+import { useSelectedNetwork } from '../../../hooks'
+
+interface InstallModuleParams {
+  account: Address
+  module: ModuleRegistryEntry
+  config: Record<string, unknown>
+}
+
+interface UseModuleInstallReturn {
+  installModule: (params: InstallModuleParams) => Promise<Hash>
+  uninstallModule: (params: { account: Address; moduleAddress: Address; moduleType: bigint }) => Promise<Hash>
+  isPending: boolean
+  error: Error | null
+}
+
+/**
+ * Hook for installing and uninstalling modules on a Smart Account
+ */
+export function useModuleInstall(): UseModuleInstallReturn {
+  const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const currentNetwork = useSelectedNetwork()
+
+  const installModule = useCallback(
+    async (params: InstallModuleParams): Promise<Hash> => {
+      if (!currentNetwork) {
+        throw new Error('No network selected')
+      }
+
+      setIsPending(true)
+      setError(null)
+
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'RPC_REQUEST',
+          id: `install-module-${Date.now()}`,
+          payload: {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'stablenet_installModule',
+            params: [
+              {
+                account: params.account,
+                moduleAddress: params.module.metadata.address,
+                moduleType: params.module.metadata.type.toString(),
+                initData: params.config,
+                chainId: currentNetwork.chainId,
+              },
+            ],
+          },
+        })
+
+        if (response?.payload?.error) {
+          throw new Error(response.payload.error.message || 'Module installation failed')
+        }
+
+        return response?.payload?.result?.hash as Hash
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Module installation failed')
+        setError(error)
+        throw error
+      } finally {
+        setIsPending(false)
+      }
+    },
+    [currentNetwork]
+  )
+
+  const uninstallModule = useCallback(
+    async (params: {
+      account: Address
+      moduleAddress: Address
+      moduleType: bigint
+    }): Promise<Hash> => {
+      if (!currentNetwork) {
+        throw new Error('No network selected')
+      }
+
+      setIsPending(true)
+      setError(null)
+
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'RPC_REQUEST',
+          id: `uninstall-module-${Date.now()}`,
+          payload: {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'stablenet_uninstallModule',
+            params: [
+              {
+                account: params.account,
+                moduleAddress: params.moduleAddress,
+                moduleType: params.moduleType.toString(),
+                chainId: currentNetwork.chainId,
+              },
+            ],
+          },
+        })
+
+        if (response?.payload?.error) {
+          throw new Error(response.payload.error.message || 'Module uninstallation failed')
+        }
+
+        return response?.payload?.result?.hash as Hash
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Module uninstallation failed')
+        setError(error)
+        throw error
+      } finally {
+        setIsPending(false)
+      }
+    },
+    [currentNetwork]
+  )
+
+  return {
+    installModule,
+    uninstallModule,
+    isPending,
+    error,
+  }
+}
