@@ -8,14 +8,17 @@ import {
   type ModuleRegistryEntry,
   type WebAuthnValidatorConfig,
   type SessionKeyConfig,
+  type SpendingLimitHookConfig,
 } from '@stablenet/core'
 import type { Hex } from 'viem'
+import { formatEther } from 'viem'
 
 import { useModuleRegistry } from './hooks/useModuleRegistry'
 import { useModuleInstall } from './hooks/useModuleInstall'
 import { ModuleConfigForm } from './ModuleConfig'
 import { WebAuthnConfig } from './WebAuthnConfig'
 import { SessionKeyConfigUI } from './SessionKeyConfig'
+import { SpendingLimitConfigUI } from './SpendingLimitConfig'
 import { saveWebAuthnCredential } from './hooks/useWebAuthn'
 
 // ============================================================================
@@ -71,6 +74,13 @@ export function InstallModuleWizard({
     return name.includes('session') && (name.includes('key') || name.includes('executor'))
   }, [selectedModule])
 
+  // Check if selected module is Spending Limit hook
+  const isSpendingLimitHook = useMemo(() => {
+    if (!selectedModule) return false
+    const name = selectedModule.metadata.name.toLowerCase()
+    return name.includes('spending') && (name.includes('limit') || name.includes('hook'))
+  }, [selectedModule])
+
   // Handle type selection
   const handleTypeSelect = (type: ModuleType) => {
     setSelectedType(type)
@@ -86,8 +96,9 @@ export function InstallModuleWizard({
     const moduleName = module.metadata.name.toLowerCase()
     const isWebAuthn = moduleName.includes('webauthn') || moduleName.includes('passkey')
     const isSessionKey = moduleName.includes('session') && (moduleName.includes('key') || moduleName.includes('executor'))
+    const isSpendingLimit = moduleName.includes('spending') && (moduleName.includes('limit') || moduleName.includes('hook'))
 
-    if (isWebAuthn || isSessionKey) {
+    if (isWebAuthn || isSessionKey || isSpendingLimit) {
       // Special modules need custom config UI
       setStep('configure')
     } else if (module.configSchema.fields.length === 0) {
@@ -140,6 +151,18 @@ export function InstallModuleWizard({
     setStep('confirm')
   }
 
+  // Handle Spending Limit config complete
+  const handleSpendingLimitComplete = (initData: Hex, config: SpendingLimitHookConfig) => {
+    setCustomInitData(initData)
+    setConfigValues({
+      token: config.token,
+      limit: formatEther(config.limit),
+      period: `${config.period} seconds`,
+    })
+
+    setStep('confirm')
+  }
+
   // Handle install
   const handleInstall = async () => {
     if (!selectedModule) return
@@ -161,7 +184,7 @@ export function InstallModuleWizard({
     }
   }
 
-  const hasConfig = isWebAuthnValidator || isSessionKeyExecutor || (selectedModule?.configSchema.fields.length ?? 0) > 0
+  const hasConfig = isWebAuthnValidator || isSessionKeyExecutor || isSpendingLimitHook || (selectedModule?.configSchema.fields.length ?? 0) > 0
 
   return (
     <div className="install-module-wizard">
@@ -209,6 +232,12 @@ export function InstallModuleWizard({
             <SessionKeyConfigUI
               accountAddress={account.address}
               onSubmit={handleSessionKeyComplete}
+              onBack={() => setStep('select-module')}
+            />
+          ) : isSpendingLimitHook ? (
+            <SpendingLimitConfigUI
+              accountAddress={account.address}
+              onSubmit={handleSpendingLimitComplete}
               onBack={() => setStep('select-module')}
             />
           ) : (
