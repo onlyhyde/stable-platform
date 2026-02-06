@@ -27,6 +27,14 @@ export function AuthorizationApproval({
     }
   }
 
+  const getOriginDisplay = (origin: string) => {
+    try {
+      return new URL(origin).hostname
+    } catch {
+      return origin === 'extension' ? 'StableNet Wallet' : origin
+    }
+  }
+
   return (
     <div
       className="min-h-screen flex flex-col"
@@ -68,7 +76,7 @@ export function AuthorizationApproval({
             )}
             <div>
               <p className="font-medium break-all" style={{ color: 'rgb(var(--foreground))' }}>
-                {new URL(approval.origin).hostname}
+                {getOriginDisplay(approval.origin)}
               </p>
               <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {data.isRevocation ? 'Account Revocation' : 'Account Authorization'}

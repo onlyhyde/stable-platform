@@ -3,7 +3,7 @@ import { Header } from './components/Header'
 import { Navigation } from './components/Navigation'
 import { Spinner } from './components/common'
 import { useWalletStore } from './hooks/useWalletStore'
-import { Activity, Bank, BuyPage, Home, Lock, Receive, Send, Settings } from './pages'
+import { Activity, Bank, BuyPage, Home, Lock, ModulesPage, Receive, Send, Settings } from './pages'
 import { Onboarding } from './pages/Onboarding'
 import './styles/globals.css'
 
@@ -93,6 +93,8 @@ export function App() {
         return <Bank />
       case 'buy':
         return <BuyPage />
+      case 'modules':
+        return <ModulesPage />
       default:
         return <Home />
     }

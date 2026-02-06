@@ -146,6 +146,7 @@ export type Page =
   | 'connect'
   | 'bank'
   | 'buy'
+  | 'modules'
   | 'onboarding'
   | 'lock'
 

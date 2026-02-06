@@ -22,6 +22,14 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
   const [selectedAccounts, setSelectedAccounts] = useState<Set<Address>>(new Set())
   const [loading, setLoading] = useState(true)
 
+  const getOriginDisplay = (origin: string) => {
+    try {
+      return new URL(origin).hostname
+    } catch {
+      return origin === 'extension' ? 'StableNet Wallet' : origin
+    }
+  }
+
   useEffect(() => {
     loadAccounts()
   }, [])
@@ -137,7 +145,7 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
           )}
           <div>
             <p className="font-medium break-all" style={{ color: 'rgb(var(--foreground))' }}>
-              {new URL(approval.origin).hostname}
+              {getOriginDisplay(approval.origin)}
             </p>
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
               wants to connect

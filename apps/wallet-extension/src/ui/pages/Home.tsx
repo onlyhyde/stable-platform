@@ -125,14 +125,32 @@ export function Home() {
             `-- ${currencySymbol}`
           )}
         </h2>
-        <p className="text-sm opacity-80 mt-2">
-          {currentAccount.type === 'smart' ? 'Smart Account' : 'EOA'}
-          {currentAccount.isDeployed === false && ' (Not Deployed)'}
-        </p>
+        <div className="flex items-center gap-2 mt-2">
+          <span
+            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              color: 'white',
+            }}
+          >
+            {currentAccount.type === 'smart' ? 'Smart Account' : 'EOA'}
+          </span>
+          {currentAccount.isDeployed === false && (
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                color: 'rgba(255, 255, 255, 0.8)',
+              }}
+            >
+              Not Deployed
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => setPage('send')}
@@ -190,6 +208,101 @@ export function Home() {
           </div>
           <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
             Receive
+          </span>
+        </button>
+
+        {currentAccount.type === 'smart' ? (
+          <button
+            type="button"
+            onClick={() => setPage('modules')}
+            className="card rounded-xl p-4 flex flex-col items-center transition-colors"
+          >
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center mb-2"
+              style={{ backgroundColor: 'rgb(var(--accent) / 0.1)' }}
+            >
+              <svg
+                className="w-5 h-5"
+                style={{ color: 'rgb(var(--accent))' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"
+                />
+              </svg>
+            </div>
+            <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              Modules
+            </span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setPage('modules')}
+            className="card rounded-xl p-4 flex flex-col items-center transition-colors"
+          >
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center mb-2"
+              style={{ backgroundColor: 'rgb(var(--warning) / 0.1)' }}
+            >
+              <svg
+                className="w-5 h-5"
+                style={{ color: 'rgb(var(--warning))' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+            </div>
+            <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              Upgrade
+            </span>
+            <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              EIP-7702
+            </span>
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setPage('activity')}
+          className="card rounded-xl p-4 flex flex-col items-center transition-colors"
+        >
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center mb-2"
+            style={{ backgroundColor: 'rgb(var(--muted-foreground) / 0.1)' }}
+          >
+            <svg
+              className="w-5 h-5"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+            Activity
           </span>
         </button>
       </div>

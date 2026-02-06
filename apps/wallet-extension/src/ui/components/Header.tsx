@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { createLogger } from '../../shared/utils/logger'
 import { useWalletStore } from '../hooks/useWalletStore'
 import { AccountSelector } from './common/AccountSelector'
@@ -15,6 +16,11 @@ export function Header() {
     addAccount,
     isLoading,
   } = useWalletStore()
+
+  const currentAccount = useMemo(
+    () => accounts.find((a) => a.address === selectedAccount),
+    [accounts, selectedAccount],
+  )
 
   const handleAddAccount = async () => {
     try {
@@ -70,12 +76,33 @@ export function Header() {
       {/* Account Selector */}
       {accounts.length > 0 && (
         <div className="mt-3">
-          <AccountSelector
-            accounts={accounts}
-            selectedAccount={selectedAccount}
-            onSelect={selectAccount}
-            onAddAccount={handleAddAccount}
-          />
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <AccountSelector
+                accounts={accounts}
+                selectedAccount={selectedAccount}
+                onSelect={selectAccount}
+                onAddAccount={handleAddAccount}
+              />
+            </div>
+            {currentAccount && (
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
+                style={{
+                  backgroundColor:
+                    currentAccount.type === 'smart'
+                      ? 'rgb(var(--primary) / 0.1)'
+                      : 'rgb(var(--muted-foreground) / 0.1)',
+                  color:
+                    currentAccount.type === 'smart'
+                      ? 'rgb(var(--primary))'
+                      : 'rgb(var(--muted-foreground))',
+                }}
+              >
+                {currentAccount.type === 'smart' ? 'Smart Account' : 'EOA'}
+              </span>
+            )}
+          </div>
           {isLoading && (
             <div className="mt-2 text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Loading...

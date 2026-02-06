@@ -3,6 +3,16 @@ import type { TransactionApprovalRequest } from '../../types'
 import { Badge, Button, Card } from '../../ui/components/common'
 import { useNetworkCurrency } from '../../ui/hooks'
 
+/**
+ * Convert a value that may be bigint or string (from JSON serialization) to bigint.
+ * Chrome extension messaging serializes BigInt as strings.
+ */
+function toBigInt(value: bigint | string | number | undefined): bigint {
+  if (value === undefined) return 0n
+  if (typeof value === 'bigint') return value
+  return BigInt(value)
+}
+
 interface TransactionApprovalProps {
   approval: TransactionApprovalRequest
   onApprove: (data?: unknown) => void
@@ -25,6 +35,14 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
   }
 
   const formatAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`
+
+  const getOriginDisplay = (origin: string) => {
+    try {
+      return new URL(origin).hostname
+    } catch {
+      return origin === 'extension' ? 'StableNet Wallet' : origin
+    }
+  }
 
   return (
     <div
@@ -67,7 +85,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
             )}
             <div>
               <p className="font-medium break-all" style={{ color: 'rgb(var(--foreground))' }}>
-                {new URL(approval.origin).hostname}
+                {getOriginDisplay(approval.origin)}
               </p>
               <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Transaction Request
@@ -86,7 +104,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
         <Card padding="lg" variant="gradient" className="text-center">
           <p className="text-sm opacity-80 mb-1">{data.methodName ?? 'Send'}</p>
           <p className="text-2xl font-bold">
-            {formatEther(data.value)} {currencySymbol}
+            {formatEther(toBigInt(data.value))} {currencySymbol}
           </p>
         </Card>
 
@@ -140,7 +158,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
                 Network Fee
               </span>
               <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                ~{formatEther(data.estimatedGasCost)} {currencySymbol}
+                ~{formatEther(toBigInt(data.estimatedGasCost))} {currencySymbol}
               </span>
             </div>
             {data.estimatedTotalCost && (
@@ -155,7 +173,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
                   Total
                 </span>
                 <span className="text-sm font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-                  ~{formatEther(data.estimatedTotalCost)} {currencySymbol}
+                  ~{formatEther(toBigInt(data.estimatedTotalCost))} {currencySymbol}
                 </span>
               </div>
             )}
@@ -213,7 +231,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
                     }}
                   >
                     {transfer.direction === 'out' ? '-' : '+'}
-                    {(Number(transfer.amount) / 10 ** transfer.decimals).toFixed(4)}{' '}
+                    {(Number(toBigInt(transfer.amount)) / 10 ** transfer.decimals).toFixed(4)}{' '}
                     {transfer.symbol}
                   </span>
                 </div>

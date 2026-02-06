@@ -21,6 +21,14 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
     }
   }
 
+  const getOriginDisplay = (origin: string) => {
+    try {
+      return new URL(origin).hostname
+    } catch {
+      return origin === 'extension' ? 'StableNet Wallet' : origin
+    }
+  }
+
   return (
     <div
       className="min-h-screen flex flex-col"
@@ -62,7 +70,7 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
             )}
             <div>
               <p className="font-medium break-all" style={{ color: 'rgb(var(--foreground))' }}>
-                {new URL(approval.origin).hostname}
+                {getOriginDisplay(approval.origin)}
               </p>
               <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Signature Request

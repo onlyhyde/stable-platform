@@ -2,6 +2,7 @@ import { MODULE_TYPE, type ModuleType } from '@stablenet/core'
 import { useMemo, useState } from 'react'
 
 import { useWalletStore } from '../../hooks'
+import { DelegateSetup } from './DelegateSetup'
 import { useModules } from './hooks/useModules'
 
 import { InstallModuleWizard } from './InstallModule'
@@ -12,7 +13,7 @@ import { ModuleList } from './ModuleList'
 // Types
 // ============================================================================
 
-type ModuleView = 'list' | 'details' | 'install'
+type ModuleView = 'list' | 'details' | 'install' | 'delegate'
 
 // ============================================================================
 // Component
@@ -32,7 +33,21 @@ export function ModulesPage() {
 
   const { installedModules, isLoading, error, refetch } = useModules(selectedAccount?.address)
 
-  // Guard: Account not Smart Account capable
+  // View: Delegate Setup (EIP-7702)
+  if (view === 'delegate' && selectedAccountAddress) {
+    return (
+      <DelegateSetup
+        account={selectedAccountAddress}
+        onComplete={() => {
+          setView('list')
+          refetch()
+        }}
+        onCancel={() => setView('list')}
+      />
+    )
+  }
+
+  // Guard: Account not Smart Account capable - show delegation setup option
   if (!selectedAccount || selectedAccount.type === 'eoa') {
     return (
       <div className="modules-page p-4">
@@ -42,13 +57,11 @@ export function ModulesPage() {
             Smart Account Required
           </h2>
           <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Module management is only available for Smart Accounts.
+            Module management is only available for Smart Accounts. Upgrade your EOA via EIP-7702 delegation.
           </p>
           <button
             className="btn-primary px-4 py-2 rounded-lg"
-            onClick={() => {
-              // Navigate to settings to enable Smart Account
-            }}
+            onClick={() => setView('delegate')}
           >
             Enable Smart Account
           </button>

@@ -116,6 +116,24 @@ function originFromUrl(url: string | undefined): string {
 }
 
 /**
+ * Recursively convert BigInt values to strings for JSON-safe serialization.
+ * Chrome extension messaging uses JSON serialization, which does not support BigInt.
+ */
+function serializeBigInts<T>(obj: T): T {
+  if (obj === null || obj === undefined) return obj
+  if (typeof obj === 'bigint') return String(obj) as unknown as T
+  if (Array.isArray(obj)) return obj.map(serializeBigInts) as unknown as T
+  if (typeof obj === 'object') {
+    const result: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = serializeBigInts(value)
+    }
+    return result as T
+  }
+  return obj
+}
+
+/**
  * Unsubscribe all subscriptions for a tab
  */
 function unsubscribeTab(tabId: number): void {
@@ -414,9 +432,17 @@ async function handleMessage(
   // Priority: sender.tab.url (content script) > sender.origin (popup/extension pages)
   let origin: string
   if (sender.tab?.url) {
-    origin = originFromUrl(sender.tab.url)
+    const tabOrigin = originFromUrl(sender.tab.url)
+    // Approval popup windows (chrome.windows.create) have sender.tab set
+    // with chrome-extension:// URLs - treat as internal extension origin
+    origin = tabOrigin.startsWith('chrome-extension://') ? 'extension' : tabOrigin
   } else if (sender.origin) {
-    origin = sender.origin
+    // Popup and extension pages have chrome-extension:// origin - treat as internal
+    if (sender.origin.startsWith('chrome-extension://')) {
+      origin = 'extension'
+    } else {
+      origin = sender.origin
+    }
   } else {
     // Only allow internal extension messages without origin
     origin = 'extension'
@@ -759,11 +785,14 @@ async function handleMessage(
       }))
       const selectedAccount = state.accounts.selectedAccount
 
+      // Serialize BigInt values to strings for JSON-safe messaging.
+      // Approval objects (TransactionApprovalRequest, AuthorizationApprovalRequest)
+      // contain bigint fields that cannot be serialized by chrome.runtime.sendMessage.
       return {
         type: 'APPROVAL_DATA',
         id: message.id,
         payload: {
-          approval,
+          approval: serializeBigInts(approval),
           accounts,
           selectedAccount,
         },

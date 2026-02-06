@@ -312,8 +312,19 @@ class WalletStateManager {
   /**
    * Get connected accounts for an origin
    * Returns accounts with the currently selected account first
+   * Internal extension origin ('extension') has access to all wallet accounts
    */
   getConnectedAccounts(origin: string): Address[] {
+    // Internal extension UI (popup, options page) has access to all wallet accounts
+    if (origin === 'extension') {
+      const allAccounts = this.state.accounts.accounts.map((a) => a.address)
+      const selectedAccount = this.state.accounts.selectedAccount
+      if (selectedAccount && allAccounts.includes(selectedAccount)) {
+        return [selectedAccount, ...allAccounts.filter((a) => a !== selectedAccount)]
+      }
+      return allAccounts
+    }
+
     const site = this.state.connections.connectedSites.find((s) => originsMatch(s.origin, origin))
 
     if (!site?.accounts || site.accounts.length === 0) {

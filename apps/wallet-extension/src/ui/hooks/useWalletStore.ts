@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { DEFAULT_NETWORKS, MESSAGE_TYPES } from '../../shared/constants'
 import type { Account, Network, PendingTransaction, WalletState } from '../../types'
 
-type Page = 'home' | 'send' | 'receive' | 'activity' | 'settings' | 'bank' | 'buy'
+type Page = 'home' | 'send' | 'receive' | 'activity' | 'settings' | 'bank' | 'buy' | 'modules'
 
 interface UIWalletState {
   // Keyring state
