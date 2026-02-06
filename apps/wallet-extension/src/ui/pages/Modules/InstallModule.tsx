@@ -9,6 +9,7 @@ import {
   type WebAuthnValidatorConfig,
   type SessionKeyConfig,
   type SpendingLimitHookConfig,
+  type MultiSigValidatorConfig,
 } from '@stablenet/core'
 import type { Hex } from 'viem'
 import { formatEther } from 'viem'
@@ -19,6 +20,7 @@ import { ModuleConfigForm } from './ModuleConfig'
 import { WebAuthnConfig } from './WebAuthnConfig'
 import { SessionKeyConfigUI } from './SessionKeyConfig'
 import { SpendingLimitConfigUI } from './SpendingLimitConfig'
+import { MultiSigConfigUI } from './MultiSigConfig'
 import { saveWebAuthnCredential } from './hooks/useWebAuthn'
 
 // ============================================================================
@@ -81,6 +83,13 @@ export function InstallModuleWizard({
     return name.includes('spending') && (name.includes('limit') || name.includes('hook'))
   }, [selectedModule])
 
+  // Check if selected module is MultiSig validator
+  const isMultiSigValidator = useMemo(() => {
+    if (!selectedModule) return false
+    const name = selectedModule.metadata.name.toLowerCase()
+    return name.includes('multisig') || name.includes('multi-sig') || (name.includes('multi') && name.includes('sig'))
+  }, [selectedModule])
+
   // Handle type selection
   const handleTypeSelect = (type: ModuleType) => {
     setSelectedType(type)
@@ -97,8 +106,9 @@ export function InstallModuleWizard({
     const isWebAuthn = moduleName.includes('webauthn') || moduleName.includes('passkey')
     const isSessionKey = moduleName.includes('session') && (moduleName.includes('key') || moduleName.includes('executor'))
     const isSpendingLimit = moduleName.includes('spending') && (moduleName.includes('limit') || moduleName.includes('hook'))
+    const isMultiSig = moduleName.includes('multisig') || moduleName.includes('multi-sig') || (moduleName.includes('multi') && moduleName.includes('sig'))
 
-    if (isWebAuthn || isSessionKey || isSpendingLimit) {
+    if (isWebAuthn || isSessionKey || isSpendingLimit || isMultiSig) {
       // Special modules need custom config UI
       setStep('configure')
     } else if (module.configSchema.fields.length === 0) {
@@ -163,6 +173,17 @@ export function InstallModuleWizard({
     setStep('confirm')
   }
 
+  // Handle MultiSig config complete
+  const handleMultiSigComplete = (initData: Hex, config: MultiSigValidatorConfig) => {
+    setCustomInitData(initData)
+    setConfigValues({
+      signers: config.signers.map((s) => `${s.slice(0, 8)}...${s.slice(-6)}`).join(', '),
+      threshold: `${config.threshold} of ${config.signers.length}`,
+    })
+
+    setStep('confirm')
+  }
+
   // Handle install
   const handleInstall = async () => {
     if (!selectedModule) return
@@ -184,7 +205,7 @@ export function InstallModuleWizard({
     }
   }
 
-  const hasConfig = isWebAuthnValidator || isSessionKeyExecutor || isSpendingLimitHook || (selectedModule?.configSchema.fields.length ?? 0) > 0
+  const hasConfig = isWebAuthnValidator || isSessionKeyExecutor || isSpendingLimitHook || isMultiSigValidator || (selectedModule?.configSchema.fields.length ?? 0) > 0
 
   return (
     <div className="install-module-wizard">
@@ -238,6 +259,12 @@ export function InstallModuleWizard({
             <SpendingLimitConfigUI
               accountAddress={account.address}
               onSubmit={handleSpendingLimitComplete}
+              onBack={() => setStep('select-module')}
+            />
+          ) : isMultiSigValidator ? (
+            <MultiSigConfigUI
+              accountAddress={account.address}
+              onSubmit={handleMultiSigComplete}
               onBack={() => setStep('select-module')}
             />
           ) : (
