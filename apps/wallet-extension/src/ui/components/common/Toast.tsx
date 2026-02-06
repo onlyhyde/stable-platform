@@ -114,12 +114,8 @@ export function Toast({
     >
       <div className={styles.icon}>{icons[type]}</div>
       <div className="flex-1 min-w-0">
-        {title && (
-          <p className={`text-sm font-medium ${styles.title}`}>{title}</p>
-        )}
-        <p className={`text-sm ${styles.message} ${title ? 'mt-1' : ''}`}>
-          {message}
-        </p>
+        {title && <p className={`text-sm font-medium ${styles.title}`}>{title}</p>}
+        <p className={`text-sm ${styles.message} ${title ? 'mt-1' : ''}`}>{message}</p>
       </div>
       <button
         type="button"
@@ -127,7 +123,13 @@ export function Toast({
         className={`p-1 rounded hover:bg-black/5 ${styles.icon}`}
         aria-label="Dismiss"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"

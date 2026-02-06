@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, TextArea, Card } from '../../components/common'
+import { Button, Card, TextArea } from '../../components/common'
 
 interface ImportWalletProps {
   onImport: (mnemonic: string) => void
@@ -47,21 +47,26 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
           className="flex items-center mb-4 transition-colors"
           style={{ color: 'rgb(var(--muted-foreground))' }}
         >
-          <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-5 h-5 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back
         </button>
-        <h1
-          className="text-xl font-bold"
-          style={{ color: 'rgb(var(--foreground))' }}
-        >
+        <h1 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
           Import Wallet
         </h1>
-        <p
-          className="mt-1"
-          style={{ color: 'rgb(var(--muted-foreground))' }}
-        >
+        <p className="mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
           Enter your 12 or 24 word seed phrase
         </p>
       </div>
@@ -86,13 +91,15 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
                 stroke="currentColor"
                 aria-hidden="true"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
               </svg>
               <div className="text-sm">
-                <p
-                  className="font-medium"
-                  style={{ color: 'rgb(234 179 8)' }}
-                >
+                <p className="font-medium" style={{ color: 'rgb(234 179 8)' }}>
                   Only import on trusted devices
                 </p>
                 <p style={{ color: 'rgb(var(--warning) / 0.8)' }}>
@@ -112,10 +119,7 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
               error={validationError || error}
               className="font-mono"
             />
-            <p
-              className="mt-2 text-sm"
-              style={{ color: 'rgb(var(--muted-foreground))' }}
-            >
+            <p className="mt-2 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
               {wordCount} / 12 or 24 words
             </p>
           </div>
@@ -123,42 +127,34 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
           {/* Word chips preview */}
           {wordCount > 0 && (
             <div className="flex flex-wrap gap-1">
-              {mnemonic.trim().split(/\s+/).map((word, index) => (
-                <span
-                  key={index}
-                  className="inline-flex items-center px-2 py-1 rounded text-xs"
-                  style={{
-                    backgroundColor: 'rgb(var(--surface))',
-                    color: 'rgb(var(--foreground-secondary))',
-                  }}
-                >
+              {mnemonic
+                .trim()
+                .split(/\s+/)
+                .map((word, index) => (
                   <span
-                    className="mr-1"
-                    style={{ color: 'rgb(var(--muted-foreground))' }}
+                    key={index}
+                    className="inline-flex items-center px-2 py-1 rounded text-xs"
+                    style={{
+                      backgroundColor: 'rgb(var(--surface))',
+                      color: 'rgb(var(--foreground-secondary))',
+                    }}
                   >
-                    {index + 1}.
+                    <span className="mr-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                      {index + 1}.
+                    </span>
+                    {word}
                   </span>
-                  {word}
-                </span>
-              ))}
+                ))}
             </div>
           )}
         </div>
 
         <div className="mt-6 space-y-3">
-          <Button
-            type="submit"
-            fullWidth
-            disabled={wordCount < 12}
-            isLoading={isLoading}
-          >
+          <Button type="submit" fullWidth disabled={wordCount < 12} isLoading={isLoading}>
             Import Wallet
           </Button>
 
-          <p
-            className="text-xs text-center"
-            style={{ color: 'rgb(var(--foreground-tertiary))' }}
-          >
+          <p className="text-xs text-center" style={{ color: 'rgb(var(--foreground-tertiary))' }}>
             Importing will create a new wallet with your seed phrase
           </p>
         </div>

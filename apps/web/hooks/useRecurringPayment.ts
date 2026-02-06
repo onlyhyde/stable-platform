@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback, useEffect, useMemo } from 'react'
-import { useAccount, useChainId, useWalletClient, usePublicClient } from 'wagmi'
-import type { Address, Hex, Hash } from 'viem'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Address, Hash } from 'viem'
+import { useAccount, useChainId, usePublicClient, useWalletClient } from 'wagmi'
 import { getContractAddresses } from '../lib/config'
 
 // Default fallback address for development
@@ -323,7 +323,18 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
           maxPayments,
           status,
           createdAt,
-        ] = result as [Address, Address, bigint, Address, bigint, bigint, bigint, bigint, number, bigint]
+        ] = result as [
+          Address,
+          Address,
+          bigint,
+          Address,
+          bigint,
+          bigint,
+          bigint,
+          bigint,
+          number,
+          bigint,
+        ]
 
         const tokenInfo = await getTokenInfo(token)
 
@@ -443,9 +454,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
 
   // Create a new payment schedule
   const createSchedule = useCallback(
-    async (
-      params: CreateScheduleParams
-    ): Promise<{ scheduleId: bigint; txHash: Hash } | null> => {
+    async (params: CreateScheduleParams): Promise<{ scheduleId: bigint; txHash: Hash } | null> => {
       if (!walletClient || !targetAccount) {
         setError('Wallet not connected')
         return null

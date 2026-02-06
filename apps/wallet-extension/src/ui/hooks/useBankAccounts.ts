@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import type { LinkedBankAccount, BankTransfer } from '../../types'
+import { useCallback, useEffect, useState } from 'react'
+import type { BankTransfer, LinkedBankAccount } from '../../types'
 
 interface UseBankAccountsResult {
   accounts: LinkedBankAccount[]
@@ -96,30 +96,25 @@ export function useBankAccounts(): UseBankAccountsResult {
     }
   }, [])
 
-  const syncAccount = useCallback(
-    async (accountNo: string): Promise<LinkedBankAccount | null> => {
-      try {
-        const response = await chrome.runtime.sendMessage({
-          type: 'SYNC_BANK_ACCOUNT',
-          payload: { accountNo },
-        })
-        if (response?.account) {
-          setAccounts((prev) =>
-            prev.map((a) => (a.accountNo === accountNo ? response.account : a))
-          )
-          return response.account
-        }
-        if (response?.error) {
-          setError(response.error)
-        }
-        return null
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to sync account')
-        return null
+  const syncAccount = useCallback(async (accountNo: string): Promise<LinkedBankAccount | null> => {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'SYNC_BANK_ACCOUNT',
+        payload: { accountNo },
+      })
+      if (response?.account) {
+        setAccounts((prev) => prev.map((a) => (a.accountNo === accountNo ? response.account : a)))
+        return response.account
       }
-    },
-    []
-  )
+      if (response?.error) {
+        setError(response.error)
+      }
+      return null
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sync account')
+      return null
+    }
+  }, [])
 
   const transfer = useCallback(
     async (

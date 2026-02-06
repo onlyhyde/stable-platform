@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react'
 import { MODULE_TYPE, type ModuleType } from '@stablenet/core'
+import { useMemo, useState } from 'react'
 
 import { useWalletStore } from '../../hooks'
 import { useModules } from './hooks/useModules'
 
-import { ModuleList } from './ModuleList'
-import { ModuleDetails } from './ModuleDetails'
 import { InstallModuleWizard } from './InstallModule'
+import { ModuleDetails } from './ModuleDetails'
+import { ModuleList } from './ModuleList'
 
 // ============================================================================
 // Types
@@ -38,10 +38,7 @@ export function ModulesPage() {
       <div className="modules-page p-4">
         <div className="text-center py-8">
           <span className="text-4xl mb-4 block">🔒</span>
-          <h2
-            className="text-xl font-bold mb-2"
-            style={{ color: 'rgb(var(--foreground))' }}
-          >
+          <h2 className="text-xl font-bold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
             Smart Account Required
           </h2>
           <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
@@ -138,10 +135,7 @@ export function ModulesPage() {
             />
           </div>
         ) : error ? (
-          <div
-            className="text-center py-8"
-            style={{ color: 'rgb(var(--destructive))' }}
-          >
+          <div className="text-center py-8" style={{ color: 'rgb(var(--destructive))' }}>
             Failed to load modules: {error.message}
           </div>
         ) : (

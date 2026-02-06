@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import type { ConnectedSite, Network } from '../../types'
 import { useWalletStore } from '../hooks/useWalletStore'
-import type { Network, ConnectedSite } from '../../types'
 
 const AUTO_LOCK_OPTIONS = [
   { value: 1, label: '1 minute' },
@@ -291,20 +291,23 @@ export function Settings() {
   }, [])
 
   // Disconnect Site handler
-  const handleDisconnectSite = useCallback(async (origin: string) => {
-    try {
-      await chrome.runtime.sendMessage({
-        type: 'DISCONNECT_SITE',
-        id: `disconnect-${Date.now()}`,
-        payload: { origin },
-      })
+  const handleDisconnectSite = useCallback(
+    async (origin: string) => {
+      try {
+        await chrome.runtime.sendMessage({
+          type: 'DISCONNECT_SITE',
+          id: `disconnect-${Date.now()}`,
+          payload: { origin },
+        })
 
-      // Refresh the list
-      await loadConnectedSites()
-    } catch {
-      // Silent fail
-    }
-  }, [loadConnectedSites])
+        // Refresh the list
+        await loadConnectedSites()
+      } catch {
+        // Silent fail
+      }
+    },
+    [loadConnectedSites]
+  )
 
   // Open Connected Sites
   const handleOpenConnectedSites = useCallback(() => {
@@ -325,10 +328,7 @@ export function Settings() {
       className="p-4 overflow-y-auto max-h-[500px]"
       style={{ backgroundColor: 'rgb(var(--background))' }}
     >
-      <h2
-        className="text-xl font-bold mb-6"
-        style={{ color: 'rgb(var(--foreground))' }}
-      >
+      <h2 className="text-xl font-bold mb-6" style={{ color: 'rgb(var(--foreground))' }}>
         Settings
       </h2>
 
@@ -361,10 +361,7 @@ export function Settings() {
                 border: '1px solid rgb(var(--primary) / 0.2)',
               }}
             >
-              <h4
-                className="text-sm font-medium mb-3"
-                style={{ color: 'rgb(var(--foreground))' }}
-              >
+              <h4 className="text-sm font-medium mb-3" style={{ color: 'rgb(var(--foreground))' }}>
                 Add Custom Network
               </h4>
               <div className="space-y-3">
@@ -473,10 +470,7 @@ export function Settings() {
                     }}
                   />
                   <div>
-                    <span
-                      className="font-medium"
-                      style={{ color: 'rgb(var(--foreground))' }}
-                    >
+                    <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                       {network.name}
                     </span>
                     {network.isCustom && (
@@ -490,10 +484,7 @@ export function Settings() {
                   </div>
                 </button>
                 <div className="flex items-center gap-2">
-                  <span
-                    className="text-sm"
-                    style={{ color: 'rgb(var(--muted-foreground))' }}
-                  >
+                  <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                     Chain {network.chainId}
                   </span>
                   {network.isCustom && (
@@ -504,7 +495,12 @@ export function Settings() {
                       style={{ color: 'rgb(var(--destructive))' }}
                       title="Remove network"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -548,10 +544,7 @@ export function Settings() {
                 border: '1px solid rgb(var(--primary) / 0.2)',
               }}
             >
-              <h4
-                className="text-sm font-medium mb-3"
-                style={{ color: 'rgb(var(--foreground))' }}
-              >
+              <h4 className="text-sm font-medium mb-3" style={{ color: 'rgb(var(--foreground))' }}>
                 Import Private Key
               </h4>
               <div className="space-y-3">
@@ -572,10 +565,7 @@ export function Settings() {
                     {importSuccess}
                   </p>
                 )}
-                <p
-                  className="text-xs"
-                  style={{ color: 'rgb(var(--muted-foreground))' }}
-                >
+                <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                   Warning: Never share your private key with anyone. StableNet will never ask for
                   your private key.
                 </p>
@@ -602,22 +592,13 @@ export function Settings() {
           </h3>
           <div className="space-y-3">
             {/* Auto-Lock Setting */}
-            <div
-              className="p-3 rounded-lg"
-              style={{ border: '1px solid rgb(var(--border))' }}
-            >
+            <div className="p-3 rounded-lg" style={{ border: '1px solid rgb(var(--border))' }}>
               <div className="flex items-center justify-between mb-2">
-                <span
-                  className="font-medium"
-                  style={{ color: 'rgb(var(--foreground))' }}
-                >
+                <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                   Auto-Lock
                 </span>
               </div>
-              <p
-                className="text-xs mb-3"
-                style={{ color: 'rgb(var(--muted-foreground))' }}
-              >
+              <p className="text-xs mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Automatically lock wallet after being idle
               </p>
               {!isLoadingSettings && (
@@ -690,10 +671,7 @@ export function Settings() {
                         steal your funds.
                       </p>
                       {exportError && (
-                        <p
-                          className="text-sm mb-3"
-                          style={{ color: 'rgb(var(--destructive))' }}
-                        >
+                        <p className="text-sm mb-3" style={{ color: 'rgb(var(--destructive))' }}>
                           {exportError}
                         </p>
                       )}
@@ -803,10 +781,7 @@ export function Settings() {
                   }}
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <h3
-                      className="text-lg font-bold"
-                      style={{ color: 'rgb(var(--foreground))' }}
-                    >
+                    <h3 className="text-lg font-bold" style={{ color: 'rgb(var(--foreground))' }}>
                       Connected Sites
                     </h3>
                     <button
@@ -814,7 +789,12 @@ export function Settings() {
                       onClick={() => setShowConnectedSites(false)}
                       style={{ color: 'rgb(var(--muted-foreground))' }}
                     >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -897,22 +877,13 @@ export function Settings() {
           </h3>
           <div className="space-y-3">
             {/* MetaMask Compatibility Mode */}
-            <div
-              className="p-3 rounded-lg"
-              style={{ border: '1px solid rgb(var(--border))' }}
-            >
+            <div className="p-3 rounded-lg" style={{ border: '1px solid rgb(var(--border))' }}>
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <span
-                    className="font-medium"
-                    style={{ color: 'rgb(var(--foreground))' }}
-                  >
+                  <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                     MetaMask Mode
                   </span>
-                  <p
-                    className="text-xs mt-1"
-                    style={{ color: 'rgb(var(--muted-foreground))' }}
-                  >
+                  <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
                     Appear as MetaMask for legacy dApp compatibility
                   </p>
                 </div>
@@ -922,9 +893,7 @@ export function Settings() {
                     onClick={handleMetaMaskModeChange}
                     className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out"
                     style={{
-                      backgroundColor: metaMaskMode
-                        ? 'rgb(var(--primary))'
-                        : 'rgb(var(--border))',
+                      backgroundColor: metaMaskMode ? 'rgb(var(--primary))' : 'rgb(var(--border))',
                     }}
                     role="switch"
                     aria-checked={metaMaskMode}
@@ -950,36 +919,18 @@ export function Settings() {
           >
             About
           </h3>
-          <div
-            className="rounded-lg p-4"
-            style={{ backgroundColor: 'rgb(var(--surface))' }}
-          >
-            <p
-              className="text-sm"
-              style={{ color: 'rgb(var(--foreground-secondary))' }}
-            >
+          <div className="rounded-lg p-4" style={{ backgroundColor: 'rgb(var(--surface))' }}>
+            <p className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
               StableNet Wallet
             </p>
-            <p
-              className="text-xs mt-1"
-              style={{ color: 'rgb(var(--muted-foreground))' }}
-            >
+            <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Version 0.1.0
             </p>
-            <p
-              className="text-xs mt-2"
-              style={{ color: 'rgb(var(--muted-foreground))' }}
-            >
+            <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
               ERC-4337 Smart Account Wallet with stealth address support.
             </p>
-            <div
-              className="mt-3 pt-3"
-              style={{ borderTop: '1px solid rgb(var(--border))' }}
-            >
-              <p
-                className="text-xs"
-                style={{ color: 'rgb(var(--muted-foreground))' }}
-              >
+            <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgb(var(--border))' }}>
+              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Features:
               </p>
               <ul

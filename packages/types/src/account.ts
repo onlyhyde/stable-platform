@@ -137,7 +137,6 @@ export function getDefaultTransactionMode(account: Account): TransactionMode {
     case ACCOUNT_TYPE.SMART:
       return TRANSACTION_MODE.SMART_ACCOUNT
 
-    case ACCOUNT_TYPE.EOA:
     default:
       return TRANSACTION_MODE.EOA
   }

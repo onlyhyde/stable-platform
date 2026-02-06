@@ -1,8 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import React from 'react'
-import { useStealth } from '../useStealth'
+import { act, renderHook } from '@testing-library/react'
 import type { Hex } from 'viem'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useStealth } from '../useStealth'
 
 // Mock the context provider
 const mockContext = {
@@ -17,9 +16,9 @@ vi.mock('@/providers', () => ({
 }))
 
 // Mock wallet signing
-const mockSignMessage = vi.fn()
-const mockGetSpendingKey = vi.fn()
-const mockGetViewingKey = vi.fn()
+const _mockSignMessage = vi.fn()
+const _mockGetSpendingKey = vi.fn()
+const _mockGetViewingKey = vi.fn()
 
 describe('useStealth', () => {
   beforeEach(() => {
@@ -32,10 +31,12 @@ describe('useStealth', () => {
       const mockSpendingPubKey = `0x${'11'.repeat(33)}` as Hex
       const mockViewingPubKey = `0x${'22'.repeat(33)}` as Hex
 
-      const { result } = renderHook(() => useStealth({
-        getSpendingPublicKey: async () => mockSpendingPubKey,
-        getViewingPublicKey: async () => mockViewingPubKey,
-      }))
+      const { result } = renderHook(() =>
+        useStealth({
+          getSpendingPublicKey: async () => mockSpendingPubKey,
+          getViewingPublicKey: async () => mockViewingPubKey,
+        })
+      )
 
       await act(async () => {
         await result.current.generateOwnMetaAddress()
@@ -48,10 +49,14 @@ describe('useStealth', () => {
     })
 
     it('should handle key derivation errors', async () => {
-      const { result } = renderHook(() => useStealth({
-        getSpendingPublicKey: async () => { throw new Error('Wallet locked') },
-        getViewingPublicKey: async () => `0x${'22'.repeat(33)}` as Hex,
-      }))
+      const { result } = renderHook(() =>
+        useStealth({
+          getSpendingPublicKey: async () => {
+            throw new Error('Wallet locked')
+          },
+          getViewingPublicKey: async () => `0x${'22'.repeat(33)}` as Hex,
+        })
+      )
 
       await act(async () => {
         await result.current.generateOwnMetaAddress()
@@ -66,10 +71,12 @@ describe('useStealth', () => {
       const mockSpendingPubKey = `0x${'aa'.repeat(33)}` as Hex
       const mockViewingPubKey = `0x${'bb'.repeat(33)}` as Hex
 
-      const { result } = renderHook(() => useStealth({
-        getSpendingPublicKey: async () => mockSpendingPubKey,
-        getViewingPublicKey: async () => mockViewingPubKey,
-      }))
+      const { result } = renderHook(() =>
+        useStealth({
+          getSpendingPublicKey: async () => mockSpendingPubKey,
+          getViewingPublicKey: async () => mockViewingPubKey,
+        })
+      )
 
       await act(async () => {
         await result.current.generateOwnMetaAddress()
@@ -94,12 +101,14 @@ describe('useStealth', () => {
         transactionHash: `0x${'ab'.repeat(32)}`,
       })
 
-      const { result } = renderHook(() => useStealth({
-        getSpendingPublicKey: async () => mockSpendingPubKey,
-        getViewingPublicKey: async () => mockViewingPubKey,
-        signTypedData: mockSignTypedData,
-        registerOnChain: mockRegisterOnChain,
-      }))
+      const { result } = renderHook(() =>
+        useStealth({
+          getSpendingPublicKey: async () => mockSpendingPubKey,
+          getViewingPublicKey: async () => mockViewingPubKey,
+          signTypedData: mockSignTypedData,
+          registerOnChain: mockRegisterOnChain,
+        })
+      )
 
       // First generate the meta address
       await act(async () => {
@@ -130,12 +139,14 @@ describe('useStealth', () => {
       const mockSignTypedData = vi.fn().mockResolvedValue(mockSignature)
       const mockRegisterOnChain = vi.fn().mockRejectedValue(new Error('Transaction failed'))
 
-      const { result } = renderHook(() => useStealth({
-        getSpendingPublicKey: async () => mockSpendingPubKey,
-        getViewingPublicKey: async () => mockViewingPubKey,
-        signTypedData: mockSignTypedData,
-        registerOnChain: mockRegisterOnChain,
-      }))
+      const { result } = renderHook(() =>
+        useStealth({
+          getSpendingPublicKey: async () => mockSpendingPubKey,
+          getViewingPublicKey: async () => mockViewingPubKey,
+          signTypedData: mockSignTypedData,
+          registerOnChain: mockRegisterOnChain,
+        })
+      )
 
       await act(async () => {
         await result.current.generateOwnMetaAddress()
@@ -253,9 +264,7 @@ describe('useStealth', () => {
         await result.current.scanAnnouncements()
       })
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/announcements')
-      )
+      expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/announcements'))
       expect(result.current.announcements).toHaveLength(1)
     })
   })

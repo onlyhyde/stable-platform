@@ -2,12 +2,17 @@
  * Transaction Risk Analyzer Tests (SEC-14)
  */
 
+// Unmock to test real implementation
+jest.unmock('@stablenet/core')
+
 import {
   TransactionRiskAnalyzer,
   TransactionRiskLevel,
   TransactionRiskType,
-  transactionRiskAnalyzer,
-} from '../../../src/shared/security/transactionRiskAnalyzer'
+  createTransactionRiskAnalyzer,
+} from '@stablenet/core'
+
+const transactionRiskAnalyzer = createTransactionRiskAnalyzer()
 
 describe('TransactionRiskAnalyzer', () => {
   let analyzer: TransactionRiskAnalyzer

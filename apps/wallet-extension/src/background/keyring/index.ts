@@ -1,16 +1,16 @@
 import type { Address, Hex } from 'viem'
-import { HDKeyring } from './hdKeyring'
-import { SimpleKeyring } from './simpleKeyring'
-import { vault } from './vault'
 import type {
+  HDKeyringData,
   KeyringAccount,
   KeyringControllerState,
   KeyringType,
-  VaultData,
-  HDKeyringData,
-  SimpleKeyringData,
   SerializedKeyring,
+  SimpleKeyringData,
+  VaultData,
 } from '../../types'
+import { HDKeyring } from './hdKeyring'
+import { SimpleKeyring } from './simpleKeyring'
+import { vault } from './vault'
 
 /**
  * Keyring Controller
@@ -120,9 +120,7 @@ export class KeyringController {
     this.simpleKeyrings = []
     this.selectedAddress = account.address
 
-    const keyrings: SerializedKeyring[] = [
-      { type: 'hd', data: hdKeyring.serialize() },
-    ]
+    const keyrings: SerializedKeyring[] = [{ type: 'hd', data: hdKeyring.serialize() }]
 
     await vault.initialize(password, keyrings)
 
@@ -136,10 +134,7 @@ export class KeyringController {
   /**
    * Restore wallet from mnemonic
    */
-  async restoreFromMnemonic(
-    password: string,
-    mnemonic: string
-  ): Promise<KeyringAccount> {
+  async restoreFromMnemonic(password: string, mnemonic: string): Promise<KeyringAccount> {
     const hdKeyring = new HDKeyring()
     hdKeyring.initializeFromMnemonic(mnemonic)
     const account = hdKeyring.addAccount()
@@ -148,9 +143,7 @@ export class KeyringController {
     this.simpleKeyrings = []
     this.selectedAddress = account.address
 
-    const keyrings: SerializedKeyring[] = [
-      { type: 'hd', data: hdKeyring.serialize() },
-    ]
+    const keyrings: SerializedKeyring[] = [{ type: 'hd', data: hdKeyring.serialize() }]
 
     // Clear any existing vault and create new one
     await vault.clear()
@@ -214,9 +207,7 @@ export class KeyringController {
    */
   async setSelectedAddress(address: Address): Promise<void> {
     const accounts = this.getAllAccounts()
-    const exists = accounts.some(
-      (a) => a.address.toLowerCase() === address.toLowerCase()
-    )
+    const exists = accounts.some((a) => a.address.toLowerCase() === address.toLowerCase())
 
     if (!exists) {
       throw new Error('Address not found in keyrings')
@@ -400,13 +391,19 @@ export class KeyringController {
     // Find keyring with this address
     for (const keyring of this.hdKeyrings) {
       if (keyring.hasAccount(address)) {
-        return keyring.signTypedData(address, typedData as Parameters<typeof keyring.signTypedData>[1])
+        return keyring.signTypedData(
+          address,
+          typedData as Parameters<typeof keyring.signTypedData>[1]
+        )
       }
     }
 
     for (const keyring of this.simpleKeyrings) {
       if (keyring.hasAccount(address)) {
-        return keyring.signTypedData(address, typedData as Parameters<typeof keyring.signTypedData>[1])
+        return keyring.signTypedData(
+          address,
+          typedData as Parameters<typeof keyring.signTypedData>[1]
+        )
       }
     }
 
@@ -416,10 +413,7 @@ export class KeyringController {
   /**
    * Sign a transaction
    */
-  async signTransaction(
-    address: Address,
-    transaction: unknown
-  ): Promise<Hex> {
+  async signTransaction(address: Address, transaction: unknown): Promise<Hex> {
     if (!vault.isUnlocked()) {
       throw new Error('Vault is locked')
     }
@@ -427,13 +421,19 @@ export class KeyringController {
     // Find keyring with this address
     for (const keyring of this.hdKeyrings) {
       if (keyring.hasAccount(address)) {
-        return keyring.signTransaction(address, transaction as Parameters<typeof keyring.signTransaction>[1])
+        return keyring.signTransaction(
+          address,
+          transaction as Parameters<typeof keyring.signTransaction>[1]
+        )
       }
     }
 
     for (const keyring of this.simpleKeyrings) {
       if (keyring.hasAccount(address)) {
-        return keyring.signTransaction(address, transaction as Parameters<typeof keyring.signTransaction>[1])
+        return keyring.signTransaction(
+          address,
+          transaction as Parameters<typeof keyring.signTransaction>[1]
+        )
       }
     }
 
@@ -444,7 +444,10 @@ export class KeyringController {
    * Sign an EIP-7702 authorization hash
    * Returns the signature components (v, r, s) for the authorization
    */
-  async signAuthorizationHash(address: Address, hash: Hex): Promise<{ v: number; r: Hex; s: Hex; signature: Hex }> {
+  async signAuthorizationHash(
+    address: Address,
+    hash: Hex
+  ): Promise<{ v: number; r: Hex; s: Hex; signature: Hex }> {
     if (!vault.isUnlocked()) {
       throw new Error('Vault is locked')
     }
@@ -462,7 +465,7 @@ export class KeyringController {
 
     const r = `0x${sig.slice(0, 64)}` as Hex
     const s = `0x${sig.slice(64, 128)}` as Hex
-    let v = parseInt(sig.slice(128, 130), 16)
+    let v = Number.parseInt(sig.slice(128, 130), 16)
 
     // Normalize v to 0 or 1 (EIP-7702 uses 0/1, not 27/28)
     if (v >= 27) {

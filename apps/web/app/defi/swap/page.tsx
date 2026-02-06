@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useWallet, useSwap } from '@/hooks'
-import { useTokens } from '@/hooks/useTokens'
-import { PageHeader, ConnectWalletCard } from '@/components/common'
+import { ConnectWalletCard, PageHeader } from '@/components/common'
 import { SwapCard } from '@/components/defi'
+import { useSwap, useWallet } from '@/hooks'
+import { useTokens } from '@/hooks/useTokens'
 import type { Token } from '@/types'
+import { useEffect, useState } from 'react'
 
 export default function SwapPage() {
   const { address, isConnected } = useWallet()
@@ -44,9 +44,7 @@ export default function SwapPage() {
   }
 
   if (!isConnected) {
-    return (
-      <ConnectWalletCard message="Please connect your wallet to swap tokens" />
-    )
+    return <ConnectWalletCard message="Please connect your wallet to swap tokens" />
   }
 
   if (tokensLoading || !tokenIn || !tokenOut) {
@@ -59,10 +57,7 @@ export default function SwapPage() {
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      <PageHeader
-        title="Swap"
-        description="Exchange tokens at the best rates"
-      />
+      <PageHeader title="Swap" description="Exchange tokens at the best rates" />
 
       <SwapCard
         tokens={tokens}

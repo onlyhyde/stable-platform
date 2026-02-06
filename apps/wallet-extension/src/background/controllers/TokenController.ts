@@ -5,7 +5,7 @@
  */
 
 import { createLogger } from '../../shared/utils/logger'
-import type { IndexerClient, ERC20Transfer, IndexerTokenBalance } from '../services/IndexerClient'
+import type { IndexerClient } from '../services/IndexerClient'
 
 const logger = createLogger('TokenController')
 
@@ -144,7 +144,7 @@ function decodeString(data: string): string {
   if (hex.length >= 128) {
     // Dynamic string: offset (32 bytes) + length (32 bytes) + data
     const lengthHex = hex.slice(64, 128)
-    const length = parseInt(lengthHex, 16)
+    const length = Number.parseInt(lengthHex, 16)
     const stringHex = hex.slice(128, 128 + length * 2)
     return Buffer.from(stringHex, 'hex').toString('utf8').replace(/\0/g, '')
   }
@@ -269,8 +269,7 @@ export class TokenController {
    */
   async getTokenBalance(tokenAddress: string, account: string): Promise<string> {
     try {
-      const data =
-        ERC20_SELECTORS.balanceOf + padAddress(account)
+      const data = ERC20_SELECTORS.balanceOf + padAddress(account)
 
       const result = (await this.provider.request({
         method: 'eth_call',
@@ -355,7 +354,7 @@ export class TokenController {
       params: [{ to: address, data: ERC20_SELECTORS.decimals }, 'latest'],
     })) as string
 
-    return parseInt(decodeUint256(result), 10)
+    return Number.parseInt(decodeUint256(result), 10)
   }
 
   /**
@@ -366,10 +365,7 @@ export class TokenController {
     recipient: string,
     amount: string
   ): TransferTransaction {
-    const data =
-      ERC20_SELECTORS.transfer +
-      padAddress(recipient) +
-      padNumber(amount)
+    const data = ERC20_SELECTORS.transfer + padAddress(recipient) + padNumber(amount)
 
     return {
       to: tokenAddress,
@@ -501,10 +497,7 @@ export class TokenController {
   /**
    * Get token transfer history for an account
    */
-  async getTransferHistory(
-    account: string,
-    limit: number = 50
-  ): Promise<TokenTransferEntry[]> {
+  async getTransferHistory(account: string, limit = 50): Promise<TokenTransferEntry[]> {
     if (!this.indexerClient) {
       logger.debug('Indexer client not configured, no transfer history available')
       return []
@@ -523,9 +516,7 @@ export class TokenController {
           from: t.from,
           to: t.to,
           value: t.value,
-          formattedValue: token
-            ? this.formatTokenAmount(t.value, token.decimals)
-            : undefined,
+          formattedValue: token ? this.formatTokenAmount(t.value, token.decimals) : undefined,
           transactionHash: t.transactionHash,
           blockNumber: t.blockNumber,
           timestamp: t.timestamp,
@@ -545,7 +536,7 @@ export class TokenController {
   async getTokenTransferHistory(
     tokenAddress: string,
     account: string,
-    limit: number = 50
+    limit = 50
   ): Promise<TokenTransferEntry[]> {
     const allHistory = await this.getTransferHistory(account, limit * 2)
 

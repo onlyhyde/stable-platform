@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
 import type { Transaction } from '@/types'
+import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
 
 interface UseTransactionHistoryConfig {
@@ -17,7 +17,9 @@ interface UseTransactionHistoryReturn {
   refresh: () => Promise<void>
 }
 
-export function useTransactionHistory(config: UseTransactionHistoryConfig = {}): UseTransactionHistoryReturn {
+export function useTransactionHistory(
+  config: UseTransactionHistoryConfig = {}
+): UseTransactionHistoryReturn {
   const { address, fetchTransactions, autoFetch = true } = config
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(false)

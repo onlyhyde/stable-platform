@@ -5,20 +5,17 @@
  * Follows SRP: handles only EOA mode transactions.
  */
 
+import type { Account, MultiModeTransactionRequest } from '@stablenet/sdk-types'
+import { ACCOUNT_TYPE, TRANSACTION_MODE } from '@stablenet/sdk-types'
 import type { Hash } from 'viem'
-import type {
-  MultiModeTransactionRequest,
-  Account,
-} from '@stablenet/sdk-types'
-import { TRANSACTION_MODE, ACCOUNT_TYPE } from '@stablenet/sdk-types'
-import { createEOATransactionBuilder } from '../eoaTransaction'
 import { createTransactionError } from '../../errors'
+import { createEOATransactionBuilder } from '../eoaTransaction'
 import type {
-  TransactionStrategy,
   BaseStrategyConfig,
-  StrategyPreparedTransaction,
-  StrategyExecuteOptions,
   CombinedSigner,
+  StrategyExecuteOptions,
+  StrategyPreparedTransaction,
+  TransactionStrategy,
 } from './types'
 
 // ============================================================================
@@ -28,9 +25,7 @@ import type {
 /**
  * Create an EOA transaction strategy
  */
-export function createEOAStrategy(
-  config: BaseStrategyConfig
-): TransactionStrategy {
+export function createEOAStrategy(config: BaseStrategyConfig): TransactionStrategy {
   const { rpcUrl, chainId } = config
 
   // Create the underlying builder
@@ -91,9 +86,7 @@ export function createEOAStrategy(
       signer: CombinedSigner,
       options?: StrategyExecuteOptions
     ) {
-      const built = prepared.strategyData as Awaited<
-        ReturnType<typeof builder.build>
-      >
+      const built = prepared.strategyData as Awaited<ReturnType<typeof builder.build>>
 
       // Send the transaction
       const result = await builder.send(built, signer)

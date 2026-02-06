@@ -1,14 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { Button, ConnectWalletCard, PageHeader } from '@/components/common'
+import { ExpenseListCard, ExpenseSummaryCards, SubmitExpenseModal } from '@/components/enterprise'
 import { useWallet } from '@/hooks'
 import { useExpenses } from '@/hooks/useExpenses'
-import { PageHeader, ConnectWalletCard, Button } from '@/components/common'
-import {
-  ExpenseSummaryCards,
-  ExpenseListCard,
-  SubmitExpenseModal,
-} from '@/components/enterprise'
+import { useMemo, useState } from 'react'
 
 export default function ExpensesPage() {
   const { isConnected } = useWallet()
@@ -25,22 +21,22 @@ export default function ExpensesPage() {
   // Get all expenses for summary calculation (without filter)
   const { expenses: allExpenses } = useExpenses()
 
-  const totalPending = allExpenses
-    .filter(e => e.status === 'pending')
-    .reduce((sum, e) => sum + Number(e.amount), 0) / 1e6
+  const totalPending =
+    allExpenses
+      .filter((e) => e.status === 'pending')
+      .reduce((sum, e) => sum + Number(e.amount), 0) / 1e6
 
-  const totalApproved = allExpenses
-    .filter(e => e.status === 'approved')
-    .reduce((sum, e) => sum + Number(e.amount), 0) / 1e6
+  const totalApproved =
+    allExpenses
+      .filter((e) => e.status === 'approved')
+      .reduce((sum, e) => sum + Number(e.amount), 0) / 1e6
 
-  const totalPaidMTD = allExpenses
-    .filter(e => e.status === 'paid')
-    .reduce((sum, e) => sum + Number(e.amount), 0) / 1e6
+  const totalPaidMTD =
+    allExpenses.filter((e) => e.status === 'paid').reduce((sum, e) => sum + Number(e.amount), 0) /
+    1e6
 
   if (!isConnected) {
-    return (
-      <ConnectWalletCard message="Please connect your wallet to manage expenses" />
-    )
+    return <ConnectWalletCard message="Please connect your wallet to manage expenses" />
   }
 
   if (isLoading) {
@@ -62,12 +58,15 @@ export default function ExpensesPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <PageHeader
-          title="Expense Management"
-          description="Track and approve business expenses"
-        />
+        <PageHeader title="Expense Management" description="Track and approve business expenses" />
         <Button onClick={() => setIsAddModalOpen(true)}>
-          <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Submit Expense
@@ -87,10 +86,7 @@ export default function ExpensesPage() {
         onFilterChange={setFilterStatus}
       />
 
-      <SubmitExpenseModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-      />
+      <SubmitExpenseModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
     </div>
   )
 }

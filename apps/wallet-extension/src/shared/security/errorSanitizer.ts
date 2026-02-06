@@ -271,19 +271,11 @@ function containsSensitiveInfo(message: string): boolean {
 function classifyError(error: unknown): ErrorCategory {
   const message = extractMessage(error).toLowerCase()
 
-  if (
-    message.includes('network') ||
-    message.includes('fetch') ||
-    message.includes('connection')
-  ) {
+  if (message.includes('network') || message.includes('fetch') || message.includes('connection')) {
     return 'network'
   }
 
-  if (
-    message.includes('auth') ||
-    message.includes('password') ||
-    message.includes('credential')
-  ) {
+  if (message.includes('auth') || message.includes('password') || message.includes('credential')) {
     return 'authentication'
   }
 
@@ -295,11 +287,7 @@ function classifyError(error: unknown): ErrorCategory {
     return 'permission'
   }
 
-  if (
-    message.includes('invalid') ||
-    message.includes('required') ||
-    message.includes('missing')
-  ) {
+  if (message.includes('invalid') || message.includes('required') || message.includes('missing')) {
     return 'validation'
   }
 

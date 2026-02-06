@@ -1,5 +1,10 @@
 import type { Address, Hex } from 'viem'
-import type { StealthClient, StealthAnnouncement, AnnouncementFilterOptions, SchemeId } from '../types'
+import type {
+  AnnouncementFilterOptions,
+  SchemeId,
+  StealthAnnouncement,
+  StealthClient,
+} from '../types'
 
 /**
  * Fetch stealth announcements from the blockchain
@@ -104,7 +109,10 @@ export interface FetchAnnouncementsBatchedOptions {
   /** Additional filter options */
   filterOptions?: Omit<AnnouncementFilterOptions, 'fromBlock' | 'toBlock'>
   /** Callback after each batch completes */
-  onBatch?: (batch: StealthAnnouncement[], progress: { current: bigint; total: bigint; batchesCompleted: number; totalBatches: number }) => void
+  onBatch?: (
+    batch: StealthAnnouncement[],
+    progress: { current: bigint; total: bigint; batchesCompleted: number; totalBatches: number }
+  ) => void
   /** Callback on batch error (return true to continue, false to abort) */
   onError?: (error: Error, batchStart: bigint, batchEnd: bigint) => boolean
 }
@@ -127,13 +135,7 @@ export async function fetchAnnouncementsBatched(
   toBlock: bigint,
   options: FetchAnnouncementsBatchedOptions = {}
 ): Promise<StealthAnnouncement[]> {
-  const {
-    batchSize = 10000n,
-    concurrency = 3,
-    filterOptions = {},
-    onBatch,
-    onError,
-  } = options
+  const { batchSize = 10000n, concurrency = 3, filterOptions = {}, onBatch, onError } = options
 
   // Validate inputs
   if (fromBlock > toBlock) {
@@ -148,9 +150,8 @@ export async function fetchAnnouncementsBatched(
   let currentBlock = fromBlock
 
   while (currentBlock <= toBlock) {
-    const batchEnd = currentBlock + batchSize - 1n > toBlock
-      ? toBlock
-      : currentBlock + batchSize - 1n
+    const batchEnd =
+      currentBlock + batchSize - 1n > toBlock ? toBlock : currentBlock + batchSize - 1n
     batches.push({ start: currentBlock, end: batchEnd })
     currentBlock = batchEnd + 1n
   }
@@ -198,9 +199,8 @@ export async function fetchAnnouncementsBatched(
         }
       } else {
         // result.status === 'rejected'
-        const error = result.reason instanceof Error
-          ? result.reason
-          : new Error(String(result.reason))
+        const error =
+          result.reason instanceof Error ? result.reason : new Error(String(result.reason))
 
         if (onError) {
           const shouldContinue = onError(error, start, end)

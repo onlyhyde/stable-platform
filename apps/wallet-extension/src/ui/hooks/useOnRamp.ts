@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import type { Address } from 'viem'
 import type {
-  OnRampQuote,
-  OnRampOrder,
-  FiatCurrency,
   CryptoCurrency,
+  FiatCurrency,
+  OnRampOrder,
+  OnRampQuote,
   PaymentMethod,
 } from '../../types'
-import type { Address } from 'viem'
 
 interface UseOnRampResult {
   quote: OnRampQuote | null

@@ -4,12 +4,8 @@
  * Type definitions for module registry entries.
  */
 
+import type { ModuleConfigSchema, ModuleMetadata } from '@stablenet/sdk-types'
 import type { Address } from 'viem'
-import type {
-  ModuleType,
-  ModuleMetadata,
-  ModuleConfigSchema,
-} from '@stablenet/sdk-types'
 
 /**
  * Registry entry for a module

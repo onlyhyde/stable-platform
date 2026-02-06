@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Modal, Button, Input } from '@/components/common'
+import { Button, Input, Modal } from '@/components/common'
+import { useEffect, useState } from 'react'
 
 interface AddEmployeeModalProps {
   isOpen: boolean
@@ -38,15 +38,15 @@ export function AddEmployeeModal({ isOpen, onClose, onSubmit }: AddEmployeeModal
     }
   }, [isOpen])
 
-  const handleChange = (field: keyof EmployeeFormData) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    setFormData(prev => ({ ...prev, [field]: e.target.value }))
-    // Clear error when field is modified
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }))
+  const handleChange =
+    (field: keyof EmployeeFormData) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      setFormData((prev) => ({ ...prev, [field]: e.target.value }))
+      // Clear error when field is modified
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: undefined }))
+      }
     }
-  }
 
   const validate = (): boolean => {
     const newErrors: Partial<EmployeeFormData> = {}
@@ -76,11 +76,7 @@ export function AddEmployeeModal({ isOpen, onClose, onSubmit }: AddEmployeeModal
   }
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Add Employee"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="Add Employee">
       <div className="space-y-4">
         <div>
           <Input
@@ -103,12 +99,14 @@ export function AddEmployeeModal({ isOpen, onClose, onSubmit }: AddEmployeeModal
             onChange={handleChange('amount')}
             aria-label="Payment Amount (USDC)"
           />
-          {errors.amount && (
-            <p className="text-sm text-red-500 mt-1">{errors.amount}</p>
-          )}
+          {errors.amount && <p className="text-sm text-red-500 mt-1">{errors.amount}</p>}
         </div>
         <div>
-          <label htmlFor="frequency-select" className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+          <label
+            htmlFor="frequency-select"
+            className="block text-sm font-medium mb-1"
+            style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+          >
             Payment Frequency
           </label>
           <select
@@ -123,9 +121,7 @@ export function AddEmployeeModal({ isOpen, onClose, onSubmit }: AddEmployeeModal
             <option value="biweekly">Bi-weekly</option>
             <option value="monthly">Monthly</option>
           </select>
-          {errors.frequency && (
-            <p className="text-sm text-red-500 mt-1">{errors.frequency}</p>
-          )}
+          {errors.frequency && <p className="text-sm text-red-500 mt-1">{errors.frequency}</p>}
         </div>
         <div className="flex gap-3 pt-4">
           <Button variant="secondary" onClick={onClose} className="flex-1">

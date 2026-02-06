@@ -1,5 +1,3 @@
-import type { Address, Chain, Hex, Transport } from 'viem'
-import { createPublicClient, http } from 'viem'
 import type {
   Call,
   PaymasterClient,
@@ -8,10 +6,11 @@ import type {
   UserOperation,
   UserOperationReceipt,
 } from '@stablenet/sdk-types'
-import { createBundlerClient } from './bundlerClient'
-import { getUserOperationHash } from '../utils/userOperation'
-import { createViemProvider, type RpcProvider } from '../providers'
+import type { Address, Chain, Hex, Transport } from 'viem'
 import { ConfigurationError } from '../errors'
+import { type RpcProvider, createViemProvider } from '../providers'
+import { getUserOperationHash } from '../utils/userOperation'
+import { createBundlerClient } from './bundlerClient'
 
 /**
  * Smart Account Client for sending UserOperations
@@ -58,14 +57,23 @@ export function createSmartAccountClient<
     provider?: RpcProvider
   }
 ): SmartAccountClientActions & { account: TAccount; chain: TChain } {
-  const { account, chain, transport, bundlerTransport, paymaster: defaultPaymaster, provider: injectedProvider } = config
+  const {
+    account,
+    chain,
+    transport,
+    bundlerTransport,
+    paymaster: defaultPaymaster,
+    provider: injectedProvider,
+  } = config
 
   // DIP: Use injected provider or create one from transport URL
   const rpcUrl = getRpcUrl(transport)
-  const provider: RpcProvider = injectedProvider ?? createViemProvider({
-    rpcUrl,
-    chainId: chain.id,
-  })
+  const provider: RpcProvider =
+    injectedProvider ??
+    createViemProvider({
+      rpcUrl,
+      chainId: chain.id,
+    })
 
   // Create bundler client
   const bundlerUrl = getBundlerUrl(bundlerTransport || transport)
@@ -217,11 +225,9 @@ function getUrlFromTransport(transport: Transport): string {
   if ('url' in transportConfig && typeof transportConfig.url === 'string') {
     return transportConfig.url
   }
-  throw new ConfigurationError(
-    'Could not extract URL from transport',
-    'transport',
-    { operation: 'getUrlFromTransport' }
-  )
+  throw new ConfigurationError('Could not extract URL from transport', 'transport', {
+    operation: 'getUrlFromTransport',
+  })
 }
 
 /**

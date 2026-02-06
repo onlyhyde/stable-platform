@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
-import { useWallet } from '@/hooks'
-import { useAuditLogs } from '@/hooks/useAuditLogs'
-import { PageHeader, ConnectWalletCard, Button } from '@/components/common'
+import { Button, ConnectWalletCard, PageHeader } from '@/components/common'
 import {
-  AuditSummaryCards,
   AuditFilterCard,
   AuditLogCard,
+  AuditSummaryCards,
   ComplianceInfoCard,
 } from '@/components/enterprise'
+import { useWallet } from '@/hooks'
+import { useAuditLogs } from '@/hooks/useAuditLogs'
 import type { AuditLog } from '@/types'
+import { useCallback, useMemo, useState } from 'react'
 
 export default function AuditPage() {
   const { isConnected } = useWallet()
@@ -25,11 +25,13 @@ export default function AuditPage() {
   const { logs: auditLogs, isLoading, error } = useAuditLogs({ filter })
 
   // Client-side search filtering (hook handles action filter)
-  const filteredLogs = auditLogs.filter(log => {
+  const filteredLogs = auditLogs.filter((log) => {
     if (searchQuery === '') return true
-    return log.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    return (
+      log.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.actor.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.txHash?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
   })
 
   /**
@@ -53,10 +55,7 @@ export default function AuditPage() {
     ])
 
     // Create CSV content
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(',')),
-    ].join('\n')
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n')
 
     // Create blob and download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -71,9 +70,7 @@ export default function AuditPage() {
   }, [filteredLogs])
 
   if (!isConnected) {
-    return (
-      <ConnectWalletCard message="Please connect your wallet to view audit logs" />
-    )
+    return <ConnectWalletCard message="Please connect your wallet to view audit logs" />
   }
 
   if (isLoading) {
@@ -95,13 +92,21 @@ export default function AuditPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <PageHeader
-          title="Audit Log"
-          description="Complete history of all enterprise actions"
-        />
+        <PageHeader title="Audit Log" description="Complete history of all enterprise actions" />
         <Button variant="secondary" onClick={handleExportLogs} disabled={filteredLogs.length === 0}>
-          <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
           </svg>
           Export Logs
         </Button>
@@ -109,7 +114,7 @@ export default function AuditPage() {
 
       <AuditSummaryCards
         totalActions={auditLogs.length}
-        uniqueActors={new Set(auditLogs.map(l => l.actor)).size}
+        uniqueActors={new Set(auditLogs.map((l) => l.actor)).size}
         onChainPercentage="100%"
         complianceStatus="Compliant"
       />

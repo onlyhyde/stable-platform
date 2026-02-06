@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { AddEmployeeModal, type EmployeeFormData } from '../enterprise/cards/AddEmployeeModal'
-import { SubmitExpenseModal, type ExpenseFormData } from '../enterprise/cards/SubmitExpenseModal'
-import { AddLiquidityModal, type LiquidityFormData } from '../defi/cards/AddLiquidityModal'
 import type { Pool, Token } from '@/types'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { AddLiquidityModal } from '../defi/cards/AddLiquidityModal'
+import { AddEmployeeModal } from '../enterprise/cards/AddEmployeeModal'
+import { SubmitExpenseModal } from '../enterprise/cards/SubmitExpenseModal'
 
 describe('AddEmployeeModal', () => {
   const defaultProps = {
@@ -254,7 +254,9 @@ describe('AddLiquidityModal', () => {
   })
 
   it('should show loading state during submission', async () => {
-    const onSubmit = vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 1000)))
+    const onSubmit = vi
+      .fn()
+      .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 1000)))
     render(<AddLiquidityModal {...defaultProps} onSubmit={onSubmit} />)
 
     await userEvent.type(screen.getByLabelText(/eth amount/i), '1')

@@ -8,7 +8,7 @@
 
 import type { ChainAddresses } from '../types'
 
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const
+const _ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const
 
 /**
  * Contract addresses by chain ID

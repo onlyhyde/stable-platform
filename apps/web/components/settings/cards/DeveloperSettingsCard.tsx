@@ -1,7 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardTitle, CardDescription, Button, Input, InfoBanner } from '@/components/common'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+  InfoBanner,
+  Input,
+} from '@/components/common'
+import { useEffect, useState } from 'react'
 
 interface ContractSettings {
   entryPoint: string
@@ -32,7 +40,10 @@ const defaultAddresses: ContractSettings = {
 export function DeveloperSettingsCard() {
   const [contracts, setContracts] = useState<ContractSettings>(defaultAddresses)
   const [isSaving, setIsSaving] = useState(false)
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [saveMessage, setSaveMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
 
   useEffect(() => {
     try {
@@ -47,7 +58,7 @@ export function DeveloperSettingsCard() {
   }, [])
 
   const handleChange = (key: keyof ContractSettings, value: string) => {
-    setContracts(prev => ({ ...prev, [key]: value }))
+    setContracts((prev) => ({ ...prev, [key]: value }))
   }
 
   const isValidAddress = (address: string): boolean => {
@@ -75,7 +86,10 @@ export function DeveloperSettingsCard() {
       }
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(contracts))
-      setSaveMessage({ type: 'success', text: 'Contract addresses saved! Refresh to apply changes.' })
+      setSaveMessage({
+        type: 'success',
+        text: 'Contract addresses saved! Refresh to apply changes.',
+      })
 
       setTimeout(() => setSaveMessage(null), 5000)
     } catch {
@@ -96,9 +110,21 @@ export function DeveloperSettingsCard() {
     { key: 'entryPoint', label: 'EntryPoint', hint: 'ERC-4337 EntryPoint contract' },
     { key: 'accountFactory', label: 'Account Factory', hint: 'Smart account factory (Kernel)' },
     { key: 'paymaster', label: 'Paymaster', hint: 'Gas sponsorship paymaster' },
-    { key: 'sessionKeyManager', label: 'Session Key Manager', hint: 'Session key validator module' },
-    { key: 'subscriptionManager', label: 'Subscription Manager', hint: 'Recurring subscription contract' },
-    { key: 'recurringPaymentManager', label: 'Recurring Payment Manager', hint: 'Recurring payment processor' },
+    {
+      key: 'sessionKeyManager',
+      label: 'Session Key Manager',
+      hint: 'Session key validator module',
+    },
+    {
+      key: 'subscriptionManager',
+      label: 'Subscription Manager',
+      hint: 'Recurring subscription contract',
+    },
+    {
+      key: 'recurringPaymentManager',
+      label: 'Recurring Payment Manager',
+      hint: 'Recurring payment processor',
+    },
     { key: 'permissionManager', label: 'Permission Manager', hint: 'Permission control module' },
     { key: 'stealthAnnouncer', label: 'Stealth Announcer', hint: 'Stealth address announcer' },
     { key: 'stealthRegistry', label: 'Stealth Registry', hint: 'Stealth meta-address registry' },
@@ -110,8 +136,8 @@ export function DeveloperSettingsCard() {
         <CardContent className="py-6">
           <CardTitle className="mb-4">Contract Addresses</CardTitle>
           <CardDescription className="mb-6">
-            Configure deployed contract addresses for the current network.
-            This allows you to update addresses after redeploying contracts without restarting the app.
+            Configure deployed contract addresses for the current network. This allows you to update
+            addresses after redeploying contracts without restarting the app.
           </CardDescription>
 
           {saveMessage && (
@@ -161,15 +187,31 @@ export function DeveloperSettingsCard() {
           </CardDescription>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Environment</span>
-              <span className="text-sm font-mono font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+            <div
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: 'rgb(var(--secondary))' }}
+            >
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Environment
+              </span>
+              <span
+                className="text-sm font-mono font-medium"
+                style={{ color: 'rgb(var(--foreground))' }}
+              >
                 {process.env.NODE_ENV}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Build Time</span>
-              <span className="text-sm font-mono font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+            <div
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: 'rgb(var(--secondary))' }}
+            >
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Build Time
+              </span>
+              <span
+                className="text-sm font-mono font-medium"
+                style={{ color: 'rgb(var(--foreground))' }}
+              >
                 {new Date().toISOString().split('T')[0]}
               </span>
             </div>

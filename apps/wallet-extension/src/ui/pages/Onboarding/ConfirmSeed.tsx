@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Button, Card } from '../../components/common'
 
 interface ConfirmSeedProps {
@@ -32,7 +32,9 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
       const correctWord = words[index]
       const otherWords = words.filter((_, i) => i !== index)
       const shuffled = otherWords.sort(() => Math.random() - 0.5).slice(0, 3)
-      options[index] = [...shuffled, correctWord ?? ''].filter((w): w is string => !!w).sort(() => Math.random() - 0.5)
+      options[index] = [...shuffled, correctWord ?? '']
+        .filter((w): w is string => !!w)
+        .sort(() => Math.random() - 0.5)
     }
     return options
   }, [verificationIndices, words])
@@ -68,21 +70,26 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
           className="flex items-center mb-4 transition-colors"
           style={{ color: 'rgb(var(--muted-foreground))' }}
         >
-          <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-5 h-5 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back
         </button>
-        <h1
-          className="text-xl font-bold"
-          style={{ color: 'rgb(var(--foreground))' }}
-        >
+        <h1 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
           Confirm Your Seed Phrase
         </h1>
-        <p
-          className="mt-1"
-          style={{ color: 'rgb(var(--muted-foreground))' }}
-        >
+        <p className="mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
           Select the correct word for each position
         </p>
       </div>
@@ -110,9 +117,7 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
                         ? 'rgb(var(--primary) / 0.1)'
                         : 'rgb(var(--background-raised))',
                     borderColor:
-                      selectedWords[index] === word
-                        ? 'rgb(var(--primary))'
-                        : 'rgb(var(--border))',
+                      selectedWords[index] === word ? 'rgb(var(--primary))' : 'rgb(var(--border))',
                     color:
                       selectedWords[index] === word
                         ? 'rgb(var(--primary))'
@@ -135,12 +140,20 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
               border: '1px solid rgb(var(--destructive) / 0.2)',
             }}
           >
-            <div
-              className="flex items-center gap-2"
-              style={{ color: 'rgb(var(--destructive))' }}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="flex items-center gap-2" style={{ color: 'rgb(var(--destructive))' }}>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <span className="text-sm">{error}</span>
             </div>
@@ -149,12 +162,7 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
       </div>
 
       {/* Confirm button */}
-      <Button
-        onClick={handleConfirm}
-        fullWidth
-        disabled={!allSelected}
-        className="mt-6"
-      >
+      <Button onClick={handleConfirm} fullWidth disabled={!allSelected} className="mt-6">
         Confirm
       </Button>
     </div>

@@ -1,6 +1,6 @@
+import type { PackedUserOperation, UserOperation } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { concat, encodeAbiParameters, pad, toHex } from 'viem'
-import type { PackedUserOperation, UserOperation } from '@stablenet/sdk-types'
 
 /**
  * Pack a UserOperation into the format expected by the bundler RPC
@@ -8,9 +8,7 @@ import type { PackedUserOperation, UserOperation } from '@stablenet/sdk-types'
 export function packUserOperation(userOp: UserOperation): PackedUserOperation {
   // Build initCode: factory + factoryData
   const initCode =
-    userOp.factory && userOp.factoryData
-      ? concat([userOp.factory, userOp.factoryData])
-      : '0x'
+    userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
 
   // Build accountGasLimits: verificationGasLimit (16 bytes) + callGasLimit (16 bytes)
   const accountGasLimits = concat([
@@ -67,20 +65,14 @@ export function unpackUserOperation(packed: Record<string, Hex>): UserOperation 
   // Parse accountGasLimits
   const accountGasLimits = packed.accountGasLimits || '0x'
   const verificationGasLimit =
-    accountGasLimits.length >= 34
-      ? BigInt(`0x${accountGasLimits.slice(2, 34)}`)
-      : 0n
+    accountGasLimits.length >= 34 ? BigInt(`0x${accountGasLimits.slice(2, 34)}`) : 0n
   const callGasLimit =
-    accountGasLimits.length >= 66
-      ? BigInt(`0x${accountGasLimits.slice(34, 66)}`)
-      : 0n
+    accountGasLimits.length >= 66 ? BigInt(`0x${accountGasLimits.slice(34, 66)}`) : 0n
 
   // Parse gasFees
   const gasFees = packed.gasFees || '0x'
-  const maxPriorityFeePerGas =
-    gasFees.length >= 34 ? BigInt(`0x${gasFees.slice(2, 34)}`) : 0n
-  const maxFeePerGas =
-    gasFees.length >= 66 ? BigInt(`0x${gasFees.slice(34, 66)}`) : 0n
+  const maxPriorityFeePerGas = gasFees.length >= 34 ? BigInt(`0x${gasFees.slice(2, 34)}`) : 0n
+  const maxFeePerGas = gasFees.length >= 66 ? BigInt(`0x${gasFees.slice(34, 66)}`) : 0n
 
   // Parse paymasterAndData
   let paymaster: Address | undefined
@@ -88,7 +80,11 @@ export function unpackUserOperation(packed: Record<string, Hex>): UserOperation 
   let paymasterPostOpGasLimit: bigint | undefined
   let paymasterData: Hex | undefined
 
-  if (packed.paymasterAndData && packed.paymasterAndData !== '0x' && packed.paymasterAndData.length > 42) {
+  if (
+    packed.paymasterAndData &&
+    packed.paymasterAndData !== '0x' &&
+    packed.paymasterAndData.length > 42
+  ) {
     paymaster = `0x${packed.paymasterAndData.slice(2, 42)}` as Address
     if (packed.paymasterAndData.length >= 106) {
       paymasterVerificationGasLimit = BigInt(`0x${packed.paymasterAndData.slice(42, 74)}`)

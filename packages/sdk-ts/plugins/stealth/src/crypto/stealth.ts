@@ -1,15 +1,15 @@
-import { secp256k1 } from '@noble/curves/secp256k1'
 import type { ProjPointType } from '@noble/curves/abstract/weierstrass'
+import { secp256k1 } from '@noble/curves/secp256k1'
 import { keccak_256 } from '@noble/hashes/sha3'
 import type { Hex } from 'viem'
-import { hexToBytes, bytesToHex, toHex, getAddress } from 'viem'
-import type {
-  StealthMetaAddress,
-  GeneratedStealthAddress,
-  ComputedStealthKey,
-  StealthKeyPair,
-} from '../types'
+import { bytesToHex, getAddress, hexToBytes, toHex } from 'viem'
 import { SCHEME_ID } from '../constants'
+import type {
+  ComputedStealthKey,
+  GeneratedStealthAddress,
+  StealthKeyPair,
+  StealthMetaAddress,
+} from '../types'
 import { computeViewTag } from './viewTag'
 
 /** Type alias for secp256k1 projective point */
@@ -51,7 +51,9 @@ function validatePublicKey(publicKey: Hex): Secp256k1Point {
     if (error instanceof Error && error.message.includes('Invalid public key')) {
       throw error
     }
-    throw new Error(`Invalid public key: ${error instanceof Error ? error.message : 'unknown error'}`)
+    throw new Error(
+      `Invalid public key: ${error instanceof Error ? error.message : 'unknown error'}`
+    )
   }
 }
 
@@ -106,20 +108,16 @@ export function generateStealthAddress(
   const spendingPoint = validatePublicKey(spendingPubKey)
 
   // 1. Generate ephemeral key pair or use override for verification
-  let ephemeralPrivateKey: Uint8Array
-  let ephemeralPubKey: Uint8Array
-  let ephemeralPrivKeyBigInt: bigint
-
   if (ephemeralPubKeyOverride) {
     // For verification: reconstruct from provided ephemeral public key
     // Note: we can't derive the shared secret without the private key
     // This branch is used when we have the ephemeral pub key and viewing private key
     throw new Error('ephemeralPubKeyOverride requires using computeStealthAddressFromSharedSecret')
-  } else {
-    ephemeralPrivateKey = secp256k1.utils.randomPrivateKey()
-    ephemeralPubKey = secp256k1.getPublicKey(ephemeralPrivateKey, true)
-    ephemeralPrivKeyBigInt = BigInt(bytesToHex(ephemeralPrivateKey))
   }
+
+  const ephemeralPrivateKey = secp256k1.utils.randomPrivateKey()
+  const ephemeralPubKey = secp256k1.getPublicKey(ephemeralPrivateKey, true)
+  const ephemeralPrivKeyBigInt = BigInt(bytesToHex(ephemeralPrivateKey))
 
   // 2. Compute shared secret: S = r * viewingPubKey
   const sharedSecretPoint = viewingPoint.multiply(ephemeralPrivKeyBigInt)
@@ -187,7 +185,7 @@ export function computeStealthPrivateKey(
   // 3. Compute stealth private key: p = spendingPrivateKey + H(S) mod n
   const spendingPrivKeyBigInt = BigInt(spendingPrivateKey)
   const hashScalar = BigInt(bytesToHex(hashedSecret)) % secp256k1.CURVE.n
-  let stealthPrivKeyBigInt = (spendingPrivKeyBigInt + hashScalar) % secp256k1.CURVE.n
+  const stealthPrivKeyBigInt = (spendingPrivKeyBigInt + hashScalar) % secp256k1.CURVE.n
 
   // Handle edge case where result could be zero (extremely unlikely)
   if (stealthPrivKeyBigInt === 0n) {
@@ -198,10 +196,7 @@ export function computeStealthPrivateKey(
   const stealthPrivateKey = toHex(stealthPrivKeyBigInt, { size: 32 })
 
   // 4. Derive the stealth address
-  const stealthPubKey = secp256k1.getPublicKey(
-    hexToBytes(stealthPrivateKey),
-    false
-  ) // uncompressed
+  const stealthPubKey = secp256k1.getPublicKey(hexToBytes(stealthPrivateKey), false) // uncompressed
   const addressHash = keccak_256(stealthPubKey.slice(1))
   const stealthAddress = getAddress(bytesToHex(addressHash.slice(-20)))
 
@@ -264,10 +259,7 @@ export function parseStealthMetaAddress(raw: Hex): StealthMetaAddress {
 /**
  * Encode a stealth meta-address to raw bytes
  */
-export function encodeStealthMetaAddress(
-  spendingPubKey: Hex,
-  viewingPubKey: Hex
-): Hex {
+export function encodeStealthMetaAddress(spendingPubKey: Hex, viewingPubKey: Hex): Hex {
   const spendingBytes = hexToBytes(spendingPubKey)
   const viewingBytes = hexToBytes(viewingPubKey)
 

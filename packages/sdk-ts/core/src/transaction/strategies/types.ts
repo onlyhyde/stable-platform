@@ -5,16 +5,16 @@
  * Follows OCP: new modes can be added without modifying existing code.
  */
 
-import type { Address, Hex, Hash } from 'viem'
 import type {
-  TransactionMode,
-  MultiModeTransactionRequest,
-  GasEstimate,
-  TransactionResult,
   Account,
+  GasEstimate,
+  MultiModeTransactionRequest,
+  TransactionMode,
+  TransactionResult,
 } from '@stablenet/sdk-types'
-import type { TransactionSigner } from '../eoaTransaction'
+import type { Address, Hash } from 'viem'
 import type { AuthorizationSigner } from '../eip7702Transaction'
+import type { TransactionSigner } from '../eoaTransaction'
 
 // ============================================================================
 // Strategy Interface
@@ -138,9 +138,7 @@ export interface SmartAccountStrategyConfig extends BaseStrategyConfig {
 /**
  * Strategy factory function type
  */
-export type StrategyFactory<TConfig = BaseStrategyConfig> = (
-  config: TConfig
-) => TransactionStrategy
+export type StrategyFactory<TConfig = BaseStrategyConfig> = (config: TConfig) => TransactionStrategy
 
 /**
  * Strategy registry for managing available strategies

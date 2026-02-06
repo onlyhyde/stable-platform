@@ -1,9 +1,9 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/common'
-import { EmptyState } from '../EmptyState'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { formatAddress, formatUSD } from '@/lib/utils'
 import type { Expense } from '@/types'
+import { EmptyState } from '../EmptyState'
 
 const categoryColors: Record<string, { bg: string; text: string }> = {
   infrastructure: { bg: 'rgb(219 234 254)', text: 'rgb(30 64 175)' },
@@ -80,7 +80,13 @@ export function ExpenseListCard({
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-sm border-b" style={{ color: 'rgb(var(--muted-foreground))', borderColor: 'rgb(var(--border))' }}>
+                <tr
+                  className="text-left text-sm border-b"
+                  style={{
+                    color: 'rgb(var(--muted-foreground))',
+                    borderColor: 'rgb(var(--border))',
+                  }}
+                >
                   <th className="pb-3 font-medium">Description</th>
                   <th className="pb-3 font-medium">Amount</th>
                   <th className="pb-3 font-medium">Category</th>
@@ -94,7 +100,9 @@ export function ExpenseListCard({
                 {expenses.map((expense) => (
                   <tr key={expense.id}>
                     <td className="py-4">
-                      <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{expense.description}</span>
+                      <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                        {expense.description}
+                      </span>
                     </td>
                     <td className="py-4">
                       <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
@@ -105,7 +113,9 @@ export function ExpenseListCard({
                       <span
                         className="text-xs px-2 py-1 rounded-full capitalize"
                         style={{
-                          backgroundColor: (categoryColors[expense.category] || categoryColors.other).bg,
+                          backgroundColor: (
+                            categoryColors[expense.category] || categoryColors.other
+                          ).bg,
                           color: (categoryColors[expense.category] || categoryColors.other).text,
                         }}
                       >
@@ -121,7 +131,9 @@ export function ExpenseListCard({
                       {expense.submittedAt.toLocaleDateString()}
                     </td>
                     <td className="py-4">
-                      <span className={`text-xs px-2 py-1 rounded-full capitalize ${statusColors[expense.status]}`}>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full capitalize ${statusColors[expense.status]}`}
+                      >
                         {expense.status}
                       </span>
                     </td>
@@ -147,11 +159,7 @@ export function ExpenseListCard({
                         </div>
                       )}
                       {expense.status === 'approved' && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => onPay?.(expense.id)}
-                        >
+                        <Button variant="secondary" size="sm" onClick={() => onPay?.(expense.id)}>
                           Pay
                         </Button>
                       )}

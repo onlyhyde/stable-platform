@@ -1,8 +1,8 @@
 'use client'
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import type { Address, Hex } from 'viem'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock the hooks
 vi.mock('@/hooks/usePools', () => ({
@@ -79,12 +79,12 @@ vi.mock('@/hooks', () => ({
   })),
 }))
 
+import { useAuditLogs } from '@/hooks/useAuditLogs'
+import { useExpenses } from '@/hooks/useExpenses'
+import { usePayroll } from '@/hooks/usePayroll'
 // Import after mocking
 import { usePools } from '@/hooks/usePools'
 import { useTokens } from '@/hooks/useTokens'
-import { usePayroll } from '@/hooks/usePayroll'
-import { useAuditLogs } from '@/hooks/useAuditLogs'
-import { useExpenses } from '@/hooks/useExpenses'
 import { useTransactionHistory } from '@/hooks/useTransactionHistory'
 
 describe('Page Integration with Data Hooks', () => {
@@ -118,8 +118,18 @@ describe('Page Integration with Data Hooks', () => {
       const mockPools = [
         {
           address: '0x1234567890123456789012345678901234567890' as Address,
-          token0: { address: '0x0000000000000000000000000000000000000000' as Address, symbol: 'ETH', name: 'Ethereum', decimals: 18 },
-          token1: { address: '0x0000000000000000000000000000000000000001' as Address, symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+          token0: {
+            address: '0x0000000000000000000000000000000000000000' as Address,
+            symbol: 'ETH',
+            name: 'Ethereum',
+            decimals: 18,
+          },
+          token1: {
+            address: '0x0000000000000000000000000000000000000001' as Address,
+            symbol: 'USDC',
+            name: 'USD Coin',
+            decimals: 6,
+          },
           reserve0: BigInt('1000000000000000000'),
           reserve1: BigInt('2000000000'),
           fee: 0.3,
@@ -153,8 +163,18 @@ describe('Page Integration with Data Hooks', () => {
 
     it('should display tokens from hook in swap UI', async () => {
       const mockTokens = [
-        { address: '0x0000000000000000000000000000000000000000' as Address, symbol: 'ETH', name: 'Ethereum', decimals: 18 },
-        { address: '0x0000000000000000000000000000000000000001' as Address, symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+        {
+          address: '0x0000000000000000000000000000000000000000' as Address,
+          symbol: 'ETH',
+          name: 'Ethereum',
+          decimals: 18,
+        },
+        {
+          address: '0x0000000000000000000000000000000000000001' as Address,
+          symbol: 'USDC',
+          name: 'USD Coin',
+          decimals: 6,
+        },
       ]
 
       vi.mocked(useTokens).mockReturnValue({
@@ -292,7 +312,12 @@ describe('Page Integration with Data Hooks', () => {
           id: '1',
           description: 'AWS Cloud Services',
           amount: BigInt('1500000000'),
-          token: { address: '0x0000000000000000000000000000000000000001' as Address, symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+          token: {
+            address: '0x0000000000000000000000000000000000000001' as Address,
+            symbol: 'USDC',
+            name: 'USD Coin',
+            decimals: 6,
+          },
           category: 'infrastructure',
           submitter: '0x1234567890123456789012345678901234567890' as Address,
           submittedAt: new Date(),

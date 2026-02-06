@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import type { SwapQuote, Token } from '@/types'
+import { useCallback, useState } from 'react'
 import { encodeFunctionData } from 'viem'
 import type { Address, Hex } from 'viem'
-import type { Token, SwapQuote } from '@/types'
 
 interface SwapParams {
   tokenIn: Token
@@ -92,121 +92,126 @@ export function useSwap(config: UseSwapConfig = {}) {
   /**
    * Build swap calldata for router
    */
-  const buildSwapCalldata = useCallback((
-    swapQuote: SwapQuote,
-    recipient: Address,
-    minAmountOut: bigint
-  ): Hex => {
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800) // 30 minutes
-    const isETHIn = swapQuote.tokenIn.address.toLowerCase() === ETH_ADDRESS.toLowerCase()
+  const buildSwapCalldata = useCallback(
+    (swapQuote: SwapQuote, recipient: Address, minAmountOut: bigint): Hex => {
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800) // 30 minutes
+      const isETHIn = swapQuote.tokenIn.address.toLowerCase() === ETH_ADDRESS.toLowerCase()
 
-    if (isETHIn) {
+      if (isETHIn) {
+        return encodeFunctionData({
+          abi: SWAP_ABI,
+          functionName: 'swapExactETHForTokens',
+          args: [minAmountOut, swapQuote.route, recipient, deadline],
+        })
+      }
+
       return encodeFunctionData({
         abi: SWAP_ABI,
-        functionName: 'swapExactETHForTokens',
-        args: [minAmountOut, swapQuote.route, recipient, deadline],
+        functionName: 'swapExactTokensForTokens',
+        args: [swapQuote.amountIn, minAmountOut, swapQuote.route, recipient, deadline],
       })
-    }
-
-    return encodeFunctionData({
-      abi: SWAP_ABI,
-      functionName: 'swapExactTokensForTokens',
-      args: [swapQuote.amountIn, minAmountOut, swapQuote.route, recipient, deadline],
-    })
-  }, [])
+    },
+    []
+  )
 
   /**
    * Get swap quote from order router
    */
-  const getQuote = useCallback(async (params: SwapParams): Promise<SwapQuote | null> => {
-    setIsLoading(true)
-    setError(null)
+  const getQuote = useCallback(
+    async (params: SwapParams): Promise<SwapQuote | null> => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const { tokenIn, tokenOut, amountIn } = params
+      try {
+        const { tokenIn, tokenOut, amountIn } = params
 
-      const response = await fetch(`${orderRouterUrl}/quote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tokenIn: tokenIn.address,
-          tokenOut: tokenOut.address,
-          amountIn: amountIn.toString(),
-        }),
-      })
+        const response = await fetch(`${orderRouterUrl}/quote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tokenIn: tokenIn.address,
+            tokenOut: tokenOut.address,
+            amountIn: amountIn.toString(),
+          }),
+        })
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || 'Failed to get quote from order router')
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.message || 'Failed to get quote from order router')
+        }
+
+        const result = await response.json()
+
+        const swapQuote: SwapQuote = {
+          tokenIn,
+          tokenOut,
+          amountIn,
+          amountOut: BigInt(result.amountOut),
+          priceImpact: result.priceImpact,
+          route: result.route || [tokenIn.address, tokenOut.address],
+          gasEstimate: BigInt(result.gasEstimate || '150000'),
+        }
+
+        setQuote(swapQuote)
+        return swapQuote
+      } catch (err) {
+        const swapError = err instanceof Error ? err : new Error('Failed to get quote')
+        setError(swapError)
+        return null
+      } finally {
+        setIsLoading(false)
       }
-
-      const result = await response.json()
-
-      const swapQuote: SwapQuote = {
-        tokenIn,
-        tokenOut,
-        amountIn,
-        amountOut: BigInt(result.amountOut),
-        priceImpact: result.priceImpact,
-        route: result.route || [tokenIn.address, tokenOut.address],
-        gasEstimate: BigInt(result.gasEstimate || '150000'),
-      }
-
-      setQuote(swapQuote)
-      return swapQuote
-    } catch (err) {
-      const swapError = err instanceof Error ? err : new Error('Failed to get quote')
-      setError(swapError)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [orderRouterUrl])
+    },
+    [orderRouterUrl]
+  )
 
   /**
    * Execute swap via UserOperation
    */
-  const executeSwap = useCallback(async (
-    swapQuote: SwapQuote,
-    recipient: Address,
-    options: SwapOptions = {}
-  ): Promise<{ transactionHash: string } | null> => {
-    if (!sendUserOp) {
-      setError(new Error('sendUserOp function not provided'))
-      return null
-    }
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const slippage = options.slippage ?? defaultSlippage
-      const minAmountOut = calculateMinAmountOut(swapQuote.amountOut, slippage)
-      const calldata = buildSwapCalldata(swapQuote, recipient, minAmountOut)
-      const isETHIn = swapQuote.tokenIn.address.toLowerCase() === ETH_ADDRESS.toLowerCase()
-
-      const result = await sendUserOp(recipient, {
-        to: routerAddress,
-        value: isETHIn ? swapQuote.amountIn : undefined,
-        data: calldata,
-        minAmountOut,
-      })
-
-      if (!result || !result.success) {
-        throw new Error('UserOperation failed')
+  const executeSwap = useCallback(
+    async (
+      swapQuote: SwapQuote,
+      recipient: Address,
+      options: SwapOptions = {}
+    ): Promise<{ transactionHash: string } | null> => {
+      if (!sendUserOp) {
+        setError(new Error('sendUserOp function not provided'))
+        return null
       }
 
-      return {
-        transactionHash: result.transactionHash || result.userOpHash,
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const slippage = options.slippage ?? defaultSlippage
+        const minAmountOut = calculateMinAmountOut(swapQuote.amountOut, slippage)
+        const calldata = buildSwapCalldata(swapQuote, recipient, minAmountOut)
+        const isETHIn = swapQuote.tokenIn.address.toLowerCase() === ETH_ADDRESS.toLowerCase()
+
+        const result = await sendUserOp(recipient, {
+          to: routerAddress,
+          value: isETHIn ? swapQuote.amountIn : undefined,
+          data: calldata,
+          minAmountOut,
+        })
+
+        if (!result || !result.success) {
+          throw new Error('UserOperation failed')
+        }
+
+        return {
+          transactionHash: result.transactionHash || result.userOpHash,
+        }
+      } catch (err) {
+        const swapError = err instanceof Error ? err : new Error('Failed to execute swap')
+        setError(swapError)
+        return null
+      } finally {
+        setIsLoading(false)
       }
-    } catch (err) {
-      const swapError = err instanceof Error ? err : new Error('Failed to execute swap')
-      setError(swapError)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [sendUserOp, routerAddress, defaultSlippage, calculateMinAmountOut, buildSwapCalldata])
+    },
+    [sendUserOp, routerAddress, defaultSlippage, calculateMinAmountOut, buildSwapCalldata]
+  )
 
   return {
     quote,

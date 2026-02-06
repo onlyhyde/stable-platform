@@ -1,21 +1,21 @@
 import type { Address } from 'viem'
-import { BaseApiClient } from './baseApi'
 import { getApiConfig } from '../../config'
 import type {
-  OnRampQuote,
-  OnRampOrder,
-  GetQuoteRequest,
-  GetQuoteResponse,
   CreateOrderRequest,
   CreateOrderResponse,
+  CryptoCurrency,
+  FiatCurrency,
+  GetQuoteRequest,
+  GetQuoteResponse,
+  OnRampOrder,
+  OnRampQuote,
+  OrderListResponse,
+  PaymentMethod,
+  SupportedCurrenciesResponse,
   UpdateOrderRequest,
   UpdateOrderResponse,
-  OrderListResponse,
-  SupportedCurrenciesResponse,
-  FiatCurrency,
-  CryptoCurrency,
-  PaymentMethod,
 } from '../../types'
+import { BaseApiClient } from './baseApi'
 
 /**
  * OnRamp Simulator API Client
@@ -74,10 +74,7 @@ export class OnRampApiClient extends BaseApiClient {
   /**
    * Confirm payment for an order
    */
-  async confirmPayment(
-    orderId: string,
-    bankTransactionId?: string
-  ): Promise<OnRampOrder> {
+  async confirmPayment(orderId: string, bankTransactionId?: string): Promise<OnRampOrder> {
     return this.updateOrder(orderId, {
       paymentConfirmed: true,
       bankTransactionId,
@@ -88,9 +85,7 @@ export class OnRampApiClient extends BaseApiClient {
    * Get order history for an address
    */
   async getOrderHistory(address: Address): Promise<OnRampOrder[]> {
-    const response = await this.get<OrderListResponse>(
-      `/orders?address=${address}`
-    )
+    const response = await this.get<OrderListResponse>(`/orders?address=${address}`)
     return response.orders
   }
 
@@ -118,10 +113,7 @@ export class OnRampApiClient extends BaseApiClient {
   /**
    * Get exchange rate for specific pair
    */
-  async getExchangeRate(
-    fiat: FiatCurrency,
-    crypto: CryptoCurrency
-  ): Promise<number> {
+  async getExchangeRate(fiat: FiatCurrency, crypto: CryptoCurrency): Promise<number> {
     const rates = await this.getExchangeRates()
     return rates[`${fiat}_${crypto}`] ?? 0
   }
@@ -161,9 +153,7 @@ export class OnRampApiClient extends BaseApiClient {
   /**
    * Get available payment methods for a currency
    */
-  async getPaymentMethods(
-    _fiatCurrency: FiatCurrency
-  ): Promise<PaymentMethod[]> {
+  async getPaymentMethods(_fiatCurrency: FiatCurrency): Promise<PaymentMethod[]> {
     const currencies = await this.getSupportedCurrencies()
     return currencies.paymentMethods
   }

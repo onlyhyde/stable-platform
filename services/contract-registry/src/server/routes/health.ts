@@ -55,7 +55,7 @@ contract_registry_sets_total{service="contract-registry"} ${setCount}
   })
 
   // Metrics tracking hook
-  app.addHook('onResponse', (request, reply, done) => {
+  app.addHook('onResponse', (_request, reply, done) => {
     requestCount++
     if (reply.statusCode >= 400) {
       errorCount++

@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react'
 import {
-  parseWebAuthnCredential,
-  encodeWebAuthnValidatorInit,
-  validateWebAuthnValidatorConfig,
   type WebAuthnValidatorConfig,
+  encodeWebAuthnValidatorInit,
+  parseWebAuthnCredential,
+  validateWebAuthnValidatorConfig,
 } from '@stablenet/core'
+import { useCallback, useState } from 'react'
 import type { Hex } from 'viem'
 
 // ============================================================================

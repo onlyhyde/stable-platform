@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type {
-  OnRampQuote,
-  OnRampOrder,
-  PaymentMethod,
-  FiatCurrency,
   CryptoCurrency,
+  FiatCurrency,
   LinkedBankAccount,
+  OnRampOrder,
+  OnRampQuote,
+  PaymentMethod,
 } from '../../types'
-import { Button, Card, Input, Select, Spinner, Modal } from '../components/common'
-import { QuoteCard, OrderCard, PaymentMethodSelector } from '../components/onramp'
+import { Button, Card, Input, Modal, Select, Spinner } from '../components/common'
+import { OrderCard, PaymentMethodSelector, QuoteCard } from '../components/onramp'
 import { useWalletStore } from '../hooks/useWalletStore'
 
 type ViewType = 'buy' | 'orders'
@@ -93,7 +93,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
   }
 
   async function handleGetQuote() {
-    if (!fiatAmount || parseFloat(fiatAmount) <= 0) {
+    if (!fiatAmount || Number.parseFloat(fiatAmount) <= 0) {
       setQuoteError('Please enter a valid amount')
       return
     }
@@ -108,7 +108,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
         payload: {
           fiatCurrency,
           cryptoCurrency,
-          fiatAmount: parseFloat(fiatAmount),
+          fiatAmount: Number.parseFloat(fiatAmount),
         },
       })
 
@@ -137,7 +137,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
           quoteId: quote.id,
           fiatCurrency,
           cryptoCurrency,
-          fiatAmount: parseFloat(fiatAmount),
+          fiatAmount: Number.parseFloat(fiatAmount),
           paymentMethod,
           recipientAddress: selectedAccount,
           bankAccountNo: paymentMethod === 'bank_transfer' ? selectedBankAccount : undefined,
@@ -214,11 +214,18 @@ export function BuyPage({ onBack }: BuyPageProps) {
                   stroke="currentColor"
                   aria-hidden="true"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </button>
             )}
-            <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>Buy Crypto</h1>
+            <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+              Buy Crypto
+            </h1>
           </div>
         </div>
 
@@ -241,11 +248,13 @@ export function BuyPage({ onBack }: BuyPageProps) {
             className="pb-2 text-sm font-medium border-b-2 transition-colors"
             style={{
               borderColor: activeView === 'orders' ? 'rgb(var(--primary))' : 'transparent',
-              color: activeView === 'orders' ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
+              color:
+                activeView === 'orders' ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
             }}
           >
             Orders
-            {orders.filter((o) => o.status === 'pending' || o.status === 'processing').length > 0 && (
+            {orders.filter((o) => o.status === 'pending' || o.status === 'processing').length >
+              0 && (
               <span
                 className="ml-1 text-xs px-1.5 py-0.5 rounded-full"
                 style={{
@@ -304,7 +313,12 @@ export function BuyPage({ onBack }: BuyPageProps) {
                       stroke="currentColor"
                       aria-hidden="true"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                      />
                     </svg>
                   </div>
                 </div>
@@ -323,7 +337,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
                   onClick={handleGetQuote}
                   fullWidth
                   isLoading={isLoadingQuote}
-                  disabled={!fiatAmount || parseFloat(fiatAmount) <= 0}
+                  disabled={!fiatAmount || Number.parseFloat(fiatAmount) <= 0}
                 >
                   Get Quote
                 </Button>
@@ -348,10 +362,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
             {/* Payment Method */}
             {quote && (
               <Card padding="lg">
-                <PaymentMethodSelector
-                  value={paymentMethod}
-                  onChange={setPaymentMethod}
-                />
+                <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
 
                 {paymentMethod === 'bank_transfer' && linkedBankAccounts.length > 0 && (
                   <div className="mt-4">
@@ -375,7 +386,12 @@ export function BuyPage({ onBack }: BuyPageProps) {
                   fullWidth
                   className="mt-4"
                   isLoading={isCreatingOrder}
-                  disabled={!paymentMethod || (paymentMethod === 'bank_transfer' && linkedBankAccounts.length > 0 && !selectedBankAccount)}
+                  disabled={
+                    !paymentMethod ||
+                    (paymentMethod === 'bank_transfer' &&
+                      linkedBankAccounts.length > 0 &&
+                      !selectedBankAccount)
+                  }
                 >
                   Continue to Payment
                 </Button>

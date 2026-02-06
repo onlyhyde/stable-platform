@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { PageHeader, Input, Card, CardContent } from '@/components/common'
-import { ModuleCard, CategoryFilter, type ModuleCardData } from '@/components/marketplace'
+import { Card, CardContent, Input, PageHeader } from '@/components/common'
+import { CategoryFilter, ModuleCard, type ModuleCardData } from '@/components/marketplace'
+import { useMemo, useState } from 'react'
 
 /**
  * Default module catalog (PoC - served inline; production would fetch from module-registry API)
@@ -11,7 +11,8 @@ const MODULE_CATALOG: ModuleCardData[] = [
   {
     id: 'ecdsa-validator',
     name: 'ECDSA Validator',
-    description: 'Standard ECDSA signature validation for smart accounts. Essential security module for transaction signing.',
+    description:
+      'Standard ECDSA signature validation for smart accounts. Essential security module for transaction signing.',
     version: '1.0.0',
     moduleType: 'validator',
     category: 'security',
@@ -26,7 +27,8 @@ const MODULE_CATALOG: ModuleCardData[] = [
   {
     id: 'session-key-validator',
     name: 'Session Key Validator',
-    description: 'Temporary session keys with permission scoping. Enables gasless dApp interactions without repeated signing.',
+    description:
+      'Temporary session keys with permission scoping. Enables gasless dApp interactions without repeated signing.',
     version: '1.0.0',
     moduleType: 'validator',
     category: 'security',
@@ -41,7 +43,8 @@ const MODULE_CATALOG: ModuleCardData[] = [
   {
     id: 'subscription-executor',
     name: 'Subscription Executor',
-    description: 'Automated recurring payments executor. Schedule DCA, subscriptions, and periodic transfers.',
+    description:
+      'Automated recurring payments executor. Schedule DCA, subscriptions, and periodic transfers.',
     version: '1.0.0',
     moduleType: 'executor',
     category: 'automation',
@@ -56,7 +59,8 @@ const MODULE_CATALOG: ModuleCardData[] = [
   {
     id: 'spending-limit-hook',
     name: 'Spending Limit Hook',
-    description: 'Enforce per-transaction and daily spending limits. Protect against unauthorized large transfers.',
+    description:
+      'Enforce per-transaction and daily spending limits. Protect against unauthorized large transfers.',
     version: '1.0.0',
     moduleType: 'hook',
     category: 'security',
@@ -71,7 +75,8 @@ const MODULE_CATALOG: ModuleCardData[] = [
   {
     id: 'social-recovery',
     name: 'Social Recovery',
-    description: 'Recover account access using trusted guardians. Set threshold-based recovery with timelock protection.',
+    description:
+      'Recover account access using trusted guardians. Set threshold-based recovery with timelock protection.',
     version: '1.0.0',
     moduleType: 'validator',
     category: 'social-recovery',
@@ -86,7 +91,8 @@ const MODULE_CATALOG: ModuleCardData[] = [
   {
     id: 'dex-swap-executor',
     name: 'DEX Swap Executor',
-    description: 'Execute token swaps through Uniswap V3 directly from your smart account with built-in slippage protection.',
+    description:
+      'Execute token swaps through Uniswap V3 directly from your smart account with built-in slippage protection.',
     version: '1.0.0',
     moduleType: 'executor',
     category: 'defi',
@@ -143,32 +149,34 @@ export default function MarketplacePage() {
     if (searchQuery) {
       const lower = searchQuery.toLowerCase()
       results = results.filter(
-        m =>
+        (m) =>
           m.name.toLowerCase().includes(lower) ||
           m.description.toLowerCase().includes(lower) ||
-          m.tags.some(t => t.toLowerCase().includes(lower))
+          m.tags.some((t) => t.toLowerCase().includes(lower))
       )
     }
 
     // Filter by category
     if (selectedCategory !== 'all') {
-      results = results.filter(m => m.category === selectedCategory)
+      results = results.filter((m) => m.category === selectedCategory)
     }
 
     // Filter by module type
     if (selectedType !== 'all') {
-      results = results.filter(m => m.moduleType === selectedType)
+      results = results.filter((m) => m.moduleType === selectedType)
     }
 
     return results
   }, [searchQuery, selectedCategory, selectedType])
 
-  const featuredModules = MODULE_CATALOG.filter(m => m.featured)
+  const featuredModules = MODULE_CATALOG.filter((m) => m.featured)
 
   const stats = {
     totalModules: MODULE_CATALOG.length,
     totalInstalls: MODULE_CATALOG.reduce((sum, m) => sum + m.installCount, 0),
-    verifiedModules: MODULE_CATALOG.filter(m => m.auditStatus === 'verified' || m.auditStatus === 'audited').length,
+    verifiedModules: MODULE_CATALOG.filter(
+      (m) => m.auditStatus === 'verified' || m.auditStatus === 'audited'
+    ).length,
   }
 
   return (
@@ -182,20 +190,32 @@ export default function MarketplacePage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>{stats.totalModules}</div>
-            <div className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Available Modules</div>
+            <div className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+              {stats.totalModules}
+            </div>
+            <div className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              Available Modules
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>{stats.totalInstalls.toLocaleString()}</div>
-            <div className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Total Installs</div>
+            <div className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+              {stats.totalInstalls.toLocaleString()}
+            </div>
+            <div className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              Total Installs
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold" style={{ color: 'rgb(var(--primary))' }}>{stats.verifiedModules}</div>
-            <div className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Audited / Verified</div>
+            <div className="text-2xl font-bold" style={{ color: 'rgb(var(--primary))' }}>
+              {stats.verifiedModules}
+            </div>
+            <div className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              Audited / Verified
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -215,7 +235,12 @@ export default function MarketplacePage() {
           viewBox="0 0 24 24"
           stroke="currentColor"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
         </svg>
       </div>
 
@@ -230,9 +255,11 @@ export default function MarketplacePage() {
       {/* Featured Section (only when no filters active) */}
       {!searchQuery && selectedCategory === 'all' && selectedType === 'all' && (
         <div>
-          <h2 className="text-lg font-semibold mb-3" style={{ color: 'rgb(var(--foreground))' }}>Featured Modules</h2>
+          <h2 className="text-lg font-semibold mb-3" style={{ color: 'rgb(var(--foreground))' }}>
+            Featured Modules
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {featuredModules.map(module => (
+            {featuredModules.map((module) => (
               <ModuleCard
                 key={module.id}
                 module={module}
@@ -259,7 +286,9 @@ export default function MarketplacePage() {
         {filteredModules.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <p style={{ color: 'rgb(var(--muted-foreground))' }}>No modules found matching your criteria.</p>
+              <p style={{ color: 'rgb(var(--muted-foreground))' }}>
+                No modules found matching your criteria.
+              </p>
               <button
                 className="mt-2 text-sm font-medium"
                 style={{ color: 'rgb(var(--primary))' }}
@@ -275,7 +304,7 @@ export default function MarketplacePage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredModules.map(module => (
+            {filteredModules.map((module) => (
               <ModuleCard
                 key={module.id}
                 module={module}

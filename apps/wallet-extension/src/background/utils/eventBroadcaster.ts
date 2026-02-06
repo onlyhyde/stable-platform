@@ -9,7 +9,7 @@
  */
 
 import type { Address } from 'viem'
-import { PROVIDER_EVENTS, RPC_ERRORS, DEFAULT_VALUES } from '../../shared/constants'
+import { DEFAULT_VALUES, PROVIDER_EVENTS, RPC_ERRORS } from '../../shared/constants'
 import { createLogger } from '../../shared/utils/logger'
 
 const logger = createLogger('EventBroadcaster')
@@ -115,11 +115,7 @@ class EventBroadcaster {
    * Broadcast an event to a specific origin only
    * This ensures privacy by never sending one origin's data to another
    */
-  async broadcastToOrigin(
-    origin: string,
-    event: ProviderEventType,
-    data: unknown
-  ): Promise<void> {
+  async broadcastToOrigin(origin: string, event: ProviderEventType, data: unknown): Promise<void> {
     // Validate origin format
     if (!isValidOrigin(origin)) {
       logger.warn('Invalid origin format', { origin })
@@ -179,32 +175,19 @@ class EventBroadcaster {
    * Broadcast accounts changed event to a specific origin
    * Only sends accounts that are connected to this specific origin
    */
-  async broadcastAccountsChanged(
-    origin: string,
-    accounts: Address[]
-  ): Promise<void> {
+  async broadcastAccountsChanged(origin: string, accounts: Address[]): Promise<void> {
     // Validate all addresses before broadcasting
     const validAccounts = accounts.filter(isValidAddress)
-    await this.broadcastToOrigin(
-      origin,
-      PROVIDER_EVENTS.ACCOUNTS_CHANGED,
-      validAccounts
-    )
+    await this.broadcastToOrigin(origin, PROVIDER_EVENTS.ACCOUNTS_CHANGED, validAccounts)
   }
 
   /**
    * Broadcast chain changed event to all connected origins
    * Chain changes affect all connected sites
    */
-  async broadcastChainChanged(
-    chainId: string,
-    connectedOrigins: string[]
-  ): Promise<void> {
+  async broadcastChainChanged(chainId: string, connectedOrigins: string[]): Promise<void> {
     // Validate chainId format (should be hex)
-    if (
-      typeof chainId !== 'string' ||
-      !chainId.startsWith('0x')
-    ) {
+    if (typeof chainId !== 'string' || !chainId.startsWith('0x')) {
       logger.warn('Invalid chainId format', { chainId })
       return
     }
@@ -220,9 +203,7 @@ class EventBroadcaster {
    * Broadcast accounts changed to multiple origins
    * Each origin receives only its own connected accounts
    */
-  async broadcastAccountsChangedToAll(
-    originAccountsMap: Map<string, Address[]>
-  ): Promise<void> {
+  async broadcastAccountsChangedToAll(originAccountsMap: Map<string, Address[]>): Promise<void> {
     await Promise.all(
       Array.from(originAccountsMap.entries()).map(([origin, accounts]) =>
         this.broadcastAccountsChanged(origin, accounts)
@@ -253,9 +234,7 @@ class EventBroadcaster {
     }
 
     await Promise.all(
-      connectedOrigins.map((origin) =>
-        this.broadcastToOrigin(origin, 'assetsChanged', eventData)
-      )
+      connectedOrigins.map((origin) => this.broadcastToOrigin(origin, 'assetsChanged', eventData))
     )
   }
 

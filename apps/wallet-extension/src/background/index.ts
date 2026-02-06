@@ -11,19 +11,19 @@
  * - Auto-lock with idle detection (Frame feature)
  */
 
-import { walletState } from './state/store'
-import { handleRpcRequest } from './rpc/handler'
-import { accountController } from './controller/accountController'
-import { networkController } from './controller/networkController'
-import { keyringController } from './keyring'
-import { approvalController } from './controllers/approvalController'
-import { eventBroadcaster } from './utils/eventBroadcaster'
-import { createIndexerClient, type IndexerClient } from './services/IndexerClient'
-import type { ExtensionMessage, JsonRpcRequest, Network } from '../types'
 import type { Address, Hex } from 'viem'
+import { STORAGE_KEYS, getSecurityConfig } from '../config'
 import { MESSAGE_TYPES } from '../shared/constants'
 import { createLogger } from '../shared/utils/logger'
-import { getSecurityConfig, STORAGE_KEYS } from '../config'
+import type { ExtensionMessage, JsonRpcRequest, Network } from '../types'
+import { accountController } from './controller/accountController'
+import { networkController } from './controller/networkController'
+import { approvalController } from './controllers/approvalController'
+import { keyringController } from './keyring'
+import { handleRpcRequest } from './rpc/handler'
+import { type IndexerClient, createIndexerClient } from './services/IndexerClient'
+import { walletState } from './state/store'
+import { eventBroadcaster } from './utils/eventBroadcaster'
 
 const logger = createLogger('Background')
 
@@ -329,10 +329,7 @@ function handleTabRemoved(tabId: number): void {
 /**
  * Handle tab updated (URL change)
  */
-function handleTabUpdated(
-  tabId: number,
-  changeInfo: chrome.tabs.TabChangeInfo
-): void {
+function handleTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo): void {
   if (changeInfo.url) {
     const newOrigin = originFromUrl(changeInfo.url)
     const oldOrigin = tabOrigins.get(tabId)
@@ -357,12 +354,14 @@ async function handleTabActivated(activeInfo: chrome.tabs.TabActiveInfo): Promis
 
     if (origin.startsWith('http') || origin.startsWith('file')) {
       // Request chain ID from the tab to update icon
-      chrome.tabs.sendMessage(activeInfo.tabId, {
-        type: 'embedded:action',
-        action: { type: 'getChainId' },
-      }).catch(() => {
-        // Tab might not have content script loaded
-      })
+      chrome.tabs
+        .sendMessage(activeInfo.tabId, {
+          type: 'embedded:action',
+          action: { type: 'getChainId' },
+        })
+        .catch(() => {
+          // Tab might not have content script loaded
+        })
     }
   } catch {
     // Tab might not exist
@@ -514,7 +513,9 @@ async function handleMessage(
     }
 
     case MESSAGE_TYPES.STATE_UPDATE: {
-      const payload = message.payload as { action?: string; chainId?: number; address?: string } | undefined
+      const payload = message.payload as
+        | { action?: string; chainId?: number; address?: string }
+        | undefined
 
       // Handle specific actions
       if (payload?.action === 'selectNetwork' && payload.chainId !== undefined) {
@@ -849,7 +850,10 @@ async function handleMessage(
         return {
           type: 'NETWORK_ERROR',
           id: message.id,
-          payload: { success: false, error: err instanceof Error ? err.message : 'Failed to remove network' },
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to remove network',
+          },
         }
       }
     }
@@ -1086,7 +1090,8 @@ async function handleMessage(
 
       // Get balances for all tokens
       const tokensWithBalances = tokens.map((token) => {
-        const balance = walletState.getCachedBalance(chainId, account, token.address as Address) || '0'
+        const balance =
+          walletState.getCachedBalance(chainId, account, token.address as Address) || '0'
         return {
           ...token,
           balance,

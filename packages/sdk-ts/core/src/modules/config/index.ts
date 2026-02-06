@@ -44,11 +44,11 @@ export {
 // All Built-in Modules
 // ============================================================================
 
-import { VALIDATOR_MODULES } from './validators'
 import { EXECUTOR_MODULES } from './executors'
-import { HOOK_MODULES } from './hooks'
 import { FALLBACK_MODULES } from './fallbacks'
+import { HOOK_MODULES } from './hooks'
 import type { ModuleRegistryEntry } from './types'
+import { VALIDATOR_MODULES } from './validators'
 
 /**
  * All built-in modules

@@ -9,9 +9,11 @@ const config = {
   // Module path aliases (match tsconfig paths)
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-    '^@stablenet/core$': '<rootDir>/../../packages/sdk/packages/core/dist/index.js',
-    '^@stablenet/plugin-stealth$': '<rootDir>/../../packages/sdk/plugins/stealth/dist/index.js',
-    '^@stablenet/wallet-sdk$': '<rootDir>/../../packages/wallet-sdk/dist/index.js',
+    '^@stablenet/core$': '<rootDir>/../../packages/sdk-ts/core/src/index.ts',
+    '^@stablenet/sdk-types$': '<rootDir>/../../packages/sdk-ts/types/src/index.ts',
+    '^@stablenet/config$': '<rootDir>/../../packages/config/src/index.ts',
+    '^@stablenet/plugin-stealth$': '<rootDir>/../../packages/sdk-ts/plugins/stealth/src/index.ts',
+    '^@stablenet/wallet-sdk$': '<rootDir>/../../packages/wallet-sdk/src/index.ts',
   },
 
   // Setup files

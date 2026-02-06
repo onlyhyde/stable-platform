@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react'
 import {
+  type SessionKeyConfig,
   encodeSessionKeyInit,
   validateSessionKeyConfig,
-  type SessionKeyConfig,
 } from '@stablenet/core'
+import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
-import { parseEther, formatEther } from 'viem'
+import { formatEther, parseEther } from 'viem'
 
 // ============================================================================
 // Types
@@ -135,7 +135,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
       case 'targets':
         return form.allowedTargets.some((t) => t.length === 42)
       case 'limits':
-        return parseFloat(form.maxValuePerTx) >= 0
+        return Number.parseFloat(form.maxValuePerTx) >= 0
       default:
         return true
     }
@@ -204,8 +204,8 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              A session key is a temporary address that can sign transactions on your behalf,
-              within the limits you set.
+              A session key is a temporary address that can sign transactions on your behalf, within
+              the limits you set.
             </p>
           </div>
 
@@ -252,10 +252,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
                         form.validityDays === preset.days
                           ? 'rgb(var(--primary))'
                           : 'rgb(var(--secondary))',
-                      color:
-                        form.validityDays === preset.days
-                          ? 'white'
-                          : 'rgb(var(--foreground))',
+                      color: form.validityDays === preset.days ? 'white' : 'rgb(var(--foreground))',
                     }}
                     onClick={() =>
                       setForm((prev) => ({
@@ -420,7 +417,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
                 className="w-full px-3 py-2 rounded-lg input-base"
                 value={form.validAfterDelay}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, validAfterDelay: parseInt(e.target.value) }))
+                  setForm((prev) => ({ ...prev, validAfterDelay: Number.parseInt(e.target.value) }))
                 }
               >
                 <option value={0}>Immediately</option>
@@ -513,10 +510,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
           {step === 'key' ? 'Cancel' : 'Back'}
         </button>
         {step === 'review' ? (
-          <button
-            className="btn-primary flex-1 py-3 rounded-lg font-medium"
-            onClick={handleSubmit}
-          >
+          <button className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
             Install Executor
           </button>
         ) : (
@@ -605,15 +599,16 @@ export function SessionKeyList({ sessionKeys, onRevoke }: SessionKeyListProps) {
                     {isActive ? 'Active' : isPending ? 'Pending' : 'Expired'}
                   </span>
                 </div>
-                <div className="text-xs space-y-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                <div
+                  className="text-xs space-y-1"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                >
                   <p>
                     {sk.allowedTargets.length} contracts · {sk.allowedSelectors.length || 'All'}{' '}
                     functions
                   </p>
                   <p>Max: {formatEther(sk.maxValuePerTx)} ETH per tx</p>
-                  <p>
-                    Expires: {new Date(sk.validUntil * 1000).toLocaleDateString()}
-                  </p>
+                  <p>Expires: {new Date(sk.validUntil * 1000).toLocaleDateString()}</p>
                 </div>
               </div>
               {onRevoke && !isExpired && (

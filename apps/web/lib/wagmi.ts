@@ -1,12 +1,13 @@
 'use client'
 
-import { createConfig, custom, fallback, http } from 'wagmi'
+import { http, createConfig, custom, fallback } from 'wagmi'
 import { injected, walletConnect } from 'wagmi/connectors'
-import { supportedChains, anvilLocal, stablenetLocal, stablenetTestnet } from './chains'
+import { anvilLocal, stablenetLocal, stablenetTestnet, supportedChains } from './chains'
 
 // WalletConnect Project ID - Get yours at https://cloud.walletconnect.com
 const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ''
-const isValidProjectId = walletConnectProjectId &&
+const isValidProjectId =
+  walletConnectProjectId &&
   walletConnectProjectId !== 'your_project_id_here' &&
   walletConnectProjectId.length > 10
 
@@ -17,10 +18,7 @@ const isValidProjectId = walletConnectProjectId &&
 function createWalletTransport(fallbackUrl: string) {
   // Check if window.ethereum is available (client-side only)
   if (typeof window !== 'undefined' && window.ethereum) {
-    return fallback([
-      custom(window.ethereum),
-      http(fallbackUrl),
-    ])
+    return fallback([custom(window.ethereum), http(fallbackUrl)])
   }
   return http(fallbackUrl)
 }

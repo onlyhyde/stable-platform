@@ -11,11 +11,7 @@ export function formatAddress(address: Address, chars = 4): string {
 /**
  * Format token amount with decimals
  */
-export function formatTokenAmount(
-  amount: bigint,
-  decimals: number,
-  displayDecimals = 4
-): string {
+export function formatTokenAmount(amount: bigint, decimals: number, displayDecimals = 4): string {
   const formatted = formatUnits(amount, decimals)
   const [integer, decimal] = formatted.split('.')
 
@@ -143,7 +139,7 @@ export function getRpcSettings(): RpcSettings | null {
 /**
  * Get RPC URL for a specific chain, falling back to default if not set
  */
-export function getRpcUrl(chainId: number, defaultUrl?: string): string | undefined {
+export function getRpcUrl(_chainId: number, defaultUrl?: string): string | undefined {
   const settings = getRpcSettings()
   if (settings?.rpcUrl) {
     return settings.rpcUrl
@@ -181,17 +177,29 @@ const ERROR_MESSAGE_MAP: Array<{ pattern: RegExp; message: string }> = [
   { pattern: /user rejected|user denied|user cancel/i, message: 'Transaction was cancelled' },
   // Wallet connection errors
   { pattern: /wallet.*not connected|no.*wallet/i, message: 'Please connect your wallet first' },
-  { pattern: /eth_sign.*not supported|unsupported.*method/i, message: 'This operation is not supported by your wallet' },
+  {
+    pattern: /eth_sign.*not supported|unsupported.*method/i,
+    message: 'This operation is not supported by your wallet',
+  },
   // Network errors
-  { pattern: /network|connection|timeout|fetch/i, message: 'Network error. Please check your connection and try again' },
+  {
+    pattern: /network|connection|timeout|fetch/i,
+    message: 'Network error. Please check your connection and try again',
+  },
   // Insufficient funds
   { pattern: /insufficient.*funds|balance/i, message: 'Insufficient balance for this transaction' },
   // Gas errors
-  { pattern: /gas.*too low|out of gas/i, message: 'Transaction failed due to gas estimation. Please try again' },
+  {
+    pattern: /gas.*too low|out of gas/i,
+    message: 'Transaction failed due to gas estimation. Please try again',
+  },
   // Nonce errors
   { pattern: /nonce.*too|invalid nonce/i, message: 'Transaction failed. Please try again' },
   // Contract errors
-  { pattern: /execution reverted|revert/i, message: 'Transaction failed. The operation could not be completed' },
+  {
+    pattern: /execution reverted|revert/i,
+    message: 'Transaction failed. The operation could not be completed',
+  },
   // Private key errors
   { pattern: /invalid.*private.*key|key.*invalid/i, message: 'Invalid private key format' },
   // Generic errors - keep at the end as fallback patterns

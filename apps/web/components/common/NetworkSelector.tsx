@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { type WalletNetwork, useWalletNetworks } from '@/hooks/useWalletNetworks'
+import { useEffect, useRef, useState } from 'react'
 import { useAccount } from 'wagmi'
-import { useWalletNetworks, type WalletNetwork } from '@/hooks/useWalletNetworks'
 
 interface NetworkSelectorProps {
   /** Custom class name */
@@ -13,14 +13,14 @@ interface NetworkSelectorProps {
 
 // Chain icon colors for visual distinction
 const CHAIN_COLORS: Record<number, string> = {
-  1: 'rgb(var(--info))',         // Ethereum Mainnet - blue
-  31337: 'rgb(var(--primary))',  // Anvil - primary (indigo)
-  8283: 'rgb(var(--success))',   // StableNet Local - green
-  82830: 'rgb(var(--success))',  // StableNet Testnet - green
+  1: 'rgb(var(--info))', // Ethereum Mainnet - blue
+  31337: 'rgb(var(--primary))', // Anvil - primary (indigo)
+  8283: 'rgb(var(--success))', // StableNet Local - green
+  82830: 'rgb(var(--success))', // StableNet Testnet - green
   11155111: 'rgb(var(--warning))', // Sepolia - warning
-  137: 'rgb(var(--accent))',     // Polygon - purple
-  42161: 'rgb(var(--info))',     // Arbitrum - blue
-  10: 'rgb(var(--error))',       // Optimism - red
+  137: 'rgb(var(--accent))', // Polygon - purple
+  42161: 'rgb(var(--info))', // Arbitrum - blue
+  10: 'rgb(var(--error))', // Optimism - red
 }
 
 function getChainColor(chainId: number): string {
@@ -74,10 +74,13 @@ export function NetworkSelector({ className = '', compact = false }: NetworkSele
         className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${className}`}
         style={{
           backgroundColor: 'rgb(var(--muted))',
-          border: '1px solid rgb(var(--border))'
+          border: '1px solid rgb(var(--border))',
         }}
       >
-        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'rgb(var(--muted-foreground))' }} />
+        <span
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: 'rgb(var(--muted-foreground))' }}
+        />
         <span className="text-xs font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>
           {!isConnected ? 'Not Connected' : 'Unknown Network'}
         </span>
@@ -96,8 +99,10 @@ export function NetworkSelector({ className = '', compact = false }: NetworkSele
         disabled={isLoading || isSwitching}
         className="flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200 hover:opacity-80"
         style={{
-          backgroundColor: selectedNetwork.isTestnet ? 'rgb(var(--success-muted))' : 'rgb(var(--info-muted))',
-          border: `1px solid ${chainColor}33`
+          backgroundColor: selectedNetwork.isTestnet
+            ? 'rgb(var(--success-muted))'
+            : 'rgb(var(--info-muted))',
+          border: `1px solid ${chainColor}33`,
         }}
         title={`Chain ID: ${selectedNetwork.chainIdDecimal}${selectedNetwork.isTestnet ? ' (Testnet)' : ''}`}
       >
@@ -137,7 +142,7 @@ export function NetworkSelector({ className = '', compact = false }: NetworkSele
           className="absolute top-full right-0 mt-2 min-w-[200px] rounded-xl shadow-lg overflow-hidden z-50"
           style={{
             backgroundColor: 'rgb(var(--card))',
-            border: '1px solid rgb(var(--border))'
+            border: '1px solid rgb(var(--border))',
           }}
         >
           <div className="py-1">
@@ -157,13 +162,10 @@ export function NetworkSelector({ className = '', compact = false }: NetworkSele
                   disabled={isSwitching}
                   className="w-full flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-primary/5"
                   style={{
-                    backgroundColor: network.isSelected ? 'rgb(var(--primary) / 0.1)' : undefined
+                    backgroundColor: network.isSelected ? 'rgb(var(--primary) / 0.1)' : undefined,
                   }}
                 >
-                  <span
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
                   <div className="flex-1 text-left">
                     <div className="flex items-center gap-2">
                       <span
@@ -177,17 +179,14 @@ export function NetworkSelector({ className = '', compact = false }: NetworkSele
                           className="text-2xs px-1 py-0.5 rounded"
                           style={{
                             backgroundColor: 'rgb(var(--success-muted))',
-                            color: 'rgb(var(--success))'
+                            color: 'rgb(var(--success))',
                           }}
                         >
                           Testnet
                         </span>
                       )}
                     </div>
-                    <span
-                      className="text-xs"
-                      style={{ color: 'rgb(var(--muted-foreground))' }}
-                    >
+                    <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                       {network.currency.symbol}
                     </span>
                   </div>
@@ -199,7 +198,12 @@ export function NetworkSelector({ className = '', compact = false }: NetworkSele
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   )}
                 </button>

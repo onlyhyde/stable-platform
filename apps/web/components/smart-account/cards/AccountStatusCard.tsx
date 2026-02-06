@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, Button } from '@/components/common'
+import { Button, Card, CardContent } from '@/components/common'
 import { formatAddress } from '@/lib/utils'
 import type { Address } from 'viem'
 
@@ -49,7 +49,9 @@ export function AccountStatusCard({ address, status, error, onRefresh }: Account
               <div
                 className="w-3 h-3 rounded-full"
                 style={{
-                  backgroundColor: status.isSmartAccount ? 'rgb(var(--success))' : 'rgb(var(--warning))'
+                  backgroundColor: status.isSmartAccount
+                    ? 'rgb(var(--success))'
+                    : 'rgb(var(--warning))',
                 }}
               />
               <div>
@@ -76,7 +78,10 @@ export function AccountStatusCard({ address, status, error, onRefresh }: Account
                 <p className="text-sm mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
                   Delegated Implementation
                 </p>
-                <p className="font-mono text-sm break-all" style={{ color: 'rgb(var(--foreground))' }}>
+                <p
+                  className="font-mono text-sm break-all"
+                  style={{ color: 'rgb(var(--foreground))' }}
+                >
                   {status.implementation}
                 </p>
               </div>

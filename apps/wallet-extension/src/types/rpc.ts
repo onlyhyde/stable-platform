@@ -71,6 +71,9 @@ export type SupportedMethod =
   // Permission methods
   | 'wallet_requestPermissions'
   | 'wallet_getPermissions'
+  // Module management methods (ERC-7579)
+  | 'stablenet_installModule'
+  | 'stablenet_uninstallModule'
 
 /**
  * RPC method parameters

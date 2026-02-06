@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { isWalletInstalled, detectProvider, StableNetProvider } from '@stablenet/wallet-sdk'
+import { type StableNetProvider, detectProvider, isWalletInstalled } from '@stablenet/wallet-sdk'
+import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
 
 interface UseStableNetWalletResult {
@@ -137,21 +137,27 @@ export function useStableNetWallet(): UseStableNetWalletResult {
     setAccount(null)
   }, [provider])
 
-  const signMessage = useCallback(async (message: string): Promise<string> => {
-    if (!provider) {
-      throw new Error('StableNet wallet not detected')
-    }
+  const signMessage = useCallback(
+    async (message: string): Promise<string> => {
+      if (!provider) {
+        throw new Error('StableNet wallet not detected')
+      }
 
-    return provider.signMessage(message)
-  }, [provider])
+      return provider.signMessage(message)
+    },
+    [provider]
+  )
 
-  const switchChain = useCallback(async (newChainId: number): Promise<void> => {
-    if (!provider) {
-      throw new Error('StableNet wallet not detected')
-    }
+  const switchChain = useCallback(
+    async (newChainId: number): Promise<void> => {
+      if (!provider) {
+        throw new Error('StableNet wallet not detected')
+      }
 
-    await provider.switchChain(newChainId)
-  }, [provider])
+      await provider.switchChain(newChainId)
+    },
+    [provider]
+  )
 
   const chainIdNumber = chainId ? Number.parseInt(chainId, 16) : null
 

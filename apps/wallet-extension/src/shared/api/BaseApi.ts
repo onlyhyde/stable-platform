@@ -3,12 +3,7 @@
  * Provides standardized HTTP request handling with error management
  */
 
-import {
-  ApiError,
-  API_ERROR_CODES,
-  normalizeError,
-  createErrorFromResponse,
-} from './errors'
+import { API_ERROR_CODES, ApiError, createErrorFromResponse, normalizeError } from './errors'
 
 /**
  * Request configuration options
@@ -125,12 +120,15 @@ export class BaseApi {
     }
 
     // Should never reach here, but TypeScript needs this
-    throw lastError ?? new ApiError({
-      code: API_ERROR_CODES.UNKNOWN_ERROR,
-      message: 'Request failed',
-      url,
-      method,
-    })
+    throw (
+      lastError ??
+      new ApiError({
+        code: API_ERROR_CODES.UNKNOWN_ERROR,
+        message: 'Request failed',
+        url,
+        method,
+      })
+    )
   }
 
   /**
@@ -219,17 +217,29 @@ export class BaseApi {
     return response.data
   }
 
-  async post<T>(path: string, body?: unknown, config?: Omit<RequestConfig, 'method' | 'body'>): Promise<T> {
+  async post<T>(
+    path: string,
+    body?: unknown,
+    config?: Omit<RequestConfig, 'method' | 'body'>
+  ): Promise<T> {
     const response = await this.request<T>(path, { ...config, method: 'POST', body })
     return response.data
   }
 
-  async put<T>(path: string, body?: unknown, config?: Omit<RequestConfig, 'method' | 'body'>): Promise<T> {
+  async put<T>(
+    path: string,
+    body?: unknown,
+    config?: Omit<RequestConfig, 'method' | 'body'>
+  ): Promise<T> {
     const response = await this.request<T>(path, { ...config, method: 'PUT', body })
     return response.data
   }
 
-  async patch<T>(path: string, body?: unknown, config?: Omit<RequestConfig, 'method' | 'body'>): Promise<T> {
+  async patch<T>(
+    path: string,
+    body?: unknown,
+    config?: Omit<RequestConfig, 'method' | 'body'>
+  ): Promise<T> {
     const response = await this.request<T>(path, { ...config, method: 'PATCH', body })
     return response.data
   }

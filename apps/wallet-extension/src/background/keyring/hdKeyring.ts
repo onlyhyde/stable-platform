@@ -1,5 +1,5 @@
-import { mnemonicToAccount, english, generateMnemonic } from 'viem/accounts'
 import type { Address, Hex } from 'viem'
+import { english, generateMnemonic, mnemonicToAccount } from 'viem/accounts'
 import type { HDKeyringData, KeyringAccount } from '../../types'
 
 /**
@@ -207,9 +207,7 @@ export class HDKeyring {
    * Check if this keyring contains an address
    */
   hasAccount(address: Address): boolean {
-    return this.accounts.some(
-      (a) => a.address.toLowerCase() === address.toLowerCase()
-    )
+    return this.accounts.some((a) => a.address.toLowerCase() === address.toLowerCase())
   }
 
   /**

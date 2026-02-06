@@ -7,10 +7,10 @@
  * - Token visibility management
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
-import { useWalletStore } from './useWalletStore'
 import type { WalletToken } from '../../types'
+import { useWalletStore } from './useWalletStore'
 
 export interface AssetToken {
   address: Address

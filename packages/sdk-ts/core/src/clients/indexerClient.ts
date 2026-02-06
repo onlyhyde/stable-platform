@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_INDEXER_TIMEOUT } from '../config'
-import { SdkError, SDK_ERROR_CODES } from '../errors'
+import { SDK_ERROR_CODES, SdkError } from '../errors'
 
 /**
  * Indexer client configuration
@@ -149,10 +149,7 @@ export class IndexerClient {
   /**
    * Execute GraphQL query
    */
-  private async graphql<T>(
-    query: string,
-    variables?: Record<string, unknown>
-  ): Promise<T> {
+  private async graphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.timeout)
 
@@ -296,7 +293,7 @@ export class IndexerClient {
   /**
    * Get average gas price from recent blocks
    */
-  async getAverageGasPrice(blockCount: number = 50): Promise<string> {
+  async getAverageGasPrice(blockCount = 50): Promise<string> {
     const latestHeight = await this.getLatestHeight()
     const fromBlock = Math.max(0, latestHeight - blockCount)
     const stats = await this.getGasStats(fromBlock, latestHeight)
@@ -331,13 +328,10 @@ export class IndexerClient {
       }
     `
 
-    const result = await this.graphql<{ tokenBalances: TokenBalance[] }>(
-      query,
-      {
-        address,
-        tokenType,
-      }
-    )
+    const result = await this.graphql<{ tokenBalances: TokenBalance[] }>(query, {
+      address,
+      tokenType,
+    })
 
     return result.tokenBalances ?? []
   }
@@ -352,14 +346,16 @@ export class IndexerClient {
    */
   async getERC20Transfers(
     address: string,
-    isFrom: boolean = true,
-    limit: number = 100,
-    offset: number = 0
+    isFrom = true,
+    limit = 100,
+    offset = 0
   ): Promise<TokenTransfer[]> {
-    const result = await this.rpc<TokenTransfer[]>(
-      'getERC20TransfersByAddress',
-      [address, isFrom, limit, offset]
-    )
+    const result = await this.rpc<TokenTransfer[]>('getERC20TransfersByAddress', [
+      address,
+      isFrom,
+      limit,
+      offset,
+    ])
 
     return result ?? []
   }
@@ -370,10 +366,7 @@ export class IndexerClient {
    * @param address - Wallet address
    * @param limit - Maximum number of results (applied to merged list)
    */
-  async getAllERC20Transfers(
-    address: string,
-    limit: number = 50
-  ): Promise<TokenTransfer[]> {
+  async getAllERC20Transfers(address: string, limit = 50): Promise<TokenTransfer[]> {
     const [sent, received] = await Promise.all([
       this.getERC20Transfers(address, true, limit),
       this.getERC20Transfers(address, false, limit),
@@ -389,11 +382,7 @@ export class IndexerClient {
   /**
    * Get transfers for a specific token contract
    */
-  async getTokenTransfers(
-    tokenAddress: string,
-    limit: number = 100,
-    offset: number = 0
-  ): Promise<TokenTransfer[]> {
+  async getTokenTransfers(tokenAddress: string, limit = 100, offset = 0): Promise<TokenTransfer[]> {
     const result = await this.rpc<TokenTransfer[]>('getERC20TransfersByToken', [
       tokenAddress,
       limit,
@@ -416,8 +405,8 @@ export class IndexerClient {
    */
   async getTransactionsByAddress(
     address: string,
-    limit: number = 50,
-    offset: number = 0
+    limit = 50,
+    offset = 0
   ): Promise<PaginatedResult<IndexedTransaction>> {
     const query = `
       query GetTransactions($address: String!, $limit: Int, $offset: Int) {
@@ -456,10 +445,7 @@ export class IndexerClient {
    * @param address - Wallet address
    * @param blockNumber - Optional block number (defaults to latest)
    */
-  async getBalanceAtBlock(
-    address: string,
-    blockNumber?: number
-  ): Promise<string> {
+  async getBalanceAtBlock(address: string, blockNumber?: number): Promise<string> {
     const query = `
       query GetBalance($address: String!, $blockNumber: String) {
         addressBalance(address: $address, blockNumber: $blockNumber)
@@ -509,9 +495,7 @@ export class IndexerClient {
  * const client = createIndexerClient('https://indexer.example.com')
  * ```
  */
-export function createIndexerClient(
-  config: IndexerClientConfig | string
-): IndexerClient {
+export function createIndexerClient(config: IndexerClientConfig | string): IndexerClient {
   if (typeof config === 'string') {
     return new IndexerClient({ baseUrl: config })
   }

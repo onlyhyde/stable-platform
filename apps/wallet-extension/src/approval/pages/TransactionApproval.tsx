@@ -1,6 +1,6 @@
 import { formatEther } from 'viem'
 import type { TransactionApprovalRequest } from '../../types'
-import { Button, Card, Badge } from '../../ui/components/common'
+import { Badge, Button, Card } from '../../ui/components/common'
 import { useNetworkCurrency } from '../../ui/hooks'
 
 interface TransactionApprovalProps {
@@ -9,11 +9,7 @@ interface TransactionApprovalProps {
   onReject: () => void
 }
 
-export function TransactionApproval({
-  approval,
-  onApprove,
-  onReject,
-}: TransactionApprovalProps) {
+export function TransactionApproval({ approval, onApprove, onReject }: TransactionApprovalProps) {
   const { data } = approval
   const { symbol: currencySymbol } = useNetworkCurrency()
 
@@ -28,8 +24,7 @@ export function TransactionApproval({
     }
   }
 
-  const formatAddress = (addr: string) =>
-    `${addr.slice(0, 6)}...${addr.slice(-4)}`
+  const formatAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`
 
   return (
     <div
@@ -47,11 +42,7 @@ export function TransactionApproval({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {approval.favicon ? (
-              <img
-                src={approval.favicon}
-                alt=""
-                className="w-10 h-10 rounded-lg"
-              />
+              <img src={approval.favicon} alt="" className="w-10 h-10 rounded-lg" />
             ) : (
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center"
@@ -65,29 +56,26 @@ export function TransactionApproval({
                   stroke="currentColor"
                   aria-hidden="true"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                  />
                 </svg>
               </div>
             )}
             <div>
-              <p
-                className="font-medium break-all"
-                style={{ color: 'rgb(var(--foreground))' }}
-              >
+              <p className="font-medium break-all" style={{ color: 'rgb(var(--foreground))' }}>
                 {new URL(approval.origin).hostname}
               </p>
-              <p
-                className="text-sm"
-                style={{ color: 'rgb(var(--muted-foreground))' }}
-              >
+              <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Transaction Request
               </p>
             </div>
           </div>
           {data.riskLevel && (
-            <Badge variant={getRiskColor(data.riskLevel)}>
-              {data.riskLevel.toUpperCase()}
-            </Badge>
+            <Badge variant={getRiskColor(data.riskLevel)}>{data.riskLevel.toUpperCase()}</Badge>
           )}
         </div>
       </div>
@@ -96,9 +84,7 @@ export function TransactionApproval({
       <div className="flex-1 p-6 space-y-4">
         {/* Transaction Summary */}
         <Card padding="lg" variant="gradient" className="text-center">
-          <p className="text-sm opacity-80 mb-1">
-            {data.methodName ?? 'Send'}
-          </p>
+          <p className="text-sm opacity-80 mb-1">{data.methodName ?? 'Send'}</p>
           <p className="text-2xl font-bold">
             {formatEther(data.value)} {currencySymbol}
           </p>
@@ -108,16 +94,10 @@ export function TransactionApproval({
         <Card padding="md">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span
-                className="text-sm"
-                style={{ color: 'rgb(var(--muted-foreground))' }}
-              >
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 From
               </span>
-              <span
-                className="text-sm font-mono"
-                style={{ color: 'rgb(var(--foreground))' }}
-              >
+              <span className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                 {formatAddress(data.from)}
               </span>
             </div>
@@ -130,20 +110,19 @@ export function TransactionApproval({
                 stroke="currentColor"
                 aria-hidden="true"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                />
               </svg>
             </div>
             <div className="flex items-center justify-between">
-              <span
-                className="text-sm"
-                style={{ color: 'rgb(var(--muted-foreground))' }}
-              >
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 To
               </span>
-              <span
-                className="text-sm font-mono"
-                style={{ color: 'rgb(var(--foreground))' }}
-              >
+              <span className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                 {formatAddress(data.to)}
               </span>
             </div>
@@ -153,23 +132,14 @@ export function TransactionApproval({
         {/* Gas Estimate */}
         {data.estimatedGasCost && (
           <Card padding="md">
-            <p
-              className="text-xs mb-2"
-              style={{ color: 'rgb(var(--muted-foreground))' }}
-            >
+            <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Estimated Gas Cost
             </p>
             <div className="flex items-center justify-between">
-              <span
-                className="text-sm"
-                style={{ color: 'rgb(var(--foreground-secondary))' }}
-              >
+              <span className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
                 Network Fee
               </span>
-              <span
-                className="text-sm font-medium"
-                style={{ color: 'rgb(var(--foreground))' }}
-              >
+              <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                 ~{formatEther(data.estimatedGasCost)} {currencySymbol}
               </span>
             </div>
@@ -184,10 +154,7 @@ export function TransactionApproval({
                 >
                   Total
                 </span>
-                <span
-                  className="text-sm font-bold"
-                  style={{ color: 'rgb(var(--foreground))' }}
-                >
+                <span className="text-sm font-bold" style={{ color: 'rgb(var(--foreground))' }}>
                   ~{formatEther(data.estimatedTotalCost)} {currencySymbol}
                 </span>
               </div>
@@ -198,10 +165,7 @@ export function TransactionApproval({
         {/* Contract Interaction */}
         {data.data && data.data !== '0x' && (
           <Card padding="md">
-            <p
-              className="text-xs mb-2"
-              style={{ color: 'rgb(var(--muted-foreground))' }}
-            >
+            <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Contract Data
             </p>
             <div
@@ -221,10 +185,7 @@ export function TransactionApproval({
         {/* Token Transfers */}
         {data.tokenTransfers && data.tokenTransfers.length > 0 && (
           <Card padding="md">
-            <p
-              className="text-xs mb-2"
-              style={{ color: 'rgb(var(--muted-foreground))' }}
-            >
+            <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Token Transfers
             </p>
             <div className="space-y-2">
@@ -239,10 +200,7 @@ export function TransactionApproval({
                         : 'rgb(var(--success) / 0.1)',
                   }}
                 >
-                  <span
-                    className="text-sm"
-                    style={{ color: 'rgb(var(--foreground-secondary))' }}
-                  >
+                  <span className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
                     {transfer.direction === 'out' ? 'Send' : 'Receive'}
                   </span>
                   <span
@@ -255,7 +213,8 @@ export function TransactionApproval({
                     }}
                   >
                     {transfer.direction === 'out' ? '-' : '+'}
-                    {(Number(transfer.amount) / 10 ** transfer.decimals).toFixed(4)} {transfer.symbol}
+                    {(Number(transfer.amount) / 10 ** transfer.decimals).toFixed(4)}{' '}
+                    {transfer.symbol}
                   </span>
                 </div>
               ))}
@@ -273,10 +232,7 @@ export function TransactionApproval({
               border: '1px solid rgb(var(--warning) / 0.2)',
             }}
           >
-            <p
-              className="text-sm font-medium mb-2"
-              style={{ color: 'rgb(234 179 8)' }}
-            >
+            <p className="text-sm font-medium mb-2" style={{ color: 'rgb(234 179 8)' }}>
               Warnings
             </p>
             <ul className="space-y-1">
@@ -294,7 +250,12 @@ export function TransactionApproval({
                     stroke="currentColor"
                     aria-hidden="true"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
                   </svg>
                   {warning}
                 </li>

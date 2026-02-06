@@ -50,7 +50,9 @@ export function extractViewTag(metadata: Hex): Hex {
   const bytes = hexToBytes(metadata)
 
   if (bytes.length < VIEW_TAG_SIZE) {
-    throw new Error(`Metadata too short to contain view tag: expected at least ${VIEW_TAG_SIZE} byte, got ${bytes.length}`)
+    throw new Error(
+      `Metadata too short to contain view tag: expected at least ${VIEW_TAG_SIZE} byte, got ${bytes.length}`
+    )
   }
 
   return bytesToHex(bytes.slice(0, VIEW_TAG_SIZE)) as Hex
@@ -83,7 +85,9 @@ export function validateMetadata(metadata: Hex): void {
   }
 
   if (bytes.length > MAX_METADATA_SIZE) {
-    throw new Error(`Metadata too large: maximum ${MAX_METADATA_SIZE} bytes allowed, got ${bytes.length}`)
+    throw new Error(
+      `Metadata too large: maximum ${MAX_METADATA_SIZE} bytes allowed, got ${bytes.length}`
+    )
   }
 }
 
@@ -114,7 +118,9 @@ export function createMetadata(viewTag: Hex, extraData?: Hex): Hex {
   // Validate total size
   const totalSize = VIEW_TAG_SIZE + extraBytes.length
   if (totalSize > MAX_METADATA_SIZE) {
-    throw new Error(`Combined metadata too large: maximum ${MAX_METADATA_SIZE} bytes allowed, got ${totalSize}`)
+    throw new Error(
+      `Combined metadata too large: maximum ${MAX_METADATA_SIZE} bytes allowed, got ${totalSize}`
+    )
   }
 
   const combined = new Uint8Array(totalSize)

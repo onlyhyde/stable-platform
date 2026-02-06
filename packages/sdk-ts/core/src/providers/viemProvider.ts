@@ -5,24 +5,24 @@
  */
 
 import {
-  createPublicClient,
   http,
-  type PublicClient,
   type Address,
-  type Hex,
   type Hash,
+  type Hex,
+  type PublicClient,
   type TransactionReceipt,
+  createPublicClient,
 } from 'viem'
+import { DEFAULT_PROVIDER_TIMEOUT, MIN_PRIORITY_FEE } from '../config'
 import type {
+  BlockData,
+  EstimateGasParams,
+  GasPrices,
+  ReadContractParams,
   RpcProvider,
   RpcProviderConfig,
-  BlockData,
-  GasPrices,
-  EstimateGasParams,
-  ReadContractParams,
   WaitForReceiptOptions,
 } from './types'
-import { MIN_PRIORITY_FEE, DEFAULT_PROVIDER_TIMEOUT } from '../config'
 
 // ============================================================================
 // Viem Provider Implementation
@@ -63,7 +63,9 @@ export function createViemProvider(config: RpcProviderConfig): RpcProvider {
       return {
         // For pending blocks, number/hash can be null. Use 0n/'0x' as fallback.
         number: block.number ?? 0n,
-        hash: block.hash ?? ('0x0000000000000000000000000000000000000000000000000000000000000000' as Hash),
+        hash:
+          block.hash ??
+          ('0x0000000000000000000000000000000000000000000000000000000000000000' as Hash),
         timestamp: block.timestamp,
         baseFeePerGas: block.baseFeePerGas ?? null,
       }
@@ -106,9 +108,7 @@ export function createViemProvider(config: RpcProviderConfig): RpcProvider {
     async estimateMaxPriorityFeePerGas(): Promise<bigint> {
       try {
         const priorityFee = await client.estimateMaxPriorityFeePerGas()
-        return priorityFee < MIN_PRIORITY_FEE
-          ? MIN_PRIORITY_FEE
-          : priorityFee
+        return priorityFee < MIN_PRIORITY_FEE ? MIN_PRIORITY_FEE : priorityFee
       } catch {
         return MIN_PRIORITY_FEE
       }
@@ -170,9 +170,7 @@ export function createViemProvider(config: RpcProviderConfig): RpcProvider {
     // Contract Methods
     // ----------------------------------------
 
-    async readContract<TResult = unknown>(
-      params: ReadContractParams
-    ): Promise<TResult> {
+    async readContract<TResult = unknown>(params: ReadContractParams): Promise<TResult> {
       const result = await client.readContract({
         address: params.address,
         abi: params.abi as readonly unknown[],

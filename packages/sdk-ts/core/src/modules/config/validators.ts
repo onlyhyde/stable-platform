@@ -5,13 +5,13 @@
  * Responsible for validating signatures and authorizations.
  */
 
-import type { Address } from 'viem'
 import { MODULE_TYPE } from '@stablenet/sdk-types'
+import type { Address } from 'viem'
 import {
-  type ModuleRegistryEntry,
-  createModuleEntry,
   DEFAULT_SUPPORTED_CHAINS,
+  type ModuleRegistryEntry,
   SUPPORTED_CHAIN_IDS,
+  createModuleEntry,
 } from './types'
 
 // ============================================================================

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
 import {
-  createModuleRegistry,
   type ModuleRegistry,
   type ModuleRegistryEntry,
+  createModuleRegistry,
 } from '@stablenet/core'
+import { useEffect, useState } from 'react'
 import { useSelectedNetwork } from '../../../hooks'
 
 interface UseModuleRegistryReturn {

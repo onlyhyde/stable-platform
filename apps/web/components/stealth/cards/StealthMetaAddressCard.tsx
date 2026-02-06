@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/common'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { copyToClipboard } from '@/lib/utils'
 import type { StealthMetaAddress } from '@/types'
+import { useState } from 'react'
 
 interface StealthMetaAddressCardProps {
   stealthMetaAddress: StealthMetaAddress | null
@@ -41,9 +41,15 @@ export function StealthMetaAddressCard({
         {stealthMetaAddress ? (
           <>
             <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-              <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>Share this address to receive private payments</p>
-              <code className="text-sm break-all block" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
-                st:eth:{stealthMetaAddress.spendingPubKey.slice(0, 20)}...{stealthMetaAddress.viewingPubKey.slice(-16)}
+              <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Share this address to receive private payments
+              </p>
+              <code
+                className="text-sm break-all block"
+                style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+              >
+                st:eth:{stealthMetaAddress.spendingPubKey.slice(0, 20)}...
+                {stealthMetaAddress.viewingPubKey.slice(-16)}
               </code>
             </div>
 
@@ -55,15 +61,37 @@ export function StealthMetaAddressCard({
               >
                 {copied ? (
                   <>
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                     Copied!
                   </>
                 ) : (
                   <>
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
                     </svg>
                     Copy Address
                   </>
@@ -100,7 +128,9 @@ export function StealthMetaAddressCard({
                 d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
               />
             </svg>
-            <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>No stealth meta-address generated</p>
+            <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              No stealth meta-address generated
+            </p>
             <Button isLoading={isLoading} onClick={onGenerate} disabled={isLoading}>
               Generate Meta-Address
             </Button>

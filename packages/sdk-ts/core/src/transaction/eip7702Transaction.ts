@@ -1,21 +1,14 @@
+import type { GasEstimate, SignedAuthorization, TransactionResult } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import type {
-  GasEstimate,
-  TransactionResult,
-  SignedAuthorization,
-} from '@stablenet/sdk-types'
-import {
-  createAuthorizationHash,
-  ZERO_ADDRESS,
-} from '../eip7702'
-import { createTransactionError } from '../errors'
-import { createViemProvider, type RpcProvider } from '../providers'
 import {
   EIP7702_AUTH_GAS,
-  SETCODE_BASE_GAS,
   GAS_PER_AUTHORIZATION,
   MIN_PRIORITY_FEE,
+  SETCODE_BASE_GAS,
 } from '../config'
+import { ZERO_ADDRESS, createAuthorizationHash } from '../eip7702'
+import { createTransactionError } from '../errors'
+import { type RpcProvider, createViemProvider } from '../providers'
 
 // ============================================================================
 // Types
@@ -112,9 +105,7 @@ export interface BuiltEIP7702Transaction {
  * }, signer)
  * ```
  */
-export function createEIP7702TransactionBuilder(
-  config: EIP7702TransactionConfig
-) {
+export function createEIP7702TransactionBuilder(config: EIP7702TransactionConfig) {
   const { rpcUrl, chainId, provider: injectedProvider } = config
 
   // DIP: Use injected provider or create one from rpcUrl
@@ -124,10 +115,12 @@ export function createEIP7702TransactionBuilder(
     })
   }
 
-  const provider: RpcProvider = injectedProvider ?? createViemProvider({
-    rpcUrl: rpcUrl!,
-    chainId,
-  })
+  const provider: RpcProvider =
+    injectedProvider ??
+    createViemProvider({
+      rpcUrl: rpcUrl!,
+      chainId,
+    })
 
   /**
    * Get current nonce for account
@@ -200,11 +193,7 @@ export function createEIP7702TransactionBuilder(
    * Calculate gas for EIP-7702 transaction
    */
   function calculateGas(authCount: number): bigint {
-    return (
-      SETCODE_BASE_GAS +
-      EIP7702_AUTH_GAS +
-      GAS_PER_AUTHORIZATION * BigInt(authCount)
-    )
+    return SETCODE_BASE_GAS + EIP7702_AUTH_GAS + GAS_PER_AUTHORIZATION * BigInt(authCount)
   }
 
   /**
@@ -216,10 +205,9 @@ export function createEIP7702TransactionBuilder(
   ): Promise<BuiltEIP7702Transaction> {
     // Validate
     if (request.delegateAddress === ZERO_ADDRESS) {
-      throw createTransactionError(
-        'Use buildRevocation() to revoke delegation',
-        { reason: 'INVALID_REQUEST' }
-      )
+      throw createTransactionError('Use buildRevocation() to revoke delegation', {
+        reason: 'INVALID_REQUEST',
+      })
     }
 
     // Create signed authorization
@@ -283,10 +271,9 @@ export function createEIP7702TransactionBuilder(
     // 2. Sign the transaction envelope
     // 3. Send via eth_sendRawTransaction
 
-    throw createTransactionError(
-      'EIP-7702 transaction sending requires node support',
-      { reason: 'NOT_IMPLEMENTED' }
-    )
+    throw createTransactionError('EIP-7702 transaction sending requires node support', {
+      reason: 'NOT_IMPLEMENTED',
+    })
   }
 
   /**
@@ -331,6 +318,4 @@ export function createEIP7702TransactionBuilder(
 // Exports
 // ============================================================================
 
-export type EIP7702TransactionBuilder = ReturnType<
-  typeof createEIP7702TransactionBuilder
->
+export type EIP7702TransactionBuilder = ReturnType<typeof createEIP7702TransactionBuilder>

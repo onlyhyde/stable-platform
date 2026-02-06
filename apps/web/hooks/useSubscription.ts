@@ -1,22 +1,19 @@
 'use client'
 
-import { useState, useCallback, useEffect, useMemo } from 'react'
-import { type Address, formatUnits, parseUnits, keccak256, toBytes } from 'viem'
-import { useWalletClient, useChainId } from 'wagmi'
-import { useWallet } from './useWallet'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { type Address, formatUnits, keccak256, toBytes } from 'viem'
+import { useChainId, useWalletClient } from 'wagmi'
+import { getContractAddresses } from '../lib/config'
 import { useStableNetContext } from '../providers/StableNetProvider'
 import type {
-  SubscriptionPlan,
-  UserSubscription,
+  CreatePlanParams,
+  MerchantStats,
   PlanDisplayInfo,
   SubscriptionDisplayInfo,
-  CreatePlanParams,
-  PaymentHistoryEntry,
-  MerchantStats,
   SubscriptionStatus,
 } from '../types/subscription'
 import { getIntervalLabel, getStatusInfo } from '../types/subscription'
-import { getContractAddresses } from '../lib/config'
+import { useWallet } from './useWallet'
 
 // Default fallback addresses for development
 const DEFAULT_subscriptionManager = '0x9d4454B023096f34B160D6B654540c56A1F81688' as const
@@ -218,7 +215,8 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
   const { subscriptionManager, permissionManager, recurringPaymentExecutor } = useMemo(() => {
     const contracts = getContractAddresses(chainId)
     return {
-      subscriptionManager: (contracts?.subscriptionManager ?? DEFAULT_subscriptionManager) as Address,
+      subscriptionManager: (contracts?.subscriptionManager ??
+        DEFAULT_subscriptionManager) as Address,
       permissionManager: (contracts?.permissionManager ?? DEFAULT_permissionManager) as Address,
       recurringPaymentExecutor: DEFAULT_recurringPaymentExecutor as Address, // Not in config yet
     }
@@ -237,32 +235,57 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
   const [error, setError] = useState<Error | null>(null)
 
   // Helper: Convert raw plan data to display info
-  const toPlanDisplayInfo = useCallback((id: bigint, rawPlan: readonly unknown[]): PlanDisplayInfo => {
-    const [merchant, name, description, price, interval, token, isActive, subscriberCount, trialPeriod, gracePeriod, createdAt] = rawPlan as readonly [
-      Address, string, string, bigint, bigint, Address, boolean, bigint, bigint, bigint, bigint
-    ]
+  const toPlanDisplayInfo = useCallback(
+    (id: bigint, rawPlan: readonly unknown[]): PlanDisplayInfo => {
+      const [
+        merchant,
+        name,
+        description,
+        price,
+        interval,
+        token,
+        isActive,
+        subscriberCount,
+        trialPeriod,
+        gracePeriod,
+        createdAt,
+      ] = rawPlan as readonly [
+        Address,
+        string,
+        string,
+        bigint,
+        bigint,
+        Address,
+        boolean,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+      ]
 
-    const tokenInfo = TOKEN_INFO[token.toLowerCase()] || { symbol: 'TOKEN', decimals: 18 }
+      const tokenInfo = TOKEN_INFO[token.toLowerCase()] || { symbol: 'TOKEN', decimals: 18 }
 
-    return {
-      id,
-      merchant,
-      name,
-      description,
-      price,
-      interval,
-      token,
-      isActive,
-      subscriberCount,
-      trialPeriod,
-      gracePeriod,
-      createdAt,
-      priceFormatted: `${formatUnits(price, tokenInfo.decimals)} ${tokenInfo.symbol}`,
-      intervalFormatted: getIntervalLabel(interval),
-      tokenSymbol: tokenInfo.symbol,
-      tokenDecimals: tokenInfo.decimals,
-    }
-  }, [])
+      return {
+        id,
+        merchant,
+        name,
+        description,
+        price,
+        interval,
+        token,
+        isActive,
+        subscriberCount,
+        trialPeriod,
+        gracePeriod,
+        createdAt,
+        priceFormatted: `${formatUnits(price, tokenInfo.decimals)} ${tokenInfo.symbol}`,
+        intervalFormatted: getIntervalLabel(interval),
+        tokenSymbol: tokenInfo.symbol,
+        tokenDecimals: tokenInfo.decimals,
+      }
+    },
+    []
+  )
 
   // Helper: Get subscription status from enum
   const getStatusFromEnum = (statusEnum: number): SubscriptionStatus => {
@@ -284,21 +307,23 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     setError(null)
 
     try {
-      const planCount = await publicClient.readContract({
+      const planCount = (await publicClient.readContract({
         address: subscriptionManager,
         abi: subscriptionManager_ABI,
         functionName: 'planCount',
-      }) as bigint
+      })) as bigint
 
       const planPromises: Promise<PlanDisplayInfo>[] = []
       for (let i = 1n; i <= planCount; i++) {
         planPromises.push(
-          publicClient.readContract({
-            address: subscriptionManager,
-            abi: subscriptionManager_ABI,
-            functionName: 'plans',
-            args: [i],
-          }).then((data) => toPlanDisplayInfo(i, data as readonly unknown[]))
+          publicClient
+            .readContract({
+              address: subscriptionManager,
+              abi: subscriptionManager_ABI,
+              functionName: 'plans',
+              args: [i],
+            })
+            .then((data) => toPlanDisplayInfo(i, data as readonly unknown[]))
         )
       }
 
@@ -319,12 +344,12 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     setError(null)
 
     try {
-      const planIds = await publicClient.readContract({
+      const planIds = (await publicClient.readContract({
         address: subscriptionManager,
         abi: subscriptionManager_ABI,
         functionName: 'getSubscriberSubscriptions',
         args: [address],
-      }) as bigint[]
+      })) as bigint[]
 
       const subscriptionPromises = planIds.map(async (planId) => {
         const [planData, subData] = await Promise.all([
@@ -343,9 +368,8 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         ])
 
         const plan = toPlanDisplayInfo(planId, planData as readonly unknown[])
-        const [startTime, lastPaymentTime, nextPaymentTime, statusEnum, permissionId] = subData as readonly [
-          bigint, bigint, bigint, number, `0x${string}`
-        ]
+        const [startTime, lastPaymentTime, nextPaymentTime, statusEnum, permissionId] =
+          subData as readonly [bigint, bigint, bigint, number, `0x${string}`]
 
         const status = getStatusFromEnum(statusEnum)
         const statusInfo = getStatusInfo(status)
@@ -382,12 +406,12 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     setError(null)
 
     try {
-      const planIds = await publicClient.readContract({
+      const planIds = (await publicClient.readContract({
         address: subscriptionManager,
         abi: subscriptionManager_ABI,
         functionName: 'getMerchantPlans',
         args: [address],
-      }) as bigint[]
+      })) as bigint[]
 
       const planPromises = planIds.map(async (planId) => {
         const planData = await publicClient.readContract({
@@ -404,7 +428,9 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
 
       // Calculate stats
       const totalSubscribers = loadedPlans.reduce((sum, p) => sum + Number(p.subscriberCount), 0)
-      const activeSubscribers = loadedPlans.filter((p) => p.isActive).reduce((sum, p) => sum + Number(p.subscriberCount), 0)
+      const activeSubscribers = loadedPlans
+        .filter((p) => p.isActive)
+        .reduce((sum, p) => sum + Number(p.subscriberCount), 0)
 
       setMerchantStats({
         totalPlans: loadedPlans.length,
@@ -421,233 +447,252 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
   }, [publicClient, address, toPlanDisplayInfo])
 
   // Request ERC-7715 permission
-  const requestPermission = useCallback(async (
-    plan: PlanDisplayInfo,
-  ): Promise<`0x${string}`> => {
-    if (!walletClient || !publicClient) {
-      throw new Error('Wallet not connected')
-    }
+  const requestPermission = useCallback(
+    async (plan: PlanDisplayInfo): Promise<`0x${string}`> => {
+      if (!walletClient || !publicClient) {
+        throw new Error('Wallet not connected')
+      }
 
-    // Calculate permission parameters
-    const allowancePerPeriod = plan.price
-    const period = plan.interval
-    // Permission valid for 1 year or 365 payment cycles, whichever is longer
-    const validUntil = BigInt(Math.floor(Date.now() / 1000)) + BigInt(365 * 24 * 60 * 60)
+      // Calculate permission parameters
+      const allowancePerPeriod = plan.price
+      const period = plan.interval
+      // Permission valid for 1 year or 365 payment cycles, whichever is longer
+      const validUntil = BigInt(Math.floor(Date.now() / 1000)) + BigInt(365 * 24 * 60 * 60)
 
-    // Build ERC-7715 permission request
-    const permissionRequest = {
-      permissions: [{
-        type: 'native-token-recurring-allowance' as const,
-        data: {
-          allowance: allowancePerPeriod.toString(),
-          period: period.toString(),
-          start: Math.floor(Date.now() / 1000),
-        },
-        policies: [{
-          type: 'token-allowance' as const,
-          data: {
-            token: plan.token,
-            allowance: allowancePerPeriod.toString(),
+      // Build ERC-7715 permission request
+      const permissionRequest = {
+        permissions: [
+          {
+            type: 'native-token-recurring-allowance' as const,
+            data: {
+              allowance: allowancePerPeriod.toString(),
+              period: period.toString(),
+              start: Math.floor(Date.now() / 1000),
+            },
+            policies: [
+              {
+                type: 'token-allowance' as const,
+                data: {
+                  token: plan.token,
+                  allowance: allowancePerPeriod.toString(),
+                },
+              },
+            ],
+            required: true,
           },
-        }],
-        required: true,
-      }],
-      expiry: Number(validUntil),
-    }
-
-    try {
-      // Try ERC-7715 wallet_grantPermissions first (modern wallets)
-      const response = await walletClient.request({
-        method: 'wallet_grantPermissions' as any,
-        params: [permissionRequest] as any,
-      })
-
-      // Extract permissionId from response
-      if (response && typeof response === 'object' && 'permissionId' in response) {
-        return (response as { permissionId: `0x${string}` }).permissionId
+        ],
+        expiry: Number(validUntil),
       }
 
-      // Fallback: Some wallets may return the permissionId directly
-      if (typeof response === 'string' && response.startsWith('0x')) {
-        return response as `0x${string}`
+      try {
+        // Try ERC-7715 wallet_grantPermissions first (modern wallets)
+        const response = await walletClient.request({
+          method: 'wallet_grantPermissions' as any,
+          params: [permissionRequest] as any,
+        })
+
+        // Extract permissionId from response
+        if (response && typeof response === 'object' && 'permissionId' in response) {
+          return (response as { permissionId: `0x${string}` }).permissionId
+        }
+
+        // Fallback: Some wallets may return the permissionId directly
+        if (typeof response === 'string' && response.startsWith('0x')) {
+          return response as `0x${string}`
+        }
+
+        throw new Error('Invalid permission response from wallet')
+      } catch (err: unknown) {
+        // Check if wallet doesn't support ERC-7715
+        const errorMessage = err instanceof Error ? err.message : String(err)
+        if (
+          errorMessage.includes('not supported') ||
+          errorMessage.includes('unknown method') ||
+          errorMessage.includes('Method not found')
+        ) {
+          // Wallet does not support ERC-7715, fallback to direct contract call on PermissionManager
+          const permissionTxHash = await walletClient.writeContract({
+            address: permissionManager,
+            abi: permissionManager_ABI,
+            functionName: 'grantPermission',
+            args: [
+              recurringPaymentExecutor, // operator
+              plan.token, // token
+              allowancePerPeriod, // allowance per period
+              period, // period
+              validUntil, // validUntil
+            ],
+          })
+
+          // Wait for transaction and extract permissionId from logs
+          const receipt = await publicClient.waitForTransactionReceipt({ hash: permissionTxHash })
+
+          // Find PermissionGranted event log
+          // Event signature: PermissionGranted(bytes32 indexed permissionId, address indexed owner, address operator)
+          // Use keccak256 hash of event signature for proper topic matching
+          const permissionGrantedTopic = keccak256(
+            toBytes('PermissionGranted(bytes32,address,address)')
+          )
+          const permissionLog = receipt.logs.find(
+            (log) =>
+              log.address.toLowerCase() === permissionManager.toLowerCase() &&
+              log.topics[0] === permissionGrantedTopic
+          )
+
+          if (permissionLog?.topics[1]) {
+            return permissionLog.topics[1] as `0x${string}`
+          }
+
+          // If we can't find the log, generate a deterministic permissionId
+          // This is a fallback - in production, the contract should emit proper events
+          const permissionId = `0x${Buffer.from(
+            `${address}:${recurringPaymentExecutor}:${plan.token}:${Date.now()}`
+          )
+            .toString('hex')
+            .slice(0, 64)
+            .padEnd(64, '0')}` as `0x${string}`
+
+          return permissionId
+        }
+
+        // Re-throw other errors
+        throw err
+      }
+    },
+    [walletClient, publicClient, address]
+  )
+
+  // Subscribe to a plan
+  const subscribe = useCallback(
+    async (planId: bigint): Promise<`0x${string}`> => {
+      if (!publicClient || !address || !walletClient) {
+        throw new Error('Wallet not connected')
       }
 
-      throw new Error('Invalid permission response from wallet')
-    } catch (err: unknown) {
-      // Check if wallet doesn't support ERC-7715
-      const errorMessage = err instanceof Error ? err.message : String(err)
-      if (
-        errorMessage.includes('not supported') ||
-        errorMessage.includes('unknown method') ||
-        errorMessage.includes('Method not found')
-      ) {
-        // Wallet does not support ERC-7715, fallback to direct contract call on PermissionManager
-        const permissionTxHash = await walletClient.writeContract({
-          address: permissionManager,
-          abi: permissionManager_ABI,
-          functionName: 'grantPermission',
+      setIsSubscribing(true)
+      setError(null)
+
+      try {
+        // Get the plan to check if payment is needed and for permission request
+        const planData = (await publicClient.readContract({
+          address: subscriptionManager,
+          abi: subscriptionManager_ABI,
+          functionName: 'plans',
+          args: [planId],
+        })) as readonly unknown[]
+
+        const plan = toPlanDisplayInfo(planId, planData)
+
+        // Step 1: Request ERC-7715 permission for recurring payments
+        const permissionId = await requestPermission(plan)
+
+        // Step 2: Subscribe with the permission ID
+        const txHash = await walletClient.writeContract({
+          address: subscriptionManager,
+          abi: subscriptionManager_ABI,
+          functionName: 'subscribe',
+          args: [planId, permissionId],
+          value: plan.token === '0x0000000000000000000000000000000000000000' ? plan.price : 0n,
+        })
+
+        // Wait for transaction confirmation
+        await publicClient.waitForTransactionReceipt({ hash: txHash })
+
+        return txHash
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to subscribe')
+        setError(error)
+        throw error
+      } finally {
+        setIsSubscribing(false)
+      }
+    },
+    [publicClient, address, walletClient, toPlanDisplayInfo, requestPermission]
+  )
+
+  // Cancel subscription
+  const cancelSubscription = useCallback(
+    async (planId: bigint): Promise<`0x${string}`> => {
+      if (!address || !walletClient || !publicClient) {
+        throw new Error('Wallet not connected')
+      }
+
+      setIsCancelling(true)
+      setError(null)
+
+      try {
+        // Send cancel subscription transaction
+        const txHash = await walletClient.writeContract({
+          address: subscriptionManager,
+          abi: subscriptionManager_ABI,
+          functionName: 'cancelSubscription',
+          args: [planId],
+        })
+
+        // Wait for transaction confirmation
+        await publicClient.waitForTransactionReceipt({ hash: txHash })
+
+        return txHash
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to cancel subscription')
+        setError(error)
+        throw error
+      } finally {
+        setIsCancelling(false)
+      }
+    },
+    [address, walletClient, publicClient]
+  )
+
+  // Create a new plan (for merchants)
+  const createPlan = useCallback(
+    async (params: CreatePlanParams): Promise<bigint> => {
+      if (!address || !walletClient || !publicClient) {
+        throw new Error('Wallet not connected')
+      }
+
+      setIsCreatingPlan(true)
+      setError(null)
+
+      try {
+        // Send create plan transaction
+        const txHash = await walletClient.writeContract({
+          address: subscriptionManager,
+          abi: subscriptionManager_ABI,
+          functionName: 'createPlan',
           args: [
-            recurringPaymentExecutor, // operator
-            plan.token, // token
-            allowancePerPeriod, // allowance per period
-            period, // period
-            validUntil, // validUntil
+            params.name,
+            params.description,
+            params.price,
+            params.interval,
+            params.token,
+            params.trialPeriod ?? 0n,
+            params.gracePeriod ?? 0n,
           ],
         })
 
-        // Wait for transaction and extract permissionId from logs
-        const receipt = await publicClient.waitForTransactionReceipt({ hash: permissionTxHash })
+        // Wait for transaction receipt to get the plan ID from logs
+        const _receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
 
-        // Find PermissionGranted event log
-        // Event signature: PermissionGranted(bytes32 indexed permissionId, address indexed owner, address operator)
-        // Use keccak256 hash of event signature for proper topic matching
-        const permissionGrantedTopic = keccak256(toBytes('PermissionGranted(bytes32,address,address)'))
-        const permissionLog = receipt.logs.find(
-          (log) =>
-            log.address.toLowerCase() === permissionManager.toLowerCase() &&
-            log.topics[0] === permissionGrantedTopic
-        )
+        // Get the new plan count (the plan ID is planCount - 1 since it's 0-indexed after creation)
+        const planCount = (await publicClient.readContract({
+          address: subscriptionManager,
+          abi: subscriptionManager_ABI,
+          functionName: 'planCount',
+        })) as bigint
 
-        if (permissionLog && permissionLog.topics[1]) {
-          return permissionLog.topics[1] as `0x${string}`
-        }
-
-        // If we can't find the log, generate a deterministic permissionId
-        // This is a fallback - in production, the contract should emit proper events
-        const permissionId = ('0x' + Buffer.from(
-          `${address}:${recurringPaymentExecutor}:${plan.token}:${Date.now()}`
-        ).toString('hex').slice(0, 64).padEnd(64, '0')) as `0x${string}`
-
-        return permissionId
+        // Return the new plan ID (last created)
+        return planCount - 1n
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to create plan')
+        setError(error)
+        throw error
+      } finally {
+        setIsCreatingPlan(false)
       }
-
-      // Re-throw other errors
-      throw err
-    }
-  }, [walletClient, publicClient, address])
-
-  // Subscribe to a plan
-  const subscribe = useCallback(async (planId: bigint): Promise<`0x${string}`> => {
-    if (!publicClient || !address || !walletClient) {
-      throw new Error('Wallet not connected')
-    }
-
-    setIsSubscribing(true)
-    setError(null)
-
-    try {
-      // Get the plan to check if payment is needed and for permission request
-      const planData = await publicClient.readContract({
-        address: subscriptionManager,
-        abi: subscriptionManager_ABI,
-        functionName: 'plans',
-        args: [planId],
-      }) as readonly unknown[]
-
-      const plan = toPlanDisplayInfo(planId, planData)
-
-      // Step 1: Request ERC-7715 permission for recurring payments
-      const permissionId = await requestPermission(plan)
-
-      // Step 2: Subscribe with the permission ID
-      const txHash = await walletClient.writeContract({
-        address: subscriptionManager,
-        abi: subscriptionManager_ABI,
-        functionName: 'subscribe',
-        args: [planId, permissionId],
-        value: plan.token === '0x0000000000000000000000000000000000000000' ? plan.price : 0n,
-      })
-
-      // Wait for transaction confirmation
-      await publicClient.waitForTransactionReceipt({ hash: txHash })
-
-      return txHash
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to subscribe')
-      setError(error)
-      throw error
-    } finally {
-      setIsSubscribing(false)
-    }
-  }, [publicClient, address, walletClient, toPlanDisplayInfo, requestPermission])
-
-  // Cancel subscription
-  const cancelSubscription = useCallback(async (planId: bigint): Promise<`0x${string}`> => {
-    if (!address || !walletClient || !publicClient) {
-      throw new Error('Wallet not connected')
-    }
-
-    setIsCancelling(true)
-    setError(null)
-
-    try {
-      // Send cancel subscription transaction
-      const txHash = await walletClient.writeContract({
-        address: subscriptionManager,
-        abi: subscriptionManager_ABI,
-        functionName: 'cancelSubscription',
-        args: [planId],
-      })
-
-      // Wait for transaction confirmation
-      await publicClient.waitForTransactionReceipt({ hash: txHash })
-
-      return txHash
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to cancel subscription')
-      setError(error)
-      throw error
-    } finally {
-      setIsCancelling(false)
-    }
-  }, [address, walletClient, publicClient])
-
-  // Create a new plan (for merchants)
-  const createPlan = useCallback(async (params: CreatePlanParams): Promise<bigint> => {
-    if (!address || !walletClient || !publicClient) {
-      throw new Error('Wallet not connected')
-    }
-
-    setIsCreatingPlan(true)
-    setError(null)
-
-    try {
-      // Send create plan transaction
-      const txHash = await walletClient.writeContract({
-        address: subscriptionManager,
-        abi: subscriptionManager_ABI,
-        functionName: 'createPlan',
-        args: [
-          params.name,
-          params.description,
-          params.price,
-          params.interval,
-          params.token,
-          params.trialPeriod ?? 0n,
-          params.gracePeriod ?? 0n,
-        ],
-      })
-
-      // Wait for transaction receipt to get the plan ID from logs
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
-
-      // Get the new plan count (the plan ID is planCount - 1 since it's 0-indexed after creation)
-      const planCount = await publicClient.readContract({
-        address: subscriptionManager,
-        abi: subscriptionManager_ABI,
-        functionName: 'planCount',
-      }) as bigint
-
-      // Return the new plan ID (last created)
-      return planCount - 1n
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to create plan')
-      setError(error)
-      throw error
-    } finally {
-      setIsCreatingPlan(false)
-    }
-  }, [address, walletClient, publicClient])
+    },
+    [address, walletClient, publicClient]
+  )
 
   // Refetch all data
   const refetch = useCallback(async () => {

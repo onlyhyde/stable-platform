@@ -1,12 +1,14 @@
 // Unmock to test real implementation
-jest.unmock('../../../src/shared/security/typedDataValidator')
+jest.unmock('@stablenet/core')
 
 import {
   TypedDataValidator,
-  typedDataValidator,
+  createTypedDataValidator,
   type TypedData,
   type TypedDataDomain,
-} from '../../../src/shared/security/typedDataValidator'
+} from '@stablenet/core'
+
+const typedDataValidator = createTypedDataValidator()
 
 describe('TypedDataValidator', () => {
   let validator: TypedDataValidator

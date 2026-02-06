@@ -1,6 +1,6 @@
-import type { ComputedStealthKey, ComputeStealthKeyParams } from '../types'
-import { computeStealthPrivateKey, checkViewTag } from '../crypto'
+import { checkViewTag, computeStealthPrivateKey } from '../crypto'
 import { extractViewTag } from '../crypto/viewTag'
+import type { ComputeStealthKeyParams, ComputedStealthKey } from '../types'
 
 /**
  * Error thrown when stealth key computation fails due to invalid inputs
@@ -20,7 +20,11 @@ export class StealthKeyComputationError extends Error {
  */
 export type ComputeStealthKeyResult =
   | { success: true; key: ComputedStealthKey }
-  | { success: false; reason: 'view_tag_mismatch' | 'address_mismatch' | 'invalid_input' | 'computation_error'; error?: Error }
+  | {
+      success: false
+      reason: 'view_tag_mismatch' | 'address_mismatch' | 'invalid_input' | 'computation_error'
+      error?: Error
+    }
 
 /**
  * Compute the stealth private key from an announcement
@@ -44,9 +48,7 @@ export type ComputeStealthKeyResult =
  * @param params - Computation parameters
  * @returns The stealth key if the announcement is for the recipient, null otherwise
  */
-export function computeStealthKey(
-  params: ComputeStealthKeyParams
-): ComputedStealthKey | null {
+export function computeStealthKey(params: ComputeStealthKeyParams): ComputedStealthKey | null {
   const { announcement, spendingPrivateKey, viewingPrivateKey } = params
 
   // Validate inputs
@@ -141,7 +143,7 @@ export function computeStealthKeyWithResult(
     if (!viewTagMatches) {
       return { success: false, reason: 'view_tag_mismatch' }
     }
-  } catch (error) {
+  } catch {
     // View tag check failed, but we'll try full computation anyway
   }
 

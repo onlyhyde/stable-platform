@@ -1,10 +1,9 @@
 'use client'
 
-import { type FC, useState, useRef, useEffect } from 'react'
-import { Modal } from '../common/Modal'
-import { Button } from '../common/Button'
+import { type FC, useEffect, useRef, useState } from 'react'
 import type { PlanDisplayInfo } from '../../types/subscription'
-import { cn } from '../../lib/utils'
+import { Button } from '../common/Button'
+import { Modal } from '../common/Modal'
 
 interface PermissionModalProps {
   isOpen: boolean
@@ -79,11 +78,20 @@ export const PermissionModal: FC<PermissionModalProps> = ({
           <>
             {/* Plan Summary */}
             <div className="rounded-lg p-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-              <h3 className="font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>{plan.name}</h3>
-              <p className="text-sm mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>{plan.description}</p>
-              <div className="flex justify-between items-center pt-3 border-t" style={{ borderColor: 'rgb(var(--border))' }}>
+              <h3 className="font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
+                {plan.name}
+              </h3>
+              <p className="text-sm mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {plan.description}
+              </p>
+              <div
+                className="flex justify-between items-center pt-3 border-t"
+                style={{ borderColor: 'rgb(var(--border))' }}
+              >
                 <span style={{ color: 'rgb(var(--muted-foreground))' }}>Amount</span>
-                <span className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{plan.priceFormatted}</span>
+                <span className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+                  {plan.priceFormatted}
+                </span>
               </div>
               <div className="flex justify-between items-center mt-2">
                 <span style={{ color: 'rgb(var(--muted-foreground))' }}>Frequency</span>
@@ -92,7 +100,9 @@ export const PermissionModal: FC<PermissionModalProps> = ({
               {plan.trialPeriod > 0n && (
                 <div className="flex justify-between items-center mt-2">
                   <span style={{ color: 'rgb(var(--muted-foreground))' }}>Free trial</span>
-                  <span style={{ color: 'rgb(var(--success))' }}>{Number(plan.trialPeriod) / 86400} days</span>
+                  <span style={{ color: 'rgb(var(--success))' }}>
+                    {Number(plan.trialPeriod) / 86400} days
+                  </span>
                 </div>
               )}
             </div>
@@ -126,20 +136,35 @@ export const PermissionModal: FC<PermissionModalProps> = ({
 
             {/* What you're agreeing to */}
             <div className="space-y-3">
-              <h4 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>What you&apos;re agreeing to:</h4>
+              <h4 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                What you&apos;re agreeing to:
+              </h4>
               <ul className="space-y-2 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 <li className="flex items-start gap-2">
-                  <svg className="w-4 h-4 mt-0.5" style={{ color: 'rgb(var(--success))' }} fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    className="w-4 h-4 mt-0.5"
+                    style={{ color: 'rgb(var(--success))' }}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>Automatic payments of {plan.priceFormatted} every {plan.intervalFormatted.toLowerCase()}</span>
+                  <span>
+                    Automatic payments of {plan.priceFormatted} every{' '}
+                    {plan.intervalFormatted.toLowerCase()}
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <svg className="w-4 h-4 mt-0.5" style={{ color: 'rgb(var(--success))' }} fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    className="w-4 h-4 mt-0.5"
+                    style={{ color: 'rgb(var(--success))' }}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -149,7 +174,12 @@ export const PermissionModal: FC<PermissionModalProps> = ({
                   <span>Permission can be revoked at any time</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <svg className="w-4 h-4 mt-0.5" style={{ color: 'rgb(var(--success))' }} fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    className="w-4 h-4 mt-0.5"
+                    style={{ color: 'rgb(var(--success))' }}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -162,7 +192,14 @@ export const PermissionModal: FC<PermissionModalProps> = ({
             </div>
 
             {error && (
-              <div className="border rounded-lg p-3 text-sm" style={{ backgroundColor: 'rgb(var(--destructive) / 0.1)', borderColor: 'rgb(var(--destructive) / 0.3)', color: 'rgb(var(--destructive))' }}>
+              <div
+                className="border rounded-lg p-3 text-sm"
+                style={{
+                  backgroundColor: 'rgb(var(--destructive) / 0.1)',
+                  borderColor: 'rgb(var(--destructive) / 0.3)',
+                  color: 'rgb(var(--destructive))',
+                }}
+              >
                 {error}
               </div>
             )}
@@ -172,7 +209,12 @@ export const PermissionModal: FC<PermissionModalProps> = ({
               <Button variant="secondary" className="flex-1" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button variant="primary" className="flex-1" onClick={handleConfirm} isLoading={isLoading}>
+              <Button
+                variant="primary"
+                className="flex-1"
+                onClick={handleConfirm}
+                isLoading={isLoading}
+              >
                 Confirm & Subscribe
               </Button>
             </div>
@@ -185,18 +227,27 @@ export const PermissionModal: FC<PermissionModalProps> = ({
             <div className="flex items-center justify-center gap-2 mb-6">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white"
-                style={{ backgroundColor: step === 'requesting_permission' ? 'rgb(var(--primary))' : 'rgb(var(--success))' }}
+                style={{
+                  backgroundColor:
+                    step === 'requesting_permission'
+                      ? 'rgb(var(--primary))'
+                      : 'rgb(var(--success))',
+                }}
               >
                 {step === 'requesting_permission' ? '1' : '✓'}
               </div>
               <div
                 className="w-12 h-1 rounded"
-                style={{ backgroundColor: step === 'subscribing' ? 'rgb(var(--primary))' : 'rgb(var(--border))' }}
+                style={{
+                  backgroundColor:
+                    step === 'subscribing' ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                }}
               />
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
                 style={{
-                  backgroundColor: step === 'subscribing' ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                  backgroundColor:
+                    step === 'subscribing' ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
                   color: step === 'subscribing' ? 'white' : 'rgb(var(--muted-foreground))',
                 }}
               >
@@ -204,8 +255,16 @@ export const PermissionModal: FC<PermissionModalProps> = ({
               </div>
             </div>
 
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}>
-              <svg className="w-8 h-8 animate-spin" style={{ color: 'rgb(var(--primary))' }} fill="none" viewBox="0 0 24 24">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+            >
+              <svg
+                className="w-8 h-8 animate-spin"
+                style={{ color: 'rgb(var(--primary))' }}
+                fill="none"
+                viewBox="0 0 24 24"
+              >
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -224,7 +283,10 @@ export const PermissionModal: FC<PermissionModalProps> = ({
 
             {step === 'requesting_permission' && (
               <>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
+                <h3
+                  className="text-lg font-semibold mb-2"
+                  style={{ color: 'rgb(var(--foreground))' }}
+                >
                   Requesting Permission (ERC-7715)
                 </h3>
                 <p style={{ color: 'rgb(var(--muted-foreground))' }}>
@@ -235,7 +297,10 @@ export const PermissionModal: FC<PermissionModalProps> = ({
 
             {step === 'subscribing' && (
               <>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
+                <h3
+                  className="text-lg font-semibold mb-2"
+                  style={{ color: 'rgb(var(--foreground))' }}
+                >
                   Confirming Subscription
                 </h3>
                 <p style={{ color: 'rgb(var(--muted-foreground))' }}>
@@ -248,15 +313,34 @@ export const PermissionModal: FC<PermissionModalProps> = ({
 
         {step === 'success' && (
           <div className="text-center py-8">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}>
-              <svg className="w-8 h-8" style={{ color: 'rgb(var(--success))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}
+            >
+              <svg
+                className="w-8 h-8"
+                style={{ color: 'rgb(var(--success))' }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>Successfully Subscribed!</h3>
+            <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
+              Successfully Subscribed!
+            </h3>
             <p className="mb-6" style={{ color: 'rgb(var(--muted-foreground))' }}>
               You are now subscribed to {plan.name}. Your first payment will be processed{' '}
-              {plan.trialPeriod > 0n ? `after your ${Number(plan.trialPeriod) / 86400}-day trial` : 'immediately'}.
+              {plan.trialPeriod > 0n
+                ? `after your ${Number(plan.trialPeriod) / 86400}-day trial`
+                : 'immediately'}
+              .
             </p>
             <Button variant="primary" onClick={handleClose}>
               Done

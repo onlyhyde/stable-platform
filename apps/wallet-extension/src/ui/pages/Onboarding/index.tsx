@@ -1,12 +1,12 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import type { Address } from 'viem'
-import { Welcome } from './Welcome'
-import { CreatePassword } from './CreatePassword'
-import { SeedPhrase } from './SeedPhrase'
-import { ConfirmSeed } from './ConfirmSeed'
-import { ImportWallet } from './ImportWallet'
-import { Complete } from './Complete'
 import { useWalletStore } from '../../hooks/useWalletStore'
+import { Complete } from './Complete'
+import { ConfirmSeed } from './ConfirmSeed'
+import { CreatePassword } from './CreatePassword'
+import { ImportWallet } from './ImportWallet'
+import { SeedPhrase } from './SeedPhrase'
+import { Welcome } from './Welcome'
 
 export type OnboardingStep =
   | 'welcome'
@@ -45,22 +45,25 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     setStep('importWallet')
   }, [])
 
-  const handlePasswordCreate = useCallback(async (pwd: string) => {
-    setPassword(pwd)
-    setIsLoading(true)
-    setError('')
+  const handlePasswordCreate = useCallback(
+    async (pwd: string) => {
+      setPassword(pwd)
+      setIsLoading(true)
+      setError('')
 
-    try {
-      const result = await createWallet(pwd)
-      setMnemonic(result.mnemonic)
-      setCreatedAddress(result.address)
-      setStep('seedPhrase')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create wallet')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [createWallet])
+      try {
+        const result = await createWallet(pwd)
+        setMnemonic(result.mnemonic)
+        setCreatedAddress(result.address)
+        setStep('seedPhrase')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to create wallet')
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [createWallet]
+  )
 
   const handleSeedConfirm = useCallback(() => {
     setStep('confirmSeed')
@@ -75,21 +78,24 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     setStep('importPassword')
   }, [])
 
-  const handleImportPasswordCreate = useCallback(async (pwd: string) => {
-    setPassword(pwd)
-    setIsLoading(true)
-    setError('')
+  const handleImportPasswordCreate = useCallback(
+    async (pwd: string) => {
+      setPassword(pwd)
+      setIsLoading(true)
+      setError('')
 
-    try {
-      const address = await restoreWallet(pwd, mnemonic)
-      setCreatedAddress(address)
-      setStep('complete')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import wallet')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [mnemonic, restoreWallet])
+      try {
+        const address = await restoreWallet(pwd, mnemonic)
+        setCreatedAddress(address)
+        setStep('complete')
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to import wallet')
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [mnemonic, restoreWallet]
+  )
 
   const handleFinish = useCallback(() => {
     // Clear sensitive data
@@ -120,40 +126,22 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   return (
     <div className="h-full" style={{ backgroundColor: 'rgb(var(--background))' }}>
-      {step === 'welcome' && (
-        <Welcome onCreateNew={handleCreateNew} onImport={handleImport} />
-      )}
+      {step === 'welcome' && <Welcome onCreateNew={handleCreateNew} onImport={handleImport} />}
 
       {step === 'createPassword' && (
-        <CreatePassword
-          onSubmit={handlePasswordCreate}
-          onBack={handleBack}
-          isLoading={isLoading}
-        />
+        <CreatePassword onSubmit={handlePasswordCreate} onBack={handleBack} isLoading={isLoading} />
       )}
 
       {step === 'seedPhrase' && mnemonic && (
-        <SeedPhrase
-          mnemonic={mnemonic}
-          onConfirm={handleSeedConfirm}
-          onBack={handleBack}
-        />
+        <SeedPhrase mnemonic={mnemonic} onConfirm={handleSeedConfirm} onBack={handleBack} />
       )}
 
       {step === 'confirmSeed' && mnemonic && (
-        <ConfirmSeed
-          mnemonic={mnemonic}
-          onConfirm={handleConfirmComplete}
-          onBack={handleBack}
-        />
+        <ConfirmSeed mnemonic={mnemonic} onConfirm={handleConfirmComplete} onBack={handleBack} />
       )}
 
       {step === 'importWallet' && (
-        <ImportWallet
-          onImport={handleImportMnemonic}
-          onBack={handleBack}
-          error={error}
-        />
+        <ImportWallet onImport={handleImportMnemonic} onBack={handleBack} error={error} />
       )}
 
       {step === 'importPassword' && (

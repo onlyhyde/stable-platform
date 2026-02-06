@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
 import type { Pool } from '@/types'
+import { useCallback, useEffect, useState } from 'react'
 
 interface UsePoolsConfig {
   fetchPools?: () => Promise<Pool[]>

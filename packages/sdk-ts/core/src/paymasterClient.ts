@@ -6,15 +6,15 @@
  * Follows DIP: uses JsonRpcClient abstraction for RPC communication.
  */
 
-import type { Address, Hex } from 'viem'
 import type {
-  SupportedToken,
-  SponsorPolicy,
-  PaymasterClientConfig,
   GasPaymentConfig,
+  PaymasterClientConfig,
+  SponsorPolicy,
+  SupportedToken,
 } from '@stablenet/sdk-types'
 import { GAS_PAYMENT_TYPE } from '@stablenet/sdk-types'
-import { createPaymasterRpcClient, type JsonRpcClient, RpcError } from './rpc'
+import type { Address, Hex } from 'viem'
+import { type JsonRpcClient, RpcError, createPaymasterRpcClient } from './rpc'
 
 // ============================================================================
 // Types
@@ -155,10 +155,11 @@ export function createPaymasterClient(config: PaymasterClientConfig) {
     sender: Address,
     operation: 'transfer' | 'swap' | 'contract_call'
   ): Promise<SponsorPolicy> {
-    return rpcClient.request<SponsorPolicy>(
-      RPC_METHODS.GET_SPONSOR_POLICY,
-      [sender, operation, chainId]
-    )
+    return rpcClient.request<SponsorPolicy>(RPC_METHODS.GET_SPONSOR_POLICY, [
+      sender,
+      operation,
+      chainId,
+    ])
   }
 
   /**
@@ -190,10 +191,9 @@ export function createPaymasterClient(config: PaymasterClientConfig) {
    * Get supported ERC20 tokens for gas payment
    */
   async function getSupportedTokens(): Promise<SupportedToken[]> {
-    const result = await rpcClient.request<RawSupportedToken[]>(
-      RPC_METHODS.SUPPORTED_TOKENS,
-      [chainId]
-    )
+    const result = await rpcClient.request<RawSupportedToken[]>(RPC_METHODS.SUPPORTED_TOKENS, [
+      chainId,
+    ])
 
     return result.map((token) => ({
       address: token.address,
@@ -211,10 +211,11 @@ export function createPaymasterClient(config: PaymasterClientConfig) {
     userOp: PartialUserOperationForPaymaster,
     tokenAddress: Address
   ): Promise<ERC20PaymentEstimate> {
-    const result = await rpcClient.request<RawERC20Estimate>(
-      RPC_METHODS.ESTIMATE_ERC20_PAYMENT,
-      [formatUserOpForRpc(userOp), tokenAddress, chainId]
-    )
+    const result = await rpcClient.request<RawERC20Estimate>(RPC_METHODS.ESTIMATE_ERC20_PAYMENT, [
+      formatUserOpForRpc(userOp),
+      tokenAddress,
+      chainId,
+    ])
 
     return {
       tokenAddress: result.tokenAddress,
@@ -268,11 +269,9 @@ export function createPaymasterClient(config: PaymasterClientConfig) {
 
       case GAS_PAYMENT_TYPE.ERC20:
         if (!gasPayment.tokenAddress) {
-          throw new RpcError(
-            'PAYMASTER_ERROR',
-            'Token address required for ERC20 gas payment',
-            { code: -33002 }
-          )
+          throw new RpcError('PAYMASTER_ERROR', 'Token address required for ERC20 gas payment', {
+            code: -33002,
+          })
         }
         return getERC20PaymasterData(userOp, gasPayment.tokenAddress)
 
@@ -315,9 +314,7 @@ export function createPaymasterClient(config: PaymasterClientConfig) {
 /**
  * Format UserOperation for RPC (convert bigints to hex strings)
  */
-function formatUserOpForRpc(
-  userOp: PartialUserOperationForPaymaster
-): Record<string, string> {
+function formatUserOpForRpc(userOp: PartialUserOperationForPaymaster): Record<string, string> {
   return {
     sender: userOp.sender,
     nonce: toHexString(userOp.nonce),
@@ -334,7 +331,7 @@ function formatUserOpForRpc(
  * Convert bigint to hex string
  */
 function toHexString(value: bigint): string {
-  return '0x' + value.toString(16)
+  return `0x${value.toString(16)}`
 }
 
 /**

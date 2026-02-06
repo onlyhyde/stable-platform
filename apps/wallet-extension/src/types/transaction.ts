@@ -4,20 +4,9 @@ import type { Address, Hex } from 'viem'
  * Transaction types
  */
 
-export type TransactionStatus =
-  | 'pending'
-  | 'submitted'
-  | 'confirmed'
-  | 'failed'
-  | 'cancelled'
+export type TransactionStatus = 'pending' | 'submitted' | 'confirmed' | 'failed' | 'cancelled'
 
-export type TransactionType =
-  | 'send'
-  | 'receive'
-  | 'swap'
-  | 'approve'
-  | 'contract'
-  | 'userOp'
+export type TransactionType = 'send' | 'receive' | 'swap' | 'approve' | 'contract' | 'userOp'
 
 export interface PendingTransaction {
   id: string

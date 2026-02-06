@@ -171,7 +171,10 @@ export interface WatchAnnouncementsOptions {
   /** Polling interval in milliseconds */
   pollingInterval?: number
   /** Callback when announcement is found */
-  onAnnouncement: (announcement: StealthAnnouncement, stealthKey: ComputedStealthKey) => void | Promise<void>
+  onAnnouncement: (
+    announcement: StealthAnnouncement,
+    stealthKey: ComputedStealthKey
+  ) => void | Promise<void>
   /** Callback on error */
   onError?: (error: Error) => void
 }

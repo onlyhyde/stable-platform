@@ -1,7 +1,7 @@
 'use client'
 
-import type { HTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import type { HTMLAttributes, ReactNode } from 'react'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
@@ -72,11 +72,7 @@ interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
 export function CardHeader({ className, children, bordered = true, ...props }: CardHeaderProps) {
   return (
     <div
-      className={cn(
-        'px-6 py-5',
-        bordered && 'border-b',
-        className
-      )}
+      className={cn('px-6 py-5', bordered && 'border-b', className)}
       style={bordered ? { borderColor: 'rgb(var(--border))' } : undefined}
       {...props}
     >
@@ -108,7 +104,11 @@ interface CardDescriptionProps extends HTMLAttributes<HTMLParagraphElement> {
 
 export function CardDescription({ className, children, ...props }: CardDescriptionProps) {
   return (
-    <p className={cn('text-sm mt-1', className)} style={{ color: 'rgb(var(--muted-foreground))' }} {...props}>
+    <p
+      className={cn('text-sm mt-1', className)}
+      style={{ color: 'rgb(var(--muted-foreground))' }}
+      {...props}
+    >
       {children}
     </p>
   )
@@ -134,15 +134,15 @@ interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
 export function CardFooter({ className, children, bordered = true, ...props }: CardFooterProps) {
   return (
     <div
-      className={cn(
-        'px-6 py-4 rounded-b-2xl',
-        bordered && 'border-t',
-        className
-      )}
-      style={bordered ? {
-        borderColor: 'rgb(var(--border))',
-        backgroundColor: 'rgb(var(--secondary) / 0.5)'
-      } : undefined}
+      className={cn('px-6 py-4 rounded-b-2xl', bordered && 'border-t', className)}
+      style={
+        bordered
+          ? {
+              borderColor: 'rgb(var(--border))',
+              backgroundColor: 'rgb(var(--secondary) / 0.5)',
+            }
+          : undefined
+      }
       {...props}
     >
       {children}
@@ -180,12 +180,22 @@ export function StatCard({
   const trendIcons = {
     up: (
       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M5 10l7-7m0 0l7 7m-7-7v18"
+        />
       </svg>
     ),
     down: (
       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M19 14l-7 7m0 0l-7-7m7 7V3"
+        />
       </svg>
     ),
     neutral: null,
@@ -195,8 +205,12 @@ export function StatCard({
     <Card className={cn('p-6', className)} {...props}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>{title}</p>
-          <p className="mt-2 text-3xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>{value}</p>
+          <p className="text-sm font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {title}
+          </p>
+          <p className="mt-2 text-3xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+            {value}
+          </p>
           {change !== undefined && (
             <div className="mt-2 flex items-center gap-1">
               <span
@@ -207,16 +221,21 @@ export function StatCard({
                 {Math.abs(change)}%
               </span>
               {changeLabel && (
-                <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>{changeLabel}</span>
+                <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  {changeLabel}
+                </span>
               )}
             </div>
           )}
         </div>
         {icon && (
-          <div className="p-3 rounded-xl" style={{
-            backgroundColor: 'rgb(var(--primary-muted))',
-            color: 'rgb(var(--primary))'
-          }}>
+          <div
+            className="p-3 rounded-xl"
+            style={{
+              backgroundColor: 'rgb(var(--primary-muted))',
+              color: 'rgb(var(--primary))',
+            }}
+          >
             {icon}
           </div>
         )}
@@ -242,13 +261,19 @@ export function FeatureCard({
 }: FeatureCardProps) {
   const content = (
     <Card hover className={cn('p-6 group', className)} {...props}>
-      <div className="p-3 w-fit rounded-xl text-white mb-4
+      <div
+        className="p-3 w-fit rounded-xl text-white mb-4
                       group-hover:scale-110 transition-transform duration-200"
-           style={{ background: 'linear-gradient(135deg, rgb(var(--primary)), rgb(var(--accent)))' }}>
+        style={{ background: 'linear-gradient(135deg, rgb(var(--primary)), rgb(var(--accent)))' }}
+      >
         {icon}
       </div>
-      <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>{title}</h3>
-      <p className="text-sm leading-relaxed" style={{ color: 'rgb(var(--muted-foreground))' }}>{description}</p>
+      <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
+        {title}
+      </h3>
+      <p className="text-sm leading-relaxed" style={{ color: 'rgb(var(--muted-foreground))' }}>
+        {description}
+      </p>
     </Card>
   )
 

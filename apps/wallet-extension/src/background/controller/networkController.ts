@@ -1,7 +1,7 @@
-import { createPublicClient, http } from 'viem'
+import { http, createPublicClient } from 'viem'
+import { PROVIDER_EVENTS } from '../../shared/constants'
 import type { Network } from '../../types'
 import { walletState } from '../state/store'
-import { PROVIDER_EVENTS } from '../../shared/constants'
 
 /**
  * Network Controller
@@ -85,13 +85,10 @@ export class NetworkController {
   /**
    * Update network configuration
    */
-  async updateNetwork(
-    chainId: number,
-    updates: Partial<Network>
-  ): Promise<void> {
-    const networks = walletState.getState().networks.networks.map((n) =>
-      n.chainId === chainId ? { ...n, ...updates } : n
-    )
+  async updateNetwork(chainId: number, updates: Partial<Network>): Promise<void> {
+    const networks = walletState
+      .getState()
+      .networks.networks.map((n) => (n.chainId === chainId ? { ...n, ...updates } : n))
 
     await walletState.setState({
       networks: {
@@ -113,9 +110,7 @@ export class NetworkController {
       const chainId = await client.getChainId()
 
       if (chainId !== network.chainId) {
-        throw new Error(
-          `Chain ID mismatch: expected ${network.chainId}, got ${chainId}`
-        )
+        throw new Error(`Chain ID mismatch: expected ${network.chainId}, got ${chainId}`)
       }
 
       return true

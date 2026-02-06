@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { AuditLog } from '@/types'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface AuditLogFilter {
   action?: string
@@ -59,7 +59,7 @@ export function useAuditLogs(config: UseAuditLogsConfig = {}): UseAuditLogsRetur
   const logs = useMemo(() => {
     if (!filter) return allLogs
 
-    return allLogs.filter(log => {
+    return allLogs.filter((log) => {
       if (filter.action && log.action !== filter.action) return false
       if (filter.actor && log.actor !== filter.actor) return false
       if (filter.fromDate && log.timestamp < filter.fromDate) return false

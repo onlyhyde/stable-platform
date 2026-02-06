@@ -14,7 +14,13 @@ const navItems: NavItem[] = [
     id: 'home',
     label: 'Home',
     icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -28,7 +34,13 @@ const navItems: NavItem[] = [
     id: 'send',
     label: 'Send',
     icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -42,7 +54,13 @@ const navItems: NavItem[] = [
     id: 'receive',
     label: 'Receive',
     icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -56,7 +74,13 @@ const navItems: NavItem[] = [
     id: 'activity',
     label: 'Activity',
     icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -70,7 +94,13 @@ const navItems: NavItem[] = [
     id: 'settings',
     label: 'Settings',
     icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -111,9 +141,7 @@ export function Navigation() {
                 isActive ? 'nav-active-glow' : ''
               }`}
               style={{
-                color: isActive
-                  ? 'rgb(var(--primary))'
-                  : 'rgb(var(--muted-foreground))',
+                color: isActive ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
               }}
             >
               <span

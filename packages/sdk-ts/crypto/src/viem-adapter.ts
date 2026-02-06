@@ -86,7 +86,7 @@ export class ViemHashAlgorithm implements HashAlgorithm {
     return viemKeccak256(data as ViemHex) as Hash
   }
 
-  sha256(data: Uint8Array | Hex): Hash {
+  sha256(_data: Uint8Array | Hex): Hash {
     // viem doesn't have built-in sha256, use Web Crypto API
     throw new Error('sha256 not implemented in viem adapter - use native crypto')
   }
@@ -107,9 +107,10 @@ export class ViemRpcClient implements RpcClient {
   }
 
   async request<T>(method: string, params?: readonly unknown[]): Promise<T> {
+    // biome-ignore lint/suspicious/noExplicitAny: viem request API requires specific method types
     return this.client.request({
-      method: method as any,
-      params: params as any,
+      method: method as Parameters<typeof this.client.request>[0]['method'],
+      params: params as Parameters<typeof this.client.request>[0]['params'],
     }) as Promise<T>
   }
 

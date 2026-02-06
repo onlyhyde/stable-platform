@@ -8,8 +8,8 @@
  * to prevent page scripts from reading/modifying wallet settings.
  */
 
-import type { ExtensionMessage } from '../types'
 import { MESSAGE_TYPES, RPC_ERRORS } from '../shared/constants'
+import type { ExtensionMessage } from '../types'
 
 // Get MetaMask mode setting and inject inpage script
 getMetaMaskMode()

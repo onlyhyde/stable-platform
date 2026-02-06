@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle, Button, Input } from '@/components/common'
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/components/common'
 
 interface StealthTransferCardProps {
   balance: bigint
@@ -52,7 +52,9 @@ export function StealthTransferCard({
       <CardContent className="space-y-4">
         {/* Balance */}
         <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Available Balance</p>
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            Available Balance
+          </p>
           <p className="text-xl font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
             {formatTokenAmount(balance, decimals)} {symbol}
           </p>
@@ -92,8 +94,19 @@ export function StealthTransferCard({
         {generatedAddress && (
           <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <div>
                 <p className="font-medium text-green-800">Stealth Address Generated</p>
@@ -108,13 +121,25 @@ export function StealthTransferCard({
         {/* Privacy Info */}
         <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
           <div className="flex gap-2">
-            <svg className="w-5 h-5 text-purple-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            <svg
+              className="w-5 h-5 text-purple-600 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
             </svg>
             <div>
               <p className="text-sm text-purple-800 font-medium">Enhanced Privacy</p>
               <p className="text-xs text-purple-600 mt-0.5">
-                A unique one-time address will be generated. Only the recipient can access the funds.
+                A unique one-time address will be generated. Only the recipient can access the
+                funds.
               </p>
             </div>
           </div>
@@ -138,14 +163,23 @@ export function StealthTransferCard({
         {txHash && (
           <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               <div>
                 <p className="font-medium text-green-800">Transaction Sent Successfully</p>
-                <code className="text-xs text-green-700 break-all block mt-1">
-                  {txHash}
-                </code>
+                <code className="text-xs text-green-700 break-all block mt-1">{txHash}</code>
               </div>
             </div>
           </div>
@@ -153,12 +187,7 @@ export function StealthTransferCard({
 
         {/* Actions */}
         <div className="flex gap-3 pt-4">
-          <Button
-            variant="secondary"
-            onClick={onCancel}
-            className="flex-1"
-            disabled={isSending}
-          >
+          <Button variant="secondary" onClick={onCancel} className="flex-1" disabled={isSending}>
             Cancel
           </Button>
           {!generatedAddress ? (
@@ -171,12 +200,7 @@ export function StealthTransferCard({
               Generate Address
             </Button>
           ) : (
-            <Button
-              onClick={onSend}
-              isLoading={isSending}
-              disabled={!!txHash}
-              className="flex-1"
-            >
+            <Button onClick={onSend} isLoading={isSending} disabled={!!txHash} className="flex-1">
               {txHash ? 'Sent!' : 'Send Privately'}
             </Button>
           )}

@@ -154,22 +154,57 @@ export function getLocalConfig() {
 
   return {
     // User settings > Environment variables > Defaults
-    rpcUrl: userSettings?.rpcUrl || getEnvString(WEB_ENV_VARS.LOCAL_RPC_URL, DEFAULTS.LOCAL_RPC_URL),
-    bundlerUrl: userSettings?.bundlerUrl || getEnvString(WEB_ENV_VARS.LOCAL_BUNDLER_URL, DEFAULTS.LOCAL_BUNDLER_URL),
-    paymasterUrl: userSettings?.paymasterUrl || getEnvString(WEB_ENV_VARS.LOCAL_PAYMASTER_URL, DEFAULTS.LOCAL_PAYMASTER_URL),
-    stealthServerUrl: getEnvString(WEB_ENV_VARS.LOCAL_STEALTH_SERVER_URL, DEFAULTS.LOCAL_STEALTH_SERVER_URL),
+    rpcUrl:
+      userSettings?.rpcUrl || getEnvString(WEB_ENV_VARS.LOCAL_RPC_URL, DEFAULTS.LOCAL_RPC_URL),
+    bundlerUrl:
+      userSettings?.bundlerUrl ||
+      getEnvString(WEB_ENV_VARS.LOCAL_BUNDLER_URL, DEFAULTS.LOCAL_BUNDLER_URL),
+    paymasterUrl:
+      userSettings?.paymasterUrl ||
+      getEnvString(WEB_ENV_VARS.LOCAL_PAYMASTER_URL, DEFAULTS.LOCAL_PAYMASTER_URL),
+    stealthServerUrl: getEnvString(
+      WEB_ENV_VARS.LOCAL_STEALTH_SERVER_URL,
+      DEFAULTS.LOCAL_STEALTH_SERVER_URL
+    ),
     explorerUrl: getEnvString(WEB_ENV_VARS.LOCAL_EXPLORER_URL, DEFAULTS.LOCAL_EXPLORER_URL),
     indexerUrl: getEnvString(WEB_ENV_VARS.LOCAL_INDEXER_URL, DEFAULTS.LOCAL_INDEXER_URL),
     contracts: {
-      entryPoint: getEnvString(WEB_ENV_VARS.LOCAL_ENTRY_POINT, DEFAULTS.LOCAL_ENTRY_POINT) as `0x${string}`,
-      accountFactory: getEnvString(WEB_ENV_VARS.LOCAL_ACCOUNT_FACTORY, DEFAULTS.LOCAL_ACCOUNT_FACTORY) as `0x${string}`,
-      paymaster: getEnvString(WEB_ENV_VARS.LOCAL_PAYMASTER, DEFAULTS.LOCAL_PAYMASTER) as `0x${string}`,
-      stealthAnnouncer: getEnvString(WEB_ENV_VARS.LOCAL_STEALTH_ANNOUNCER, DEFAULTS.LOCAL_STEALTH_ANNOUNCER) as `0x${string}`,
-      stealthRegistry: getEnvString(WEB_ENV_VARS.LOCAL_STEALTH_REGISTRY, DEFAULTS.LOCAL_STEALTH_REGISTRY) as `0x${string}`,
-      sessionKeyManager: getEnvString(WEB_ENV_VARS.LOCAL_SESSION_KEY_MANAGER, DEFAULTS.LOCAL_SESSION_KEY_MANAGER) as `0x${string}`,
-      subscriptionManager: getEnvString(WEB_ENV_VARS.LOCAL_SUBSCRIPTION_MANAGER, DEFAULTS.LOCAL_SUBSCRIPTION_MANAGER) as `0x${string}`,
-      recurringPaymentManager: getEnvString(WEB_ENV_VARS.LOCAL_RECURRING_PAYMENT_MANAGER, DEFAULTS.LOCAL_RECURRING_PAYMENT_MANAGER) as `0x${string}`,
-      permissionManager: getEnvString(WEB_ENV_VARS.LOCAL_PERMISSION_MANAGER, DEFAULTS.LOCAL_PERMISSION_MANAGER) as `0x${string}`,
+      entryPoint: getEnvString(
+        WEB_ENV_VARS.LOCAL_ENTRY_POINT,
+        DEFAULTS.LOCAL_ENTRY_POINT
+      ) as `0x${string}`,
+      accountFactory: getEnvString(
+        WEB_ENV_VARS.LOCAL_ACCOUNT_FACTORY,
+        DEFAULTS.LOCAL_ACCOUNT_FACTORY
+      ) as `0x${string}`,
+      paymaster: getEnvString(
+        WEB_ENV_VARS.LOCAL_PAYMASTER,
+        DEFAULTS.LOCAL_PAYMASTER
+      ) as `0x${string}`,
+      stealthAnnouncer: getEnvString(
+        WEB_ENV_VARS.LOCAL_STEALTH_ANNOUNCER,
+        DEFAULTS.LOCAL_STEALTH_ANNOUNCER
+      ) as `0x${string}`,
+      stealthRegistry: getEnvString(
+        WEB_ENV_VARS.LOCAL_STEALTH_REGISTRY,
+        DEFAULTS.LOCAL_STEALTH_REGISTRY
+      ) as `0x${string}`,
+      sessionKeyManager: getEnvString(
+        WEB_ENV_VARS.LOCAL_SESSION_KEY_MANAGER,
+        DEFAULTS.LOCAL_SESSION_KEY_MANAGER
+      ) as `0x${string}`,
+      subscriptionManager: getEnvString(
+        WEB_ENV_VARS.LOCAL_SUBSCRIPTION_MANAGER,
+        DEFAULTS.LOCAL_SUBSCRIPTION_MANAGER
+      ) as `0x${string}`,
+      recurringPaymentManager: getEnvString(
+        WEB_ENV_VARS.LOCAL_RECURRING_PAYMENT_MANAGER,
+        DEFAULTS.LOCAL_RECURRING_PAYMENT_MANAGER
+      ) as `0x${string}`,
+      permissionManager: getEnvString(
+        WEB_ENV_VARS.LOCAL_PERMISSION_MANAGER,
+        DEFAULTS.LOCAL_PERMISSION_MANAGER
+      ) as `0x${string}`,
     },
   }
 }
@@ -188,22 +223,57 @@ export function getTestnetConfig() {
 
   return {
     // User settings > Environment variables > Defaults
-    rpcUrl: userSettings?.rpcUrl || getEnvString(WEB_ENV_VARS.TESTNET_RPC_URL, DEFAULTS.TESTNET_RPC_URL),
-    bundlerUrl: userSettings?.bundlerUrl || getEnvString(WEB_ENV_VARS.TESTNET_BUNDLER_URL, DEFAULTS.TESTNET_BUNDLER_URL),
-    paymasterUrl: userSettings?.paymasterUrl || getEnvString(WEB_ENV_VARS.TESTNET_PAYMASTER_URL, DEFAULTS.TESTNET_PAYMASTER_URL),
-    stealthServerUrl: getEnvString(WEB_ENV_VARS.TESTNET_STEALTH_SERVER_URL, DEFAULTS.TESTNET_STEALTH_SERVER_URL),
+    rpcUrl:
+      userSettings?.rpcUrl || getEnvString(WEB_ENV_VARS.TESTNET_RPC_URL, DEFAULTS.TESTNET_RPC_URL),
+    bundlerUrl:
+      userSettings?.bundlerUrl ||
+      getEnvString(WEB_ENV_VARS.TESTNET_BUNDLER_URL, DEFAULTS.TESTNET_BUNDLER_URL),
+    paymasterUrl:
+      userSettings?.paymasterUrl ||
+      getEnvString(WEB_ENV_VARS.TESTNET_PAYMASTER_URL, DEFAULTS.TESTNET_PAYMASTER_URL),
+    stealthServerUrl: getEnvString(
+      WEB_ENV_VARS.TESTNET_STEALTH_SERVER_URL,
+      DEFAULTS.TESTNET_STEALTH_SERVER_URL
+    ),
     explorerUrl: getEnvString(WEB_ENV_VARS.TESTNET_EXPLORER_URL, DEFAULTS.TESTNET_EXPLORER_URL),
     indexerUrl: getEnvString(WEB_ENV_VARS.TESTNET_INDEXER_URL, DEFAULTS.TESTNET_INDEXER_URL),
     contracts: {
-      entryPoint: getEnvString(WEB_ENV_VARS.TESTNET_ENTRY_POINT, DEFAULTS.TESTNET_ENTRY_POINT) as `0x${string}`,
-      accountFactory: getEnvString(WEB_ENV_VARS.TESTNET_ACCOUNT_FACTORY, DEFAULTS.TESTNET_ACCOUNT_FACTORY) as `0x${string}`,
-      paymaster: getEnvString(WEB_ENV_VARS.TESTNET_PAYMASTER, DEFAULTS.TESTNET_PAYMASTER) as `0x${string}`,
-      stealthAnnouncer: getEnvString(WEB_ENV_VARS.TESTNET_STEALTH_ANNOUNCER, DEFAULTS.TESTNET_STEALTH_ANNOUNCER) as `0x${string}`,
-      stealthRegistry: getEnvString(WEB_ENV_VARS.TESTNET_STEALTH_REGISTRY, DEFAULTS.TESTNET_STEALTH_REGISTRY) as `0x${string}`,
-      sessionKeyManager: getEnvString(WEB_ENV_VARS.TESTNET_SESSION_KEY_MANAGER, DEFAULTS.TESTNET_SESSION_KEY_MANAGER) as `0x${string}`,
-      subscriptionManager: getEnvString(WEB_ENV_VARS.TESTNET_SUBSCRIPTION_MANAGER, DEFAULTS.TESTNET_SUBSCRIPTION_MANAGER) as `0x${string}`,
-      recurringPaymentManager: getEnvString(WEB_ENV_VARS.TESTNET_RECURRING_PAYMENT_MANAGER, DEFAULTS.TESTNET_RECURRING_PAYMENT_MANAGER) as `0x${string}`,
-      permissionManager: getEnvString(WEB_ENV_VARS.TESTNET_PERMISSION_MANAGER, DEFAULTS.TESTNET_PERMISSION_MANAGER) as `0x${string}`,
+      entryPoint: getEnvString(
+        WEB_ENV_VARS.TESTNET_ENTRY_POINT,
+        DEFAULTS.TESTNET_ENTRY_POINT
+      ) as `0x${string}`,
+      accountFactory: getEnvString(
+        WEB_ENV_VARS.TESTNET_ACCOUNT_FACTORY,
+        DEFAULTS.TESTNET_ACCOUNT_FACTORY
+      ) as `0x${string}`,
+      paymaster: getEnvString(
+        WEB_ENV_VARS.TESTNET_PAYMASTER,
+        DEFAULTS.TESTNET_PAYMASTER
+      ) as `0x${string}`,
+      stealthAnnouncer: getEnvString(
+        WEB_ENV_VARS.TESTNET_STEALTH_ANNOUNCER,
+        DEFAULTS.TESTNET_STEALTH_ANNOUNCER
+      ) as `0x${string}`,
+      stealthRegistry: getEnvString(
+        WEB_ENV_VARS.TESTNET_STEALTH_REGISTRY,
+        DEFAULTS.TESTNET_STEALTH_REGISTRY
+      ) as `0x${string}`,
+      sessionKeyManager: getEnvString(
+        WEB_ENV_VARS.TESTNET_SESSION_KEY_MANAGER,
+        DEFAULTS.TESTNET_SESSION_KEY_MANAGER
+      ) as `0x${string}`,
+      subscriptionManager: getEnvString(
+        WEB_ENV_VARS.TESTNET_SUBSCRIPTION_MANAGER,
+        DEFAULTS.TESTNET_SUBSCRIPTION_MANAGER
+      ) as `0x${string}`,
+      recurringPaymentManager: getEnvString(
+        WEB_ENV_VARS.TESTNET_RECURRING_PAYMENT_MANAGER,
+        DEFAULTS.TESTNET_RECURRING_PAYMENT_MANAGER
+      ) as `0x${string}`,
+      permissionManager: getEnvString(
+        WEB_ENV_VARS.TESTNET_PERMISSION_MANAGER,
+        DEFAULTS.TESTNET_PERMISSION_MANAGER
+      ) as `0x${string}`,
     },
   }
 }
@@ -227,7 +297,7 @@ export function getAppConfig() {
  */
 export function getConfigByChainId(chainId: number) {
   switch (chainId) {
-    case 8283:  // StableNet Local
+    case 8283: // StableNet Local
       return getLocalConfig()
     case 82830: // StableNet Testnet
       return getTestnetConfig()

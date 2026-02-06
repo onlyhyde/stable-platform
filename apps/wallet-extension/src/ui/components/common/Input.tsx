@@ -10,19 +10,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      label,
-      error,
-      hint,
-      leftElement,
-      rightElement,
-      className = '',
-      id,
-      ...props
-    },
-    ref
-  ) => {
+  ({ label, error, hint, leftElement, rightElement, className = '', id, ...props }, ref) => {
     const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-')
 
     return (
@@ -63,16 +51,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightElement && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-              {rightElement}
-            </div>
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">{rightElement}</div>
           )}
         </div>
         {error && (
-          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error}</p>
+          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--destructive))' }}>
+            {error}
+          </p>
         )}
         {hint && !error && (
-          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{hint}</p>
+          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {hint}
+          </p>
         )}
       </div>
     )
@@ -81,8 +71,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
 Input.displayName = 'Input'
 
-export interface TextAreaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string
   error?: string
   hint?: string
@@ -119,9 +108,15 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
           }}
           {...props}
         />
-        {error && <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error}</p>}
+        {error && (
+          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--destructive))' }}>
+            {error}
+          </p>
+        )}
         {hint && !error && (
-          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{hint}</p>
+          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {hint}
+          </p>
         )}
       </div>
     )

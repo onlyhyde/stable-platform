@@ -1,7 +1,7 @@
-import { create } from 'zustand'
 import type { Address } from 'viem'
-import type { Account, Network, PendingTransaction, WalletState } from '../../types'
+import { create } from 'zustand'
 import { DEFAULT_NETWORKS, MESSAGE_TYPES } from '../../shared/constants'
+import type { Account, Network, PendingTransaction, WalletState } from '../../types'
 
 type Page = 'home' | 'send' | 'receive' | 'activity' | 'settings' | 'bank' | 'buy'
 
@@ -139,7 +139,8 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
         const accounts = state.accounts?.accounts ?? []
         const selectedAccount = state.accounts?.selectedAccount ?? null
         const networks = state.networks?.networks ?? DEFAULT_NETWORKS
-        const selectedChainId = state.networks?.selectedChainId ?? DEFAULT_NETWORKS[0]?.chainId ?? 31337
+        const selectedChainId =
+          state.networks?.selectedChainId ?? DEFAULT_NETWORKS[0]?.chainId ?? 31337
         const pendingTransactions = state.transactions?.pendingTransactions ?? []
         const history = state.transactions?.history ?? []
 

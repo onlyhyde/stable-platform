@@ -1,11 +1,11 @@
 'use client'
 
 import { type FC, useState } from 'react'
-import type { Address, Hex } from 'viem'
+import type { Address } from 'viem'
 import { formatUnits } from 'viem'
-import { Button } from '../common/Button'
-import { cn } from '../../lib/utils'
 import type { SessionKeyInfo, SessionKeyState } from '../../hooks/useSessionKey'
+import { cn } from '../../lib/utils'
+import { Button } from '../common/Button'
 
 interface SessionKeyCardProps {
   sessionKey: SessionKeyInfo
@@ -33,7 +33,7 @@ function formatTimestamp(timestamp: bigint): string {
 }
 
 // Format spending limit
-function formatLimit(amount: bigint, decimals: number = 18): string {
+function formatLimit(amount: bigint, decimals = 18): string {
   if (amount === BigInt(0)) return 'Unlimited'
   return `${formatUnits(amount, decimals)} ETH`
 }
@@ -93,13 +93,19 @@ export const SessionKeyCard: FC<SessionKeyCardProps> = ({
       : 100
 
   return (
-    <div className="rounded-lg border shadow-sm overflow-hidden" style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}>
+    <div
+      className="rounded-lg border shadow-sm overflow-hidden"
+      style={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}
+    >
       {/* Header */}
       <div className="p-4 border-b" style={{ borderColor: 'rgb(var(--border) / 0.5)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Key Icon */}
-            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'rgb(var(--secondary))' }}
+            >
               <svg
                 className="w-5 h-5"
                 style={{ color: 'rgb(var(--muted-foreground))' }}
@@ -138,7 +144,9 @@ export const SessionKeyCard: FC<SessionKeyCardProps> = ({
         {/* Expiry */}
         <div className="flex justify-between items-center text-sm">
           <span style={{ color: 'rgb(var(--muted-foreground))' }}>Expires</span>
-          <span style={{ color: 'rgb(var(--foreground))' }}>{formatTimestamp(sessionKey.expiry)}</span>
+          <span style={{ color: 'rgb(var(--foreground))' }}>
+            {formatTimestamp(sessionKey.expiry)}
+          </span>
         </div>
 
         {/* Spending Limit */}
@@ -150,16 +158,20 @@ export const SessionKeyCard: FC<SessionKeyCardProps> = ({
             </span>
           </div>
           {sessionKey.totalLimit > BigInt(0) && (
-            <div className="w-full rounded-full h-2" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+            <div
+              className="w-full rounded-full h-2"
+              style={{ backgroundColor: 'rgb(var(--secondary))' }}
+            >
               <div
                 className="h-2 rounded-full transition-all"
                 style={{
                   width: `${remainingPercentage}%`,
-                  backgroundColor: remainingPercentage > 50
-                    ? 'rgb(var(--success))'
-                    : remainingPercentage > 20
-                    ? 'rgb(var(--warning))'
-                    : 'rgb(var(--destructive))'
+                  backgroundColor:
+                    remainingPercentage > 50
+                      ? 'rgb(var(--success))'
+                      : remainingPercentage > 20
+                        ? 'rgb(var(--warning))'
+                        : 'rgb(var(--destructive))',
                 }}
               />
             </div>
@@ -181,14 +193,22 @@ export const SessionKeyCard: FC<SessionKeyCardProps> = ({
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
         </div>
 
         {/* Expanded Permissions */}
         {isExpanded && sessionKey.permissions.length > 0 && (
-          <div className="mt-2 space-y-2 pt-2 border-t" style={{ borderColor: 'rgb(var(--border) / 0.5)' }}>
+          <div
+            className="mt-2 space-y-2 pt-2 border-t"
+            style={{ borderColor: 'rgb(var(--border) / 0.5)' }}
+          >
             {sessionKey.permissions.map((perm, idx) => (
               <div
                 key={`${perm.target}-${perm.selector}-${idx}`}
@@ -197,11 +217,19 @@ export const SessionKeyCard: FC<SessionKeyCardProps> = ({
                 <div className="flex items-center gap-2">
                   <span
                     className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: perm.active ? 'rgb(var(--success))' : 'rgb(var(--muted-foreground) / 0.3)' }}
+                    style={{
+                      backgroundColor: perm.active
+                        ? 'rgb(var(--success))'
+                        : 'rgb(var(--muted-foreground) / 0.3)',
+                    }}
                   />
-                  <span className="font-mono" style={{ color: 'rgb(var(--muted-foreground))' }}>{formatAddress(perm.target)}</span>
+                  <span className="font-mono" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                    {formatAddress(perm.target)}
+                  </span>
                 </div>
-                <span className="font-mono" style={{ color: 'rgb(var(--muted-foreground) / 0.6)' }}>{perm.selector}</span>
+                <span className="font-mono" style={{ color: 'rgb(var(--muted-foreground) / 0.6)' }}>
+                  {perm.selector}
+                </span>
               </div>
             ))}
           </div>

@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/common/Card'
 import { Input } from '@/components/common/Input'
 import { Modal } from '@/components/common/Modal'
+import { useState } from 'react'
 
 interface ApiKey {
   id: string
@@ -56,10 +56,8 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
   }
 
   const togglePermission = (permissionId: string) => {
-    setSelectedPermissions(prev =>
-      prev.includes(permissionId)
-        ? prev.filter(p => p !== permissionId)
-        : [...prev, permissionId]
+    setSelectedPermissions((prev) =>
+      prev.includes(permissionId) ? prev.filter((p) => p !== permissionId) : [...prev, permissionId]
     )
   }
 
@@ -85,16 +83,25 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
                 Manage API keys for programmatic access to your merchant account
               </CardDescription>
             </div>
-            <Button onClick={() => setShowCreateModal(true)}>
-              Create API Key
-            </Button>
+            <Button onClick={() => setShowCreateModal(true)}>Create API Key</Button>
           </div>
         </CardHeader>
         <CardContent>
           {apiKeys.length === 0 ? (
             <div className="text-center py-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              <svg className="w-12 h-12 mx-auto mb-4" style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              <svg
+                className="w-12 h-12 mx-auto mb-4"
+                style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                />
               </svg>
               <p>No API keys created</p>
               <p className="text-sm">Create an API key to integrate with your systems</p>
@@ -104,12 +111,42 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
               <table className="w-full">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgb(var(--border))' }}>
-                    <th className="text-left py-3 px-4 text-sm font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>Key</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>Permissions</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>Created</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>Last Used</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>Actions</th>
+                    <th
+                      className="text-left py-3 px-4 text-sm font-medium"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
+                      Name
+                    </th>
+                    <th
+                      className="text-left py-3 px-4 text-sm font-medium"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
+                      Key
+                    </th>
+                    <th
+                      className="text-left py-3 px-4 text-sm font-medium"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
+                      Permissions
+                    </th>
+                    <th
+                      className="text-left py-3 px-4 text-sm font-medium"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
+                      Created
+                    </th>
+                    <th
+                      className="text-left py-3 px-4 text-sm font-medium"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
+                      Last Used
+                    </th>
+                    <th
+                      className="text-right py-3 px-4 text-sm font-medium"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -120,12 +157,17 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
                       style={{ borderBottom: '1px solid rgb(var(--border) / 0.5)' }}
                     >
                       <td className="py-3 px-4">
-                        <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{key.name}</span>
+                        <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                          {key.name}
+                        </span>
                       </td>
                       <td className="py-3 px-4">
                         <code
                           className="text-sm font-mono px-2 py-1 rounded"
-                          style={{ backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--foreground))' }}
+                          style={{
+                            backgroundColor: 'rgb(var(--secondary))',
+                            color: 'rgb(var(--foreground))',
+                          }}
                         >
                           {key.keyPrefix}...
                         </code>
@@ -136,7 +178,10 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
                             <span
                               key={perm}
                               className="px-2 py-0.5 text-xs rounded"
-                              style={{ backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--muted-foreground))' }}
+                              style={{
+                                backgroundColor: 'rgb(var(--secondary))',
+                                color: 'rgb(var(--muted-foreground))',
+                              }}
                             >
                               {perm.split(':')[0]}
                             </span>
@@ -144,17 +189,26 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
                           {key.permissions.length > 2 && (
                             <span
                               className="px-2 py-0.5 text-xs rounded"
-                              style={{ backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--muted-foreground))' }}
+                              style={{
+                                backgroundColor: 'rgb(var(--secondary))',
+                                color: 'rgb(var(--muted-foreground))',
+                              }}
                             >
                               +{key.permissions.length - 2} more
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                      <td
+                        className="py-3 px-4 text-sm"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
                         {key.createdAt.toLocaleDateString()}
                       </td>
-                      <td className="py-3 px-4 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                      <td
+                        className="py-3 px-4 text-sm"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
                         {key.lastUsed ? key.lastUsed.toLocaleDateString() : 'Never'}
                       </td>
                       <td className="py-3 px-4 text-right">
@@ -183,7 +237,10 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
               Key Name
             </label>
             <Input
@@ -193,7 +250,10 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
               Permissions
             </label>
             <div className="space-y-2">
@@ -210,7 +270,9 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
                     className="rounded"
                     style={{ borderColor: 'rgb(var(--border-hover))' }}
                   />
-                  <span className="text-sm" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>{permission.label}</span>
+                  <span className="text-sm" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+                    {permission.label}
+                  </span>
                 </label>
               ))}
             </div>
@@ -230,11 +292,7 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
       </Modal>
 
       {/* New Key Display Modal */}
-      <Modal
-        isOpen={showNewKeyModal}
-        onClose={handleCloseNewKeyModal}
-        title="API Key Created"
-      >
+      <Modal isOpen={showNewKeyModal} onClose={handleCloseNewKeyModal} title="API Key Created">
         <div className="space-y-4">
           <div
             className="p-4 rounded-lg"
@@ -244,11 +302,24 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
             }}
           >
             <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 mt-0.5" style={{ color: 'rgb(var(--warning))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg
+                className="w-5 h-5 mt-0.5"
+                style={{ color: 'rgb(var(--warning))' }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
               <div>
-                <p className="text-sm font-medium" style={{ color: 'rgb(var(--warning))' }}>Save this key now</p>
+                <p className="text-sm font-medium" style={{ color: 'rgb(var(--warning))' }}>
+                  Save this key now
+                </p>
                 <p className="text-sm" style={{ color: 'rgb(var(--warning) / 0.8)' }}>
                   This is the only time you will see this API key. Store it securely.
                 </p>
@@ -256,13 +327,19 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
               Your API Key
             </label>
             <div className="flex items-center gap-2">
               <code
                 className="flex-1 text-sm font-mono px-3 py-2 rounded break-all"
-                style={{ backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--foreground))' }}
+                style={{
+                  backgroundColor: 'rgb(var(--secondary))',
+                  color: 'rgb(var(--foreground))',
+                }}
               >
                 {generatedKey}
               </code>
@@ -272,9 +349,7 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
             </div>
           </div>
           <div className="flex justify-end pt-4">
-            <Button onClick={handleCloseNewKeyModal}>
-              Done
-            </Button>
+            <Button onClick={handleCloseNewKeyModal}>Done</Button>
           </div>
         </div>
       </Modal>

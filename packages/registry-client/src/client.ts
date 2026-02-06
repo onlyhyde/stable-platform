@@ -33,7 +33,7 @@ export class RegistryClient extends EventEmitter<ClientEvent> {
   constructor(options: RegistryClientOptions) {
     super()
     this.baseUrl = options.url.replace(/\/$/, '')
-    this.wsUrl = this.baseUrl.replace(/^http/, 'ws') + '/ws'
+    this.wsUrl = `${this.baseUrl.replace(/^http/, 'ws')}/ws`
     this.apiKey = options.apiKey
     this.reconnectInterval = options.reconnectInterval ?? 3000
     this.maxReconnectAttempts = options.maxReconnectAttempts ?? 10

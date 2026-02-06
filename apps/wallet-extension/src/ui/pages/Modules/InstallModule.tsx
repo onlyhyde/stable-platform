@@ -1,26 +1,29 @@
-import { useState, useMemo, Fragment } from 'react'
 import {
-  MODULE_TYPE,
-  getModuleTypeName,
-  encodeWebAuthnValidatorInit,
   type Account,
-  type ModuleType,
+  MODULE_TYPE,
   type ModuleRegistryEntry,
-  type WebAuthnValidatorConfig,
+  type ModuleType,
+  type MultiSigValidatorConfig,
   type SessionKeyConfig,
   type SpendingLimitHookConfig,
-  type MultiSigValidatorConfig,
+  type WebAuthnValidatorConfig,
+  getModuleTypeName,
 } from '@stablenet/core'
+import { Fragment, useMemo, useState } from 'react'
 import type { Hex } from 'viem'
 import { formatEther } from 'viem'
 
-import { useModuleRegistry } from './hooks/useModuleRegistry'
-import { useModuleInstall } from './hooks/useModuleInstall'
+import { LendingExecutorConfigUI } from './LendingExecutorConfig'
 import { ModuleConfigForm } from './ModuleConfig'
-import { WebAuthnConfig } from './WebAuthnConfig'
+import { MultiSigConfigUI } from './MultiSigConfig'
+import { RecurringPaymentConfigUI } from './RecurringPaymentConfig'
 import { SessionKeyConfigUI } from './SessionKeyConfig'
 import { SpendingLimitConfigUI } from './SpendingLimitConfig'
-import { MultiSigConfigUI } from './MultiSigConfig'
+import { StakingExecutorConfigUI } from './StakingExecutorConfig'
+import { SwapExecutorConfigUI } from './SwapExecutorConfig'
+import { WebAuthnConfig } from './WebAuthnConfig'
+import { useModuleInstall } from './hooks/useModuleInstall'
+import { useModuleRegistry } from './hooks/useModuleRegistry'
 import { saveWebAuthnCredential } from './hooks/useWebAuthn'
 
 // ============================================================================
@@ -87,7 +90,51 @@ export function InstallModuleWizard({
   const isMultiSigValidator = useMemo(() => {
     if (!selectedModule) return false
     const name = selectedModule.metadata.name.toLowerCase()
-    return name.includes('multisig') || name.includes('multi-sig') || (name.includes('multi') && name.includes('sig'))
+    return (
+      name.includes('multisig') ||
+      name.includes('multi-sig') ||
+      (name.includes('multi') && name.includes('sig'))
+    )
+  }, [selectedModule])
+
+  // Check if selected module is Swap executor
+  const isSwapExecutor = useMemo(() => {
+    if (!selectedModule) return false
+    const name = selectedModule.metadata.name.toLowerCase()
+    return (
+      name.includes('swap') &&
+      (name.includes('executor') || selectedModule.metadata.type === MODULE_TYPE.EXECUTOR)
+    )
+  }, [selectedModule])
+
+  // Check if selected module is Lending executor
+  const isLendingExecutor = useMemo(() => {
+    if (!selectedModule) return false
+    const name = selectedModule.metadata.name.toLowerCase()
+    return (
+      (name.includes('lending') || name.includes('lend') || name.includes('borrow')) &&
+      (name.includes('executor') || selectedModule.metadata.type === MODULE_TYPE.EXECUTOR)
+    )
+  }, [selectedModule])
+
+  // Check if selected module is Staking executor
+  const isStakingExecutor = useMemo(() => {
+    if (!selectedModule) return false
+    const name = selectedModule.metadata.name.toLowerCase()
+    return (
+      (name.includes('staking') || name.includes('stake')) &&
+      (name.includes('executor') || selectedModule.metadata.type === MODULE_TYPE.EXECUTOR)
+    )
+  }, [selectedModule])
+
+  // Check if selected module is Recurring Payment executor
+  const isRecurringPaymentExecutor = useMemo(() => {
+    if (!selectedModule) return false
+    const name = selectedModule.metadata.name.toLowerCase()
+    return (
+      (name.includes('recurring') || name.includes('subscription') || name.includes('payment')) &&
+      (name.includes('executor') || selectedModule.metadata.type === MODULE_TYPE.EXECUTOR)
+    )
   }, [selectedModule])
 
   // Handle type selection
@@ -104,11 +151,43 @@ export function InstallModuleWizard({
     // Check for special module types that need custom config UIs
     const moduleName = module.metadata.name.toLowerCase()
     const isWebAuthn = moduleName.includes('webauthn') || moduleName.includes('passkey')
-    const isSessionKey = moduleName.includes('session') && (moduleName.includes('key') || moduleName.includes('executor'))
-    const isSpendingLimit = moduleName.includes('spending') && (moduleName.includes('limit') || moduleName.includes('hook'))
-    const isMultiSig = moduleName.includes('multisig') || moduleName.includes('multi-sig') || (moduleName.includes('multi') && moduleName.includes('sig'))
+    const isSessionKey =
+      moduleName.includes('session') &&
+      (moduleName.includes('key') || moduleName.includes('executor'))
+    const isSpendingLimit =
+      moduleName.includes('spending') &&
+      (moduleName.includes('limit') || moduleName.includes('hook'))
+    const isMultiSig =
+      moduleName.includes('multisig') ||
+      moduleName.includes('multi-sig') ||
+      (moduleName.includes('multi') && moduleName.includes('sig'))
+    const isSwap =
+      moduleName.includes('swap') &&
+      (moduleName.includes('executor') || module.metadata.type === MODULE_TYPE.EXECUTOR)
+    const isLending =
+      (moduleName.includes('lending') ||
+        moduleName.includes('lend') ||
+        moduleName.includes('borrow')) &&
+      (moduleName.includes('executor') || module.metadata.type === MODULE_TYPE.EXECUTOR)
+    const isStaking =
+      (moduleName.includes('staking') || moduleName.includes('stake')) &&
+      (moduleName.includes('executor') || module.metadata.type === MODULE_TYPE.EXECUTOR)
+    const isRecurring =
+      (moduleName.includes('recurring') ||
+        moduleName.includes('subscription') ||
+        moduleName.includes('payment')) &&
+      (moduleName.includes('executor') || module.metadata.type === MODULE_TYPE.EXECUTOR)
 
-    if (isWebAuthn || isSessionKey || isSpendingLimit || isMultiSig) {
+    if (
+      isWebAuthn ||
+      isSessionKey ||
+      isSpendingLimit ||
+      isMultiSig ||
+      isSwap ||
+      isLending ||
+      isStaking ||
+      isRecurring
+    ) {
       // Special modules need custom config UI
       setStep('configure')
     } else if (module.configSchema.fields.length === 0) {
@@ -184,6 +263,14 @@ export function InstallModuleWizard({
     setStep('confirm')
   }
 
+  // Handle DeFi executor config complete (generic handler for Swap, Lending, Staking, Recurring)
+  const handleDefiExecutorComplete = (initData: Hex) => {
+    setCustomInitData(initData)
+    // Config values are displayed from the initData encoding
+    setConfigValues({ configured: 'true' })
+    setStep('confirm')
+  }
+
   // Handle install
   const handleInstall = async () => {
     if (!selectedModule) return
@@ -205,7 +292,16 @@ export function InstallModuleWizard({
     }
   }
 
-  const hasConfig = isWebAuthnValidator || isSessionKeyExecutor || isSpendingLimitHook || isMultiSigValidator || (selectedModule?.configSchema.fields.length ?? 0) > 0
+  const hasConfig =
+    isWebAuthnValidator ||
+    isSessionKeyExecutor ||
+    isSpendingLimitHook ||
+    isMultiSigValidator ||
+    isSwapExecutor ||
+    isLendingExecutor ||
+    isStakingExecutor ||
+    isRecurringPaymentExecutor ||
+    (selectedModule?.configSchema.fields.length ?? 0) > 0
 
   return (
     <div className="install-module-wizard">
@@ -242,8 +338,9 @@ export function InstallModuleWizard({
         )}
 
         {/* Step: Configure */}
-        {step === 'configure' && selectedModule && (
-          isWebAuthnValidator ? (
+        {step === 'configure' &&
+          selectedModule &&
+          (isWebAuthnValidator ? (
             <WebAuthnConfig
               accountAddress={account.address}
               onSubmit={handleWebAuthnComplete}
@@ -267,6 +364,30 @@ export function InstallModuleWizard({
               onSubmit={handleMultiSigComplete}
               onBack={() => setStep('select-module')}
             />
+          ) : isSwapExecutor ? (
+            <SwapExecutorConfigUI
+              accountAddress={account.address}
+              onSubmit={handleDefiExecutorComplete}
+              onBack={() => setStep('select-module')}
+            />
+          ) : isLendingExecutor ? (
+            <LendingExecutorConfigUI
+              accountAddress={account.address}
+              onSubmit={handleDefiExecutorComplete}
+              onBack={() => setStep('select-module')}
+            />
+          ) : isStakingExecutor ? (
+            <StakingExecutorConfigUI
+              accountAddress={account.address}
+              onSubmit={handleDefiExecutorComplete}
+              onBack={() => setStep('select-module')}
+            />
+          ) : isRecurringPaymentExecutor ? (
+            <RecurringPaymentConfigUI
+              accountAddress={account.address}
+              onSubmit={handleDefiExecutorComplete}
+              onBack={() => setStep('select-module')}
+            />
           ) : (
             <ModuleConfigForm
               module={selectedModule}
@@ -274,8 +395,7 @@ export function InstallModuleWizard({
               onSubmit={handleConfigComplete}
               onBack={() => setStep('select-module')}
             />
-          )
-        )}
+          ))}
 
         {/* Step: Confirm */}
         {step === 'confirm' && selectedModule && (
@@ -326,8 +446,7 @@ function WizardProgress({ currentStep, hasConfig }: WizardProgressProps) {
           <div
             className="w-3 h-3 rounded-full"
             style={{
-              backgroundColor:
-                index <= currentIndex ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+              backgroundColor: index <= currentIndex ? 'rgb(var(--primary))' : 'rgb(var(--border))',
             }}
           />
           {index < steps.length - 1 && (
@@ -455,10 +574,7 @@ function ModuleSelector({ modules, type, onSelect }: ModuleSelectorProps) {
                       </span>
                     )}
                   </div>
-                  <p
-                    className="text-sm mt-1"
-                    style={{ color: 'rgb(var(--muted-foreground))' }}
-                  >
+                  <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
                     {module.metadata.description}
                   </p>
                   <div className="flex gap-1 mt-2">
@@ -494,7 +610,13 @@ interface InstallConfirmationProps {
   onBack: () => void
 }
 
-function InstallConfirmation({ module, config, error, onConfirm, onBack }: InstallConfirmationProps) {
+function InstallConfirmation({
+  module,
+  config,
+  error,
+  onConfirm,
+  onBack,
+}: InstallConfirmationProps) {
   return (
     <div className="install-confirmation">
       <h3 className="text-lg font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
@@ -502,7 +624,10 @@ function InstallConfirmation({ module, config, error, onConfirm, onBack }: Insta
       </h3>
 
       {/* Module Info */}
-      <div className="module-info p-4 rounded-lg mb-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+      <div
+        className="module-info p-4 rounded-lg mb-4"
+        style={{ backgroundColor: 'rgb(var(--secondary))' }}
+      >
         <h4 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
           {module.metadata.name}
         </h4>
@@ -513,7 +638,10 @@ function InstallConfirmation({ module, config, error, onConfirm, onBack }: Insta
 
       {/* Configuration Summary */}
       {Object.keys(config).length > 0 && (
-        <div className="config-summary p-4 rounded-lg mb-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+        <div
+          className="config-summary p-4 rounded-lg mb-4"
+          style={{ backgroundColor: 'rgb(var(--secondary))' }}
+        >
           <h5 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
             Configuration
           </h5>

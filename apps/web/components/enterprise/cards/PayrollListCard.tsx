@@ -1,9 +1,9 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/common'
-import { EmptyState } from '../EmptyState'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { formatAddress, formatUSD } from '@/lib/utils'
 import type { PayrollEntry } from '@/types'
+import { EmptyState } from '../EmptyState'
 
 interface PayrollListCardProps {
   entries: PayrollEntry[]
@@ -42,7 +42,13 @@ export function PayrollListCard({ entries, onEdit }: PayrollListCardProps) {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-sm border-b" style={{ color: 'rgb(var(--muted-foreground))', borderColor: 'rgb(var(--border))' }}>
+                <tr
+                  className="text-left text-sm border-b"
+                  style={{
+                    color: 'rgb(var(--muted-foreground))',
+                    borderColor: 'rgb(var(--border))',
+                  }}
+                >
                   <th className="pb-3 font-medium">Employee</th>
                   <th className="pb-3 font-medium">Amount</th>
                   <th className="pb-3 font-medium">Frequency</th>
@@ -56,7 +62,10 @@ export function PayrollListCard({ entries, onEdit }: PayrollListCardProps) {
                   <tr key={entry.id}>
                     <td className="py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
+                          style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                        >
                           {entry.recipient.slice(2, 4).toUpperCase()}
                         </div>
                         <code className="text-sm" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
@@ -68,9 +77,14 @@ export function PayrollListCard({ entries, onEdit }: PayrollListCardProps) {
                       <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                         {formatUSD(Number(entry.amount) / 10 ** entry.token.decimals)}
                       </span>
-                      <span className="ml-1" style={{ color: 'rgb(var(--muted-foreground))' }}>{entry.token.symbol}</span>
+                      <span className="ml-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                        {entry.token.symbol}
+                      </span>
                     </td>
-                    <td className="py-4 capitalize" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                    <td
+                      className="py-4 capitalize"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
                       {entry.frequency}
                     </td>
                     <td className="py-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
@@ -79,9 +93,16 @@ export function PayrollListCard({ entries, onEdit }: PayrollListCardProps) {
                     <td className="py-4">
                       <span
                         className="text-xs px-2 py-1 rounded-full"
-                        style={entry.status === 'active'
-                          ? { backgroundColor: 'rgb(var(--success) / 0.1)', color: 'rgb(var(--success))' }
-                          : { backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--foreground) / 0.8)' }
+                        style={
+                          entry.status === 'active'
+                            ? {
+                                backgroundColor: 'rgb(var(--success) / 0.1)',
+                                color: 'rgb(var(--success))',
+                              }
+                            : {
+                                backgroundColor: 'rgb(var(--secondary))',
+                                color: 'rgb(var(--foreground) / 0.8)',
+                              }
                         }
                       >
                         {entry.status}

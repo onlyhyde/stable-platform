@@ -3,15 +3,15 @@
  * Manages transaction lifecycle: unapproved → approved → signed → submitted → confirmed
  */
 
-import type { Address, Hex } from 'viem'
+import type { Hex } from 'viem'
 import type {
+  GasFeeEstimates,
+  TransactionControllerOptions,
+  TransactionControllerState,
+  TransactionMeta,
+  TransactionParams,
   TransactionStatus,
   TransactionType,
-  TransactionParams,
-  TransactionMeta,
-  TransactionControllerState,
-  TransactionControllerOptions,
-  GasFeeEstimates,
 } from './transactionController.types'
 
 type TransactionEventType =
@@ -130,10 +130,7 @@ export class TransactionController {
     }
 
     try {
-      const rawTx = await this.options.signTransaction(
-        txMeta.txParams.from,
-        txMeta.txParams
-      )
+      const rawTx = await this.options.signTransaction(txMeta.txParams.from, txMeta.txParams)
 
       const updated: TransactionMeta = {
         ...txMeta,
@@ -248,18 +245,14 @@ export class TransactionController {
    * Get transactions filtered by status
    */
   getTransactionsByStatus(status: TransactionStatus): TransactionMeta[] {
-    return Object.values(this.state.transactions).filter(
-      (tx) => tx.status === status
-    )
+    return Object.values(this.state.transactions).filter((tx) => tx.status === status)
   }
 
   /**
    * Get transactions filtered by origin
    */
   getTransactionsForOrigin(origin: string): TransactionMeta[] {
-    return Object.values(this.state.transactions).filter(
-      (tx) => tx.origin === origin
-    )
+    return Object.values(this.state.transactions).filter((tx) => tx.origin === origin)
   }
 
   /**
@@ -317,7 +310,7 @@ export class TransactionController {
   }
 
   private async estimateGasFees(txParams: TransactionParams): Promise<GasFeeEstimates> {
-    const gasLimit = txParams.gas ?? await this.options.estimateGas(txParams)
+    const gasLimit = txParams.gas ?? (await this.options.estimateGas(txParams))
     const gasPrice = await this.options.getGasPrice()
 
     return {

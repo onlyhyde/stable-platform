@@ -62,24 +62,43 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer className="border-t"
-            style={{
-              borderColor: 'rgb(var(--border))',
-              backgroundColor: 'rgb(var(--card))'
-            }}>
+    <footer
+      className="border-t"
+      style={{
+        borderColor: 'rgb(var(--border))',
+        backgroundColor: 'rgb(var(--card))',
+      }}
+    >
       {/* Main Footer */}
       <div className="py-12 px-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                   style={{ background: 'linear-gradient(135deg, rgb(var(--primary)), rgb(var(--primary-hover)))' }}>
-                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgb(var(--primary)), rgb(var(--primary-hover)))',
+                }}
+              >
+                <svg
+                  className="w-5 h-5 text-white"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
                 </svg>
               </div>
-              <span className="font-bold text-lg" style={{ color: 'rgb(var(--foreground))' }}>StableNet</span>
+              <span className="font-bold text-lg" style={{ color: 'rgb(var(--foreground))' }}>
+                StableNet
+              </span>
             </Link>
             <p className="text-sm mb-4 max-w-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
               The next generation smart account platform for secure and efficient crypto management.
@@ -104,7 +123,9 @@ export function Footer() {
 
           {/* Product Links */}
           <div>
-            <h3 className="font-semibold mb-4" style={{ color: 'rgb(var(--foreground))' }}>Product</h3>
+            <h3 className="font-semibold mb-4" style={{ color: 'rgb(var(--foreground))' }}>
+              Product
+            </h3>
             <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.name}>
@@ -122,7 +143,9 @@ export function Footer() {
 
           {/* Resources Links */}
           <div>
-            <h3 className="font-semibold mb-4" style={{ color: 'rgb(var(--foreground))' }}>Resources</h3>
+            <h3 className="font-semibold mb-4" style={{ color: 'rgb(var(--foreground))' }}>
+              Resources
+            </h3>
             <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
                 <li key={link.name}>
@@ -140,7 +163,9 @@ export function Footer() {
 
           {/* Company Links */}
           <div>
-            <h3 className="font-semibold mb-4" style={{ color: 'rgb(var(--foreground))' }}>Company</h3>
+            <h3 className="font-semibold mb-4" style={{ color: 'rgb(var(--foreground))' }}>
+              Company
+            </h3>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
@@ -158,7 +183,9 @@ export function Footer() {
 
           {/* Legal Links */}
           <div>
-            <h3 className="font-semibold mb-4" style={{ color: 'rgb(var(--foreground))' }}>Legal</h3>
+            <h3 className="font-semibold mb-4" style={{ color: 'rgb(var(--foreground))' }}>
+              Legal
+            </h3>
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.name}>
@@ -183,8 +210,13 @@ export function Footer() {
             &copy; {new Date().getFullYear()} StableNet. All rights reserved.
           </p>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'rgb(var(--success))' }} />
-            <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>All systems operational</span>
+            <span
+              className="w-2 h-2 rounded-full animate-pulse"
+              style={{ backgroundColor: 'rgb(var(--success))' }}
+            />
+            <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              All systems operational
+            </span>
           </div>
         </div>
       </div>

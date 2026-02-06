@@ -205,7 +205,7 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
     })
 
     // Metrics tracking hook
-    this.app.addHook('onResponse', (request, reply, done) => {
+    this.app.addHook('onResponse', (_request, reply, done) => {
       requestCount++
       if (reply.statusCode >= 400) {
         errorCount++

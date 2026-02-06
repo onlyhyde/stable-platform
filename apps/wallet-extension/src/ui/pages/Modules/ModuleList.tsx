@@ -111,17 +111,11 @@ function ModuleCard({ module, onClick }: ModuleCardProps) {
             <h4 className="font-medium truncate" style={{ color: 'rgb(var(--foreground))' }}>
               {module.metadata.name}
             </h4>
-            <span
-              className="text-xs flex items-center gap-1"
-              style={{ color: statusInfo.color }}
-            >
+            <span className="text-xs flex items-center gap-1" style={{ color: statusInfo.color }}>
               {statusInfo.icon} {statusInfo.label}
             </span>
           </div>
-          <p
-            className="text-sm truncate"
-            style={{ color: 'rgb(var(--muted-foreground))' }}
-          >
+          <p className="text-sm truncate" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {module.metadata.description}
           </p>
 

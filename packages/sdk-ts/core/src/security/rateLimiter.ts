@@ -241,9 +241,10 @@ export class RateLimiter {
     return {
       allowed: remaining > 0,
       remaining,
-      resetAt: activeTimestamps.length > 0
-        ? (activeTimestamps[0] || now) + config.windowMs
-        : now + config.windowMs,
+      resetAt:
+        activeTimestamps.length > 0
+          ? (activeTimestamps[0] || now) + config.windowMs
+          : now + config.windowMs,
     }
   }
 
@@ -360,8 +361,6 @@ export class RateLimiter {
 /**
  * Create a new RateLimiter instance
  */
-export function createRateLimiter(
-  customLimits?: Record<string, RateLimitConfig>
-): RateLimiter {
+export function createRateLimiter(customLimits?: Record<string, RateLimitConfig>): RateLimiter {
   return new RateLimiter(customLimits)
 }

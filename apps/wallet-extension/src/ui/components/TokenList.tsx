@@ -7,8 +7,8 @@
 
 import { useState } from 'react'
 import { useNetworkCurrency } from '../hooks'
-import type { TokenBalance } from '../hooks/useIndexerData'
 import type { AssetToken } from '../hooks/useAssets'
+import type { TokenBalance } from '../hooks/useIndexerData'
 
 interface TokenListProps {
   /** Native coin balance in wei */
@@ -34,7 +34,7 @@ interface TokenListProps {
 /**
  * Format balance for display
  */
-function formatBalance(balance: string | bigint, decimals: number = 18): string {
+function formatBalance(balance: string | bigint, decimals = 18): string {
   const value = typeof balance === 'bigint' ? balance : BigInt(balance || '0')
   const divisor = BigInt(10 ** decimals)
   const whole = value / divisor
@@ -127,10 +127,7 @@ export function TokenList({
     <div className="mt-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h3
-          className="text-sm font-medium"
-          style={{ color: 'rgb(var(--foreground-secondary))' }}
-        >
+        <h3 className="text-sm font-medium" style={{ color: 'rgb(var(--foreground-secondary))' }}>
           Assets
         </h3>
         <div className="flex items-center gap-2">
@@ -230,10 +227,7 @@ export function TokenList({
               const isHidden = 'isVisible' in token && token.isVisible === false
 
               return (
-                <div
-                  key={token.address}
-                  className="relative"
-                >
+                <div key={token.address} className="relative">
                   <button
                     type="button"
                     onClick={() => onTokenClick?.(token)}
@@ -251,7 +245,7 @@ export function TokenList({
                           className="w-8 h-8 rounded-full"
                           onError={(e) => {
                             // Fallback to letter icon on error
-                            (e.target as HTMLImageElement).style.display = 'none'
+                            ;(e.target as HTMLImageElement).style.display = 'none'
                           }}
                         />
                       ) : (
@@ -339,7 +333,12 @@ export function TokenList({
                       >
                         {isHidden ? (
                           <>
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -357,7 +356,12 @@ export function TokenList({
                           </>
                         ) : (
                           <>
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"

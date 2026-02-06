@@ -37,21 +37,26 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
           className="flex items-center mb-4 transition-colors"
           style={{ color: 'rgb(var(--muted-foreground))' }}
         >
-          <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-5 h-5 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back
         </button>
-        <h1
-          className="text-xl font-bold"
-          style={{ color: 'rgb(var(--foreground))' }}
-        >
+        <h1 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
           Secret Recovery Phrase
         </h1>
-        <p
-          className="mt-1"
-          style={{ color: 'rgb(var(--muted-foreground))' }}
-        >
+        <p className="mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
           Write down these {words.length} words in order and keep them safe
         </p>
       </div>
@@ -75,13 +80,15 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
             stroke="currentColor"
             aria-hidden="true"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
           </svg>
           <div className="text-sm">
-            <p
-              className="font-medium"
-              style={{ color: 'rgb(var(--destructive))' }}
-            >
+            <p className="font-medium" style={{ color: 'rgb(var(--destructive))' }}>
               NEVER share your recovery phrase
             </p>
             <p style={{ color: 'rgb(var(--destructive) / 0.8)' }}>
@@ -109,16 +116,10 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
                   border: '1px solid rgb(var(--border))',
                 }}
               >
-                <span
-                  className="text-xs w-4"
-                  style={{ color: 'rgb(var(--muted-foreground))' }}
-                >
+                <span className="text-xs w-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
                   {index + 1}.
                 </span>
-                <span
-                  className="text-sm font-medium"
-                  style={{ color: 'rgb(var(--foreground))' }}
-                >
+                <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                   {word}
                 </span>
               </div>
@@ -132,9 +133,25 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
                 onClick={() => setRevealed(true)}
                 variant="primary"
                 leftIcon={
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
                   </svg>
                 }
               >
@@ -154,15 +171,37 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
           >
             {copied ? (
               <>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 Copied!
               </>
             ) : (
               <>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
                 </svg>
                 Copy to clipboard
               </>
@@ -180,11 +219,7 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
           size="sm"
         />
 
-        <Button
-          onClick={onConfirm}
-          fullWidth
-          disabled={!revealed || !understood}
-        >
+        <Button onClick={onConfirm} fullWidth disabled={!revealed || !understood}>
           Continue
         </Button>
       </div>

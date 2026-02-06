@@ -40,16 +40,8 @@ export class BaseApiClient {
   /**
    * Make an API request
    */
-  protected async request<T>(
-    endpoint: string,
-    options: RequestOptions = {}
-  ): Promise<T> {
-    const {
-      method = 'GET',
-      headers = {},
-      body,
-      timeout = getDefaultTimeout(),
-    } = options
+  protected async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+    const { method = 'GET', headers = {}, body, timeout = getDefaultTimeout() } = options
 
     const url = `${this.baseUrl}${endpoint}`
 
@@ -102,35 +94,53 @@ export class BaseApiClient {
   /**
    * GET request
    */
-  protected get<T>(endpoint: string, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T> {
+  protected get<T>(
+    endpoint: string,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'GET' })
   }
 
   /**
    * POST request
    */
-  protected post<T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T> {
+  protected post<T>(
+    endpoint: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'POST', body })
   }
 
   /**
    * PUT request
    */
-  protected put<T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T> {
+  protected put<T>(
+    endpoint: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'PUT', body })
   }
 
   /**
    * DELETE request
    */
-  protected delete<T>(endpoint: string, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T> {
+  protected delete<T>(
+    endpoint: string,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' })
   }
 
   /**
    * PATCH request
    */
-  protected patch<T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T> {
+  protected patch<T>(
+    endpoint: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, 'method' | 'body'>
+  ): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'PATCH', body })
   }
 }

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback, useEffect, useMemo } from 'react'
-import { useAccount, useChainId, useWalletClient, usePublicClient } from 'wagmi'
-import type { Address, Hex, Hash } from 'viem'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Address, Hash, Hex } from 'viem'
+import { useAccount, useChainId, usePublicClient, useWalletClient } from 'wagmi'
 import { getContractAddresses } from '../lib/config'
 
 // Default fallback address for development
@@ -179,10 +179,7 @@ export interface UseSessionKeyReturn {
     txHash: Hash
   } | null>
   revokeSessionKey: (sessionKey: Address) => Promise<{ txHash: Hash } | null>
-  grantPermission: (
-    sessionKey: Address,
-    permission: Permission
-  ) => Promise<{ txHash: Hash } | null>
+  grantPermission: (sessionKey: Address, permission: Permission) => Promise<{ txHash: Hash } | null>
   revokePermission: (
     sessionKey: Address,
     target: Address,
@@ -191,11 +188,7 @@ export interface UseSessionKeyReturn {
 
   // Queries
   getSessionKeyState: (sessionKey: Address) => Promise<SessionKeyInfo | null>
-  checkPermission: (
-    sessionKey: Address,
-    target: Address,
-    selector: Hex
-  ) => Promise<boolean>
+  checkPermission: (sessionKey: Address, target: Address, selector: Hex) => Promise<boolean>
 
   // Helpers
   refresh: () => Promise<void>
@@ -252,7 +245,7 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
           bigint,
           bigint,
           boolean,
-          bigint
+          bigint,
         ]
 
         // Fetch permissions for this session key
@@ -387,7 +380,9 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
         // In production, this would be a full keypair with the private key stored securely
         const randomBytes = new Uint8Array(20)
         crypto.getRandomValues(randomBytes)
-        const sessionKey = `0x${Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('')}` as Address
+        const sessionKey = `0x${Array.from(randomBytes)
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('')}` as Address
 
         const expiry = params.expiry ?? BigInt(0)
         const spendingLimit = params.spendingLimit ?? BigInt(0)
@@ -463,10 +458,7 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
 
   // Grant permission to a session key
   const grantPermission = useCallback(
-    async (
-      sessionKey: Address,
-      permission: Permission
-    ): Promise<{ txHash: Hash } | null> => {
+    async (sessionKey: Address, permission: Permission): Promise<{ txHash: Hash } | null> => {
       if (!walletClient || !targetAccount) {
         setError('Wallet not connected')
         return null

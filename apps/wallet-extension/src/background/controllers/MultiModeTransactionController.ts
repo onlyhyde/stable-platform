@@ -7,27 +7,26 @@
  * Uses SDK's Strategy pattern for extensible transaction handling.
  */
 
-import type { Address, Hex, Hash } from 'viem'
 import {
-  createTransactionRouter,
-  type TransactionRouter,
-  type TransactionMode,
-  type MultiModeTransactionRequest,
-  type GasEstimate,
   type Account,
+  type GasEstimate,
+  type MultiModeTransactionRequest,
   TRANSACTION_MODE,
+  type TransactionMode,
+  type TransactionRouter,
+  createTransactionRouter,
   getAvailableTransactionModes,
   getDefaultTransactionMode,
 } from '@stablenet/core'
+import type { Address, Hex } from 'viem'
 import { createLogger } from '../../shared/utils/logger'
 import type {
+  ModeComparisonResult,
+  MultiModeTransactionControllerOptions,
+  MultiModeTransactionControllerState,
   MultiModeTransactionMeta,
   MultiModeTransactionParams,
-  MultiModeTransactionControllerState,
-  MultiModeTransactionControllerOptions,
   TransactionAccountInfo,
-  ModeComparisonResult,
-  PreparedMultiModeTransaction,
 } from './multiModeTransactionController.types'
 import type { TransactionStatus, TransactionType } from './transactionController.types'
 
@@ -332,10 +331,7 @@ export class MultiModeTransactionController {
 
       switch (txMeta.mode) {
         case TRANSACTION_MODE.EOA:
-          rawTx = await this.options.signTransaction(
-            txMeta.txParams.from,
-            txMeta.txParams
-          )
+          rawTx = await this.options.signTransaction(txMeta.txParams.from, txMeta.txParams)
           break
 
         case TRANSACTION_MODE.EIP7702:
@@ -345,22 +341,17 @@ export class MultiModeTransactionController {
               txMeta.txParams.from,
               txMeta.txParams.delegateTo as Hex // Authorization hash placeholder
             )
-            authorizationHash = `0x${authResult.r.slice(2)}${authResult.s.slice(2)}${authResult.v.toString(16).padStart(2, '0')}` as Hex
+            authorizationHash =
+              `0x${authResult.r.slice(2)}${authResult.s.slice(2)}${authResult.v.toString(16).padStart(2, '0')}` as Hex
           }
-          rawTx = await this.options.signTransaction(
-            txMeta.txParams.from,
-            txMeta.txParams
-          )
+          rawTx = await this.options.signTransaction(txMeta.txParams.from, txMeta.txParams)
           break
 
         case TRANSACTION_MODE.SMART_ACCOUNT:
           // For Smart Account, we sign the UserOperation hash
           // The actual UserOp is built by the SDK strategy
           userOpHash = await this.buildUserOpHash(txMeta)
-          const signature = await this.options.signUserOperation(
-            txMeta.txParams.from,
-            userOpHash
-          )
+          const signature = await this.options.signUserOperation(txMeta.txParams.from, userOpHash)
           // Store signature in rawTx for now
           rawTx = signature
           break
@@ -513,27 +504,21 @@ export class MultiModeTransactionController {
    * Get transactions filtered by status
    */
   getTransactionsByStatus(status: TransactionStatus): MultiModeTransactionMeta[] {
-    return Object.values(this.state.transactions).filter(
-      (tx) => tx.status === status
-    )
+    return Object.values(this.state.transactions).filter((tx) => tx.status === status)
   }
 
   /**
    * Get transactions filtered by mode
    */
   getTransactionsByMode(mode: TransactionMode): MultiModeTransactionMeta[] {
-    return Object.values(this.state.transactions).filter(
-      (tx) => tx.mode === mode
-    )
+    return Object.values(this.state.transactions).filter((tx) => tx.mode === mode)
   }
 
   /**
    * Get transactions filtered by origin
    */
   getTransactionsForOrigin(origin: string): MultiModeTransactionMeta[] {
-    return Object.values(this.state.transactions).filter(
-      (tx) => tx.origin === origin
-    )
+    return Object.values(this.state.transactions).filter((tx) => tx.origin === origin)
   }
 
   /**
@@ -727,7 +712,11 @@ export class MultiModeTransactionController {
     }
   }
 
-  private emit(event: TransactionEventType, transaction: MultiModeTransactionMeta, extra?: unknown): void {
+  private emit(
+    event: TransactionEventType,
+    transaction: MultiModeTransactionMeta,
+    extra?: unknown
+  ): void {
     const handlers = this.eventHandlers.get(event)
     if (handlers) {
       for (const handler of handlers) {

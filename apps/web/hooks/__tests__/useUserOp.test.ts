@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { useUserOp } from '../useUserOp'
+import { act, renderHook } from '@testing-library/react'
 import type { Address, Hex } from 'viem'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useUserOp } from '../useUserOp'
 
 // Mock the context provider
 const mockContext = {
@@ -21,7 +21,7 @@ describe('useUserOp', () => {
 
   describe('nonce fetching', () => {
     it('should fetch nonce from chain before building UserOp', async () => {
-      const mockNonce = '0x5'
+      const _mockNonce = '0x5'
       const mockGetNonce = vi.fn().mockResolvedValue(BigInt(5))
 
       vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -33,18 +33,17 @@ describe('useUserOp', () => {
         }),
       } as Response)
 
-      const { result } = renderHook(() => useUserOp({
-        getNonce: mockGetNonce,
-      }))
+      const { result } = renderHook(() =>
+        useUserOp({
+          getNonce: mockGetNonce,
+        })
+      )
 
       await act(async () => {
-        await result.current.sendUserOp(
-          '0x1234567890123456789012345678901234567890' as Address,
-          {
-            to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
-            data: '0x' as Hex,
-          }
-        )
+        await result.current.sendUserOp('0x1234567890123456789012345678901234567890' as Address, {
+          to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
+          data: '0x' as Hex,
+        })
       })
 
       // Should have called getNonce
@@ -81,19 +80,18 @@ describe('useUserOp', () => {
         }),
       } as Response)
 
-      const { result } = renderHook(() => useUserOp({
-        getNonce: mockGetNonce,
-        estimateGas: mockEstimateGas,
-      }))
+      const { result } = renderHook(() =>
+        useUserOp({
+          getNonce: mockGetNonce,
+          estimateGas: mockEstimateGas,
+        })
+      )
 
       await act(async () => {
-        await result.current.sendUserOp(
-          '0x1234567890123456789012345678901234567890' as Address,
-          {
-            to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
-            data: '0x12345678' as Hex,
-          }
-        )
+        await result.current.sendUserOp('0x1234567890123456789012345678901234567890' as Address, {
+          to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
+          data: '0x12345678' as Hex,
+        })
       })
 
       // Should have called estimateGas
@@ -128,20 +126,19 @@ describe('useUserOp', () => {
         }),
       } as Response)
 
-      const { result } = renderHook(() => useUserOp({
-        getNonce: mockGetNonce,
-        estimateGas: mockEstimateGas,
-        getGasPrice: mockGetGasPrice,
-      }))
+      const { result } = renderHook(() =>
+        useUserOp({
+          getNonce: mockGetNonce,
+          estimateGas: mockEstimateGas,
+          getGasPrice: mockGetGasPrice,
+        })
+      )
 
       await act(async () => {
-        await result.current.sendUserOp(
-          '0x1234567890123456789012345678901234567890' as Address,
-          {
-            to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
-            data: '0x' as Hex,
-          }
-        )
+        await result.current.sendUserOp('0x1234567890123456789012345678901234567890' as Address, {
+          to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
+          data: '0x' as Hex,
+        })
       })
 
       // Should have called getGasPrice
@@ -176,10 +173,12 @@ describe('useUserOp', () => {
         }),
       } as Response)
 
-      const { result } = renderHook(() => useUserOp({
-        getNonce: mockGetNonce,
-        estimateGas: mockEstimateGas,
-      }))
+      const { result } = renderHook(() =>
+        useUserOp({
+          getNonce: mockGetNonce,
+          estimateGas: mockEstimateGas,
+        })
+      )
 
       let opResult: unknown
       await act(async () => {
@@ -207,10 +206,12 @@ describe('useUserOp', () => {
 
       vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Network error'))
 
-      const { result } = renderHook(() => useUserOp({
-        getNonce: mockGetNonce,
-        estimateGas: mockEstimateGas,
-      }))
+      const { result } = renderHook(() =>
+        useUserOp({
+          getNonce: mockGetNonce,
+          estimateGas: mockEstimateGas,
+        })
+      )
 
       let opResult: unknown
       await act(async () => {
@@ -230,9 +231,11 @@ describe('useUserOp', () => {
     it('should handle nonce fetch errors', async () => {
       const mockGetNonce = vi.fn().mockRejectedValue(new Error('Failed to get nonce'))
 
-      const { result } = renderHook(() => useUserOp({
-        getNonce: mockGetNonce,
-      }))
+      const { result } = renderHook(() =>
+        useUserOp({
+          getNonce: mockGetNonce,
+        })
+      )
 
       let opResult: unknown
       await act(async () => {
@@ -268,10 +271,12 @@ describe('useUserOp', () => {
         }),
       } as Response)
 
-      const { result } = renderHook(() => useUserOp({
-        getNonce: mockGetNonce,
-        estimateGas: mockEstimateGas,
-      }))
+      const { result } = renderHook(() =>
+        useUserOp({
+          getNonce: mockGetNonce,
+          estimateGas: mockEstimateGas,
+        })
+      )
 
       await act(async () => {
         await result.current.sendTransaction(
@@ -308,20 +313,19 @@ describe('useUserOp', () => {
         }),
       } as Response)
 
-      const { result } = renderHook(() => useUserOp({
-        getNonce: mockGetNonce,
-        estimateGas: mockEstimateGas,
-        signUserOp: mockSignUserOp,
-      }))
+      const { result } = renderHook(() =>
+        useUserOp({
+          getNonce: mockGetNonce,
+          estimateGas: mockEstimateGas,
+          signUserOp: mockSignUserOp,
+        })
+      )
 
       await act(async () => {
-        await result.current.sendUserOp(
-          '0x1234567890123456789012345678901234567890' as Address,
-          {
-            to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
-            data: '0x' as Hex,
-          }
-        )
+        await result.current.sendUserOp('0x1234567890123456789012345678901234567890' as Address, {
+          to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
+          data: '0x' as Hex,
+        })
       })
 
       expect(mockSignUserOp).toHaveBeenCalled()

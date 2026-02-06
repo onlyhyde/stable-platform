@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Expense } from '@/types'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface ExpenseFilter {
   status?: 'pending' | 'approved' | 'rejected' | 'paid'
@@ -58,7 +58,7 @@ export function useExpenses(config: UseExpensesConfig = {}): UseExpensesReturn {
   const expenses = useMemo(() => {
     if (!filter) return allExpenses
 
-    return allExpenses.filter(expense => {
+    return allExpenses.filter((expense) => {
       if (filter.status && expense.status !== filter.status) return false
       if (filter.category && expense.category !== filter.category) return false
       if (filter.submitter && expense.submitter !== filter.submitter) return false

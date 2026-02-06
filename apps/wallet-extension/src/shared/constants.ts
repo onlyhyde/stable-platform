@@ -112,7 +112,10 @@ export const RPC_ERRORS = {
   UNAUTHORIZED: { code: 4100, message: 'The requested account has not been authorized' },
   UNSUPPORTED_METHOD: { code: 4200, message: 'The requested method is not supported' },
   DISCONNECTED: { code: 4900, message: 'The provider is disconnected from all chains' },
-  CHAIN_DISCONNECTED: { code: 4901, message: 'The provider is disconnected from the specified chain' },
+  CHAIN_DISCONNECTED: {
+    code: 4901,
+    message: 'The provider is disconnected from the specified chain',
+  },
 } as const
 
 /**

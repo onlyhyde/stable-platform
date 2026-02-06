@@ -14,8 +14,7 @@ export const SignatureMethod = {
   ETH_SIGN_TYPED_DATA_V4: 'eth_signTypedData_v4',
 } as const
 
-export type SignatureMethodType =
-  (typeof SignatureMethod)[keyof typeof SignatureMethod]
+export type SignatureMethodType = (typeof SignatureMethod)[keyof typeof SignatureMethod]
 
 /**
  * Risk level enumeration
@@ -28,8 +27,7 @@ export const SignatureRiskLevel = {
   CRITICAL: 'critical',
 } as const
 
-export type SignatureRiskLevelType =
-  (typeof SignatureRiskLevel)[keyof typeof SignatureRiskLevel]
+export type SignatureRiskLevelType = (typeof SignatureRiskLevel)[keyof typeof SignatureRiskLevel]
 
 /**
  * Risk type enumeration
@@ -44,8 +42,7 @@ export const SignatureRiskType = {
   LEGACY_FORMAT: 'legacy_format',
 } as const
 
-export type SignatureRiskTypeValue =
-  (typeof SignatureRiskType)[keyof typeof SignatureRiskType]
+export type SignatureRiskTypeValue = (typeof SignatureRiskType)[keyof typeof SignatureRiskType]
 
 /**
  * EIP-712 Typed Data structure
@@ -84,8 +81,7 @@ export interface SignatureRiskResult {
 /**
  * Max uint256 value (unlimited approval)
  */
-const MAX_UINT256 =
-  '115792089237316195423570985008687907853269984665640564039457584007913129639935'
+const MAX_UINT256 = '115792089237316195423570985008687907853269984665640564039457584007913129639935'
 
 /**
  * Dangerous keywords in messages
@@ -120,10 +116,7 @@ export class SignatureRiskAnalyzer {
   /**
    * Analyze a signature request
    */
-  analyzeSignature(
-    method: SignatureMethodType,
-    data: string
-  ): SignatureRiskResult {
+  analyzeSignature(method: SignatureMethodType, data: string): SignatureRiskResult {
     switch (method) {
       case SignatureMethod.ETH_SIGN:
         return this.analyzeEthSign(data)
@@ -139,16 +132,19 @@ export class SignatureRiskAnalyzer {
         return this.analyzeTypedDataV4(data, method)
 
       default:
-        return this.createResult(method, SignatureRiskLevel.MEDIUM, [], [
-          'Unknown signature method',
-        ])
+        return this.createResult(
+          method,
+          SignatureRiskLevel.MEDIUM,
+          [],
+          ['Unknown signature method']
+        )
     }
   }
 
   /**
    * Analyze eth_sign (blind signing - always dangerous)
    */
-  private analyzeEthSign(data: string): SignatureRiskResult {
+  private analyzeEthSign(_data: string): SignatureRiskResult {
     const warnings = [
       'eth_sign signs arbitrary data without human-readable context',
       'This method can be used to sign malicious transactions',
@@ -186,19 +182,13 @@ export class SignatureRiskAnalyzer {
       }
     }
 
-    return this.createResult(
-      SignatureMethod.PERSONAL_SIGN,
-      riskLevel,
-      riskTypes,
-      warnings,
-      {
-        decodedMessage,
-        summary:
-          riskLevel === SignatureRiskLevel.LOW
-            ? 'Low risk: Signing a text message for authentication or verification.'
-            : 'Medium risk: Message contains potentially dangerous content.',
-      }
-    )
+    return this.createResult(SignatureMethod.PERSONAL_SIGN, riskLevel, riskTypes, warnings, {
+      decodedMessage,
+      summary:
+        riskLevel === SignatureRiskLevel.LOW
+          ? 'Low risk: Signing a text message for authentication or verification.'
+          : 'Medium risk: Message contains potentially dangerous content.',
+    })
   }
 
   /**
@@ -221,8 +211,7 @@ export class SignatureRiskAnalyzer {
       riskTypes,
       warnings,
       {
-        summary:
-          'Medium risk: Using legacy typed data format. Consider upgrading to v4.',
+        summary: 'Medium risk: Using legacy typed data format. Consider upgrading to v4.',
       }
     )
   }
@@ -230,10 +219,7 @@ export class SignatureRiskAnalyzer {
   /**
    * Analyze EIP-712 typed data v4
    */
-  private analyzeTypedDataV4(
-    data: string,
-    method: SignatureMethodType
-  ): SignatureRiskResult {
+  private analyzeTypedDataV4(data: string, method: SignatureMethodType): SignatureRiskResult {
     const warnings: string[] = []
     const riskTypes: SignatureRiskTypeValue[] = []
     let riskLevel: SignatureRiskLevelType = SignatureRiskLevel.LOW
@@ -244,19 +230,21 @@ export class SignatureRiskAnalyzer {
     try {
       parsedTypedData = JSON.parse(data) as EIP712TypedData
     } catch {
-      return this.createResult(method, SignatureRiskLevel.HIGH, [
-        SignatureRiskType.MALFORMED_DATA,
-      ], ['Could not parse typed data'], {
-        summary: 'High risk: Could not parse the typed data structure.',
-      })
+      return this.createResult(
+        method,
+        SignatureRiskLevel.HIGH,
+        [SignatureRiskType.MALFORMED_DATA],
+        ['Could not parse typed data'],
+        {
+          summary: 'High risk: Could not parse the typed data structure.',
+        }
+      )
     }
 
     // Extract contract interaction info
     if (parsedTypedData.domain) {
       contractInteraction = {
-        verifyingContract: parsedTypedData.domain.verifyingContract as
-          | string
-          | undefined,
+        verifyingContract: parsedTypedData.domain.verifyingContract as string | undefined,
       }
     }
 
@@ -312,7 +300,7 @@ export class SignatureRiskAnalyzer {
         const hex = data.slice(2)
         let str = ''
         for (let i = 0; i < hex.length; i += 2) {
-          const charCode = parseInt(hex.substr(i, 2), 16)
+          const charCode = Number.parseInt(hex.substr(i, 2), 16)
           str += String.fromCharCode(charCode)
         }
         return str
@@ -360,9 +348,7 @@ export class SignatureRiskAnalyzer {
       riskScore: RISK_SCORES[riskLevel],
       riskTypes,
       warnings,
-      summary:
-        extra.summary ||
-        `${riskLevel.toUpperCase()} risk signature request.`,
+      summary: extra.summary || `${riskLevel.toUpperCase()} risk signature request.`,
       ...extra,
     }
   }

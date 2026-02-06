@@ -70,7 +70,7 @@ export interface AuthorizationSignatureResult {
  * Legacy EIP7702_CONSTANTS for backwards compatibility
  * @deprecated Use individual exports (ZERO_ADDRESS, DELEGATION_PREFIX, etc.) instead
  */
-import { EIP7702_MAGIC, DELEGATION_PREFIX, ZERO_ADDRESS } from '@stablenet/core'
+import { DELEGATION_PREFIX, EIP7702_MAGIC, ZERO_ADDRESS } from '@stablenet/core'
 export const EIP7702_CONSTANTS = {
   /** Magic byte for authorization hash (0x05) */
   MAGIC_BYTE: EIP7702_MAGIC,

@@ -1,16 +1,16 @@
-import { BaseApiClient } from './baseApi'
 import { getApiConfig } from '../../config'
 import type {
   BankAccount,
+  BankAccountListResponse,
   BankTransfer,
+  BankTransferListResponse,
   CreateBankAccountRequest,
   CreateBankAccountResponse,
+  FreezeAccountRequest,
   TransferFundsRequest,
   TransferFundsResponse,
-  FreezeAccountRequest,
-  BankAccountListResponse,
-  BankTransferListResponse,
 } from '../../types'
+import { BaseApiClient } from './baseApi'
 
 /**
  * Bank Simulator API Client
@@ -65,9 +65,7 @@ export class BankApiClient extends BaseApiClient {
    * Get transfer history for an account
    */
   async getTransferHistory(accountNo: string): Promise<BankTransfer[]> {
-    const response = await this.get<BankTransferListResponse>(
-      `/accounts/${accountNo}/transfers`
-    )
+    const response = await this.get<BankTransferListResponse>(`/accounts/${accountNo}/transfers`)
     return response.transfers
   }
 
@@ -81,10 +79,7 @@ export class BankApiClient extends BaseApiClient {
   /**
    * Freeze an account
    */
-  async freezeAccount(
-    accountNo: string,
-    data?: FreezeAccountRequest
-  ): Promise<BankAccount> {
+  async freezeAccount(accountNo: string, data?: FreezeAccountRequest): Promise<BankAccount> {
     return this.post<BankAccount>(`/accounts/${accountNo}/freeze`, data)
   }
 

@@ -3,16 +3,19 @@
  * TDD tests for comprehensive input validation
  */
 
+// Unmock to test real implementation
+jest.unmock('@stablenet/core')
+
 import {
   InputValidator,
-  ValidationResult,
-  isValidAddress,
+  type InputValidationResult as ValidationResult,
+  isValidInputAddress as isValidAddress,
   isValidHex,
   isValidChainId,
   isValidTransactionObject,
   isValidRpcRequest,
   sanitizeString,
-} from '../../../src/shared/security/inputValidator'
+} from '@stablenet/core'
 
 describe('InputValidator', () => {
   let validator: InputValidator

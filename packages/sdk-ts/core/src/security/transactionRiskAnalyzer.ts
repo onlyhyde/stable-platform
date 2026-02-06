@@ -141,8 +141,7 @@ const DANGEROUS_SELECTORS = {
 /**
  * Max uint256 value (unlimited approval)
  */
-const MAX_UINT256 =
-  '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
 
 /**
  * Zero address
@@ -216,15 +215,15 @@ export class TransactionRiskAnalyzer {
     if (value > 0n) {
       if (value >= VALUE_THRESHOLDS.CRITICAL) {
         riskTypes.push(TransactionRiskType.HIGH_VALUE)
-        warnings.push(`Very high value transaction (≥100 ETH equivalent)`)
+        warnings.push('Very high value transaction (≥100 ETH equivalent)')
         upgradeRisk(TransactionRiskLevel.CRITICAL)
       } else if (value >= VALUE_THRESHOLDS.HIGH) {
         riskTypes.push(TransactionRiskType.HIGH_VALUE)
-        warnings.push(`High value transaction (≥10 ETH equivalent)`)
+        warnings.push('High value transaction (≥10 ETH equivalent)')
         upgradeRisk(TransactionRiskLevel.HIGH)
       } else if (value >= VALUE_THRESHOLDS.MEDIUM) {
         riskTypes.push(TransactionRiskType.HIGH_VALUE)
-        warnings.push(`Moderate value transaction (≥1 ETH equivalent)`)
+        warnings.push('Moderate value transaction (≥1 ETH equivalent)')
         upgradeRisk(TransactionRiskLevel.MEDIUM)
       }
     }
@@ -352,7 +351,7 @@ export class TransactionRiskAnalyzer {
     // approve(address,uint256) - amount is last 32 bytes
     if (data.length < 74) return false // 10 + 64 = 74 (selector + address + amount)
 
-    const amountHex = '0x' + data.slice(74, 138)
+    const amountHex = `0x${data.slice(74, 138)}`
     return amountHex.toLowerCase() === MAX_UINT256.toLowerCase()
   }
 

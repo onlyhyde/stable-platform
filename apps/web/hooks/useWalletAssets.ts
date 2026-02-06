@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAccount, useChainId } from 'wagmi'
+import { getNativeCurrencySymbol } from '@stablenet/wallet-sdk'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
 import { formatUnits } from 'viem'
-import { getNativeCurrencySymbol } from '@stablenet/wallet-sdk'
+import { useAccount, useChainId } from 'wagmi'
 
 /**
  * Token asset from wallet
@@ -88,7 +88,9 @@ export interface UseWalletAssetsResult {
 /**
  * Get provider from window.ethereum
  */
-function getProvider(): { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> } | null {
+function getProvider(): {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+} | null {
   if (typeof window === 'undefined') return null
   const ethereum = (window as { ethereum?: { request?: Function } }).ethereum
   if (!ethereum?.request) return null
@@ -168,10 +170,10 @@ export function useWalletAssets(): UseWalletAssetsResult {
     if (!provider) return null
 
     try {
-      const result = await provider.request({
+      const result = (await provider.request({
         method: 'wallet_getAssets',
         params: [],
-      }) as WalletAssetsResponse
+      })) as WalletAssetsResponse
 
       return result
     } catch (err) {
@@ -191,14 +193,14 @@ export function useWalletAssets(): UseWalletAssetsResult {
 
     try {
       // Get chain ID
-      const chainIdHex = await provider.request({ method: 'eth_chainId' }) as string
-      const currentChainId = parseInt(chainIdHex, 16)
+      const chainIdHex = (await provider.request({ method: 'eth_chainId' })) as string
+      const currentChainId = Number.parseInt(chainIdHex, 16)
 
       // Get native balance
-      const balanceHex = await provider.request({
+      const balanceHex = (await provider.request({
         method: 'eth_getBalance',
         params: [address, 'latest'],
-      }) as string
+      })) as string
       const balance = BigInt(balanceHex || '0')
 
       const symbol = getNativeCurrencySymbol(currentChainId)
@@ -261,36 +263,39 @@ export function useWalletAssets(): UseWalletAssetsResult {
   /**
    * Add a custom token
    */
-  const addToken = useCallback(async (params: AddTokenParams): Promise<AddTokenResult> => {
-    const provider = getProvider()
-    if (!provider) {
-      return { success: false, error: 'No provider available' }
-    }
-
-    if (!isSupported) {
-      return { success: false, error: 'Wallet does not support wallet_addToken' }
-    }
-
-    try {
-      const result = await provider.request({
-        method: 'wallet_addToken',
-        params: [params],
-      }) as { success: boolean; token?: WalletToken; error?: string }
-
-      if (result.success) {
-        // Refresh assets to include the new token
-        await fetchAssets()
+  const addToken = useCallback(
+    async (params: AddTokenParams): Promise<AddTokenResult> => {
+      const provider = getProvider()
+      if (!provider) {
+        return { success: false, error: 'No provider available' }
       }
 
-      return result
-    } catch (err) {
-      console.error('[useWalletAssets] wallet_addToken error:', err)
-      return {
-        success: false,
-        error: (err as Error).message || 'Failed to add token',
+      if (!isSupported) {
+        return { success: false, error: 'Wallet does not support wallet_addToken' }
       }
-    }
-  }, [isSupported, fetchAssets])
+
+      try {
+        const result = (await provider.request({
+          method: 'wallet_addToken',
+          params: [params],
+        })) as { success: boolean; token?: WalletToken; error?: string }
+
+        if (result.success) {
+          // Refresh assets to include the new token
+          await fetchAssets()
+        }
+
+        return result
+      } catch (err) {
+        console.error('[useWalletAssets] wallet_addToken error:', err)
+        return {
+          success: false,
+          error: (err as Error).message || 'Failed to add token',
+        }
+      }
+    },
+    [isSupported, fetchAssets]
+  )
 
   // Check wallet support on mount
   useEffect(() => {
@@ -331,7 +336,6 @@ export function useWalletAssets(): UseWalletAssetsResult {
     if (!ethereum.ethereum?.on) return
 
     const handleAssetsChanged = () => {
-      console.log('[useWalletAssets] Assets changed event received')
       fetchAssets()
     }
 

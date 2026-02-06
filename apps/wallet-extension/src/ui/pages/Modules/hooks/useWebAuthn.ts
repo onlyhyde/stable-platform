@@ -1,9 +1,5 @@
-import { useState, useCallback } from 'react'
-import {
-  encodeWebAuthnSignature,
-  type WebAuthnSignatureData,
-  type WebAuthnValidatorConfig,
-} from '@stablenet/core'
+import { type WebAuthnSignatureData, encodeWebAuthnSignature } from '@stablenet/core'
+import { useCallback, useState } from 'react'
 import type { Hex } from 'viem'
 
 // ============================================================================
@@ -44,9 +40,7 @@ export function useWebAuthn(options: UseWebAuthnOptions = {}): UseWebAuthnReturn
   const [error, setError] = useState<string | null>(null)
 
   const isSupported =
-    typeof window !== 'undefined' &&
-    !!window.PublicKeyCredential &&
-    !!navigator.credentials
+    typeof window !== 'undefined' && !!window.PublicKeyCredential && !!navigator.credentials
 
   const sign = useCallback(
     async (challenge: Uint8Array, credentialId?: Hex): Promise<Hex> => {
@@ -128,7 +122,7 @@ function hexToUint8Array(hex: string): Uint8Array<ArrayBuffer> {
   const buffer = new ArrayBuffer(cleanHex.length / 2)
   const bytes = new Uint8Array(buffer)
   for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16)
+    bytes[i] = Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16)
   }
   return bytes
 }
@@ -150,16 +144,22 @@ function parseAssertionResponse(
   _challenge: Uint8Array
 ): WebAuthnSignatureData {
   // Get authenticator data - ensure we have ArrayBuffer
-  const authDataBuffer = response.authenticatorData instanceof ArrayBuffer
-    ? response.authenticatorData
-    : (response.authenticatorData as unknown as { buffer: ArrayBuffer }).buffer
-  const authenticatorData = uint8ArrayToHex(new Uint8Array(authDataBuffer) as Uint8Array<ArrayBuffer>)
+  const authDataBuffer =
+    response.authenticatorData instanceof ArrayBuffer
+      ? response.authenticatorData
+      : (response.authenticatorData as unknown as { buffer: ArrayBuffer }).buffer
+  const authenticatorData = uint8ArrayToHex(
+    new Uint8Array(authDataBuffer) as Uint8Array<ArrayBuffer>
+  )
 
   // Get client data JSON - ensure we have ArrayBuffer
-  const clientDataBuffer = response.clientDataJSON instanceof ArrayBuffer
-    ? response.clientDataJSON
-    : (response.clientDataJSON as unknown as { buffer: ArrayBuffer }).buffer
-  const clientDataJSON = uint8ArrayToHex(new Uint8Array(clientDataBuffer) as Uint8Array<ArrayBuffer>)
+  const clientDataBuffer =
+    response.clientDataJSON instanceof ArrayBuffer
+      ? response.clientDataJSON
+      : (response.clientDataJSON as unknown as { buffer: ArrayBuffer }).buffer
+  const clientDataJSON = uint8ArrayToHex(
+    new Uint8Array(clientDataBuffer) as Uint8Array<ArrayBuffer>
+  )
 
   // Parse client data to find challenge and type indices
   const clientDataStr = new TextDecoder().decode(response.clientDataJSON)
@@ -169,9 +169,10 @@ function parseAssertionResponse(
   const typeIndex = clientDataStr.indexOf('"type"')
 
   // Parse signature (DER encoded -> r, s) - ensure we have ArrayBuffer
-  const sigBuffer = response.signature instanceof ArrayBuffer
-    ? response.signature
-    : (response.signature as unknown as { buffer: ArrayBuffer }).buffer
+  const sigBuffer =
+    response.signature instanceof ArrayBuffer
+      ? response.signature
+      : (response.signature as unknown as { buffer: ArrayBuffer }).buffer
   const { r, s } = parseDERSignature(new Uint8Array(sigBuffer) as Uint8Array<ArrayBuffer>)
 
   return {

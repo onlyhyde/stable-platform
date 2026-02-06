@@ -1,7 +1,7 @@
 'use client'
 
+import { Button, Card, CardContent, CardDescription, CardTitle, Input } from '@/components/common'
 import { useState } from 'react'
-import { Card, CardContent, CardTitle, CardDescription, Button, Input } from '@/components/common'
 
 interface AccountSettingsCardProps {
   isConnected: boolean
@@ -9,7 +9,11 @@ interface AccountSettingsCardProps {
   onDisconnect: () => void
 }
 
-export function AccountSettingsCard({ isConnected, address, onDisconnect }: AccountSettingsCardProps) {
+export function AccountSettingsCard({
+  isConnected,
+  address,
+  onDisconnect,
+}: AccountSettingsCardProps) {
   const [accountName, setAccountName] = useState('My Account')
 
   const formatAddress = (addr: string) => {
@@ -30,15 +34,25 @@ export function AccountSettingsCard({ isConnected, address, onDisconnect }: Acco
 
           {isConnected && address ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-4 p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+              <div
+                className="flex items-center gap-4 p-4 rounded-lg"
+                style={{ backgroundColor: 'rgb(var(--secondary))' }}
+              >
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                   <span className="text-white font-bold text-lg">
                     {accountName.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{accountName}</p>
-                  <p className="text-sm font-mono" style={{ color: 'rgb(var(--muted-foreground))' }}>{formatAddress(address)}</p>
+                  <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                    {accountName}
+                  </p>
+                  <p
+                    className="text-sm font-mono"
+                    style={{ color: 'rgb(var(--muted-foreground))' }}
+                  >
+                    {formatAddress(address)}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -47,7 +61,13 @@ export function AccountSettingsCard({ isConnected, address, onDisconnect }: Acco
                   style={{ color: 'rgb(var(--muted-foreground))' }}
                   title="Copy address"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -68,15 +88,29 @@ export function AccountSettingsCard({ isConnected, address, onDisconnect }: Acco
               </div>
 
               <div className="pt-4 border-t" style={{ borderColor: 'rgb(var(--border))' }}>
-                <Button variant="secondary" onClick={onDisconnect} style={{ color: 'rgb(var(--destructive))' }}>
+                <Button
+                  variant="secondary"
+                  onClick={onDisconnect}
+                  style={{ color: 'rgb(var(--destructive))' }}
+                >
                   Disconnect Wallet
                 </Button>
               </div>
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-                <svg className="w-8 h-8" style={{ color: 'rgb(var(--muted-foreground))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ backgroundColor: 'rgb(var(--secondary))' }}
+              >
+                <svg
+                  className="w-8 h-8"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -85,7 +119,9 @@ export function AccountSettingsCard({ isConnected, address, onDisconnect }: Acco
                   />
                 </svg>
               </div>
-              <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>No wallet connected</p>
+              <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                No wallet connected
+              </p>
               <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}>
                 Connect a wallet to manage your account settings
               </p>
@@ -98,21 +134,43 @@ export function AccountSettingsCard({ isConnected, address, onDisconnect }: Acco
         <CardContent className="py-6">
           <CardTitle className="mb-4">Smart Account</CardTitle>
           <CardDescription className="mb-6">
-            Your smart account provides enhanced features like gas sponsorship and batch transactions.
+            Your smart account provides enhanced features like gas sponsorship and batch
+            transactions.
           </CardDescription>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Account Type</span>
-              <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>Kernel v3 (ERC-4337)</span>
+            <div
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: 'rgb(var(--secondary))' }}
+            >
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Account Type
+              </span>
+              <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                Kernel v3 (ERC-4337)
+              </span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Deployment Status</span>
-              <span className="text-sm font-medium" style={{ color: 'rgb(var(--success))' }}>Deployed</span>
+            <div
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: 'rgb(var(--secondary))' }}
+            >
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Deployment Status
+              </span>
+              <span className="text-sm font-medium" style={{ color: 'rgb(var(--success))' }}>
+                Deployed
+              </span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Modules</span>
-              <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>ECDSA Validator</span>
+            <div
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: 'rgb(var(--secondary))' }}
+            >
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Modules
+              </span>
+              <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                ECDSA Validator
+              </span>
             </div>
           </div>
         </CardContent>

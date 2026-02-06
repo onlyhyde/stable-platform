@@ -44,14 +44,20 @@ interface ToggleCardProps {
 
 export function ToggleCard({ title, description, checked, onChange, disabled }: ToggleCardProps) {
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl border"
-         style={{
-           backgroundColor: 'rgb(var(--card))',
-           borderColor: 'rgb(var(--border))',
-         }}>
+    <div
+      className="flex items-center justify-between p-4 rounded-xl border"
+      style={{
+        backgroundColor: 'rgb(var(--card))',
+        borderColor: 'rgb(var(--border))',
+      }}
+    >
       <div>
-        <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{title}</p>
-        <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{description}</p>
+        <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+          {title}
+        </p>
+        <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          {description}
+        </p>
       </div>
       <Toggle checked={checked} onChange={onChange} disabled={disabled} />
     </div>

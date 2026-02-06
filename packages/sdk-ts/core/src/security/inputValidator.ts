@@ -196,7 +196,8 @@ export class InputValidator {
     return {
       isValid: errors.length === 0,
       errors,
-      normalizedValue: errors.length === 0 ? (hasPrefix ? hex : `0x${hex}`).toLowerCase() : undefined,
+      normalizedValue:
+        errors.length === 0 ? (hasPrefix ? hex : `0x${hex}`).toLowerCase() : undefined,
     }
   }
 
@@ -211,9 +212,9 @@ export class InputValidator {
     if (typeof chainId === 'string') {
       // Try hex format
       if (chainId.startsWith('0x')) {
-        normalizedValue = parseInt(chainId, 16)
+        normalizedValue = Number.parseInt(chainId, 16)
       } else {
-        normalizedValue = parseInt(chainId, 10)
+        normalizedValue = Number.parseInt(chainId, 10)
       }
     } else if (typeof chainId === 'number') {
       normalizedValue = chainId
@@ -225,7 +226,7 @@ export class InputValidator {
     }
 
     // Check if parsing succeeded
-    if (isNaN(normalizedValue)) {
+    if (Number.isNaN(normalizedValue)) {
       return {
         isValid: false,
         errors: ['Invalid chain ID format'],
@@ -383,6 +384,7 @@ export class InputValidator {
     let result = input
 
     // Remove null bytes
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: intentionally removing null bytes for security
     result = result.replace(/\x00/g, '')
 
     // Trim whitespace

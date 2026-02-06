@@ -5,13 +5,13 @@
  * Handle calls to unsupported functions.
  */
 
-import type { Address } from 'viem'
 import { MODULE_TYPE } from '@stablenet/sdk-types'
+import type { Address } from 'viem'
 import {
-  type ModuleRegistryEntry,
-  createModuleEntry,
   DEFAULT_SUPPORTED_CHAINS,
+  type ModuleRegistryEntry,
   SUPPORTED_CHAIN_IDS,
+  createModuleEntry,
 } from './types'
 
 // ============================================================================
@@ -53,6 +53,4 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 /**
  * All built-in fallback modules
  */
-export const FALLBACK_MODULES: ModuleRegistryEntry[] = [
-  TOKEN_RECEIVER_FALLBACK,
-]
+export const FALLBACK_MODULES: ModuleRegistryEntry[] = [TOKEN_RECEIVER_FALLBACK]

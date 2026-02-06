@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/common'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import type { Pool } from '@/types'
 
 interface AvailablePoolsCardProps {
@@ -18,7 +18,10 @@ export function AvailablePoolsCard({ pools, onAddLiquidity }: AvailablePoolsCard
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="text-left text-sm border-b" style={{ color: 'rgb(var(--muted-foreground))', borderColor: 'rgb(var(--border))' }}>
+              <tr
+                className="text-left text-sm border-b"
+                style={{ color: 'rgb(var(--muted-foreground))', borderColor: 'rgb(var(--border))' }}
+              >
                 <th className="pb-3 font-medium">Pool</th>
                 <th className="pb-3 font-medium">TVL</th>
                 <th className="pb-3 font-medium">APR</th>
@@ -32,10 +35,16 @@ export function AvailablePoolsCard({ pools, onAddLiquidity }: AvailablePoolsCard
                   <td className="py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex -space-x-2">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
+                          style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                        >
                           {pool.token0.symbol[0]}
                         </div>
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium"
+                          style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                        >
                           {pool.token1.symbol[0]}
                         </div>
                       </div>
@@ -56,11 +65,7 @@ export function AvailablePoolsCard({ pools, onAddLiquidity }: AvailablePoolsCard
                     {pool.fee}%
                   </td>
                   <td className="py-4 text-right">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => onAddLiquidity(pool)}
-                    >
+                    <Button variant="secondary" size="sm" onClick={() => onAddLiquidity(pool)}>
                       Add
                     </Button>
                   </td>

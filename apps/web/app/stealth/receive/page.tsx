@@ -1,9 +1,9 @@
 'use client'
 
+import { ConnectWalletCard, PageHeader } from '@/components/common'
+import { IncomingPaymentsCard, StealthMetaAddressCard } from '@/components/stealth'
+import { useStealth, useWallet } from '@/hooks'
 import { useState } from 'react'
-import { useWallet, useStealth } from '@/hooks'
-import { PageHeader, ConnectWalletCard } from '@/components/common'
-import { StealthMetaAddressCard, IncomingPaymentsCard } from '@/components/stealth'
 
 export default function StealthReceivePage() {
   const { isConnected } = useWallet()
@@ -33,9 +33,7 @@ export default function StealthReceivePage() {
   }
 
   if (!isConnected) {
-    return (
-      <ConnectWalletCard message="Please connect your wallet to receive privately" />
-    )
+    return <ConnectWalletCard message="Please connect your wallet to receive privately" />
   }
 
   return (
@@ -66,7 +64,9 @@ export default function StealthReceivePage() {
             borderColor: 'rgb(var(--destructive) / 0.3)',
           }}
         >
-          <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error.message}</p>
+          <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
+            {error.message}
+          </p>
         </div>
       )}
     </div>

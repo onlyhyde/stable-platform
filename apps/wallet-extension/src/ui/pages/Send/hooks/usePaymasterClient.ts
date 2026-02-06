@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import type { SponsorPolicy, SupportedToken } from '@stablenet/core'
+import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
-import type { SupportedToken, SponsorPolicy } from '@stablenet/core'
 import { useSelectedNetwork } from '../../../hooks'
 
 interface ERC20Estimate {

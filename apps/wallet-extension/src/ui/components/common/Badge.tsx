@@ -20,12 +20,7 @@ const sizeStyles = {
   md: 'px-2.5 py-1 text-sm',
 }
 
-export function Badge({
-  variant = 'default',
-  size = 'sm',
-  children,
-  className = '',
-}: BadgeProps) {
+export function Badge({ variant = 'default', size = 'sm', children, className = '' }: BadgeProps) {
   return (
     <span
       className={`
@@ -55,9 +50,5 @@ const statusConfig = {
 
 export function StatusBadge({ status, children }: StatusBadgeProps) {
   const config = statusConfig[status]
-  return (
-    <Badge variant={config.variant}>
-      {children ?? config.label}
-    </Badge>
-  )
+  return <Badge variant={config.variant}>{children ?? config.label}</Badge>
 }

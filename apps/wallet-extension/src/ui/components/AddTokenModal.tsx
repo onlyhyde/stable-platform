@@ -5,13 +5,13 @@
  * Supports auto-fetching token metadata from the contract.
  */
 
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import type { Address } from 'viem'
-import { Modal, ModalFooter } from './common/Modal'
+import { useAssets } from '../hooks'
 import { Button } from './common/Button'
 import { Input } from './common/Input'
+import { Modal, ModalFooter } from './common/Modal'
 import { Spinner } from './common/Spinner'
-import { useAssets } from '../hooks'
 
 interface AddTokenModalProps {
   isOpen: boolean
@@ -231,7 +231,10 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
 
         {/* Loading state */}
         {isFetchingMetadata && (
-          <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+          <div
+            className="flex items-center gap-2 p-3 rounded-lg"
+            style={{ backgroundColor: 'rgb(var(--secondary))' }}
+          >
             <Spinner size="sm" />
             <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Fetching token information...
@@ -241,10 +244,7 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
 
         {/* Token Preview */}
         {tokenPreview && !isFetchingMetadata && (
-          <div
-            className="p-4 rounded-lg"
-            style={{ backgroundColor: 'rgb(var(--secondary))' }}
-          >
+          <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
             <div className="flex items-center gap-3">
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
@@ -408,10 +408,12 @@ function decodeString(data: string | undefined): string {
   if (hex.length >= 128) {
     // Dynamic string: offset (32 bytes) + length (32 bytes) + data
     const lengthHex = hex.slice(64, 128)
-    const length = parseInt(lengthHex, 16)
+    const length = Number.parseInt(lengthHex, 16)
     const stringHex = hex.slice(128, 128 + length * 2)
     try {
-      const bytes = new Uint8Array(stringHex.match(/.{2}/g)?.map((b) => parseInt(b, 16)) ?? [])
+      const bytes = new Uint8Array(
+        stringHex.match(/.{2}/g)?.map((b) => Number.parseInt(b, 16)) ?? []
+      )
       return new TextDecoder().decode(bytes).replace(/\0/g, '')
     } catch {
       return ''
@@ -420,7 +422,7 @@ function decodeString(data: string | undefined): string {
 
   // Static bytes32 string
   try {
-    const bytes = new Uint8Array(hex.match(/.{2}/g)?.map((b) => parseInt(b, 16)) ?? [])
+    const bytes = new Uint8Array(hex.match(/.{2}/g)?.map((b) => Number.parseInt(b, 16)) ?? [])
     return new TextDecoder().decode(bytes).replace(/\0/g, '')
   } catch {
     return ''

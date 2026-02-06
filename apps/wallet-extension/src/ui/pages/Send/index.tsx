@@ -1,18 +1,18 @@
-import { useState, useCallback, useMemo } from 'react'
-import { parseEther, formatEther, isAddress } from 'viem'
-import type { Address } from 'viem'
 import {
+  type GasPaymentConfig,
   TRANSACTION_MODE,
   type TransactionMode,
-  type GasPaymentConfig,
   getAvailableTransactionModes,
   getDefaultTransactionMode,
 } from '@stablenet/core'
+import { useCallback, useMemo, useState } from 'react'
+import { formatEther, isAddress, parseEther } from 'viem'
+import type { Address } from 'viem'
 
-import { useWalletStore, useSelectedNetwork, useNetworkCurrency } from '../../hooks'
-import { useSendTransaction } from './hooks/useSendTransaction'
-import { useGasEstimate } from './hooks/useGasEstimate'
+import { useNetworkCurrency, useSelectedNetwork, useWalletStore } from '../../hooks'
 import { SendForm } from './SendForm'
+import { useGasEstimate } from './hooks/useGasEstimate'
+import { useSendTransaction } from './hooks/useSendTransaction'
 
 // ============================================================================
 // Types
@@ -82,7 +82,7 @@ export function SendPage() {
   // Form validation
   const isFormValid = useMemo(() => {
     if (!formData.recipient || !isAddress(formData.recipient)) return false
-    if (!formData.amount || parseFloat(formData.amount) <= 0) return false
+    if (!formData.amount || Number.parseFloat(formData.amount) <= 0) return false
     return true
   }, [formData])
 

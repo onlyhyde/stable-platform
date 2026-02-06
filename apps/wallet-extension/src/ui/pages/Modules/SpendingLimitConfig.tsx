@@ -1,12 +1,12 @@
-import { useState, useCallback, useMemo } from 'react'
 import {
-  encodeSpendingLimitInit,
-  validateSpendingLimitConfig,
   PERIOD_PRESETS,
   type SpendingLimitHookConfig,
+  encodeSpendingLimitInit,
+  validateSpendingLimitConfig,
 } from '@stablenet/core'
+import { useCallback, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
-import { parseEther, formatEther } from 'viem'
+import { formatEther, parseEther } from 'viem'
 
 // ============================================================================
 // Types
@@ -46,7 +46,11 @@ const LIMIT_PRESETS = ['0.1', '0.5', '1', '5', '10', '50']
 // Component
 // ============================================================================
 
-export function SpendingLimitConfigUI({ accountAddress, onSubmit, onBack }: SpendingLimitConfigProps) {
+export function SpendingLimitConfigUI({
+  accountAddress,
+  onSubmit,
+  onBack,
+}: SpendingLimitConfigProps) {
   const [step, setStep] = useState<Step>('token')
   const [form, setForm] = useState<FormState>({
     tokenType: 'native',
@@ -103,7 +107,7 @@ export function SpendingLimitConfigUI({ accountAddress, onSubmit, onBack }: Spen
         }
         return true
       case 'limit':
-        return parseFloat(form.limitAmount) > 0
+        return Number.parseFloat(form.limitAmount) > 0
       case 'period':
         return form.period > 0
       default:
@@ -183,10 +187,11 @@ export function SpendingLimitConfigUI({ accountAddress, onSubmit, onBack }: Spen
               className="w-full p-4 rounded-lg text-left flex items-center gap-3"
               style={{
                 backgroundColor:
-                  form.tokenType === 'native' ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
+                  form.tokenType === 'native'
+                    ? 'rgb(var(--primary) / 0.1)'
+                    : 'rgb(var(--secondary))',
                 borderWidth: 1,
-                borderColor:
-                  form.tokenType === 'native' ? 'rgb(var(--primary))' : 'transparent',
+                borderColor: form.tokenType === 'native' ? 'rgb(var(--primary))' : 'transparent',
               }}
               onClick={() => setForm((prev) => ({ ...prev, tokenType: 'native' }))}
             >
@@ -205,10 +210,11 @@ export function SpendingLimitConfigUI({ accountAddress, onSubmit, onBack }: Spen
               className="w-full p-4 rounded-lg text-left flex items-center gap-3"
               style={{
                 backgroundColor:
-                  form.tokenType === 'erc20' ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
+                  form.tokenType === 'erc20'
+                    ? 'rgb(var(--primary) / 0.1)'
+                    : 'rgb(var(--secondary))',
                 borderWidth: 1,
-                borderColor:
-                  form.tokenType === 'erc20' ? 'rgb(var(--primary))' : 'transparent',
+                borderColor: form.tokenType === 'erc20' ? 'rgb(var(--primary))' : 'transparent',
               }}
               onClick={() => setForm((prev) => ({ ...prev, tokenType: 'erc20' }))}
             >
@@ -286,11 +292,8 @@ export function SpendingLimitConfigUI({ accountAddress, onSubmit, onBack }: Spen
                   className="px-3 py-2 rounded-lg text-sm"
                   style={{
                     backgroundColor:
-                      form.limitAmount === preset
-                        ? 'rgb(var(--primary))'
-                        : 'rgb(var(--secondary))',
-                    color:
-                      form.limitAmount === preset ? 'white' : 'rgb(var(--foreground))',
+                      form.limitAmount === preset ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                    color: form.limitAmount === preset ? 'white' : 'rgb(var(--foreground))',
                   }}
                   onClick={() => setForm((prev) => ({ ...prev, limitAmount: preset }))}
                 >
@@ -329,8 +332,7 @@ export function SpendingLimitConfigUI({ accountAddress, onSubmit, onBack }: Spen
                       ? 'rgb(var(--primary) / 0.1)'
                       : 'rgb(var(--secondary))',
                   borderWidth: 1,
-                  borderColor:
-                    form.period === option.value ? 'rgb(var(--primary))' : 'transparent',
+                  borderColor: form.period === option.value ? 'rgb(var(--primary))' : 'transparent',
                 }}
                 onClick={() => setForm((prev) => ({ ...prev, period: option.value }))}
               >
@@ -424,8 +426,8 @@ export function SpendingLimitConfigUI({ accountAddress, onSubmit, onBack }: Spen
             }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--foreground))' }}>
-              <strong>How it works:</strong> Any transaction exceeding the remaining allowance
-              will be blocked until the period resets.
+              <strong>How it works:</strong> Any transaction exceeding the remaining allowance will
+              be blocked until the period resets.
             </p>
           </div>
 
@@ -438,8 +440,8 @@ export function SpendingLimitConfigUI({ accountAddress, onSubmit, onBack }: Spen
             }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--warning))' }}>
-              <strong>Note:</strong> The hook will be applied to all transactions. Make sure
-              the limit is high enough for your normal usage.
+              <strong>Note:</strong> The hook will be applied to all transactions. Make sure the
+              limit is high enough for your normal usage.
             </p>
           </div>
         </div>
@@ -451,10 +453,7 @@ export function SpendingLimitConfigUI({ accountAddress, onSubmit, onBack }: Spen
           {step === 'token' ? 'Cancel' : 'Back'}
         </button>
         {step === 'review' ? (
-          <button
-            className="btn-primary flex-1 py-3 rounded-lg font-medium"
-            onClick={handleSubmit}
-          >
+          <button className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
             Install Hook
           </button>
         ) : (
@@ -582,10 +581,7 @@ export function SpendingLimitDisplay({
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2 text-center">
-        <div
-          className="p-2 rounded"
-          style={{ backgroundColor: 'rgb(var(--secondary))' }}
-        >
+        <div className="p-2 rounded" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
           <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Remaining
           </p>
@@ -593,10 +589,7 @@ export function SpendingLimitDisplay({
             {formatEther(remaining)} {tokenSymbol}
           </p>
         </div>
-        <div
-          className="p-2 rounded"
-          style={{ backgroundColor: 'rgb(var(--secondary))' }}
-        >
+        <div className="p-2 rounded" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
           <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Resets in
           </p>

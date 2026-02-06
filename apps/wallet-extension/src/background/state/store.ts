@@ -1,14 +1,14 @@
 import type { Address } from 'viem'
+import { DEFAULT_NETWORKS, STORAGE_KEYS } from '../../shared/constants'
 import type {
   Account,
+  AssetState,
+  ConnectedSite,
   Network,
   PendingTransaction,
-  ConnectedSite,
   WalletState,
   WalletToken,
-  AssetState,
 } from '../../types'
-import { DEFAULT_NETWORKS, STORAGE_KEYS } from '../../shared/constants'
 import { deepMerge, normalizeOrigin, originsMatch } from './utils'
 
 /**
@@ -226,12 +226,9 @@ class WalletStateManager {
     })
   }
 
-  async updateTransaction(
-    id: string,
-    updates: Partial<PendingTransaction>
-  ): Promise<void> {
-    const pendingTransactions = this.state.transactions.pendingTransactions.map(
-      (tx) => (tx.id === id ? { ...tx, ...updates } : tx)
+  async updateTransaction(id: string, updates: Partial<PendingTransaction>): Promise<void> {
+    const pendingTransactions = this.state.transactions.pendingTransactions.map((tx) =>
+      tx.id === id ? { ...tx, ...updates } : tx
     )
     await this.setState({
       transactions: {
@@ -284,10 +281,7 @@ class WalletStateManager {
       })
     } else {
       // Add new
-      const connectedSites = [
-        ...this.state.connections.connectedSites,
-        normalizedSite,
-      ]
+      const connectedSites = [...this.state.connections.connectedSites, normalizedSite]
       await this.setState({
         connections: { connectedSites },
       })
@@ -312,9 +306,7 @@ class WalletStateManager {
    * Origin is normalized for consistent matching
    */
   isConnected(origin: string): boolean {
-    return this.state.connections.connectedSites.some((s) =>
-      originsMatch(s.origin, origin)
-    )
+    return this.state.connections.connectedSites.some((s) => originsMatch(s.origin, origin))
   }
 
   /**
@@ -322,9 +314,7 @@ class WalletStateManager {
    * Returns accounts with the currently selected account first
    */
   getConnectedAccounts(origin: string): Address[] {
-    const site = this.state.connections.connectedSites.find((s) =>
-      originsMatch(s.origin, origin)
-    )
+    const site = this.state.connections.connectedSites.find((s) => originsMatch(s.origin, origin))
 
     if (!site?.accounts || site.accounts.length === 0) {
       return []
@@ -512,16 +502,10 @@ class WalletStateManager {
   /**
    * Get cached balance for a token
    */
-  getCachedBalance(
-    chainId: number,
-    account: Address,
-    tokenAddress: Address
-  ): string | undefined {
+  getCachedBalance(chainId: number, account: Address, tokenAddress: Address): string | undefined {
     const normalizedToken = tokenAddress.toLowerCase()
     const normalizedAccount = account.toLowerCase()
-    return this.state.assets.balanceCache[chainId]?.[normalizedAccount]?.[
-      normalizedToken
-    ]
+    return this.state.assets.balanceCache[chainId]?.[normalizedAccount]?.[normalizedToken]
   }
 
   /**

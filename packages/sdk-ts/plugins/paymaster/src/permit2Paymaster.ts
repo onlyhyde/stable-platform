@@ -1,6 +1,11 @@
+import type {
+  PaymasterClient,
+  PaymasterData,
+  PaymasterStubData,
+  UserOperation,
+} from '@stablenet/sdk-types'
 import type { Address, Hex, LocalAccount, PublicClient, TypedDataDomain } from 'viem'
-import { encodePacked, toHex, pad, concat, numberToHex, hexToNumber } from 'viem'
-import type { UserOperation, PaymasterClient, PaymasterStubData, PaymasterData } from '@stablenet/sdk-types'
+import { concat, pad, toHex } from 'viem'
 
 // Default gas limits for Permit2Paymaster operations
 const DEFAULT_PAYMASTER_VERIFICATION_GAS_LIMIT = 150_000n // Higher due to Permit2 verification
@@ -96,9 +101,7 @@ const PERMIT2_TYPES = {
  * })
  * ```
  */
-export function createPermit2Paymaster(
-  config: Permit2PaymasterConfig
-): PaymasterClient {
+export function createPermit2Paymaster(config: Permit2PaymasterConfig): PaymasterClient {
   const {
     paymasterAddress,
     permit2Address,
@@ -116,8 +119,8 @@ export function createPermit2Paymaster(
    * Uses placeholder signature since actual signature isn't needed for estimation
    */
   const getPaymasterStubData = async (
-    userOperation: UserOperation,
-    entryPoint: Address,
+    _userOperation: UserOperation,
+    _entryPoint: Address,
     _chainId: bigint
   ): Promise<PaymasterStubData> => {
     const expiration = Math.floor(Date.now() / 1000) + validitySeconds
@@ -143,8 +146,8 @@ export function createPermit2Paymaster(
    * Get paymaster data with actual Permit2 signature
    */
   const getPaymasterData = async (
-    userOperation: UserOperation,
-    entryPoint: Address,
+    _userOperation: UserOperation,
+    _entryPoint: Address,
     _chainId: bigint
   ): Promise<PaymasterData> => {
     const expiration = Math.floor(Date.now() / 1000) + validitySeconds
@@ -164,12 +167,7 @@ export function createPermit2Paymaster(
     }
 
     // Sign the permit using EIP-712
-    const signature = await signPermit2(
-      signer,
-      permit2Address,
-      chainId,
-      permitSingle
-    )
+    const signature = await signPermit2(signer, permit2Address, chainId, permitSingle)
 
     // Encode paymaster data
     const paymasterData = encodePermit2PaymasterData({
@@ -282,8 +280,8 @@ export function decodePermit2PaymasterData(data: Hex): {
   return {
     token: `0x${hex.slice(0, 40)}` as Address,
     amount: BigInt(`0x${hex.slice(40, 80)}`),
-    expiration: parseInt(hex.slice(80, 92), 16),
-    nonce: parseInt(hex.slice(92, 104), 16),
+    expiration: Number.parseInt(hex.slice(80, 92), 16),
+    nonce: Number.parseInt(hex.slice(92, 104), 16),
     signature: `0x${hex.slice(104)}` as Hex,
   }
 }

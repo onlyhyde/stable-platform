@@ -2,21 +2,23 @@
  * Legacy API Warning Tests (SEC-18)
  */
 
+// Unmock to test real implementation
+jest.unmock('@stablenet/core')
+
 import {
   hasApiWarning,
   getApiWarning,
   shouldBlockMethod,
   getAllApiWarnings,
   getWarningsByStatus,
-  logLegacyApiUsage,
-  formatWarningForUI,
+  formatApiWarningForUI as formatWarningForUI,
   createConsoleDeprecationNotice,
   updateEthSignSettings,
   getEthSignSettings,
   isEthSignAllowed,
   shouldShowEthSignWarning,
   DeprecationStatus,
-} from '../../../src/shared/security/legacyApiWarning'
+} from '@stablenet/core'
 
 describe('legacyApiWarning', () => {
   describe('hasApiWarning', () => {
@@ -129,25 +131,6 @@ describe('legacyApiWarning', () => {
     })
   })
 
-  describe('logLegacyApiUsage', () => {
-    it('should return warning for legacy methods', () => {
-      const warning = logLegacyApiUsage('eth_sign', 'https://example.com', {
-        silent: true,
-      })
-
-      expect(warning).not.toBeNull()
-      expect(warning?.method).toBe('eth_sign')
-    })
-
-    it('should return null for standard methods', () => {
-      const warning = logLegacyApiUsage('eth_call', 'https://example.com', {
-        silent: true,
-      })
-
-      expect(warning).toBeNull()
-    })
-  })
-
   describe('formatWarningForUI', () => {
     it('should format dangerous method warning', () => {
       const warning = getApiWarning('eth_sign')!
@@ -188,7 +171,7 @@ describe('legacyApiWarning', () => {
     it('should create notice for known methods', () => {
       const notice = createConsoleDeprecationNotice('eth_sign')
 
-      expect(notice).toContain('[StableNet Wallet]')
+      expect(notice).toContain('[Deprecated]')
       expect(notice).toContain('DANGEROUS')
       expect(notice).toContain('eth_sign')
     })

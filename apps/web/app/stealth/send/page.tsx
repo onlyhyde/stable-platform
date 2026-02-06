@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useWallet, useBalance, useStealth } from '@/hooks'
-import { PageHeader, ConnectWalletCard } from '@/components/common'
+import { ConnectWalletCard, PageHeader } from '@/components/common'
 import { StealthTransferCard } from '@/components/stealth'
+import { useBalance, useStealth, useWallet } from '@/hooks'
 import { formatTokenAmount } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import type { Hex } from 'viem'
 
 export default function StealthSendPage() {
@@ -61,17 +61,12 @@ export default function StealthSendPage() {
   }
 
   if (!isConnected) {
-    return (
-      <ConnectWalletCard message="Please connect your wallet to send privately" />
-    )
+    return <ConnectWalletCard message="Please connect your wallet to send privately" />
   }
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      <PageHeader
-        title="Private Send"
-        description="Send tokens to a stealth meta-address"
-      />
+      <PageHeader title="Private Send" description="Send tokens to a stealth meta-address" />
 
       <StealthTransferCard
         balance={balance}

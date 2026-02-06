@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 export type ToastType = 'success' | 'error' | 'info' | 'loading'
@@ -55,9 +55,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
   }, [])
 
   const updateToast = useCallback((id: string, updates: Partial<Toast>) => {
-    setToasts((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
-    )
+    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)))
   }, [])
 
   return (
@@ -96,23 +94,53 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
 
   const icons: Record<ToastType, ReactNode> = {
     success: (
-      <svg className="w-5 h-5" style={{ color: 'rgb(var(--success))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg
+        className="w-5 h-5"
+        style={{ color: 'rgb(var(--success))' }}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
       </svg>
     ),
     error: (
-      <svg className="w-5 h-5" style={{ color: 'rgb(var(--destructive))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      <svg
+        className="w-5 h-5"
+        style={{ color: 'rgb(var(--destructive))' }}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M6 18L18 6M6 6l12 12"
+        />
       </svg>
     ),
     info: (
-      <svg className="w-5 h-5" style={{ color: 'rgb(var(--info))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <svg
+        className="w-5 h-5"
+        style={{ color: 'rgb(var(--info))' }}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
       </svg>
     ),
     loading: (
-      <div className="w-5 h-5 border-2 rounded-full animate-spin"
-           style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }} />
+      <div
+        className="w-5 h-5 border-2 rounded-full animate-spin"
+        style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
+      />
     ),
   }
 
@@ -142,12 +170,19 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
     >
       <div className="flex-shrink-0 mt-0.5">{icons[toast.type]}</div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{toast.title}</p>
+        <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+          {toast.title}
+        </p>
         {toast.message && (
-          <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>{toast.message}</p>
+          <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {toast.message}
+          </p>
         )}
         {toast.txHash && (
-          <p className="text-xs mt-2 font-mono truncate" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          <p
+            className="text-xs mt-2 font-mono truncate"
+            style={{ color: 'rgb(var(--muted-foreground))' }}
+          >
             TX: {toast.txHash.slice(0, 10)}...{toast.txHash.slice(-8)}
           </p>
         )}
@@ -160,7 +195,12 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
           style={{ color: 'rgb(var(--muted-foreground))' }}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </button>
       )}

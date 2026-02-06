@@ -38,27 +38,22 @@ export type {
   ModuleType,
   ModuleConfig,
   ModuleInfo,
-
   // Validator types
   ValidatorConfig,
   ECDSAValidatorConfig,
   WebAuthnValidatorConfig,
   MultiSigValidatorConfig,
-
   // Executor types
   ExecutorConfig,
   SessionKeyExecutorConfig,
   SessionKeyConfig,
-
   // Hook types
   HookConfig,
   HookTypeFlags,
   SpendingLimitHookConfig,
   HealthFactorHookConfig,
-
   // Fallback types
   FallbackConfig,
-
   // Installation types
   InstallModuleParams,
   UninstallModuleParams,
@@ -100,28 +95,23 @@ export {
   buildInstallModuleCall,
   buildUninstallModuleCall,
   buildBatchInstallModuleCalls,
-
   // Module queries
   isModuleInstalled,
   isModuleType,
   isModuleInitialized,
   getRootValidator,
-
   // Helpers
   validateModuleType,
   getModuleTypeName,
-
   // Validator init data encoders
   encodeECDSAValidatorInitData,
   encodeWebAuthnValidatorInitData,
   encodeMultiSigValidatorInitData,
-
   // Executor init data encoders
   encodeSessionKeyExecutorInitData,
   encodeSwapExecutorInitData,
   encodeLendingExecutorInitData,
   encodeStakingExecutorInitData,
-
   // Hook init data encoders
   encodeSpendingLimitHookInitData,
   encodeHealthFactorHookInitData,

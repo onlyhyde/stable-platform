@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
-import { useWalletStore, useNetworkCurrency, useIndexerData } from '../hooks'
+import { useEffect, useMemo, useState } from 'react'
 import { isAddress, parseEther } from 'viem'
+import { useIndexerData, useNetworkCurrency, useWalletStore } from '../hooks'
 import type { TokenBalance } from '../hooks/useIndexerData'
 
 /** Asset type for native or ERC-20 token */
@@ -57,9 +57,7 @@ export function Send() {
       name: nativeName,
       decimals: nativeDecimals,
       balance: nativeBalance?.toString(),
-      formattedBalance: nativeBalance
-        ? (Number(nativeBalance) / 1e18).toFixed(4)
-        : undefined,
+      formattedBalance: nativeBalance ? (Number(nativeBalance) / 1e18).toFixed(4) : undefined,
     }
 
     const tokens: SelectedAsset[] = tokenBalances.map((t) => ({
@@ -192,7 +190,9 @@ export function Send() {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-6" style={{ color: 'rgb(var(--foreground))' }}>Send</h2>
+      <h2 className="text-xl font-bold mb-6" style={{ color: 'rgb(var(--foreground))' }}>
+        Send
+      </h2>
 
       <div className="space-y-4">
         {/* Asset Selector */}
@@ -225,10 +225,7 @@ export function Send() {
                   </div>
                   <span style={{ color: 'rgb(var(--foreground))' }}>{selectedAsset.symbol}</span>
                   {selectedAsset.formattedBalance && (
-                    <span
-                      className="text-sm"
-                      style={{ color: 'rgb(var(--muted-foreground))' }}
-                    >
+                    <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                       ({selectedAsset.formattedBalance})
                     </span>
                   )}
@@ -243,7 +240,12 @@ export function Send() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
 
@@ -313,7 +315,9 @@ export function Send() {
             }}
           />
           {!isValidRecipient && (
-            <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>Invalid address</p>
+            <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
+              Invalid address
+            </p>
           )}
         </div>
 
@@ -352,15 +356,14 @@ export function Send() {
             }}
           />
           {!isValidAmount && (
-            <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>Invalid amount</p>
+            <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
+              Invalid amount
+            </p>
           )}
         </div>
 
         {/* Gas Estimation */}
-        <div
-          className="rounded-lg p-3"
-          style={{ backgroundColor: 'rgb(var(--secondary))' }}
-        >
+        <div className="rounded-lg p-3" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
           <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Gas will be sponsored by the Paymaster
           </p>

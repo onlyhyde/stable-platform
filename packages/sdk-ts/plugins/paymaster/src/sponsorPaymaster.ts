@@ -1,5 +1,10 @@
+import type {
+  PaymasterClient,
+  PaymasterData,
+  PaymasterStubData,
+  UserOperation,
+} from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import type { UserOperation, PaymasterClient, PaymasterStubData, PaymasterData } from '@stablenet/sdk-types'
 import type { SponsorPaymasterConfig } from './types'
 
 /**
@@ -19,9 +24,7 @@ import type { SponsorPaymasterConfig } from './types'
  * })
  * ```
  */
-export function createSponsorPaymaster(
-  config: SponsorPaymasterConfig
-): PaymasterClient {
+export function createSponsorPaymaster(config: SponsorPaymasterConfig): PaymasterClient {
   const { paymasterUrl, apiKey, chainId } = config
 
   const headers: Record<string, string> = {
@@ -47,11 +50,7 @@ export function createSponsorPaymaster(
         jsonrpc: '2.0',
         id: 1,
         method: 'pm_getPaymasterStubData',
-        params: [
-          serializeUserOperation(userOperation),
-          entryPoint,
-          toHexString(chainId),
-        ],
+        params: [serializeUserOperation(userOperation), entryPoint, toHexString(chainId)],
       }),
     })
 
@@ -95,11 +94,7 @@ export function createSponsorPaymaster(
         jsonrpc: '2.0',
         id: 1,
         method: 'pm_getPaymasterData',
-        params: [
-          serializeUserOperation(userOperation),
-          entryPoint,
-          toHexString(chainId),
-        ],
+        params: [serializeUserOperation(userOperation), entryPoint, toHexString(chainId)],
       }),
     })
 
@@ -147,8 +142,12 @@ function serializeUserOperation(userOp: UserOperation): Record<string, string> {
     maxPriorityFeePerGas: toHexString(userOp.maxPriorityFeePerGas),
     paymaster: userOp.paymaster || '',
     paymasterData: userOp.paymasterData || '0x',
-    paymasterVerificationGasLimit: userOp.paymasterVerificationGasLimit ? toHexString(userOp.paymasterVerificationGasLimit) : '0x0',
-    paymasterPostOpGasLimit: userOp.paymasterPostOpGasLimit ? toHexString(userOp.paymasterPostOpGasLimit) : '0x0',
+    paymasterVerificationGasLimit: userOp.paymasterVerificationGasLimit
+      ? toHexString(userOp.paymasterVerificationGasLimit)
+      : '0x0',
+    paymasterPostOpGasLimit: userOp.paymasterPostOpGasLimit
+      ? toHexString(userOp.paymasterPostOpGasLimit)
+      : '0x0',
     signature: userOp.signature || '0x',
   }
 }
@@ -174,9 +173,9 @@ export function createSponsorPaymasterWithPolicy(
   config: SponsorPaymasterConfig & { policy: SponsorshipPolicy }
 ): PaymasterClient {
   const basePaymaster = createSponsorPaymaster(config)
-  const { policy } = config
+  const { policy: _policy } = config
 
-  // Wrap the base methods to include policy
+  // Wrap the base methods to include policy (policy is available for future use)
   return {
     getPaymasterStubData: async (userOp, entryPoint, chainId) => {
       // The policy would be included in the API request in a real implementation

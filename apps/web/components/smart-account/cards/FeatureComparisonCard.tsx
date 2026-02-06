@@ -23,18 +23,38 @@ export function FeatureComparisonCard() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid rgb(var(--border))' }}>
-                <th className="text-left py-3 pr-4 font-medium" style={{ color: 'rgb(var(--foreground))' }}>Feature</th>
-                <th className="text-center py-3 px-4 font-medium" style={{ color: 'rgb(var(--foreground))' }}>EOA</th>
-                <th className="text-center py-3 pl-4 font-medium" style={{ color: 'rgb(var(--foreground))' }}>Smart Account</th>
+                <th
+                  className="text-left py-3 pr-4 font-medium"
+                  style={{ color: 'rgb(var(--foreground))' }}
+                >
+                  Feature
+                </th>
+                <th
+                  className="text-center py-3 px-4 font-medium"
+                  style={{ color: 'rgb(var(--foreground))' }}
+                >
+                  EOA
+                </th>
+                <th
+                  className="text-center py-3 pl-4 font-medium"
+                  style={{ color: 'rgb(var(--foreground))' }}
+                >
+                  Smart Account
+                </th>
               </tr>
             </thead>
             <tbody>
               {features.map((feature, index) => (
                 <tr
                   key={feature.name}
-                  style={{ borderBottom: index < features.length - 1 ? '1px solid rgb(var(--border) / 0.5)' : 'none' }}
+                  style={{
+                    borderBottom:
+                      index < features.length - 1 ? '1px solid rgb(var(--border) / 0.5)' : 'none',
+                  }}
                 >
-                  <td className="py-3 pr-4" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>{feature.name}</td>
+                  <td className="py-3 pr-4" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+                    {feature.name}
+                  </td>
                   <td className="py-3 px-4 text-center">
                     {feature.eoa === null ? (
                       <span style={{ color: 'rgb(var(--muted-foreground))' }}>N/A</span>

@@ -1,4 +1,4 @@
-import type { SelectHTMLAttributes, ReactNode } from 'react'
+import type { ReactNode, SelectHTMLAttributes } from 'react'
 import { forwardRef } from 'react'
 
 export interface SelectOption {
@@ -18,17 +18,7 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   (
-    {
-      label,
-      error,
-      hint,
-      options,
-      leftElement,
-      placeholder,
-      className = '',
-      id,
-      ...props
-    },
+    { label, error, hint, options, leftElement, placeholder, className = '', id, ...props },
     ref
   ) => {
     const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-')
@@ -75,11 +65,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               </option>
             )}
             {options.map((option) => (
-              <option
-                key={option.value}
-                value={option.value}
-                disabled={option.disabled}
-              >
+              <option key={option.value} value={option.value} disabled={option.disabled}>
                 {option.label}
               </option>
             ))}
@@ -104,9 +90,15 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </svg>
           </div>
         </div>
-        {error && <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error}</p>}
+        {error && (
+          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--destructive))' }}>
+            {error}
+          </p>
+        )}
         {hint && !error && (
-          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{hint}</p>
+          <p className="mt-1.5 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {hint}
+          </p>
         )}
       </div>
     )

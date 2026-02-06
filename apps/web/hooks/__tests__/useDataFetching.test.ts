@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
-import { usePools } from '../usePools'
-import { useTokens } from '../useTokens'
-import { usePayroll } from '../usePayroll'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuditLogs } from '../useAuditLogs'
 import { useExpenses } from '../useExpenses'
+import { usePayroll } from '../usePayroll'
+import { usePools } from '../usePools'
+import { useTokens } from '../useTokens'
 import { useTransactionHistory } from '../useTransactionHistory'
 
 // Mock context
@@ -39,9 +39,11 @@ describe('usePools', () => {
 
     const mockFetchPools = vi.fn().mockResolvedValue(mockPools)
 
-    const { result } = renderHook(() => usePools({
-      fetchPools: mockFetchPools,
-    }))
+    const { result } = renderHook(() =>
+      usePools({
+        fetchPools: mockFetchPools,
+      })
+    )
 
     expect(result.current.isLoading).toBe(true)
 
@@ -57,9 +59,11 @@ describe('usePools', () => {
   it('should handle fetch errors', async () => {
     const mockFetchPools = vi.fn().mockRejectedValue(new Error('Network error'))
 
-    const { result } = renderHook(() => usePools({
-      fetchPools: mockFetchPools,
-    }))
+    const { result } = renderHook(() =>
+      usePools({
+        fetchPools: mockFetchPools,
+      })
+    )
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -72,9 +76,11 @@ describe('usePools', () => {
   it('should allow manual refresh', async () => {
     const mockFetchPools = vi.fn().mockResolvedValue([])
 
-    const { result } = renderHook(() => usePools({
-      fetchPools: mockFetchPools,
-    }))
+    const { result } = renderHook(() =>
+      usePools({
+        fetchPools: mockFetchPools,
+      })
+    )
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -103,9 +109,11 @@ describe('useTokens', () => {
 
     const mockFetchTokens = vi.fn().mockResolvedValue(mockTokens)
 
-    const { result } = renderHook(() => useTokens({
-      fetchTokens: mockFetchTokens,
-    }))
+    const { result } = renderHook(() =>
+      useTokens({
+        fetchTokens: mockFetchTokens,
+      })
+    )
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -136,9 +144,11 @@ describe('usePayroll', () => {
 
     const mockFetchPayroll = vi.fn().mockResolvedValue(mockPayroll)
 
-    const { result } = renderHook(() => usePayroll({
-      fetchPayroll: mockFetchPayroll,
-    }))
+    const { result } = renderHook(() =>
+      usePayroll({
+        fetchPayroll: mockFetchPayroll,
+      })
+    )
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -172,9 +182,11 @@ describe('usePayroll', () => {
 
     const mockFetchPayroll = vi.fn().mockResolvedValue(mockPayroll)
 
-    const { result } = renderHook(() => usePayroll({
-      fetchPayroll: mockFetchPayroll,
-    }))
+    const { result } = renderHook(() =>
+      usePayroll({
+        fetchPayroll: mockFetchPayroll,
+      })
+    )
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -205,9 +217,11 @@ describe('useAuditLogs', () => {
 
     const mockFetchLogs = vi.fn().mockResolvedValue(mockLogs)
 
-    const { result } = renderHook(() => useAuditLogs({
-      fetchLogs: mockFetchLogs,
-    }))
+    const { result } = renderHook(() =>
+      useAuditLogs({
+        fetchLogs: mockFetchLogs,
+      })
+    )
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -225,10 +239,12 @@ describe('useAuditLogs', () => {
 
     const mockFetchLogs = vi.fn().mockResolvedValue(mockLogs)
 
-    const { result } = renderHook(() => useAuditLogs({
-      fetchLogs: mockFetchLogs,
-      filter: { action: 'PayrollExecuted' },
-    }))
+    const { result } = renderHook(() =>
+      useAuditLogs({
+        fetchLogs: mockFetchLogs,
+        filter: { action: 'PayrollExecuted' },
+      })
+    )
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -260,9 +276,11 @@ describe('useExpenses', () => {
 
     const mockFetchExpenses = vi.fn().mockResolvedValue(mockExpenses)
 
-    const { result } = renderHook(() => useExpenses({
-      fetchExpenses: mockFetchExpenses,
-    }))
+    const { result } = renderHook(() =>
+      useExpenses({
+        fetchExpenses: mockFetchExpenses,
+      })
+    )
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -280,10 +298,12 @@ describe('useExpenses', () => {
 
     const mockFetchExpenses = vi.fn().mockResolvedValue(mockExpenses)
 
-    const { result } = renderHook(() => useExpenses({
-      fetchExpenses: mockFetchExpenses,
-      filter: { status: 'pending' },
-    }))
+    const { result } = renderHook(() =>
+      useExpenses({
+        fetchExpenses: mockFetchExpenses,
+        filter: { status: 'pending' },
+      })
+    )
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -314,10 +334,12 @@ describe('useTransactionHistory', () => {
 
     const mockFetchTransactions = vi.fn().mockResolvedValue(mockTransactions)
 
-    const { result } = renderHook(() => useTransactionHistory({
-      address: '0x1234567890123456789012345678901234567890',
-      fetchTransactions: mockFetchTransactions,
-    }))
+    const { result } = renderHook(() =>
+      useTransactionHistory({
+        address: '0x1234567890123456789012345678901234567890',
+        fetchTransactions: mockFetchTransactions,
+      })
+    )
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -330,10 +352,12 @@ describe('useTransactionHistory', () => {
   it('should return empty array when no address provided', async () => {
     const mockFetchTransactions = vi.fn().mockResolvedValue([])
 
-    const { result } = renderHook(() => useTransactionHistory({
-      address: undefined,
-      fetchTransactions: mockFetchTransactions,
-    }))
+    const { result } = renderHook(() =>
+      useTransactionHistory({
+        address: undefined,
+        fetchTransactions: mockFetchTransactions,
+      })
+    )
 
     expect(result.current.transactions).toHaveLength(0)
     expect(mockFetchTransactions).not.toHaveBeenCalled()

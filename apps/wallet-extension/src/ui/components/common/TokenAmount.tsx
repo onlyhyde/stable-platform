@@ -22,7 +22,7 @@ export function TokenAmount({
   className = '',
 }: TokenAmountProps) {
   const formatted = formatUnits(amount, decimals)
-  const numValue = parseFloat(formatted)
+  const numValue = Number.parseFloat(formatted)
 
   // Format with max decimals, removing trailing zeros
   const displayValue = numValue.toFixed(maxDecimals).replace(/\.?0+$/, '')
@@ -37,9 +37,7 @@ export function TokenAmount({
         {showSymbol && ` ${symbol}`}
       </span>
       {usdValue !== null && (
-        <span className="text-gray-500 text-sm ml-1">
-          (${usdValue.toFixed(2)})
-        </span>
+        <span className="text-gray-500 text-sm ml-1">(${usdValue.toFixed(2)})</span>
       )}
     </span>
   )
@@ -71,9 +69,7 @@ export function TokenDisplay({
         {icon ? (
           <img src={icon} alt={symbol} className="w-full h-full object-cover" />
         ) : (
-          <span className="text-sm font-bold text-gray-500">
-            {symbol.slice(0, 2)}
-          </span>
+          <span className="text-sm font-bold text-gray-500">{symbol.slice(0, 2)}</span>
         )}
       </div>
 
@@ -92,13 +88,9 @@ export function TokenDisplay({
           )}
         </div>
         <div className="flex items-center justify-between">
-          {name && (
-            <span className="text-sm text-gray-500 truncate">{name}</span>
-          )}
+          {name && <span className="text-sm text-gray-500 truncate">{name}</span>}
           {usdValue !== undefined && (
-            <span className="text-sm text-gray-500">
-              ${usdValue.toFixed(2)}
-            </span>
+            <span className="text-sm text-gray-500">${usdValue.toFixed(2)}</span>
           )}
         </div>
       </div>
@@ -127,7 +119,7 @@ export function AmountInput({
   error,
   disabled = false,
 }: AmountInputProps) {
-  const numValue = parseFloat(value) || 0
+  const numValue = Number.parseFloat(value) || 0
   const usdValue = usdPrice ? numValue * usdPrice : null
 
   const handleMax = () => {
@@ -171,9 +163,7 @@ export function AmountInput({
 
       <div className="flex items-center justify-between mt-2 px-1">
         {usdValue !== null && (
-          <span className="text-sm text-gray-500">
-            ≈ ${usdValue.toFixed(2)}
-          </span>
+          <span className="text-sm text-gray-500">≈ ${usdValue.toFixed(2)}</span>
         )}
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>

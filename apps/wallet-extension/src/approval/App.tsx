@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
+import { MESSAGE_TYPES } from '../shared/constants'
 import type { ApprovalRequest } from '../types'
+import { Spinner } from '../ui/components/common'
+import { AuthorizationApproval } from './pages/AuthorizationApproval'
 import { ConnectApproval } from './pages/ConnectApproval'
 import { SignatureApproval } from './pages/SignatureApproval'
 import { TransactionApproval } from './pages/TransactionApproval'
-import { AuthorizationApproval } from './pages/AuthorizationApproval'
-import { Spinner } from '../ui/components/common'
-import { MESSAGE_TYPES } from '../shared/constants'
 
 export function ApprovalApp() {
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
@@ -117,19 +117,18 @@ export function ApprovalApp() {
             stroke="currentColor"
             aria-hidden="true"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </div>
-        <p
-          className="font-medium mb-2"
-          style={{ color: 'rgb(var(--foreground))' }}
-        >
+        <p className="font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
           Error
         </p>
-        <p
-          className="text-sm text-center"
-          style={{ color: 'rgb(var(--muted-foreground))' }}
-        >
+        <p className="text-sm text-center" style={{ color: 'rgb(var(--muted-foreground))' }}>
           {error}
         </p>
         <button
@@ -155,20 +154,12 @@ export function ApprovalApp() {
   switch (approval.type) {
     case 'connect':
       return (
-        <ConnectApproval
-          approval={approval}
-          onApprove={handleApprove}
-          onReject={handleReject}
-        />
+        <ConnectApproval approval={approval} onApprove={handleApprove} onReject={handleReject} />
       )
 
     case 'signature':
       return (
-        <SignatureApproval
-          approval={approval}
-          onApprove={handleApprove}
-          onReject={handleReject}
-        />
+        <SignatureApproval approval={approval} onApprove={handleApprove} onReject={handleReject} />
       )
 
     case 'transaction':

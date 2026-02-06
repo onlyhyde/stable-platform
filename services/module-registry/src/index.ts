@@ -1,7 +1,7 @@
 import { ModuleRegistryServer } from './server/index'
 import { createLogger } from './utils/logger'
 
-const PORT = parseInt(process.env.PORT ?? '4340', 10)
+const PORT = Number.parseInt(process.env.PORT ?? '4340', 10)
 const HOST = process.env.HOST ?? '0.0.0.0'
 const SEED_DATA = process.env.SEED_DATA !== 'false'
 const LOG_LEVEL = process.env.LOG_LEVEL ?? 'info'

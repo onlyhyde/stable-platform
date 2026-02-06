@@ -11,7 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@stablenet/sdk-types': resolve(__dirname, '../../../types/src'),
-      '@stablenet/core': resolve(__dirname, '../../packages/core/src'),
+      '@stablenet/core': resolve(__dirname, '../../core/src'),
     },
   },
 })

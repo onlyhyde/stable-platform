@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent } from '../../../components/common/Card'
+import { useEffect, useState } from 'react'
 import { Button } from '../../../components/common/Button'
-import { SubscriptionPlanCard } from '../../../components/subscription/SubscriptionPlanCard'
+import { Card, CardContent } from '../../../components/common/Card'
 import { PermissionModal } from '../../../components/subscription/PermissionModal'
-import { useWallet } from '../../../hooks/useWallet'
+import { SubscriptionPlanCard } from '../../../components/subscription/SubscriptionPlanCard'
 import { useSubscription } from '../../../hooks/useSubscription'
+import { useWallet } from '../../../hooks/useWallet'
 import type { PlanDisplayInfo } from '../../../types/subscription'
 
 export default function PlansPage() {
@@ -57,12 +57,21 @@ export default function PlansPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>Browse Plans</h1>
-          <p style={{ color: 'rgb(var(--muted-foreground))' }}>Discover subscription services powered by ERC-7715</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+            Browse Plans
+          </h1>
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>
+            Discover subscription services powered by ERC-7715
+          </p>
         </div>
         <Button variant="secondary" onClick={() => router.push('/subscription')}>
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           My Subscriptions
         </Button>
@@ -71,12 +80,19 @@ export default function PlansPage() {
       {/* Info Banner */}
       <Card
         className="border-0"
-        style={{ background: 'linear-gradient(to right, rgb(var(--primary)), rgb(var(--primary-hover)))' }}
+        style={{
+          background: 'linear-gradient(to right, rgb(var(--primary)), rgb(var(--primary-hover)))',
+        }}
       >
         <CardContent className="py-6">
           <div className="flex items-center gap-6">
             <div className="hidden md:flex w-16 h-16 rounded-full items-center justify-center bg-white/20">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -88,8 +104,8 @@ export default function PlansPage() {
             <div className="text-white">
               <h2 className="text-lg font-semibold mb-1">Secure On-Chain Subscriptions</h2>
               <p className="text-white/80 text-sm">
-                All subscriptions use ERC-7715 permissions for secure, transparent recurring payments.
-                You maintain full control and can cancel anytime.
+                All subscriptions use ERC-7715 permissions for secure, transparent recurring
+                payments. You maintain full control and can cancel anytime.
               </p>
             </div>
           </div>
@@ -102,10 +118,22 @@ export default function PlansPage() {
           {[1, 2, 3].map((i) => (
             <Card key={i} className="h-96 animate-pulse">
               <CardContent className="h-full flex flex-col items-center justify-center gap-4">
-                <div className="w-24 h-24 rounded-full" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
-                <div className="h-6 rounded w-1/2" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
-                <div className="h-4 rounded w-3/4" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
-                <div className="h-10 rounded w-2/3 mt-auto" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                <div
+                  className="w-24 h-24 rounded-full"
+                  style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                />
+                <div
+                  className="h-6 rounded w-1/2"
+                  style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                />
+                <div
+                  className="h-4 rounded w-3/4"
+                  style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                />
+                <div
+                  className="h-10 rounded w-2/3 mt-auto"
+                  style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                />
               </CardContent>
             </Card>
           ))}
@@ -117,7 +145,13 @@ export default function PlansPage() {
               className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
               style={{ backgroundColor: 'rgb(var(--secondary))' }}
             >
-              <svg className="w-10 h-10" style={{ color: 'rgb(var(--muted-foreground))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-10 h-10"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -126,10 +160,12 @@ export default function PlansPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>No Plans Available</h3>
+            <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
+              No Plans Available
+            </h3>
             <p className="mb-6" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              There are no subscription plans available at the moment.
-              Check back later or create your own as a merchant!
+              There are no subscription plans available at the moment. Check back later or create
+              your own as a merchant!
             </p>
             <Button variant="primary" onClick={() => router.push('/subscription/merchant')}>
               Create a Plan

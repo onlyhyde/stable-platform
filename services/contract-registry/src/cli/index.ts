@@ -184,7 +184,7 @@ async function exportContracts(argv: { chain?: number; url: string }) {
   if (!res.ok) throw new Error(`Export failed: ${res.statusText}`)
 
   const contracts = await res.json()
-  process.stdout.write(JSON.stringify(contracts, null, 2) + '\n')
+  process.stdout.write(`${JSON.stringify(contracts, null, 2)}\n`)
 }
 
 async function listContracts(argv: { chain?: number; tag?: string; url: string }) {

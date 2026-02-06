@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
-import { Input, Button } from '@/components/common'
-import { cn } from '@/lib/utils'
-import { formatAddress } from '@/lib/utils'
+import { Button, Input } from '@/components/common'
 import {
+  type DelegatePreset,
+  ZERO_ADDRESS,
   getDelegatePresets,
   isValidAddress,
-  ZERO_ADDRESS,
-  type DelegatePreset,
 } from '@/lib/eip7702'
+import { cn } from '@/lib/utils'
+import { formatAddress } from '@/lib/utils'
+import { useCallback, useMemo, useState } from 'react'
 import type { Address } from 'viem'
 
 interface DelegateAddressInputProps {
@@ -96,7 +96,8 @@ export function DelegateAddressInput({
             disabled && 'opacity-50 cursor-not-allowed'
           )}
           style={{
-            backgroundColor: mode === 'preset' ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
+            backgroundColor:
+              mode === 'preset' ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
             color: mode === 'preset' ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
             borderWidth: '2px',
             borderStyle: 'solid',
@@ -114,7 +115,8 @@ export function DelegateAddressInput({
             disabled && 'opacity-50 cursor-not-allowed'
           )}
           style={{
-            backgroundColor: mode === 'custom' ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
+            backgroundColor:
+              mode === 'custom' ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
             color: mode === 'custom' ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
             borderWidth: '2px',
             borderStyle: 'solid',
@@ -149,8 +151,7 @@ export function DelegateAddressInput({
               }}
             >
               <p className="text-sm" style={{ color: 'rgb(var(--warning))' }}>
-                No preset contracts available for this network.
-                Please use a custom address.
+                No preset contracts available for this network. Please use a custom address.
               </p>
             </div>
           )}
@@ -268,7 +269,10 @@ function PresetCard({ preset, selected, onSelect, disabled }: PresetCardProps) {
           <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {preset.description}
           </p>
-          <p className="font-mono text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}>
+          <p
+            className="font-mono text-xs mt-2"
+            style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}
+          >
             {formatAddress(preset.address, 8)}
           </p>
         </div>

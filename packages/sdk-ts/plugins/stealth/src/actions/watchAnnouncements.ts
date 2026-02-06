@@ -1,8 +1,8 @@
 import type { Hex } from 'viem'
-import type { WatchAnnouncementsOptions, StealthAnnouncement, SchemeId } from '../types'
-import { fetchAnnouncements, getCurrentBlock } from './fetchAnnouncements'
-import { computeStealthKey } from './computeStealthKey'
+import type { SchemeId, StealthAnnouncement, WatchAnnouncementsOptions } from '../types'
 import { filterByViewTag } from './checkAnnouncement'
+import { computeStealthKey } from './computeStealthKey'
+import { fetchAnnouncements, getCurrentBlock } from './fetchAnnouncements'
 
 /**
  * Options for watching announcements without key computation
@@ -55,9 +55,7 @@ export interface WatchAnnouncementsSimpleOptions {
  * @param options - Watch options
  * @returns Unwatch function to stop watching
  */
-export function watchAnnouncements(
-  options: WatchAnnouncementsSimpleOptions
-): () => void {
+export function watchAnnouncements(options: WatchAnnouncementsSimpleOptions): () => void {
   const {
     client,
     viewingPrivateKey,

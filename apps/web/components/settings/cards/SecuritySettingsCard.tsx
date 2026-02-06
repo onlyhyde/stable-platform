@@ -1,7 +1,16 @@
 'use client'
 
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+  InfoBanner,
+  Input,
+  ToggleCard,
+} from '@/components/common'
 import { useState } from 'react'
-import { Card, CardContent, CardTitle, CardDescription, Button, Input, ToggleCard, InfoBanner } from '@/components/common'
 
 export function SecuritySettingsCard() {
   const [sessionKeyEnabled, setSessionKeyEnabled] = useState(false)
@@ -64,16 +73,8 @@ export function SecuritySettingsCard() {
           </CardDescription>
 
           <div className="space-y-3">
-            <RecoveryOption
-              icon={<EmailIcon />}
-              title="Email Recovery"
-              status="Not configured"
-            />
-            <RecoveryOption
-              icon={<SocialIcon />}
-              title="Social Recovery"
-              status="Not configured"
-            />
+            <RecoveryOption icon={<EmailIcon />} title="Email Recovery" status="Not configured" />
+            <RecoveryOption icon={<SocialIcon />} title="Social Recovery" status="Not configured" />
           </div>
         </CardContent>
       </Card>
@@ -95,24 +96,43 @@ interface RecoveryOptionProps {
 
 function RecoveryOption({ icon, title, status }: RecoveryOptionProps) {
   return (
-    <div className="flex items-center justify-between p-4 border rounded-lg" style={{ borderColor: 'rgb(var(--border))' }}>
+    <div
+      className="flex items-center justify-between p-4 border rounded-lg"
+      style={{ borderColor: 'rgb(var(--border))' }}
+    >
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: 'rgb(var(--secondary))' }}
+        >
           {icon}
         </div>
         <div>
-          <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{title}</p>
-          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{status}</p>
+          <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+            {title}
+          </p>
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {status}
+          </p>
         </div>
       </div>
-      <Button variant="secondary" size="sm">Setup</Button>
+      <Button variant="secondary" size="sm">
+        Setup
+      </Button>
     </div>
   )
 }
 
 function EmailIcon() {
   return (
-    <svg className="w-5 h-5" style={{ color: 'rgb(var(--muted-foreground))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <svg
+      className="w-5 h-5"
+      style={{ color: 'rgb(var(--muted-foreground))' }}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      aria-hidden="true"
+    >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -125,7 +145,14 @@ function EmailIcon() {
 
 function SocialIcon() {
   return (
-    <svg className="w-5 h-5" style={{ color: 'rgb(var(--muted-foreground))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <svg
+      className="w-5 h-5"
+      style={{ color: 'rgb(var(--muted-foreground))' }}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      aria-hidden="true"
+    >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"

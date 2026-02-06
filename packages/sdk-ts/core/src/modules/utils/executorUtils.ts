@@ -1,14 +1,14 @@
+import type { RecurringPaymentConfig, SessionKeyConfig } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import {
+  concat,
   encodeAbiParameters,
-  parseAbiParameters,
   encodeFunctionData,
   keccak256,
-  concat,
-  toBytes,
   pad,
+  parseAbiParameters,
+  toBytes,
 } from 'viem'
-import type { SessionKeyConfig, RecurringPaymentConfig } from '@stablenet/sdk-types'
 
 // ============================================================================
 // Types

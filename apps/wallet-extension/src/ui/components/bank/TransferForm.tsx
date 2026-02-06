@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { LinkedBankAccount } from '../../../types'
-import { Button, Input, Select, Card } from '../common'
+import { Button, Card, Input, Select } from '../common'
 
 interface TransferFormProps {
   accounts: LinkedBankAccount[]
@@ -29,7 +29,7 @@ export function TransferForm({ accounts, onTransfer, isLoading = false }: Transf
       return
     }
 
-    const amountNum = parseFloat(amount)
+    const amountNum = Number.parseFloat(amount)
     if (isNaN(amountNum) || amountNum <= 0) {
       setError('Please enter a valid amount')
       return
@@ -86,11 +86,14 @@ export function TransferForm({ accounts, onTransfer, isLoading = false }: Transf
           placeholder="Enter description"
         />
 
-        {error && (
-          <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg">{error}</div>
-        )}
+        {error && <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg">{error}</div>}
 
-        <Button type="submit" fullWidth isLoading={isLoading} disabled={!fromAccount || !toAccount || !amount}>
+        <Button
+          type="submit"
+          fullWidth
+          isLoading={isLoading}
+          disabled={!fromAccount || !toAccount || !amount}
+        >
           Transfer
         </Button>
       </form>

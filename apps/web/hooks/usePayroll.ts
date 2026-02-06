@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { PayrollEntry } from '@/types'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface UsePayrollConfig {
   fetchPayroll?: () => Promise<PayrollEntry[]>
@@ -57,20 +57,19 @@ export function usePayroll(config: UsePayrollConfig = {}): UsePayrollReturn {
   }, [autoFetch, refresh])
 
   const summary = useMemo<PayrollSummary>(() => {
-    const activeEntries = payrollEntries.filter(e => e.status === 'active')
+    const activeEntries = payrollEntries.filter((e) => e.status === 'active')
 
     // Calculate total monthly (converting from token amount)
     const totalMonthly = activeEntries.reduce((sum, entry) => {
       const decimals = entry.token?.decimals ?? 6
-      const amount = Number(entry.amount) / (10 ** decimals)
+      const amount = Number(entry.amount) / 10 ** decimals
 
       // Convert to monthly equivalent
       switch (entry.frequency) {
         case 'weekly':
-          return sum + (amount * 4.33) // ~4.33 weeks per month
+          return sum + amount * 4.33 // ~4.33 weeks per month
         case 'biweekly':
-          return sum + (amount * 2.17) // ~2.17 bi-weeks per month
-        case 'monthly':
+          return sum + amount * 2.17 // ~2.17 bi-weeks per month
         default:
           return sum + amount
       }

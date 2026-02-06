@@ -8,9 +8,9 @@
  */
 
 import type { Address, Hex } from 'viem'
-import { keccak256, concat, toHex, toRlp, numberToHex } from 'viem'
-import { EIP7702_MAGIC, DELEGATION_PREFIX, ZERO_ADDRESS, DELEGATE_PRESETS } from './constants'
-import type { Authorization, SignedAuthorization, DelegatePreset, DelegationStatus } from './types'
+import { concat, keccak256, numberToHex, toHex, toRlp } from 'viem'
+import { DELEGATE_PRESETS, DELEGATION_PREFIX, EIP7702_MAGIC, ZERO_ADDRESS } from './constants'
+import type { Authorization, DelegatePreset, DelegationStatus, SignedAuthorization } from './types'
 
 /**
  * Create authorization hash according to EIP-7702 specification

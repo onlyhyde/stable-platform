@@ -47,22 +47,17 @@ export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
   action?: ReactNode
 }
 
-export function CardHeader({
-  title,
-  subtitle,
-  action,
-  className = '',
-  ...props
-}: CardHeaderProps) {
+export function CardHeader({ title, subtitle, action, className = '', ...props }: CardHeaderProps) {
   return (
-    <div
-      className={`flex items-start justify-between mb-4 ${className}`}
-      {...props}
-    >
+    <div className={`flex items-start justify-between mb-4 ${className}`} {...props}>
       <div>
-        <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{title}</h3>
+        <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+          {title}
+        </h3>
         {subtitle && (
-          <p className="text-sm mt-0.5" style={{ color: 'rgb(var(--muted-foreground))' }}>{subtitle}</p>
+          <p className="text-sm mt-0.5" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {subtitle}
+          </p>
         )}
       </div>
       {action && <div>{action}</div>}
@@ -72,11 +67,7 @@ export function CardHeader({
 
 export interface CardContentProps extends HTMLAttributes<HTMLDivElement> {}
 
-export function CardContent({
-  children,
-  className = '',
-  ...props
-}: CardContentProps) {
+export function CardContent({ children, className = '', ...props }: CardContentProps) {
   return (
     <div className={className} {...props}>
       {children}
@@ -86,11 +77,7 @@ export function CardContent({
 
 export interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {}
 
-export function CardFooter({
-  children,
-  className = '',
-  ...props
-}: CardFooterProps) {
+export function CardFooter({ children, className = '', ...props }: CardFooterProps) {
   return (
     <div
       className={`mt-4 pt-4 ${className}`}

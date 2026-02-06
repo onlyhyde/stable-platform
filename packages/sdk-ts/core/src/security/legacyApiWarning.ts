@@ -15,8 +15,7 @@ export const DeprecationStatus = {
   REMOVED: 'removed',
 } as const
 
-export type DeprecationStatusType =
-  (typeof DeprecationStatus)[keyof typeof DeprecationStatus]
+export type DeprecationStatusType = (typeof DeprecationStatus)[keyof typeof DeprecationStatus]
 
 /**
  * API warning info
@@ -174,9 +173,7 @@ export function getAllApiWarnings(): ApiWarning[] {
 /**
  * Get warnings by status
  */
-export function getWarningsByStatus(
-  status: DeprecationStatusType
-): ApiWarning[] {
+export function getWarningsByStatus(status: DeprecationStatusType): ApiWarning[] {
   return getAllApiWarnings().filter((w) => w.status === status)
 }
 
@@ -218,10 +215,7 @@ export function createConsoleDeprecationNotice(method: string): string {
   const warning = getApiWarning(method)
   if (!warning) return ''
 
-  const lines = [
-    `[Deprecated] ${warning.status.toUpperCase()}: ${method}`,
-    warning.message,
-  ]
+  const lines = [`[Deprecated] ${warning.status.toUpperCase()}: ${method}`, warning.message]
 
   if (warning.alternative) {
     lines.push(`Suggested alternative: ${warning.alternative}`)
@@ -254,9 +248,7 @@ let ethSignSettings: EthSignSettings = { ...DEFAULT_ETH_SIGN_SETTINGS }
 /**
  * Update eth_sign settings
  */
-export function updateEthSignSettings(
-  settings: Partial<EthSignSettings>
-): void {
+export function updateEthSignSettings(settings: Partial<EthSignSettings>): void {
   ethSignSettings = { ...ethSignSettings, ...settings }
 }
 

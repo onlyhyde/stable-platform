@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useEffect, useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 
 export interface ModalProps {
   isOpen: boolean
@@ -138,9 +138,7 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div className="p-4 overflow-y-auto max-h-[calc(90vh-8rem)]">
-          {children}
-        </div>
+        <div className="p-4 overflow-y-auto max-h-[calc(90vh-8rem)]">{children}</div>
       </div>
     </div>
   )

@@ -6,31 +6,22 @@
  * Provides backwards-compatible API while delegating to specialized clients.
  */
 
+import type { ModuleType } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import type {
-  ModuleType,
-  ModuleInstallRequest,
-  ModuleUninstallRequest,
-  InstalledModule,
-} from '@stablenet/sdk-types'
-import { createViemProvider, type RpcProvider } from '../providers'
 import { ConfigurationError } from '../errors'
-import { createModuleQueryClient, type ModuleQueryClient } from './queryClient'
+import { type RpcProvider, createViemProvider } from '../providers'
+import { createModuleRegistry } from './moduleRegistry'
 import {
-  createModuleOperationClient,
-  type ModuleOperationClient,
+  type ConflictCheckResult,
   type ModuleCalldata,
   type ValidationResult,
-  type ConflictCheckResult,
+  createModuleOperationClient,
 } from './operationClient'
-import { createModuleRegistry } from './moduleRegistry'
-// Re-export encoding utils for convenience (use these instead of deprecated helpers)
-import {
-  encodeECDSAValidatorInit,
-  encodeWebAuthnValidatorInit,
-} from './utils/validatorUtils'
+import { createModuleQueryClient } from './queryClient'
 import { encodeSessionKeyInit } from './utils/executorUtils'
 import { encodeSpendingLimitInit } from './utils/hookUtils'
+// Re-export encoding utils for convenience (use these instead of deprecated helpers)
+import { encodeECDSAValidatorInit, encodeWebAuthnValidatorInit } from './utils/validatorUtils'
 
 // ============================================================================
 // Types
@@ -113,17 +104,17 @@ export function createModuleClient(config: ModuleClientConfig) {
 
   // DIP: Use injected provider or create one from rpcUrl
   if (!injectedProvider && !rpcUrl) {
-    throw new ConfigurationError(
-      'Either provider or rpcUrl must be provided',
-      'provider',
-      { operation: 'createModuleClient' }
-    )
+    throw new ConfigurationError('Either provider or rpcUrl must be provided', 'provider', {
+      operation: 'createModuleClient',
+    })
   }
 
-  const provider: RpcProvider = injectedProvider ?? createViemProvider({
-    rpcUrl: rpcUrl!,
-    chainId,
-  })
+  const provider: RpcProvider =
+    injectedProvider ??
+    createViemProvider({
+      rpcUrl: rpcUrl!,
+      chainId,
+    })
 
   // Create shared registry
   const registry = createModuleRegistry({ chainId })

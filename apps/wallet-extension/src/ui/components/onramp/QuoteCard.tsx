@@ -1,5 +1,5 @@
 import type { OnRampQuote } from '../../../types'
-import { Card, Badge } from '../common'
+import { Badge, Card } from '../common'
 
 interface QuoteCardProps {
   quote: OnRampQuote
@@ -17,7 +17,7 @@ export function QuoteCard({ quote, onAccept, isExpired = false }: QuoteCardProps
   }
 
   const formatCrypto = (amount: string, symbol: string) => {
-    return `${parseFloat(amount).toFixed(6)} ${symbol}`
+    return `${Number.parseFloat(amount).toFixed(6)} ${symbol}`
   }
 
   const getTimeRemaining = () => {
@@ -61,7 +61,12 @@ export function QuoteCard({ quote, onAccept, isExpired = false }: QuoteCardProps
             stroke="currentColor"
             aria-hidden="true"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 14l-7 7m0 0l-7-7m7 7V3"
+            />
           </svg>
         </div>
 
@@ -82,15 +87,21 @@ export function QuoteCard({ quote, onAccept, isExpired = false }: QuoteCardProps
         </div>
         <div className="flex items-center justify-between text-xs">
           <span className="text-gray-500">Network Fee</span>
-          <span className="text-gray-700">{formatCurrency(quote.fees.networkFee, quote.fiatCurrency)}</span>
+          <span className="text-gray-700">
+            {formatCurrency(quote.fees.networkFee, quote.fiatCurrency)}
+          </span>
         </div>
         <div className="flex items-center justify-between text-xs">
           <span className="text-gray-500">Service Fee</span>
-          <span className="text-gray-700">{formatCurrency(quote.fees.serviceFee, quote.fiatCurrency)}</span>
+          <span className="text-gray-700">
+            {formatCurrency(quote.fees.serviceFee, quote.fiatCurrency)}
+          </span>
         </div>
         <div className="flex items-center justify-between text-xs font-medium">
           <span className="text-gray-700">Total</span>
-          <span className="text-gray-900">{formatCurrency(quote.totalFiatAmount, quote.fiatCurrency)}</span>
+          <span className="text-gray-900">
+            {formatCurrency(quote.totalFiatAmount, quote.fiatCurrency)}
+          </span>
         </div>
       </div>
 

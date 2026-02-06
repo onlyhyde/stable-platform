@@ -1,15 +1,17 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import type { Address, Hex } from 'viem'
 import { useStableNetContext } from '@/providers'
 import type { Announcement, StealthMetaAddress } from '@/types'
+import { useCallback, useState } from 'react'
+import type { Address, Hex } from 'viem'
 
 interface UseStealthConfig {
   getSpendingPublicKey?: () => Promise<Hex>
   getViewingPublicKey?: () => Promise<Hex>
   signTypedData?: (data: unknown) => Promise<Hex>
-  registerOnChain?: (params: { metaAddress: string; signature: Hex }) => Promise<{ transactionHash: Hex }>
+  registerOnChain?: (params: { metaAddress: string; signature: Hex }) => Promise<{
+    transactionHash: Hex
+  }>
   sendTransaction?: (params: { to: Address; value: bigint; data?: Hex }) => Promise<{ hash: Hex }>
 }
 
@@ -75,105 +77,110 @@ export function useStealth(config: UseStealthConfig = {}) {
   /**
    * Generate stealth address for recipient
    */
-  const generateStealthAddress = useCallback(async (
-    recipientMetaAddress: string
-  ): Promise<{ stealthAddress: Address; ephemeralPubKey: Hex; viewTag: number } | null> => {
-    setIsLoading(true)
-    setError(null)
+  const generateStealthAddress = useCallback(
+    async (
+      recipientMetaAddress: string
+    ): Promise<{ stealthAddress: Address; ephemeralPubKey: Hex; viewTag: number } | null> => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const metaAddress = parseStealthMetaAddress(recipientMetaAddress)
-      if (!metaAddress) {
-        throw new Error('Invalid stealth meta address')
+      try {
+        const metaAddress = parseStealthMetaAddress(recipientMetaAddress)
+        if (!metaAddress) {
+          throw new Error('Invalid stealth meta address')
+        }
+
+        const response = await fetch(`${stealthServerUrl}/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ metaAddress: recipientMetaAddress }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to generate stealth address')
+        }
+
+        const result = await response.json()
+        return {
+          stealthAddress: result.stealthAddress as Address,
+          ephemeralPubKey: result.ephemeralPubKey as Hex,
+          viewTag: result.viewTag as number,
+        }
+      } catch (err) {
+        const stealthError =
+          err instanceof Error ? err : new Error('Failed to generate stealth address')
+        setError(stealthError)
+        return null
+      } finally {
+        setIsLoading(false)
       }
-
-      const response = await fetch(`${stealthServerUrl}/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ metaAddress: recipientMetaAddress }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to generate stealth address')
-      }
-
-      const result = await response.json()
-      return {
-        stealthAddress: result.stealthAddress as Address,
-        ephemeralPubKey: result.ephemeralPubKey as Hex,
-        viewTag: result.viewTag as number,
-      }
-    } catch (err) {
-      const stealthError = err instanceof Error ? err : new Error('Failed to generate stealth address')
-      setError(stealthError)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [stealthServerUrl, parseStealthMetaAddress])
+    },
+    [stealthServerUrl, parseStealthMetaAddress]
+  )
 
   /**
    * Fetch announcements for scanning
    */
-  const fetchAnnouncements = useCallback(async (
-    fromBlock?: bigint,
-    toBlock?: bigint
-  ): Promise<Announcement[]> => {
-    setIsLoading(true)
-    setError(null)
+  const fetchAnnouncements = useCallback(
+    async (fromBlock?: bigint, toBlock?: bigint): Promise<Announcement[]> => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const params = new URLSearchParams()
-      if (fromBlock) params.set('fromBlock', fromBlock.toString())
-      if (toBlock) params.set('toBlock', toBlock.toString())
+      try {
+        const params = new URLSearchParams()
+        if (fromBlock) params.set('fromBlock', fromBlock.toString())
+        if (toBlock) params.set('toBlock', toBlock.toString())
 
-      const response = await fetch(`${stealthServerUrl}/announcements?${params}`)
+        const response = await fetch(`${stealthServerUrl}/announcements?${params}`)
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch announcements')
+        if (!response.ok) {
+          throw new Error('Failed to fetch announcements')
+        }
+
+        const result = await response.json()
+        return result.announcements as Announcement[]
+      } catch (err) {
+        const fetchError = err instanceof Error ? err : new Error('Failed to fetch announcements')
+        setError(fetchError)
+        return []
+      } finally {
+        setIsLoading(false)
       }
-
-      const result = await response.json()
-      return result.announcements as Announcement[]
-    } catch (err) {
-      const fetchError = err instanceof Error ? err : new Error('Failed to fetch announcements')
-      setError(fetchError)
-      return []
-    } finally {
-      setIsLoading(false)
-    }
-  }, [stealthServerUrl])
+    },
+    [stealthServerUrl]
+  )
 
   /**
    * Register stealth meta address via API
    */
-  const registerMetaAddress = useCallback(async (
-    metaAddress: string,
-    signature: Hex
-  ): Promise<boolean> => {
-    setIsLoading(true)
-    setError(null)
+  const registerMetaAddress = useCallback(
+    async (metaAddress: string, signature: Hex): Promise<boolean> => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const response = await fetch(`${stealthServerUrl}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ metaAddress, signature }),
-      })
+      try {
+        const response = await fetch(`${stealthServerUrl}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ metaAddress, signature }),
+        })
 
-      if (!response.ok) {
-        throw new Error('Failed to register meta address')
+        if (!response.ok) {
+          throw new Error('Failed to register meta address')
+        }
+
+        return true
+      } catch (err) {
+        const registerError =
+          err instanceof Error ? err : new Error('Failed to register meta address')
+        setError(registerError)
+        return false
+      } finally {
+        setIsLoading(false)
       }
-
-      return true
-    } catch (err) {
-      const registerError = err instanceof Error ? err : new Error('Failed to register meta address')
-      setError(registerError)
-      return false
-    } finally {
-      setIsLoading(false)
-    }
-  }, [stealthServerUrl])
+    },
+    [stealthServerUrl]
+  )
 
   /**
    * Register the user's stealth meta address on-chain
@@ -223,7 +230,8 @@ export function useStealth(config: UseStealthConfig = {}) {
 
       return true
     } catch (err) {
-      const regError = err instanceof Error ? err : new Error('Failed to register stealth meta address')
+      const regError =
+        err instanceof Error ? err : new Error('Failed to register stealth meta address')
       setError(regError)
       return false
     } finally {
@@ -273,51 +281,55 @@ export function useStealth(config: UseStealthConfig = {}) {
   /**
    * Send tokens to a stealth address
    */
-  const sendToStealthAddress = useCallback(async (params: {
-    stealthAddress: Address
-    ephemeralPubKey: Hex
-    value: bigint
-  }): Promise<{ hash: Hex } | null> => {
-    if (!sendTransaction) {
-      setError(new Error('sendTransaction function required'))
-      return null
-    }
+  const sendToStealthAddress = useCallback(
+    async (params: {
+      stealthAddress: Address
+      ephemeralPubKey: Hex
+      value: bigint
+    }): Promise<{ hash: Hex } | null> => {
+      if (!sendTransaction) {
+        setError(new Error('sendTransaction function required'))
+        return null
+      }
 
-    setIsLoading(true)
-    setError(null)
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const { stealthAddress, ephemeralPubKey, value } = params
+      try {
+        const { stealthAddress, ephemeralPubKey, value } = params
 
-      // First, announce the payment on-chain (would call the announcement contract)
-      // For now, we just send the transaction directly
-      const result = await sendTransaction({
-        to: stealthAddress,
-        value,
-        // In production, this would include data for the announcement contract
-      })
+        // First, announce the payment on-chain (would call the announcement contract)
+        // For now, we just send the transaction directly
+        const result = await sendTransaction({
+          to: stealthAddress,
+          value,
+          // In production, this would include data for the announcement contract
+        })
 
-      // Register the announcement with the stealth server
-      await fetch(`${stealthServerUrl}/announce`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          stealthAddress,
-          ephemeralPubKey,
-          transactionHash: result.hash,
-          value: value.toString(),
-        }),
-      })
+        // Register the announcement with the stealth server
+        await fetch(`${stealthServerUrl}/announce`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            stealthAddress,
+            ephemeralPubKey,
+            transactionHash: result.hash,
+            value: value.toString(),
+          }),
+        })
 
-      return result
-    } catch (err) {
-      const sendError = err instanceof Error ? err : new Error('Failed to send to stealth address')
-      setError(sendError)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [sendTransaction, stealthServerUrl])
+        return result
+      } catch (err) {
+        const sendError =
+          err instanceof Error ? err : new Error('Failed to send to stealth address')
+        setError(sendError)
+        return null
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [sendTransaction, stealthServerUrl]
+  )
 
   return {
     stealthMetaAddress,

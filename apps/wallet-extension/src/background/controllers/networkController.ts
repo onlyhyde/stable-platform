@@ -5,12 +5,12 @@
 
 import type { Hex } from 'viem'
 import type {
-  NetworkConfig,
-  NetworkStatus,
-  NetworkState,
-  NetworkControllerState,
-  NetworkControllerOptions,
   AddNetworkParams,
+  NetworkConfig,
+  NetworkControllerOptions,
+  NetworkControllerState,
+  NetworkState,
+  NetworkStatus,
 } from './networkController.types'
 
 type NetworkEventType =
@@ -227,7 +227,7 @@ export class NetworkController {
    * Convert hex chain ID to number
    */
   chainIdHexToNumber(hex: Hex): number {
-    return parseInt(hex, 16)
+    return Number.parseInt(hex, 16)
   }
 
   /**

@@ -1,10 +1,10 @@
 'use client'
 
-import { type FC } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../common/Card'
-import type { PaymentHistoryEntry } from '../../types/subscription'
-import { cn, formatAddress } from '../../lib/utils'
+import type { FC } from 'react'
 import { formatUnits } from 'viem'
+import { formatAddress } from '../../lib/utils'
+import type { PaymentHistoryEntry } from '../../types/subscription'
+import { Card, CardContent, CardHeader, CardTitle } from '../common/Card'
 
 interface PaymentHistoryProps {
   payments: PaymentHistoryEntry[]
@@ -33,12 +33,24 @@ export const PaymentHistory: FC<PaymentHistoryProps> = ({
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="animate-pulse flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                <div
+                  className="w-10 h-10 rounded-full"
+                  style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 rounded w-1/3" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
-                  <div className="h-3 rounded w-1/4" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                  <div
+                    className="h-4 rounded w-1/3"
+                    style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                  />
+                  <div
+                    className="h-3 rounded w-1/4"
+                    style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                  />
                 </div>
-                <div className="h-4 rounded w-20" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                <div
+                  className="h-4 rounded w-20"
+                  style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                />
               </div>
             ))}
           </div>
@@ -54,7 +66,10 @@ export const PaymentHistory: FC<PaymentHistoryProps> = ({
           <CardTitle>Payment History</CardTitle>
         </CardHeader>
         <CardContent className="py-8 text-center">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+            style={{ backgroundColor: 'rgb(var(--secondary))' }}
+          >
             <svg
               className="w-6 h-6"
               style={{ color: 'rgb(var(--muted-foreground))' }}
@@ -106,15 +121,42 @@ const PaymentHistoryItem: FC<PaymentHistoryItemProps> = ({ payment }) => {
       <div className="flex items-center gap-4">
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: payment.status === 'success' ? 'rgb(var(--success) / 0.1)' : 'rgb(var(--destructive) / 0.1)' }}
+          style={{
+            backgroundColor:
+              payment.status === 'success'
+                ? 'rgb(var(--success) / 0.1)'
+                : 'rgb(var(--destructive) / 0.1)',
+          }}
         >
           {payment.status === 'success' ? (
-            <svg className="w-5 h-5" style={{ color: 'rgb(var(--success))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-5 h-5"
+              style={{ color: 'rgb(var(--success))' }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           ) : (
-            <svg className="w-5 h-5" style={{ color: 'rgb(var(--destructive))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5"
+              style={{ color: 'rgb(var(--destructive))' }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           )}
         </div>
@@ -122,7 +164,10 @@ const PaymentHistoryItem: FC<PaymentHistoryItemProps> = ({ payment }) => {
           <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
             Subscription Payment #{payment.subscriptionId.toString()}
           </p>
-          <div className="flex items-center gap-2 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          <div
+            className="flex items-center gap-2 text-sm"
+            style={{ color: 'rgb(var(--muted-foreground))' }}
+          >
             <span>{date.toLocaleDateString()}</span>
             <span>&middot;</span>
             <a
@@ -138,10 +183,19 @@ const PaymentHistoryItem: FC<PaymentHistoryItemProps> = ({ payment }) => {
         </div>
       </div>
       <div className="text-right">
-        <p className="font-semibold" style={{ color: payment.status === 'success' ? 'rgb(var(--foreground))' : 'rgb(var(--destructive))' }}>
-          {payment.status === 'success' ? '-' : ''}{amountFormatted} {tokenInfo.symbol}
+        <p
+          className="font-semibold"
+          style={{
+            color:
+              payment.status === 'success' ? 'rgb(var(--foreground))' : 'rgb(var(--destructive))',
+          }}
+        >
+          {payment.status === 'success' ? '-' : ''}
+          {amountFormatted} {tokenInfo.symbol}
         </p>
-        <p className="text-sm capitalize" style={{ color: 'rgb(var(--muted-foreground))' }}>{payment.status}</p>
+        <p className="text-sm capitalize" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          {payment.status}
+        </p>
       </div>
     </div>
   )

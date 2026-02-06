@@ -5,13 +5,13 @@
  * Pre/post execution hooks for validation and state management.
  */
 
-import type { Address } from 'viem'
 import { MODULE_TYPE } from '@stablenet/sdk-types'
+import type { Address } from 'viem'
 import {
-  type ModuleRegistryEntry,
-  createModuleEntry,
   DEFAULT_SUPPORTED_CHAINS,
+  type ModuleRegistryEntry,
   SUPPORTED_CHAIN_IDS,
+  createModuleEntry,
 } from './types'
 
 // ============================================================================
@@ -80,6 +80,4 @@ export const SPENDING_LIMIT_HOOK: ModuleRegistryEntry = createModuleEntry(
 /**
  * All built-in hook modules
  */
-export const HOOK_MODULES: ModuleRegistryEntry[] = [
-  SPENDING_LIMIT_HOOK,
-]
+export const HOOK_MODULES: ModuleRegistryEntry[] = [SPENDING_LIMIT_HOOK]

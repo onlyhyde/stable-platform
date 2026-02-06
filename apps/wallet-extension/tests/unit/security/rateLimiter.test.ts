@@ -1,12 +1,12 @@
-// Unmock rate limiter to test real implementation
-jest.unmock('../../../src/shared/security/rateLimiter')
+// Unmock to test real implementation
+jest.unmock('@stablenet/core')
 
 import {
   RateLimiter,
   DEFAULT_LIMITS,
   METHOD_CATEGORIES,
   type RateLimitConfig,
-} from '../../../src/shared/security/rateLimiter'
+} from '@stablenet/core'
 
 describe('RateLimiter', () => {
   let rateLimiter: RateLimiter

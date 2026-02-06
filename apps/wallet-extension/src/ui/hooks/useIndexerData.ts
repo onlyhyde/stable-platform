@@ -5,7 +5,7 @@
  * from the network's indexer service.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useWalletStore } from './useWalletStore'
 
 /**

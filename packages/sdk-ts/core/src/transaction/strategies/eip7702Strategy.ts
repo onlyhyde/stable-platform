@@ -5,22 +5,18 @@
  * Follows SRP: handles only EIP-7702 mode transactions.
  */
 
+import type { Account, MultiModeTransactionRequest, TransactionResult } from '@stablenet/sdk-types'
+import { ACCOUNT_TYPE, TRANSACTION_MODE } from '@stablenet/sdk-types'
 import type { Hash } from 'viem'
-import type {
-  MultiModeTransactionRequest,
-  TransactionResult,
-  Account,
-} from '@stablenet/sdk-types'
-import { TRANSACTION_MODE, ACCOUNT_TYPE } from '@stablenet/sdk-types'
-import { createEIP7702TransactionBuilder } from '../eip7702Transaction'
-import { createTransactionError } from '../../errors'
 import { DEFAULT_CONFIRMATION_TIMEOUT } from '../../config'
+import { createTransactionError } from '../../errors'
+import { createEIP7702TransactionBuilder } from '../eip7702Transaction'
 import type {
-  TransactionStrategy,
   BaseStrategyConfig,
-  StrategyPreparedTransaction,
-  StrategyExecuteOptions,
   CombinedSigner,
+  StrategyExecuteOptions,
+  StrategyPreparedTransaction,
+  TransactionStrategy,
 } from './types'
 
 // ============================================================================
@@ -42,9 +38,7 @@ interface EIP7702PreparedData {
 /**
  * Create an EIP-7702 transaction strategy
  */
-export function createEIP7702Strategy(
-  config: BaseStrategyConfig
-): TransactionStrategy {
+export function createEIP7702Strategy(config: BaseStrategyConfig): TransactionStrategy {
   const { rpcUrl, chainId } = config
 
   // Create the underlying builder
@@ -57,10 +51,7 @@ export function createEIP7702Strategy(
      * EIP-7702 mode supports EOA and delegated accounts
      */
     supports(account: Account): boolean {
-      return (
-        account.type === ACCOUNT_TYPE.EOA ||
-        account.type === ACCOUNT_TYPE.DELEGATED
-      )
+      return account.type === ACCOUNT_TYPE.EOA || account.type === ACCOUNT_TYPE.DELEGATED
     },
 
     /**
@@ -127,10 +118,7 @@ export function createEIP7702Strategy(
 
       // Build the delegation/revocation
       const built = preparedData.isRevocation
-        ? await builder.buildRevocation(
-            { account: prepared.request.from },
-            signer
-          )
+        ? await builder.buildRevocation({ account: prepared.request.from }, signer)
         : await builder.buildDelegation(
             {
               account: prepared.request.from,
@@ -157,10 +145,9 @@ export function createEIP7702Strategy(
       // EIP-7702 confirmation would be similar to EOA
       // For now, we just wait the timeout as a placeholder
       // In production, this would poll for the transaction receipt
-      throw createTransactionError(
-        'EIP-7702 confirmation waiting not yet implemented',
-        { reason: 'NOT_IMPLEMENTED' }
-      )
+      throw createTransactionError('EIP-7702 confirmation waiting not yet implemented', {
+        reason: 'NOT_IMPLEMENTED',
+      })
     },
   }
 }

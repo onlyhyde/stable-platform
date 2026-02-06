@@ -5,7 +5,11 @@
  * Follows OCP: new modes can be added without modifying existing code.
  */
 
-import type { TransactionMode, GasEstimate, MultiModeTransactionRequest } from '@stablenet/sdk-types'
+import type {
+  GasEstimate,
+  MultiModeTransactionRequest,
+  TransactionMode,
+} from '@stablenet/sdk-types'
 import type { RpcProvider } from '../../providers'
 
 // ============================================================================

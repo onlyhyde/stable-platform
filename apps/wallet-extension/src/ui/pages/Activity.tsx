@@ -1,5 +1,5 @@
-import { useWalletStore, useNetworkCurrency } from '../hooks'
 import { formatEther } from 'viem'
+import { useNetworkCurrency, useWalletStore } from '../hooks'
 
 export function Activity() {
   const { pendingTransactions, history } = useWalletStore()
@@ -11,10 +11,7 @@ export function Activity() {
   if (allTransactions.length === 0) {
     return (
       <div className="p-4">
-        <h2
-          className="text-xl font-bold mb-6"
-          style={{ color: 'rgb(var(--foreground))' }}
-        >
+        <h2 className="text-xl font-bold mb-6" style={{ color: 'rgb(var(--foreground))' }}>
           Activity
         </h2>
         <div className="text-center py-12">
@@ -41,10 +38,7 @@ export function Activity() {
 
   return (
     <div className="p-4">
-      <h2
-        className="text-xl font-bold mb-4"
-        style={{ color: 'rgb(var(--foreground))' }}
-      >
+      <h2 className="text-xl font-bold mb-4" style={{ color: 'rgb(var(--foreground))' }}>
         Activity
       </h2>
 
@@ -108,7 +102,9 @@ function TransactionItem({ transaction }: TransactionItemProps) {
             </svg>
           </div>
           <div>
-            <p className="font-medium text-sm" style={{ color: 'rgb(var(--foreground))' }}>Send</p>
+            <p className="font-medium text-sm" style={{ color: 'rgb(var(--foreground))' }}>
+              Send
+            </p>
             <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
               To: {formatAddress(transaction.to)}
             </p>

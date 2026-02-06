@@ -17,14 +17,8 @@ export function AuditSummaryCards({
 }: AuditSummaryCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <SummaryStatCard
-        label="Total Actions (30d)"
-        value={totalActions}
-      />
-      <SummaryStatCard
-        label="Unique Actors"
-        value={uniqueActors}
-      />
+      <SummaryStatCard label="Total Actions (30d)" value={totalActions} />
+      <SummaryStatCard label="Unique Actors" value={uniqueActors} />
       <SummaryStatCard
         label="On-Chain Records"
         value={onChainPercentage}

@@ -60,9 +60,10 @@ export function createLogger(namespace: string) {
      */
     error(message: string, error?: unknown, context?: LogContext): void {
       if (isDev) {
-        const errorContext = error instanceof Error
-          ? { ...context, errorMessage: error.message, errorStack: error.stack }
-          : { ...context, error }
+        const errorContext =
+          error instanceof Error
+            ? { ...context, errorMessage: error.message, errorStack: error.stack }
+            : { ...context, error }
         console.error(formatMessage('error', message, errorContext))
       }
     },

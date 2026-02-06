@@ -27,10 +27,12 @@ export function SigningMethodCard({
             <label
               className="flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-colors"
               style={{
-                backgroundColor: signingMethod === 'stablenet' ? 'rgb(var(--primary) / 0.1)' : 'transparent',
+                backgroundColor:
+                  signingMethod === 'stablenet' ? 'rgb(var(--primary) / 0.1)' : 'transparent',
                 borderWidth: '1px',
                 borderStyle: 'solid',
-                borderColor: signingMethod === 'stablenet' ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                borderColor:
+                  signingMethod === 'stablenet' ? 'rgb(var(--primary))' : 'rgb(var(--border))',
               }}
             >
               <input
@@ -72,7 +74,8 @@ export function SigningMethodCard({
                       Native EIP-7702 Support
                     </div>
                     <div style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
-                      Your private key never leaves your wallet. The authorization is signed securely using wallet_signAuthorization.
+                      Your private key never leaves your wallet. The authorization is signed
+                      securely using wallet_signAuthorization.
                     </div>
                     <div className="mt-2 text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                       Note: A relayer account (Anvil Account #0) will pay the gas fee.
@@ -87,10 +90,12 @@ export function SigningMethodCard({
           <label
             className="flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-colors"
             style={{
-              backgroundColor: signingMethod === 'privateKey' ? 'rgb(var(--primary) / 0.1)' : 'transparent',
+              backgroundColor:
+                signingMethod === 'privateKey' ? 'rgb(var(--primary) / 0.1)' : 'transparent',
               borderWidth: '1px',
               borderStyle: 'solid',
-              borderColor: signingMethod === 'privateKey' ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+              borderColor:
+                signingMethod === 'privateKey' ? 'rgb(var(--primary))' : 'rgb(var(--border))',
             }}
           >
             <input
@@ -111,7 +116,6 @@ export function SigningMethodCard({
               </div>
             </div>
           </label>
-
         </div>
       </CardContent>
     </Card>

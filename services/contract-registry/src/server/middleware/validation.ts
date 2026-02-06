@@ -6,7 +6,7 @@ function formatZodError(error: ZodError): string {
 }
 
 export function validateBody<T>(schema: ZodSchema<T>) {
-  return async function (request: FastifyRequest, reply: FastifyReply) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
     const result = schema.safeParse(request.body)
     if (!result.success) {
       return reply.status(400).send({
@@ -19,7 +19,7 @@ export function validateBody<T>(schema: ZodSchema<T>) {
 }
 
 export function validateParams<T>(schema: ZodSchema<T>) {
-  return async function (request: FastifyRequest, reply: FastifyReply) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
     const result = schema.safeParse(request.params)
     if (!result.success) {
       return reply.status(400).send({
@@ -32,7 +32,7 @@ export function validateParams<T>(schema: ZodSchema<T>) {
 }
 
 export function validateQuery<T>(schema: ZodSchema<T>) {
-  return async function (request: FastifyRequest, reply: FastifyReply) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
     const result = schema.safeParse(request.query)
     if (!result.success) {
       return reply.status(400).send({

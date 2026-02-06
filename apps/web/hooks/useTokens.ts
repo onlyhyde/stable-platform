@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
 import type { Token } from '@/types'
+import { useCallback, useEffect, useState } from 'react'
 
 interface UseTokensConfig {
   fetchTokens?: () => Promise<Token[]>

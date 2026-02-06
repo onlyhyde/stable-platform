@@ -9,9 +9,9 @@ import type { GasEstimate, MultiModeTransactionRequest } from '@stablenet/sdk-ty
 import { TRANSACTION_MODE } from '@stablenet/sdk-types'
 import {
   BASE_TRANSFER_GAS,
-  GAS_BUFFER_MULTIPLIER,
-  GAS_BUFFER_DIVISOR,
   EIP7702_AUTH_GAS,
+  GAS_BUFFER_DIVISOR,
+  GAS_BUFFER_MULTIPLIER,
   GAS_PER_AUTHORIZATION,
 } from '../../config'
 import type { GasEstimationStrategy, GasPrices, GasStrategyConfig } from './types'
@@ -54,8 +54,7 @@ export function createEIP7702GasStrategy(config: GasStrategyConfig): GasEstimati
       const authCount = request.authorizationList?.length ?? 1
       const authGas = EIP7702_AUTH_GAS + GAS_PER_AUTHORIZATION * BigInt(authCount)
 
-      const gasLimit =
-        ((baseGas + authGas) * GAS_BUFFER_MULTIPLIER) / GAS_BUFFER_DIVISOR
+      const gasLimit = ((baseGas + authGas) * GAS_BUFFER_MULTIPLIER) / GAS_BUFFER_DIVISOR
 
       return {
         gasLimit,

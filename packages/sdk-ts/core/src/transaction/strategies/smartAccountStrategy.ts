@@ -5,34 +5,30 @@
  * Follows SRP: handles only Smart Account mode transactions.
  */
 
-import type { Address, Hex, Hash } from 'viem'
 import type {
+  Account,
   MultiModeTransactionRequest,
   TransactionResult,
-  Account,
   UserOperation,
 } from '@stablenet/sdk-types'
-import {
-  TRANSACTION_MODE,
-  ACCOUNT_TYPE,
-  GAS_PAYMENT_TYPE,
-} from '@stablenet/sdk-types'
+import { ACCOUNT_TYPE, GAS_PAYMENT_TYPE, TRANSACTION_MODE } from '@stablenet/sdk-types'
+import type { Address, Hash, Hex } from 'viem'
 import { createBundlerClient } from '../../clients/bundlerClient'
-import { createPaymasterClient } from '../../paymasterClient'
-import { createTransactionError } from '../../errors'
 import {
-  DEFAULT_CONFIRMATION_TIMEOUT,
-  DEFAULT_VERIFICATION_GAS_LIMIT,
-  DEFAULT_PRE_VERIFICATION_GAS,
   DEFAULT_CALL_GAS_LIMIT,
+  DEFAULT_CONFIRMATION_TIMEOUT,
   DEFAULT_MAX_FEE_PER_GAS,
+  DEFAULT_PRE_VERIFICATION_GAS,
+  DEFAULT_VERIFICATION_GAS_LIMIT,
 } from '../../config'
+import { createTransactionError } from '../../errors'
+import { createPaymasterClient } from '../../paymasterClient'
 import type {
-  TransactionStrategy,
-  SmartAccountStrategyConfig,
-  StrategyPreparedTransaction,
-  StrategyExecuteOptions,
   CombinedSigner,
+  SmartAccountStrategyConfig,
+  StrategyExecuteOptions,
+  StrategyPreparedTransaction,
+  TransactionStrategy,
 } from './types'
 
 // ============================================================================
@@ -140,11 +136,7 @@ export function createSmartAccountStrategy(
       this.validate(request, account)
 
       // Encode calldata for Smart Account
-      const callData = encodeSmartAccountCall(
-        request.to,
-        request.value,
-        request.data
-      )
+      const callData = encodeSmartAccountCall(request.to, request.value, request.data)
 
       // Estimate gas via bundler
       const gasEstimation = await bundlerClient.estimateUserOperationGas({
@@ -176,7 +168,8 @@ export function createSmartAccountStrategy(
             nonce: 0n,
             callData,
             callGasLimit: gasEstimation.callGasLimit,
-            verificationGasLimit: gasEstimation.verificationGasLimit ?? DEFAULT_VERIFICATION_GAS_LIMIT,
+            verificationGasLimit:
+              gasEstimation.verificationGasLimit ?? DEFAULT_VERIFICATION_GAS_LIMIT,
             preVerificationGas: gasEstimation.preVerificationGas ?? DEFAULT_PRE_VERIFICATION_GAS,
             maxFeePerGas: request.maxFeePerGas ?? 0n,
             maxPriorityFeePerGas: request.maxPriorityFeePerGas ?? 0n,
@@ -190,7 +183,8 @@ export function createSmartAccountStrategy(
       }
 
       // Calculate gas estimate
-      const gasLimit = gasEstimation.callGasLimit +
+      const gasLimit =
+        gasEstimation.callGasLimit +
         (gasEstimation.verificationGasLimit ?? DEFAULT_VERIFICATION_GAS_LIMIT) +
         (gasEstimation.preVerificationGas ?? DEFAULT_PRE_VERIFICATION_GAS)
 
@@ -228,8 +222,12 @@ export function createSmartAccountStrategy(
         sender: prepared.request.from,
         nonce: 0n, // Should be fetched from entry point
         callData: preparedData.userOp.callData!,
-        callGasLimit: preparedData.userOp.callGasLimit ?? prepared.gasEstimate.callGasLimit ?? DEFAULT_CALL_GAS_LIMIT,
-        verificationGasLimit: preparedData.userOp.verificationGasLimit ?? DEFAULT_VERIFICATION_GAS_LIMIT,
+        callGasLimit:
+          preparedData.userOp.callGasLimit ??
+          prepared.gasEstimate.callGasLimit ??
+          DEFAULT_CALL_GAS_LIMIT,
+        verificationGasLimit:
+          preparedData.userOp.verificationGasLimit ?? DEFAULT_VERIFICATION_GAS_LIMIT,
         preVerificationGas: preparedData.userOp.preVerificationGas ?? DEFAULT_PRE_VERIFICATION_GAS,
         maxFeePerGas: prepared.gasEstimate.maxFeePerGas,
         maxPriorityFeePerGas: prepared.gasEstimate.maxPriorityFeePerGas,
@@ -240,7 +238,8 @@ export function createSmartAccountStrategy(
       if (preparedData.paymasterData) {
         userOp.paymaster = preparedData.paymasterData.paymaster
         userOp.paymasterData = preparedData.paymasterData.paymasterData
-        userOp.paymasterVerificationGasLimit = preparedData.paymasterData.paymasterVerificationGasLimit
+        userOp.paymasterVerificationGasLimit =
+          preparedData.paymasterData.paymasterVerificationGasLimit
         userOp.paymasterPostOpGasLimit = preparedData.paymasterData.paymasterPostOpGasLimit
       }
 
@@ -293,11 +292,7 @@ export function createSmartAccountStrategy(
 /**
  * Encode Smart Account execute call
  */
-function encodeSmartAccountCall(
-  _to: Address,
-  _value: bigint,
-  _data: Hex
-): Hex {
+function encodeSmartAccountCall(_to: Address, _value: bigint, _data: Hex): Hex {
   // Kernel's execute function encoding
   // This is a placeholder - actual implementation would use viem's encodeFunctionData
   return '0x' as Hex

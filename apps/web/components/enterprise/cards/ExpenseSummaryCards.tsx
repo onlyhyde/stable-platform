@@ -1,7 +1,7 @@
 'use client'
 
-import { SummaryStatCard } from '../SummaryStatCard'
 import { formatUSD } from '@/lib/utils'
+import { SummaryStatCard } from '../SummaryStatCard'
 
 interface ExpenseSummaryCardsProps {
   totalPending: number
@@ -33,10 +33,7 @@ export function ExpenseSummaryCards({
         value={formatUSD(totalPaidMTD)}
         valueClassName="text-green-600"
       />
-      <SummaryStatCard
-        label="Total Expenses"
-        value={totalExpenses}
-      />
+      <SummaryStatCard label="Total Expenses" value={totalExpenses} />
     </div>
   )
 }

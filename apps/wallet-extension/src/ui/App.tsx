@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
-import { useWalletStore } from './hooks/useWalletStore'
 import { Header } from './components/Header'
 import { Navigation } from './components/Navigation'
-import { Home, Send, Receive, Activity, Settings, Lock, Bank, BuyPage } from './pages'
-import { Onboarding } from './pages/Onboarding'
 import { Spinner } from './components/common'
+import { useWalletStore } from './hooks/useWalletStore'
+import { Activity, Bank, BuyPage, Home, Lock, Receive, Send, Settings } from './pages'
+import { Onboarding } from './pages/Onboarding'
 import './styles/globals.css'
 
 export function App() {
@@ -54,10 +54,7 @@ export function App() {
   // Show onboarding if wallet is not initialized
   if (!isInitialized) {
     return (
-      <div
-        className="w-[360px] h-[600px]"
-        style={{ backgroundColor: 'rgb(var(--background))' }}
-      >
+      <div className="w-[360px] h-[600px]" style={{ backgroundColor: 'rgb(var(--background))' }}>
         <Onboarding onComplete={() => syncWithBackground()} />
       </div>
     )
@@ -66,10 +63,7 @@ export function App() {
   // Show lock screen if wallet is locked
   if (!isUnlocked) {
     return (
-      <div
-        className="w-[360px] h-[600px]"
-        style={{ backgroundColor: 'rgb(var(--background))' }}
-      >
+      <div className="w-[360px] h-[600px]" style={{ backgroundColor: 'rgb(var(--background))' }}>
         <Lock
           onUnlock={async (password) => {
             const success = await unlockWallet(password)
@@ -129,7 +123,13 @@ export function App() {
             className="transition-all-fast hover:opacity-80"
             style={{ color: 'rgb(var(--destructive))' }}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

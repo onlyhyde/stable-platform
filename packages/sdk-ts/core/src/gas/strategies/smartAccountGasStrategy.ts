@@ -6,17 +6,17 @@
  */
 
 import type { GasEstimate, MultiModeTransactionRequest } from '@stablenet/sdk-types'
-import { TRANSACTION_MODE, GAS_PAYMENT_TYPE } from '@stablenet/sdk-types'
-import { GasEstimationError } from '../../errors'
+import { GAS_PAYMENT_TYPE, TRANSACTION_MODE } from '@stablenet/sdk-types'
 import {
   BASE_TRANSFER_GAS,
-  GAS_BUFFER_MULTIPLIER,
-  GAS_BUFFER_DIVISOR,
-  DEFAULT_VERIFICATION_GAS_LIMIT,
   DEFAULT_PRE_VERIFICATION_GAS,
-  PAYMASTER_VERIFICATION_GAS,
+  DEFAULT_VERIFICATION_GAS_LIMIT,
+  GAS_BUFFER_DIVISOR,
+  GAS_BUFFER_MULTIPLIER,
   PAYMASTER_POST_OP_GAS,
+  PAYMASTER_VERIFICATION_GAS,
 } from '../../config'
+import { GasEstimationError } from '../../errors'
 import type { GasEstimationStrategy, GasPrices, GasStrategyConfig } from './types'
 
 // ============================================================================
@@ -41,10 +41,10 @@ export function createSmartAccountGasStrategy(config: GasStrategyConfig): GasEst
       gasPrices: GasPrices
     ): Promise<GasEstimate> {
       if (!bundlerUrl) {
-        throw new GasEstimationError(
-          'Bundler URL required for Smart Account gas estimation',
-          { operation: 'smartAccountGasStrategy.estimate', reason: 'BUNDLER_NOT_CONFIGURED' }
-        )
+        throw new GasEstimationError('Bundler URL required for Smart Account gas estimation', {
+          operation: 'smartAccountGasStrategy.estimate',
+          reason: 'BUNDLER_NOT_CONFIGURED',
+        })
       }
 
       // For now, use simplified estimation
@@ -100,11 +100,8 @@ export function createSmartAccountGasStrategy(config: GasStrategyConfig): GasEst
         verificationGasLimit,
         callGasLimit,
         paymasterVerificationGasLimit:
-          paymasterVerificationGasLimit > 0n
-            ? paymasterVerificationGasLimit
-            : undefined,
-        paymasterPostOpGasLimit:
-          paymasterPostOpGasLimit > 0n ? paymasterPostOpGasLimit : undefined,
+          paymasterVerificationGasLimit > 0n ? paymasterVerificationGasLimit : undefined,
+        paymasterPostOpGasLimit: paymasterPostOpGasLimit > 0n ? paymasterPostOpGasLimit : undefined,
       }
     },
   }

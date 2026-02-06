@@ -53,12 +53,7 @@ export function Button({
       {...props}
     >
       {isLoading && (
-        <svg
-          className="animate-spin h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
+        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
           <circle
             className="opacity-25"
             cx="12"

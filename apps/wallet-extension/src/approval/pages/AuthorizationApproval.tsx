@@ -1,5 +1,5 @@
 import type { AuthorizationApprovalRequest } from '../../types'
-import { Button, Card, Badge } from '../../ui/components/common'
+import { Badge, Button, Card } from '../../ui/components/common'
 
 interface AuthorizationApprovalProps {
   approval: AuthorizationApprovalRequest
@@ -43,11 +43,7 @@ export function AuthorizationApproval({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {approval.favicon ? (
-              <img
-                src={approval.favicon}
-                alt=""
-                className="w-10 h-10 rounded-lg"
-              />
+              <img src={approval.favicon} alt="" className="w-10 h-10 rounded-lg" />
             ) : (
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center"
@@ -61,28 +57,25 @@ export function AuthorizationApproval({
                   stroke="currentColor"
                   aria-hidden="true"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
                 </svg>
               </div>
             )}
             <div>
-              <p
-                className="font-medium break-all"
-                style={{ color: 'rgb(var(--foreground))' }}
-              >
+              <p className="font-medium break-all" style={{ color: 'rgb(var(--foreground))' }}>
                 {new URL(approval.origin).hostname}
               </p>
-              <p
-                className="text-sm"
-                style={{ color: 'rgb(var(--muted-foreground))' }}
-              >
+              <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {data.isRevocation ? 'Account Revocation' : 'Account Authorization'}
               </p>
             </div>
           </div>
-          <Badge variant={getRiskColor(data.riskLevel)}>
-            {data.riskLevel.toUpperCase()}
-          </Badge>
+          <Badge variant={getRiskColor(data.riskLevel)}>{data.riskLevel.toUpperCase()}</Badge>
         </div>
       </div>
 
@@ -109,10 +102,7 @@ export function AuthorizationApproval({
               ? 'Revoke Smart Account Delegation'
               : 'EIP-7702 Smart Account Authorization'}
           </p>
-          <p
-            className="text-sm"
-            style={{ color: 'rgb(var(--foreground-secondary))' }}
-          >
+          <p className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
             {data.isRevocation
               ? 'This will remove the smart contract delegation from your account, reverting it to a regular EOA.'
               : 'This will authorize your account to delegate its operations to a smart contract. Your account will gain smart account capabilities while you retain full control of your private key.'}
@@ -121,16 +111,10 @@ export function AuthorizationApproval({
 
         {/* Account being authorized */}
         <Card padding="md">
-          <p
-            className="text-xs mb-1"
-            style={{ color: 'rgb(var(--muted-foreground))' }}
-          >
+          <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Account to {data.isRevocation ? 'Revoke' : 'Authorize'}
           </p>
-          <p
-            className="text-sm font-mono break-all"
-            style={{ color: 'rgb(var(--foreground))' }}
-          >
+          <p className="text-sm font-mono break-all" style={{ color: 'rgb(var(--foreground))' }}>
             {data.account}
           </p>
         </Card>
@@ -138,16 +122,10 @@ export function AuthorizationApproval({
         {/* Contract being delegated to */}
         {!data.isRevocation && (
           <Card padding="md">
-            <p
-              className="text-xs mb-1"
-              style={{ color: 'rgb(var(--muted-foreground))' }}
-            >
+            <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Delegate to Contract
             </p>
-            <p
-              className="text-sm font-mono break-all"
-              style={{ color: 'rgb(var(--foreground))' }}
-            >
+            <p className="text-sm font-mono break-all" style={{ color: 'rgb(var(--foreground))' }}>
               {data.contractAddress}
             </p>
             {data.contractInfo && (
@@ -155,16 +133,10 @@ export function AuthorizationApproval({
                 className="mt-3 p-3 rounded-lg"
                 style={{ backgroundColor: 'rgb(var(--surface))' }}
               >
-                <p
-                  className="text-sm font-medium mb-1"
-                  style={{ color: 'rgb(var(--foreground))' }}
-                >
+                <p className="text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground))' }}>
                   {data.contractInfo.name}
                 </p>
-                <p
-                  className="text-xs mb-2"
-                  style={{ color: 'rgb(var(--muted-foreground))' }}
-                >
+                <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
                   {data.contractInfo.description}
                 </p>
                 {data.contractInfo.features.length > 0 && (
@@ -192,30 +164,18 @@ export function AuthorizationApproval({
         <Card padding="md">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p
-                className="text-xs mb-1"
-                style={{ color: 'rgb(var(--muted-foreground))' }}
-              >
+              <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Chain ID
               </p>
-              <p
-                className="text-sm font-mono"
-                style={{ color: 'rgb(var(--foreground))' }}
-              >
+              <p className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                 {data.chainId}
               </p>
             </div>
             <div>
-              <p
-                className="text-xs mb-1"
-                style={{ color: 'rgb(var(--muted-foreground))' }}
-              >
+              <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Authorization Nonce
               </p>
-              <p
-                className="text-sm font-mono"
-                style={{ color: 'rgb(var(--foreground))' }}
-              >
+              <p className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                 {String(data.nonce)}
               </p>
             </div>
@@ -228,20 +188,23 @@ export function AuthorizationApproval({
             variant="filled"
             padding="md"
             style={{
-              backgroundColor: data.riskLevel === 'critical' || data.riskLevel === 'high'
-                ? 'rgb(var(--destructive) / 0.1)'
-                : 'rgb(var(--warning) / 0.1)',
-              border: data.riskLevel === 'critical' || data.riskLevel === 'high'
-                ? '1px solid rgb(var(--destructive) / 0.2)'
-                : '1px solid rgb(var(--warning) / 0.2)',
+              backgroundColor:
+                data.riskLevel === 'critical' || data.riskLevel === 'high'
+                  ? 'rgb(var(--destructive) / 0.1)'
+                  : 'rgb(var(--warning) / 0.1)',
+              border:
+                data.riskLevel === 'critical' || data.riskLevel === 'high'
+                  ? '1px solid rgb(var(--destructive) / 0.2)'
+                  : '1px solid rgb(var(--warning) / 0.2)',
             }}
           >
             <p
               className="text-sm font-medium mb-2"
               style={{
-                color: data.riskLevel === 'critical' || data.riskLevel === 'high'
-                  ? 'rgb(var(--destructive))'
-                  : 'rgb(var(--warning))'
+                color:
+                  data.riskLevel === 'critical' || data.riskLevel === 'high'
+                    ? 'rgb(var(--destructive))'
+                    : 'rgb(var(--warning))',
               }}
             >
               Security Warnings
@@ -252,24 +215,31 @@ export function AuthorizationApproval({
                   key={index}
                   className="flex items-start gap-2 text-sm"
                   style={{
-                    color: data.riskLevel === 'critical' || data.riskLevel === 'high'
-                      ? 'rgb(var(--destructive) / 0.8)'
-                      : 'rgb(var(--warning) / 0.8)'
+                    color:
+                      data.riskLevel === 'critical' || data.riskLevel === 'high'
+                        ? 'rgb(var(--destructive) / 0.8)'
+                        : 'rgb(var(--warning) / 0.8)',
                   }}
                 >
                   <svg
                     className="w-4 h-4 mt-0.5 shrink-0"
                     style={{
-                      color: data.riskLevel === 'critical' || data.riskLevel === 'high'
-                        ? 'rgb(var(--destructive))'
-                        : 'rgb(var(--warning))'
+                      color:
+                        data.riskLevel === 'critical' || data.riskLevel === 'high'
+                          ? 'rgb(var(--destructive))'
+                          : 'rgb(var(--warning))',
                     }}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     aria-hidden="true"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
                   </svg>
                   {warning}
                 </li>
@@ -297,30 +267,27 @@ export function AuthorizationApproval({
                 stroke="currentColor"
                 aria-hidden="true"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
-              <p
-                className="text-sm font-bold"
-                style={{ color: 'rgb(var(--destructive))' }}
-              >
+              <p className="text-sm font-bold" style={{ color: 'rgb(var(--destructive))' }}>
                 CRITICAL WARNING
               </p>
             </div>
-            <p
-              className="text-sm"
-              style={{ color: 'rgb(var(--destructive))' }}
-            >
-              Authorizing an unknown or unverified contract is extremely risky. The contract could potentially:
+            <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
+              Authorizing an unknown or unverified contract is extremely risky. The contract could
+              potentially:
             </p>
             <ul className="mt-2 space-y-1 text-sm" style={{ color: 'rgb(var(--destructive))' }}>
               <li>• Access all assets in your account</li>
               <li>• Execute transactions on your behalf</li>
               <li>• Drain your funds without further approval</li>
             </ul>
-            <p
-              className="text-sm font-medium mt-2"
-              style={{ color: 'rgb(var(--destructive))' }}
-            >
+            <p className="text-sm font-medium mt-2" style={{ color: 'rgb(var(--destructive))' }}>
               Only proceed if you fully trust the contract source.
             </p>
           </Card>

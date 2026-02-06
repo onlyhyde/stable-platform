@@ -1,21 +1,28 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
-import { useSmartAccount, useWallet } from '@/hooks'
-import type { SigningMethod } from '@/hooks/useSmartAccount'
-import { Card, CardContent, PageHeader, InfoBanner, ConnectWalletCard, useToast } from '@/components/common'
+import {
+  Card,
+  CardContent,
+  ConnectWalletCard,
+  InfoBanner,
+  PageHeader,
+  useToast,
+} from '@/components/common'
 import {
   AccountStatusCard,
-  PrivateKeyCard,
-  UpgradeCard,
-  RevokeCard,
   AuthorizationDetailsCard,
-  FeatureComparisonCard,
   ContractAddressesCard,
+  FeatureComparisonCard,
+  PrivateKeyCard,
+  RevokeCard,
   SigningMethodCard,
+  UpgradeCard,
 } from '@/components/smart-account'
+import { useSmartAccount, useWallet } from '@/hooks'
+import type { SigningMethod } from '@/hooks/useSmartAccount'
 import { getDelegatePresets } from '@/lib/eip7702'
 import { sanitizeErrorMessage } from '@/lib/utils'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Address, Hex } from 'viem'
 
 export default function SmartAccountPage() {
@@ -77,13 +84,10 @@ export default function SmartAccountPage() {
     }
   }, [])
 
-
   // Find matching Anvil account based on connected address
   const matchingAnvilAccount = useMemo(() => {
     if (!address) return null
-    return anvilAccounts.find(
-      (acc) => acc.address.toLowerCase() === address.toLowerCase()
-    )
+    return anvilAccounts.find((acc) => acc.address.toLowerCase() === address.toLowerCase())
   }, [address, anvilAccounts])
 
   // Auto-fill private key if connected to an Anvil account
@@ -277,10 +281,7 @@ export default function SmartAccountPage() {
           )}
 
           {lastAuthorization && (
-            <AuthorizationDetailsCard
-              authorization={lastAuthorization}
-              txHash={lastTxHash}
-            />
+            <AuthorizationDetailsCard authorization={lastAuthorization} txHash={lastTxHash} />
           )}
 
           <FeatureComparisonCard />
@@ -293,7 +294,6 @@ export default function SmartAccountPage() {
           />
         </>
       )}
-
     </div>
   )
 }

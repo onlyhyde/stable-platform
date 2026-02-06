@@ -1,20 +1,20 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
-import { useAccount, useChainId, useWalletClient } from 'wagmi'
-import { getPublicClient } from 'wagmi/actions'
-import { createWalletClient, http, type Chain } from 'viem'
-import type { Address, Hex, SignedAuthorization as ViemSignedAuthorization } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
-import { anvil, sepolia, mainnet } from 'viem/chains'
-import { wagmiConfig } from '@/lib/wagmi'
+import { getConfigByChainId } from '@/lib/config'
 import {
-  isDelegatedAccount,
+  ZERO_ADDRESS,
   extractDelegateAddress,
   getDelegatePresets,
-  ZERO_ADDRESS,
+  isDelegatedAccount,
 } from '@/lib/eip7702'
-import { getConfigByChainId } from '@/lib/config'
+import { wagmiConfig } from '@/lib/wagmi'
+import { useCallback, useEffect, useState } from 'react'
+import { http, type Chain, createWalletClient } from 'viem'
+import type { Address, Hex, SignedAuthorization as ViemSignedAuthorization } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import { anvil, mainnet, sepolia } from 'viem/chains'
+import { useAccount, useChainId, useWalletClient } from 'wagmi'
+import { getPublicClient } from 'wagmi/actions'
 
 // Contract addresses (local devnet) - can be overridden by user selection
 const DEFAULT_KERNEL_IMPLEMENTATION = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9' as const
@@ -137,7 +137,8 @@ export function useSmartAccount() {
   // Check if connected wallet is StableNet (supports wallet_signAuthorization)
   const isStableNetWallet = Boolean(
     wagmiWalletClient?.transport &&
-    (wagmiWalletClient as unknown as { transport?: { isStableNet?: boolean } })?.transport?.isStableNet
+      (wagmiWalletClient as unknown as { transport?: { isStableNet?: boolean } })?.transport
+        ?.isStableNet
   )
 
   // Get default delegate address for current chain
@@ -226,9 +227,7 @@ export function useSmartAccount() {
         const account = privateKeyToAccount(privateKey)
 
         if (account.address.toLowerCase() !== address.toLowerCase()) {
-          throw new Error(
-            `Private key mismatch. Expected: ${address}, Got: ${account.address}`
-          )
+          throw new Error(`Private key mismatch. Expected: ${address}, Got: ${account.address}`)
         }
 
         const chain = getChainConfig(chainId)
@@ -281,7 +280,14 @@ export function useSmartAccount() {
         setIsUpgrading(false)
       }
     },
-    [isConnected, address, chainId, status.isSmartAccount, getDefaultDelegateAddress, checkSmartAccountStatus]
+    [
+      isConnected,
+      address,
+      chainId,
+      status.isSmartAccount,
+      getDefaultDelegateAddress,
+      checkSmartAccountStatus,
+    ]
   )
 
   /**
@@ -324,19 +330,23 @@ export function useSmartAccount() {
 
         // Request authorization signature from StableNet wallet
         // Use raw transport request to bypass wagmi's strict typing
-        const transport = wagmiWalletClient.transport as { request?: (args: unknown) => Promise<unknown> }
+        const transport = wagmiWalletClient.transport as {
+          request?: (args: unknown) => Promise<unknown>
+        }
         if (!transport?.request) {
           throw new Error('Wallet transport not available')
         }
 
-        const result = await transport.request({
+        const result = (await transport.request({
           method: 'wallet_signAuthorization',
-          params: [{
-            account: address,
-            contractAddress: targetDelegate,
-            chainId,
-          }],
-        }) as {
+          params: [
+            {
+              account: address,
+              contractAddress: targetDelegate,
+              chainId,
+            },
+          ],
+        })) as {
           signedAuthorization: {
             chainId: bigint
             address: Address
@@ -357,7 +367,13 @@ export function useSmartAccount() {
           nonce: Number(signedAuthorization.nonce),
           r: signedAuthorization.r,
           s: signedAuthorization.s,
-          v: BigInt(signedAuthorization.v === 0 ? 27 : signedAuthorization.v === 1 ? 28 : signedAuthorization.v),
+          v: BigInt(
+            signedAuthorization.v === 0
+              ? 27
+              : signedAuthorization.v === 1
+                ? 28
+                : signedAuthorization.v
+          ),
         }
 
         const authInfo: AuthorizationInfo = {
@@ -400,7 +416,15 @@ export function useSmartAccount() {
         setIsUpgrading(false)
       }
     },
-    [isConnected, address, chainId, status.isSmartAccount, wagmiWalletClient, getDefaultDelegateAddress, checkSmartAccountStatus]
+    [
+      isConnected,
+      address,
+      chainId,
+      status.isSmartAccount,
+      wagmiWalletClient,
+      getDefaultDelegateAddress,
+      checkSmartAccountStatus,
+    ]
   )
 
   /**
@@ -439,19 +463,23 @@ export function useSmartAccount() {
 
         // Request revocation signature from StableNet wallet
         // Use raw transport request to bypass wagmi's strict typing
-        const transport = wagmiWalletClient.transport as { request?: (args: unknown) => Promise<unknown> }
+        const transport = wagmiWalletClient.transport as {
+          request?: (args: unknown) => Promise<unknown>
+        }
         if (!transport?.request) {
           throw new Error('Wallet transport not available')
         }
 
-        const result = await transport.request({
+        const result = (await transport.request({
           method: 'wallet_signAuthorization',
-          params: [{
-            account: address,
-            contractAddress: ZERO_ADDRESS,
-            chainId,
-          }],
-        }) as {
+          params: [
+            {
+              account: address,
+              contractAddress: ZERO_ADDRESS,
+              chainId,
+            },
+          ],
+        })) as {
           signedAuthorization: {
             chainId: bigint
             address: Address
@@ -471,7 +499,13 @@ export function useSmartAccount() {
           nonce: Number(signedAuthorization.nonce),
           r: signedAuthorization.r,
           s: signedAuthorization.s,
-          v: BigInt(signedAuthorization.v === 0 ? 27 : signedAuthorization.v === 1 ? 28 : signedAuthorization.v),
+          v: BigInt(
+            signedAuthorization.v === 0
+              ? 27
+              : signedAuthorization.v === 1
+                ? 28
+                : signedAuthorization.v
+          ),
         }
 
         const authInfo: AuthorizationInfo = {
@@ -512,7 +546,14 @@ export function useSmartAccount() {
         setIsRevoking(false)
       }
     },
-    [isConnected, address, chainId, status.isSmartAccount, wagmiWalletClient, checkSmartAccountStatus]
+    [
+      isConnected,
+      address,
+      chainId,
+      status.isSmartAccount,
+      wagmiWalletClient,
+      checkSmartAccountStatus,
+    ]
   )
 
   /**
@@ -543,9 +584,7 @@ export function useSmartAccount() {
         const account = privateKeyToAccount(privateKey)
 
         if (account.address.toLowerCase() !== address.toLowerCase()) {
-          throw new Error(
-            `Private key mismatch. Expected: ${address}, Got: ${account.address}`
-          )
+          throw new Error(`Private key mismatch. Expected: ${address}, Got: ${account.address}`)
         }
 
         const chain = getChainConfig(chainId)

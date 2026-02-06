@@ -1,5 +1,5 @@
 import type { OnRampOrder } from '../../../types'
-import { Card, Badge } from '../common'
+import { Badge, Card } from '../common'
 
 interface OrderCardProps {
   order: OnRampOrder
@@ -17,7 +17,7 @@ export function OrderCard({ order, onViewDetails, onCancel }: OrderCardProps) {
   }
 
   const formatCrypto = (amount: string, symbol: string) => {
-    return `${parseFloat(amount).toFixed(6)} ${symbol}`
+    return `${Number.parseFloat(amount).toFixed(6)} ${symbol}`
   }
 
   const formatDate = (dateStr: string) => {
@@ -80,7 +80,9 @@ export function OrderCard({ order, onViewDetails, onCancel }: OrderCardProps) {
       <div className="mt-3 space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="text-gray-500">Amount Paid</span>
-          <span className="text-gray-700">{formatCurrency(order.totalFiatAmount, order.fiatCurrency)}</span>
+          <span className="text-gray-700">
+            {formatCurrency(order.totalFiatAmount, order.fiatCurrency)}
+          </span>
         </div>
         <div className="flex items-center justify-between text-xs">
           <span className="text-gray-500">Payment Method</span>
@@ -99,7 +101,9 @@ export function OrderCard({ order, onViewDetails, onCancel }: OrderCardProps) {
           </div>
         )}
         {order.failureReason && (
-          <div className="mt-2 p-2 bg-red-50 rounded text-xs text-red-700">{order.failureReason}</div>
+          <div className="mt-2 p-2 bg-red-50 rounded text-xs text-red-700">
+            {order.failureReason}
+          </div>
         )}
       </div>
 

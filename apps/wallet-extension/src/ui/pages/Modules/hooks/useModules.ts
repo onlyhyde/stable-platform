@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
-import type { Address } from 'viem'
 import type { InstalledModule } from '@stablenet/core'
+import { useCallback, useEffect, useState } from 'react'
+import type { Address } from 'viem'
 import { useSelectedNetwork } from '../../../hooks'
 
 interface UseModulesReturn {

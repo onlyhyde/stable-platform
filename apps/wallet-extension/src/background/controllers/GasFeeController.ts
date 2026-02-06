@@ -4,17 +4,17 @@
  * Integrates with SDK GasEstimator for multi-mode transaction support
  */
 
-import { createLogger } from '../../shared/utils/logger'
-import { getGasFeeConfig, GWEI } from '../../config'
-import type { IndexerClient, GasStats } from '../services/IndexerClient'
 import {
-  createGasEstimator,
+  type GasEstimate,
   type GasEstimator,
   type GasPriceInfo,
-  type GasEstimate,
   type MultiModeTransactionRequest,
   type TransactionMode,
+  createGasEstimator,
 } from '@stablenet/core'
+import { GWEI, getGasFeeConfig } from '../../config'
+import { createLogger } from '../../shared/utils/logger'
+import type { IndexerClient } from '../services/IndexerClient'
 
 const logger = createLogger('GasFeeController')
 
@@ -254,9 +254,7 @@ export class GasFeeController {
   /**
    * Estimate gas for multi-mode transaction using SDK
    */
-  async estimateMultiModeGas(
-    request: MultiModeTransactionRequest
-  ): Promise<GasEstimate> {
+  async estimateMultiModeGas(request: MultiModeTransactionRequest): Promise<GasEstimate> {
     if (!this.gasEstimator) {
       throw new Error('Gas estimator not initialized')
     }
@@ -404,10 +402,7 @@ export class GasFeeController {
   /**
    * Estimate gas for a transaction
    */
-  async estimateGas(
-    tx: TransactionParams,
-    options: GasEstimationOptions = {}
-  ): Promise<string> {
+  async estimateGas(tx: TransactionParams, options: GasEstimationOptions = {}): Promise<string> {
     const { addBuffer = false, bufferPercentage = 20 } = options
 
     try {
@@ -563,7 +558,7 @@ export class GasFeeController {
    * Get historical gas statistics from indexer
    * Useful for displaying gas price trends
    */
-  async getHistoricalGasStats(blockCount: number = 100): Promise<HistoricalGasStats | null> {
+  async getHistoricalGasStats(blockCount = 100): Promise<HistoricalGasStats | null> {
     if (!this.indexerClient) {
       logger.debug('Indexer client not configured, skipping historical stats')
       return null

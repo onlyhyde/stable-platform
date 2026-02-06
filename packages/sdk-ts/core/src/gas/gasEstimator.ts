@@ -1,19 +1,18 @@
-import type { Address } from 'viem'
-import { formatGwei } from 'viem'
 import type {
-  TransactionMode,
   GasEstimate,
   MultiModeTransactionRequest,
+  TransactionMode,
 } from '@stablenet/sdk-types'
+import type { Address } from 'viem'
+import { formatGwei } from 'viem'
+import { MAX_PRIORITY_FEE, MIN_PRIORITY_FEE } from '../config'
 import { GasEstimationError } from '../errors'
-import { createViemProvider, type RpcProvider } from '../providers'
-import { MIN_PRIORITY_FEE, MAX_PRIORITY_FEE } from '../config'
+import { type RpcProvider, createViemProvider } from '../providers'
 import {
-  createGasStrategyRegistry,
-  createEOAGasStrategy,
   createEIP7702GasStrategy,
+  createEOAGasStrategy,
+  createGasStrategyRegistry,
   createSmartAccountGasStrategy,
-  type GasPrices,
 } from './strategies'
 
 // ============================================================================
@@ -116,10 +115,12 @@ export function createGasEstimator(config: GasEstimatorConfig) {
     })
   }
 
-  const provider: RpcProvider = injectedProvider ?? createViemProvider({
-    rpcUrl: rpcUrl!,
-    chainId,
-  })
+  const provider: RpcProvider =
+    injectedProvider ??
+    createViemProvider({
+      rpcUrl: rpcUrl!,
+      chainId,
+    })
 
   // Create strategy config
   const strategyConfig = {
@@ -176,9 +177,7 @@ export function createGasEstimator(config: GasEstimatorConfig) {
   /**
    * Estimate gas based on transaction mode (OCP: uses strategy pattern)
    */
-  async function estimate(
-    request: MultiModeTransactionRequest
-  ): Promise<GasEstimate> {
+  async function estimate(request: MultiModeTransactionRequest): Promise<GasEstimate> {
     const strategy = strategyRegistry.getStrategy(request.mode)
 
     if (!strategy) {
@@ -247,10 +246,9 @@ export function createGasEstimator(config: GasEstimatorConfig) {
   } {
     return {
       gasLimit: gasEstimate.gasLimit.toString(),
-      maxFeePerGas: formatGwei(gasEstimate.maxFeePerGas) + ' gwei',
-      estimatedCost: gasEstimate.estimatedCost.toString() + ' wei',
-      estimatedCostEth:
-        (Number(gasEstimate.estimatedCost) / 1e18).toFixed(6) + ' ETH',
+      maxFeePerGas: `${formatGwei(gasEstimate.maxFeePerGas)} gwei`,
+      estimatedCost: `${gasEstimate.estimatedCost.toString()} wei`,
+      estimatedCostEth: `${(Number(gasEstimate.estimatedCost) / 1e18).toFixed(6)} ETH`,
     }
   }
 

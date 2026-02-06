@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useAccount, useChainId, useChains, useSwitchChain } from 'wagmi'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Chain } from 'viem'
+import { useAccount, useChainId, useChains, useSwitchChain } from 'wagmi'
 
 /**
  * Network information from wallet
@@ -90,9 +90,11 @@ export function useWalletNetworks(): UseWalletNetworksReturn {
       return
     }
 
-    const provider = (window as unknown as {
-      ethereum?: { request?: (...args: unknown[]) => Promise<unknown> }
-    }).ethereum
+    const provider = (
+      window as unknown as {
+        ethereum?: { request?: (...args: unknown[]) => Promise<unknown> }
+      }
+    ).ethereum
 
     if (!provider?.request) {
       setSupportsWalletNetworks(false)
@@ -136,12 +138,14 @@ export function useWalletNetworks(): UseWalletNetworksReturn {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const provider = (window as unknown as {
-      ethereum?: {
-        on?: (...args: unknown[]) => void
-        removeListener?: (...args: unknown[]) => void
+    const provider = (
+      window as unknown as {
+        ethereum?: {
+          on?: (...args: unknown[]) => void
+          removeListener?: (...args: unknown[]) => void
+        }
       }
-    }).ethereum
+    ).ethereum
 
     if (!provider?.on) return
 
@@ -159,9 +163,7 @@ export function useWalletNetworks(): UseWalletNetworksReturn {
 
   // Build fallback networks from wagmi config (only used when wallet doesn't support wallet_getNetworks)
   const fallbackNetworks = useMemo((): WalletNetwork[] => {
-    return configuredChains.map((chain) =>
-      chainToWalletNetwork(chain, chain.id === currentChainId)
-    )
+    return configuredChains.map((chain) => chainToWalletNetwork(chain, chain.id === currentChainId))
   }, [configuredChains, currentChainId])
 
   // Determine which networks to use:
@@ -180,16 +182,19 @@ export function useWalletNetworks(): UseWalletNetworksReturn {
   }, [walletNetworks, fallbackNetworks, currentChainId, supportsWalletNetworks])
 
   // Switch network - use wagmi's switchChain which handles both EIP-3326 and EIP-3085
-  const switchNetwork = useCallback(async (chainId: number): Promise<boolean> => {
-    try {
-      await switchChainAsync({ chainId })
-      return true
-    } catch (err) {
-      console.error('[useWalletNetworks] Failed to switch network:', err)
-      setError('Failed to switch network')
-      return false
-    }
-  }, [switchChainAsync])
+  const switchNetwork = useCallback(
+    async (chainId: number): Promise<boolean> => {
+      try {
+        await switchChainAsync({ chainId })
+        return true
+      } catch (err) {
+        console.error('[useWalletNetworks] Failed to switch network:', err)
+        setError('Failed to switch network')
+        return false
+      }
+    },
+    [switchChainAsync]
+  )
 
   // Get selected network from the networks list
   const selectedNetwork = useMemo(() => {

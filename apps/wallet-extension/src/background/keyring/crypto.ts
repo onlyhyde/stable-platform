@@ -23,10 +23,7 @@ export function getRandomBytes(length: number): Uint8Array {
 /**
  * Derive an encryption key from password using PBKDF2
  */
-export async function deriveKey(
-  password: string,
-  salt: Uint8Array
-): Promise<CryptoKey> {
+export async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
   const encoder = new TextEncoder()
   const passwordBuffer = encoder.encode(password)
 
@@ -189,7 +186,7 @@ export function hexToBuffer(hex: string): Uint8Array {
   if (!matches) {
     throw new Error('Invalid hex string')
   }
-  return new Uint8Array(matches.map((byte) => parseInt(byte, 16)))
+  return new Uint8Array(matches.map((byte) => Number.parseInt(byte, 16)))
 }
 
 /**

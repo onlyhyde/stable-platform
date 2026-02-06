@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useChainId, useChains } from 'wagmi'
 import type { Chain } from 'viem'
+import { useChainId, useChains } from 'wagmi'
 
 export interface ChainInfo {
   id: number
@@ -15,14 +15,14 @@ export interface ChainInfo {
 
 // Chain icon colors for visual distinction
 const CHAIN_COLORS: Record<number, string> = {
-  1: 'rgb(var(--info))',         // Ethereum Mainnet - blue
-  31337: 'rgb(var(--primary))',  // Anvil - primary (indigo)
-  8283: 'rgb(var(--success))',   // StableNet Local - green
-  82830: 'rgb(var(--success))',  // StableNet Testnet - green
+  1: 'rgb(var(--info))', // Ethereum Mainnet - blue
+  31337: 'rgb(var(--primary))', // Anvil - primary (indigo)
+  8283: 'rgb(var(--success))', // StableNet Local - green
+  82830: 'rgb(var(--success))', // StableNet Testnet - green
   11155111: 'rgb(var(--warning))', // Sepolia - warning
-  137: 'rgb(var(--accent))',     // Polygon - purple
-  42161: 'rgb(var(--info))',     // Arbitrum - blue
-  10: 'rgb(var(--error))',       // Optimism - red
+  137: 'rgb(var(--accent))', // Polygon - purple
+  42161: 'rgb(var(--info))', // Arbitrum - blue
+  10: 'rgb(var(--error))', // Optimism - red
 }
 
 /**

@@ -21,10 +21,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * @param source - Object to merge into target
  * @returns New merged object (immutable)
  */
-export function deepMerge<T extends object>(
-  target: T,
-  source: Partial<T>
-): T {
+export function deepMerge<T extends object>(target: T, source: Partial<T>): T {
   const result = { ...target } as T
 
   for (const key of Object.keys(source) as Array<keyof T>) {
@@ -38,13 +35,13 @@ export function deepMerge<T extends object>(
 
     // If both are plain objects, deep merge
     if (isPlainObject(targetValue) && isPlainObject(sourceValue)) {
-      (result as Record<string, unknown>)[key as string] = deepMerge(
+      ;(result as Record<string, unknown>)[key as string] = deepMerge(
         targetValue as Record<string, unknown>,
         sourceValue as Record<string, unknown>
       )
     } else {
       // Otherwise replace (including arrays)
-      (result as Record<string, unknown>)[key as string] = sourceValue
+      ;(result as Record<string, unknown>)[key as string] = sourceValue
     }
   }
 

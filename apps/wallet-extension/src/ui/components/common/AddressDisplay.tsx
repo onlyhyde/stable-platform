@@ -38,9 +38,7 @@ export function AddressDisplay({
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <code className="text-sm font-mono text-gray-700 break-all">
-        {displayAddress}
-      </code>
+      <code className="text-sm font-mono text-gray-700 break-all">{displayAddress}</code>
       {showCopy && (
         <button
           type="button"
@@ -120,13 +118,9 @@ const avatarSizes = {
   lg: 'w-10 h-10 text-base',
 }
 
-export function AddressAvatar({
-  address,
-  size = 'md',
-  className = '',
-}: AddressAvatarProps) {
+export function AddressAvatar({ address, size = 'md', className = '' }: AddressAvatarProps) {
   // Generate a color based on the address
-  const hue = parseInt(address.slice(2, 8), 16) % 360
+  const hue = Number.parseInt(address.slice(2, 8), 16) % 360
 
   return (
     <div

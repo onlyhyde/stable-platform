@@ -1,6 +1,11 @@
-import type { Address, Hex, LocalAccount } from 'viem'
-import { encodePacked, keccak256, toHex, pad, concat } from 'viem'
-import type { UserOperation, PaymasterClient, PaymasterStubData, PaymasterData } from '@stablenet/sdk-types'
+import type {
+  PaymasterClient,
+  PaymasterData,
+  PaymasterStubData,
+  UserOperation,
+} from '@stablenet/sdk-types'
+import type { Address, Hex } from 'viem'
+import { concat, encodePacked, keccak256, pad, toHex } from 'viem'
 import type { VerifyingPaymasterConfig } from './types'
 import { DEFAULT_VALIDITY_SECONDS } from './types'
 
@@ -30,9 +35,7 @@ const STUB_SIGNATURE: Hex = `0x${'00'.repeat(65)}`
  * })
  * ```
  */
-export function createVerifyingPaymaster(
-  config: VerifyingPaymasterConfig
-): PaymasterClient {
+export function createVerifyingPaymaster(config: VerifyingPaymasterConfig): PaymasterClient {
   const { paymasterAddress, signer, chainId, validitySeconds = DEFAULT_VALIDITY_SECONDS } = config
 
   /**
@@ -40,8 +43,8 @@ export function createVerifyingPaymaster(
    * Uses placeholder signature since actual signature isn't needed for estimation
    */
   const getPaymasterStubData = async (
-    userOperation: UserOperation,
-    entryPoint: Address,
+    _userOperation: UserOperation,
+    _entryPoint: Address,
     _chainId: bigint
   ): Promise<PaymasterStubData> => {
     // Create stub paymaster data with placeholder timestamps and signature
@@ -63,7 +66,7 @@ export function createVerifyingPaymaster(
    */
   const getPaymasterData = async (
     userOperation: UserOperation,
-    entryPoint: Address,
+    _entryPoint: Address,
     _chainId: bigint
   ): Promise<PaymasterData> => {
     // Set validity window (configurable, default: 1 hour)
@@ -103,11 +106,7 @@ export function createVerifyingPaymaster(
  * Encode paymaster data in the format expected by VerifyingPaymaster
  * Format: [validUntil (6 bytes)][validAfter (6 bytes)][signature (65 bytes)]
  */
-function encodePaymasterData(
-  validUntil: bigint,
-  validAfter: bigint,
-  signature: Hex
-): Hex {
+function encodePaymasterData(validUntil: bigint, validAfter: bigint, signature: Hex): Hex {
   // Convert timestamps to 6 bytes each (uint48)
   const validUntilBytes = pad(toHex(validUntil), { size: 6 })
   const validAfterBytes = pad(toHex(validAfter), { size: 6 })
@@ -127,9 +126,8 @@ function computePaymasterHash(
   validAfter: bigint
 ): Hex {
   // Pack initCode from factory + factoryData
-  const initCode = userOp.factory && userOp.factoryData
-    ? concat([userOp.factory, userOp.factoryData])
-    : '0x'
+  const initCode =
+    userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
 
   // Pack accountGasLimits (verificationGasLimit + callGasLimit)
   const accountGasLimits = packGasLimits(userOp.verificationGasLimit, userOp.callGasLimit)
@@ -139,7 +137,19 @@ function computePaymasterHash(
 
   return keccak256(
     encodePacked(
-      ['address', 'uint256', 'bytes32', 'bytes32', 'bytes32', 'uint256', 'bytes32', 'uint256', 'address', 'uint48', 'uint48'],
+      [
+        'address',
+        'uint256',
+        'bytes32',
+        'bytes32',
+        'bytes32',
+        'uint256',
+        'bytes32',
+        'uint256',
+        'address',
+        'uint48',
+        'uint48',
+      ],
       [
         userOp.sender,
         userOp.nonce,

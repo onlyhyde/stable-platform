@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/common'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { EmptyState } from '@/components/enterprise'
 import type { LiquidityPosition } from '@/types'
 
@@ -97,10 +97,16 @@ function PositionItem({ position, onRemove }: PositionItemProps) {
     <div className="py-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <div className="flex -space-x-2">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium border-2 border-white" style={{ color: 'rgb(var(--primary))' }}>
+          <div
+            className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium border-2 border-white"
+            style={{ color: 'rgb(var(--primary))' }}
+          >
             {position.token0.symbol.slice(0, 2)}
           </div>
-          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium border-2 border-white" style={{ color: 'rgb(var(--success))' }}>
+          <div
+            className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium border-2 border-white"
+            style={{ color: 'rgb(var(--success))' }}
+          >
             {position.token1.symbol.slice(0, 2)}
           </div>
         </div>
@@ -123,11 +129,7 @@ function PositionItem({ position, onRemove }: PositionItemProps) {
           </p>
         </div>
         {onRemove && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onRemove(position)}
-          >
+          <Button variant="secondary" size="sm" onClick={() => onRemove(position)}>
             Remove
           </Button>
         )}

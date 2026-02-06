@@ -1,13 +1,12 @@
 'use client'
 
 import { type FC, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../common/Card'
-import { Button } from '../common/Button'
-import { Input } from '../common/Input'
+import { type Address, parseUnits } from 'viem'
 import type { CreatePlanParams, IntervalPreset } from '../../types/subscription'
 import { INTERVAL_PRESETS } from '../../types/subscription'
-import { parseUnits, type Address } from 'viem'
-import { cn } from '../../lib/utils'
+import { Button } from '../common/Button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../common/Card'
+import { Input } from '../common/Input'
 
 interface CreatePlanFormProps {
   onSubmit: (params: CreatePlanParams) => Promise<void>
@@ -79,7 +78,9 @@ export const CreatePlanForm: FC<CreatePlanFormProps> = ({
     <Card className={className}>
       <CardHeader>
         <CardTitle>Create Subscription Plan</CardTitle>
-        <CardDescription>Set up a new recurring subscription plan for your customers</CardDescription>
+        <CardDescription>
+          Set up a new recurring subscription plan for your customers
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -94,12 +95,18 @@ export const CreatePlanForm: FC<CreatePlanFormProps> = ({
             />
 
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+              <label
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+              >
                 Description
               </label>
               <textarea
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none resize-none"
-                style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgb(var(--background))' }}
+                style={{
+                  borderColor: 'rgb(var(--border))',
+                  backgroundColor: 'rgb(var(--background))',
+                }}
                 rows={3}
                 placeholder="Describe what subscribers get..."
                 value={description}
@@ -110,11 +117,16 @@ export const CreatePlanForm: FC<CreatePlanFormProps> = ({
 
           {/* Pricing */}
           <div className="space-y-4">
-            <h3 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>Pricing</h3>
+            <h3 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              Pricing
+            </h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+                >
                   Price
                 </label>
                 <div className="relative">
@@ -123,7 +135,10 @@ export const CreatePlanForm: FC<CreatePlanFormProps> = ({
                     step="any"
                     min="0"
                     className="w-full px-3 py-2 pr-16 border rounded-lg focus:ring-2 focus:outline-none"
-                    style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgb(var(--background))' }}
+                    style={{
+                      borderColor: 'rgb(var(--border))',
+                      backgroundColor: 'rgb(var(--background))',
+                    }}
                     placeholder="0.00"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
@@ -131,7 +146,10 @@ export const CreatePlanForm: FC<CreatePlanFormProps> = ({
                   />
                   <select
                     className="absolute right-0 top-0 h-full px-2 border-l rounded-r-lg focus:outline-none"
-                    style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgb(var(--secondary))' }}
+                    style={{
+                      borderColor: 'rgb(var(--border))',
+                      backgroundColor: 'rgb(var(--secondary))',
+                    }}
                     value={tokenIndex}
                     onChange={(e) => setTokenIndex(Number(e.target.value))}
                   >
@@ -145,12 +163,18 @@ export const CreatePlanForm: FC<CreatePlanFormProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+                >
                   Billing Interval
                 </label>
                 <select
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none"
-                  style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgb(var(--background))' }}
+                  style={{
+                    borderColor: 'rgb(var(--border))',
+                    backgroundColor: 'rgb(var(--background))',
+                  }}
                   value={interval}
                   onChange={(e) => setInterval(e.target.value as IntervalPreset)}
                 >
@@ -166,7 +190,9 @@ export const CreatePlanForm: FC<CreatePlanFormProps> = ({
 
           {/* Trial & Grace Period */}
           <div className="space-y-4">
-            <h3 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>Trial & Grace Period (Optional)</h3>
+            <h3 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              Trial & Grace Period (Optional)
+            </h3>
 
             <div className="grid grid-cols-2 gap-4">
               <Input
@@ -193,23 +219,41 @@ export const CreatePlanForm: FC<CreatePlanFormProps> = ({
 
           {/* Preview */}
           <div className="rounded-lg p-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-            <h4 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>Preview</h4>
+            <h4
+              className="text-sm font-medium mb-2"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
+              Preview
+            </h4>
             <div className="flex justify-between items-center">
               <div>
-                <p className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{name || 'Plan Name'}</p>
-                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{description || 'Plan description'}</p>
+                <p className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+                  {name || 'Plan Name'}
+                </p>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  {description || 'Plan description'}
+                </p>
               </div>
               <div className="text-right">
                 <p className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
                   {price || '0'} {selectedToken.symbol}
                 </p>
-                <p className="text-sm capitalize" style={{ color: 'rgb(var(--muted-foreground))' }}>{interval}</p>
+                <p className="text-sm capitalize" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  {interval}
+                </p>
               </div>
             </div>
           </div>
 
           {error && (
-            <div className="border rounded-lg p-3 text-sm" style={{ backgroundColor: 'rgb(var(--destructive) / 0.1)', borderColor: 'rgb(var(--destructive) / 0.3)', color: 'rgb(var(--destructive))' }}>
+            <div
+              className="border rounded-lg p-3 text-sm"
+              style={{
+                backgroundColor: 'rgb(var(--destructive) / 0.1)',
+                borderColor: 'rgb(var(--destructive) / 0.3)',
+                color: 'rgb(var(--destructive))',
+              }}
+            >
               {error}
             </div>
           )}

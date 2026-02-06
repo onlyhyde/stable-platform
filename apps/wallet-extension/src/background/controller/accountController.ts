@@ -1,11 +1,5 @@
 import type { Address } from 'viem'
-import {
-  createPublicClient,
-  http,
-  getAddress,
-  keccak256,
-  encodePacked,
-} from 'viem'
+import { http, createPublicClient, encodePacked, getAddress, keccak256 } from 'viem'
 import type { Account } from '../../types'
 import { walletState } from '../state/store'
 
@@ -17,10 +11,7 @@ export class AccountController {
   /**
    * Create a new smart account
    */
-  async createSmartAccount(
-    ownerAddress: Address,
-    name?: string
-  ): Promise<Account> {
+  async createSmartAccount(ownerAddress: Address, name?: string): Promise<Account> {
     const network = walletState.getCurrentNetwork()
 
     if (!network) {
@@ -30,9 +21,7 @@ export class AccountController {
     // Calculate counterfactual address
     // This is a simplified version - real implementation would use the factory
     const index = BigInt(walletState.getState().accounts.accounts.length)
-    const salt = keccak256(
-      encodePacked(['address', 'uint256'], [ownerAddress, index])
-    )
+    const salt = keccak256(encodePacked(['address', 'uint256'], [ownerAddress, index]))
 
     // For now, use a deterministic address based on owner and index
     // In production, this would call the factory contract
@@ -55,10 +44,7 @@ export class AccountController {
   /**
    * Import an existing smart account
    */
-  async importSmartAccount(
-    address: Address,
-    name?: string
-  ): Promise<Account> {
+  async importSmartAccount(address: Address, name?: string): Promise<Account> {
     const network = walletState.getCurrentNetwork()
 
     if (!network) {
@@ -129,11 +115,11 @@ export class AccountController {
     const isDeployed = code !== undefined && code !== '0x'
 
     // Update state
-    const accounts = walletState.getState().accounts.accounts.map((a) =>
-      a.address.toLowerCase() === address.toLowerCase()
-        ? { ...a, isDeployed }
-        : a
-    )
+    const accounts = walletState
+      .getState()
+      .accounts.accounts.map((a) =>
+        a.address.toLowerCase() === address.toLowerCase() ? { ...a, isDeployed } : a
+      )
 
     await walletState.setState({
       accounts: {
@@ -194,9 +180,11 @@ export class AccountController {
    * Rename an account
    */
   async renameAccount(address: Address, name: string): Promise<void> {
-    const accounts = walletState.getState().accounts.accounts.map((a) =>
-      a.address.toLowerCase() === address.toLowerCase() ? { ...a, name } : a
-    )
+    const accounts = walletState
+      .getState()
+      .accounts.accounts.map((a) =>
+        a.address.toLowerCase() === address.toLowerCase() ? { ...a, name } : a
+      )
 
     await walletState.setState({
       accounts: {

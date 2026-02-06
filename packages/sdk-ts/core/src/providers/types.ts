@@ -5,7 +5,7 @@
  * Follows DIP: modules depend on this abstraction, not viem directly.
  */
 
-import type { Address, Hex, Hash, TransactionReceipt } from 'viem'
+import type { Address, Hash, Hex, TransactionReceipt } from 'viem'
 
 // ============================================================================
 // Core Types
@@ -106,10 +106,7 @@ export interface RpcProvider {
   /**
    * Get transaction count (nonce) for an address
    */
-  getTransactionCount(
-    address: Address,
-    blockTag?: 'latest' | 'pending'
-  ): Promise<number>
+  getTransactionCount(address: Address, blockTag?: 'latest' | 'pending'): Promise<number>
 
   /**
    * Get code at an address

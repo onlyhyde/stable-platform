@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Modal, Button, Input } from '@/components/common'
+import { Button, Input, Modal } from '@/components/common'
+import { useEffect, useState } from 'react'
 
 interface SubmitExpenseModalProps {
   isOpen: boolean
@@ -35,15 +35,15 @@ export function SubmitExpenseModal({ isOpen, onClose, onSubmit }: SubmitExpenseM
     }
   }, [isOpen])
 
-  const handleChange = (field: keyof ExpenseFormData) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    setFormData(prev => ({ ...prev, [field]: e.target.value }))
-    // Clear error when field is modified
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }))
+  const handleChange =
+    (field: keyof ExpenseFormData) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      setFormData((prev) => ({ ...prev, [field]: e.target.value }))
+      // Clear error when field is modified
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: undefined }))
+      }
     }
-  }
 
   const validate = (): boolean => {
     const newErrors: Partial<ExpenseFormData> = {}
@@ -71,11 +71,7 @@ export function SubmitExpenseModal({ isOpen, onClose, onSubmit }: SubmitExpenseM
   }
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Submit Expense"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="Submit Expense">
       <div className="space-y-4">
         <div>
           <Input
@@ -85,9 +81,7 @@ export function SubmitExpenseModal({ isOpen, onClose, onSubmit }: SubmitExpenseM
             onChange={handleChange('description')}
             aria-label="Description"
           />
-          {errors.description && (
-            <p className="text-sm text-red-500 mt-1">{errors.description}</p>
-          )}
+          {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
         </div>
         <div>
           <Input
@@ -98,12 +92,14 @@ export function SubmitExpenseModal({ isOpen, onClose, onSubmit }: SubmitExpenseM
             onChange={handleChange('amount')}
             aria-label="Amount (USDC)"
           />
-          {errors.amount && (
-            <p className="text-sm text-red-500 mt-1">{errors.amount}</p>
-          )}
+          {errors.amount && <p className="text-sm text-red-500 mt-1">{errors.amount}</p>}
         </div>
         <div>
-          <label htmlFor="category-select" className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+          <label
+            htmlFor="category-select"
+            className="block text-sm font-medium mb-1"
+            style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+          >
             Category
           </label>
           <select
@@ -120,9 +116,7 @@ export function SubmitExpenseModal({ isOpen, onClose, onSubmit }: SubmitExpenseM
             <option value="marketing">Marketing</option>
             <option value="other">Other</option>
           </select>
-          {errors.category && (
-            <p className="text-sm text-red-500 mt-1">{errors.category}</p>
-          )}
+          {errors.category && <p className="text-sm text-red-500 mt-1">{errors.category}</p>}
         </div>
         <Input
           label="Receipt/Documentation URL"

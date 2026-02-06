@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
-import type { Address, Hex } from 'viem'
 import { useStableNetContext } from '@/providers'
+import { useCallback, useMemo, useState } from 'react'
+import type { Address, Hex } from 'viem'
 
 // ============================================================================
 // Types
@@ -64,140 +64,153 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
   const [selectedType, setSelectedType] = useState<PaymasterType>(config.defaultType ?? 'verifying')
 
   // Current paymaster config
-  const paymasterConfig = useMemo<PaymasterConfig>(() => ({
-    type: selectedType,
-    address: defaultPaymasterAddress,
-    tokenAddress: config.tokenAddress,
-    policyId: config.policyId,
-  }), [selectedType, defaultPaymasterAddress, config.tokenAddress, config.policyId])
+  const paymasterConfig = useMemo<PaymasterConfig>(
+    () => ({
+      type: selectedType,
+      address: defaultPaymasterAddress,
+      tokenAddress: config.tokenAddress,
+      policyId: config.policyId,
+    }),
+    [selectedType, defaultPaymasterAddress, config.tokenAddress, config.policyId]
+  )
 
   /**
    * Get paymaster stub data (for gas estimation)
    */
-  const getPaymasterStubData = useCallback(async (
-    userOp: Record<string, unknown>,
-    entryPoint: Address
-  ): Promise<PaymasterStubData | null> => {
-    setIsLoading(true)
-    setError(null)
+  const getPaymasterStubData = useCallback(
+    async (
+      userOp: Record<string, unknown>,
+      entryPoint: Address
+    ): Promise<PaymasterStubData | null> => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const response = await fetch(paymasterUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'pm_getPaymasterStubData',
-          params: [userOp, entryPoint, `0x${chainId.toString(16)}`],
-        }),
-      })
+      try {
+        const response = await fetch(paymasterUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'pm_getPaymasterStubData',
+            params: [userOp, entryPoint, `0x${chainId.toString(16)}`],
+          }),
+        })
 
-      const result = await response.json()
+        const result = await response.json()
 
-      if (result.error) {
-        throw new Error(result.error.message)
+        if (result.error) {
+          throw new Error(result.error.message)
+        }
+
+        return {
+          paymaster: result.result.paymaster,
+          paymasterData: result.result.paymasterData,
+          paymasterVerificationGasLimit: BigInt(
+            result.result.paymasterVerificationGasLimit ?? '0x30000'
+          ),
+          paymasterPostOpGasLimit: BigInt(result.result.paymasterPostOpGasLimit ?? '0x10000'),
+        }
+      } catch (err) {
+        const paymasterError =
+          err instanceof Error ? err : new Error('Failed to get paymaster stub data')
+        setError(paymasterError)
+        return null
+      } finally {
+        setIsLoading(false)
       }
-
-      return {
-        paymaster: result.result.paymaster,
-        paymasterData: result.result.paymasterData,
-        paymasterVerificationGasLimit: BigInt(result.result.paymasterVerificationGasLimit ?? '0x30000'),
-        paymasterPostOpGasLimit: BigInt(result.result.paymasterPostOpGasLimit ?? '0x10000'),
-      }
-    } catch (err) {
-      const paymasterError = err instanceof Error ? err : new Error('Failed to get paymaster stub data')
-      setError(paymasterError)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [paymasterUrl, chainId])
+    },
+    [paymasterUrl, chainId]
+  )
 
   /**
    * Get final paymaster data (after gas estimation)
    */
-  const getPaymasterData = useCallback(async (
-    userOp: Record<string, unknown>,
-    entryPoint: Address
-  ): Promise<PaymasterData | null> => {
-    setIsLoading(true)
-    setError(null)
+  const getPaymasterData = useCallback(
+    async (userOp: Record<string, unknown>, entryPoint: Address): Promise<PaymasterData | null> => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const response = await fetch(paymasterUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'pm_getPaymasterData',
-          params: [userOp, entryPoint, `0x${chainId.toString(16)}`],
-        }),
-      })
+      try {
+        const response = await fetch(paymasterUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'pm_getPaymasterData',
+            params: [userOp, entryPoint, `0x${chainId.toString(16)}`],
+          }),
+        })
 
-      const result = await response.json()
+        const result = await response.json()
 
-      if (result.error) {
-        throw new Error(result.error.message)
+        if (result.error) {
+          throw new Error(result.error.message)
+        }
+
+        return {
+          paymaster: result.result.paymaster,
+          paymasterData: result.result.paymasterData,
+        }
+      } catch (err) {
+        const paymasterError =
+          err instanceof Error ? err : new Error('Failed to get paymaster data')
+        setError(paymasterError)
+        return null
+      } finally {
+        setIsLoading(false)
       }
-
-      return {
-        paymaster: result.result.paymaster,
-        paymasterData: result.result.paymasterData,
-      }
-    } catch (err) {
-      const paymasterError = err instanceof Error ? err : new Error('Failed to get paymaster data')
-      setError(paymasterError)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [paymasterUrl, chainId])
+    },
+    [paymasterUrl, chainId]
+  )
 
   /**
    * Check if sender is eligible for sponsorship
    */
-  const checkSponsorshipEligibility = useCallback(async (
-    sender: Address
-  ): Promise<{ eligible: boolean; reason?: string } | null> => {
-    setIsLoading(true)
-    setError(null)
+  const checkSponsorshipEligibility = useCallback(
+    async (sender: Address): Promise<{ eligible: boolean; reason?: string } | null> => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const response = await fetch(paymasterUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'pm_checkEligibility',
-          params: [{
-            sender,
-            policyId: config.policyId,
-            chainId: `0x${chainId.toString(16)}`,
-          }],
-        }),
-      })
+      try {
+        const response = await fetch(paymasterUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'pm_checkEligibility',
+            params: [
+              {
+                sender,
+                policyId: config.policyId,
+                chainId: `0x${chainId.toString(16)}`,
+              },
+            ],
+          }),
+        })
 
-      const result = await response.json()
+        const result = await response.json()
 
-      if (result.error) {
-        throw new Error(result.error.message)
+        if (result.error) {
+          throw new Error(result.error.message)
+        }
+
+        return {
+          eligible: result.result.eligible,
+          reason: result.result.reason,
+        }
+      } catch (err) {
+        const paymasterError = err instanceof Error ? err : new Error('Failed to check eligibility')
+        setError(paymasterError)
+        return null
+      } finally {
+        setIsLoading(false)
       }
-
-      return {
-        eligible: result.result.eligible,
-        reason: result.result.reason,
-      }
-    } catch (err) {
-      const paymasterError = err instanceof Error ? err : new Error('Failed to check eligibility')
-      setError(paymasterError)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [paymasterUrl, chainId, config.policyId])
+    },
+    [paymasterUrl, chainId, config.policyId]
+  )
 
   /**
    * Get available sponsorship policies
@@ -244,45 +257,47 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
   /**
    * Get paymaster balance info
    */
-  const getPaymasterBalance = useCallback(async (
-    paymasterAddress?: Address
-  ): Promise<PaymasterBalance | null> => {
-    setIsLoading(true)
-    setError(null)
+  const getPaymasterBalance = useCallback(
+    async (paymasterAddress?: Address): Promise<PaymasterBalance | null> => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const targetPaymaster = paymasterAddress ?? defaultPaymasterAddress
+      try {
+        const targetPaymaster = paymasterAddress ?? defaultPaymasterAddress
 
-      const response = await fetch(paymasterUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'pm_getBalance',
-          params: [targetPaymaster, `0x${chainId.toString(16)}`],
-        }),
-      })
+        const response = await fetch(paymasterUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'pm_getBalance',
+            params: [targetPaymaster, `0x${chainId.toString(16)}`],
+          }),
+        })
 
-      const result = await response.json()
+        const result = await response.json()
 
-      if (result.error) {
-        throw new Error(result.error.message)
+        if (result.error) {
+          throw new Error(result.error.message)
+        }
+
+        return {
+          balance: BigInt(result.result.balance),
+          deposited: BigInt(result.result.deposited),
+          staked: BigInt(result.result.staked),
+        }
+      } catch (err) {
+        const paymasterError =
+          err instanceof Error ? err : new Error('Failed to get paymaster balance')
+        setError(paymasterError)
+        return null
+      } finally {
+        setIsLoading(false)
       }
-
-      return {
-        balance: BigInt(result.result.balance),
-        deposited: BigInt(result.result.deposited),
-        staked: BigInt(result.result.staked),
-      }
-    } catch (err) {
-      const paymasterError = err instanceof Error ? err : new Error('Failed to get paymaster balance')
-      setError(paymasterError)
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }, [paymasterUrl, chainId, defaultPaymasterAddress])
+    },
+    [paymasterUrl, chainId, defaultPaymasterAddress]
+  )
 
   /**
    * Get supported ERC20 tokens for token paymaster
@@ -311,7 +326,8 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
 
       return result.result.tokens
     } catch (err) {
-      const paymasterError = err instanceof Error ? err : new Error('Failed to get supported tokens')
+      const paymasterError =
+        err instanceof Error ? err : new Error('Failed to get supported tokens')
       setError(paymasterError)
       return null
     } finally {

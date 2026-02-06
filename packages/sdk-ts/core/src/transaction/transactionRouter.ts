@@ -7,30 +7,30 @@
  * Follows DIP: depends on TransactionStrategy abstraction.
  */
 
-import type { Address } from 'viem'
 import type {
-  TransactionMode,
-  MultiModeTransactionRequest,
-  GasEstimate,
   Account,
+  GasEstimate,
+  MultiModeTransactionRequest,
+  TransactionMode,
 } from '@stablenet/sdk-types'
 import {
   TRANSACTION_MODE,
   getAvailableTransactionModes,
   getDefaultTransactionMode,
 } from '@stablenet/sdk-types'
+import type { Address } from 'viem'
 import { createTransactionError } from '../errors'
-import { createGasEstimator, type GasEstimator } from '../gas'
+import { type GasEstimator, createGasEstimator } from '../gas'
 import {
-  createStrategyRegistry,
-  createEOAStrategy,
-  createEIP7702Strategy,
-  createSmartAccountStrategy,
-  type TransactionStrategy,
-  type StrategyRegistry,
   type CombinedSigner,
-  type StrategyPreparedTransaction,
   type StrategyExecuteOptions,
+  type StrategyPreparedTransaction,
+  type StrategyRegistry,
+  type TransactionStrategy,
+  createEIP7702Strategy,
+  createEOAStrategy,
+  createSmartAccountStrategy,
+  createStrategyRegistry,
 } from './strategies'
 
 // Re-export for backwards compatibility
@@ -95,13 +95,7 @@ export interface ExecuteOptions extends StrategyExecuteOptions {}
  * ```
  */
 export function createTransactionRouter(config: TransactionRouterConfig) {
-  const {
-    rpcUrl,
-    chainId,
-    bundlerUrl,
-    paymasterUrl,
-    entryPointAddress,
-  } = config
+  const { rpcUrl, chainId, bundlerUrl, paymasterUrl, entryPointAddress } = config
 
   // Create strategy registry
   const strategyRegistry: StrategyRegistry = createStrategyRegistry()
@@ -138,10 +132,9 @@ export function createTransactionRouter(config: TransactionRouterConfig) {
     const strategy = strategyRegistry.get(mode)
 
     if (!strategy) {
-      throw createTransactionError(
-        `No strategy available for mode '${mode}'`,
-        { reason: 'UNSUPPORTED_MODE' }
-      )
+      throw createTransactionError(`No strategy available for mode '${mode}'`, {
+        reason: 'UNSUPPORTED_MODE',
+      })
     }
 
     return strategy
@@ -172,20 +165,16 @@ export function createTransactionRouter(config: TransactionRouterConfig) {
 
     // Additional validation for Smart Account mode
     if (mode === TRANSACTION_MODE.SMART_ACCOUNT && !bundlerUrl) {
-      throw createTransactionError(
-        'Bundler URL is required for Smart Account mode',
-        { reason: 'BUNDLER_NOT_CONFIGURED' }
-      )
+      throw createTransactionError('Bundler URL is required for Smart Account mode', {
+        reason: 'BUNDLER_NOT_CONFIGURED',
+      })
     }
   }
 
   /**
    * Resolve the transaction mode based on account state and preferences
    */
-  function resolveMode(
-    request: MultiModeTransactionRequest,
-    account: Account
-  ): TransactionMode {
+  function resolveMode(request: MultiModeTransactionRequest, account: Account): TransactionMode {
     // If mode is explicitly specified, validate and use it
     if (request.mode) {
       validateMode(request.mode, account)
@@ -239,9 +228,7 @@ export function createTransactionRouter(config: TransactionRouterConfig) {
   async function getAvailableModesWithEstimates(
     request: Omit<MultiModeTransactionRequest, 'mode'>,
     account: Account
-  ): Promise<
-    Array<{ mode: TransactionMode; estimate: GasEstimate; available: boolean }>
-  > {
+  ): Promise<Array<{ mode: TransactionMode; estimate: GasEstimate; available: boolean }>> {
     const availableModes = getAvailableTransactionModes(account)
     const estimates = await gasEstimator.estimateAllModes(request)
 

@@ -1,8 +1,8 @@
 'use client'
 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { useWallet } from '@/hooks'
 import { useTransactionHistory } from '@/hooks/useTransactionHistory'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { formatAddress, formatRelativeTime } from '@/lib/utils'
 import type { Transaction } from '@/types'
 
@@ -13,7 +13,9 @@ export default function HistoryPage() {
   if (!isConnected) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Please connect your wallet to view history</p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>
+          Please connect your wallet to view history
+        </p>
       </div>
     )
   }
@@ -37,7 +39,9 @@ export default function HistoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>Transaction History</h1>
+        <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+          Transaction History
+        </h1>
         <p style={{ color: 'rgb(var(--muted-foreground))' }}>View your past transactions</p>
       </div>
 

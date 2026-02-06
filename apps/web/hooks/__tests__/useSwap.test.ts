@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
-import { useSwap } from '../useSwap'
 import type { Token } from '@/types'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSwap } from '../useSwap'
 
 // Mock tokens for testing
 const mockTokenIn: Token = {
@@ -41,9 +41,11 @@ describe('useSwap', () => {
         json: async () => mockQuoteResponse,
       } as Response)
 
-      const { result } = renderHook(() => useSwap({
-        orderRouterUrl: 'http://localhost:4340',
-      }))
+      const { result } = renderHook(() =>
+        useSwap({
+          orderRouterUrl: 'http://localhost:4340',
+        })
+      )
 
       let quote: unknown
       await act(async () => {
@@ -76,9 +78,11 @@ describe('useSwap', () => {
     it('should handle quote API errors gracefully', async () => {
       vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Network error'))
 
-      const { result } = renderHook(() => useSwap({
-        orderRouterUrl: 'http://localhost:4340',
-      }))
+      const { result } = renderHook(() =>
+        useSwap({
+          orderRouterUrl: 'http://localhost:4340',
+        })
+      )
 
       let quote: unknown
       await act(async () => {
@@ -102,9 +106,11 @@ describe('useSwap', () => {
       })
       vi.mocked(global.fetch).mockReturnValueOnce(pendingPromise)
 
-      const { result } = renderHook(() => useSwap({
-        orderRouterUrl: 'http://localhost:4340',
-      }))
+      const { result } = renderHook(() =>
+        useSwap({
+          orderRouterUrl: 'http://localhost:4340',
+        })
+      )
 
       expect(result.current.isLoading).toBe(false)
 
@@ -152,10 +158,12 @@ describe('useSwap', () => {
         success: true,
       })
 
-      const { result } = renderHook(() => useSwap({
-        orderRouterUrl: 'http://localhost:4340',
-        sendUserOp: mockSendUserOp,
-      }))
+      const { result } = renderHook(() =>
+        useSwap({
+          orderRouterUrl: 'http://localhost:4340',
+          sendUserOp: mockSendUserOp,
+        })
+      )
 
       const mockQuote = {
         tokenIn: mockTokenIn,
@@ -191,11 +199,13 @@ describe('useSwap', () => {
         success: true,
       })
 
-      const { result } = renderHook(() => useSwap({
-        orderRouterUrl: 'http://localhost:4340',
-        sendUserOp: mockSendUserOp,
-        routerAddress: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
-      }))
+      const { result } = renderHook(() =>
+        useSwap({
+          orderRouterUrl: 'http://localhost:4340',
+          sendUserOp: mockSendUserOp,
+          routerAddress: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
+        })
+      )
 
       const mockQuote = {
         tokenIn: mockTokenIn,
@@ -224,10 +234,12 @@ describe('useSwap', () => {
     it('should handle swap execution errors', async () => {
       const mockSendUserOp = vi.fn().mockRejectedValueOnce(new Error('UserOp failed'))
 
-      const { result } = renderHook(() => useSwap({
-        orderRouterUrl: 'http://localhost:4340',
-        sendUserOp: mockSendUserOp,
-      }))
+      const { result } = renderHook(() =>
+        useSwap({
+          orderRouterUrl: 'http://localhost:4340',
+          sendUserOp: mockSendUserOp,
+        })
+      )
 
       const mockQuote = {
         tokenIn: mockTokenIn,
@@ -260,11 +272,13 @@ describe('useSwap', () => {
         success: true,
       })
 
-      const { result } = renderHook(() => useSwap({
-        orderRouterUrl: 'http://localhost:4340',
-        sendUserOp: mockSendUserOp,
-        defaultSlippage: 0.5, // 0.5%
-      }))
+      const { result } = renderHook(() =>
+        useSwap({
+          orderRouterUrl: 'http://localhost:4340',
+          sendUserOp: mockSendUserOp,
+          defaultSlippage: 0.5, // 0.5%
+        })
+      )
 
       const mockQuote = {
         tokenIn: mockTokenIn,

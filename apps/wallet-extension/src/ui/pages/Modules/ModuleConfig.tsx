@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import type { ModuleRegistryEntry, ModuleConfigField } from '@stablenet/core'
+import type { ModuleConfigField, ModuleRegistryEntry } from '@stablenet/core'
+import { useCallback, useState } from 'react'
 
 // ============================================================================
 // Types
@@ -152,12 +152,7 @@ function ConfigField({ field, value, error, onChange }: ConfigFieldProps) {
         )
 
       case 'address[]':
-        return (
-          <AddressArrayInput
-            value={(value as string[]) ?? []}
-            onChange={onChange}
-          />
-        )
+        return <AddressArrayInput value={(value as string[]) ?? []} onChange={onChange} />
 
       default:
         return (

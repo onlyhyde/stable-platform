@@ -3,17 +3,17 @@
  * Helper functions for normalizing, checking, and creating errors
  */
 
-import type { ErrorContext, SdkErrorCode, BundlerErrorCode } from './types'
-import { SDK_ERROR_CODES, BUNDLER_ERROR_CODES } from './types'
 import {
-  SdkError,
   BundlerError,
-  UserOperationError,
-  TransactionError,
   ConfigurationError,
-  ValidationError,
   PaymasterError,
+  SdkError,
+  TransactionError,
+  UserOperationError,
+  ValidationError,
 } from './SdkError'
+import type { BundlerErrorCode, ErrorContext, SdkErrorCode } from './types'
+import { BUNDLER_ERROR_CODES, SDK_ERROR_CODES } from './types'
 
 /**
  * Check if an error is an SdkError
@@ -212,18 +212,14 @@ export function createUserOperationError(
     context?: ErrorContext
   }
 ): UserOperationError {
-  return new UserOperationError(
-    options?.code ?? SDK_ERROR_CODES.USER_OP_FAILED,
-    message,
-    {
-      userOpHash: options?.userOpHash as `0x${string}` | undefined,
-      sender: options?.sender as `0x${string}` | undefined,
-      reason: options?.reason,
-      revertData: options?.revertData as `0x${string}` | undefined,
-      gasUsed: options?.gasUsed,
-      context: options?.context,
-    }
-  )
+  return new UserOperationError(options?.code ?? SDK_ERROR_CODES.USER_OP_FAILED, message, {
+    userOpHash: options?.userOpHash as `0x${string}` | undefined,
+    sender: options?.sender as `0x${string}` | undefined,
+    reason: options?.reason,
+    revertData: options?.revertData as `0x${string}` | undefined,
+    gasUsed: options?.gasUsed,
+    context: options?.context,
+  })
 }
 
 /**
@@ -242,19 +238,15 @@ export function createTransactionError(
     context?: ErrorContext
   }
 ): TransactionError {
-  return new TransactionError(
-    options?.code ?? SDK_ERROR_CODES.TRANSACTION_FAILED,
-    message,
-    {
-      txHash: options?.txHash as `0x${string}` | undefined,
-      from: options?.from as `0x${string}` | undefined,
-      to: options?.to as `0x${string}` | undefined,
-      reason: options?.reason,
-      revertData: options?.revertData as `0x${string}` | undefined,
-      gasUsed: options?.gasUsed,
-      context: options?.context,
-    }
-  )
+  return new TransactionError(options?.code ?? SDK_ERROR_CODES.TRANSACTION_FAILED, message, {
+    txHash: options?.txHash as `0x${string}` | undefined,
+    from: options?.from as `0x${string}` | undefined,
+    to: options?.to as `0x${string}` | undefined,
+    reason: options?.reason,
+    revertData: options?.revertData as `0x${string}` | undefined,
+    gasUsed: options?.gasUsed,
+    context: options?.context,
+  })
 }
 
 /**

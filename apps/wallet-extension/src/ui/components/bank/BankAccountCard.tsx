@@ -1,5 +1,5 @@
-import type { LinkedBankAccount, BankAccount } from '../../../types'
-import { Card, Badge } from '../common'
+import type { BankAccount, LinkedBankAccount } from '../../../types'
+import { Badge, Card } from '../common'
 
 interface BankAccountCardProps {
   account: LinkedBankAccount | BankAccount

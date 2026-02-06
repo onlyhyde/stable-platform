@@ -1,7 +1,7 @@
 'use client'
 
-import { useSessionKey } from '../../hooks/useSessionKey'
 import { SessionKeyList } from '../../components/session-keys'
+import { useSessionKey } from '../../hooks/useSessionKey'
 import { useWallet } from '../../hooks/useWallet'
 
 export default function SessionKeysPage() {
@@ -37,7 +37,9 @@ export default function SessionKeysPage() {
                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
               />
             </svg>
-            <h2 className="text-xl font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>Connect Your Wallet</h2>
+            <h2 className="text-xl font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
+              Connect Your Wallet
+            </h2>
             <p className="max-w-md mx-auto" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Please connect your wallet to manage session keys for your account.
             </p>
@@ -52,7 +54,9 @@ export default function SessionKeysPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>Session Key Management</h1>
+          <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+            Session Key Management
+          </h1>
           <p className="mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Create and manage session keys for delegated transaction signing (ERC-7715)
           </p>
@@ -82,7 +86,9 @@ export default function SessionKeysPage() {
               />
             </svg>
             <div>
-              <h3 className="font-medium" style={{ color: 'rgb(var(--info))' }}>What are Session Keys?</h3>
+              <h3 className="font-medium" style={{ color: 'rgb(var(--info))' }}>
+                What are Session Keys?
+              </h3>
               <p className="text-sm mt-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
                 Session keys are temporary keys that can sign transactions on behalf of your
                 account. They&apos;re useful for dApps that need to perform multiple transactions
@@ -129,7 +135,9 @@ export default function SessionKeysPage() {
               />
             </svg>
             <div>
-              <h3 className="font-medium" style={{ color: 'rgb(var(--warning))' }}>Security Notice</h3>
+              <h3 className="font-medium" style={{ color: 'rgb(var(--warning))' }}>
+                Security Notice
+              </h3>
               <p className="text-sm mt-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
                 Session keys have the ability to sign transactions on your behalf. Always set
                 appropriate limits and revoke keys when they&apos;re no longer needed. If you

@@ -3,13 +3,16 @@
  * TDD tests for analyzing signing request risks
  */
 
+// Unmock to test real implementation
+jest.unmock('@stablenet/core')
+
 import {
   SignatureRiskAnalyzer,
-  SignatureRiskResult,
+  type SignatureRiskResult,
   SignatureRiskLevel,
   SignatureRiskType,
   SignatureMethod,
-} from '../../../src/shared/security/signatureRiskAnalyzer'
+} from '@stablenet/core'
 
 describe('SignatureRiskAnalyzer', () => {
   let analyzer: SignatureRiskAnalyzer

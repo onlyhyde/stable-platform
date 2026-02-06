@@ -103,18 +103,18 @@ const SUSPICIOUS_TLDS = [
  * Characters that look similar to ASCII (homograph attacks)
  */
 const CONFUSABLE_CHARS: Record<string, string> = {
-  'а': 'a', // Cyrillic
-  'е': 'e', // Cyrillic
-  'і': 'i', // Cyrillic
-  'о': 'o', // Cyrillic
-  'р': 'p', // Cyrillic
-  'с': 'c', // Cyrillic
-  'ѕ': 's', // Cyrillic
-  'х': 'x', // Cyrillic
-  'у': 'y', // Cyrillic
-  'ω': 'w', // Greek
-  'ν': 'v', // Greek
-  'α': 'a', // Greek
+  а: 'a', // Cyrillic
+  е: 'e', // Cyrillic
+  і: 'i', // Cyrillic
+  о: 'o', // Cyrillic
+  р: 'p', // Cyrillic
+  с: 'c', // Cyrillic
+  ѕ: 's', // Cyrillic
+  х: 'x', // Cyrillic
+  у: 'y', // Cyrillic
+  ω: 'w', // Greek
+  ν: 'v', // Greek
+  α: 'a', // Greek
   '0': 'o',
   '1': 'l',
 }
@@ -131,9 +131,7 @@ export class PhishingDetector {
   constructor(config: PhishingDetectorConfig = {}) {
     this.blocklist = new Set(config.blocklist || [])
     this.allowlist = new Set(config.allowlist || [])
-    this.trustedDomains = new Set(
-      config.trustedDomains || DEFAULT_TRUSTED_DOMAINS
-    )
+    this.trustedDomains = new Set(config.trustedDomains || DEFAULT_TRUSTED_DOMAINS)
   }
 
   /**
@@ -468,10 +466,7 @@ export class PhishingDetector {
       // Skip if it's the exact same name
       if (domainWithoutTld === trustedWithoutTld) continue
 
-      const similarity = this.getSimilarityScore(
-        domainWithoutTld,
-        trustedWithoutTld
-      )
+      const similarity = this.getSimilarityScore(domainWithoutTld, trustedWithoutTld)
 
       // High similarity but not exact match suggests typosquatting
       // Threshold 0.7 catches common typos like swapped letters
@@ -541,8 +536,6 @@ export class PhishingDetector {
 /**
  * Create a new PhishingDetector instance
  */
-export function createPhishingDetector(
-  config?: PhishingDetectorConfig
-): PhishingDetector {
+export function createPhishingDetector(config?: PhishingDetectorConfig): PhishingDetector {
   return new PhishingDetector(config)
 }

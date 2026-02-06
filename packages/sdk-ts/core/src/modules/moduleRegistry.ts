@@ -6,24 +6,20 @@
  * Module definitions are in ./config/
  */
 
-import type { Address } from 'viem'
-import type {
-  ModuleType,
-  ModuleConfigField,
-  SolidityType,
-} from '@stablenet/sdk-types'
+import type { ModuleConfigField, ModuleType, SolidityType } from '@stablenet/sdk-types'
 import { MODULE_TYPE } from '@stablenet/sdk-types'
+import type { Address } from 'viem'
 import {
-  type ModuleRegistryEntry,
   BUILT_IN_MODULES,
   // Re-export individual modules for backwards compatibility
   ECDSA_VALIDATOR,
-  WEBAUTHN_VALIDATOR,
   MULTISIG_VALIDATOR,
-  SESSION_KEY_EXECUTOR,
+  type ModuleRegistryEntry,
   RECURRING_PAYMENT_EXECUTOR,
+  SESSION_KEY_EXECUTOR,
   SPENDING_LIMIT_HOOK,
   TOKEN_RECEIVER_FALLBACK,
+  WEBAUTHN_VALIDATOR,
 } from './config'
 
 // ============================================================================
@@ -100,11 +96,7 @@ export function createModuleRegistry(config: ModuleRegistryConfig) {
    */
   function getByAddress(address: Address): ModuleRegistryEntry | null {
     const normalizedAddress = address.toLowerCase()
-    return (
-      allModules.find(
-        (m) => m.addresses[chainId]?.toLowerCase() === normalizedAddress
-      ) ?? null
-    )
+    return allModules.find((m) => m.addresses[chainId]?.toLowerCase() === normalizedAddress) ?? null
   }
 
   /**
@@ -118,9 +110,7 @@ export function createModuleRegistry(config: ModuleRegistryConfig) {
    * Get modules by tags
    */
   function getByTags(tags: string[]): ModuleRegistryEntry[] {
-    return getAll().filter((m) =>
-      tags.some((tag) => m.metadata.tags.includes(tag))
-    )
+    return getAll().filter((m) => tags.some((tag) => m.metadata.tags.includes(tag)))
   }
 
   /**
@@ -136,9 +126,7 @@ export function createModuleRegistry(config: ModuleRegistryConfig) {
 
     // Filter by tags
     if (filters.tags && filters.tags.length > 0) {
-      results = results.filter((m) =>
-        filters.tags!.some((tag) => m.metadata.tags.includes(tag))
-      )
+      results = results.filter((m) => filters.tags!.some((tag) => m.metadata.tags.includes(tag)))
     }
 
     // Filter by verified
@@ -275,10 +263,7 @@ export function createModuleRegistry(config: ModuleRegistryConfig) {
 /**
  * Validate field value against rules
  */
-function validateFieldValue(
-  field: ModuleConfigField,
-  value: unknown
-): string | null {
+function validateFieldValue(field: ModuleConfigField, value: unknown): string | null {
   const { validation } = field
 
   if (!validation) return null

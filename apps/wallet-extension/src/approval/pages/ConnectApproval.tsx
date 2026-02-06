@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { Address } from 'viem'
+import { createLogger } from '../../shared/utils/logger'
 import type { ConnectApprovalRequest } from '../../types'
 import { Button, Card, Spinner } from '../../ui/components/common'
-import { createLogger } from '../../shared/utils/logger'
 
 const logger = createLogger('ConnectApproval')
 
@@ -17,11 +17,7 @@ interface ConnectApprovalProps {
   onReject: () => void
 }
 
-export function ConnectApproval({
-  approval,
-  onApprove,
-  onReject,
-}: ConnectApprovalProps) {
+export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprovalProps) {
   const [accounts, setAccounts] = useState<WalletAccount[]>([])
   const [selectedAccounts, setSelectedAccounts] = useState<Set<Address>>(new Set())
   const [loading, setLoading] = useState(true)
@@ -116,11 +112,7 @@ export function ConnectApproval({
       >
         <div className="flex items-center gap-3">
           {approval.favicon ? (
-            <img
-              src={approval.favicon}
-              alt=""
-              className="w-10 h-10 rounded-lg"
-            />
+            <img src={approval.favicon} alt="" className="w-10 h-10 rounded-lg" />
           ) : (
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center"
@@ -134,21 +126,20 @@ export function ConnectApproval({
                 stroke="currentColor"
                 aria-hidden="true"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                />
               </svg>
             </div>
           )}
           <div>
-            <p
-              className="font-medium break-all"
-              style={{ color: 'rgb(var(--foreground))' }}
-            >
+            <p className="font-medium break-all" style={{ color: 'rgb(var(--foreground))' }}>
               {new URL(approval.origin).hostname}
             </p>
-            <p
-              className="text-sm"
-              style={{ color: 'rgb(var(--muted-foreground))' }}
-            >
+            <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
               wants to connect
             </p>
           </div>
@@ -178,7 +169,12 @@ export function ConnectApproval({
                 stroke="currentColor"
                 aria-hidden="true"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               View your wallet address
             </li>
@@ -194,7 +190,12 @@ export function ConnectApproval({
                 stroke="currentColor"
                 aria-hidden="true"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               Request transaction approval
             </li>
@@ -210,7 +211,12 @@ export function ConnectApproval({
                 stroke="currentColor"
                 aria-hidden="true"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               Request message signatures
             </li>
@@ -248,7 +254,9 @@ export function ConnectApproval({
                   className="w-full flex items-center justify-between p-3 rounded-lg border-2 transition-colors"
                   style={{
                     borderColor: isSelected ? 'rgb(var(--primary))' : 'rgb(var(--border))',
-                    backgroundColor: isSelected ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--surface))',
+                    backgroundColor: isSelected
+                      ? 'rgb(var(--primary) / 0.1)'
+                      : 'rgb(var(--surface))',
                   }}
                 >
                   <div className="flex items-center gap-3">
@@ -272,10 +280,7 @@ export function ConnectApproval({
                       >
                         {account.name}
                       </p>
-                      <p
-                        className="text-xs"
-                        style={{ color: 'rgb(var(--muted-foreground))' }}
-                      >
+                      <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                         {formatAddress(account.address)}
                       </p>
                     </div>
@@ -298,11 +303,9 @@ export function ConnectApproval({
               )
             })}
           </div>
-          <p
-            className="mt-2 text-xs"
-            style={{ color: 'rgb(var(--muted-foreground))' }}
-          >
-            {selectedAccounts.size} of {accounts.length} account{accounts.length > 1 ? 's' : ''} selected
+          <p className="mt-2 text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {selectedAccounts.size} of {accounts.length} account{accounts.length > 1 ? 's' : ''}{' '}
+            selected
           </p>
         </Card>
 
@@ -324,14 +327,16 @@ export function ConnectApproval({
               stroke="currentColor"
               aria-hidden="true"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
-            <p
-              className="text-xs"
-              style={{ color: 'rgb(234 179 8)' }}
-            >
-              Only connect to sites you trust. Malicious sites can phish your
-              assets by requesting misleading signatures.
+            <p className="text-xs" style={{ color: 'rgb(234 179 8)' }}>
+              Only connect to sites you trust. Malicious sites can phish your assets by requesting
+              misleading signatures.
             </p>
           </div>
         </Card>
@@ -345,11 +350,7 @@ export function ConnectApproval({
           borderTop: '1px solid rgb(var(--border))',
         }}
       >
-        <Button
-          onClick={handleApprove}
-          fullWidth
-          disabled={selectedAccounts.size === 0}
-        >
+        <Button onClick={handleApprove} fullWidth disabled={selectedAccounts.size === 0}>
           Connect ({selectedAccounts.size} account{selectedAccounts.size !== 1 ? 's' : ''})
         </Button>
         <Button onClick={onReject} variant="secondary" fullWidth>

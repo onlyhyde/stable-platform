@@ -1,6 +1,6 @@
 import type { Address, PublicClient, WalletClient } from 'viem'
-import type { StealthClient, StealthClientConfig } from '../types'
 import { getAnnouncerAddress, getRegistryAddress } from '../constants'
+import type { StealthClient, StealthClientConfig } from '../types'
 
 /**
  * Create a Stealth Client instance
@@ -54,11 +54,15 @@ export function createStealthClient(config: StealthClientConfig): StealthClient 
   const resolvedRegistryAddress = registryAddress ?? getRegistryAddress(chainId)
 
   if (!resolvedAnnouncerAddress) {
-    throw new Error(`No announcer address configured for chain ${chainId}. Please provide announcerAddress in config.`)
+    throw new Error(
+      `No announcer address configured for chain ${chainId}. Please provide announcerAddress in config.`
+    )
   }
 
   if (!resolvedRegistryAddress) {
-    throw new Error(`No registry address configured for chain ${chainId}. Please provide registryAddress in config.`)
+    throw new Error(
+      `No registry address configured for chain ${chainId}. Please provide registryAddress in config.`
+    )
   }
 
   return {

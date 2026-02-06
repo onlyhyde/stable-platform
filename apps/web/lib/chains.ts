@@ -1,6 +1,6 @@
 import { defineChain } from 'viem'
 import type { Chain } from 'viem'
-import { getLocalConfig, getTestnetConfig, getAppConfig, getConfigByChainId } from './config'
+import { getAppConfig, getConfigByChainId, getLocalConfig, getTestnetConfig } from './config'
 
 // Re-export for convenience
 export { getConfigByChainId }
@@ -113,9 +113,9 @@ export function getSupportedChains(): readonly [Chain, ...Chain[]] {
  * Supported chains - includes all networks supported by wallet
  */
 export const supportedChains: readonly [Chain, ...Chain[]] = [
-  anvilLocal,        // chainId 31337
-  stablenetLocal,    // chainId 8283
-  stablenetTestnet,  // chainId 82830
+  anvilLocal, // chainId 31337
+  stablenetLocal, // chainId 8283
+  stablenetTestnet, // chainId 82830
 ]
 
 /**

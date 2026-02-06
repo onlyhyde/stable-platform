@@ -4,23 +4,17 @@
  */
 
 import type { Address, Hex, PublicClient } from 'viem'
-import { encodeFunctionData, decodeFunctionResult, getAddress, hexToBigInt, isAddress } from 'viem'
-import { KernelModuleAbi, IModuleAbi } from './abis'
+import { encodeFunctionData } from 'viem'
+import { IModuleAbi, KernelModuleAbi } from './abis'
 import {
-  type ModuleType,
-  type InstallModuleParams,
-  type UninstallModuleParams,
-  type ModuleOperationCallData,
-  type IsModuleInstalledParams,
   type BatchModuleInstallation,
-  type ValidatorConfig,
-  type ExecutorConfig,
-  type HookConfig,
-  type FallbackConfig,
-  MODULE_TYPES,
-  ModuleInstallationError,
-  ModuleNotInstalledError,
+  type InstallModuleParams,
   InvalidModuleTypeError,
+  type IsModuleInstalledParams,
+  MODULE_TYPES,
+  type ModuleOperationCallData,
+  type ModuleType,
+  type UninstallModuleParams,
 } from './types'
 
 // ============================================================================
@@ -241,11 +235,9 @@ export function validateModuleType(moduleType: bigint): ModuleType {
     moduleType !== MODULE_TYPES.FALLBACK &&
     moduleType !== MODULE_TYPES.HOOK
   ) {
-    throw new InvalidModuleTypeError(
-      `Invalid module type: ${moduleType}`,
-      'INVALID_MODULE_TYPE',
-      { moduleType }
-    )
+    throw new InvalidModuleTypeError(`Invalid module type: ${moduleType}`, 'INVALID_MODULE_TYPE', {
+      moduleType,
+    })
   }
   return moduleType as ModuleType
 }

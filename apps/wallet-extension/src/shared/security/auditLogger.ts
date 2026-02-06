@@ -62,8 +62,7 @@ export const AuditEventType = {
   REAUTHENTICATION_FAILED: 'security.reauth_failed',
 } as const
 
-export type AuditEventTypeValue =
-  (typeof AuditEventType)[keyof typeof AuditEventType]
+export type AuditEventTypeValue = (typeof AuditEventType)[keyof typeof AuditEventType]
 
 /**
  * Audit event severity levels
@@ -74,8 +73,7 @@ export const AuditSeverity = {
   CRITICAL: 'critical',
 } as const
 
-export type AuditSeverityValue =
-  (typeof AuditSeverity)[keyof typeof AuditSeverity]
+export type AuditSeverityValue = (typeof AuditSeverity)[keyof typeof AuditSeverity]
 
 /**
  * Audit event structure
@@ -337,15 +335,17 @@ export class AuditLogger {
   /**
    * Get audit events with optional filters
    */
-  async getEvents(options: {
-    type?: AuditEventTypeValue
-    severity?: AuditSeverityValue
-    origin?: string
-    address?: string
-    fromTimestamp?: number
-    toTimestamp?: number
-    limit?: number
-  } = {}): Promise<AuditEvent[]> {
+  async getEvents(
+    options: {
+      type?: AuditEventTypeValue
+      severity?: AuditSeverityValue
+      origin?: string
+      address?: string
+      fromTimestamp?: number
+      toTimestamp?: number
+      limit?: number
+    } = {}
+  ): Promise<AuditEvent[]> {
     // Flush pending events first
     await this.flush()
 
@@ -363,9 +363,7 @@ export class AuditLogger {
       events = events.filter((e) => e.origin === options.origin)
     }
     if (options.address) {
-      events = events.filter(
-        (e) => e.address?.toLowerCase() === options.address?.toLowerCase()
-      )
+      events = events.filter((e) => e.address?.toLowerCase() === options.address?.toLowerCase())
     }
     if (options.fromTimestamp) {
       events = events.filter((e) => e.timestamp >= options.fromTimestamp!)
@@ -540,10 +538,7 @@ export class AuditLogger {
     const reset = '\x1b[0m'
     const color = severityColors[event.severity]
 
-    logger.info(
-      `${color}[AUDIT:${event.severity.toUpperCase()}]${reset} ${event.type}`,
-      event.data
-    )
+    logger.info(`${color}[AUDIT:${event.severity.toUpperCase()}]${reset} ${event.type}`, event.data)
   }
 }
 

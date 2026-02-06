@@ -5,14 +5,14 @@
  */
 
 // Types
-export {
-  type RpcProvider,
-  type RpcProviderConfig,
-  type BlockData,
-  type GasPrices,
-  type EstimateGasParams,
-  type ReadContractParams,
-  type WaitForReceiptOptions,
+export type {
+  RpcProvider,
+  RpcProviderConfig,
+  BlockData,
+  GasPrices,
+  EstimateGasParams,
+  ReadContractParams,
+  WaitForReceiptOptions,
 } from './types'
 
 // Implementations

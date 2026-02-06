@@ -21,16 +21,10 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
         <span className="text-3xl font-bold text-white">S</span>
       </div>
 
-      <h1
-        className="text-2xl font-bold mb-2"
-        style={{ color: 'rgb(var(--foreground))' }}
-      >
+      <h1 className="text-2xl font-bold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
         Welcome to StableNet
       </h1>
-      <p
-        className="text-center mb-8"
-        style={{ color: 'rgb(var(--muted-foreground))' }}
-      >
+      <p className="text-center mb-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
         Your gateway to the decentralized future
       </p>
 
@@ -58,16 +52,10 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
               </svg>
             </div>
             <div className="flex-1">
-              <h3
-                className="font-semibold mb-1"
-                style={{ color: 'rgb(var(--foreground))' }}
-              >
+              <h3 className="font-semibold mb-1" style={{ color: 'rgb(var(--foreground))' }}>
                 Create a new wallet
               </h3>
-              <p
-                className="text-sm mb-4"
-                style={{ color: 'rgb(var(--muted-foreground))' }}
-              >
+              <p className="text-sm mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Generate a new seed phrase and set up your wallet
               </p>
               <Button onClick={onCreateNew} fullWidth>
@@ -100,16 +88,10 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
               </svg>
             </div>
             <div className="flex-1">
-              <h3
-                className="font-semibold mb-1"
-                style={{ color: 'rgb(var(--foreground))' }}
-              >
+              <h3 className="font-semibold mb-1" style={{ color: 'rgb(var(--foreground))' }}>
                 Import existing wallet
               </h3>
-              <p
-                className="text-sm mb-4"
-                style={{ color: 'rgb(var(--muted-foreground))' }}
-              >
+              <p className="text-sm mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Restore your wallet using a seed phrase
               </p>
               <Button onClick={onImport} variant="secondary" fullWidth>
@@ -120,10 +102,7 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
         </Card>
       </div>
 
-      <p
-        className="text-xs mt-8 text-center"
-        style={{ color: 'rgb(var(--foreground-tertiary))' }}
-      >
+      <p className="text-xs mt-8 text-center" style={{ color: 'rgb(var(--foreground-tertiary))' }}>
         By continuing, you agree to our Terms of Service and Privacy Policy
       </p>
     </div>

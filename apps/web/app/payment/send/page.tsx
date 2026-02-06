@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { isAddress } from 'viem'
-import { useWallet, useWalletAssets, useUserOp } from '@/hooks'
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/components/common'
+import { useUserOp, useWallet, useWalletAssets } from '@/hooks'
 import type { WalletToken } from '@/hooks'
-import { Card, CardContent, CardHeader, CardTitle, Button, Input } from '@/components/common'
 import { formatTokenAmount } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { isAddress } from 'viem'
 
 type SelectedAsset = 'native' | WalletToken
 
@@ -21,15 +21,12 @@ export default function SendPage() {
   const [selectedAsset, setSelectedAsset] = useState<SelectedAsset>('native')
 
   // Get balance info from selected asset
-  const balance = selectedAsset === 'native'
-    ? BigInt(native?.balance || '0')
-    : BigInt(selectedAsset.balance || '0')
-  const decimals = selectedAsset === 'native'
-    ? (native?.decimals ?? 18)
-    : selectedAsset.decimals
-  const symbol = selectedAsset === 'native'
-    ? (native?.symbol ?? 'ETH')
-    : selectedAsset.symbol
+  const balance =
+    selectedAsset === 'native'
+      ? BigInt(native?.balance || '0')
+      : BigInt(selectedAsset.balance || '0')
+  const decimals = selectedAsset === 'native' ? (native?.decimals ?? 18) : selectedAsset.decimals
+  const symbol = selectedAsset === 'native' ? (native?.symbol ?? 'ETH') : selectedAsset.symbol
 
   const isValidRecipient = recipient === '' || isAddress(recipient)
   const isValidAmount = amount === '' || (!Number.isNaN(Number(amount)) && Number(amount) > 0)
@@ -47,7 +44,9 @@ export default function SendPage() {
   if (!isConnected) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Please connect your wallet to send payments</p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>
+          Please connect your wallet to send payments
+        </p>
       </div>
     )
   }
@@ -55,7 +54,9 @@ export default function SendPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>Send</h1>
+        <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+          Send
+        </h1>
         <p style={{ color: 'rgb(var(--muted-foreground))' }}>Transfer tokens to another address</p>
       </div>
 
@@ -67,7 +68,10 @@ export default function SendPage() {
           {/* Asset Selector (for StableNet wallet) */}
           {isSupported && tokens.length > 0 && (
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
+              <label
+                className="block text-sm font-medium mb-2"
+                style={{ color: 'rgb(var(--foreground))' }}
+              >
                 Select Asset
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -79,9 +83,14 @@ export default function SendPage() {
                     selectedAsset === 'native' ? 'ring-2' : ''
                   }`}
                   style={{
-                    backgroundColor: selectedAsset === 'native' ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
-                    borderColor: selectedAsset === 'native' ? 'rgb(var(--primary))' : 'rgb(var(--border))',
-                    ...(selectedAsset === 'native' && { '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as React.CSSProperties),
+                    backgroundColor:
+                      selectedAsset === 'native'
+                        ? 'rgb(var(--primary) / 0.1)'
+                        : 'rgb(var(--secondary))',
+                    borderColor:
+                      selectedAsset === 'native' ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                    ...(selectedAsset === 'native' &&
+                      ({ '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as React.CSSProperties)),
                   }}
                 >
                   <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
@@ -98,15 +107,19 @@ export default function SendPage() {
                     type="button"
                     onClick={() => setSelectedAsset(token)}
                     className={`p-3 rounded-lg border text-left transition-all ${
-                      selectedAsset !== 'native' && selectedAsset.address === token.address ? 'ring-2' : ''
+                      selectedAsset !== 'native' && selectedAsset.address === token.address
+                        ? 'ring-2'
+                        : ''
                     }`}
                     style={{
-                      backgroundColor: selectedAsset !== 'native' && selectedAsset.address === token.address
-                        ? 'rgb(var(--primary) / 0.1)'
-                        : 'rgb(var(--secondary))',
-                      borderColor: selectedAsset !== 'native' && selectedAsset.address === token.address
-                        ? 'rgb(var(--primary))'
-                        : 'rgb(var(--border))',
+                      backgroundColor:
+                        selectedAsset !== 'native' && selectedAsset.address === token.address
+                          ? 'rgb(var(--primary) / 0.1)'
+                          : 'rgb(var(--secondary))',
+                      borderColor:
+                        selectedAsset !== 'native' && selectedAsset.address === token.address
+                          ? 'rgb(var(--primary))'
+                          : 'rgb(var(--border))',
                     }}
                   >
                     <p className="font-medium truncate" style={{ color: 'rgb(var(--foreground))' }}>
@@ -123,7 +136,9 @@ export default function SendPage() {
 
           {/* Balance */}
           <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-            <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Available Balance</p>
+            <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              Available Balance
+            </p>
             <p className="text-xl font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
               {formatTokenAmount(balance, decimals)} {symbol}
             </p>
@@ -174,17 +189,15 @@ export default function SendPage() {
                 borderColor: 'rgb(var(--destructive) / 0.3)',
               }}
             >
-              <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error.message}</p>
+              <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
+                {error.message}
+              </p>
             </div>
           )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
-            <Button
-              variant="secondary"
-              onClick={() => router.back()}
-              className="flex-1"
-            >
+            <Button variant="secondary" onClick={() => router.back()} className="flex-1">
               Cancel
             </Button>
             <Button

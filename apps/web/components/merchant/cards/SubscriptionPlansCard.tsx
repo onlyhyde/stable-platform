@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/common/Card'
 import { Input } from '@/components/common/Input'
 import { Modal } from '@/components/common/Modal'
+import { useState } from 'react'
 
 interface SubscriptionPlan {
   id: string
@@ -21,7 +21,9 @@ interface SubscriptionPlan {
 
 interface SubscriptionPlansCardProps {
   plans: SubscriptionPlan[]
-  onCreatePlan: (plan: Omit<SubscriptionPlan, 'id' | 'activeSubscribers' | 'totalRevenue' | 'createdAt'>) => Promise<void>
+  onCreatePlan: (
+    plan: Omit<SubscriptionPlan, 'id' | 'activeSubscribers' | 'totalRevenue' | 'createdAt'>
+  ) => Promise<void>
   onUpdatePlan: (id: string, updates: Partial<SubscriptionPlan>) => Promise<void>
   onTogglePlan: (id: string, isActive: boolean) => Promise<void>
 }
@@ -64,7 +66,7 @@ export function SubscriptionPlansCard({
       await onCreatePlan({
         name: formData.name,
         description: formData.description,
-        price: parseFloat(formData.price),
+        price: Number.parseFloat(formData.price),
         token: formData.token,
         interval: formData.interval,
         isActive: formData.isActive,
@@ -88,7 +90,7 @@ export function SubscriptionPlansCard({
   }
 
   const intervalLabel = (interval: string) => {
-    const found = INTERVALS.find(i => i.value === interval)
+    const found = INTERVALS.find((i) => i.value === interval)
     return found ? found.label : interval
   }
 
@@ -99,20 +101,27 @@ export function SubscriptionPlansCard({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Subscription Plans</CardTitle>
-              <CardDescription>
-                Manage your subscription plans and pricing
-              </CardDescription>
+              <CardDescription>Manage your subscription plans and pricing</CardDescription>
             </div>
-            <Button onClick={() => setShowCreateModal(true)}>
-              Create Plan
-            </Button>
+            <Button onClick={() => setShowCreateModal(true)}>Create Plan</Button>
           </div>
         </CardHeader>
         <CardContent>
           {plans.length === 0 ? (
             <div className="text-center py-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              <svg className="w-12 h-12 mx-auto mb-4" style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              <svg
+                className="w-12 h-12 mx-auto mb-4"
+                style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                />
               </svg>
               <p>No subscription plans created</p>
               <p className="text-sm">Create a plan to start accepting subscriptions</p>
@@ -131,9 +140,16 @@ export function SubscriptionPlansCard({
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h4 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{plan.name}</h4>
+                      <h4 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                        {plan.name}
+                      </h4>
                       {plan.description && (
-                        <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>{plan.description}</p>
+                        <p
+                          className="text-sm mt-1"
+                          style={{ color: 'rgb(var(--muted-foreground))' }}
+                        >
+                          {plan.description}
+                        </p>
                       )}
                     </div>
                     <span
@@ -154,18 +170,29 @@ export function SubscriptionPlansCard({
                   <div className="mb-4">
                     <p className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
                       {formatCurrency(plan.price, plan.token)}
-                      <span className="text-sm font-normal" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                      <span
+                        className="text-sm font-normal"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
                         /{intervalLabel(plan.interval).toLowerCase()}
                       </span>
                     </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-sm mb-4">
-                    <div className="p-2 rounded" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+                    <div
+                      className="p-2 rounded"
+                      style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                    >
                       <p style={{ color: 'rgb(var(--muted-foreground))' }}>Subscribers</p>
-                      <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{plan.activeSubscribers}</p>
+                      <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                        {plan.activeSubscribers}
+                      </p>
                     </div>
-                    <div className="p-2 rounded" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+                    <div
+                      className="p-2 rounded"
+                      style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                    >
                       <p style={{ color: 'rgb(var(--muted-foreground))' }}>Revenue</p>
                       <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                         {formatCurrency(plan.totalRevenue, plan.token)}
@@ -178,15 +205,15 @@ export function SubscriptionPlansCard({
                       onClick={() => onTogglePlan(plan.id, !plan.isActive)}
                       className="text-sm"
                       style={{
-                        color: plan.isActive
-                          ? 'rgb(var(--destructive))'
-                          : 'rgb(var(--success))',
+                        color: plan.isActive ? 'rgb(var(--destructive))' : 'rgb(var(--success))',
                       }}
                     >
                       {plan.isActive ? 'Deactivate' : 'Activate'}
                     </button>
                     <button
-                      onClick={() => {/* TODO: Edit modal */}}
+                      onClick={() => {
+                        /* TODO: Edit modal */
+                      }}
                       className="text-sm"
                       style={{ color: 'rgb(var(--primary))' }}
                     >
@@ -208,7 +235,10 @@ export function SubscriptionPlansCard({
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
               Plan Name *
             </label>
             <Input
@@ -219,7 +249,10 @@ export function SubscriptionPlansCard({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
               Description
             </label>
             <textarea
@@ -238,7 +271,10 @@ export function SubscriptionPlansCard({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+              <label
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+              >
                 Price *
               </label>
               <Input
@@ -249,7 +285,10 @@ export function SubscriptionPlansCard({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+              <label
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+              >
                 Token
               </label>
               <select
@@ -272,7 +311,10 @@ export function SubscriptionPlansCard({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
               Billing Interval
             </label>
             <select
@@ -283,7 +325,9 @@ export function SubscriptionPlansCard({
                 color: 'rgb(var(--foreground))',
               }}
               value={formData.interval}
-              onChange={(e) => setFormData({ ...formData, interval: e.target.value as typeof formData.interval })}
+              onChange={(e) =>
+                setFormData({ ...formData, interval: e.target.value as typeof formData.interval })
+              }
             >
               {INTERVALS.map((interval) => (
                 <option key={interval.value} value={interval.value}>
@@ -302,7 +346,11 @@ export function SubscriptionPlansCard({
               className="rounded"
               style={{ borderColor: 'rgb(var(--border-hover))' }}
             />
-            <label htmlFor="isActive" className="text-sm" style={{ color: 'rgb(var(--foreground) / 0.8)' }}>
+            <label
+              htmlFor="isActive"
+              className="text-sm"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
               Plan is active and accepting subscriptions
             </label>
           </div>

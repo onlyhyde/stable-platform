@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import type { LinkedBankAccount, BankAccount } from '../../types'
-import { Button, Card, Modal, Input, Select, Spinner } from '../components/common'
+import { useEffect, useState } from 'react'
+import type { LinkedBankAccount } from '../../types'
 import { BankAccountCard, TransferForm } from '../components/bank'
+import { Button, Card, Input, Modal, Select, Spinner } from '../components/common'
 
 type TabType = 'accounts' | 'transfer' | 'link'
 
@@ -160,11 +160,18 @@ export function Bank({ onBack }: BankPageProps) {
                   stroke="currentColor"
                   aria-hidden="true"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </button>
             )}
-            <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>Bank Accounts</h1>
+            <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+              Bank Accounts
+            </h1>
           </div>
           <Button size="sm" onClick={() => setShowLinkModal(true)}>
             Link Account
@@ -299,11 +306,7 @@ export function Bank({ onBack }: BankPageProps) {
             placeholder="Enter account owner name"
           />
           <div className="flex gap-2 pt-2">
-            <Button
-              variant="secondary"
-              onClick={() => setShowLinkModal(false)}
-              fullWidth
-            >
+            <Button variant="secondary" onClick={() => setShowLinkModal(false)} fullWidth>
               Cancel
             </Button>
             <Button

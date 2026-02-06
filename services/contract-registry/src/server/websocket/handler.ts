@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import type { WebSocket } from 'ws'
-import { ChannelManager } from './channels'
+import type { ChannelManager } from './channels'
 import { parseClientMessage, serializeMessage } from './protocol'
 import type { Logger } from '../../utils/logger'
 

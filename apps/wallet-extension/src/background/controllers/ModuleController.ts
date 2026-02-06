@@ -85,8 +85,8 @@ interface ModuleControllerConfig {
 
 // ERC-7579 module management selectors
 const MODULE_SELECTORS = {
-  installModule: '0x9517e29f',     // installModule(uint256,address,bytes)
-  uninstallModule: '0xa4d0a17e',   // uninstallModule(uint256,address,bytes)
+  installModule: '0x9517e29f', // installModule(uint256,address,bytes)
+  uninstallModule: '0xa4d0a17e', // uninstallModule(uint256,address,bytes)
   isModuleInstalled: '0x112c5bc2', // isModuleInstalled(uint256,address,bytes)
 } as const
 
@@ -199,7 +199,7 @@ export class ModuleController {
     const accountModules = chainModules[accountAddress.toLowerCase()]
     if (!accountModules) return []
 
-    return accountModules.filter(m => m.active)
+    return accountModules.filter((m) => m.active)
   }
 
   /**
@@ -214,14 +214,14 @@ export class ModuleController {
    */
   getModule(accountAddress: string, moduleAddress: string): InstalledModule | undefined {
     const modules = this.getInstalledModules(accountAddress)
-    return modules.find(m => m.address.toLowerCase() === moduleAddress.toLowerCase())
+    return modules.find((m) => m.address.toLowerCase() === moduleAddress.toLowerCase())
   }
 
   /**
    * Get modules by type
    */
   getModulesByType(accountAddress: string, moduleType: ModuleTypeValue): InstalledModule[] {
-    return this.getInstalledModules(accountAddress).filter(m => m.moduleType === moduleType)
+    return this.getInstalledModules(accountAddress).filter((m) => m.moduleType === moduleType)
   }
 
   /**
@@ -261,7 +261,7 @@ export class ModuleController {
     // Remove existing entry for same address
     const modules = chainModules[addr]!
     const existingIdx = modules.findIndex(
-      m => m.address.toLowerCase() === module.address.toLowerCase()
+      (m) => m.address.toLowerCase() === module.address.toLowerCase()
     )
     if (existingIdx >= 0) {
       chainModules[addr] = [
@@ -281,14 +281,16 @@ export class ModuleController {
     const modules = chainModules[addr]
     if (!modules) return
 
-    chainModules[addr] = modules.map(m =>
-      m.address.toLowerCase() === moduleAddress.toLowerCase()
-        ? { ...m, active: false }
-        : m
+    chainModules[addr] = modules.map((m) =>
+      m.address.toLowerCase() === moduleAddress.toLowerCase() ? { ...m, active: false } : m
     )
   }
 
-  private encodeInstallModule(moduleType: ModuleTypeValue, moduleAddress: string, initData: string): string {
+  private encodeInstallModule(
+    moduleType: ModuleTypeValue,
+    moduleAddress: string,
+    initData: string
+  ): string {
     const typeHex = moduleType.toString(16).padStart(64, '0')
     const addrHex = moduleAddress.slice(2).toLowerCase().padStart(64, '0')
     const dataOffset = '0'.repeat(62) + '60' // offset to bytes data
@@ -299,7 +301,11 @@ export class ModuleController {
     return `${MODULE_SELECTORS.installModule}${typeHex}${addrHex}${dataOffset}${dataLen}${paddedData}`
   }
 
-  private encodeUninstallModule(moduleType: ModuleTypeValue, moduleAddress: string, deInitData: string): string {
+  private encodeUninstallModule(
+    moduleType: ModuleTypeValue,
+    moduleAddress: string,
+    deInitData: string
+  ): string {
     const typeHex = moduleType.toString(16).padStart(64, '0')
     const addrHex = moduleAddress.slice(2).toLowerCase().padStart(64, '0')
     const dataOffset = '0'.repeat(62) + '60'
@@ -313,12 +319,14 @@ export class ModuleController {
   private async sendModuleTransaction(accountAddress: string, callData: string): Promise<string> {
     const txHash = await this.provider.request({
       method: 'eth_sendTransaction',
-      params: [{
-        from: accountAddress,
-        to: accountAddress, // Self-call for ERC-7579
-        data: `0x${callData}`,
-        value: '0x0',
-      }],
+      params: [
+        {
+          from: accountAddress,
+          to: accountAddress, // Self-call for ERC-7579
+          data: `0x${callData}`,
+          value: '0x0',
+        },
+      ],
     })
 
     if (typeof txHash !== 'string') {

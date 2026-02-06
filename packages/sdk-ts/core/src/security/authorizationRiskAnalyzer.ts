@@ -6,7 +6,7 @@
  */
 
 import type { Address } from 'viem'
-import { ZERO_ADDRESS, DELEGATE_PRESETS } from '../eip7702'
+import { DELEGATE_PRESETS, ZERO_ADDRESS } from '../eip7702'
 
 /**
  * Check if an address is the zero address (revocation)
@@ -38,9 +38,7 @@ export interface AuthorizationRiskParams {
 /**
  * Analyze an EIP-7702 authorization request for risks
  */
-export function analyzeAuthorizationRisk(
-  params: AuthorizationRiskParams
-): AuthorizationRiskResult {
+export function analyzeAuthorizationRisk(params: AuthorizationRiskParams): AuthorizationRiskResult {
   const { contractAddress, chainId, origin } = params
   const warnings: string[] = []
   let riskLevel: AuthorizationRiskLevel = 'low'
@@ -94,8 +92,8 @@ export function analyzeAuthorizationRisk(
   // Warn about implications of delegation
   warnings.push(
     'By signing this authorization, your account will be able to execute smart contract logic. ' +
-    'This enables features like gas sponsorship and batch transactions, but also means ' +
-    'the delegate contract controls how your account behaves.'
+      'This enables features like gas sponsorship and batch transactions, but also means ' +
+      'the delegate contract controls how your account behaves.'
   )
 
   // Check for mainnet (extra caution)
@@ -149,9 +147,7 @@ export function getAuthorizationSummary(params: {
 /**
  * Format risk warnings for display in UI
  */
-export function formatRiskWarningsForUI(
-  result: AuthorizationRiskResult
-): Array<{
+export function formatRiskWarningsForUI(result: AuthorizationRiskResult): Array<{
   type: 'info' | 'warning' | 'danger'
   message: string
 }> {

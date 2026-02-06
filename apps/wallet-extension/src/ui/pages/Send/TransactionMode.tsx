@@ -1,10 +1,5 @@
+import { ACCOUNT_TYPE, type Account, TRANSACTION_MODE, type TransactionMode } from '@stablenet/core'
 import { useMemo } from 'react'
-import {
-  TRANSACTION_MODE,
-  ACCOUNT_TYPE,
-  type TransactionMode,
-  type Account,
-} from '@stablenet/core'
 
 // ============================================================================
 // Types
@@ -66,7 +61,11 @@ const MODE_INFO: Record<TransactionMode, ModeInfo> = {
       'Delegate your EOA to a Smart Account contract using EIP-7702. ' +
       'This enables advanced features while keeping your existing address.',
     icon: '⚙️',
-    features: ['Keep your existing address', 'Enable Smart Account features', 'Reversible (can revoke)'],
+    features: [
+      'Keep your existing address',
+      'Enable Smart Account features',
+      'Reversible (can revoke)',
+    ],
     requirements: ['ETH for gas', 'One-time setup'],
     gasInfo: 'One-time gas cost',
   },
@@ -378,7 +377,10 @@ export function ModeComparison({ availableModes, gasEstimates }: ModeComparisonP
             const estimate = gasEstimates?.[mode]
 
             return (
-              <tr key={mode} style={{ borderBottomWidth: 1, borderBottomColor: 'rgb(var(--border))' }}>
+              <tr
+                key={mode}
+                style={{ borderBottomWidth: 1, borderBottomColor: 'rgb(var(--border))' }}
+              >
                 <td className="py-2" style={{ color: 'rgb(var(--foreground))' }}>
                   <span className="mr-1">{info.icon}</span>
                   {info.name}

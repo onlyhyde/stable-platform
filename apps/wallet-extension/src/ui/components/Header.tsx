@@ -1,6 +1,6 @@
+import { createLogger } from '../../shared/utils/logger'
 import { useWalletStore } from '../hooks/useWalletStore'
 import { AccountSelector } from './common/AccountSelector'
-import { createLogger } from '../../shared/utils/logger'
 
 const logger = createLogger('Header')
 

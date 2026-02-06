@@ -1,8 +1,8 @@
 'use client'
 
-import { Modal } from './Modal'
-import type { Connector } from 'wagmi'
 import { cn } from '@/lib/utils'
+import type { Connector } from 'wagmi'
+import { Modal } from './Modal'
 
 interface WalletSelectorModalProps {
   isOpen: boolean
@@ -14,11 +14,22 @@ interface WalletSelectorModalProps {
 }
 
 // Wallet icons by connector name/id
-const walletIcons: Record<string, { icon: string; gradientFrom: string; gradientTo: string; label?: string }> = {
+const walletIcons: Record<
+  string,
+  { icon: string; gradientFrom: string; gradientTo: string; label?: string }
+> = {
   // StableNet Wallet
   stablenet: { icon: '⚡', gradientFrom: 'from-primary-500', gradientTo: 'to-primary-600' },
-  'dev.stablenet.wallet': { icon: '⚡', gradientFrom: 'from-primary-500', gradientTo: 'to-primary-600' },
-  'stablenet wallet': { icon: '⚡', gradientFrom: 'from-primary-500', gradientTo: 'to-primary-600' },
+  'dev.stablenet.wallet': {
+    icon: '⚡',
+    gradientFrom: 'from-primary-500',
+    gradientTo: 'to-primary-600',
+  },
+  'stablenet wallet': {
+    icon: '⚡',
+    gradientFrom: 'from-primary-500',
+    gradientTo: 'to-primary-600',
+  },
   // MetaMask
   metaMask: { icon: '🦊', gradientFrom: 'from-orange-400', gradientTo: 'to-orange-600' },
   metamask: { icon: '🦊', gradientFrom: 'from-orange-400', gradientTo: 'to-orange-600' },
@@ -27,11 +38,26 @@ const walletIcons: Record<string, { icon: string; gradientFrom: string; gradient
   rabby: { icon: '🐰', gradientFrom: 'from-blue-400', gradientTo: 'to-blue-600' },
   'io.rabby': { icon: '🐰', gradientFrom: 'from-blue-400', gradientTo: 'to-blue-600' },
   // Coinbase
-  coinbaseWallet: { icon: '🔵', gradientFrom: 'from-blue-500', gradientTo: 'to-blue-700', label: 'Coinbase' },
+  coinbaseWallet: {
+    icon: '🔵',
+    gradientFrom: 'from-blue-500',
+    gradientTo: 'to-blue-700',
+    label: 'Coinbase',
+  },
   // WalletConnect
-  walletConnect: { icon: '🔗', gradientFrom: 'from-accent-400', gradientTo: 'to-accent-600', label: 'WalletConnect' },
+  walletConnect: {
+    icon: '🔗',
+    gradientFrom: 'from-accent-400',
+    gradientTo: 'to-accent-600',
+    label: 'WalletConnect',
+  },
   // Generic
-  injected: { icon: '🌐', gradientFrom: 'from-dark-400', gradientTo: 'to-dark-600', label: 'Browser Wallet' },
+  injected: {
+    icon: '🌐',
+    gradientFrom: 'from-dark-400',
+    gradientTo: 'to-dark-600',
+    label: 'Browser Wallet',
+  },
   default: { icon: '👛', gradientFrom: 'from-dark-400', gradientTo: 'to-dark-600' },
 }
 
@@ -39,12 +65,11 @@ function getWalletInfo(connector: Connector) {
   const id = connector.id.toLowerCase()
   const name = connector.name.toLowerCase()
 
-  const info = walletIcons[id] ||
-               walletIcons[name] ||
-               Object.entries(walletIcons).find(([key]) =>
-                 id.includes(key) || name.includes(key)
-               )?.[1] ||
-               walletIcons.default
+  const info =
+    walletIcons[id] ||
+    walletIcons[name] ||
+    Object.entries(walletIcons).find(([key]) => id.includes(key) || name.includes(key))?.[1] ||
+    walletIcons.default
 
   return info
 }
@@ -63,7 +88,7 @@ export function WalletSelectorModal({
 
   // Filter out duplicate connectors (same name)
   const uniqueConnectors = connectors.reduce((acc, connector) => {
-    const existingIndex = acc.findIndex(c => c.name === connector.name)
+    const existingIndex = acc.findIndex((c) => c.name === connector.name)
     if (existingIndex === -1) {
       acc.push(connector)
     }
@@ -100,19 +125,23 @@ export function WalletSelectorModal({
               }}
             >
               {/* Wallet Icon */}
-              <div className={cn(
-                'w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl shadow-soft',
-                'transform group-hover:scale-105 transition-transform duration-150',
-                gradientFrom,
-                gradientTo
-              )}>
+              <div
+                className={cn(
+                  'w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl shadow-soft',
+                  'transform group-hover:scale-105 transition-transform duration-150',
+                  gradientFrom,
+                  gradientTo
+                )}
+              >
                 <span className="drop-shadow-sm">{icon}</span>
               </div>
 
               {/* Wallet Info */}
               <div className="flex-1 text-left">
-                <div className="font-semibold transition-colors"
-                     style={{ color: 'rgb(var(--foreground))' }}>
+                <div
+                  className="font-semibold transition-colors"
+                  style={{ color: 'rgb(var(--foreground))' }}
+                >
                   {connector.name}
                 </div>
                 <div className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
@@ -123,8 +152,10 @@ export function WalletSelectorModal({
               {/* Status */}
               {isPending ? (
                 <div className="flex items-center gap-2" style={{ color: 'rgb(var(--primary))' }}>
-                  <div className="animate-spin w-5 h-5 border-2 rounded-full"
-                       style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }} />
+                  <div
+                    className="animate-spin w-5 h-5 border-2 rounded-full"
+                    style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
+                  />
                 </div>
               ) : (
                 <svg
@@ -134,7 +165,12 @@ export function WalletSelectorModal({
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               )}
             </button>
@@ -144,13 +180,28 @@ export function WalletSelectorModal({
 
       {uniqueConnectors.length === 0 && (
         <div className="text-center py-8">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-               style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-            <svg className="w-8 h-8" style={{ color: 'rgb(var(--muted-foreground))' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ backgroundColor: 'rgb(var(--secondary))' }}
+          >
+            <svg
+              className="w-8 h-8"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
             </svg>
           </div>
-          <p className="font-semibold mb-1" style={{ color: 'rgb(var(--foreground))' }}>No wallet detected</p>
+          <p className="font-semibold mb-1" style={{ color: 'rgb(var(--foreground))' }}>
+            No wallet detected
+          </p>
           <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Please install MetaMask or another Web3 wallet to continue
           </p>
@@ -163,16 +214,29 @@ export function WalletSelectorModal({
           >
             <span>Install MetaMask</span>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
             </svg>
           </a>
         </div>
       )}
 
       <div className="mt-6 pt-4 border-t" style={{ borderColor: 'rgb(var(--border))' }}>
-        <div className="flex items-center justify-center gap-2 text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+        <div
+          className="flex items-center justify-center gap-2 text-xs"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+        >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
           </svg>
           <span>Secure, encrypted connection</span>
         </div>

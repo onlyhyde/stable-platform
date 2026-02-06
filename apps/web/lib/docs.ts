@@ -523,7 +523,5 @@ export function getDocArticle(sectionSlug: string, articleSlug: string): DocArti
 }
 
 export function getAllArticles(): Array<{ section: DocSection; article: DocArticle }> {
-  return docSections.flatMap((section) =>
-    section.articles.map((article) => ({ section, article }))
-  )
+  return docSections.flatMap((section) => section.articles.map((article) => ({ section, article })))
 }

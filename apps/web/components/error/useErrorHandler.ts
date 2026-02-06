@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
 /**
  * Error handler state
@@ -103,7 +103,7 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}): UseErrorH
   }, [])
 
   const wrapAsync = useCallback(
-    async <T,>(asyncFn: () => Promise<T>): Promise<T | undefined> => {
+    async <T>(asyncFn: () => Promise<T>): Promise<T | undefined> => {
       try {
         return await asyncFn()
       } catch (error) {

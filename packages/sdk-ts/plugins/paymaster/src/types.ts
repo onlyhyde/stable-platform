@@ -1,5 +1,4 @@
 import type { Address, Hex, LocalAccount } from 'viem'
-import type { UserOperation, PaymasterClient, PaymasterStubData, PaymasterData } from '@stablenet/sdk-types'
 
 /**
  * Default validity window for paymaster signatures (1 hour)

@@ -1,7 +1,7 @@
 import type { Hex } from 'viem'
-import type { CheckAnnouncementParams, StealthAnnouncement } from '../types'
 import { checkViewTag, generateStealthAddress as generateStealthAddressCrypto } from '../crypto'
 import { extractViewTag } from '../crypto/viewTag'
+import type { CheckAnnouncementParams, StealthAnnouncement } from '../types'
 
 /**
  * Check if an announcement is intended for the recipient using view tag filtering.
@@ -46,11 +46,7 @@ export function checkAnnouncement(params: CheckAnnouncementParams): boolean {
 
   try {
     const announcementViewTag = extractViewTag(announcement.metadata)
-    return checkViewTag(
-      announcement.ephemeralPubKey,
-      viewingPrivateKey,
-      announcementViewTag
-    )
+    return checkViewTag(announcement.ephemeralPubKey, viewingPrivateKey, announcementViewTag)
   } catch {
     // Invalid ephemeral public key or metadata format
     return false

@@ -6,12 +6,8 @@
 
 import type { GasEstimate, MultiModeTransactionRequest } from '@stablenet/sdk-types'
 import { TRANSACTION_MODE } from '@stablenet/sdk-types'
+import { BASE_TRANSFER_GAS, GAS_BUFFER_DIVISOR, GAS_BUFFER_MULTIPLIER } from '../../config'
 import { GasEstimationError } from '../../errors'
-import {
-  BASE_TRANSFER_GAS,
-  GAS_BUFFER_MULTIPLIER,
-  GAS_BUFFER_DIVISOR,
-} from '../../config'
 import type { GasEstimationStrategy, GasPrices, GasStrategyConfig } from './types'
 
 // ============================================================================

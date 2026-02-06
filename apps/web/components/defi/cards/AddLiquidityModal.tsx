@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { Modal, Button } from '@/components/common'
+import { Button, Modal } from '@/components/common'
 import type { Pool } from '@/types'
+import { useEffect, useMemo, useState } from 'react'
 
 interface AddLiquidityModalProps {
   isOpen: boolean
@@ -17,7 +17,12 @@ export interface LiquidityFormData {
   poolAddress: string
 }
 
-export function AddLiquidityModal({ isOpen, onClose, onSubmit, selectedPool }: AddLiquidityModalProps) {
+export function AddLiquidityModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  selectedPool,
+}: AddLiquidityModalProps) {
   const [token0Amount, setToken0Amount] = useState('')
   const [token1Amount, setToken1Amount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -41,8 +46,8 @@ export function AddLiquidityModal({ isOpen, onClose, onSubmit, selectedPool }: A
     if (amount0 <= 0 || amount1 <= 0) return 0
 
     // Calculate share based on reserve ratio
-    const reserve0 = Number(selectedPool.reserve0) / (10 ** selectedPool.token0.decimals)
-    const reserve1 = Number(selectedPool.reserve1) / (10 ** selectedPool.token1.decimals)
+    const reserve0 = Number(selectedPool.reserve0) / 10 ** selectedPool.token0.decimals
+    const reserve1 = Number(selectedPool.reserve1) / 10 ** selectedPool.token1.decimals
 
     const share0 = (amount0 / (reserve0 + amount0)) * 100
     const share1 = (amount1 / (reserve1 + amount1)) * 100
@@ -77,20 +82,22 @@ export function AddLiquidityModal({ isOpen, onClose, onSubmit, selectedPool }: A
   }
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Add Liquidity"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="Add Liquidity">
       <div className="space-y-4">
         {selectedPool ? (
           <>
             <div className="flex items-center justify-center gap-2 py-4">
               <div className="flex -space-x-2">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium"
+                  style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                >
                   {selectedPool.token0.symbol[0]}
                 </div>
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium"
+                  style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                >
                   {selectedPool.token1.symbol[0]}
                 </div>
               </div>
@@ -101,7 +108,11 @@ export function AddLiquidityModal({ isOpen, onClose, onSubmit, selectedPool }: A
 
             <div className="space-y-3">
               <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-                <label htmlFor="token0-amount" className="text-sm block mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                <label
+                  htmlFor="token0-amount"
+                  className="text-sm block mb-2"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                >
                   {selectedPool.token0.symbol} Amount
                 </label>
                 <input
@@ -116,7 +127,11 @@ export function AddLiquidityModal({ isOpen, onClose, onSubmit, selectedPool }: A
                 />
               </div>
               <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-                <label htmlFor="token1-amount" className="text-sm block mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                <label
+                  htmlFor="token1-amount"
+                  className="text-sm block mb-2"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                >
                   {selectedPool.token1.symbol} Amount
                 </label>
                 <input
@@ -139,15 +154,13 @@ export function AddLiquidityModal({ isOpen, onClose, onSubmit, selectedPool }: A
               </div>
               <div className="flex justify-between text-sm mt-2">
                 <span style={{ color: 'rgb(var(--muted-foreground))' }}>APR</span>
-                <span className="font-medium" style={{ color: 'rgb(var(--success))' }}>{selectedPool.apr.toFixed(2)}%</span>
+                <span className="font-medium" style={{ color: 'rgb(var(--success))' }}>
+                  {selectedPool.apr.toFixed(2)}%
+                </span>
               </div>
             </div>
 
-            <Button
-              className="w-full"
-              onClick={handleSubmit}
-              disabled={!isValid || isLoading}
-            >
+            <Button className="w-full" onClick={handleSubmit} disabled={!isValid || isLoading}>
               {isLoading ? 'Adding Liquidity...' : 'Add Liquidity'}
             </Button>
           </>

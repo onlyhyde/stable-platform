@@ -1,5 +1,5 @@
 import type { Address } from 'viem'
-import type { TransactionMode, TRANSACTION_MODE } from './transaction'
+import type { TransactionMode } from './transaction'
 import type { InstalledModule } from './module'
 
 // ============================================================================
@@ -142,7 +142,6 @@ export function getDefaultTransactionMode(account: Account): TransactionMode {
     case ACCOUNT_TYPE.SMART:
       return 'smartAccount'
 
-    case ACCOUNT_TYPE.EOA:
     default:
       return 'eoa'
   }

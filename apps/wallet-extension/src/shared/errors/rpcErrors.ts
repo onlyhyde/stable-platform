@@ -4,10 +4,10 @@
  */
 
 import {
+  ERROR_MESSAGES,
+  ETH_RPC_ERROR_CODES,
   JSON_RPC_ERROR_CODES,
   PROVIDER_ERROR_CODES,
-  ETH_RPC_ERROR_CODES,
-  ERROR_MESSAGES,
   type SerializedRpcError,
 } from './rpcErrors.types'
 
@@ -103,11 +103,7 @@ export function invalidRequest(data?: unknown): RpcError {
  * The method does not exist / is not available
  */
 export function methodNotFound(method: string, data?: unknown): RpcError {
-  return new RpcError(
-    JSON_RPC_ERROR_CODES.METHOD_NOT_FOUND,
-    `Method not found: ${method}`,
-    data
-  )
+  return new RpcError(JSON_RPC_ERROR_CODES.METHOD_NOT_FOUND, `Method not found: ${method}`, data)
 }
 
 /**
@@ -219,11 +215,7 @@ export function transactionRejected(message?: string, data?: unknown): RpcError 
  * The requested resource was not found
  */
 export function resourceNotFound(message: string, data?: unknown): RpcError {
-  return new RpcError(
-    ETH_RPC_ERROR_CODES.RESOURCE_NOT_FOUND,
-    message,
-    data
-  )
+  return new RpcError(ETH_RPC_ERROR_CODES.RESOURCE_NOT_FOUND, message, data)
 }
 
 /**

@@ -1,10 +1,17 @@
 'use client'
 
-import { type FC } from 'react'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '../common/Card'
-import { Button } from '../common/Button'
-import type { PlanDisplayInfo } from '../../types/subscription'
+import type { FC } from 'react'
 import { cn } from '../../lib/utils'
+import type { PlanDisplayInfo } from '../../types/subscription'
+import { Button } from '../common/Button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '../common/Card'
 
 interface SubscriptionPlanCardProps {
   plan: PlanDisplayInfo
@@ -33,10 +40,7 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
 
   return (
     <Card
-      className={cn(
-        'flex flex-col h-full transition-all hover:shadow-md',
-        className
-      )}
+      className={cn('flex flex-col h-full transition-all hover:shadow-md', className)}
       style={{
         borderColor: featured ? 'rgb(var(--primary))' : undefined,
         boxShadow: featured ? '0 0 0 2px rgb(var(--primary) / 0.1)' : undefined,
@@ -59,10 +63,16 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
         {/* Price */}
         <div className="text-center mb-6">
           <div className="flex items-baseline justify-center gap-1">
-            <span className="text-4xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>{plan.priceFormatted.split(' ')[0]}</span>
-            <span className="text-lg" style={{ color: 'rgb(var(--muted-foreground))' }}>{plan.tokenSymbol}</span>
+            <span className="text-4xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+              {plan.priceFormatted.split(' ')[0]}
+            </span>
+            <span className="text-lg" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              {plan.tokenSymbol}
+            </span>
           </div>
-          <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>{plan.intervalFormatted}</p>
+          <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {plan.intervalFormatted}
+          </p>
         </div>
 
         {/* Features */}
@@ -76,7 +86,12 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {Number(plan.trialPeriod) / 86400} day free trial
@@ -93,7 +108,12 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {Number(plan.gracePeriod) / 86400} day grace period
@@ -109,7 +129,12 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             <span style={{ color: 'rgb(var(--muted-foreground))' }}>Cancel anytime</span>
           </div>
@@ -122,21 +147,34 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
-            <span style={{ color: 'rgb(var(--muted-foreground))' }}>Automatic payments via ERC-7715</span>
+            <span style={{ color: 'rgb(var(--muted-foreground))' }}>
+              Automatic payments via ERC-7715
+            </span>
           </div>
         </div>
 
         {/* Subscriber count */}
         <div className="mt-4 pt-4 border-t" style={{ borderColor: 'rgb(var(--border) / 0.5)' }}>
-          <p className="text-xs text-center" style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}>
+          <p
+            className="text-xs text-center"
+            style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}
+          >
             {Number(plan.subscriberCount).toLocaleString()} subscribers
           </p>
         </div>
 
         {showMerchant && (
-          <div className="mt-2 text-xs text-center font-mono" style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}>
+          <div
+            className="mt-2 text-xs text-center font-mono"
+            style={{ color: 'rgb(var(--muted-foreground) / 0.7)' }}
+          >
             by {plan.merchant.slice(0, 6)}...{plan.merchant.slice(-4)}
           </div>
         )}
@@ -146,7 +184,12 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
         {isSubscribed ? (
           <Button variant="secondary" className="w-full" disabled>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             Subscribed
           </Button>

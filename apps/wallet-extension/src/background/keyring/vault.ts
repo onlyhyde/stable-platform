@@ -1,13 +1,8 @@
-import { encrypt, decrypt, bufferToHex, getRandomBytes } from './crypto'
-import {
-  encryptSessionData,
-  decryptSessionData,
-  isEncryptedSessionData,
-  type EncryptedSessionData,
-} from './sessionCrypto'
-import type { EncryptedVault, VaultData, SerializedKeyring, VaultSessionData } from '../../types'
-import { STORAGE_KEYS, SESSION_KEYS } from '../../shared/constants'
+import { SESSION_KEYS, STORAGE_KEYS } from '../../shared/constants'
 import { createLogger } from '../../shared/utils/logger'
+import type { EncryptedVault, SerializedKeyring, VaultData, VaultSessionData } from '../../types'
+import { decrypt, encrypt } from './crypto'
+import { decryptSessionData, encryptSessionData, isEncryptedSessionData } from './sessionCrypto'
 
 const logger = createLogger('Vault')
 
@@ -28,9 +23,9 @@ export class Vault {
   private autoLockDelay: number
   private autoLockMinutes: number
   /** Flag indicating if restored from session (password not available) */
-  private isSessionRestored: boolean = false
+  private isSessionRestored = false
 
-  constructor(autoLockMinutes: number = 15) {
+  constructor(autoLockMinutes = 15) {
     this.autoLockMinutes = autoLockMinutes
     this.autoLockDelay = autoLockMinutes * 60 * 1000
   }
@@ -460,7 +455,7 @@ export class Vault {
     const hex = vault.salt
     const bytes = new Uint8Array(hex.length / 2)
     for (let i = 0; i < hex.length; i += 2) {
-      bytes[i / 2] = parseInt(hex.substr(i, 2), 16)
+      bytes[i / 2] = Number.parseInt(hex.substr(i, 2), 16)
     }
     return bytes
   }

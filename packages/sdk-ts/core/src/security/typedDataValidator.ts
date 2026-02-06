@@ -53,24 +53,24 @@ export type DomainWarningType =
  * Known legitimate domain names for common protocols
  */
 const KNOWN_PROTOCOL_DOMAINS: Record<string, string[]> = {
-  'uniswap': ['app.uniswap.org', 'uniswap.org'],
-  'opensea': ['opensea.io'],
-  'aave': ['app.aave.com', 'aave.com'],
-  'compound': ['app.compound.finance', 'compound.finance'],
+  uniswap: ['app.uniswap.org', 'uniswap.org'],
+  opensea: ['opensea.io'],
+  aave: ['app.aave.com', 'aave.com'],
+  compound: ['app.compound.finance', 'compound.finance'],
   '1inch': ['app.1inch.io', '1inch.io'],
-  'sushiswap': ['app.sushi.com', 'sushi.com'],
-  'curve': ['curve.fi'],
-  'balancer': ['app.balancer.fi', 'balancer.fi'],
-  'lido': ['stake.lido.fi', 'lido.fi'],
+  sushiswap: ['app.sushi.com', 'sushi.com'],
+  curve: ['curve.fi'],
+  balancer: ['app.balancer.fi', 'balancer.fi'],
+  lido: ['stake.lido.fi', 'lido.fi'],
 }
 
 /**
  * Suspicious patterns in domain names (potential phishing)
  */
 const SUSPICIOUS_PATTERNS = [
-  /uniswap[^.]/i,     // uniswapx, uniswaps, etc.
+  /uniswap[^.]/i, // uniswapx, uniswaps, etc.
   /opensea[^.]/i,
-  /metamask/i,        // MetaMask doesn't use typed data domains
+  /metamask/i, // MetaMask doesn't use typed data domains
   /wallet.*connect/i,
   /airdrop/i,
   /claim.*reward/i,
@@ -121,11 +121,7 @@ export class TypedDataValidator {
     }
 
     // Validate domain fields
-    const domainWarnings = this.validateDomain(
-      data.domain,
-      currentChainId,
-      requestOrigin
-    )
+    const domainWarnings = this.validateDomain(data.domain, currentChainId, requestOrigin)
     warnings.push(...domainWarnings)
 
     // Check for permit signatures (high risk)
@@ -172,9 +168,10 @@ export class TypedDataValidator {
 
     // Validate chain ID
     if (domain.chainId !== undefined) {
-      const domainChainId = typeof domain.chainId === 'string'
-        ? parseInt(domain.chainId, domain.chainId.startsWith('0x') ? 16 : 10)
-        : domain.chainId
+      const domainChainId =
+        typeof domain.chainId === 'string'
+          ? Number.parseInt(domain.chainId, domain.chainId.startsWith('0x') ? 16 : 10)
+          : domain.chainId
 
       if (domainChainId !== currentChainId) {
         warnings.push({
@@ -210,10 +207,7 @@ export class TypedDataValidator {
 
     // Check domain name against origin
     if (domain.name) {
-      const originMismatchWarning = this.checkDomainOriginMismatch(
-        domain.name,
-        requestOrigin
-      )
+      const originMismatchWarning = this.checkDomainOriginMismatch(domain.name, requestOrigin)
       if (originMismatchWarning) {
         warnings.push(originMismatchWarning)
       }
@@ -254,8 +248,8 @@ export class TypedDataValidator {
     // Check for known protocols
     for (const [protocol, domains] of Object.entries(KNOWN_PROTOCOL_DOMAINS)) {
       if (normalizedDomainName.includes(protocol)) {
-        const isFromLegitimateOrigin = domains.some((d) =>
-          originHost.includes(d) || originHost.endsWith(d)
+        const isFromLegitimateOrigin = domains.some(
+          (d) => originHost.includes(d) || originHost.endsWith(d)
         )
         if (!isFromLegitimateOrigin) {
           return {
@@ -269,9 +263,7 @@ export class TypedDataValidator {
 
     // Generic mismatch check - warn if domain name doesn't seem related to origin
     const hasMatchingPart = domainNameParts.some((part) =>
-      originParts.some((originPart) =>
-        originPart.includes(part) || part.includes(originPart)
-      )
+      originParts.some((originPart) => originPart.includes(part) || part.includes(originPart))
     )
 
     if (!hasMatchingPart && domainName.length > 3) {
@@ -320,9 +312,7 @@ export class TypedDataValidator {
     if (data.message) {
       const messageKeys = Object.keys(data.message).map((k) => k.toLowerCase())
       const permitIndicators = ['spender', 'value', 'nonce', 'deadline', 'allowed']
-      const matchCount = permitIndicators.filter((ind) =>
-        messageKeys.includes(ind)
-      ).length
+      const matchCount = permitIndicators.filter((ind) => messageKeys.includes(ind)).length
 
       if (matchCount >= 3) {
         return true
@@ -344,7 +334,8 @@ export class TypedDataValidator {
 
     // Check for max uint256 value (unlimited approval)
     const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-    const MAX_UINT256_DEC = '115792089237316195423570985008687907853269984665640564039457584007913129639935'
+    const MAX_UINT256_DEC =
+      '115792089237316195423570985008687907853269984665640564039457584007913129639935'
 
     const valueFields = ['value', 'amount', 'allowed', 'allowance']
 
@@ -391,9 +382,14 @@ export class TypedDataValidator {
         return severityOrder[a.severity] - severityOrder[b.severity]
       })
       .map((w) => {
-        const prefix = w.severity === 'critical' ? '🚨' :
-          w.severity === 'high' ? '⚠️' :
-            w.severity === 'medium' ? '⚡' : 'ℹ️'
+        const prefix =
+          w.severity === 'critical'
+            ? '🚨'
+            : w.severity === 'high'
+              ? '⚠️'
+              : w.severity === 'medium'
+                ? '⚡'
+                : 'ℹ️'
         return `${prefix} ${w.message}`
       })
   }

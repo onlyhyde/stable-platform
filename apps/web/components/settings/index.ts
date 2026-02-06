@@ -1,1 +1,6 @@
-export { NetworkSettingsCard, AccountSettingsCard, SecuritySettingsCard, DeveloperSettingsCard } from './cards'
+export {
+  NetworkSettingsCard,
+  AccountSettingsCard,
+  SecuritySettingsCard,
+  DeveloperSettingsCard,
+} from './cards'

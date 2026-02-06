@@ -1,12 +1,11 @@
-import type { Address, Hex, LocalAccount, PublicClient, WalletClient } from 'viem'
-import { encodeFunctionData, getContract, keccak256, encodePacked } from 'viem'
+import type { Address, Hex, LocalAccount, PublicClient } from 'viem'
+import { encodeFunctionData, encodePacked, keccak256 } from 'viem'
 import type {
-  SessionKeyConfig,
-  Permission,
-  SessionKeyExecutorConfig,
   CreateSessionKeyParams,
-  PermissionInput,
   ExecutionRequest,
+  PermissionInput,
+  SessionKeyConfig,
+  SessionKeyExecutorConfig,
   SessionKeyState,
 } from './types'
 import { SESSION_KEY_EXECUTOR_ABI } from './types'
@@ -35,19 +34,42 @@ export interface SessionKeyExecutorClient {
 
   // Read functions (require publicClient)
   /** Get session key configuration */
-  getSessionKey: (publicClient: PublicClient, account: Address, sessionKey: Address) => Promise<SessionKeyConfig>
+  getSessionKey: (
+    publicClient: PublicClient,
+    account: Address,
+    sessionKey: Address
+  ) => Promise<SessionKeyConfig>
   /** Get session key state with computed values */
-  getSessionKeyState: (publicClient: PublicClient, account: Address, sessionKey: Address) => Promise<SessionKeyState>
+  getSessionKeyState: (
+    publicClient: PublicClient,
+    account: Address,
+    sessionKey: Address
+  ) => Promise<SessionKeyState>
   /** Check if session key has permission */
-  hasPermission: (publicClient: PublicClient, account: Address, sessionKey: Address, target: Address, selector: Hex) => Promise<boolean>
+  hasPermission: (
+    publicClient: PublicClient,
+    account: Address,
+    sessionKey: Address,
+    target: Address,
+    selector: Hex
+  ) => Promise<boolean>
   /** Get all active session keys for an account */
   getActiveSessionKeys: (publicClient: PublicClient, account: Address) => Promise<Address[]>
   /** Get remaining spending limit */
-  getRemainingSpendingLimit: (publicClient: PublicClient, account: Address, sessionKey: Address) => Promise<bigint>
+  getRemainingSpendingLimit: (
+    publicClient: PublicClient,
+    account: Address,
+    sessionKey: Address
+  ) => Promise<bigint>
 
   // Execution functions
   /** Sign an execution request with session key */
-  signExecution: (sessionKey: LocalAccount, account: Address, request: ExecutionRequest, nonce: bigint) => Promise<Hex>
+  signExecution: (
+    sessionKey: LocalAccount,
+    account: Address,
+    request: ExecutionRequest,
+    nonce: bigint
+  ) => Promise<Hex>
   /** Encode execute on behalf calldata */
   encodeExecuteOnBehalf: (account: Address, request: ExecutionRequest, signature: Hex) => Hex
   /** Encode execute as session key calldata */
@@ -96,12 +118,7 @@ export function createSessionKeyExecutor(
     return encodeFunctionData({
       abi: SESSION_KEY_EXECUTOR_ABI,
       functionName: 'addSessionKey',
-      args: [
-        sessionKey.address,
-        Number(validAfter),
-        Number(validUntil),
-        spendingLimit,
-      ],
+      args: [sessionKey.address, Number(validAfter), Number(validUntil), spendingLimit],
     })
   }
 
@@ -141,12 +158,12 @@ export function createSessionKeyExecutor(
     account: Address,
     sessionKey: Address
   ): Promise<SessionKeyConfig> => {
-    const result = await publicClient.readContract({
+    const result = (await publicClient.readContract({
       address: executorAddress,
       abi: SESSION_KEY_EXECUTOR_ABI,
       functionName: 'getSessionKey',
       args: [account, sessionKey],
-    }) as {
+    })) as {
       sessionKey: Address
       validAfter: number
       validUntil: number
@@ -175,15 +192,12 @@ export function createSessionKeyExecutor(
     const config = await getSessionKey(publicClient, account, sessionKey)
     const now = BigInt(Math.floor(Date.now() / 1000))
 
-    const isValid = config.isActive &&
-      now >= config.validAfter &&
-      now <= config.validUntil
+    const isValid = config.isActive && now >= config.validAfter && now <= config.validUntil
 
     const timeRemaining = config.validUntil > now ? config.validUntil - now : 0n
 
-    const remainingLimit = config.spendingLimit > config.spentAmount
-      ? config.spendingLimit - config.spentAmount
-      : 0n
+    const remainingLimit =
+      config.spendingLimit > config.spentAmount ? config.spendingLimit - config.spentAmount : 0n
 
     return {
       config,
@@ -273,10 +287,7 @@ export function createSessionKeyExecutor(
     })
   }
 
-  const encodeExecuteAsSessionKey = (
-    account: Address,
-    request: ExecutionRequest
-  ): Hex => {
+  const encodeExecuteAsSessionKey = (account: Address, request: ExecutionRequest): Hex => {
     return encodeFunctionData({
       abi: SESSION_KEY_EXECUTOR_ABI,
       functionName: 'executeAsSessionKey',

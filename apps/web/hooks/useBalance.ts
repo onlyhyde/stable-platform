@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useAccount, useChainId } from 'wagmi'
+import { getNativeCurrencySymbol } from '@stablenet/wallet-sdk'
+import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
 import { formatUnits } from 'viem'
-import { getNativeCurrencySymbol } from '@stablenet/wallet-sdk'
+import { useAccount, useChainId } from 'wagmi'
 
 interface UseBalanceOptions {
   address?: Address
@@ -48,7 +48,7 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
 
     try {
       // Get provider from connected wallet
-      const provider = await connector?.getProvider() as { request?: Function } | undefined
+      const provider = (await connector?.getProvider()) as { request?: Function } | undefined
       if (!provider?.request) {
         // Fallback to window.ethereum
         const windowProvider = (window as { ethereum?: { request: Function } }).ethereum
@@ -57,30 +57,33 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
         }
 
         // Get chain ID from provider
-        const chainIdHex = await windowProvider.request({ method: 'eth_chainId' }) as string
-        const currentChainId = parseInt(chainIdHex, 16)
+        const chainIdHex = (await windowProvider.request({ method: 'eth_chainId' })) as string
+        const currentChainId = Number.parseInt(chainIdHex, 16)
         setChainId(currentChainId)
 
         if (token) {
           // ERC-20 token balance
-          const balanceResult = await windowProvider.request({
+          const balanceResult = (await windowProvider.request({
             method: 'eth_call',
-            params: [{
-              to: token,
-              data: `0x70a08231000000000000000000000000${address.slice(2)}`, // balanceOf(address)
-            }, 'latest'],
-          }) as string
+            params: [
+              {
+                to: token,
+                data: `0x70a08231000000000000000000000000${address.slice(2)}`, // balanceOf(address)
+              },
+              'latest',
+            ],
+          })) as string
           setBalance(BigInt(balanceResult || '0'))
 
           // Get token symbol and decimals
-          const symbolResult = await windowProvider.request({
+          const symbolResult = (await windowProvider.request({
             method: 'eth_call',
             params: [{ to: token, data: '0x95d89b41' }, 'latest'], // symbol()
-          }) as string
-          const decimalsResult = await windowProvider.request({
+          })) as string
+          const decimalsResult = (await windowProvider.request({
             method: 'eth_call',
             params: [{ to: token, data: '0x313ce567' }, 'latest'], // decimals()
-          }) as string
+          })) as string
 
           if (symbolResult && symbolResult !== '0x') {
             // Decode string from ABI
@@ -88,14 +91,14 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
             setSymbol(Buffer.from(symbolHex, 'hex').toString('utf8') || 'TOKEN')
           }
           if (decimalsResult && decimalsResult !== '0x') {
-            setDecimals(parseInt(decimalsResult, 16))
+            setDecimals(Number.parseInt(decimalsResult, 16))
           }
         } else {
           // Native balance
-          const balanceHex = await windowProvider.request({
+          const balanceHex = (await windowProvider.request({
             method: 'eth_getBalance',
             params: [address, 'latest'],
-          }) as string
+          })) as string
           setBalance(BigInt(balanceHex || '0'))
 
           // Get native currency symbol from chain info
@@ -105,26 +108,29 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
         }
       } else {
         // Use connector's provider
-        const chainIdHex = await provider.request({ method: 'eth_chainId' }) as string
-        const currentChainId = parseInt(chainIdHex, 16)
+        const chainIdHex = (await provider.request({ method: 'eth_chainId' })) as string
+        const currentChainId = Number.parseInt(chainIdHex, 16)
         setChainId(currentChainId)
 
         if (token) {
           // ERC-20 token balance
-          const balanceResult = await provider.request({
+          const balanceResult = (await provider.request({
             method: 'eth_call',
-            params: [{
-              to: token,
-              data: `0x70a08231000000000000000000000000${address.slice(2)}`,
-            }, 'latest'],
-          }) as string
+            params: [
+              {
+                to: token,
+                data: `0x70a08231000000000000000000000000${address.slice(2)}`,
+              },
+              'latest',
+            ],
+          })) as string
           setBalance(BigInt(balanceResult || '0'))
         } else {
           // Native balance
-          const balanceHex = await provider.request({
+          const balanceHex = (await provider.request({
             method: 'eth_getBalance',
             params: [address, 'latest'],
-          }) as string
+          })) as string
           setBalance(BigInt(balanceHex || '0'))
 
           const networkSymbol = getNativeCurrencySymbol(currentChainId)
@@ -157,7 +163,8 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const provider = (window as { ethereum?: { on?: Function; removeListener?: Function } }).ethereum
+    const provider = (window as { ethereum?: { on?: Function; removeListener?: Function } })
+      .ethereum
     if (!provider?.on) return
 
     const handleChainChanged = () => {
@@ -183,4 +190,3 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
     refetch: fetchBalance,
   }
 }
-

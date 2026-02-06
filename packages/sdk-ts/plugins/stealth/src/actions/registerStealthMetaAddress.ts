@@ -1,6 +1,6 @@
 import type { Address, Hex } from 'viem'
-import type { StealthClient, RegisterStealthMetaAddressParams } from '../types'
 import { ERC6538_REGISTRY_ABI } from '../constants'
+import type { RegisterStealthMetaAddressParams, StealthClient } from '../types'
 
 /**
  * Register a stealth meta-address in the EIP-6538 registry

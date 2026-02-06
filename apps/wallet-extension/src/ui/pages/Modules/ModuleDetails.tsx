@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import type { InstalledModule } from '@stablenet/core'
 import { getModuleTypeName } from '@stablenet/core'
+import { useState } from 'react'
 
 // ============================================================================
 // Types

@@ -1,7 +1,7 @@
 'use client'
 
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { type InputHTMLAttributes, type ReactNode, forwardRef } from 'react'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
@@ -14,17 +14,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
-    {
-      className,
-      label,
-      error,
-      hint,
-      leftElement,
-      rightElement,
-      variant = 'default',
-      id,
-      ...props
-    },
+    { className, label, error, hint, leftElement, rightElement, variant = 'default', id, ...props },
     ref
   ) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-')
@@ -42,8 +32,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative group">
           {leftElement && (
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors"
-                 style={{ color: 'rgb(var(--muted-foreground))' }}>
+            <div
+              className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
               {leftElement}
             </div>
           )}
@@ -69,22 +61,34 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightElement && (
-            <div className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                 style={{ color: 'rgb(var(--muted-foreground))' }}>
+            <div
+              className="absolute inset-y-0 right-0 pr-4 flex items-center"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
               {rightElement}
             </div>
           )}
         </div>
         {error && (
-          <p className="mt-2 text-sm flex items-center gap-1.5" style={{ color: 'rgb(var(--destructive))' }}>
+          <p
+            className="mt-2 text-sm flex items-center gap-1.5"
+            style={{ color: 'rgb(var(--destructive))' }}
+          >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             {error}
           </p>
         )}
         {hint && !error && (
-          <p className="mt-2 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{hint}</p>
+          <p className="mt-2 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {hint}
+          </p>
         )}
       </div>
     )

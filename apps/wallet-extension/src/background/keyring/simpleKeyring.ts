@@ -1,6 +1,6 @@
-import { privateKeyToAccount } from 'viem/accounts'
 import type { Address, Hex } from 'viem'
-import type { SimpleKeyringData, KeyringAccount } from '../../types'
+import { privateKeyToAccount } from 'viem/accounts'
+import type { KeyringAccount, SimpleKeyringData } from '../../types'
 
 /**
  * Simple Keyring - Manages imported private keys
@@ -36,9 +36,7 @@ export class SimpleKeyring {
    */
   importAccount(privateKey: Hex): KeyringAccount {
     // Normalize private key format
-    const normalizedKey = privateKey.startsWith('0x')
-      ? privateKey
-      : (`0x${privateKey}` as Hex)
+    const normalizedKey = privateKey.startsWith('0x') ? privateKey : (`0x${privateKey}` as Hex)
 
     // Validate private key by deriving address
     let viemAccount: ReturnType<typeof privateKeyToAccount>
@@ -75,9 +73,7 @@ export class SimpleKeyring {
     const normalizedAddress = address.toLowerCase() as Address
 
     // Find account in accounts array
-    const index = this.accounts.findIndex(
-      (a) => a.address.toLowerCase() === normalizedAddress
-    )
+    const index = this.accounts.findIndex((a) => a.address.toLowerCase() === normalizedAddress)
 
     if (index === -1) {
       throw new Error('Account not found')
@@ -223,8 +219,6 @@ export class SimpleKeyring {
    * Check if this keyring contains an address
    */
   hasAccount(address: Address): boolean {
-    return this.accounts.some(
-      (a) => a.address.toLowerCase() === address.toLowerCase()
-    )
+    return this.accounts.some((a) => a.address.toLowerCase() === address.toLowerCase())
   }
 }

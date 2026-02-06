@@ -5,12 +5,12 @@
  * Follows SRP: only handles module queries, not operations.
  */
 
+import type { InstalledModule, ModuleType } from '@stablenet/sdk-types'
+import { MODULE_STATUS, MODULE_TYPE } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import type { ModuleType, InstalledModule } from '@stablenet/sdk-types'
-import { MODULE_TYPE, MODULE_STATUS } from '@stablenet/sdk-types'
 import { KERNEL_ABI } from '../abis'
-import { createModuleRegistry, type ModuleRegistry, type ModuleRegistryConfig } from './moduleRegistry'
 import type { RpcProvider } from '../providers'
+import { type ModuleRegistry, createModuleRegistry } from './moduleRegistry'
 
 // ============================================================================
 // Types

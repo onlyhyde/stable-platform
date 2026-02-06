@@ -36,17 +36,21 @@ export function CategoryFilter({
     <div className="space-y-4">
       {/* Categories */}
       <div>
-        <h3 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>Category</h3>
+        <h3 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          Category
+        </h3>
         <div className="flex flex-wrap gap-2">
-          {categories.map(cat => (
+          {categories.map((cat) => (
             <button
               key={cat.key}
               onClick={() => onCategoryChange(cat.key)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-150"
               style={{
-                backgroundColor: selectedCategory === cat.key ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                backgroundColor:
+                  selectedCategory === cat.key ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
                 color: selectedCategory === cat.key ? 'white' : 'rgb(var(--foreground))',
-                boxShadow: selectedCategory === cat.key ? '0 0 16px -4px rgba(16, 185, 129, 0.3)' : 'none',
+                boxShadow:
+                  selectedCategory === cat.key ? '0 0 16px -4px rgba(16, 185, 129, 0.3)' : 'none',
               }}
             >
               <span>{cat.icon}</span>
@@ -58,16 +62,20 @@ export function CategoryFilter({
 
       {/* Module Types */}
       <div>
-        <h3 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>Module Type</h3>
+        <h3 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          Module Type
+        </h3>
         <div className="flex flex-wrap gap-2">
-          {moduleTypes.map(type => (
+          {moduleTypes.map((type) => (
             <button
               key={type.key}
               onClick={() => onTypeChange(type.key)}
               className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-150"
               style={{
-                backgroundColor: selectedType === type.key ? 'rgb(var(--foreground))' : 'rgb(var(--secondary))',
-                color: selectedType === type.key ? 'rgb(var(--background))' : 'rgb(var(--foreground))',
+                backgroundColor:
+                  selectedType === type.key ? 'rgb(var(--foreground))' : 'rgb(var(--secondary))',
+                color:
+                  selectedType === type.key ? 'rgb(var(--background))' : 'rgb(var(--foreground))',
               }}
             >
               {type.label}

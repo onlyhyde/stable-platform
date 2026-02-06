@@ -1,9 +1,9 @@
 'use client'
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Address, Hex } from 'viem'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ============================================
 // 1. IncomingPaymentsCard Tests
@@ -45,16 +45,20 @@ describe('IncomingPaymentsCard', () => {
 
   it('should show loading state during withdrawal', async () => {
     const { IncomingPaymentsCard } = await import('@/components/stealth/cards/IncomingPaymentsCard')
-    const onWithdraw = vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
+    const onWithdraw = vi
+      .fn()
+      .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)))
     const loadingAnnouncements = [
       {
         schemeId: 1,
         stealthAddress: '0x1234567890123456789012345678901234567890' as Address,
-        ephemeralPubKey: '0xabcd000000000000000000000000000000000000000000000000000000000000' as Hex,
+        ephemeralPubKey:
+          '0xabcd000000000000000000000000000000000000000000000000000000000000' as Hex,
         viewTag: 0,
         caller: '0x2345678901234567890123456789012345678901' as Address,
         blockNumber: BigInt(12345),
-        transactionHash: '0x0000000000000000000000000000000000000000000000000000000000000001' as Hex,
+        transactionHash:
+          '0x0000000000000000000000000000000000000000000000000000000000000001' as Hex,
         value: BigInt('1000000000000000000'),
       },
     ]
@@ -81,7 +85,9 @@ describe('IncomingPaymentsCard', () => {
 // ============================================
 describe('StealthMetaAddressCard', () => {
   it('should call onGenerate callback when generate button clicked', async () => {
-    const { StealthMetaAddressCard } = await import('@/components/stealth/cards/StealthMetaAddressCard')
+    const { StealthMetaAddressCard } = await import(
+      '@/components/stealth/cards/StealthMetaAddressCard'
+    )
     const onGenerate = vi.fn()
 
     render(
@@ -101,7 +107,9 @@ describe('StealthMetaAddressCard', () => {
   })
 
   it('should show loading state when generating', async () => {
-    const { StealthMetaAddressCard } = await import('@/components/stealth/cards/StealthMetaAddressCard')
+    const { StealthMetaAddressCard } = await import(
+      '@/components/stealth/cards/StealthMetaAddressCard'
+    )
 
     render(
       <StealthMetaAddressCard
@@ -125,8 +133,18 @@ describe('YourPositionsCard', () => {
   const mockPositions = [
     {
       poolAddress: '0x1234567890123456789012345678901234567890' as Address,
-      token0: { address: '0x0000000000000000000000000000000000000000' as Address, symbol: 'ETH', name: 'Ethereum', decimals: 18 },
-      token1: { address: '0x0000000000000000000000000000000000000001' as Address, symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+      token0: {
+        address: '0x0000000000000000000000000000000000000000' as Address,
+        symbol: 'ETH',
+        name: 'Ethereum',
+        decimals: 18,
+      },
+      token1: {
+        address: '0x0000000000000000000000000000000000000001' as Address,
+        symbol: 'USDC',
+        name: 'USD Coin',
+        decimals: 6,
+      },
       liquidity: BigInt('1000000000000000000'),
       token0Amount: BigInt('500000000000000000'),
       token1Amount: BigInt('1000000000'),
@@ -137,7 +155,9 @@ describe('YourPositionsCard', () => {
   it('should display positions when provided', async () => {
     const { YourPositionsCard } = await import('@/components/defi/cards/YourPositionsCard')
 
-    render(<YourPositionsCard positions={mockPositions} isLoading={false} onRemoveLiquidity={vi.fn()} />)
+    render(
+      <YourPositionsCard positions={mockPositions} isLoading={false} onRemoveLiquidity={vi.fn()} />
+    )
 
     // Check for share percentage which is unambiguous
     expect(screen.getByText('5.00% share')).toBeInTheDocument()

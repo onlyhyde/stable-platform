@@ -1,11 +1,11 @@
 import type { Address } from 'viem'
 import {
-  getLocalConfig,
-  getDevnetConfig,
-  getTestnetConfig,
   getAppConfig as getAppConfigFromEnv,
   getContractAddresses as getContractAddressesFromEnv,
+  getDevnetConfig,
+  getLocalConfig,
   getServiceUrls as getServiceUrlsFromEnv,
+  getTestnetConfig,
 } from './config'
 
 /**
@@ -99,13 +99,16 @@ export const SERVICE_URLS: Record<number, ServiceUrls> = {
 /**
  * Default tokens by chain
  */
-export const DEFAULT_TOKENS: Record<number, Array<{
-  address: Address
-  name: string
-  symbol: string
-  decimals: number
-  logoUrl?: string
-}>> = {
+export const DEFAULT_TOKENS: Record<
+  number,
+  Array<{
+    address: Address
+    name: string
+    symbol: string
+    decimals: number
+    logoUrl?: string
+  }>
+> = {
   31337: [
     {
       address: '0x0000000000000000000000000000000000000000',

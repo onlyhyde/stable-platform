@@ -20,7 +20,7 @@ export function ContractAddressesCard({
   contracts,
   currentDelegate,
   selectedDelegate,
-  isSmartAccount
+  isSmartAccount,
 }: ContractAddressesCardProps) {
   const addressList = [
     ...(isSmartAccount && currentDelegate
@@ -47,13 +47,16 @@ export function ContractAddressesCard({
               key={item.label}
               className="flex justify-between items-center py-2 -mx-4 px-4 rounded"
               style={{
-                borderBottom: index < addressList.length - 1 ? '1px solid rgb(var(--border))' : 'none',
+                borderBottom:
+                  index < addressList.length - 1 ? '1px solid rgb(var(--border))' : 'none',
                 backgroundColor: item.highlight ? 'rgb(var(--success) / 0.1)' : 'transparent',
               }}
             >
               <span
                 className={item.highlight ? 'font-medium' : ''}
-                style={{ color: item.highlight ? 'rgb(var(--success))' : 'rgb(var(--muted-foreground))' }}
+                style={{
+                  color: item.highlight ? 'rgb(var(--success))' : 'rgb(var(--muted-foreground))',
+                }}
               >
                 {item.label}
               </span>

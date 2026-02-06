@@ -1,19 +1,19 @@
-import type { Address, Hex } from 'viem'
-import {
-  encodeAbiParameters,
-  parseAbiParameters,
-  keccak256,
-  toBytes,
-  concat,
-  hexToBytes,
-  bytesToHex,
-  decodeAbiParameters,
-} from 'viem'
 import type {
   ECDSAValidatorConfig,
-  WebAuthnValidatorConfig,
   MultiSigValidatorConfig,
+  WebAuthnValidatorConfig,
 } from '@stablenet/sdk-types'
+import type { Address, Hex } from 'viem'
+import {
+  bytesToHex,
+  concat,
+  decodeAbiParameters,
+  encodeAbiParameters,
+  hexToBytes,
+  keccak256,
+  parseAbiParameters,
+  toBytes,
+} from 'viem'
 import { ValidationError } from '../../errors'
 
 // ============================================================================

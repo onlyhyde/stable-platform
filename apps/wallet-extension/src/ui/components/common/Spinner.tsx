@@ -16,11 +16,7 @@ const colorStyles = {
   gray: 'spinner-muted',
 }
 
-export function Spinner({
-  size = 'md',
-  color = 'primary',
-  className = '',
-}: SpinnerProps) {
+export function Spinner({ size = 'md', color = 'primary', className = '' }: SpinnerProps) {
   return (
     <svg
       className={`animate-spin ${sizeStyles[size]} ${colorStyles[color]} ${className}`}
@@ -28,14 +24,7 @@ export function Spinner({
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path
         className="opacity-75"
         fill="currentColor"
@@ -57,7 +46,9 @@ export function LoadingOverlay({ message }: LoadingOverlayProps) {
     >
       <Spinner size="lg" />
       {message && (
-        <p className="mt-3 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{message}</p>
+        <p className="mt-3 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          {message}
+        </p>
       )}
     </div>
   )

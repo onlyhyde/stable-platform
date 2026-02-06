@@ -1,4 +1,4 @@
-import type { Address, Hex } from 'viem'
+import type { Address } from 'viem'
 
 // Re-export from individual type files
 export * from './account'

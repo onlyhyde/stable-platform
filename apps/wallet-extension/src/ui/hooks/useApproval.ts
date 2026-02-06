@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ApprovalRequest } from '../../types'
 
 interface UseApprovalResult {
@@ -34,15 +34,14 @@ export function useApproval(): UseApprovalResult {
     refresh()
 
     // Listen for approval updates
-    const handleMessage = (
-      message: { type: string; payload?: { approval?: ApprovalRequest; id?: string } }
-    ) => {
+    const handleMessage = (message: {
+      type: string
+      payload?: { approval?: ApprovalRequest; id?: string }
+    }) => {
       if (message.type === 'APPROVAL_ADDED' && message.payload?.approval) {
         setPendingApprovals((prev) => [...prev, message.payload!.approval!])
       } else if (message.type === 'APPROVAL_RESOLVED' && message.payload?.id) {
-        setPendingApprovals((prev) =>
-          prev.filter((a) => a.id !== message.payload!.id)
-        )
+        setPendingApprovals((prev) => prev.filter((a) => a.id !== message.payload!.id))
       }
     }
 
@@ -52,10 +51,7 @@ export function useApproval(): UseApprovalResult {
     }
   }, [refresh])
 
-  const approve = useCallback(async <T = unknown>(
-    id: string,
-    data?: T
-  ): Promise<boolean> => {
+  const approve = useCallback(async <T = unknown>(id: string, data?: T): Promise<boolean> => {
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'APPROVAL_RESPONSE',

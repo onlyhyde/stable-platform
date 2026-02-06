@@ -19,19 +19,19 @@
  * ```
  */
 
+import {
+  DEFAULT_MAX_RETRIES,
+  DEFAULT_RETRY_DELAY,
+  DEFAULT_RPC_TIMEOUT,
+  RETRY_BACKOFF_MULTIPLIER,
+} from '../config'
+import { RpcError, isRpcError } from './errors'
 import type {
   JsonRpcClientConfig,
   JsonRpcRequest,
-  JsonRpcResponse,
   JsonRpcRequestOptions,
+  JsonRpcResponse,
 } from './types'
-import { RpcError, isRpcError } from './errors'
-import {
-  DEFAULT_RPC_TIMEOUT,
-  DEFAULT_MAX_RETRIES,
-  DEFAULT_RETRY_DELAY,
-  RETRY_BACKOFF_MULTIPLIER,
-} from '../config'
 
 // ============================================================================
 // Types
@@ -131,10 +131,7 @@ export function createJsonRpcClient(config: JsonRpcClientConfig): JsonRpcClient 
       try {
         data = await response.json()
       } catch (parseError) {
-        throw RpcError.parseError(
-          url,
-          parseError instanceof Error ? parseError : undefined
-        )
+        throw RpcError.parseError(url, parseError instanceof Error ? parseError : undefined)
       }
 
       // Handle RPC errors
@@ -179,7 +176,7 @@ export function createJsonRpcClient(config: JsonRpcClientConfig): JsonRpcClient 
    * Sleep helper with exponential backoff
    */
   async function sleep(attempt: number): Promise<void> {
-    const delay = retryDelay * Math.pow(RETRY_BACKOFF_MULTIPLIER, attempt)
+    const delay = retryDelay * RETRY_BACKOFF_MULTIPLIER ** attempt
     return new Promise((resolve) => setTimeout(resolve, delay))
   }
 
@@ -199,12 +196,7 @@ export function createJsonRpcClient(config: JsonRpcClientConfig): JsonRpcClient 
 
     for (let attempt = 0; attempt <= retriesAllowed; attempt++) {
       try {
-        return await executeRequest<TResult, TParams>(
-          method,
-          params,
-          requestTimeout,
-          headers
-        )
+        return await executeRequest<TResult, TParams>(method, params, requestTimeout, headers)
       } catch (error) {
         if (!isRpcError(error)) {
           throw error

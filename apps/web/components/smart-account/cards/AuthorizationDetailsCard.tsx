@@ -29,20 +29,31 @@ export function AuthorizationDetailsCard({ authorization, txHash }: Authorizatio
               style={{ borderBottom: '1px solid rgb(var(--border))' }}
             >
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>Transaction Hash:</span>
-              <span className="font-mono break-all text-xs" style={{ color: 'rgb(var(--foreground))' }}>{txHash}</span>
+              <span
+                className="font-mono break-all text-xs"
+                style={{ color: 'rgb(var(--foreground))' }}
+              >
+                {txHash}
+              </span>
             </div>
           )}
           <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
             <span style={{ color: 'rgb(var(--muted-foreground))' }}>Chain ID:</span>
-            <span className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>{authorization.chainId}</span>
+            <span className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>
+              {authorization.chainId}
+            </span>
           </div>
           <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
             <span style={{ color: 'rgb(var(--muted-foreground))' }}>Delegate Address:</span>
-            <span className="font-mono break-all" style={{ color: 'rgb(var(--foreground))' }}>{authorization.contractAddress}</span>
+            <span className="font-mono break-all" style={{ color: 'rgb(var(--foreground))' }}>
+              {authorization.contractAddress}
+            </span>
           </div>
           <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
             <span style={{ color: 'rgb(var(--muted-foreground))' }}>Nonce:</span>
-            <span className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>{authorization.nonce}</span>
+            <span className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>
+              {authorization.nonce}
+            </span>
           </div>
         </div>
         <p className="text-xs mt-3" style={{ color: 'rgb(var(--muted-foreground))' }}>

@@ -1,21 +1,25 @@
-import type { Address, Hex } from 'viem'
-import { createPublicClient, http, isAddress } from 'viem'
-import type { JsonRpcRequest, JsonRpcResponse, SupportedMethod } from '../../types'
-import { RPC_ERRORS, ENTRY_POINT_ADDRESSES, DEFAULT_VALUES } from '../../shared/constants'
-import { walletState } from '../state/store'
-import { approvalController } from '../controllers/approvalController'
-import { keyringController } from '../keyring'
 // Use SDK for bundler client, UserOperation utilities, and security modules
 import {
-  createBundlerClient,
-  getUserOperationHash,
-  type UserOperation,
   // Security utilities
   InputValidator,
+  type ModuleType,
   type TransactionObject,
+  type UserOperation,
+  createBundlerClient,
+  // Module operations
+  createModuleOperationClient,
   createRateLimiter,
   createTypedDataValidator,
+  getModuleTypeName,
+  getUserOperationHash,
 } from '@stablenet/core'
+import type { Address, Hex } from 'viem'
+import { http, createPublicClient, isAddress } from 'viem'
+import { DEFAULT_VALUES, ENTRY_POINT_ADDRESSES, RPC_ERRORS } from '../../shared/constants'
+import type { JsonRpcRequest, JsonRpcResponse, SupportedMethod } from '../../types'
+import { approvalController } from '../controllers/approvalController'
+import { keyringController } from '../keyring'
+import { walletState } from '../state/store'
 import { eventBroadcaster } from '../utils/eventBroadcaster'
 
 // Create singleton instances for security utilities
@@ -30,10 +34,7 @@ import {
 // Singleton validator instance
 const inputValidator = new InputValidator()
 
-type RpcHandler = (
-  params: unknown[] | undefined,
-  origin: string
-) => Promise<unknown>
+type RpcHandler = (params: unknown[] | undefined, origin: string) => Promise<unknown>
 
 /**
  * RPC method handlers
@@ -55,10 +56,7 @@ const handlers: Record<string, RpcHandler> = {
 
     if (selectedAccount && connectedAccounts.includes(selectedAccount)) {
       // Move selected account to first position
-      const sorted = [
-        selectedAccount,
-        ...connectedAccounts.filter((a) => a !== selectedAccount),
-      ]
+      const sorted = [selectedAccount, ...connectedAccounts.filter((a) => a !== selectedAccount)]
       return sorted
     }
 
@@ -78,10 +76,7 @@ const handlers: Record<string, RpcHandler> = {
       const selectedAccount = state.accounts.selectedAccount
 
       if (selectedAccount && connectedAccounts.includes(selectedAccount)) {
-        return [
-          selectedAccount,
-          ...connectedAccounts.filter((a) => a !== selectedAccount),
-        ]
+        return [selectedAccount, ...connectedAccounts.filter((a) => a !== selectedAccount)]
       }
       return connectedAccounts
     }
@@ -116,10 +111,7 @@ const handlers: Record<string, RpcHandler> = {
       // Return accounts with selected account first
       const selectedAccount = state.accounts.selectedAccount
       if (selectedAccount && result.accounts.includes(selectedAccount)) {
-        return [
-          selectedAccount,
-          ...result.accounts.filter((a) => a !== selectedAccount),
-        ]
+        return [selectedAccount, ...result.accounts.filter((a) => a !== selectedAccount)]
       }
 
       return result.accounts
@@ -173,7 +165,7 @@ const handlers: Record<string, RpcHandler> = {
         nativeCurrency: { name: string; symbol: string; decimals: number }
         rpcUrls: string[]
         blockExplorerUrls?: string[]
-      }
+      },
     ]
 
     const chainId = Number.parseInt(chainParams.chainId, 16)
@@ -305,17 +297,14 @@ const handlers: Record<string, RpcHandler> = {
         nonce: `0x${tx.nonce.toString(16)}`,
         blockHash: tx.blockHash,
         blockNumber: tx.blockNumber ? `0x${tx.blockNumber.toString(16)}` : null,
-        transactionIndex: tx.transactionIndex !== null
-          ? `0x${tx.transactionIndex.toString(16)}`
-          : null,
+        transactionIndex:
+          tx.transactionIndex !== null ? `0x${tx.transactionIndex.toString(16)}` : null,
         from: tx.from,
         to: tx.to,
         value: `0x${tx.value.toString(16)}`,
         gas: `0x${tx.gas.toString(16)}`,
         gasPrice: tx.gasPrice ? `0x${tx.gasPrice.toString(16)}` : undefined,
-        maxFeePerGas: tx.maxFeePerGas
-          ? `0x${tx.maxFeePerGas.toString(16)}`
-          : undefined,
+        maxFeePerGas: tx.maxFeePerGas ? `0x${tx.maxFeePerGas.toString(16)}` : undefined,
         maxPriorityFeePerGas: tx.maxPriorityFeePerGas
           ? `0x${tx.maxPriorityFeePerGas.toString(16)}`
           : undefined,
@@ -365,7 +354,7 @@ const handlers: Record<string, RpcHandler> = {
         address?: Address | Address[]
         topics?: (Hex | Hex[] | null)[]
         blockHash?: Hex
-      }
+      },
     ]
     const network = walletState.getCurrentNetwork()
 
@@ -425,9 +414,10 @@ const handlers: Record<string, RpcHandler> = {
     })
 
     // Use either blockTag or blockNumber, not both
-    const block = blockNumber === 'latest'
-      ? await client.getBlock({ blockTag: 'latest', includeTransactions })
-      : await client.getBlock({ blockNumber: BigInt(blockNumber), includeTransactions })
+    const block =
+      blockNumber === 'latest'
+        ? await client.getBlock({ blockTag: 'latest', includeTransactions })
+        : await client.getBlock({ blockNumber: BigInt(blockNumber), includeTransactions })
 
     if (!block) return null
 
@@ -509,7 +499,7 @@ const handlers: Record<string, RpcHandler> = {
   eth_call: async (params) => {
     const [callObject, _block] = params as [
       { to: Address; data?: Hex; from?: Address; value?: Hex },
-      string
+      string,
     ]
     const network = walletState.getCurrentNetwork()
 
@@ -566,9 +556,7 @@ const handlers: Record<string, RpcHandler> = {
     // Verify account is connected (case-insensitive comparison)
     const connectedAccounts = walletState.getConnectedAccounts(origin)
     const normalizedAddress = address.toLowerCase()
-    const isAuthorized = connectedAccounts.some(
-      (a) => a.toLowerCase() === normalizedAddress
-    )
+    const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === normalizedAddress)
     if (!isAuthorized) {
       throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
     }
@@ -642,9 +630,7 @@ const handlers: Record<string, RpcHandler> = {
     // Verify account is connected (case-insensitive)
     const connectedAccounts = walletState.getConnectedAccounts(origin)
     const normalizedAddress = address.toLowerCase()
-    const isAuthorized = connectedAccounts.some(
-      (a) => a.toLowerCase() === normalizedAddress
-    )
+    const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === normalizedAddress)
     if (!isAuthorized) {
       throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
     }
@@ -660,11 +646,7 @@ const handlers: Record<string, RpcHandler> = {
     // Validate typed data domain (SEC-5)
     const currentNetwork = walletState.getCurrentNetwork()
     const currentChainId = currentNetwork?.chainId ?? 1
-    const domainValidation = typedDataValidator.validateTypedData(
-      typedData,
-      currentChainId,
-      origin
-    )
+    const domainValidation = typedDataValidator.validateTypedData(typedData, currentChainId, origin)
 
     // Reject if typed data structure is invalid
     if (!domainValidation.isValid) {
@@ -676,9 +658,7 @@ const handlers: Record<string, RpcHandler> = {
 
     // Get risk level and formatted warnings for approval UI
     const riskLevel = typedDataValidator.getRiskLevel(domainValidation.warnings)
-    const warningMessages = typedDataValidator.formatWarningsForDisplay(
-      domainValidation.warnings
-    )
+    const warningMessages = typedDataValidator.formatWarningsForDisplay(domainValidation.warnings)
 
     // Request user approval with domain validation results
     try {
@@ -721,12 +701,14 @@ const handlers: Record<string, RpcHandler> = {
    * Allows EOAs to delegate to smart contract implementations
    */
   wallet_signAuthorization: async (params, origin) => {
-    const [authRequest] = params as [{
-      account: Address
-      contractAddress: Address
-      chainId?: number | string
-      nonce?: number | string
-    }]
+    const [authRequest] = params as [
+      {
+        account: Address
+        contractAddress: Address
+        chainId?: number | string
+        nonce?: number | string
+      },
+    ]
 
     if (!authRequest || !authRequest.account || !authRequest.contractAddress) {
       throw createRpcError({
@@ -755,9 +737,7 @@ const handlers: Record<string, RpcHandler> = {
     // Verify account is connected
     const connectedAccounts = walletState.getConnectedAccounts(origin)
     const normalizedAccount = account.toLowerCase()
-    const isAuthorized = connectedAccounts.some(
-      (a) => a.toLowerCase() === normalizedAccount
-    )
+    const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === normalizedAccount)
     if (!isAuthorized) {
       throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
     }
@@ -774,9 +754,10 @@ const handlers: Record<string, RpcHandler> = {
     const currentNetwork = walletState.getCurrentNetwork()
     let chainId: number
     if (authRequest.chainId !== undefined) {
-      chainId = typeof authRequest.chainId === 'string'
-        ? parseInt(authRequest.chainId, authRequest.chainId.startsWith('0x') ? 16 : 10)
-        : authRequest.chainId
+      chainId =
+        typeof authRequest.chainId === 'string'
+          ? Number.parseInt(authRequest.chainId, authRequest.chainId.startsWith('0x') ? 16 : 10)
+          : authRequest.chainId
     } else {
       chainId = currentNetwork?.chainId ?? 1
     }
@@ -787,7 +768,7 @@ const handlers: Record<string, RpcHandler> = {
       nonce = BigInt(authRequest.nonce)
     } else {
       // Get current nonce from the network
-      const network = walletState.getState().networks.networks.find(n => n.chainId === chainId)
+      const network = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
       if (network) {
         const client = createPublicClient({
           transport: http(network.rpcUrl),
@@ -894,9 +875,7 @@ const handlers: Record<string, RpcHandler> = {
     // Verify sender account is connected (case-insensitive)
     const connectedAccounts = walletState.getConnectedAccounts(origin)
     const normalizedSender = userOp.sender.toLowerCase()
-    const isAuthorized = connectedAccounts.some(
-      (a) => a.toLowerCase() === normalizedSender
-    )
+    const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === normalizedSender)
     if (!isAuthorized) {
       throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
     }
@@ -924,9 +903,7 @@ const handlers: Record<string, RpcHandler> = {
 
     // Calculate estimated gas cost for approval display
     const estimatedGasCost =
-      (userOp.preVerificationGas +
-        userOp.verificationGasLimit +
-        userOp.callGasLimit) *
+      (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
       userOp.maxFeePerGas
 
     // Request user approval
@@ -1120,7 +1097,7 @@ const handlers: Record<string, RpcHandler> = {
         maxFeePerGas?: string
         maxPriorityFeePerGas?: string
         nonce?: string
-      }
+      },
     ]
 
     // Validate required 'from' field
@@ -1154,9 +1131,7 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     const normalizedFrom = txParams.from.toLowerCase()
-    const isAuthorized = connectedAccounts.some(
-      (a) => a.toLowerCase() === normalizedFrom
-    )
+    const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === normalizedFrom)
     if (!isAuthorized) {
       throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
     }
@@ -1203,10 +1178,8 @@ const handlers: Record<string, RpcHandler> = {
 
     // Get gas price if not provided
     let gasPrice = txParams.gasPrice ? BigInt(txParams.gasPrice) : undefined
-    let maxFeePerGas = txParams.maxFeePerGas
-      ? BigInt(txParams.maxFeePerGas)
-      : undefined
-    let maxPriorityFeePerGas = txParams.maxPriorityFeePerGas
+    const maxFeePerGas = txParams.maxFeePerGas ? BigInt(txParams.maxFeePerGas) : undefined
+    const maxPriorityFeePerGas = txParams.maxPriorityFeePerGas
       ? BigInt(txParams.maxPriorityFeePerGas)
       : undefined
 
@@ -1327,11 +1300,7 @@ const handlers: Record<string, RpcHandler> = {
     const tokenBalances = await Promise.all(
       trackedTokens.map(async (token) => {
         // Try to get cached balance first
-        let balance = walletState.getCachedBalance(
-          network.chainId,
-          selectedAccount,
-          token.address
-        )
+        let balance = walletState.getCachedBalance(network.chainId, selectedAccount, token.address)
 
         // Fetch fresh balance if not cached
         if (!balance) {
@@ -1398,7 +1367,7 @@ const handlers: Record<string, RpcHandler> = {
         name?: string
         decimals?: number
         logoURI?: string
-      }
+      },
     ]
 
     if (!tokenParams?.address) {
@@ -1500,6 +1469,368 @@ const handlers: Record<string, RpcHandler> = {
     return {
       success: true,
       token: newToken,
+    }
+  },
+
+  /**
+   * Install a module on a Smart Account (ERC-7579)
+   * Custom RPC method for module management
+   */
+  stablenet_installModule: async (params, origin) => {
+    const [moduleParams] = params as [
+      {
+        account: Address
+        moduleAddress: Address
+        moduleType: string
+        initData: Hex | Record<string, unknown>
+        initDataEncoded: boolean
+        chainId: number
+      },
+    ]
+
+    if (!moduleParams) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Missing module installation parameters',
+      })
+    }
+
+    const { account, moduleAddress, moduleType, initData, initDataEncoded, chainId } = moduleParams
+
+    // Validate addresses
+    if (!isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid account address',
+      })
+    }
+
+    if (!isAddress(moduleAddress)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid module address',
+      })
+    }
+
+    // Verify account is connected (case-insensitive)
+    const connectedAccounts = walletState.getConnectedAccounts(origin)
+    const normalizedAccount = account.toLowerCase()
+    const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === normalizedAccount)
+    if (!isAuthorized) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    // Check if wallet is unlocked
+    if (!keyringController.isUnlocked()) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: 'Wallet is locked',
+      })
+    }
+
+    // Get network configuration
+    const network = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!network.bundlerUrl) {
+      throw createRpcError({
+        code: RPC_ERRORS.RESOURCE_UNAVAILABLE.code,
+        message: 'Bundler not configured for this network',
+      })
+    }
+
+    // Parse module type from string to ModuleType
+    const moduleTypeParsed = BigInt(moduleType) as ModuleType
+    const moduleTypeNameStr = getModuleTypeName(moduleTypeParsed)
+
+    // Determine init data - use encoded if provided, otherwise use empty for now
+    // (Complex config encoding should be done on the UI side)
+    const finalInitData: Hex = initDataEncoded ? (initData as Hex) : ('0x' as Hex)
+
+    // Create module operation client and prepare calldata
+    const moduleOpClient = createModuleOperationClient({ chainId })
+    const moduleCalldata = moduleOpClient.prepareInstall(account, {
+      moduleAddress,
+      moduleType: moduleTypeParsed,
+      initData: finalInitData,
+    })
+
+    // Build a UserOperation to execute the module installation
+    // This calls the smart account's installModule function
+    const client = createPublicClient({
+      transport: http(network.rpcUrl),
+    })
+
+    // Get current nonce
+    const nonce = await client
+      .readContract({
+        address: account,
+        abi: [
+          {
+            inputs: [{ name: 'key', type: 'uint192' }],
+            name: 'getNonce',
+            outputs: [{ name: '', type: 'uint256' }],
+            stateMutability: 'view',
+            type: 'function',
+          },
+        ],
+        functionName: 'getNonce',
+        args: [0n],
+      })
+      .catch(() => 0n)
+
+    // Get gas prices
+    const feeData = await client.estimateFeesPerGas().catch(() => ({
+      maxFeePerGas: BigInt(1e9),
+      maxPriorityFeePerGas: BigInt(1e8),
+    }))
+
+    // Create UserOperation
+    const userOp: UserOperation = {
+      sender: account,
+      nonce,
+      factory: undefined,
+      factoryData: undefined,
+      callData: moduleCalldata.data,
+      callGasLimit: BigInt(500000),
+      verificationGasLimit: BigInt(500000),
+      preVerificationGas: BigInt(100000),
+      maxFeePerGas: feeData.maxFeePerGas ?? BigInt(1e9),
+      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ?? BigInt(1e8),
+      paymaster: undefined,
+      paymasterVerificationGasLimit: undefined,
+      paymasterPostOpGasLimit: undefined,
+      paymasterData: undefined,
+      signature: '0x',
+    }
+
+    // Calculate estimated gas cost for display
+    const estimatedGasCost =
+      (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
+      userOp.maxFeePerGas
+
+    // Request user approval
+    try {
+      await approvalController.requestTransaction(
+        origin,
+        account,
+        account, // Smart account is both from and to
+        BigInt(0),
+        moduleCalldata.data,
+        estimatedGasCost,
+        `Install ${moduleTypeNameStr} Module`,
+        undefined
+      )
+    } catch (error) {
+      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+    }
+
+    // Sign the UserOperation
+    const entryPoint = ENTRY_POINT_ADDRESSES.V07
+    let signedUserOp: UserOperation
+    try {
+      const hash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
+      const signature = await keyringController.signMessage(account, hash)
+      signedUserOp = { ...userOp, signature }
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'UserOperation signing failed',
+      })
+    }
+
+    // Submit to bundler
+    try {
+      const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+      const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
+      return { hash: userOpHash }
+    } catch (error) {
+      const err = error as Error & { code?: number; data?: unknown }
+      throw createRpcError({
+        code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+        message: err.message || 'Module installation failed',
+        data: err.data,
+      })
+    }
+  },
+
+  /**
+   * Uninstall a module from a Smart Account (ERC-7579)
+   * Custom RPC method for module management
+   */
+  stablenet_uninstallModule: async (params, origin) => {
+    const [moduleParams] = params as [
+      {
+        account: Address
+        moduleAddress: Address
+        moduleType: string
+        chainId: number
+        deInitData?: Hex
+      },
+    ]
+
+    if (!moduleParams) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Missing module uninstallation parameters',
+      })
+    }
+
+    const { account, moduleAddress, moduleType, chainId, deInitData = '0x' as Hex } = moduleParams
+
+    // Validate addresses
+    if (!isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid account address',
+      })
+    }
+
+    if (!isAddress(moduleAddress)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid module address',
+      })
+    }
+
+    // Verify account is connected (case-insensitive)
+    const connectedAccounts = walletState.getConnectedAccounts(origin)
+    const normalizedAccount = account.toLowerCase()
+    const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === normalizedAccount)
+    if (!isAuthorized) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    // Check if wallet is unlocked
+    if (!keyringController.isUnlocked()) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: 'Wallet is locked',
+      })
+    }
+
+    // Get network configuration
+    const network = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!network.bundlerUrl) {
+      throw createRpcError({
+        code: RPC_ERRORS.RESOURCE_UNAVAILABLE.code,
+        message: 'Bundler not configured for this network',
+      })
+    }
+
+    // Parse module type from string to ModuleType
+    const moduleTypeParsed = BigInt(moduleType) as ModuleType
+    const moduleTypeNameStr = getModuleTypeName(moduleTypeParsed)
+
+    // Create module operation client and prepare calldata
+    const moduleOpClient = createModuleOperationClient({ chainId })
+    const moduleCalldata = moduleOpClient.prepareUninstall(account, {
+      moduleAddress,
+      moduleType: moduleTypeParsed,
+      deInitData,
+    })
+
+    // Build a UserOperation to execute the module uninstallation
+    const client = createPublicClient({
+      transport: http(network.rpcUrl),
+    })
+
+    // Get current nonce
+    const nonce = await client
+      .readContract({
+        address: account,
+        abi: [
+          {
+            inputs: [{ name: 'key', type: 'uint192' }],
+            name: 'getNonce',
+            outputs: [{ name: '', type: 'uint256' }],
+            stateMutability: 'view',
+            type: 'function',
+          },
+        ],
+        functionName: 'getNonce',
+        args: [0n],
+      })
+      .catch(() => 0n)
+
+    // Get gas prices
+    const feeData = await client.estimateFeesPerGas().catch(() => ({
+      maxFeePerGas: BigInt(1e9),
+      maxPriorityFeePerGas: BigInt(1e8),
+    }))
+
+    // Create UserOperation
+    const userOp: UserOperation = {
+      sender: account,
+      nonce,
+      factory: undefined,
+      factoryData: undefined,
+      callData: moduleCalldata.data,
+      callGasLimit: BigInt(300000),
+      verificationGasLimit: BigInt(300000),
+      preVerificationGas: BigInt(100000),
+      maxFeePerGas: feeData.maxFeePerGas ?? BigInt(1e9),
+      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ?? BigInt(1e8),
+      paymaster: undefined,
+      paymasterVerificationGasLimit: undefined,
+      paymasterPostOpGasLimit: undefined,
+      paymasterData: undefined,
+      signature: '0x',
+    }
+
+    // Calculate estimated gas cost for display
+    const estimatedGasCost =
+      (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
+      userOp.maxFeePerGas
+
+    // Request user approval
+    try {
+      await approvalController.requestTransaction(
+        origin,
+        account,
+        account,
+        BigInt(0),
+        moduleCalldata.data,
+        estimatedGasCost,
+        `Uninstall ${moduleTypeNameStr} Module`,
+        undefined
+      )
+    } catch (error) {
+      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+    }
+
+    // Sign the UserOperation
+    const entryPoint = ENTRY_POINT_ADDRESSES.V07
+    let signedUserOp: UserOperation
+    try {
+      const hash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
+      const signature = await keyringController.signMessage(account, hash)
+      signedUserOp = { ...userOp, signature }
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'UserOperation signing failed',
+      })
+    }
+
+    // Submit to bundler
+    try {
+      const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+      const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
+      return { hash: userOpHash }
+    } catch (error) {
+      const err = error as Error & { code?: number; data?: unknown }
+      throw createRpcError({
+        code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+        message: err.message || 'Module uninstallation failed',
+        data: err.data,
+      })
     }
   },
 }
@@ -1632,11 +1963,13 @@ function decodeStringResult(data: Hex | undefined): string {
   if (hex.length >= 128) {
     // Dynamic string: offset (32 bytes) + length (32 bytes) + data
     const lengthHex = hex.slice(64, 128)
-    const length = parseInt(lengthHex, 16)
+    const length = Number.parseInt(lengthHex, 16)
     const stringHex = hex.slice(128, 128 + length * 2)
     try {
       // Convert hex to UTF-8 string
-      const bytes = new Uint8Array(stringHex.match(/.{2}/g)?.map((b) => parseInt(b, 16)) ?? [])
+      const bytes = new Uint8Array(
+        stringHex.match(/.{2}/g)?.map((b) => Number.parseInt(b, 16)) ?? []
+      )
       return new TextDecoder().decode(bytes).replace(/\0/g, '')
     } catch {
       return ''
@@ -1645,7 +1978,7 @@ function decodeStringResult(data: Hex | undefined): string {
 
   // Static bytes32 string
   try {
-    const bytes = new Uint8Array(hex.match(/.{2}/g)?.map((b) => parseInt(b, 16)) ?? [])
+    const bytes = new Uint8Array(hex.match(/.{2}/g)?.map((b) => Number.parseInt(b, 16)) ?? [])
     return new TextDecoder().decode(bytes).replace(/\0/g, '')
   } catch {
     return ''
@@ -1961,6 +2294,68 @@ function validateRpcParams(method: string, params: unknown[] | undefined): void 
     case 'eth_supportedEntryPoints':
       break
 
+    case 'stablenet_installModule':
+    case 'stablenet_uninstallModule': {
+      if (!params || params.length < 1) {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: `${method} requires module parameters`,
+        })
+      }
+      const [moduleParams] = params as [unknown]
+      if (!moduleParams || typeof moduleParams !== 'object') {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: 'Module parameters must be an object',
+        })
+      }
+      const { account, moduleAddress, moduleType, chainId } = moduleParams as {
+        account?: unknown
+        moduleAddress?: unknown
+        moduleType?: unknown
+        chainId?: unknown
+      }
+      if (!account || typeof account !== 'string') {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: 'Account address is required',
+        })
+      }
+      const accountResult = inputValidator.validateAddress(account)
+      if (!accountResult.isValid) {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: `Invalid account: ${accountResult.errors.join(', ')}`,
+        })
+      }
+      if (!moduleAddress || typeof moduleAddress !== 'string') {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: 'Module address is required',
+        })
+      }
+      const moduleResult = inputValidator.validateAddress(moduleAddress)
+      if (!moduleResult.isValid) {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: `Invalid module address: ${moduleResult.errors.join(', ')}`,
+        })
+      }
+      if (moduleType === undefined || moduleType === null) {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: 'Module type is required',
+        })
+      }
+      if (chainId === undefined || chainId === null) {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: 'Chain ID is required',
+        })
+      }
+      break
+    }
+
     default:
       // Unknown method - let handler deal with it
       break
@@ -2007,9 +2402,7 @@ function formatBlock(
     receiptsRoot: block.receiptsRoot,
     miner: block.miner,
     difficulty: `0x${block.difficulty.toString(16)}`,
-    totalDifficulty: block.totalDifficulty
-      ? `0x${block.totalDifficulty.toString(16)}`
-      : null,
+    totalDifficulty: block.totalDifficulty ? `0x${block.totalDifficulty.toString(16)}` : null,
     extraData: block.extraData,
     size: `0x${block.size.toString(16)}`,
     gasLimit: `0x${block.gasLimit.toString(16)}`,
@@ -2017,13 +2410,9 @@ function formatBlock(
     timestamp: `0x${block.timestamp.toString(16)}`,
     transactions: includeTransactions
       ? block.transactions
-      : block.transactions.map((tx) =>
-          typeof tx === 'string' ? tx : tx.hash
-        ),
+      : block.transactions.map((tx) => (typeof tx === 'string' ? tx : tx.hash)),
     uncles: block.uncles,
-    baseFeePerGas: block.baseFeePerGas
-      ? `0x${block.baseFeePerGas.toString(16)}`
-      : null,
+    baseFeePerGas: block.baseFeePerGas ? `0x${block.baseFeePerGas.toString(16)}` : null,
   }
 }
 

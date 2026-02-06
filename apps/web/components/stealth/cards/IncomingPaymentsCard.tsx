@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/common'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { formatAddress } from '@/lib/utils'
 import type { Announcement } from '@/types'
+import { useState } from 'react'
 
 interface IncomingPaymentsCardProps {
   announcements: Announcement[]
@@ -22,14 +22,20 @@ export function IncomingPaymentsCard({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Incoming Payments</CardTitle>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onScan}
-          isLoading={isScanning}
-        >
-          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        <Button variant="secondary" size="sm" onClick={onScan} isLoading={isScanning}>
+          <svg
+            className="w-4 h-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
           </svg>
           Scan
         </Button>
@@ -129,12 +135,7 @@ function AnnouncementItem({ announcement, onWithdraw }: AnnouncementItemProps) {
             Block #{announcement.blockNumber.toString()}
           </p>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleWithdraw}
-          isLoading={isWithdrawing}
-        >
+        <Button variant="secondary" size="sm" onClick={handleWithdraw} isLoading={isWithdrawing}>
           Withdraw
         </Button>
       </div>

@@ -36,7 +36,7 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
   // ─── Get Popular Modules ───
   app.get('/api/v1/modules/popular', async (request) => {
     const { limit } = (request.query as Record<string, string>)
-    return { data: store.getPopularModules(limit ? parseInt(limit, 10) : 10) }
+    return { data: store.getPopularModules(limit ? Number.parseInt(limit, 10) : 10) }
   })
 
   // ─── Search Modules ───

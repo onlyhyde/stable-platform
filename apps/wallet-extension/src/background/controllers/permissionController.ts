@@ -5,13 +5,13 @@
 
 import type { Address } from 'viem'
 import type {
-  PermissionType,
-  Permission,
-  PermissionRequest,
-  OriginPermissions,
-  PermissionControllerState,
-  PermissionControllerOptions,
   Caveat,
+  OriginPermissions,
+  Permission,
+  PermissionControllerOptions,
+  PermissionControllerState,
+  PermissionRequest,
+  PermissionType,
 } from './permissionController.types'
 
 type PermissionEventType =
@@ -206,9 +206,7 @@ export class PermissionController {
       (p) => p.parentCapability === 'eth_accounts'
     )
     if (ethAccountsPerm) {
-      const accountCaveat = ethAccountsPerm.caveats.find(
-        (c) => c.type === 'restrictToAccounts'
-      )
+      const accountCaveat = ethAccountsPerm.caveats.find((c) => c.type === 'restrictToAccounts')
       if (accountCaveat) {
         accountCaveat.value = accounts.map((a) => a)
       }

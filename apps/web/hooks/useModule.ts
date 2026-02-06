@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useStableNetContext } from '@/providers'
+import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData } from 'viem'
-import { useStableNetContext } from '@/providers'
 
 // ============================================================================
 // Types
@@ -115,56 +115,55 @@ export function useModule() {
   /**
    * Build install module call for smart account
    */
-  const buildInstallModuleCall = useCallback((
-    smartAccount: Address,
-    params: InstallModuleParams
-  ): ModuleCallData => {
-    return {
-      to: smartAccount,
-      data: encodeInstallModule(params),
-      value: 0n,
-    }
-  }, [encodeInstallModule])
+  const buildInstallModuleCall = useCallback(
+    (smartAccount: Address, params: InstallModuleParams): ModuleCallData => {
+      return {
+        to: smartAccount,
+        data: encodeInstallModule(params),
+        value: 0n,
+      }
+    },
+    [encodeInstallModule]
+  )
 
   /**
    * Build uninstall module call for smart account
    */
-  const buildUninstallModuleCall = useCallback((
-    smartAccount: Address,
-    params: UninstallModuleParams
-  ): ModuleCallData => {
-    return {
-      to: smartAccount,
-      data: encodeUninstallModule(params),
-      value: 0n,
-    }
-  }, [encodeUninstallModule])
+  const buildUninstallModuleCall = useCallback(
+    (smartAccount: Address, params: UninstallModuleParams): ModuleCallData => {
+      return {
+        to: smartAccount,
+        data: encodeUninstallModule(params),
+        value: 0n,
+      }
+    },
+    [encodeUninstallModule]
+  )
 
   /**
    * Check if a module is installed
    */
-  const isModuleInstalled = useCallback(async (
-    smartAccount: Address,
-    moduleType: ModuleType,
-    module: Address
-  ): Promise<boolean> => {
-    setIsLoading(true)
-    setError(null)
+  const isModuleInstalled = useCallback(
+    async (smartAccount: Address, moduleType: ModuleType, module: Address): Promise<boolean> => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const result = await publicClient.readContract({
-        address: smartAccount,
-        abi: KERNEL_MODULE_ABI,
-        functionName: 'isModuleInstalled',
-        args: [moduleType, module, '0x'],
-      })
-      return result as boolean
-    } catch {
-      return false
-    } finally {
-      setIsLoading(false)
-    }
-  }, [publicClient])
+      try {
+        const result = await publicClient.readContract({
+          address: smartAccount,
+          abi: KERNEL_MODULE_ABI,
+          functionName: 'isModuleInstalled',
+          args: [moduleType, module, '0x'],
+        })
+        return result as boolean
+      } catch {
+        return false
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [publicClient]
+  )
 
   /**
    * Get module type name
@@ -198,15 +197,20 @@ export function useModule() {
   /**
    * Encode MultiSig validator init data
    */
-  const encodeMultiSigValidatorInit = useCallback((config: {
-    signers: Address[]
-    threshold: number
-  }): Hex => {
-    const thresholdHex = config.threshold.toString(16).padStart(64, '0')
-    const signerCountHex = config.signers.length.toString(16).padStart(64, '0')
-    const signersHex = config.signers.map((s) => s.slice(2).toLowerCase().padStart(64, '0')).join('')
-    return `0x${thresholdHex}${signerCountHex}${signersHex}` as Hex
-  }, [])
+  const encodeMultiSigValidatorInit = useCallback(
+    (config: {
+      signers: Address[]
+      threshold: number
+    }): Hex => {
+      const thresholdHex = config.threshold.toString(16).padStart(64, '0')
+      const signerCountHex = config.signers.length.toString(16).padStart(64, '0')
+      const signersHex = config.signers
+        .map((s) => s.slice(2).toLowerCase().padStart(64, '0'))
+        .join('')
+      return `0x${thresholdHex}${signerCountHex}${signersHex}` as Hex
+    },
+    []
+  )
 
   // ============================================================================
   // Executor Init Data Encoders
@@ -222,40 +226,49 @@ export function useModule() {
   /**
    * Encode swap executor init data
    */
-  const encodeSwapExecutorInit = useCallback((config: {
-    maxSlippageBps: number
-    dailyLimit: bigint
-  }): Hex => {
-    const slippageHex = config.maxSlippageBps.toString(16).padStart(64, '0')
-    const limitHex = config.dailyLimit.toString(16).padStart(64, '0')
-    return `0x${slippageHex}${limitHex}` as Hex
-  }, [])
+  const encodeSwapExecutorInit = useCallback(
+    (config: {
+      maxSlippageBps: number
+      dailyLimit: bigint
+    }): Hex => {
+      const slippageHex = config.maxSlippageBps.toString(16).padStart(64, '0')
+      const limitHex = config.dailyLimit.toString(16).padStart(64, '0')
+      return `0x${slippageHex}${limitHex}` as Hex
+    },
+    []
+  )
 
   /**
    * Encode lending executor init data
    */
-  const encodeLendingExecutorInit = useCallback((config: {
-    maxLtv: number
-    minHealthFactor: bigint
-    dailyBorrowLimit: bigint
-  }): Hex => {
-    const ltvHex = config.maxLtv.toString(16).padStart(64, '0')
-    const hfHex = config.minHealthFactor.toString(16).padStart(64, '0')
-    const limitHex = config.dailyBorrowLimit.toString(16).padStart(64, '0')
-    return `0x${ltvHex}${hfHex}${limitHex}` as Hex
-  }, [])
+  const encodeLendingExecutorInit = useCallback(
+    (config: {
+      maxLtv: number
+      minHealthFactor: bigint
+      dailyBorrowLimit: bigint
+    }): Hex => {
+      const ltvHex = config.maxLtv.toString(16).padStart(64, '0')
+      const hfHex = config.minHealthFactor.toString(16).padStart(64, '0')
+      const limitHex = config.dailyBorrowLimit.toString(16).padStart(64, '0')
+      return `0x${ltvHex}${hfHex}${limitHex}` as Hex
+    },
+    []
+  )
 
   /**
    * Encode staking executor init data
    */
-  const encodeStakingExecutorInit = useCallback((config: {
-    maxStakePerPool: bigint
-    dailyStakeLimit: bigint
-  }): Hex => {
-    const maxStakeHex = config.maxStakePerPool.toString(16).padStart(64, '0')
-    const limitHex = config.dailyStakeLimit.toString(16).padStart(64, '0')
-    return `0x${maxStakeHex}${limitHex}` as Hex
-  }, [])
+  const encodeStakingExecutorInit = useCallback(
+    (config: {
+      maxStakePerPool: bigint
+      dailyStakeLimit: bigint
+    }): Hex => {
+      const maxStakeHex = config.maxStakePerPool.toString(16).padStart(64, '0')
+      const limitHex = config.dailyStakeLimit.toString(16).padStart(64, '0')
+      return `0x${maxStakeHex}${limitHex}` as Hex
+    },
+    []
+  )
 
   // ============================================================================
   // Hook Init Data Encoders
@@ -264,38 +277,47 @@ export function useModule() {
   /**
    * Encode spending limit hook init data
    */
-  const encodeSpendingLimitHookInit = useCallback((config: {
-    token: Address
-    limit: bigint
-    period: bigint
-  }): Hex => {
-    const tokenHex = config.token.slice(2).toLowerCase().padStart(64, '0')
-    const limitHex = config.limit.toString(16).padStart(64, '0')
-    const periodHex = config.period.toString(16).padStart(64, '0')
-    return `0x${tokenHex}${limitHex}${periodHex}` as Hex
-  }, [])
+  const encodeSpendingLimitHookInit = useCallback(
+    (config: {
+      token: Address
+      limit: bigint
+      period: bigint
+    }): Hex => {
+      const tokenHex = config.token.slice(2).toLowerCase().padStart(64, '0')
+      const limitHex = config.limit.toString(16).padStart(64, '0')
+      const periodHex = config.period.toString(16).padStart(64, '0')
+      return `0x${tokenHex}${limitHex}${periodHex}` as Hex
+    },
+    []
+  )
 
   /**
    * Encode health factor hook init data
    */
-  const encodeHealthFactorHookInit = useCallback((config: {
-    minHealthFactor: bigint
-  }): Hex => {
-    const hfHex = config.minHealthFactor.toString(16).padStart(64, '0')
-    return `0x${hfHex}` as Hex
-  }, [])
+  const encodeHealthFactorHookInit = useCallback(
+    (config: {
+      minHealthFactor: bigint
+    }): Hex => {
+      const hfHex = config.minHealthFactor.toString(16).padStart(64, '0')
+      return `0x${hfHex}` as Hex
+    },
+    []
+  )
 
   /**
    * Encode policy hook init data
    */
-  const encodePolicyHookInit = useCallback((config: {
-    maxValue: bigint
-    dailyLimit: bigint
-  }): Hex => {
-    const maxValueHex = config.maxValue.toString(16).padStart(64, '0')
-    const limitHex = config.dailyLimit.toString(16).padStart(64, '0')
-    return `0x${maxValueHex}${limitHex}` as Hex
-  }, [])
+  const encodePolicyHookInit = useCallback(
+    (config: {
+      maxValue: bigint
+      dailyLimit: bigint
+    }): Hex => {
+      const maxValueHex = config.maxValue.toString(16).padStart(64, '0')
+      const limitHex = config.dailyLimit.toString(16).padStart(64, '0')
+      return `0x${maxValueHex}${limitHex}` as Hex
+    },
+    []
+  )
 
   return {
     // Module types

@@ -1,12 +1,12 @@
+import {
+  GAS_PAYMENT_TYPE,
+  type GasEstimate,
+  type GasPaymentConfig,
+  type SponsorPolicy,
+} from '@stablenet/core'
 import { useMemo } from 'react'
 import type { Address } from 'viem'
 import { formatEther, formatUnits } from 'viem'
-import {
-  GAS_PAYMENT_TYPE,
-  type GasPaymentConfig,
-  type GasEstimate,
-  type SponsorPolicy,
-} from '@stablenet/core'
 
 import { usePaymasterClient } from './hooks/usePaymasterClient'
 
@@ -386,7 +386,10 @@ export function GasPaymentSummary({
   const isERC20 = gasPayment.type === GAS_PAYMENT_TYPE.ERC20
 
   return (
-    <div className="gas-payment-summary p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+    <div
+      className="gas-payment-summary p-3 rounded-lg"
+      style={{ backgroundColor: 'rgb(var(--secondary))' }}
+    >
       <h4 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
         Gas Payment
       </h4>

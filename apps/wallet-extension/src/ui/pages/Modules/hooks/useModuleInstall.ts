@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
-import type { Address, Hash, Hex } from 'viem'
 import type { ModuleRegistryEntry } from '@stablenet/core'
+import { useCallback, useState } from 'react'
+import type { Address, Hash, Hex } from 'viem'
 import { useSelectedNetwork } from '../../../hooks'
 
 interface InstallModuleParams {
@@ -13,7 +13,11 @@ interface InstallModuleParams {
 
 interface UseModuleInstallReturn {
   installModule: (params: InstallModuleParams) => Promise<Hash>
-  uninstallModule: (params: { account: Address; moduleAddress: Address; moduleType: bigint }) => Promise<Hash>
+  uninstallModule: (params: {
+    account: Address
+    moduleAddress: Address
+    moduleType: bigint
+  }) => Promise<Hash>
   isPending: boolean
   error: Error | null
 }

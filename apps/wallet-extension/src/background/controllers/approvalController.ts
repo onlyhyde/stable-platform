@@ -1,21 +1,20 @@
+import { analyzeAuthorizationRisk } from '@stablenet/core'
 import type { Address, Hex } from 'viem'
+import { getApprovalConfig } from '../../config'
+import { isRevocationAddress } from '../../shared/utils/eip7702'
+import { createLogger } from '../../shared/utils/logger'
 import type {
+  AddNetworkApprovalRequest,
+  ApprovalControllerState,
   ApprovalRequest,
-  ApprovalType,
   ApprovalResult,
+  AuthorizationApprovalRequest,
   ConnectApprovalRequest,
   SignatureApprovalRequest,
-  TransactionApprovalRequest,
   SwitchNetworkApprovalRequest,
-  AddNetworkApprovalRequest,
-  AuthorizationApprovalRequest,
-  ApprovalControllerState,
+  TransactionApprovalRequest,
 } from '../../types'
-import { analyzeAuthorizationRisk } from '@stablenet/core'
-import { isRevocationAddress } from '../../shared/utils/eip7702'
 import { generateRandomHex } from '../keyring/crypto'
-import { createLogger } from '../../shared/utils/logger'
-import { getApprovalConfig } from '../../config'
 
 const logger = createLogger('ApprovalController')
 
@@ -74,9 +73,7 @@ export class ApprovalController {
    * Get all pending approvals for an origin
    */
   getPendingApprovalsForOrigin(origin: string): ApprovalRequest[] {
-    return Array.from(this.pendingApprovals.values()).filter(
-      (a) => a.origin === origin
-    )
+    return Array.from(this.pendingApprovals.values()).filter((a) => a.origin === origin)
   }
 
   /**
@@ -122,7 +119,9 @@ export class ApprovalController {
       params.message,
       undefined,
       params.favicon
-    ).then(() => ({ approved: true })).catch(() => ({ approved: false }))
+    )
+      .then(() => ({ approved: true }))
+      .catch(() => ({ approved: false }))
   }
 
   /**
@@ -148,7 +147,9 @@ export class ApprovalController {
       params.typedData,
       params.favicon,
       params.domainValidation
-    ).then(() => ({ approved: true })).catch(() => ({ approved: false }))
+    )
+      .then(() => ({ approved: true }))
+      .catch(() => ({ approved: false }))
   }
 
   /**
@@ -171,10 +172,7 @@ export class ApprovalController {
     const signatureRiskWarnings = this.assessSignatureRisk(message, typedData)
 
     // Merge signature risk warnings with domain validation warnings (SEC-5)
-    const allWarnings = [
-      ...signatureRiskWarnings,
-      ...(domainValidation?.warningMessages ?? []),
-    ]
+    const allWarnings = [...signatureRiskWarnings, ...(domainValidation?.warningMessages ?? [])]
 
     // Determine overall risk level (domain validation takes precedence if critical)
     let riskLevel: 'low' | 'medium' | 'high' = 'low'
@@ -478,7 +476,9 @@ export class ApprovalController {
 
       // Create new popup using chrome.runtime.getURL for proper extension URL
       // SEC-12: URL encode the approval ID to prevent injection attacks
-      const popupUrl = chrome.runtime.getURL(`src/approval/approval.html?id=${encodeURIComponent(approval.id)}`)
+      const popupUrl = chrome.runtime.getURL(
+        `src/approval/approval.html?id=${encodeURIComponent(approval.id)}`
+      )
       logger.info('Opening approval popup', { url: popupUrl, approvalId: approval.id })
 
       const popup = await chrome.windows.create({
@@ -571,17 +571,14 @@ export class ApprovalController {
   /**
    * Format message for display
    */
-  private formatMessageForDisplay(
-    message: string,
-    method: string
-  ): string {
+  private formatMessageForDisplay(message: string, method: string): string {
     if (method === 'personal_sign') {
       // Try to decode hex message
       try {
         if (message.startsWith('0x')) {
           const hex = message.slice(2)
           const bytes = new Uint8Array(
-            hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+            hex.match(/.{1,2}/g)!.map((byte) => Number.parseInt(byte, 16))
           )
           return new TextDecoder().decode(bytes)
         }
@@ -595,10 +592,7 @@ export class ApprovalController {
   /**
    * Assess signature risk
    */
-  private assessSignatureRisk(
-    _message: string,
-    typedData?: unknown
-  ): string[] {
+  private assessSignatureRisk(_message: string, typedData?: unknown): string[] {
     const warnings: string[] = []
 
     if (typedData) {
@@ -615,11 +609,7 @@ export class ApprovalController {
   /**
    * Assess transaction risk
    */
-  private assessTransactionRisk(
-    to: Address,
-    value: bigint,
-    data?: string
-  ): string[] {
+  private assessTransactionRisk(to: Address, value: bigint, data?: string): string[] {
     const warnings: string[] = []
 
     // Check for high value transactions

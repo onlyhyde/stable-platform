@@ -4,17 +4,17 @@
  */
 
 import type {
-  SdkErrorCode,
-  SdkErrorDetails,
   BundlerErrorCode,
   BundlerErrorDetails,
   ErrorContext,
-  UserOperationErrorDetails,
-  TransactionErrorDetails,
   GasEstimationErrorDetails,
   PaymasterErrorDetails,
+  SdkErrorCode,
+  SdkErrorDetails,
+  TransactionErrorDetails,
+  UserOperationErrorDetails,
 } from './types'
-import { SDK_ERROR_CODES, BUNDLER_ERROR_CODES } from './types'
+import { BUNDLER_ERROR_CODES, SDK_ERROR_CODES } from './types'
 
 /**
  * Base SDK Error class
@@ -218,10 +218,7 @@ export class GasEstimationError extends SdkError {
   readonly availableGas?: bigint
   readonly reason?: string
 
-  constructor(
-    message: string,
-    details: GasEstimationErrorDetails & { context?: ErrorContext }
-  ) {
+  constructor(message: string, details: GasEstimationErrorDetails & { context?: ErrorContext }) {
     super({
       code: SDK_ERROR_CODES.GAS_ESTIMATION_FAILED,
       message,

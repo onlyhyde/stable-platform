@@ -6,7 +6,6 @@
  * Follows DIP: uses JsonRpcClient abstraction for RPC communication.
  */
 
-import type { Address, Hex } from 'viem'
 import type {
   BundlerClient,
   BundlerClientConfig,
@@ -17,10 +16,11 @@ import type {
   WaitForUserOperationReceiptOptions,
 } from '@stablenet/sdk-types'
 import { ENTRY_POINT_V07_ADDRESS } from '@stablenet/sdk-types'
+import type { Address, Hex } from 'viem'
+import { DEFAULT_CONFIRMATION_TIMEOUT, USER_OP_POLLING_INTERVAL } from '../config'
+import { SDK_ERROR_CODES, SdkError } from '../errors'
+import { type JsonRpcClient, createBundlerRpcClient } from '../rpc'
 import { packUserOperation, unpackUserOperation } from '../utils/userOperation'
-import { SdkError, SDK_ERROR_CODES } from '../errors'
-import { createBundlerRpcClient, type JsonRpcClient } from '../rpc'
-import { USER_OP_POLLING_INTERVAL, DEFAULT_CONFIRMATION_TIMEOUT } from '../config'
 
 // ============================================================================
 // Types
@@ -141,10 +141,10 @@ export function createBundlerClient(config: BundlerClientConfig): BundlerClient 
       paymasterPostOpGasLimit: userOp.paymasterPostOpGasLimit,
     })
 
-    const result = await rpcClient.request<RawGasEstimation>(
-      'eth_estimateUserOperationGas',
-      [packed, entryPoint]
-    )
+    const result = await rpcClient.request<RawGasEstimation>('eth_estimateUserOperationGas', [
+      packed,
+      entryPoint,
+    ])
 
     return parseGasEstimation(result)
   }
@@ -174,9 +174,7 @@ export function createBundlerClient(config: BundlerClientConfig): BundlerClient 
   /**
    * Get UserOperation receipt
    */
-  async function getUserOperationReceipt(
-    hash: Hex
-  ): Promise<UserOperationReceipt | null> {
+  async function getUserOperationReceipt(hash: Hex): Promise<UserOperationReceipt | null> {
     const result = await rpcClient.request<RawUserOperationReceipt | null>(
       'eth_getUserOperationReceipt',
       [hash]
@@ -209,7 +207,8 @@ export function createBundlerClient(config: BundlerClientConfig): BundlerClient 
     hash: Hex,
     options: WaitForUserOperationReceiptOptions = {}
   ): Promise<UserOperationReceipt> {
-    const { pollingInterval = USER_OP_POLLING_INTERVAL, timeout = DEFAULT_CONFIRMATION_TIMEOUT } = options
+    const { pollingInterval = USER_OP_POLLING_INTERVAL, timeout = DEFAULT_CONFIRMATION_TIMEOUT } =
+      options
     const startTime = Date.now()
 
     while (Date.now() - startTime < timeout) {
@@ -276,9 +275,7 @@ function parseLog(raw: RawLog) {
 /**
  * Parse raw UserOperation receipt
  */
-function parseUserOperationReceipt(
-  raw: RawUserOperationReceipt
-): UserOperationReceipt {
+function parseUserOperationReceipt(raw: RawUserOperationReceipt): UserOperationReceipt {
   return {
     userOpHash: raw.userOpHash,
     entryPoint: raw.entryPoint,

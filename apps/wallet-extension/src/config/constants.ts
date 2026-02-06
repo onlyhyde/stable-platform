@@ -167,7 +167,10 @@ export function getDevnetNetworkConfig() {
     rpcUrl: getEnvString(WALLET_ENV_VARS.DEVNET_RPC_URL, DEFAULTS.DEVNET_RPC_URL),
     bundlerUrl: getEnvString(WALLET_ENV_VARS.DEVNET_BUNDLER_URL, DEFAULTS.DEVNET_BUNDLER_URL),
     paymasterUrl: getEnvString(WALLET_ENV_VARS.DEVNET_PAYMASTER_URL, DEFAULTS.DEVNET_PAYMASTER_URL),
-    stealthServerUrl: getEnvString(WALLET_ENV_VARS.DEVNET_STEALTH_SERVER_URL, DEFAULTS.DEVNET_STEALTH_SERVER_URL),
+    stealthServerUrl: getEnvString(
+      WALLET_ENV_VARS.DEVNET_STEALTH_SERVER_URL,
+      DEFAULTS.DEVNET_STEALTH_SERVER_URL
+    ),
   }
 }
 
@@ -178,8 +181,14 @@ export function getTestnetNetworkConfig() {
   return {
     rpcUrl: getEnvString(WALLET_ENV_VARS.TESTNET_RPC_URL, DEFAULTS.TESTNET_RPC_URL),
     bundlerUrl: getEnvString(WALLET_ENV_VARS.TESTNET_BUNDLER_URL, DEFAULTS.TESTNET_BUNDLER_URL),
-    paymasterUrl: getEnvString(WALLET_ENV_VARS.TESTNET_PAYMASTER_URL, DEFAULTS.TESTNET_PAYMASTER_URL),
-    stealthServerUrl: getEnvString(WALLET_ENV_VARS.TESTNET_STEALTH_SERVER_URL, DEFAULTS.TESTNET_STEALTH_SERVER_URL),
+    paymasterUrl: getEnvString(
+      WALLET_ENV_VARS.TESTNET_PAYMASTER_URL,
+      DEFAULTS.TESTNET_PAYMASTER_URL
+    ),
+    stealthServerUrl: getEnvString(
+      WALLET_ENV_VARS.TESTNET_STEALTH_SERVER_URL,
+      DEFAULTS.TESTNET_STEALTH_SERVER_URL
+    ),
   }
 }
 
@@ -206,8 +215,14 @@ export function getNetworkConfigByChainId(chainId: number) {
  */
 export function getGasFeeConfig() {
   return {
-    pollingIntervalMs: getEnvNumber(WALLET_ENV_VARS.GAS_POLLING_INTERVAL_MS, DEFAULTS.GAS_POLLING_INTERVAL_MS),
-    historyMaxLength: getEnvNumber(WALLET_ENV_VARS.GAS_HISTORY_MAX_LENGTH, DEFAULTS.GAS_HISTORY_MAX_LENGTH),
+    pollingIntervalMs: getEnvNumber(
+      WALLET_ENV_VARS.GAS_POLLING_INTERVAL_MS,
+      DEFAULTS.GAS_POLLING_INTERVAL_MS
+    ),
+    historyMaxLength: getEnvNumber(
+      WALLET_ENV_VARS.GAS_HISTORY_MAX_LENGTH,
+      DEFAULTS.GAS_HISTORY_MAX_LENGTH
+    ),
   }
 }
 
@@ -226,7 +241,10 @@ export const GWEI = BigInt(1_000_000_000)
 export function getApprovalConfig() {
   return {
     expiryMs: getEnvNumber(WALLET_ENV_VARS.APPROVAL_EXPIRY_MS, DEFAULTS.APPROVAL_EXPIRY_MS),
-    historyMaxLength: getEnvNumber(WALLET_ENV_VARS.APPROVAL_HISTORY_MAX_LENGTH, DEFAULTS.APPROVAL_HISTORY_MAX_LENGTH),
+    historyMaxLength: getEnvNumber(
+      WALLET_ENV_VARS.APPROVAL_HISTORY_MAX_LENGTH,
+      DEFAULTS.APPROVAL_HISTORY_MAX_LENGTH
+    ),
   }
 }
 
@@ -246,7 +264,10 @@ export function getSecurityConfig() {
      * Set to false by default for local development/testing with HTTP URLs.
      * Enable via VITE_WALLET_ENFORCE_HTTPS_RPC_URLS=true for production builds.
      */
-    enforceHttpsRpcUrls: getEnvBoolean(WALLET_ENV_VARS.ENFORCE_HTTPS_RPC_URLS, DEFAULTS.ENFORCE_HTTPS_RPC_URLS),
+    enforceHttpsRpcUrls: getEnvBoolean(
+      WALLET_ENV_VARS.ENFORCE_HTTPS_RPC_URLS,
+      DEFAULTS.ENFORCE_HTTPS_RPC_URLS
+    ),
   }
 }
 
@@ -285,7 +306,10 @@ export const STORAGE_KEYS = {
  */
 export function getRpcConfig() {
   return {
-    requestTimeoutMs: getEnvNumber(WALLET_ENV_VARS.RPC_REQUEST_TIMEOUT_MS, DEFAULTS.RPC_REQUEST_TIMEOUT_MS),
+    requestTimeoutMs: getEnvNumber(
+      WALLET_ENV_VARS.RPC_REQUEST_TIMEOUT_MS,
+      DEFAULTS.RPC_REQUEST_TIMEOUT_MS
+    ),
   }
 }
 

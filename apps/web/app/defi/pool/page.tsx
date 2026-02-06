@@ -1,15 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { Button, ConnectWalletCard, PageHeader } from '@/components/common'
+import { AddLiquidityModal, AvailablePoolsCard, YourPositionsCard } from '@/components/defi'
 import { useWallet } from '@/hooks'
 import { usePools } from '@/hooks/usePools'
-import { PageHeader, ConnectWalletCard, Button } from '@/components/common'
-import {
-  YourPositionsCard,
-  AvailablePoolsCard,
-  AddLiquidityModal,
-} from '@/components/defi'
 import type { Pool } from '@/types'
+import { useState } from 'react'
 
 export default function PoolPage() {
   const { isConnected } = useWallet()
@@ -28,9 +24,7 @@ export default function PoolPage() {
   }
 
   if (!isConnected) {
-    return (
-      <ConnectWalletCard message="Please connect your wallet to view pools" />
-    )
+    return <ConnectWalletCard message="Please connect your wallet to view pools" />
   }
 
   if (isLoading) {
@@ -52,12 +46,15 @@ export default function PoolPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <PageHeader
-          title="Liquidity Pools"
-          description="Provide liquidity and earn trading fees"
-        />
+        <PageHeader title="Liquidity Pools" description="Provide liquidity and earn trading fees" />
         <Button onClick={() => setIsAddLiquidityOpen(true)}>
-          <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Add Liquidity
@@ -66,10 +63,7 @@ export default function PoolPage() {
 
       <YourPositionsCard />
 
-      <AvailablePoolsCard
-        pools={pools}
-        onAddLiquidity={handleAddLiquidity}
-      />
+      <AvailablePoolsCard pools={pools} onAddLiquidity={handleAddLiquidity} />
 
       <AddLiquidityModal
         isOpen={isAddLiquidityOpen}

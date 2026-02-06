@@ -1,9 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardTitle, CardDescription, Button, Input, InfoBanner } from '@/components/common'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+  InfoBanner,
+  Input,
+} from '@/components/common'
 import { supportedChains } from '@/lib/chains'
-import { type RpcSettings } from '@/lib/utils'
+import type { RpcSettings } from '@/lib/utils'
+import { useEffect, useState } from 'react'
 
 interface NetworkSettingsCardProps {
   currentChainId: number
@@ -17,7 +25,10 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
   const [bundlerUrl, setBundlerUrl] = useState('')
   const [paymasterUrl, setPaymasterUrl] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [saveMessage, setSaveMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
 
   // Load saved settings from localStorage on mount
   useEffect(() => {
@@ -64,7 +75,10 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
 
-      setSaveMessage({ type: 'success', text: 'RPC settings saved! Refresh the page to apply changes.' })
+      setSaveMessage({
+        type: 'success',
+        text: 'RPC settings saved! Refresh the page to apply changes.',
+      })
 
       // Clear message after 5 seconds
       setTimeout(() => {
@@ -93,7 +107,8 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
         <CardContent className="py-6">
           <CardTitle className="mb-4">Network Selection</CardTitle>
           <CardDescription className="mb-6">
-            Choose which network to connect to. Different networks may have different features and token availability.
+            Choose which network to connect to. Different networks may have different features and
+            token availability.
           </CardDescription>
 
           <div className="space-y-3">
@@ -104,8 +119,10 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
                 onClick={() => onSwitchChain(chain.id)}
                 className="w-full flex items-center justify-between p-4 rounded-lg border-2 transition-colors"
                 style={{
-                  borderColor: currentChainId === chain.id ? 'rgb(var(--primary))' : 'rgb(var(--border))',
-                  backgroundColor: currentChainId === chain.id ? 'rgb(var(--primary) / 0.1)' : 'transparent',
+                  borderColor:
+                    currentChainId === chain.id ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                  backgroundColor:
+                    currentChainId === chain.id ? 'rgb(var(--primary) / 0.1)' : 'transparent',
                 }}
                 onMouseEnter={(e) => {
                   if (currentChainId !== chain.id) {
@@ -122,13 +139,17 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center"
                     style={{
-                      backgroundColor: currentChainId === chain.id ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                      backgroundColor:
+                        currentChainId === chain.id
+                          ? 'rgb(var(--primary))'
+                          : 'rgb(var(--secondary))',
                     }}
                   >
                     <svg
                       className="w-5 h-5"
                       style={{
-                        color: currentChainId === chain.id ? 'white' : 'rgb(var(--muted-foreground))',
+                        color:
+                          currentChainId === chain.id ? 'white' : 'rgb(var(--muted-foreground))',
                       }}
                       fill="none"
                       viewBox="0 0 24 24"
@@ -144,12 +165,18 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
                     </svg>
                   </div>
                   <div className="text-left">
-                    <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>{chain.name}</p>
-                    <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Chain ID: {chain.id}</p>
+                    <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                      {chain.name}
+                    </p>
+                    <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                      Chain ID: {chain.id}
+                    </p>
                   </div>
                 </div>
                 {currentChainId === chain.id && (
-                  <span className="text-sm font-medium" style={{ color: 'rgb(var(--primary))' }}>Connected</span>
+                  <span className="text-sm font-medium" style={{ color: 'rgb(var(--primary))' }}>
+                    Connected
+                  </span>
                 )}
               </button>
             ))}
@@ -195,8 +222,8 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
               value={paymasterUrl}
               onChange={(e) => setPaymasterUrl(e.target.value)}
             />
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               onClick={handleSave}
               isLoading={isSaving}
               disabled={isSaving}

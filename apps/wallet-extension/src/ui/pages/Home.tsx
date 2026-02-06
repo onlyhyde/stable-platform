@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useWalletStore, useNetworkCurrency, useIndexerData, useAssets } from '../hooks'
-import { TokenList } from '../components/TokenList'
-import { AddTokenModal } from '../components/AddTokenModal'
-import type { TokenBalance } from '../hooks/useIndexerData'
-import type { AssetToken } from '../hooks/useAssets'
 import { formatEther } from 'viem'
+import { AddTokenModal } from '../components/AddTokenModal'
+import { TokenList } from '../components/TokenList'
+import { useAssets, useIndexerData, useNetworkCurrency, useWalletStore } from '../hooks'
+import type { AssetToken } from '../hooks/useAssets'
+import type { TokenBalance } from '../hooks/useIndexerData'
 
 export function Home() {
   const { selectedAccount, accounts, balances, updateBalance, setPage } = useWalletStore()
@@ -13,12 +13,8 @@ export function Home() {
   const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false)
 
   // Token balances from indexer
-  const {
-    tokenBalances,
-    isLoadingTokens,
-    refreshTokenBalances,
-    isIndexerAvailable,
-  } = useIndexerData()
+  const { tokenBalances, isLoadingTokens, refreshTokenBalances, isIndexerAvailable } =
+    useIndexerData()
 
   // Asset management (custom tokens, visibility)
   const {
@@ -95,7 +91,9 @@ export function Home() {
     return (
       <div className="p-4">
         <div className="text-center py-8">
-          <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>No account found</p>
+          <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            No account found
+          </p>
           <button
             type="button"
             onClick={() => setPage('settings')}
@@ -160,7 +158,9 @@ export function Home() {
               />
             </svg>
           </div>
-          <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>Send</span>
+          <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+            Send
+          </span>
         </button>
 
         <button
@@ -188,7 +188,9 @@ export function Home() {
               />
             </svg>
           </div>
-          <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>Receive</span>
+          <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+            Receive
+          </span>
         </button>
       </div>
 
@@ -206,25 +208,18 @@ export function Home() {
 
       {/* Indexer Status */}
       {!isIndexerAvailable && !isLoadingTokens && (
-        <p
-          className="text-xs text-center mt-4"
-          style={{ color: 'rgb(var(--muted-foreground))' }}
-        >
+        <p className="text-xs text-center mt-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
           Token discovery unavailable. Configure indexer URL in settings.
         </p>
       )}
 
       {/* Account Address */}
-      <div
-        className="rounded-xl p-4 mt-6"
-        style={{ backgroundColor: 'rgb(var(--secondary))' }}
-      >
-        <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>Account Address</p>
+      <div className="rounded-xl p-4 mt-6" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+        <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          Account Address
+        </p>
         <div className="flex items-center gap-2">
-          <code
-            className="text-sm break-all"
-            style={{ color: 'rgb(var(--foreground-secondary))' }}
-          >
+          <code className="text-sm break-all" style={{ color: 'rgb(var(--foreground-secondary))' }}>
             {currentAccount.address}
           </code>
           <button
@@ -233,7 +228,13 @@ export function Home() {
             style={{ color: 'rgb(var(--primary))' }}
             title="Copy address"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -246,10 +247,7 @@ export function Home() {
       </div>
 
       {/* Add Token Modal */}
-      <AddTokenModal
-        isOpen={isAddTokenModalOpen}
-        onClose={() => setIsAddTokenModalOpen(false)}
-      />
+      <AddTokenModal isOpen={isAddTokenModalOpen} onClose={() => setIsAddTokenModalOpen(false)} />
     </div>
   )
 }

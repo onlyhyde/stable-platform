@@ -14,9 +14,9 @@
  *   to prevent page scripts from reading/modifying wallet settings
  */
 
-import type { EIP1193Provider, ExtensionMessage, JsonRpcRequest, JsonRpcResponse } from '../types'
 import { MESSAGE_TYPES, PROVIDER_EVENTS, TIMING } from '../shared/constants'
 import { createLogger } from '../shared/utils/logger'
+import type { EIP1193Provider, ExtensionMessage, JsonRpcRequest, JsonRpcResponse } from '../types'
 
 // Logger for inpage provider
 const logger = createLogger('InpageProvider')
@@ -45,7 +45,7 @@ function getInjectedConfig(): { metamaskMode: boolean } {
 
 // Read MetaMask appearance mode from injected script data attribute
 const injectedConfig = getInjectedConfig()
-let appearAsMetaMask = injectedConfig.metamaskMode
+const appearAsMetaMask = injectedConfig.metamaskMode
 
 // Track current mode for dynamic updates
 let currentMetaMaskMode = appearAsMetaMask
@@ -61,7 +61,9 @@ const WALLET_UUID = 'd8f3b2a1-5c4e-4f6d-9a8b-7e1c2d3f4a5b'
  * Made mutable to support dynamic MetaMask mode switching
  */
 // StableNet shield logo SVG (base64 encoded)
-const STABLENET_ICON_SVG = 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+const STABLENET_ICON_SVG =
+  'data:image/svg+xml;base64,' +
+  btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
     <linearGradient id="g" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" style="stop-color:#6366F1"/>
@@ -113,7 +115,7 @@ class StableNetProvider implements EIP1193Provider {
     { resolve: (value: unknown) => void; reject: (error: Error) => void }
   > = new Map()
 
-  constructor(asMetaMask: boolean = false) {
+  constructor(asMetaMask = false) {
     this.isMetaMask = asMetaMask
 
     if (asMetaMask) {
@@ -442,10 +444,7 @@ class StableNetProvider implements EIP1193Provider {
 
     // Old signature: send(payload, callback)
     const payload = methodOrPayload
-    const callback = paramsOrCallback as (
-      error: Error | null,
-      response?: JsonRpcResponse
-    ) => void
+    const callback = paramsOrCallback as (error: Error | null, response?: JsonRpcResponse) => void
 
     this.request({ method: payload.method, params: payload.params as unknown[] })
       .then((result) => {
@@ -600,15 +599,11 @@ function announceEIP6963Provider(): void {
   })
 
   // Dispatch announce event
-  window.dispatchEvent(
-    new CustomEvent('eip6963:announceProvider', { detail })
-  )
+  window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail }))
 
   // Listen for request events and re-announce
   window.addEventListener('eip6963:requestProvider', () => {
-    window.dispatchEvent(
-      new CustomEvent('eip6963:announceProvider', { detail })
-    )
+    window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail }))
   })
 }
 
@@ -671,7 +666,10 @@ window.addEventListener('message', async (event) => {
       const res = await handler(action)
       const payload = { method: 'embedded_action_res', params: [action, res] }
       window.postMessage(
-        { target: 'stablenet-contentscript', data: { type: MESSAGE_TYPES.RPC_REQUEST, id: `embedded-${Date.now()}`, payload } },
+        {
+          target: 'stablenet-contentscript',
+          data: { type: MESSAGE_TYPES.RPC_REQUEST, id: `embedded-${Date.now()}`, payload },
+        },
         window.location.origin
       )
     }

@@ -1,19 +1,19 @@
-import type { Address, Hex, Hash, TransactionSerializable } from 'viem'
 import type {
-  MultiModeTransactionRequest,
   GasEstimate,
+  MultiModeTransactionRequest,
   TransactionResult,
 } from '@stablenet/sdk-types'
-import { createTransactionError } from '../errors'
-import { createViemProvider, type RpcProvider } from '../providers'
+import type { Address, Hash, Hex, TransactionSerializable } from 'viem'
 import {
-  GAS_BUFFER_MULTIPLIER,
+  DEFAULT_CONFIRMATIONS,
+  DEFAULT_CONFIRMATION_TIMEOUT,
   GAS_BUFFER_DIVISOR,
+  GAS_BUFFER_MULTIPLIER,
   MAX_GAS_LIMIT,
   MIN_PRIORITY_FEE,
-  DEFAULT_CONFIRMATION_TIMEOUT,
-  DEFAULT_CONFIRMATIONS,
 } from '../config'
+import { createTransactionError } from '../errors'
+import { type RpcProvider, createViemProvider } from '../providers'
 
 // ============================================================================
 // Types
@@ -103,10 +103,12 @@ export function createEOATransactionBuilder(config: EOATransactionConfig) {
     })
   }
 
-  const provider: RpcProvider = injectedProvider ?? createViemProvider({
-    rpcUrl: rpcUrl!,
-    chainId,
-  })
+  const provider: RpcProvider =
+    injectedProvider ??
+    createViemProvider({
+      rpcUrl: rpcUrl!,
+      chainId,
+    })
 
   /**
    * Get current nonce for address
@@ -147,9 +149,7 @@ export function createEOATransactionBuilder(config: EOATransactionConfig) {
   /**
    * Estimate gas for a transaction
    */
-  async function estimateGas(
-    request: MultiModeTransactionRequest
-  ): Promise<GasEstimate> {
+  async function estimateGas(request: MultiModeTransactionRequest): Promise<GasEstimate> {
     const { maxFeePerGas, maxPriorityFeePerGas } = await getGasPrices()
 
     // Estimate gas limit
@@ -192,9 +192,7 @@ export function createEOATransactionBuilder(config: EOATransactionConfig) {
   /**
    * Build a transaction for signing
    */
-  async function build(
-    request: MultiModeTransactionRequest
-  ): Promise<BuiltEOATransaction> {
+  async function build(request: MultiModeTransactionRequest): Promise<BuiltEOATransaction> {
     // Validate request
     if (!request.from) {
       throw createTransactionError('Missing "from" address', {
@@ -215,8 +213,7 @@ export function createEOATransactionBuilder(config: EOATransactionConfig) {
 
     // Use provided gas values or estimated ones
     const maxFeePerGas = request.maxFeePerGas ?? gasEstimate.maxFeePerGas
-    const maxPriorityFeePerGas =
-      request.maxPriorityFeePerGas ?? gasEstimate.maxPriorityFeePerGas
+    const maxPriorityFeePerGas = request.maxPriorityFeePerGas ?? gasEstimate.maxPriorityFeePerGas
     const gas = request.gas ?? gasEstimate.gasLimit
 
     // Build transaction object
@@ -310,7 +307,8 @@ export function createEOATransactionBuilder(config: EOATransactionConfig) {
     hash: Hash,
     options: { confirmations?: number; timeout?: number } = {}
   ) {
-    const { confirmations = DEFAULT_CONFIRMATIONS, timeout = DEFAULT_CONFIRMATION_TIMEOUT } = options
+    const { confirmations = DEFAULT_CONFIRMATIONS, timeout = DEFAULT_CONFIRMATION_TIMEOUT } =
+      options
 
     return provider.waitForTransactionReceipt(hash, {
       confirmations,

@@ -94,7 +94,7 @@ export class ContractAddressWatcher extends EventEmitter {
     return new Map(this.currentAddresses)
   }
 
-  private handleChange(path: string): void {
+  private handleChange(_path: string): void {
     // Debounce rapid changes
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer)

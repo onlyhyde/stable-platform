@@ -3,15 +3,13 @@
  * Extends base transaction types with multi-mode support (EOA, EIP-7702, SmartAccount)
  */
 
+import type { Account, GasEstimate, GasPaymentConfig, TransactionMode } from '@stablenet/core'
 import type { Address, Hex } from 'viem'
 import type {
-  TransactionMode,
-  GasPaymentConfig,
-  GasEstimate,
-  Account,
-  TransactionResult,
-} from '@stablenet/core'
-import type { TransactionStatus, TransactionType, TransactionParams as BaseTransactionParams } from './transactionController.types'
+  TransactionParams as BaseTransactionParams,
+  TransactionStatus,
+  TransactionType,
+} from './transactionController.types'
 
 /**
  * Extended transaction parameters with multi-mode support
@@ -104,7 +102,11 @@ export type MultiModeTransactionEvent =
   | { type: 'transaction:submitted'; transaction: MultiModeTransactionMeta }
   | { type: 'transaction:confirmed'; transaction: MultiModeTransactionMeta }
   | { type: 'transaction:failed'; transaction: MultiModeTransactionMeta }
-  | { type: 'transaction:modeChanged'; transaction: MultiModeTransactionMeta; previousMode: TransactionMode }
+  | {
+      type: 'transaction:modeChanged'
+      transaction: MultiModeTransactionMeta
+      previousMode: TransactionMode
+    }
 
 /**
  * Account info for transaction processing

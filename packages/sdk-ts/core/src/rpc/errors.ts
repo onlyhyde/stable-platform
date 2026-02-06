@@ -5,11 +5,7 @@
  */
 
 import type { JsonRpcError } from './types'
-import {
-  JSON_RPC_ERROR_CODES,
-  BUNDLER_ERROR_CODES,
-  PAYMASTER_ERROR_CODES,
-} from './types'
+import { BUNDLER_ERROR_CODES, JSON_RPC_ERROR_CODES, PAYMASTER_ERROR_CODES } from './types'
 
 // ============================================================================
 // Error Types
@@ -62,10 +58,7 @@ export class RpcError extends Error {
   /**
    * Create error from JSON-RPC error response
    */
-  static fromRpcError(
-    error: JsonRpcError,
-    options?: { url?: string; method?: string }
-  ): RpcError {
+  static fromRpcError(error: JsonRpcError, options?: { url?: string; method?: string }): RpcError {
     const type = determineErrorType(error.code)
     return new RpcError(type, error.message, {
       code: error.code,
@@ -79,22 +72,14 @@ export class RpcError extends Error {
    * Create timeout error
    */
   static timeout(url: string, timeoutMs: number): RpcError {
-    return new RpcError(
-      'TIMEOUT',
-      `Request timeout after ${timeoutMs}ms`,
-      { url }
-    )
+    return new RpcError('TIMEOUT', `Request timeout after ${timeoutMs}ms`, { url })
   }
 
   /**
    * Create network error
    */
   static network(url: string, cause?: Error): RpcError {
-    return new RpcError(
-      'NETWORK',
-      `Network error: ${cause?.message ?? 'Unknown'}`,
-      { url, cause }
-    )
+    return new RpcError('NETWORK', `Network error: ${cause?.message ?? 'Unknown'}`, { url, cause })
   }
 
   /**
@@ -128,12 +113,7 @@ export class RpcError extends Error {
         return true
       case 'HTTP_ERROR':
         // Retry on 429 (rate limit), 502, 503, 504 (server errors)
-        return (
-          this.code === 429 ||
-          this.code === 502 ||
-          this.code === 503 ||
-          this.code === 504
-        )
+        return this.code === 429 || this.code === 502 || this.code === 503 || this.code === 504
       case 'RPC_ERROR':
         // Retry on internal server errors
         return (

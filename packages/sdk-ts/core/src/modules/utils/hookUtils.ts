@@ -1,6 +1,6 @@
+import type { AuditHookConfig, SpendingLimitHookConfig } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import { encodeAbiParameters, parseAbiParameters, formatEther, formatUnits } from 'viem'
-import type { SpendingLimitHookConfig, AuditHookConfig } from '@stablenet/sdk-types'
+import { encodeAbiParameters, formatEther, formatUnits, parseAbiParameters } from 'viem'
 
 // ============================================================================
 // Types
@@ -132,9 +132,7 @@ export function encodeMultipleSpendingLimitsInit(configs: SpendingLimitHookConfi
 /**
  * Validate Spending Limit configuration
  */
-export function validateSpendingLimitConfig(
-  config: SpendingLimitHookConfig
-): HookValidationResult {
+export function validateSpendingLimitConfig(config: SpendingLimitHookConfig): HookValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
 
@@ -234,8 +232,8 @@ export function wouldExceedLimit(
  */
 export function formatSpendingLimit(
   status: SpendingLimitStatus,
-  tokenDecimals: number = 18,
-  tokenSymbol: string = 'ETH'
+  tokenDecimals = 18,
+  tokenSymbol = 'ETH'
 ): {
   limit: string
   spent: string
@@ -357,7 +355,7 @@ export function validateAuditHookConfig(config: AuditHookConfig): HookValidation
  */
 export function formatAuditLogEntry(
   entry: AuditLogEntry,
-  tokenDecimals: number = 18
+  tokenDecimals = 18
 ): {
   date: string
   type: string
@@ -403,7 +401,7 @@ export function getPeriodName(seconds: number): string {
 export function suggestSpendingLimit(
   averageSpend: bigint,
   _period: number,
-  safetyMargin: number = 1.5
+  safetyMargin = 1.5
 ): bigint {
   // Suggest limit as average spend * safety margin
   const suggested = (averageSpend * BigInt(Math.floor(safetyMargin * 100))) / 100n
@@ -412,16 +410,17 @@ export function suggestSpendingLimit(
   if (suggested < 10n ** 16n) {
     // < 0.01 ETH, round to 0.01
     return 10n ** 16n
-  } else if (suggested < 10n ** 17n) {
+  }
+  if (suggested < 10n ** 17n) {
     // < 0.1 ETH, round to nearest 0.01
     return ((suggested + 10n ** 16n - 1n) / 10n ** 16n) * 10n ** 16n
-  } else if (suggested < 10n ** 18n) {
+  }
+  if (suggested < 10n ** 18n) {
     // < 1 ETH, round to nearest 0.1
     return ((suggested + 10n ** 17n - 1n) / 10n ** 17n) * 10n ** 17n
-  } else {
-    // >= 1 ETH, round to nearest 1
-    return ((suggested + 10n ** 18n - 1n) / 10n ** 18n) * 10n ** 18n
   }
+  // >= 1 ETH, round to nearest 1
+  return ((suggested + 10n ** 18n - 1n) / 10n ** 18n) * 10n ** 18n
 }
 
 // ============================================================================

@@ -1,10 +1,10 @@
 'use client'
 
-import { type FC } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../common/Card'
-import { Button } from '../common/Button'
-import type { SubscriptionDisplayInfo } from '../../types/subscription'
+import type { FC } from 'react'
 import { cn } from '../../lib/utils'
+import type { SubscriptionDisplayInfo } from '../../types/subscription'
+import { Button } from '../common/Button'
+import { Card, CardContent } from '../common/Card'
 
 interface SubscriptionListProps {
   subscriptions: SubscriptionDisplayInfo[]
@@ -29,7 +29,10 @@ export const SubscriptionList: FC<SubscriptionListProps> = ({
     return (
       <Card className={className}>
         <CardContent className="py-12 text-center">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ backgroundColor: 'rgb(var(--secondary))' }}
+          >
             <svg
               className="w-8 h-8"
               style={{ color: 'rgb(var(--muted-foreground))' }}
@@ -93,7 +96,10 @@ const SubscriptionListItem: FC<SubscriptionListItemProps> = ({
       case 'gray':
         return { backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--muted-foreground))' }
       case 'red':
-        return { backgroundColor: 'rgb(var(--destructive) / 0.1)', color: 'rgb(var(--destructive))' }
+        return {
+          backgroundColor: 'rgb(var(--destructive) / 0.1)',
+          color: 'rgb(var(--destructive))',
+        }
       default:
         return { backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--muted-foreground))' }
     }
@@ -105,8 +111,17 @@ const SubscriptionListItem: FC<SubscriptionListItemProps> = ({
         <div className="flex items-center justify-between">
           {/* Left: Plan info */}
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}>
-              <svg className="w-6 h-6" style={{ color: 'rgb(var(--primary))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div
+              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+            >
+              <svg
+                className="w-6 h-6"
+                style={{ color: 'rgb(var(--primary))' }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -116,7 +131,9 @@ const SubscriptionListItem: FC<SubscriptionListItemProps> = ({
               </svg>
             </div>
             <div>
-              <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{plan.name}</h3>
+              <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+                {plan.name}
+              </h3>
               <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {plan.priceFormatted} / {plan.intervalFormatted.toLowerCase()}
               </p>
@@ -160,7 +177,10 @@ const SubscriptionListItem: FC<SubscriptionListItemProps> = ({
         </div>
 
         {/* Mobile: Status row */}
-        <div className="flex md:hidden items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'rgb(var(--border) / 0.5)' }}>
+        <div
+          className="flex md:hidden items-center gap-2 mt-3 pt-3 border-t"
+          style={{ borderColor: 'rgb(var(--border) / 0.5)' }}
+        >
           <span
             className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
             style={getStatusStyles(statusColor)}

@@ -35,10 +35,14 @@ export function Toggle({
       {(label || description) && (
         <div className="flex-1 mr-4">
           {label && (
-            <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>{label}</span>
+            <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              {label}
+            </span>
           )}
           {description && (
-            <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>{description}</p>
+            <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              {description}
+            </p>
           )}
         </div>
       )}

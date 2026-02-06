@@ -1,14 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/common/Card'
+import { useEffect, useState } from 'react'
 import { Button } from '../../../components/common/Button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../../components/common/Card'
 import { CreatePlanForm } from '../../../components/subscription/CreatePlanForm'
-import { useWallet } from '../../../hooks/useWallet'
 import { useSubscription } from '../../../hooks/useSubscription'
+import { useWallet } from '../../../hooks/useWallet'
 import type { CreatePlanParams, PlanDisplayInfo } from '../../../types/subscription'
-import { cn } from '../../../lib/utils'
 
 export default function MerchantDashboardPage() {
   const router = useRouter()
@@ -46,7 +51,13 @@ export default function MerchantDashboardPage() {
               className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
               style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
             >
-              <svg className="w-8 h-8" style={{ color: 'rgb(var(--primary))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-8 h-8"
+                style={{ color: 'rgb(var(--primary))' }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -55,7 +66,9 @@ export default function MerchantDashboardPage() {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>Connect to Continue</h2>
+            <h2 className="text-xl font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
+              Connect to Continue
+            </h2>
             <p className="mb-6" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Connect your wallet to access the merchant dashboard
             </p>
@@ -70,13 +83,22 @@ export default function MerchantDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>Merchant Dashboard</h1>
-          <p style={{ color: 'rgb(var(--muted-foreground))' }}>Create and manage your subscription plans</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+            Merchant Dashboard
+          </h1>
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>
+            Create and manage your subscription plans
+          </p>
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" onClick={() => router.push('/subscription')}>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Back
           </Button>
@@ -84,14 +106,24 @@ export default function MerchantDashboardPage() {
             {showCreateForm ? (
               <>
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
                 Cancel
               </>
             ) : (
               <>
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
                 Create Plan
               </>
@@ -106,8 +138,12 @@ export default function MerchantDashboardPage() {
           <Card>
             <CardContent className="py-4">
               <div className="text-center">
-                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Total Plans</p>
-                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>{merchantStats.totalPlans}</p>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  Total Plans
+                </p>
+                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+                  {merchantStats.totalPlans}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -115,8 +151,12 @@ export default function MerchantDashboardPage() {
           <Card>
             <CardContent className="py-4">
               <div className="text-center">
-                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Total Subscribers</p>
-                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>{merchantStats.totalSubscribers}</p>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  Total Subscribers
+                </p>
+                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+                  {merchantStats.totalSubscribers}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -124,8 +164,12 @@ export default function MerchantDashboardPage() {
           <Card>
             <CardContent className="py-4">
               <div className="text-center">
-                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Active Subscribers</p>
-                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--success))' }}>{merchantStats.activeSubscribers}</p>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  Active Subscribers
+                </p>
+                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--success))' }}>
+                  {merchantStats.activeSubscribers}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -133,8 +177,12 @@ export default function MerchantDashboardPage() {
           <Card>
             <CardContent className="py-4">
               <div className="text-center">
-                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Monthly Revenue</p>
-                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--primary))' }}>-</p>
+                <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  Monthly Revenue
+                </p>
+                <p className="text-3xl font-bold" style={{ color: 'rgb(var(--primary))' }}>
+                  -
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -142,9 +190,7 @@ export default function MerchantDashboardPage() {
       )}
 
       {/* Create Plan Form */}
-      {showCreateForm && (
-        <CreatePlanForm onSubmit={handleCreatePlan} isLoading={isCreatingPlan} />
-      )}
+      {showCreateForm && <CreatePlanForm onSubmit={handleCreatePlan} isLoading={isCreatingPlan} />}
 
       {/* Plans List */}
       <Card>
@@ -158,10 +204,19 @@ export default function MerchantDashboardPage() {
               <div className="space-y-4">
                 {[1, 2].map((i) => (
                   <div key={i} className="animate-pulse flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                    <div
+                      className="w-12 h-12 rounded-lg"
+                      style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                    />
                     <div className="flex-1 space-y-2">
-                      <div className="h-4 rounded w-1/3" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
-                      <div className="h-3 rounded w-1/4" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+                      <div
+                        className="h-4 rounded w-1/3"
+                        style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                      />
+                      <div
+                        className="h-3 rounded w-1/4"
+                        style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -173,7 +228,13 @@ export default function MerchantDashboardPage() {
                 className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
                 style={{ backgroundColor: 'rgb(var(--secondary))' }}
               >
-                <svg className="w-8 h-8" style={{ color: 'rgb(var(--muted-foreground))' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-8 h-8"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -182,7 +243,9 @@ export default function MerchantDashboardPage() {
                   />
                 </svg>
               </div>
-              <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>You haven&apos;t created any plans yet</p>
+              <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                You haven&apos;t created any plans yet
+              </p>
               <Button variant="primary" onClick={() => setShowCreateForm(true)}>
                 Create Your First Plan
               </Button>
@@ -234,7 +297,9 @@ function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
         >
           <svg
             className="w-6 h-6"
-            style={{ color: plan.isActive ? 'rgb(var(--success))' : 'rgb(var(--muted-foreground))' }}
+            style={{
+              color: plan.isActive ? 'rgb(var(--success))' : 'rgb(var(--muted-foreground))',
+            }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -248,7 +313,9 @@ function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
           </svg>
         </div>
         <div>
-          <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{plan.name}</h3>
+          <h3 className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+            {plan.name}
+          </h3>
           <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {plan.priceFormatted} / {plan.intervalFormatted.toLowerCase()}
           </p>
@@ -257,8 +324,12 @@ function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
 
       <div className="hidden md:flex items-center gap-8">
         <div className="text-center">
-          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Subscribers</p>
-          <p className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>{Number(plan.subscriberCount)}</p>
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            Subscribers
+          </p>
+          <p className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+            {Number(plan.subscriberCount)}
+          </p>
         </div>
 
         <span

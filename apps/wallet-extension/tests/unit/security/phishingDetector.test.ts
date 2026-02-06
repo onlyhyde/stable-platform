@@ -3,12 +3,15 @@
  * TDD tests for URL and domain security validation
  */
 
+// Unmock to test real implementation
+jest.unmock('@stablenet/core')
+
 import {
   PhishingDetector,
-  PhishingResult,
+  type PhishingResult,
   RiskLevel,
   PhishingPatternType,
-} from '../../../src/shared/security/phishingDetector'
+} from '@stablenet/core'
 
 describe('PhishingDetector', () => {
   let detector: PhishingDetector

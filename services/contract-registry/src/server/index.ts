@@ -13,7 +13,7 @@ import { registerChainRoutes } from './routes/chains'
 import { registerBulkRoutes } from './routes/bulk'
 import type { RegistryConfig } from '../cli/config'
 import type { Logger } from '../utils/logger'
-import type { ContractEntry, AddressSet, ResolvedAddressSet } from '../store/types'
+import type { ContractEntry, AddressSet } from '../store/types'
 
 export class RegistryServer {
   private app: FastifyInstance

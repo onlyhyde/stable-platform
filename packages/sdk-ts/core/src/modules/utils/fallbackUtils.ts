@@ -1,5 +1,5 @@
 import type { Address, Hex } from 'viem'
-import { encodeAbiParameters, parseAbiParameters, keccak256, encodeFunctionData } from 'viem'
+import { encodeAbiParameters, encodeFunctionData, keccak256, parseAbiParameters } from 'viem'
 
 // ============================================================================
 // Types
@@ -266,9 +266,7 @@ export function encodeFlashLoanInit(config: FlashLoanCallbackConfig): Hex {
 /**
  * Validate Flash Loan configuration
  */
-export function validateFlashLoanConfig(
-  config: FlashLoanCallbackConfig
-): FallbackValidationResult {
+export function validateFlashLoanConfig(config: FlashLoanCallbackConfig): FallbackValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
 
@@ -377,9 +375,7 @@ export function encodeFallbackHandlerRegistration(registration: FallbackHandlerR
 /**
  * Encode multiple fallback handler registrations
  */
-export function encodeBatchFallbackRegistration(
-  registrations: FallbackHandlerRegistration[]
-): Hex {
+export function encodeBatchFallbackRegistration(registrations: FallbackHandlerRegistration[]): Hex {
   const encoded = registrations.map((r) => {
     const callTypeValue = r.callType === 'static' ? 0 : r.callType === 'delegate' ? 1 : 2
     return { selector: r.selector as `0x${string}`, handler: r.handler, callType: callTypeValue }

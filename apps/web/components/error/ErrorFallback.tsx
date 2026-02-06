@@ -1,8 +1,8 @@
 'use client'
 
-import { type ReactNode } from 'react'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/common/Button'
+import { cn } from '@/lib/utils'
+import type { ReactNode } from 'react'
 
 /**
  * Error severity levels
@@ -103,7 +103,8 @@ export function ErrorFallback({
 
   const styles = severityStyles[severity]
 
-  const displayTitle = title ?? (severity === 'critical' ? 'Critical Error' : 'Something went wrong')
+  const displayTitle =
+    title ?? (severity === 'critical' ? 'Critical Error' : 'Something went wrong')
   const displayMessage = message ?? getUserFriendlyMessage(error)
 
   const handleReset = () => {
@@ -116,11 +117,7 @@ export function ErrorFallback({
 
   return (
     <div
-      className={cn(
-        'rounded-lg border p-6',
-        styles.container,
-        className
-      )}
+      className={cn('rounded-lg border p-6', styles.container, className)}
       role="alert"
       aria-live="assertive"
     >
@@ -160,14 +157,10 @@ export function ErrorFallback({
         </div>
 
         {/* Title */}
-        <h2 className={cn('text-xl font-semibold mb-2', styles.title)}>
-          {displayTitle}
-        </h2>
+        <h2 className={cn('text-xl font-semibold mb-2', styles.title)}>{displayTitle}</h2>
 
         {/* Message */}
-        <p className={cn('mb-6 max-w-md', styles.message)}>
-          {displayMessage}
-        </p>
+        <p className={cn('mb-6 max-w-md', styles.message)}>{displayMessage}</p>
 
         {/* Custom content */}
         {children}
@@ -192,7 +185,10 @@ export function ErrorFallback({
             <summary className={cn('cursor-pointer text-sm', styles.message)}>
               Show technical details
             </summary>
-            <pre className="mt-2 overflow-auto rounded p-4 text-xs" style={{ backgroundColor: 'rgb(17 24 39)', color: 'rgb(243 244 246)' }}>
+            <pre
+              className="mt-2 overflow-auto rounded p-4 text-xs"
+              style={{ backgroundColor: 'rgb(17 24 39)', color: 'rgb(243 244 246)' }}
+            >
               <code>
                 {error.name}: {error.message}
                 {error.stack && `\n\n${error.stack}`}

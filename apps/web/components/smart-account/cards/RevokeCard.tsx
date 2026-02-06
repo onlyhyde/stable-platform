@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, Button } from '@/components/common'
+import { Button, Card, CardContent } from '@/components/common'
 
 interface RevokeCardProps {
   onRevoke: () => void
@@ -26,7 +26,12 @@ export function RevokeCard({ onRevoke, isRevoking, isLoading, canPerformAction }
               stroke="currentColor"
               aria-hidden="true"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+              />
             </svg>
           </div>
           <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>

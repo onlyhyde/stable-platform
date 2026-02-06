@@ -1,6 +1,6 @@
 import type { Hex } from 'viem'
-import type { StealthClient, AnnounceParams } from '../types'
 import { ERC5564_ANNOUNCER_ABI } from '../constants'
+import type { AnnounceParams, StealthClient } from '../types'
 
 /**
  * Announce a stealth payment via the EIP-5564 Announcer
@@ -27,10 +27,7 @@ import { ERC5564_ANNOUNCER_ABI } from '../constants'
  * @param params - Announcement parameters
  * @returns Transaction hash
  */
-export async function announce(
-  client: StealthClient,
-  params: AnnounceParams
-): Promise<Hex> {
+export async function announce(client: StealthClient, params: AnnounceParams): Promise<Hex> {
   const { schemeId, stealthAddress, ephemeralPubKey, metadata } = params
 
   if (!client.walletClient) {
