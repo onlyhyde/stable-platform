@@ -1,12 +1,20 @@
 /**
  * GasFeeController
  * Manages gas fee estimation and EIP-1559 support
- * Integrates with indexer-go for historical gas statistics
+ * Integrates with SDK GasEstimator for multi-mode transaction support
  */
 
 import { createLogger } from '../../shared/utils/logger'
 import { getGasFeeConfig, GWEI } from '../../config'
 import type { IndexerClient, GasStats } from '../services/IndexerClient'
+import {
+  createGasEstimator,
+  type GasEstimator,
+  type GasPriceInfo,
+  type GasEstimate,
+  type MultiModeTransactionRequest,
+  type TransactionMode,
+} from '@stablenet/core'
 
 const logger = createLogger('GasFeeController')
 
@@ -120,8 +128,11 @@ export interface Provider {
 export interface GasFeeControllerConfig {
   provider: Provider
   chainId: number
+  rpcUrl: string
   pollingInterval?: number
   indexerClient?: IndexerClient
+  bundlerUrl?: string
+  paymasterUrl?: string
 }
 
 /**
@@ -134,6 +145,15 @@ export interface HistoricalGasStats {
   transactionCount: number
   fromBlock: number
   toBlock: number
+}
+
+/**
+ * Multi-mode gas estimate result
+ */
+export interface MultiModeGasEstimateResult {
+  mode: TransactionMode
+  estimate: GasEstimate | null
+  available: boolean
 }
 
 /**
@@ -159,16 +179,20 @@ function getMaxHistoryLength(): number {
 /**
  * GasFeeController
  * Manages gas price fetching, EIP-1559 fee estimation, and gas estimation
+ * Now integrates with SDK GasEstimator for multi-mode support
  */
 export class GasFeeController {
   private provider: Provider
   private indexerClient: IndexerClient | null = null
   private pollingTimer: ReturnType<typeof setInterval> | null = null
+  private gasEstimator: GasEstimator | null = null
+  private config: GasFeeControllerConfig
 
   state: GasFeeState
 
   constructor(config: GasFeeControllerConfig) {
     this.provider = config.provider
+    this.config = config
     this.indexerClient = config.indexerClient ?? null
     this.state = {
       chainId: config.chainId,
@@ -181,6 +205,27 @@ export class GasFeeController {
       pollingInterval: config.pollingInterval || getDefaultPollingInterval(),
       lastUpdated: null,
     }
+
+    // Initialize SDK GasEstimator for multi-mode support
+    this.initializeGasEstimator()
+  }
+
+  /**
+   * Initialize SDK GasEstimator
+   */
+  private initializeGasEstimator(): void {
+    try {
+      this.gasEstimator = createGasEstimator({
+        rpcUrl: this.config.rpcUrl,
+        chainId: this.config.chainId,
+        bundlerUrl: this.config.bundlerUrl,
+        paymasterUrl: this.config.paymasterUrl,
+      })
+      logger.debug('SDK GasEstimator initialized', { chainId: this.config.chainId })
+    } catch (error) {
+      logger.warn('Failed to initialize SDK GasEstimator', { error })
+      this.gasEstimator = null
+    }
   }
 
   /**
@@ -189,6 +234,84 @@ export class GasFeeController {
   setIndexerClient(client: IndexerClient): void {
     this.indexerClient = client
   }
+
+  /**
+   * Update configuration (e.g., when network changes)
+   */
+  updateConfig(config: Partial<GasFeeControllerConfig>): void {
+    this.config = { ...this.config, ...config }
+    if (config.chainId !== undefined) {
+      this.state.chainId = config.chainId
+    }
+    // Re-initialize gas estimator with new config
+    this.initializeGasEstimator()
+  }
+
+  // ============================================
+  // SDK GasEstimator Integration (Multi-Mode)
+  // ============================================
+
+  /**
+   * Estimate gas for multi-mode transaction using SDK
+   */
+  async estimateMultiModeGas(
+    request: MultiModeTransactionRequest
+  ): Promise<GasEstimate> {
+    if (!this.gasEstimator) {
+      throw new Error('Gas estimator not initialized')
+    }
+
+    return this.gasEstimator.estimate(request)
+  }
+
+  /**
+   * Get gas estimates for all available modes
+   */
+  async estimateAllModes(
+    request: Omit<MultiModeTransactionRequest, 'mode'>
+  ): Promise<Record<TransactionMode, GasEstimate | null>> {
+    if (!this.gasEstimator) {
+      throw new Error('Gas estimator not initialized')
+    }
+
+    return this.gasEstimator.estimateAllModes(request)
+  }
+
+  /**
+   * Get gas prices using SDK (consistent with multi-mode estimation)
+   */
+  async getGasPricesFromSDK(): Promise<GasPriceInfo> {
+    if (!this.gasEstimator) {
+      throw new Error('Gas estimator not initialized')
+    }
+
+    return this.gasEstimator.getGasPrices()
+  }
+
+  /**
+   * Format gas estimate for display
+   */
+  formatGasEstimate(estimate: GasEstimate): {
+    gasLimit: string
+    maxFeePerGas: string
+    estimatedCost: string
+    estimatedCostEth: string
+  } {
+    if (!this.gasEstimator) {
+      return {
+        gasLimit: estimate.gasLimit.toString(),
+        maxFeePerGas: estimate.maxFeePerGas.toString() + ' wei',
+        estimatedCost: estimate.estimatedCost.toString() + ' wei',
+        estimatedCostEth: (Number(estimate.estimatedCost) / 1e18).toFixed(6) + ' ETH',
+      }
+    }
+
+    return this.gasEstimator.formatEstimate(estimate)
+  }
+
+  // ============================================
+  // Legacy Gas Price APIs (backwards compatibility)
+  // ============================================
 
   /**
    * Get current gas price (legacy)
@@ -516,6 +639,17 @@ export class GasFeeController {
     }
 
     return fees
+  }
+
+  // ============================================
+  // Accessors
+  // ============================================
+
+  /**
+   * Get the SDK GasEstimator instance
+   */
+  getGasEstimator(): GasEstimator | null {
+    return this.gasEstimator
   }
 
   // Private helpers
