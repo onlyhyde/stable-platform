@@ -18,10 +18,10 @@ export type BundlerRpcMethod =
 export interface BundlerClientConfig {
   /** The bundler RPC URL */
   url: string
-  /** The EntryPoint address to use */
-  entryPoint: Address
-  /** The chain ID */
-  chainId: bigint
+  /** The EntryPoint address to use (defaults to V0.7) */
+  entryPoint?: Address
+  /** The chain ID (optional, only needed for certain operations) */
+  chainId?: bigint
 }
 
 /**

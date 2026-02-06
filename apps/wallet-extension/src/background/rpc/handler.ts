@@ -5,13 +5,12 @@ import { RPC_ERRORS, ENTRY_POINT_ADDRESSES, DEFAULT_VALUES } from '../../shared/
 import { walletState } from '../state/store'
 import { approvalController } from '../controllers/approvalController'
 import { keyringController } from '../keyring'
-import { createBundlerClient } from '../../lib/bundler'
+// Use SDK for bundler client and UserOperation utilities
 import {
-  packUserOperation,
-  getUserOpHash,
+  createBundlerClient,
+  getUserOperationHash,
   type UserOperation,
-  type PackedUserOperation,
-} from '../../lib/userOp'
+} from '@stablenet/core'
 import { eventBroadcaster } from '../utils/eventBroadcaster'
 import {
   InputValidator,
@@ -946,7 +945,7 @@ const handlers: Record<string, RpcHandler> = {
     // Sign the UserOperation
     let signedUserOp: UserOperation
     try {
-      const hash = getUserOpHash(userOp, entryPoint, network.chainId)
+      const hash = getUserOperationHash(userOp, entryPoint, BigInt(network.chainId))
       const signature = await keyringController.signMessage(userOp.sender, hash)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
@@ -956,16 +955,10 @@ const handlers: Record<string, RpcHandler> = {
       })
     }
 
-    // Pack the UserOperation for bundler submission
-    const packedUserOp = packUserOperation(signedUserOp)
-
-    // Submit to bundler
+    // Submit to bundler (SDK handles packing internally)
     try {
-      const bundlerClient = createBundlerClient(network.bundlerUrl)
-      const userOpHash = await bundlerClient.sendUserOperation(
-        packedUserOp,
-        entryPoint
-      )
+      const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+      const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
       return userOpHash
     } catch (error) {
       const err = error as Error & { code?: number; data?: unknown }
@@ -1013,16 +1006,10 @@ const handlers: Record<string, RpcHandler> = {
       })
     }
 
-    // Pack the UserOperation
-    const packedUserOp = packUserOperation(userOp)
-
-    // Forward to bundler
+    // Forward to bundler (SDK handles packing internally)
     try {
-      const bundlerClient = createBundlerClient(network.bundlerUrl)
-      const gasEstimate = await bundlerClient.estimateUserOperationGas(
-        packedUserOp,
-        entryPoint
-      )
+      const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+      const gasEstimate = await bundlerClient.estimateUserOperationGas(userOp)
 
       // Return as hex values for JSON-RPC compatibility
       return {
@@ -1058,7 +1045,7 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     try {
-      const bundlerClient = createBundlerClient(network.bundlerUrl)
+      const bundlerClient = createBundlerClient({ url: network.bundlerUrl })
       return await bundlerClient.getUserOperationByHash(userOpHash)
     } catch (error) {
       const err = error as Error & { code?: number; data?: unknown }
@@ -1082,7 +1069,7 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     try {
-      const bundlerClient = createBundlerClient(network.bundlerUrl)
+      const bundlerClient = createBundlerClient({ url: network.bundlerUrl })
       return await bundlerClient.getUserOperationReceipt(userOpHash)
     } catch (error) {
       const err = error as Error & { code?: number; data?: unknown }
@@ -1106,7 +1093,7 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     try {
-      const bundlerClient = createBundlerClient(network.bundlerUrl)
+      const bundlerClient = createBundlerClient({ url: network.bundlerUrl })
       return await bundlerClient.getSupportedEntryPoints()
     } catch {
       // Fallback to default entry points
