@@ -44,6 +44,7 @@ export class ApprovalController {
   > = new Map()
   private listeners: Set<ApprovalListener> = new Set()
   private expiryTimers: Map<string, ReturnType<typeof setTimeout>> = new Map()
+  private approvalWindowId: number | null = null
 
   /**
    * Get current state
@@ -464,21 +465,31 @@ export class ApprovalController {
    */
   private async openApprovalPopup(approval: ApprovalRequest): Promise<void> {
     try {
-      // Check if popup already exists
-      const windows = await chrome.windows.getAll({ populate: false })
-      const existingPopup = windows.find((w) => w.type === 'popup')
-
-      if (existingPopup?.id) {
-        // Focus existing popup
-        await chrome.windows.update(existingPopup.id, { focused: true })
-        return
-      }
-
-      // Create new popup using chrome.runtime.getURL for proper extension URL
       // SEC-12: URL encode the approval ID to prevent injection attacks
       const popupUrl = chrome.runtime.getURL(
         `src/approval/approval.html?id=${encodeURIComponent(approval.id)}`
       )
+
+      // Check if our tracked approval window still exists
+      if (this.approvalWindowId !== null) {
+        try {
+          const existingWindow = await chrome.windows.get(this.approvalWindowId)
+          if (existingWindow) {
+            // Navigate the existing approval window to the new approval URL
+            const tabs = await chrome.tabs.query({ windowId: this.approvalWindowId })
+            if (tabs[0]?.id) {
+              await chrome.tabs.update(tabs[0].id, { url: popupUrl })
+            }
+            await chrome.windows.update(this.approvalWindowId, { focused: true })
+            return
+          }
+        } catch {
+          // Window no longer exists, clear the tracked ID
+          this.approvalWindowId = null
+        }
+      }
+
+      // Create new popup
       logger.info('Opening approval popup', { url: popupUrl, approvalId: approval.id })
 
       const popup = await chrome.windows.create({
@@ -489,11 +500,14 @@ export class ApprovalController {
         focused: true,
       })
 
-      if (!popup?.id) {
+      if (popup?.id) {
+        this.approvalWindowId = popup.id
+      } else {
         logger.error('Failed to create approval popup window')
       }
     } catch (error) {
       logger.error('Failed to open approval popup', error)
+      this.approvalWindowId = null
       // Reject the approval if popup fails to open
       const resolver = this.resolvers.get(approval.id)
       if (resolver) {
