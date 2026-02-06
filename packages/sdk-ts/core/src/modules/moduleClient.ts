@@ -1,14 +1,36 @@
-import type { Address, Hex, PublicClient } from 'viem'
-import { createPublicClient, http, encodeFunctionData } from 'viem'
+/**
+ * Module Client
+ *
+ * Unified client for managing Smart Account modules.
+ * Composes ModuleQueryClient and ModuleOperationClient.
+ * Provides backwards-compatible API while delegating to specialized clients.
+ */
+
+import type { Address, Hex } from 'viem'
 import type {
   ModuleType,
   ModuleInstallRequest,
   ModuleUninstallRequest,
   InstalledModule,
 } from '@stablenet/sdk-types'
-import { MODULE_TYPE, MODULE_STATUS, getModuleTypeName } from '@stablenet/sdk-types'
-import { KERNEL_ABI } from '../abis'
-import { createModuleRegistry, type ModuleRegistry } from './moduleRegistry'
+import { createViemProvider, type RpcProvider } from '../providers'
+import { ConfigurationError } from '../errors'
+import { createModuleQueryClient, type ModuleQueryClient } from './queryClient'
+import {
+  createModuleOperationClient,
+  type ModuleOperationClient,
+  type ModuleCalldata,
+  type ValidationResult,
+  type ConflictCheckResult,
+} from './operationClient'
+import { createModuleRegistry } from './moduleRegistry'
+// Re-export encoding utils for convenience (use these instead of deprecated helpers)
+import {
+  encodeECDSAValidatorInit,
+  encodeWebAuthnValidatorInit,
+} from './utils/validatorUtils'
+import { encodeSessionKeyInit } from './utils/executorUtils'
+import { encodeSpendingLimitInit } from './utils/hookUtils'
 
 // ============================================================================
 // Types
@@ -18,8 +40,8 @@ import { createModuleRegistry, type ModuleRegistry } from './moduleRegistry'
  * Module client configuration
  */
 export interface ModuleClientConfig {
-  /** RPC URL for the network */
-  rpcUrl: string
+  /** RPC URL for the network (used if provider not specified) */
+  rpcUrl?: string
 
   /** Chain ID */
   chainId: number
@@ -29,6 +51,9 @@ export interface ModuleClientConfig {
 
   /** Paymaster URL for gas sponsorship */
   paymasterUrl?: string
+
+  /** RPC Provider instance (DIP: allows dependency injection) */
+  provider?: RpcProvider
 }
 
 /**
@@ -51,19 +76,8 @@ export interface ModuleInstallResult {
   error?: string
 }
 
-/**
- * Module operation calldata
- */
-export interface ModuleCalldata {
-  /** Target address (Smart Account) */
-  to: Address
-
-  /** Calldata for the operation */
-  data: Hex
-
-  /** Value (usually 0) */
-  value: bigint
-}
+// Re-export types from operation client
+export type { ModuleCalldata, ValidationResult, ConflictCheckResult }
 
 // ============================================================================
 // Module Client
@@ -71,6 +85,9 @@ export interface ModuleCalldata {
 
 /**
  * Create a module client for managing Smart Account modules
+ *
+ * This client composes ModuleQueryClient (read operations) and
+ * ModuleOperationClient (write operations) for a unified API.
  *
  * @example
  * ```typescript
@@ -80,11 +97,11 @@ export interface ModuleCalldata {
  *   bundlerUrl: 'https://bundler.example.com',
  * })
  *
- * // Get installed modules
+ * // Get installed modules (query)
  * const modules = await client.getInstalledModules(smartAccountAddress)
  *
- * // Prepare module installation
- * const calldata = client.prepareInstall({
+ * // Prepare module installation (operation)
+ * const calldata = client.prepareInstall(accountAddress, {
  *   moduleAddress: validatorAddress,
  *   moduleType: MODULE_TYPE.VALIDATOR,
  *   initData: encodedInitData,
@@ -92,278 +109,67 @@ export interface ModuleCalldata {
  * ```
  */
 export function createModuleClient(config: ModuleClientConfig) {
-  const { rpcUrl, chainId } = config
+  const { rpcUrl, chainId, provider: injectedProvider } = config
 
-  const publicClient = createPublicClient({
-    transport: http(rpcUrl),
+  // DIP: Use injected provider or create one from rpcUrl
+  if (!injectedProvider && !rpcUrl) {
+    throw new ConfigurationError(
+      'Either provider or rpcUrl must be provided',
+      'provider',
+      { operation: 'createModuleClient' }
+    )
+  }
+
+  const provider: RpcProvider = injectedProvider ?? createViemProvider({
+    rpcUrl: rpcUrl!,
+    chainId,
   })
 
+  // Create shared registry
   const registry = createModuleRegistry({ chainId })
 
-  // ============================================================================
-  // Read Operations
-  // ============================================================================
+  // Create specialized clients
+  const queryClient = createModuleQueryClient({
+    chainId,
+    provider,
+    registry,
+  })
 
-  /**
-   * Check if a module is installed on a Smart Account
-   */
-  async function isModuleInstalled(
-    account: Address,
-    moduleAddress: Address,
-    moduleType: ModuleType
-  ): Promise<boolean> {
-    try {
-      const result = await publicClient.readContract({
-        address: account,
-        abi: KERNEL_ABI,
-        functionName: 'isModuleInstalled',
-        args: [moduleType, moduleAddress, '0x'],
-      })
-
-      return result as boolean
-    } catch {
-      // Account might not be a Smart Account
-      return false
-    }
-  }
-
-  /**
-   * Get all installed modules for a Smart Account
-   */
-  async function getInstalledModules(account: Address): Promise<InstalledModule[]> {
-    // Check each known module from registry
-    const allModules = registry.getAll()
-
-    // Check in parallel
-    const checks = await Promise.all(
-      allModules.map(async (entry) => {
-        const moduleAddress = registry.getModuleAddress(entry)
-        if (!moduleAddress) return null
-
-        const installed = await isModuleInstalled(account, moduleAddress, entry.metadata.type)
-
-        if (installed) {
-          return {
-            address: moduleAddress,
-            type: entry.metadata.type,
-            metadata: {
-              ...entry.metadata,
-              address: moduleAddress,
-            },
-            initData: '0x' as Hex, // Would need to decode from events
-            status: MODULE_STATUS.INSTALLED,
-          } as InstalledModule
-        }
-
-        return null
-      })
-    )
-
-    return checks.filter((m): m is InstalledModule => m !== null)
-  }
-
-  /**
-   * Get installed modules by type
-   */
-  async function getInstalledModulesByType(
-    account: Address,
-    type: ModuleType
-  ): Promise<InstalledModule[]> {
-    const allInstalled = await getInstalledModules(account)
-    return allInstalled.filter((m) => m.type === type)
-  }
-
-  /**
-   * Get the primary validator for a Smart Account
-   */
-  async function getPrimaryValidator(account: Address): Promise<InstalledModule | null> {
-    const validators = await getInstalledModulesByType(account, MODULE_TYPE.VALIDATOR)
-    return validators[0] ?? null
-  }
+  const operationClient = createModuleOperationClient({
+    chainId,
+    registry,
+    queryClient,
+  })
 
   // ============================================================================
-  // Write Operation Preparation
+  // Deprecated Encoding Helpers (for backwards compatibility)
+  // Use utils/validatorUtils, utils/executorUtils, utils/hookUtils instead
   // ============================================================================
 
   /**
-   * Prepare calldata for module installation
-   */
-  function prepareInstall(account: Address, request: ModuleInstallRequest): ModuleCalldata {
-    const data = encodeFunctionData({
-      abi: KERNEL_ABI,
-      functionName: 'installModule',
-      args: [request.moduleType, request.moduleAddress, request.initData],
-    })
-
-    return {
-      to: account,
-      data,
-      value: 0n,
-    }
-  }
-
-  /**
-   * Prepare calldata for module uninstallation
-   */
-  function prepareUninstall(account: Address, request: ModuleUninstallRequest): ModuleCalldata {
-    const data = encodeFunctionData({
-      abi: KERNEL_ABI,
-      functionName: 'uninstallModule',
-      args: [request.moduleType, request.moduleAddress, request.deInitData],
-    })
-
-    return {
-      to: account,
-      data,
-      value: 0n,
-    }
-  }
-
-  /**
-   * Prepare batch module installation
-   */
-  function prepareBatchInstall(
-    account: Address,
-    requests: ModuleInstallRequest[]
-  ): ModuleCalldata[] {
-    return requests.map((request) => prepareInstall(account, request))
-  }
-
-  /**
-   * Prepare batch module uninstallation
-   */
-  function prepareBatchUninstall(
-    account: Address,
-    requests: ModuleUninstallRequest[]
-  ): ModuleCalldata[] {
-    return requests.map((request) => prepareUninstall(account, request))
-  }
-
-  // ============================================================================
-  // Validation
-  // ============================================================================
-
-  /**
-   * Validate module installation request
-   */
-  function validateInstallRequest(
-    request: ModuleInstallRequest
-  ): { valid: boolean; errors: string[] } {
-    const errors: string[] = []
-
-    // Check module exists in registry
-    const entry = registry.getByAddress(request.moduleAddress)
-    if (!entry) {
-      errors.push('Module not found in registry')
-    }
-
-    // Check module type matches
-    if (entry && entry.metadata.type !== request.moduleType) {
-      errors.push(
-        `Module type mismatch: expected ${getModuleTypeName(entry.metadata.type)}, ` +
-          `got ${getModuleTypeName(request.moduleType)}`
-      )
-    }
-
-    // Check initData is valid hex
-    if (!request.initData.startsWith('0x')) {
-      errors.push('initData must be a hex string starting with 0x')
-    }
-
-    return {
-      valid: errors.length === 0,
-      errors,
-    }
-  }
-
-  /**
-   * Check if installation would conflict with existing modules
-   */
-  async function checkInstallConflicts(
-    account: Address,
-    request: ModuleInstallRequest
-  ): Promise<{ hasConflict: boolean; conflictReason?: string }> {
-    // Check if already installed
-    const alreadyInstalled = await isModuleInstalled(
-      account,
-      request.moduleAddress,
-      request.moduleType
-    )
-
-    if (alreadyInstalled) {
-      return {
-        hasConflict: true,
-        conflictReason: 'Module is already installed',
-      }
-    }
-
-    // For validators, check if switching would affect security
-    if (request.moduleType === MODULE_TYPE.VALIDATOR) {
-      const currentValidator = await getPrimaryValidator(account)
-      if (currentValidator) {
-        // Not necessarily a conflict, but worth noting
-        return {
-          hasConflict: false,
-          conflictReason: undefined,
-        }
-      }
-    }
-
-    return { hasConflict: false }
-  }
-
-  // ============================================================================
-  // Encoding Helpers
-  // ============================================================================
-
-  /**
-   * Encode ECDSA validator init data
+   * @deprecated Use encodeECDSAValidatorInit from './utils/validatorUtils' instead
    */
   function encodeECDSAValidatorInitData(owner: Address): Hex {
-    return encodeFunctionData({
-      abi: [
-        {
-          type: 'function',
-          name: 'init',
-          inputs: [{ type: 'address', name: 'owner' }],
-          outputs: [],
-          stateMutability: 'nonpayable',
-        },
-      ],
-      functionName: 'init',
-      args: [owner],
-    })
+    return encodeECDSAValidatorInit({ owner })
   }
 
   /**
-   * Encode WebAuthn validator init data
+   * @deprecated Use encodeWebAuthnValidatorInit from './utils/validatorUtils' instead
    */
   function encodeWebAuthnValidatorInitData(
     pubKeyX: bigint,
     pubKeyY: bigint,
     credentialId: Hex
   ): Hex {
-    return encodeFunctionData({
-      abi: [
-        {
-          type: 'function',
-          name: 'init',
-          inputs: [
-            { type: 'uint256', name: 'pubKeyX' },
-            { type: 'uint256', name: 'pubKeyY' },
-            { type: 'bytes', name: 'credentialId' },
-          ],
-          outputs: [],
-          stateMutability: 'nonpayable',
-        },
-      ],
-      functionName: 'init',
-      args: [pubKeyX, pubKeyY, credentialId],
+    return encodeWebAuthnValidatorInit({
+      pubKeyX,
+      pubKeyY,
+      credentialId,
     })
   }
 
   /**
-   * Encode Session Key executor init data
+   * @deprecated Use encodeSessionKeyInit from './utils/executorUtils' instead
    */
   function encodeSessionKeyInitData(config: {
     sessionKey: Address
@@ -373,80 +179,50 @@ export function createModuleClient(config: ModuleClientConfig) {
     validUntil: number
     validAfter: number
   }): Hex {
-    return encodeFunctionData({
-      abi: [
-        {
-          type: 'function',
-          name: 'init',
-          inputs: [
-            { type: 'address', name: 'sessionKey' },
-            { type: 'address[]', name: 'allowedTargets' },
-            { type: 'bytes4[]', name: 'allowedSelectors' },
-            { type: 'uint256', name: 'maxValuePerTx' },
-            { type: 'uint64', name: 'validUntil' },
-            { type: 'uint64', name: 'validAfter' },
-          ],
-          outputs: [],
-          stateMutability: 'nonpayable',
-        },
-      ],
-      functionName: 'init',
-      args: [
-        config.sessionKey,
-        config.allowedTargets,
-        config.allowedSelectors,
-        config.maxValuePerTx,
-        BigInt(config.validUntil),
-        BigInt(config.validAfter),
-      ],
+    // Direct pass to encodeSessionKeyInit which handles BigInt conversion internally
+    return encodeSessionKeyInit({
+      sessionKey: config.sessionKey,
+      allowedTargets: config.allowedTargets,
+      allowedSelectors: config.allowedSelectors,
+      maxValuePerTx: config.maxValuePerTx,
+      validUntil: config.validUntil,
+      validAfter: config.validAfter,
     })
   }
 
   /**
-   * Encode Spending Limit hook init data
+   * @deprecated Use encodeSpendingLimitInit from './utils/hookUtils' instead
    */
   function encodeSpendingLimitInitData(config: {
     token: Address
     limit: bigint
     period: number
   }): Hex {
-    return encodeFunctionData({
-      abi: [
-        {
-          type: 'function',
-          name: 'init',
-          inputs: [
-            { type: 'address', name: 'token' },
-            { type: 'uint256', name: 'limit' },
-            { type: 'uint64', name: 'period' },
-          ],
-          outputs: [],
-          stateMutability: 'nonpayable',
-        },
-      ],
-      functionName: 'init',
-      args: [config.token, config.limit, BigInt(config.period)],
+    return encodeSpendingLimitInit({
+      token: config.token,
+      limit: config.limit,
+      period: config.period,
     })
   }
 
   return {
-    // Read operations
-    isModuleInstalled,
-    getInstalledModules,
-    getInstalledModulesByType,
-    getPrimaryValidator,
+    // Query operations (delegated to queryClient)
+    isModuleInstalled: queryClient.isModuleInstalled,
+    getInstalledModules: queryClient.getInstalledModules,
+    getInstalledModulesByType: queryClient.getInstalledModulesByType,
+    getPrimaryValidator: queryClient.getPrimaryValidator,
 
-    // Write preparation
-    prepareInstall,
-    prepareUninstall,
-    prepareBatchInstall,
-    prepareBatchUninstall,
+    // Operation preparation (delegated to operationClient)
+    prepareInstall: operationClient.prepareInstall,
+    prepareUninstall: operationClient.prepareUninstall,
+    prepareBatchInstall: operationClient.prepareBatchInstall,
+    prepareBatchUninstall: operationClient.prepareBatchUninstall,
 
-    // Validation
-    validateInstallRequest,
-    checkInstallConflicts,
+    // Validation (delegated to operationClient)
+    validateInstallRequest: operationClient.validateInstallRequest,
+    checkInstallConflicts: operationClient.checkInstallConflicts,
 
-    // Encoding helpers
+    // Deprecated encoding helpers (for backwards compatibility)
     encodeECDSAValidatorInitData,
     encodeWebAuthnValidatorInitData,
     encodeSessionKeyInitData,
@@ -454,6 +230,10 @@ export function createModuleClient(config: ModuleClientConfig) {
 
     // Registry access
     registry,
+
+    // Expose sub-clients for advanced usage
+    queryClient,
+    operationClient,
   }
 }
 
@@ -462,3 +242,7 @@ export function createModuleClient(config: ModuleClientConfig) {
 // ============================================================================
 
 export type ModuleClient = ReturnType<typeof createModuleClient>
+
+// Re-export sub-clients for direct usage
+export { createModuleQueryClient, type ModuleQueryClient } from './queryClient'
+export { createModuleOperationClient, type ModuleOperationClient } from './operationClient'

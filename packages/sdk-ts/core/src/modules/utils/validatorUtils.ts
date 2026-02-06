@@ -14,6 +14,7 @@ import type {
   WebAuthnValidatorConfig,
   MultiSigValidatorConfig,
 } from '@stablenet/sdk-types'
+import { ValidationError } from '../../errors'
 
 // ============================================================================
 // Types
@@ -258,7 +259,12 @@ export function parseWebAuthnCredential(response: {
   // For P-256, the COSE key has specific structure
   // Assuming uncompressed point format (0x04 || x || y)
   if (publicKeyBytes[0] !== 0x04) {
-    throw new Error('Invalid public key format: expected uncompressed point (0x04 prefix)')
+    throw new ValidationError(
+      'Invalid public key format: expected uncompressed point (0x04 prefix)',
+      'publicKey',
+      publicKeyBytes[0],
+      { operation: 'parseWebAuthnCredential' }
+    )
   }
 
   const x = publicKeyBytes.slice(1, 33)

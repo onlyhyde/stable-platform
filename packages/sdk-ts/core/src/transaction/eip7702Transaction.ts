@@ -1,5 +1,4 @@
 import type { Address, Hex } from 'viem'
-import { createPublicClient, http, parseGwei, toHex } from 'viem'
 import type {
   GasEstimate,
   TransactionResult,
@@ -10,6 +9,13 @@ import {
   ZERO_ADDRESS,
 } from '../eip7702'
 import { createTransactionError } from '../errors'
+import { createViemProvider, type RpcProvider } from '../providers'
+import {
+  EIP7702_AUTH_GAS,
+  SETCODE_BASE_GAS,
+  GAS_PER_AUTHORIZATION,
+  MIN_PRIORITY_FEE,
+} from '../config'
 
 // ============================================================================
 // Types
@@ -19,11 +25,14 @@ import { createTransactionError } from '../errors'
  * EIP-7702 Transaction configuration
  */
 export interface EIP7702TransactionConfig {
-  /** RPC URL for the network */
-  rpcUrl: string
+  /** RPC URL for the network (used if provider not specified) */
+  rpcUrl?: string
 
   /** Chain ID */
   chainId: number
+
+  /** RPC Provider instance (DIP: allows dependency injection) */
+  provider?: RpcProvider
 }
 
 /**
@@ -78,22 +87,6 @@ export interface BuiltEIP7702Transaction {
 }
 
 // ============================================================================
-// Constants
-// ============================================================================
-
-/** Gas overhead for authorization verification */
-const AUTH_VERIFICATION_GAS = 25_000n
-
-/** Base gas for SetCode transaction */
-const SETCODE_BASE_GAS = 21_000n
-
-/** Gas per authorization in the list */
-const GAS_PER_AUTHORIZATION = 12_500n
-
-/** Minimum priority fee */
-const MIN_PRIORITY_FEE = parseGwei('1')
-
-// ============================================================================
 // EIP-7702 Transaction Builder
 // ============================================================================
 
@@ -122,20 +115,25 @@ const MIN_PRIORITY_FEE = parseGwei('1')
 export function createEIP7702TransactionBuilder(
   config: EIP7702TransactionConfig
 ) {
-  const { rpcUrl, chainId } = config
+  const { rpcUrl, chainId, provider: injectedProvider } = config
 
-  const publicClient = createPublicClient({
-    transport: http(rpcUrl),
+  // DIP: Use injected provider or create one from rpcUrl
+  if (!injectedProvider && !rpcUrl) {
+    throw createTransactionError('Either provider or rpcUrl must be provided', {
+      reason: 'MISSING_PROVIDER',
+    })
+  }
+
+  const provider: RpcProvider = injectedProvider ?? createViemProvider({
+    rpcUrl: rpcUrl!,
+    chainId,
   })
 
   /**
    * Get current nonce for account
    */
   async function getAccountNonce(address: Address): Promise<bigint> {
-    const nonce = await publicClient.getTransactionCount({
-      address,
-      blockTag: 'pending',
-    })
+    const nonce = await provider.getTransactionCount(address, 'pending')
     return BigInt(nonce)
   }
 
@@ -146,12 +144,12 @@ export function createEIP7702TransactionBuilder(
     maxFeePerGas: bigint
     maxPriorityFeePerGas: bigint
   }> {
-    const block = await publicClient.getBlock({ blockTag: 'latest' })
+    const block = await provider.getBlock('latest')
     const baseFee = block.baseFeePerGas ?? 0n
 
     let maxPriorityFeePerGas: bigint
     try {
-      maxPriorityFeePerGas = await publicClient.estimateMaxPriorityFeePerGas()
+      maxPriorityFeePerGas = await provider.estimateMaxPriorityFeePerGas()
     } catch {
       maxPriorityFeePerGas = MIN_PRIORITY_FEE
     }
@@ -204,7 +202,7 @@ export function createEIP7702TransactionBuilder(
   function calculateGas(authCount: number): bigint {
     return (
       SETCODE_BASE_GAS +
-      AUTH_VERIFICATION_GAS +
+      EIP7702_AUTH_GAS +
       GAS_PER_AUTHORIZATION * BigInt(authCount)
     )
   }
@@ -295,7 +293,7 @@ export function createEIP7702TransactionBuilder(
    * Check if an account is currently delegated
    */
   async function isDelegated(account: Address): Promise<boolean> {
-    const code = await publicClient.getCode({ address: account })
+    const code = await provider.getCode(account)
     if (!code || code === '0x') return false
 
     // Check for delegation prefix (0xef0100)
@@ -306,7 +304,7 @@ export function createEIP7702TransactionBuilder(
    * Get the delegate address for a delegated account
    */
   async function getDelegateAddress(account: Address): Promise<Address | null> {
-    const code = await publicClient.getCode({ address: account })
+    const code = await provider.getCode(account)
     if (!code || code === '0x') return null
 
     // Check for delegation prefix

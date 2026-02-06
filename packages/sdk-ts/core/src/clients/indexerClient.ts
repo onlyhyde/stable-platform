@@ -7,6 +7,9 @@
  * This client is designed to work with indexer-go compatible APIs.
  */
 
+import { DEFAULT_INDEXER_TIMEOUT } from '../config'
+import { SdkError, SDK_ERROR_CODES } from '../errors'
+
 /**
  * Indexer client configuration
  */
@@ -126,7 +129,7 @@ export class IndexerClient {
 
   constructor(config: IndexerClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '')
-    this.timeout = config.timeout ?? 30000
+    this.timeout = config.timeout ?? DEFAULT_INDEXER_TIMEOUT
   }
 
   /**
@@ -166,20 +169,32 @@ export class IndexerClient {
       clearTimeout(timeoutId)
 
       if (!response.ok) {
-        throw new Error(`GraphQL request failed: ${response.status}`)
+        throw new SdkError({
+          code: SDK_ERROR_CODES.RPC_ERROR,
+          message: `GraphQL request failed: ${response.status}`,
+          context: { operation: 'indexerClient.graphql' },
+        })
       }
 
       const result = await response.json()
 
       if (result.errors) {
-        throw new Error(result.errors[0]?.message ?? 'GraphQL error')
+        throw new SdkError({
+          code: SDK_ERROR_CODES.RPC_ERROR,
+          message: result.errors[0]?.message ?? 'GraphQL error',
+          context: { operation: 'indexerClient.graphql' },
+        })
       }
 
       return result.data as T
     } catch (error) {
       clearTimeout(timeoutId)
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timeout')
+        throw new SdkError({
+          code: SDK_ERROR_CODES.NETWORK_ERROR,
+          message: 'Request timeout',
+          context: { operation: 'indexerClient.graphql' },
+        })
       }
       throw error
     }
@@ -210,20 +225,32 @@ export class IndexerClient {
       clearTimeout(timeoutId)
 
       if (!response.ok) {
-        throw new Error(`RPC request failed: ${response.status}`)
+        throw new SdkError({
+          code: SDK_ERROR_CODES.RPC_ERROR,
+          message: `RPC request failed (${method}): ${response.status}`,
+          context: { operation: `indexerClient.rpc.${method}` },
+        })
       }
 
       const result = await response.json()
 
       if (result.error) {
-        throw new Error(result.error.message ?? 'RPC error')
+        throw new SdkError({
+          code: SDK_ERROR_CODES.RPC_ERROR,
+          message: result.error.message ?? `RPC error (${method})`,
+          context: { operation: `indexerClient.rpc.${method}` },
+        })
       }
 
       return result.result as T
     } catch (error) {
       clearTimeout(timeoutId)
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timeout')
+        throw new SdkError({
+          code: SDK_ERROR_CODES.NETWORK_ERROR,
+          message: `Request timeout (${method})`,
+          context: { operation: `indexerClient.rpc.${method}` },
+        })
       }
       throw error
     }

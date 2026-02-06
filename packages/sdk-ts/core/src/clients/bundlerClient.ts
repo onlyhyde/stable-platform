@@ -1,3 +1,11 @@
+/**
+ * Bundler Client
+ *
+ * ERC-4337 Bundler client for sending and managing UserOperations.
+ * Follows SRP: handles only bundler-specific operations.
+ * Follows DIP: uses JsonRpcClient abstraction for RPC communication.
+ */
+
 import type { Address, Hex } from 'viem'
 import type {
   BundlerClient,
@@ -10,48 +18,111 @@ import type {
 } from '@stablenet/sdk-types'
 import { ENTRY_POINT_V07_ADDRESS } from '@stablenet/sdk-types'
 import { packUserOperation, unpackUserOperation } from '../utils/userOperation'
-import { createBundlerError, SdkError, SDK_ERROR_CODES } from '../errors'
+import { SdkError, SDK_ERROR_CODES } from '../errors'
+import { createBundlerRpcClient, type JsonRpcClient } from '../rpc'
+import { USER_OP_POLLING_INTERVAL, DEFAULT_CONFIRMATION_TIMEOUT } from '../config'
+
+// ============================================================================
+// Types
+// ============================================================================
+
+/**
+ * Raw bundler response types (hex strings)
+ */
+interface RawGasEstimation {
+  preVerificationGas: Hex
+  verificationGasLimit: Hex
+  callGasLimit: Hex
+  paymasterVerificationGasLimit?: Hex
+  paymasterPostOpGasLimit?: Hex
+}
+
+interface RawLog {
+  logIndex: Hex
+  transactionIndex: Hex
+  transactionHash: Hex
+  blockHash: Hex
+  blockNumber: Hex
+  address: Address
+  data: Hex
+  topics: Hex[]
+}
+
+interface RawReceipt {
+  transactionHash: Hex
+  transactionIndex: Hex
+  blockHash: Hex
+  blockNumber: Hex
+  from: Address
+  to?: Address
+  cumulativeGasUsed: Hex
+  gasUsed: Hex
+  contractAddress?: Address
+  logs: RawLog[]
+  status: Hex
+  effectiveGasPrice: Hex
+}
+
+interface RawUserOperationReceipt {
+  userOpHash: Hex
+  entryPoint: Address
+  sender: Address
+  nonce: Hex
+  paymaster?: Address
+  actualGasCost: Hex
+  actualGasUsed: Hex
+  success: boolean
+  reason?: string
+  logs: RawLog[]
+  receipt: RawReceipt
+}
+
+interface RawUserOperationWithHash {
+  userOperation: Record<string, Hex>
+  entryPoint: Address
+  transactionHash: Hex
+  blockHash: Hex
+  blockNumber: Hex
+}
+
+// ============================================================================
+// Bundler Client Implementation
+// ============================================================================
 
 /**
  * Create a bundler client for sending UserOperations
+ *
+ * @example
+ * ```typescript
+ * const bundler = createBundlerClient({
+ *   url: 'https://bundler.example.com',
+ *   entryPoint: ENTRY_POINT_V07_ADDRESS,
+ * })
+ *
+ * const hash = await bundler.sendUserOperation(userOp)
+ * const receipt = await bundler.waitForUserOperationReceipt(hash)
+ * ```
  */
 export function createBundlerClient(config: BundlerClientConfig): BundlerClient {
   const { url, entryPoint = ENTRY_POINT_V07_ADDRESS } = config
 
-  let requestId = 0
+  // Use shared RPC client
+  const rpcClient: JsonRpcClient = createBundlerRpcClient(url)
 
-  const rpcRequest = async <T>(method: string, params: unknown[]): Promise<T> => {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: ++requestId,
-        method,
-        params,
-      }),
-    })
-
-    const data = await response.json() as {
-      result?: T
-      error?: { message: string; code: number; data?: unknown }
-    }
-
-    if (data.error) {
-      throw createBundlerError(data.error.code, data.error.message, data.error.data)
-    }
-
-    return data.result as T
-  }
-
-  const sendUserOperation = async (userOp: UserOperation): Promise<Hex> => {
+  /**
+   * Send a UserOperation to the bundler
+   */
+  async function sendUserOperation(userOp: UserOperation): Promise<Hex> {
     const packed = packUserOperation(userOp)
-    return rpcRequest<Hex>('eth_sendUserOperation', [packed, entryPoint])
+    return rpcClient.request<Hex>('eth_sendUserOperation', [packed, entryPoint])
   }
 
-  const estimateUserOperationGas = async (
+  /**
+   * Estimate gas for a UserOperation
+   */
+  async function estimateUserOperationGas(
     userOp: Partial<UserOperation> & { sender: Address; callData: Hex }
-  ): Promise<UserOperationGasEstimation> => {
+  ): Promise<UserOperationGasEstimation> {
     const packed = packUserOperation({
       sender: userOp.sender,
       nonce: userOp.nonce ?? 0n,
@@ -70,37 +141,24 @@ export function createBundlerClient(config: BundlerClientConfig): BundlerClient 
       paymasterPostOpGasLimit: userOp.paymasterPostOpGasLimit,
     })
 
-    const result = await rpcRequest<{
-      preVerificationGas: Hex
-      verificationGasLimit: Hex
-      callGasLimit: Hex
-      paymasterVerificationGasLimit?: Hex
-      paymasterPostOpGasLimit?: Hex
-    }>('eth_estimateUserOperationGas', [packed, entryPoint])
+    const result = await rpcClient.request<RawGasEstimation>(
+      'eth_estimateUserOperationGas',
+      [packed, entryPoint]
+    )
 
-    return {
-      preVerificationGas: BigInt(result.preVerificationGas),
-      verificationGasLimit: BigInt(result.verificationGasLimit),
-      callGasLimit: BigInt(result.callGasLimit),
-      paymasterVerificationGasLimit: result.paymasterVerificationGasLimit
-        ? BigInt(result.paymasterVerificationGasLimit)
-        : undefined,
-      paymasterPostOpGasLimit: result.paymasterPostOpGasLimit
-        ? BigInt(result.paymasterPostOpGasLimit)
-        : undefined,
-    }
+    return parseGasEstimation(result)
   }
 
-  const getUserOperationByHash = async (
+  /**
+   * Get UserOperation by hash
+   */
+  async function getUserOperationByHash(
     hash: Hex
-  ): Promise<UserOperationWithTransactionHash | null> => {
-    const result = await rpcRequest<{
-      userOperation: Record<string, Hex>
-      entryPoint: Address
-      transactionHash: Hex
-      blockHash: Hex
-      blockNumber: Hex
-    } | null>('eth_getUserOperationByHash', [hash])
+  ): Promise<UserOperationWithTransactionHash | null> {
+    const result = await rpcClient.request<RawUserOperationWithHash | null>(
+      'eth_getUserOperationByHash',
+      [hash]
+    )
 
     if (!result) return null
 
@@ -113,122 +171,51 @@ export function createBundlerClient(config: BundlerClientConfig): BundlerClient 
     }
   }
 
-  const getUserOperationReceipt = async (
+  /**
+   * Get UserOperation receipt
+   */
+  async function getUserOperationReceipt(
     hash: Hex
-  ): Promise<UserOperationReceipt | null> => {
-    const result = await rpcRequest<{
-      userOpHash: Hex
-      entryPoint: Address
-      sender: Address
-      nonce: Hex
-      paymaster?: Address
-      actualGasCost: Hex
-      actualGasUsed: Hex
-      success: boolean
-      reason?: string
-      logs: Array<{
-        logIndex: Hex
-        transactionIndex: Hex
-        transactionHash: Hex
-        blockHash: Hex
-        blockNumber: Hex
-        address: Address
-        data: Hex
-        topics: Hex[]
-      }>
-      receipt: {
-        transactionHash: Hex
-        transactionIndex: Hex
-        blockHash: Hex
-        blockNumber: Hex
-        from: Address
-        to?: Address
-        cumulativeGasUsed: Hex
-        gasUsed: Hex
-        contractAddress?: Address
-        logs: Array<{
-          logIndex: Hex
-          transactionIndex: Hex
-          transactionHash: Hex
-          blockHash: Hex
-          blockNumber: Hex
-          address: Address
-          data: Hex
-          topics: Hex[]
-        }>
-        status: Hex
-        effectiveGasPrice: Hex
-      }
-    } | null>('eth_getUserOperationReceipt', [hash])
+  ): Promise<UserOperationReceipt | null> {
+    const result = await rpcClient.request<RawUserOperationReceipt | null>(
+      'eth_getUserOperationReceipt',
+      [hash]
+    )
 
     if (!result) return null
 
-    return {
-      userOpHash: result.userOpHash,
-      entryPoint: result.entryPoint,
-      sender: result.sender,
-      nonce: BigInt(result.nonce),
-      paymaster: result.paymaster,
-      actualGasCost: BigInt(result.actualGasCost),
-      actualGasUsed: BigInt(result.actualGasUsed),
-      success: result.success,
-      reason: result.reason,
-      logs: result.logs.map((log) => ({
-        logIndex: Number(log.logIndex),
-        transactionIndex: Number(log.transactionIndex),
-        transactionHash: log.transactionHash,
-        blockHash: log.blockHash,
-        blockNumber: BigInt(log.blockNumber),
-        address: log.address,
-        data: log.data,
-        topics: log.topics,
-      })),
-      receipt: {
-        transactionHash: result.receipt.transactionHash,
-        transactionIndex: Number(result.receipt.transactionIndex),
-        blockHash: result.receipt.blockHash,
-        blockNumber: BigInt(result.receipt.blockNumber),
-        from: result.receipt.from,
-        to: result.receipt.to,
-        cumulativeGasUsed: BigInt(result.receipt.cumulativeGasUsed),
-        gasUsed: BigInt(result.receipt.gasUsed),
-        contractAddress: result.receipt.contractAddress,
-        logs: result.receipt.logs.map((log) => ({
-          logIndex: Number(log.logIndex),
-          transactionIndex: Number(log.transactionIndex),
-          transactionHash: log.transactionHash,
-          blockHash: log.blockHash,
-          blockNumber: BigInt(log.blockNumber),
-          address: log.address,
-          data: log.data,
-          topics: log.topics,
-        })),
-        status: result.receipt.status === '0x1' ? 'success' : 'reverted',
-        effectiveGasPrice: BigInt(result.receipt.effectiveGasPrice),
-      },
-    }
+    return parseUserOperationReceipt(result)
   }
 
-  const getSupportedEntryPoints = async (): Promise<Address[]> => {
-    return rpcRequest<Address[]>('eth_supportedEntryPoints', [])
+  /**
+   * Get supported entry points
+   */
+  async function getSupportedEntryPoints(): Promise<Address[]> {
+    return rpcClient.request<Address[]>('eth_supportedEntryPoints', [])
   }
 
-  const getChainId = async (): Promise<bigint> => {
-    const result = await rpcRequest<Hex>('eth_chainId', [])
+  /**
+   * Get chain ID
+   */
+  async function getChainId(): Promise<bigint> {
+    const result = await rpcClient.request<Hex>('eth_chainId', [])
     return BigInt(result)
   }
 
-  const waitForUserOperationReceipt = async (
+  /**
+   * Wait for UserOperation receipt with polling
+   */
+  async function waitForUserOperationReceipt(
     hash: Hex,
     options: WaitForUserOperationReceiptOptions = {}
-  ): Promise<UserOperationReceipt> => {
-    const { pollingInterval = 1000, timeout = 60000 } = options
+  ): Promise<UserOperationReceipt> {
+    const { pollingInterval = USER_OP_POLLING_INTERVAL, timeout = DEFAULT_CONFIRMATION_TIMEOUT } = options
     const startTime = Date.now()
 
     while (Date.now() - startTime < timeout) {
       const receipt = await getUserOperationReceipt(hash)
       if (receipt) return receipt
-      await new Promise((resolve) => setTimeout(resolve, pollingInterval))
+      await sleep(pollingInterval)
     }
 
     throw new SdkError({
@@ -247,4 +234,82 @@ export function createBundlerClient(config: BundlerClientConfig): BundlerClient 
     getChainId,
     waitForUserOperationReceipt,
   }
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Parse raw gas estimation response
+ */
+function parseGasEstimation(raw: RawGasEstimation): UserOperationGasEstimation {
+  return {
+    preVerificationGas: BigInt(raw.preVerificationGas),
+    verificationGasLimit: BigInt(raw.verificationGasLimit),
+    callGasLimit: BigInt(raw.callGasLimit),
+    paymasterVerificationGasLimit: raw.paymasterVerificationGasLimit
+      ? BigInt(raw.paymasterVerificationGasLimit)
+      : undefined,
+    paymasterPostOpGasLimit: raw.paymasterPostOpGasLimit
+      ? BigInt(raw.paymasterPostOpGasLimit)
+      : undefined,
+  }
+}
+
+/**
+ * Parse raw log
+ */
+function parseLog(raw: RawLog) {
+  return {
+    logIndex: Number(raw.logIndex),
+    transactionIndex: Number(raw.transactionIndex),
+    transactionHash: raw.transactionHash,
+    blockHash: raw.blockHash,
+    blockNumber: BigInt(raw.blockNumber),
+    address: raw.address,
+    data: raw.data,
+    topics: raw.topics,
+  }
+}
+
+/**
+ * Parse raw UserOperation receipt
+ */
+function parseUserOperationReceipt(
+  raw: RawUserOperationReceipt
+): UserOperationReceipt {
+  return {
+    userOpHash: raw.userOpHash,
+    entryPoint: raw.entryPoint,
+    sender: raw.sender,
+    nonce: BigInt(raw.nonce),
+    paymaster: raw.paymaster,
+    actualGasCost: BigInt(raw.actualGasCost),
+    actualGasUsed: BigInt(raw.actualGasUsed),
+    success: raw.success,
+    reason: raw.reason,
+    logs: raw.logs.map(parseLog),
+    receipt: {
+      transactionHash: raw.receipt.transactionHash,
+      transactionIndex: Number(raw.receipt.transactionIndex),
+      blockHash: raw.receipt.blockHash,
+      blockNumber: BigInt(raw.receipt.blockNumber),
+      from: raw.receipt.from,
+      to: raw.receipt.to,
+      cumulativeGasUsed: BigInt(raw.receipt.cumulativeGasUsed),
+      gasUsed: BigInt(raw.receipt.gasUsed),
+      contractAddress: raw.receipt.contractAddress,
+      logs: raw.receipt.logs.map(parseLog),
+      status: raw.receipt.status === '0x1' ? 'success' : 'reverted',
+      effectiveGasPrice: BigInt(raw.receipt.effectiveGasPrice),
+    },
+  }
+}
+
+/**
+ * Sleep helper
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }

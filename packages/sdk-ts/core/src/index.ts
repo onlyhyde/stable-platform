@@ -1,3 +1,71 @@
+// Configuration (centralized constants)
+export {
+  // Gas configuration
+  MIN_PRIORITY_FEE,
+  MAX_PRIORITY_FEE,
+  BASE_TRANSFER_GAS,
+  MAX_GAS_LIMIT,
+  GAS_BUFFER_MULTIPLIER,
+  GAS_BUFFER_DIVISOR,
+  EIP7702_AUTH_GAS,
+  GAS_PER_AUTHORIZATION,
+  DEFAULT_VERIFICATION_GAS_LIMIT,
+  DEFAULT_PRE_VERIFICATION_GAS,
+  DEFAULT_CALL_GAS_LIMIT,
+  PAYMASTER_VERIFICATION_GAS,
+  PAYMASTER_POST_OP_GAS,
+  GAS_CONFIG,
+  // Client configuration
+  DEFAULT_RPC_TIMEOUT,
+  DEFAULT_PROVIDER_TIMEOUT,
+  DEFAULT_CONFIRMATION_TIMEOUT,
+  DEFAULT_MAX_RETRIES,
+  DEFAULT_RETRY_DELAY,
+  DEFAULT_POLLING_INTERVAL,
+  DEFAULT_CONFIRMATIONS,
+  CLIENT_CONFIG,
+} from './config'
+
+// RPC Module
+export {
+  // Client
+  createJsonRpcClient,
+  createBundlerRpcClient,
+  createPaymasterRpcClient,
+  type JsonRpcClient,
+  // Types
+  type JsonRpcClientConfig,
+  type JsonRpcRequest,
+  type JsonRpcResponse,
+  type JsonRpcError,
+  type JsonRpcRequestOptions,
+  // Error codes
+  JSON_RPC_ERROR_CODES,
+  BUNDLER_ERROR_CODES as BUNDLER_RPC_ERROR_CODES,
+  PAYMASTER_ERROR_CODES,
+  // Error utilities
+  RpcError,
+  isRpcError,
+  getErrorDescription,
+  isJsonRpcError,
+  isStandardRpcError,
+  isBundlerError as isBundlerRpcError,
+  isPaymasterError as isPaymasterRpcError,
+} from './rpc'
+
+// Providers Module (DIP: Abstraction layer for blockchain RPC)
+export {
+  createViemProvider,
+  type ViemProvider,
+  type RpcProvider,
+  type RpcProviderConfig,
+  type BlockData,
+  type GasPrices,
+  type EstimateGasParams,
+  type ReadContractParams,
+  type WaitForReceiptOptions,
+} from './providers'
+
 // Errors
 export {
   // Types
@@ -119,6 +187,18 @@ export {
   type TransactionRouterConfig,
   type PreparedTransaction,
   type ExecuteOptions,
+  // Strategies (for advanced usage)
+  type TransactionStrategy,
+  type CombinedSigner,
+  type StrategyPreparedTransaction,
+  type StrategyExecuteOptions,
+  type BaseStrategyConfig,
+  type SmartAccountStrategyConfig,
+  type StrategyRegistry,
+  createStrategyRegistry,
+  createEOAStrategy,
+  createEIP7702Strategy,
+  createSmartAccountStrategy,
 } from './transaction'
 
 // Gas Module
@@ -128,6 +208,15 @@ export {
   type GasEstimatorConfig,
   type GasPriceInfo,
   type ERC20GasEstimate,
+  // Gas Estimation Strategies (OCP: extensible pattern)
+  type GasEstimationStrategy,
+  type GasStrategyConfig,
+  type GasPrices as GasStrategyPrices,
+  type GasStrategyRegistry,
+  createGasStrategyRegistry,
+  createEOAGasStrategy,
+  createEIP7702GasStrategy,
+  createSmartAccountGasStrategy,
 } from './gas'
 
 // Paymaster Client
@@ -161,6 +250,15 @@ export {
   type ModuleClientConfig,
   type ModuleInstallResult,
   type ModuleCalldata,
+  type ValidationResult,
+  type ConflictCheckResult,
+  // Sub-clients (SRP: separated concerns)
+  createModuleQueryClient,
+  type ModuleQueryClient,
+  type ModuleQueryClientConfig,
+  createModuleOperationClient,
+  type ModuleOperationClient,
+  type ModuleOperationClientConfig,
   // Validator Utilities
   encodeECDSAValidatorInit,
   decodeECDSAValidatorInit,

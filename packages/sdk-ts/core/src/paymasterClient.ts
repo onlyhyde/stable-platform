@@ -1,3 +1,11 @@
+/**
+ * Paymaster Client
+ *
+ * Client for gas sponsorship and ERC20 payment via paymaster service.
+ * Follows SRP: handles only paymaster-specific operations.
+ * Follows DIP: uses JsonRpcClient abstraction for RPC communication.
+ */
+
 import type { Address, Hex } from 'viem'
 import type {
   SupportedToken,
@@ -6,7 +14,7 @@ import type {
   GasPaymentConfig,
 } from '@stablenet/sdk-types'
 import { GAS_PAYMENT_TYPE } from '@stablenet/sdk-types'
-import { createPaymasterError } from './errors'
+import { createPaymasterRpcClient, type JsonRpcClient, RpcError } from './rpc'
 
 // ============================================================================
 // Types
@@ -68,17 +76,40 @@ export interface ERC20PaymentEstimate {
 }
 
 // ============================================================================
-// Constants
+// Raw Response Types
 // ============================================================================
 
-/** Default request timeout */
-const DEFAULT_TIMEOUT = 10_000
+interface RawPaymasterResponse {
+  paymaster: Address
+  paymasterData: Hex
+  paymasterVerificationGasLimit: string
+  paymasterPostOpGasLimit: string
+}
 
-/** Maximum retry attempts */
-const MAX_RETRIES = 3
+interface RawPaymasterWithTokenResponse extends RawPaymasterResponse {
+  tokenAmount: string
+}
 
-/** Retry delay in milliseconds */
-const RETRY_DELAY = 1_000
+interface RawSupportedToken {
+  address: Address
+  symbol: string
+  decimals: number
+  exchangeRate: string
+  logoUrl?: string
+}
+
+interface RawERC20Estimate {
+  tokenAddress: Address
+  symbol: string
+  decimals: number
+  estimatedAmount: string
+  exchangeRate: string
+  maxSlippage: number
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
 
 /** Paymaster RPC method names */
 const RPC_METHODS = {
@@ -90,7 +121,7 @@ const RPC_METHODS = {
 } as const
 
 // ============================================================================
-// Paymaster Client
+// Paymaster Client Implementation
 // ============================================================================
 
 /**
@@ -112,80 +143,10 @@ const RPC_METHODS = {
  * ```
  */
 export function createPaymasterClient(config: PaymasterClientConfig) {
-  const { url, chainId, apiKey, timeout = DEFAULT_TIMEOUT } = config
+  const { url, chainId, apiKey, timeout } = config
 
-  /**
-   * Make JSON-RPC request to paymaster service
-   */
-  async function rpcRequest<T>(
-    method: string,
-    params: unknown[],
-    retries = MAX_RETRIES
-  ): Promise<T> {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), timeout)
-
-    try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      }
-
-      if (apiKey) {
-        headers['Authorization'] = `Bearer ${apiKey}`
-      }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method,
-          params,
-          id: Date.now(),
-        }),
-        signal: controller.signal,
-      })
-
-      clearTimeout(timeoutId)
-
-      if (!response.ok) {
-        throw createPaymasterError(
-          'HTTP_ERROR',
-          `Paymaster HTTP error: ${response.status} ${response.statusText}`
-        )
-      }
-
-      const result = await response.json()
-
-      if (result.error) {
-        throw createPaymasterError(
-          'RPC_ERROR',
-          `Paymaster RPC error: ${result.error.message}`,
-          { rpcCode: result.error.code }
-        )
-      }
-
-      return result.result as T
-    } catch (error) {
-      clearTimeout(timeoutId)
-
-      // Handle abort (timeout)
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw createPaymasterError(
-          'TIMEOUT',
-          `Paymaster request timeout after ${timeout}ms`
-        )
-      }
-
-      // Retry logic for transient errors
-      if (retries > 0 && isRetryableError(error)) {
-        await sleep(RETRY_DELAY)
-        return rpcRequest(method, params, retries - 1)
-      }
-
-      throw error
-    }
-  }
+  // Use shared RPC client
+  const rpcClient: JsonRpcClient = createPaymasterRpcClient(url, apiKey, { timeout })
 
   /**
    * Check if sponsor policy allows sponsorship
@@ -194,12 +155,10 @@ export function createPaymasterClient(config: PaymasterClientConfig) {
     sender: Address,
     operation: 'transfer' | 'swap' | 'contract_call'
   ): Promise<SponsorPolicy> {
-    const result = await rpcRequest<SponsorPolicy>(
+    return rpcClient.request<SponsorPolicy>(
       RPC_METHODS.GET_SPONSOR_POLICY,
       [sender, operation, chainId]
     )
-
-    return result
   }
 
   /**
@@ -212,42 +171,29 @@ export function createPaymasterClient(config: PaymasterClientConfig) {
     const policy = await getSponsorPolicy(userOp.sender, 'transfer')
 
     if (!policy.isAvailable) {
-      throw createPaymasterError(
-        'SPONSOR_NOT_AVAILABLE',
+      throw new RpcError(
+        'PAYMASTER_ERROR',
         `Sponsorship not available: ${policy.reason ?? 'Unknown reason'}`,
-        { reason: policy.reason }
+        { code: -33001, data: { reason: policy.reason } }
       )
     }
 
-    const result = await rpcRequest<{
-      paymaster: Address
-      paymasterData: Hex
-      paymasterVerificationGasLimit: string
-      paymasterPostOpGasLimit: string
-    }>(RPC_METHODS.SPONSOR_USER_OPERATION, [
-      formatUserOpForRpc(userOp),
-      chainId,
-    ])
+    const result = await rpcClient.request<RawPaymasterResponse>(
+      RPC_METHODS.SPONSOR_USER_OPERATION,
+      [formatUserOpForRpc(userOp), chainId]
+    )
 
-    return {
-      paymaster: result.paymaster,
-      paymasterData: result.paymasterData,
-      paymasterVerificationGasLimit: BigInt(result.paymasterVerificationGasLimit),
-      paymasterPostOpGasLimit: BigInt(result.paymasterPostOpGasLimit),
-    }
+    return parsePaymasterResponse(result)
   }
 
   /**
    * Get supported ERC20 tokens for gas payment
    */
   async function getSupportedTokens(): Promise<SupportedToken[]> {
-    const result = await rpcRequest<Array<{
-      address: Address
-      symbol: string
-      decimals: number
-      exchangeRate: string
-      logoUrl?: string
-    }>>(RPC_METHODS.SUPPORTED_TOKENS, [chainId])
+    const result = await rpcClient.request<RawSupportedToken[]>(
+      RPC_METHODS.SUPPORTED_TOKENS,
+      [chainId]
+    )
 
     return result.map((token) => ({
       address: token.address,
@@ -265,18 +211,10 @@ export function createPaymasterClient(config: PaymasterClientConfig) {
     userOp: PartialUserOperationForPaymaster,
     tokenAddress: Address
   ): Promise<ERC20PaymentEstimate> {
-    const result = await rpcRequest<{
-      tokenAddress: Address
-      symbol: string
-      decimals: number
-      estimatedAmount: string
-      exchangeRate: string
-      maxSlippage: number
-    }>(RPC_METHODS.ESTIMATE_ERC20_PAYMENT, [
-      formatUserOpForRpc(userOp),
-      tokenAddress,
-      chainId,
-    ])
+    const result = await rpcClient.request<RawERC20Estimate>(
+      RPC_METHODS.ESTIMATE_ERC20_PAYMENT,
+      [formatUserOpForRpc(userOp), tokenAddress, chainId]
+    )
 
     return {
       tokenAddress: result.tokenAddress,
@@ -295,29 +233,20 @@ export function createPaymasterClient(config: PaymasterClientConfig) {
     userOp: PartialUserOperationForPaymaster,
     tokenAddress: Address
   ): Promise<PaymasterResponse & { tokenAmount: bigint }> {
-    // First estimate the token amount
-    const _estimate = await estimateERC20Payment(userOp, tokenAddress)
-
-    const result = await rpcRequest<{
-      paymaster: Address
-      paymasterData: Hex
-      paymasterVerificationGasLimit: string
-      paymasterPostOpGasLimit: string
-      tokenAmount: string
-    }>(RPC_METHODS.GET_PAYMASTER_DATA, [
-      formatUserOpForRpc(userOp),
-      {
-        type: 'erc20',
-        tokenAddress,
-        chainId,
-      },
-    ])
+    const result = await rpcClient.request<RawPaymasterWithTokenResponse>(
+      RPC_METHODS.GET_PAYMASTER_DATA,
+      [
+        formatUserOpForRpc(userOp),
+        {
+          type: 'erc20',
+          tokenAddress,
+          chainId,
+        },
+      ]
+    )
 
     return {
-      paymaster: result.paymaster,
-      paymasterData: result.paymasterData,
-      paymasterVerificationGasLimit: BigInt(result.paymasterVerificationGasLimit),
-      paymasterPostOpGasLimit: BigInt(result.paymasterPostOpGasLimit),
+      ...parsePaymasterResponse(result),
       tokenAmount: BigInt(result.tokenAmount),
     }
   }
@@ -339,17 +268,19 @@ export function createPaymasterClient(config: PaymasterClientConfig) {
 
       case GAS_PAYMENT_TYPE.ERC20:
         if (!gasPayment.tokenAddress) {
-          throw createPaymasterError(
-            'INVALID_CONFIG',
-            'Token address required for ERC20 gas payment'
+          throw new RpcError(
+            'PAYMASTER_ERROR',
+            'Token address required for ERC20 gas payment',
+            { code: -33002 }
           )
         }
         return getERC20PaymasterData(userOp, gasPayment.tokenAddress)
 
       default:
-        throw createPaymasterError(
-          'INVALID_CONFIG',
-          `Unknown gas payment type: ${(gasPayment as GasPaymentConfig).type}`
+        throw new RpcError(
+          'PAYMASTER_ERROR',
+          `Unknown gas payment type: ${(gasPayment as GasPaymentConfig).type}`,
+          { code: -33000 }
         )
     }
   }
@@ -384,7 +315,9 @@ export function createPaymasterClient(config: PaymasterClientConfig) {
 /**
  * Format UserOperation for RPC (convert bigints to hex strings)
  */
-function formatUserOpForRpc(userOp: PartialUserOperationForPaymaster): Record<string, string> {
+function formatUserOpForRpc(
+  userOp: PartialUserOperationForPaymaster
+): Record<string, string> {
   return {
     sender: userOp.sender,
     nonce: toHexString(userOp.nonce),
@@ -405,25 +338,15 @@ function toHexString(value: bigint): string {
 }
 
 /**
- * Check if error is retryable
+ * Parse raw paymaster response
  */
-function isRetryableError(error: unknown): boolean {
-  if (error instanceof Error) {
-    // Network errors, timeouts, etc.
-    return (
-      error.name === 'TypeError' ||
-      error.message.includes('network') ||
-      error.message.includes('fetch')
-    )
+function parsePaymasterResponse(raw: RawPaymasterResponse): PaymasterResponse {
+  return {
+    paymaster: raw.paymaster,
+    paymasterData: raw.paymasterData,
+    paymasterVerificationGasLimit: BigInt(raw.paymasterVerificationGasLimit),
+    paymasterPostOpGasLimit: BigInt(raw.paymasterPostOpGasLimit),
   }
-  return false
-}
-
-/**
- * Sleep helper
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 // ============================================================================

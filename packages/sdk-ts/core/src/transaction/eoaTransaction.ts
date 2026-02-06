@@ -1,11 +1,19 @@
 import type { Address, Hex, Hash, TransactionSerializable } from 'viem'
-import { createPublicClient, http, parseGwei } from 'viem'
 import type {
   MultiModeTransactionRequest,
   GasEstimate,
   TransactionResult,
 } from '@stablenet/sdk-types'
 import { createTransactionError } from '../errors'
+import { createViemProvider, type RpcProvider } from '../providers'
+import {
+  GAS_BUFFER_MULTIPLIER,
+  GAS_BUFFER_DIVISOR,
+  MAX_GAS_LIMIT,
+  MIN_PRIORITY_FEE,
+  DEFAULT_CONFIRMATION_TIMEOUT,
+  DEFAULT_CONFIRMATIONS,
+} from '../config'
 
 // ============================================================================
 // Types
@@ -15,11 +23,14 @@ import { createTransactionError } from '../errors'
  * EOA Transaction configuration
  */
 export interface EOATransactionConfig {
-  /** RPC URL for the network */
-  rpcUrl: string
+  /** RPC URL for the network (used if provider not specified) */
+  rpcUrl?: string
 
   /** Chain ID */
   chainId: number
+
+  /** RPC Provider instance (DIP: allows dependency injection) */
+  provider?: RpcProvider
 }
 
 /**
@@ -55,20 +66,6 @@ export interface BuiltEOATransaction {
 }
 
 // ============================================================================
-// Constants
-// ============================================================================
-
-/** Default gas buffer multiplier (10% extra) */
-const GAS_BUFFER_MULTIPLIER = 110n
-const GAS_BUFFER_DIVISOR = 100n
-
-/** Maximum gas limit to prevent excessive fees */
-const MAX_GAS_LIMIT = 30_000_000n
-
-/** Minimum priority fee (1 gwei) */
-const MIN_PRIORITY_FEE = parseGwei('1')
-
-// ============================================================================
 // EOA Transaction Builder
 // ============================================================================
 
@@ -97,21 +94,25 @@ const MIN_PRIORITY_FEE = parseGwei('1')
  * ```
  */
 export function createEOATransactionBuilder(config: EOATransactionConfig) {
-  const { rpcUrl, chainId } = config
+  const { rpcUrl, chainId, provider: injectedProvider } = config
 
-  const publicClient = createPublicClient({
-    transport: http(rpcUrl),
+  // DIP: Use injected provider or create one from rpcUrl
+  if (!injectedProvider && !rpcUrl) {
+    throw createTransactionError('Either provider or rpcUrl must be provided', {
+      reason: 'MISSING_PROVIDER',
+    })
+  }
+
+  const provider: RpcProvider = injectedProvider ?? createViemProvider({
+    rpcUrl: rpcUrl!,
+    chainId,
   })
 
   /**
    * Get current nonce for address
    */
   async function getNonce(address: Address): Promise<number> {
-    const nonce = await publicClient.getTransactionCount({
-      address,
-      blockTag: 'pending',
-    })
-    return nonce
+    return provider.getTransactionCount(address, 'pending')
   }
 
   /**
@@ -121,13 +122,13 @@ export function createEOATransactionBuilder(config: EOATransactionConfig) {
     maxFeePerGas: bigint
     maxPriorityFeePerGas: bigint
   }> {
-    const block = await publicClient.getBlock({ blockTag: 'latest' })
+    const block = await provider.getBlock('latest')
     const baseFee = block.baseFeePerGas ?? 0n
 
     // Priority fee from network or minimum
     let maxPriorityFeePerGas: bigint
     try {
-      maxPriorityFeePerGas = await publicClient.estimateMaxPriorityFeePerGas()
+      maxPriorityFeePerGas = await provider.estimateMaxPriorityFeePerGas()
     } catch {
       maxPriorityFeePerGas = MIN_PRIORITY_FEE
     }
@@ -154,8 +155,8 @@ export function createEOATransactionBuilder(config: EOATransactionConfig) {
     // Estimate gas limit
     let gasLimit: bigint
     try {
-      gasLimit = await publicClient.estimateGas({
-        account: request.from,
+      gasLimit = await provider.estimateGas({
+        from: request.from,
         to: request.to,
         value: request.value,
         data: request.data,
@@ -282,9 +283,7 @@ export function createEOATransactionBuilder(config: EOATransactionConfig) {
     // Send raw transaction
     let hash: Hash
     try {
-      hash = await publicClient.sendRawTransaction({
-        serializedTransaction: signedTx,
-      })
+      hash = await provider.sendRawTransaction(signedTx)
     } catch (error) {
       throw createTransactionError(
         `Failed to send transaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -311,10 +310,9 @@ export function createEOATransactionBuilder(config: EOATransactionConfig) {
     hash: Hash,
     options: { confirmations?: number; timeout?: number } = {}
   ) {
-    const { confirmations = 1, timeout = 60_000 } = options
+    const { confirmations = DEFAULT_CONFIRMATIONS, timeout = DEFAULT_CONFIRMATION_TIMEOUT } = options
 
-    return publicClient.waitForTransactionReceipt({
-      hash,
+    return provider.waitForTransactionReceipt(hash, {
       confirmations,
       timeout,
     })

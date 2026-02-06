@@ -1,5 +1,5 @@
 import type { Address, Chain, Hex, Transport } from 'viem'
-import { createPublicClient } from 'viem'
+import { createPublicClient, http } from 'viem'
 import type {
   Call,
   PaymasterClient,
@@ -10,6 +10,8 @@ import type {
 } from '@stablenet/sdk-types'
 import { createBundlerClient } from './bundlerClient'
 import { getUserOperationHash } from '../utils/userOperation'
+import { createViemProvider, type RpcProvider } from '../providers'
+import { ConfigurationError } from '../errors'
 
 /**
  * Smart Account Client for sending UserOperations
@@ -51,14 +53,18 @@ export function createSmartAccountClient<
   TChain extends Chain = Chain,
   TAccount extends SmartAccount = SmartAccount,
 >(
-  config: SmartAccountClientConfig<TTransport, TChain, TAccount>
+  config: SmartAccountClientConfig<TTransport, TChain, TAccount> & {
+    /** Optional RPC Provider (DIP: allows dependency injection) */
+    provider?: RpcProvider
+  }
 ): SmartAccountClientActions & { account: TAccount; chain: TChain } {
-  const { account, chain, transport, bundlerTransport, paymaster: defaultPaymaster } = config
+  const { account, chain, transport, bundlerTransport, paymaster: defaultPaymaster, provider: injectedProvider } = config
 
-  // Create public client for reading chain data
-  const publicClient = createPublicClient({
-    chain,
-    transport,
+  // DIP: Use injected provider or create one from transport URL
+  const rpcUrl = getRpcUrl(transport)
+  const provider: RpcProvider = injectedProvider ?? createViemProvider({
+    rpcUrl,
+    chainId: chain.id,
   })
 
   // Create bundler client
@@ -100,10 +106,10 @@ export function createSmartAccountClient<
     if (maxFeePerGas && maxPriorityFeePerGas) {
       gasPrices = { maxFeePerGas, maxPriorityFeePerGas }
     } else {
-      const feeData = await publicClient.estimateFeesPerGas()
+      const feeData = await provider.getGasPrices()
       gasPrices = {
-        maxFeePerGas: maxFeePerGas ?? feeData.maxFeePerGas ?? 0n,
-        maxPriorityFeePerGas: maxPriorityFeePerGas ?? feeData.maxPriorityFeePerGas ?? 0n,
+        maxFeePerGas: maxFeePerGas ?? feeData.maxFeePerGas,
+        maxPriorityFeePerGas: maxPriorityFeePerGas ?? feeData.maxPriorityFeePerGas,
       }
     }
 
@@ -202,14 +208,32 @@ export function createSmartAccountClient<
 }
 
 /**
- * Extract bundler URL from transport
+ * Extract URL from transport
  */
-function getBundlerUrl(transport: Transport): string {
+function getUrlFromTransport(transport: Transport): string {
   // For http transport, extract the URL
   // This is a simplified implementation
   const transportConfig = transport({ chain: undefined, retryCount: 0 } as Parameters<Transport>[0])
   if ('url' in transportConfig && typeof transportConfig.url === 'string') {
     return transportConfig.url
   }
-  throw new Error('Could not extract bundler URL from transport')
+  throw new ConfigurationError(
+    'Could not extract URL from transport',
+    'transport',
+    { operation: 'getUrlFromTransport' }
+  )
+}
+
+/**
+ * Extract bundler URL from transport
+ */
+function getBundlerUrl(transport: Transport): string {
+  return getUrlFromTransport(transport)
+}
+
+/**
+ * Extract RPC URL from transport
+ */
+function getRpcUrl(transport: Transport): string {
+  return getUrlFromTransport(transport)
 }

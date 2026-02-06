@@ -30,3 +30,21 @@ export {
   type PreparedTransaction,
   type ExecuteOptions,
 } from './transactionRouter'
+
+// Transaction Strategies (for advanced usage)
+export {
+  // Types
+  type TransactionStrategy,
+  type CombinedSigner,
+  type StrategyPreparedTransaction,
+  type StrategyExecuteOptions,
+  type BaseStrategyConfig,
+  type SmartAccountStrategyConfig,
+  type StrategyFactory,
+  type StrategyRegistry,
+  createStrategyRegistry,
+  // Strategies
+  createEOAStrategy,
+  createEIP7702Strategy,
+  createSmartAccountStrategy,
+} from './strategies'
