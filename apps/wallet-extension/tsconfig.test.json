@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["chrome", "node", "jest"],
+    "verbatimModuleSyntax": false
+  },
+  "include": ["src/**/*", "tests/**/*"]
+}

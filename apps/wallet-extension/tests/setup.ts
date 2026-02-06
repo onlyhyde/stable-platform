@@ -3,65 +3,67 @@ import { TextEncoder, TextDecoder } from 'util'
 import * as crypto from 'crypto'
 import { mockChrome } from './utils/mockChrome'
 
-// Mock rate limiter instance
-const mockRateLimiter = {
-  checkLimit: jest.fn().mockReturnValue({
-    allowed: true,
-    remaining: 100,
-    resetAt: Date.now() + 60000,
-  }),
-  getStatus: jest.fn().mockReturnValue({
-    allowed: true,
-    remaining: 100,
-    resetAt: Date.now() + 60000,
-  }),
-  reset: jest.fn(),
-  resetAll: jest.fn(),
-  destroy: jest.fn(),
-  getLimitConfig: jest.fn().mockReturnValue({ maxRequests: 100, windowMs: 60000 }),
-  setLimits: jest.fn(),
-  getStats: jest.fn().mockReturnValue({ totalOrigins: 0, blockedOrigins: 0, requestsByCategory: {} }),
-}
-
-// Mock typed data validator instance
-const mockTypedDataValidator = {
-  validateTypedData: jest.fn().mockReturnValue({
-    isValid: true,
-    warnings: [],
-    errors: [],
-  }),
-  getRiskLevel: jest.fn().mockReturnValue('low'),
-  formatWarningsForDisplay: jest.fn().mockReturnValue([]),
-}
-
 // Mock @stablenet/core module - use real exports with specific mocks
+// Note: jest.mock is hoisted, so mock objects must be defined inside the factory function
 jest.mock('@stablenet/core', () => {
   const actual = jest.requireActual('@stablenet/core')
+
+  // Mock rate limiter instance (defined inside factory to avoid hoisting issues)
+  const mockRateLimiter = {
+    checkLimit: jest.fn().mockReturnValue({
+      allowed: true,
+      remaining: 100,
+      resetAt: Date.now() + 60000,
+    }),
+    getStatus: jest.fn().mockReturnValue({
+      allowed: true,
+      remaining: 100,
+      resetAt: Date.now() + 60000,
+    }),
+    reset: jest.fn(),
+    resetAll: jest.fn(),
+    destroy: jest.fn(),
+    getLimitConfig: jest.fn().mockReturnValue({ maxRequests: 100, windowMs: 60000 }),
+    setLimits: jest.fn(),
+    getStats: jest.fn().mockReturnValue({ totalOrigins: 0, blockedOrigins: 0, requestsByCategory: {} }),
+  }
+
+  // Mock typed data validator instance (defined inside factory to avoid hoisting issues)
+  const mockTypedDataValidator = {
+    validateTypedData: jest.fn().mockReturnValue({
+      isValid: true,
+      warnings: [],
+      errors: [],
+    }),
+    getRiskLevel: jest.fn().mockReturnValue('low'),
+    formatWarningsForDisplay: jest.fn().mockReturnValue([]),
+  }
+
   return {
     ...actual,
     // Override specific EIP-7702 functions with mocks for handler tests
-    createAuthorizationHash: jest.fn().mockReturnValue('0x' + '00'.repeat(32)),
+    createAuthorizationHash: jest.fn().mockReturnValue(`0x${'00'.repeat(32)}`),
     createAuthorization: jest.fn().mockReturnValue({
       chainId: 1n,
-      address: '0x' + '00'.repeat(20),
+      address: `0x${'00'.repeat(20)}`,
       nonce: 0n,
     }),
     createRevocationAuthorization: jest.fn().mockReturnValue({
       chainId: 1n,
-      address: '0x' + '00'.repeat(20),
+      address: `0x${'00'.repeat(20)}`,
       nonce: 0n,
     }),
     parseSignature: jest.fn().mockReturnValue({
-      r: '0x' + '00'.repeat(32),
-      s: '0x' + '00'.repeat(32),
+      r: `0x${'00'.repeat(32)}`,
+      s: `0x${'00'.repeat(32)}`,
       v: 27n,
     }),
     createSignedAuthorization: jest.fn().mockReturnValue({
       chainId: 1n,
-      address: '0x' + '00'.repeat(20),
+      address: `0x${'00'.repeat(20)}`,
       nonce: 0n,
-      r: '0x' + '00'.repeat(32),
-      s: '0x' + '00'.repeat(32),
+      r: `0x${'00'.repeat(32)}`,
+      s: `0x${'00'.repeat(32)}`,
       v: 27n,
     }),
     isDelegatedAccount: jest.fn().mockReturnValue(false),
