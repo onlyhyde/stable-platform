@@ -48,3 +48,35 @@ export {
   createEIP7702Strategy,
   createSmartAccountStrategy,
 } from './strategies'
+
+// Batch Transactions
+export {
+  // Constants
+  MULTICALL3_ADDRESSES,
+  MULTICALL3_ABI,
+  EXEC_MODE,
+  // Builder
+  BatchBuilder,
+  createBatchBuilder,
+  // Encoding
+  encodeAggregate,
+  encodeTryAggregate,
+  encodeAggregate3,
+  encodeAggregate3Value,
+  encodeExecution,
+  encodeBatchExecution,
+  encodeExecuteCall,
+  createBatchExecutionCalldata,
+  // Utilities
+  decodeMulticallResults,
+  calculateBatchValue,
+  mergeBatches,
+  chunkBatch,
+  // Types
+  type Call,
+  type CallWithAllowFailure,
+  type CallResult,
+  type BatchMode,
+  type BatchExecutionOptions,
+  type Execution,
+} from './batch'

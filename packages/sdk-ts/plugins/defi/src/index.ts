@@ -15,6 +15,46 @@ export {
 } from './abis'
 
 // ============================================================================
+// Permit2 (Token Approvals)
+// ============================================================================
+export {
+  // Constants
+  PERMIT2_ADDRESSES,
+  PERMIT2_TYPE_HASHES,
+  MAX_UINT160,
+  MAX_UINT48,
+  DEFAULT_PERMIT_EXPIRATION,
+  PERMIT2_ABI,
+  // Types
+  PERMIT_SINGLE_TYPES,
+  PERMIT_BATCH_TYPES,
+  PERMIT_TRANSFER_FROM_TYPES,
+  PERMIT_BATCH_TRANSFER_FROM_TYPES,
+  // Functions
+  getPermit2Domain,
+  createPermitDetails,
+  createPermitSingle,
+  createPermitBatch,
+  createPermitTransferFrom,
+  getPermitSingleTypedData,
+  getPermitBatchTypedData,
+  getPermitTransferFromTypedData,
+  encodePermitSingle,
+  encodePermitBatch,
+  encodeTransferFrom,
+  encodeSignatureTransferFrom,
+  // Type exports
+  type PermitDetails,
+  type PermitSingle,
+  type PermitBatch,
+  type TokenPermissions,
+  type PermitTransferFrom,
+  type PermitBatchTransferFrom,
+  type SignatureTransferDetails,
+  type Allowance,
+} from './permit2'
+
+// ============================================================================
 // Types
 // ============================================================================
 export type {

@@ -120,3 +120,22 @@ export {
   type ApiWarning,
   type EthSignSettings,
 } from './legacyApiWarning'
+
+// Signature Verifier (EIP-1271)
+export {
+  SignatureVerifier,
+  createSignatureVerifier,
+  EIP1271_MAGIC_VALUE,
+  EIP1271_INVALID_VALUE,
+  IS_VALID_SIGNATURE_SELECTOR,
+  EIP1271_ABI,
+  isEIP1271MagicValue,
+  encodeIsValidSignatureCall,
+  decodeIsValidSignatureResult,
+  type SignatureType,
+  type SignatureVerificationResult,
+  type VerifySignatureOptions,
+  type VerifyPersonalMessageParams,
+  type VerifyTypedDataParams,
+  type VerifyHashParams,
+} from './signatureVerifier'

@@ -1,7 +1,8 @@
 'use client'
 
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useRef } from 'react'
+import { detectProvider, type StableNetProvider } from '@stablenet/wallet-sdk'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi'
 
 export function useWallet() {
@@ -12,6 +13,9 @@ export function useWallet() {
   const { switchChain, isPending: isSwitchPending } = useSwitchChain()
   const queryClient = useQueryClient()
 
+  // StableNet provider for event listening
+  const [stableNetProvider, setStableNetProvider] = useState<StableNetProvider | null>(null)
+
   // Track previous values for change detection
   const prevChainId = useRef(chainId)
   const prevAddress = useRef(address)
@@ -19,33 +23,41 @@ export function useWallet() {
   // Debug: Log available connectors
   useEffect(() => {}, [connectors])
 
-  // Listen for chain and account changes
+  // Detect StableNet provider on mount
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const provider = (
-      window as unknown as { ethereum?: { on?: Function; removeListener?: Function } }
-    ).ethereum
-    if (!provider?.on || !provider?.removeListener) return
+    detectProvider({ timeout: 2000 })
+      .then((provider) => {
+        if (provider) {
+          setStableNetProvider(provider)
+        }
+      })
+      .catch(() => {
+        // Provider not available, that's okay
+      })
+  }, [])
 
-    const handleChainChanged = (_newChainId: string) => {
+  // Listen for chain and account changes via wallet-sdk
+  useEffect(() => {
+    if (!stableNetProvider) return
+
+    // Use wallet-sdk's 'on' prefix methods for event subscription
+    const unsubNetworkChange = stableNetProvider.onNetworkChange(() => {
       // Invalidate all queries when chain changes
       queryClient.invalidateQueries()
-    }
+    })
 
-    const handleAccountsChanged = (_accounts: string[]) => {
+    const unsubAccountChange = stableNetProvider.onAccountChange(() => {
       // Invalidate all queries when account changes
       queryClient.invalidateQueries()
-    }
-
-    provider.on('chainChanged', handleChainChanged)
-    provider.on('accountsChanged', handleAccountsChanged)
+    })
 
     return () => {
-      provider.removeListener?.('chainChanged', handleChainChanged)
-      provider.removeListener?.('accountsChanged', handleAccountsChanged)
+      unsubNetworkChange()
+      unsubAccountChange()
     }
-  }, [queryClient])
+  }, [stableNetProvider, queryClient])
 
   // Invalidate queries when chainId or address changes via wagmi state
   useEffect(() => {

@@ -1,5 +1,6 @@
 import type { EIP1193Provider, WalletSDKConfig } from '../types'
 import { StableNetProvider } from './StableNetProvider'
+import { getProviderRegistry } from './eip6963'
 
 // Extend window type for provider
 declare global {
@@ -12,6 +13,9 @@ declare global {
 /**
  * Detect StableNet wallet provider
  *
+ * Uses EIP-6963 provider discovery to find the StableNet wallet.
+ * Falls back to checking window.stablenet and window.ethereum.
+ *
  * @param config - Detection configuration
  * @returns StableNetProvider instance or null if not found
  */
@@ -20,40 +24,42 @@ export async function detectProvider(
 ): Promise<StableNetProvider | null> {
   const { timeout = 3000 } = config
 
-  // Check if provider is already available
+  // Check if provider is already available synchronously
   const existingProvider = getExistingProvider()
   if (existingProvider) {
     return new StableNetProvider(existingProvider)
   }
 
-  // Wait for provider to be injected
-  return new Promise((resolve) => {
-    const timeoutId = setTimeout(() => {
-      resolve(null)
-    }, timeout)
+  // Use EIP-6963 registry for discovery
+  const registry = getProviderRegistry()
+  await registry.discover(Math.min(timeout, 500))
 
-    // Listen for EIP-6963 provider announcement
-    const handleAnnouncement = (event: Event) => {
-      const customEvent = event as CustomEvent<{
-        info: { uuid: string; name: string; rdns: string }
-        provider: EIP1193Provider
-      }>
+  // Check if StableNet was discovered
+  const stableNetProvider = registry.getStableNetProvider()
+  if (stableNetProvider) {
+    return new StableNetProvider(stableNetProvider.provider)
+  }
 
-      if (
-        customEvent.detail?.info?.rdns === 'dev.stablenet.wallet' ||
-        (customEvent.detail?.provider as { isStableNet?: boolean })?.isStableNet
-      ) {
-        clearTimeout(timeoutId)
-        window.removeEventListener('eip6963:announceProvider', handleAnnouncement)
-        resolve(new StableNetProvider(customEvent.detail.provider))
-      }
-    }
+  // If not found yet, wait a bit longer for late announcements
+  if (timeout > 500) {
+    return new Promise((resolve) => {
+      const remainingTimeout = timeout - 500
+      const timeoutId = setTimeout(() => {
+        unsubscribe()
+        resolve(null)
+      }, remainingTimeout)
 
-    window.addEventListener('eip6963:announceProvider', handleAnnouncement)
+      const unsubscribe = registry.subscribe((event) => {
+        if (event.type === 'providerAdded' && event.provider.isStableNet) {
+          clearTimeout(timeoutId)
+          unsubscribe()
+          resolve(new StableNetProvider(event.provider.provider))
+        }
+      })
+    })
+  }
 
-    // Request provider announcements
-    window.dispatchEvent(new Event('eip6963:requestProvider'))
-  })
+  return null
 }
 
 /**

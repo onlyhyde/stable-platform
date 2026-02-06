@@ -1,13 +1,56 @@
-import type { Address } from 'viem'
+import type { Address, Hash } from 'viem'
 import type {
   EIP1193Provider,
   ConnectInfo,
   ProviderRpcError,
   TransactionRequest,
+  BalanceInfo,
 } from '../types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EventListener = (...args: any[]) => void
+
+/**
+ * Transaction event data emitted when a transaction is sent
+ */
+export interface TransactionSentEvent {
+  hash: Hash
+  from: Address
+  to?: Address
+  value?: bigint
+  chainId: number
+}
+
+/**
+ * Transaction confirmation event data
+ */
+export interface TransactionConfirmedEvent {
+  hash: Hash
+  blockNumber: number
+  status: 'success' | 'reverted'
+  gasUsed: bigint
+}
+
+/**
+ * Balance change event data
+ */
+export interface BalanceChangeEvent {
+  address: Address
+  balance: BalanceInfo
+  previousBalance?: BalanceInfo
+}
+
+/**
+ * Extended provider events including transaction lifecycle
+ */
+export type StableNetProviderEvent =
+  | 'connect'
+  | 'disconnect'
+  | 'accountsChanged'
+  | 'chainChanged'
+  | 'transactionSent'
+  | 'transactionConfirmed'
+  | 'balanceChange'
 
 /**
  * StableNet Provider wrapper
@@ -172,8 +215,9 @@ export class StableNetProvider {
 
   /**
    * Send a transaction
+   * Emits 'transactionSent' event immediately and optionally waits for confirmation
    */
-  async sendTransaction(tx: TransactionRequest): Promise<string> {
+  async sendTransaction(tx: TransactionRequest, options?: { waitForConfirmation?: boolean }): Promise<Hash> {
     if (!this._account) {
       throw new Error('No account connected')
     }
@@ -189,9 +233,74 @@ export class StableNetProvider {
         maxFeePerGas: tx.maxFeePerGas ? `0x${BigInt(tx.maxFeePerGas).toString(16)}` : undefined,
         maxPriorityFeePerGas: tx.maxPriorityFeePerGas ? `0x${BigInt(tx.maxPriorityFeePerGas).toString(16)}` : undefined,
       }],
-    }) as string
+    }) as Hash
+
+    // Emit transaction sent event
+    const sentEvent: TransactionSentEvent = {
+      hash: txHash,
+      from: tx.from ?? this._account,
+      to: tx.to,
+      value: tx.value ? BigInt(tx.value) : undefined,
+      chainId: this.chainIdNumber ?? 1,
+    }
+    this.emit('transactionSent', sentEvent)
+
+    // Optionally wait for confirmation
+    if (options?.waitForConfirmation) {
+      this.waitForTransaction(txHash).catch((error) => {
+        console.error('Transaction confirmation error:', error)
+      })
+    }
 
     return txHash
+  }
+
+  /**
+   * Wait for a transaction to be confirmed
+   * Emits 'transactionConfirmed' event when the transaction is mined
+   */
+  async waitForTransaction(hash: Hash, confirmations = 1): Promise<TransactionConfirmedEvent> {
+    const maxAttempts = 60 // 5 minutes with 5s interval
+    const pollInterval = 5000
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const receipt = await this.provider.request({
+          method: 'eth_getTransactionReceipt',
+          params: [hash],
+        }) as {
+          blockNumber: string
+          status: string
+          gasUsed: string
+        } | null
+
+        if (receipt?.blockNumber) {
+          const currentBlock = await this.provider.request({
+            method: 'eth_blockNumber',
+          }) as string
+
+          const receiptBlock = Number.parseInt(receipt.blockNumber, 16)
+          const currentBlockNum = Number.parseInt(currentBlock, 16)
+
+          if (currentBlockNum - receiptBlock >= confirmations - 1) {
+            const confirmedEvent: TransactionConfirmedEvent = {
+              hash,
+              blockNumber: receiptBlock,
+              status: receipt.status === '0x1' ? 'success' : 'reverted',
+              gasUsed: BigInt(receipt.gasUsed),
+            }
+            this.emit('transactionConfirmed', confirmedEvent)
+            return confirmedEvent
+          }
+        }
+      } catch {
+        // Transaction not yet mined, continue polling
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, pollInterval))
+    }
+
+    throw new Error(`Transaction ${hash} was not confirmed within timeout`)
   }
 
   /**
@@ -218,6 +327,9 @@ export class StableNetProvider {
   on(event: 'disconnect', listener: (error: ProviderRpcError) => void): () => void
   on(event: 'accountsChanged', listener: (accounts: Address[]) => void): () => void
   on(event: 'chainChanged', listener: (chainId: string) => void): () => void
+  on(event: 'transactionSent', listener: (event: TransactionSentEvent) => void): () => void
+  on(event: 'transactionConfirmed', listener: (event: TransactionConfirmedEvent) => void): () => void
+  on(event: 'balanceChange', listener: (event: BalanceChangeEvent) => void): () => void
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   on(event: string, listener: (...args: any[]) => void): () => void {
     if (!this.eventListeners.has(event)) {
@@ -267,5 +379,248 @@ export class StableNetProvider {
   removeListener(event: string, listener: (...args: unknown[]) => void): void {
     this.eventListeners.get(event)?.delete(listener as EventListener)
     this.provider.removeListener(event, listener)
+  }
+
+  // ============================================================================
+  // Convenience Event Methods (on-prefix)
+  // ============================================================================
+
+  /**
+   * Subscribe to connect events
+   * @returns Unsubscribe function
+   */
+  onConnect(handler: (info: ConnectInfo) => void): () => void {
+    return this.on('connect', handler)
+  }
+
+  /**
+   * Subscribe to disconnect events
+   * @returns Unsubscribe function
+   */
+  onDisconnect(handler: (error: ProviderRpcError) => void): () => void {
+    return this.on('disconnect', handler)
+  }
+
+  /**
+   * Subscribe to account change events
+   * @returns Unsubscribe function
+   */
+  onAccountChange(handler: (accounts: Address[]) => void): () => void {
+    return this.on('accountsChanged', handler)
+  }
+
+  /**
+   * Subscribe to network/chain change events
+   * @returns Unsubscribe function
+   */
+  onNetworkChange(handler: (chainId: string) => void): () => void {
+    return this.on('chainChanged', handler)
+  }
+
+  /**
+   * Subscribe to transaction sent events
+   * Emitted immediately when a transaction is submitted to the network
+   * @returns Unsubscribe function
+   */
+  onTransactionSent(handler: (event: TransactionSentEvent) => void): () => void {
+    return this.on('transactionSent', handler as EventListener)
+  }
+
+  /**
+   * Subscribe to transaction confirmation events
+   * Emitted when a transaction is confirmed on-chain
+   * @returns Unsubscribe function
+   */
+  onTransactionConfirmed(handler: (event: TransactionConfirmedEvent) => void): () => void {
+    return this.on('transactionConfirmed', handler as EventListener)
+  }
+
+  /**
+   * Subscribe to balance change events
+   * @returns Unsubscribe function
+   */
+  onBalanceChange(handler: (event: BalanceChangeEvent) => void): () => void {
+    return this.on('balanceChange', handler as EventListener)
+  }
+
+  // ============================================================================
+  // StableNet Custom RPC Methods
+  // ============================================================================
+
+  /**
+   * Sign an EIP-7702 authorization
+   * Allows the user to delegate their EOA to a smart contract
+   */
+  async signAuthorization(authorization: {
+    chainId: bigint | number
+    address: Address
+    nonce: bigint | number
+  }): Promise<{
+    chainId: bigint
+    address: Address
+    nonce: bigint
+    r: Hash
+    s: Hash
+    v: number
+  }> {
+    const result = await this.provider.request({
+      method: 'wallet_signAuthorization',
+      params: [authorization],
+    })
+    return result as {
+      chainId: bigint
+      address: Address
+      nonce: bigint
+      r: Hash
+      s: Hash
+      v: number
+    }
+  }
+
+  /**
+   * Get the delegation status of an account
+   */
+  async getDelegationStatus(address?: Address): Promise<{
+    isDelegated: boolean
+    delegate: Address | null
+    chainId: number
+    nonce: bigint
+  }> {
+    const targetAddress = address ?? this._account
+    if (!targetAddress) {
+      throw new Error('No account specified')
+    }
+
+    const result = await this.provider.request({
+      method: 'wallet_getDelegationStatus',
+      params: [{ address: targetAddress }],
+    })
+    return result as {
+      isDelegated: boolean
+      delegate: Address | null
+      chainId: number
+      nonce: bigint
+    }
+  }
+
+  /**
+   * Get installed ERC-7579 modules for the account
+   */
+  async getInstalledModules(account?: Address): Promise<{
+    address: Address
+    type: number
+    initData: Hash
+    installedAt: number
+    isActive: boolean
+  }[]> {
+    const result = await this.provider.request({
+      method: 'wallet_getInstalledModules',
+      params: [{ account: account ?? this._account }],
+    })
+    return result as {
+      address: Address
+      type: number
+      initData: Hash
+      installedAt: number
+      isActive: boolean
+    }[]
+  }
+
+  /**
+   * Create a session key for delegated signing
+   */
+  async createSessionKey(config: {
+    sessionKey: Address
+    validFrom: number
+    validUntil: number
+    permissions: {
+      target: Address
+      selectors?: Hash[]
+      maxValue?: bigint
+    }[]
+  }): Promise<{
+    sessionKey: Address
+    signature: Hash
+    validUntil: number
+    installTxHash?: Hash
+  }> {
+    const result = await this.provider.request({
+      method: 'wallet_createSessionKey',
+      params: [config],
+    })
+    return result as {
+      sessionKey: Address
+      signature: Hash
+      validUntil: number
+      installTxHash?: Hash
+    }
+  }
+
+  /**
+   * Generate a stealth address for private payments (EIP-5564)
+   */
+  async generateStealthAddress(recipientMeta: Address): Promise<{
+    stealthAddress: Address
+    ephemeralPubKey: Hash
+    viewTag: Hash
+  }> {
+    const result = await this.provider.request({
+      method: 'wallet_generateStealthAddress',
+      params: [{ recipientMeta }],
+    })
+    return result as {
+      stealthAddress: Address
+      ephemeralPubKey: Hash
+      viewTag: Hash
+    }
+  }
+
+  /**
+   * Scan for stealth payments received
+   */
+  async scanStealthPayments(options?: {
+    fromBlock?: number
+    toBlock?: number
+  }): Promise<{
+    stealthAddress: Address
+    ephemeralPubKey: Hash
+    txHash: Hash
+    blockNumber: number
+    amount: bigint
+    token: Address
+    timestamp: number
+  }[]> {
+    const result = await this.provider.request({
+      method: 'wallet_scanStealthPayments',
+      params: [options ?? {}],
+    })
+    return result as {
+      stealthAddress: Address
+      ephemeralPubKey: Hash
+      txHash: Hash
+      blockNumber: number
+      amount: bigint
+      token: Address
+      timestamp: number
+    }[]
+  }
+
+  /**
+   * Get the stealth meta-address for this account
+   */
+  async getStealthMetaAddress(): Promise<{
+    spendingPubKey: Hash
+    viewingPubKey: Hash
+    metaAddress: Address
+  }> {
+    const result = await this.provider.request({
+      method: 'wallet_getStealthMetaAddress',
+      params: [{ account: this._account }],
+    })
+    return result as {
+      spendingPubKey: Hash
+      viewingPubKey: Hash
+      metaAddress: Address
+    }
   }
 }

@@ -1,8 +1,14 @@
 'use client'
 
-import { type StableNetProvider, detectProvider, isWalletInstalled } from '@stablenet/wallet-sdk'
-import { useCallback, useEffect, useState } from 'react'
-import type { Address } from 'viem'
+import {
+  type StableNetProvider,
+  type TransactionSentEvent,
+  type TransactionConfirmedEvent,
+  detectProvider,
+  isWalletInstalled,
+} from '@stablenet/wallet-sdk'
+import { useCallback, useEffect, useState, useRef } from 'react'
+import type { Address, Hash } from 'viem'
 
 interface UseStableNetWalletResult {
   /** Whether StableNet wallet extension is installed */
@@ -27,6 +33,19 @@ interface UseStableNetWalletResult {
   signMessage: (message: string) => Promise<string>
   /** Switch to a different chain */
   switchChain: (chainId: number) => Promise<void>
+  /** Send a transaction via wallet */
+  sendTransaction: (tx: TransactionRequest) => Promise<Hash>
+  /** Subscribe to transaction sent events */
+  onTransactionSent: (handler: (event: TransactionSentEvent) => void) => () => void
+  /** Subscribe to transaction confirmed events */
+  onTransactionConfirmed: (handler: (event: TransactionConfirmedEvent) => void) => () => void
+}
+
+interface TransactionRequest {
+  to?: Address
+  value?: bigint | string
+  data?: `0x${string}`
+  gas?: bigint | string
 }
 
 /**
@@ -84,23 +103,24 @@ export function useStableNetWallet(): UseStableNetWalletResult {
     detect()
   }, [])
 
-  // Subscribe to provider events
+  // Subscribe to provider events using 'on' prefix methods
   useEffect(() => {
     if (!provider) return
 
-    const unsubConnect = provider.on('connect', (info) => {
+    // Use the new 'on' prefix convenience methods
+    const unsubConnect = provider.onConnect((info) => {
       setChainId(info.chainId)
     })
 
-    const unsubDisconnect = provider.on('disconnect', () => {
+    const unsubDisconnect = provider.onDisconnect(() => {
       setAccount(null)
     })
 
-    const unsubAccountsChanged = provider.on('accountsChanged', (accounts) => {
+    const unsubAccountsChanged = provider.onAccountChange((accounts) => {
       setAccount(accounts[0] ?? null)
     })
 
-    const unsubChainChanged = provider.on('chainChanged', (newChainId) => {
+    const unsubChainChanged = provider.onNetworkChange((newChainId) => {
       setChainId(newChainId)
     })
 
@@ -159,6 +179,62 @@ export function useStableNetWallet(): UseStableNetWalletResult {
     [provider]
   )
 
+  const sendTransaction = useCallback(
+    async (tx: TransactionRequest): Promise<Hash> => {
+      if (!provider) {
+        throw new Error('StableNet wallet not detected')
+      }
+
+      return provider.sendTransaction(tx, { waitForConfirmation: true })
+    },
+    [provider]
+  )
+
+  // Store event handlers in refs to provide stable callbacks
+  const txSentHandlersRef = useRef<Set<(event: TransactionSentEvent) => void>>(new Set())
+  const txConfirmedHandlersRef = useRef<Set<(event: TransactionConfirmedEvent) => void>>(new Set())
+
+  // Subscribe to transaction events from provider
+  useEffect(() => {
+    if (!provider) return
+
+    const handleTxSent = (event: TransactionSentEvent) => {
+      txSentHandlersRef.current.forEach((handler) => handler(event))
+    }
+
+    const handleTxConfirmed = (event: TransactionConfirmedEvent) => {
+      txConfirmedHandlersRef.current.forEach((handler) => handler(event))
+    }
+
+    const unsubSent = provider.onTransactionSent(handleTxSent)
+    const unsubConfirmed = provider.onTransactionConfirmed(handleTxConfirmed)
+
+    return () => {
+      unsubSent()
+      unsubConfirmed()
+    }
+  }, [provider])
+
+  const onTransactionSent = useCallback(
+    (handler: (event: TransactionSentEvent) => void): (() => void) => {
+      txSentHandlersRef.current.add(handler)
+      return () => {
+        txSentHandlersRef.current.delete(handler)
+      }
+    },
+    []
+  )
+
+  const onTransactionConfirmed = useCallback(
+    (handler: (event: TransactionConfirmedEvent) => void): (() => void) => {
+      txConfirmedHandlersRef.current.add(handler)
+      return () => {
+        txConfirmedHandlersRef.current.delete(handler)
+      }
+    },
+    []
+  )
+
   const chainIdNumber = chainId ? Number.parseInt(chainId, 16) : null
 
   return {
@@ -173,5 +249,8 @@ export function useStableNetWallet(): UseStableNetWalletResult {
     disconnect,
     signMessage,
     switchChain,
+    sendTransaction,
+    onTransactionSent,
+    onTransactionConfirmed,
   }
 }
