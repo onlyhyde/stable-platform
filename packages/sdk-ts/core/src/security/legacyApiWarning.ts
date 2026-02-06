@@ -1,13 +1,9 @@
 /**
- * Legacy API Warning System (SEC-18)
+ * Legacy API Warning System
  *
  * Provides warnings for deprecated or dangerous API methods
  * and suggests safer alternatives.
  */
-
-import { createLogger } from '../utils/logger'
-
-const logger = createLogger('LegacyApiWarning')
 
 /**
  * Deprecation status
@@ -185,35 +181,6 @@ export function getWarningsByStatus(
 }
 
 /**
- * Log a warning for legacy API usage
- */
-export function logLegacyApiUsage(
-  method: string,
-  origin: string,
-  options: { silent?: boolean } = {}
-): ApiWarning | null {
-  const warning = getApiWarning(method)
-  if (!warning) return null
-
-  if (!options.silent) {
-    const logFn =
-      warning.riskLevel === 'critical'
-        ? logger.error.bind(logger)
-        : warning.riskLevel === 'high'
-          ? logger.warn.bind(logger)
-          : logger.info.bind(logger)
-
-    logFn(`Legacy API usage: ${method} from ${origin}`, {
-      status: warning.status,
-      riskLevel: warning.riskLevel,
-      message: warning.message,
-    })
-  }
-
-  return warning
-}
-
-/**
  * Format warning message for display in approval UI
  */
 export function formatWarningForUI(warning: ApiWarning): {
@@ -252,7 +219,7 @@ export function createConsoleDeprecationNotice(method: string): string {
   if (!warning) return ''
 
   const lines = [
-    `[StableNet Wallet] ${warning.status.toUpperCase()}: ${method}`,
+    `[Deprecated] ${warning.status.toUpperCase()}: ${method}`,
     warning.message,
   ]
 
@@ -268,7 +235,7 @@ export function createConsoleDeprecationNotice(method: string): string {
 }
 
 /**
- * Check if eth_sign should be allowed (based on user settings)
+ * eth_sign settings interface
  */
 export interface EthSignSettings {
   /** Allow eth_sign method (dangerous) */
@@ -312,4 +279,11 @@ export function isEthSignAllowed(): boolean {
  */
 export function shouldShowEthSignWarning(): boolean {
   return ethSignSettings.showEthSignWarning
+}
+
+/**
+ * Reset eth_sign settings to defaults
+ */
+export function resetEthSignSettings(): void {
+  ethSignSettings = { ...DEFAULT_ETH_SIGN_SETTINGS }
 }

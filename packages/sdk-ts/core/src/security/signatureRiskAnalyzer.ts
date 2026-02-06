@@ -367,3 +367,10 @@ export class SignatureRiskAnalyzer {
     }
   }
 }
+
+/**
+ * Create a new SignatureRiskAnalyzer instance
+ */
+export function createSignatureRiskAnalyzer(): SignatureRiskAnalyzer {
+  return new SignatureRiskAnalyzer()
+}

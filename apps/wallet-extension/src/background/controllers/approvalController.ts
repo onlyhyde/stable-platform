@@ -11,7 +11,7 @@ import type {
   AuthorizationApprovalRequest,
   ApprovalControllerState,
 } from '../../types'
-import { analyzeAuthorizationRisk } from '../../shared/security/authorizationRiskAnalyzer'
+import { analyzeAuthorizationRisk } from '@stablenet/core'
 import { isRevocationAddress } from '../../shared/utils/eip7702'
 import { generateRandomHex } from '../keyring/crypto'
 import { createLogger } from '../../shared/utils/logger'

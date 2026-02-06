@@ -1,5 +1,5 @@
 /**
- * Transaction Risk Analyzer (SEC-14)
+ * Transaction Risk Analyzer
  *
  * Comprehensive transaction risk assessment to detect:
  * - High-value transactions
@@ -69,6 +69,19 @@ export interface DecodedMethod {
 }
 
 /**
+ * Transaction parameters for risk analysis
+ */
+export interface TransactionRiskParams {
+  from: Address
+  to: Address | null
+  value: bigint
+  data?: string
+  gasPrice?: bigint
+  maxFeePerGas?: bigint
+  maxPriorityFeePerGas?: bigint
+}
+
+/**
  * Risk score mappings
  */
 const RISK_SCORES: Record<TransactionRiskLevelType, number> = {
@@ -130,8 +143,6 @@ const DANGEROUS_SELECTORS = {
  */
 const MAX_UINT256 =
   '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-const MAX_UINT256_DECIMAL =
-  '115792089237316195423570985008687907853269984665640564039457584007913129639935'
 
 /**
  * Zero address
@@ -167,15 +178,7 @@ export class TransactionRiskAnalyzer {
   /**
    * Analyze a transaction for risks
    */
-  analyzeTransaction(params: {
-    from: Address
-    to: Address | null
-    value: bigint
-    data?: string
-    gasPrice?: bigint
-    maxFeePerGas?: bigint
-    maxPriorityFeePerGas?: bigint
-  }): TransactionRiskResult {
+  analyzeTransaction(params: TransactionRiskParams): TransactionRiskResult {
     const warnings: string[] = []
     const riskTypes: TransactionRiskTypeValue[] = []
     let maxRiskLevel: TransactionRiskLevelType = TransactionRiskLevel.SAFE
@@ -438,5 +441,9 @@ export class TransactionRiskAnalyzer {
   }
 }
 
-// Singleton instance
-export const transactionRiskAnalyzer = new TransactionRiskAnalyzer()
+/**
+ * Create a new TransactionRiskAnalyzer instance
+ */
+export function createTransactionRiskAnalyzer(): TransactionRiskAnalyzer {
+  return new TransactionRiskAnalyzer()
+}

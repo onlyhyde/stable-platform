@@ -6,7 +6,14 @@
  */
 
 import type { Address } from 'viem'
-import { ZERO_ADDRESS, isRevocationAddress, DELEGATE_PRESETS } from '../utils/eip7702'
+import { ZERO_ADDRESS, DELEGATE_PRESETS } from '../eip7702'
+
+/**
+ * Check if an address is the zero address (revocation)
+ */
+function isRevocationAddress(address: Address): boolean {
+  return address.toLowerCase() === ZERO_ADDRESS.toLowerCase()
+}
 
 export type AuthorizationRiskLevel = 'low' | 'medium' | 'high' | 'critical'
 
@@ -21,15 +28,19 @@ export interface AuthorizationRiskResult {
   }
 }
 
-/**
- * Analyze an EIP-7702 authorization request for risks
- */
-export function analyzeAuthorizationRisk(params: {
+export interface AuthorizationRiskParams {
   account: Address
   contractAddress: Address
   chainId: number
   origin: string
-}): AuthorizationRiskResult {
+}
+
+/**
+ * Analyze an EIP-7702 authorization request for risks
+ */
+export function analyzeAuthorizationRisk(
+  params: AuthorizationRiskParams
+): AuthorizationRiskResult {
   const { contractAddress, chainId, origin } = params
   const warnings: string[] = []
   let riskLevel: AuthorizationRiskLevel = 'low'

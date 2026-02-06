@@ -416,6 +416,15 @@ export class PhishingDetector {
     this.allowlist.delete(domain.toLowerCase())
   }
 
+  /**
+   * Add trusted domains
+   */
+  addTrustedDomains(domains: string[]): void {
+    for (const domain of domains) {
+      this.trustedDomains.add(domain.toLowerCase())
+    }
+  }
+
   // Private helper methods
 
   private isBlocklisted(domain: string): boolean {
@@ -527,4 +536,13 @@ export class PhishingDetector {
     const parts = domain.split('.')
     return parts.some((part) => part.startsWith('xn--'))
   }
+}
+
+/**
+ * Create a new PhishingDetector instance
+ */
+export function createPhishingDetector(
+  config?: PhishingDetectorConfig
+): PhishingDetector {
+  return new PhishingDetector(config)
 }

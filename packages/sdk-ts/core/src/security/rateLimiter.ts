@@ -1,5 +1,5 @@
 /**
- * Rate Limiter for RPC requests (SEC-4)
+ * Rate Limiter for RPC requests
  *
  * Implements sliding window rate limiting to prevent abuse:
  * - Per-origin request tracking
@@ -357,5 +357,11 @@ export class RateLimiter {
   }
 }
 
-// Singleton instance
-export const rateLimiter = new RateLimiter()
+/**
+ * Create a new RateLimiter instance
+ */
+export function createRateLimiter(
+  customLimits?: Record<string, RateLimitConfig>
+): RateLimiter {
+  return new RateLimiter(customLimits)
+}

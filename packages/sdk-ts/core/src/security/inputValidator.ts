@@ -407,6 +407,13 @@ export class InputValidator {
   }
 }
 
+/**
+ * Create a new InputValidator instance
+ */
+export function createInputValidator(): InputValidator {
+  return new InputValidator()
+}
+
 // =============================================================================
 // Utility Functions
 // =============================================================================

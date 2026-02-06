@@ -5,19 +5,22 @@ import { RPC_ERRORS, ENTRY_POINT_ADDRESSES, DEFAULT_VALUES } from '../../shared/
 import { walletState } from '../state/store'
 import { approvalController } from '../controllers/approvalController'
 import { keyringController } from '../keyring'
-// Use SDK for bundler client and UserOperation utilities
+// Use SDK for bundler client, UserOperation utilities, and security modules
 import {
   createBundlerClient,
   getUserOperationHash,
   type UserOperation,
-} from '@stablenet/core'
-import { eventBroadcaster } from '../utils/eventBroadcaster'
-import {
+  // Security utilities
   InputValidator,
   type TransactionObject,
-} from '../../shared/security/inputValidator'
-import { rateLimiter } from '../../shared/security/rateLimiter'
-import { typedDataValidator } from '../../shared/security/typedDataValidator'
+  createRateLimiter,
+  createTypedDataValidator,
+} from '@stablenet/core'
+import { eventBroadcaster } from '../utils/eventBroadcaster'
+
+// Create singleton instances for security utilities
+const rateLimiter = createRateLimiter()
+const typedDataValidator = createTypedDataValidator()
 import {
   createAuthorization,
   createAuthorizationHash,

@@ -1,5 +1,5 @@
 /**
- * EIP-712 Typed Data Domain Validator (SEC-5)
+ * EIP-712 Typed Data Domain Validator
  *
  * Validates typed data domain parameters to prevent phishing attacks:
  * - Domain structure validation
@@ -399,5 +399,9 @@ export class TypedDataValidator {
   }
 }
 
-// Singleton instance
-export const typedDataValidator = new TypedDataValidator()
+/**
+ * Create a new TypedDataValidator instance
+ */
+export function createTypedDataValidator(): TypedDataValidator {
+  return new TypedDataValidator()
+}
