@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { Address, Hash } from 'viem'
+import type { Address, Hash, Hex } from 'viem'
 import type { ModuleRegistryEntry } from '@stablenet/core'
 import { useSelectedNetwork } from '../../../hooks'
 
@@ -7,6 +7,8 @@ interface InstallModuleParams {
   account: Address
   module: ModuleRegistryEntry
   config: Record<string, unknown>
+  /** Pre-encoded init data (e.g., from WebAuthn registration) */
+  initData?: Hex
 }
 
 interface UseModuleInstallReturn {
@@ -47,7 +49,9 @@ export function useModuleInstall(): UseModuleInstallReturn {
                 account: params.account,
                 moduleAddress: params.module.metadata.address,
                 moduleType: params.module.metadata.type.toString(),
-                initData: params.config,
+                // Use pre-encoded initData if provided, otherwise pass config for encoding
+                initData: params.initData ?? params.config,
+                initDataEncoded: !!params.initData,
                 chainId: currentNetwork.chainId,
               },
             ],

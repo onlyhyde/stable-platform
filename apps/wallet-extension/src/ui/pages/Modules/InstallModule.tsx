@@ -2,14 +2,19 @@ import { useState, useMemo, Fragment } from 'react'
 import {
   MODULE_TYPE,
   getModuleTypeName,
+  encodeWebAuthnValidatorInit,
   type Account,
   type ModuleType,
   type ModuleRegistryEntry,
+  type WebAuthnValidatorConfig,
 } from '@stablenet/core'
+import type { Hex } from 'viem'
 
 import { useModuleRegistry } from './hooks/useModuleRegistry'
 import { useModuleInstall } from './hooks/useModuleInstall'
 import { ModuleConfigForm } from './ModuleConfig'
+import { WebAuthnConfig } from './WebAuthnConfig'
+import { saveWebAuthnCredential } from './hooks/useWebAuthn'
 
 // ============================================================================
 // Types
@@ -38,6 +43,7 @@ export function InstallModuleWizard({
   const [selectedType, setSelectedType] = useState<ModuleType | null>(preselectedType ?? null)
   const [selectedModule, setSelectedModule] = useState<ModuleRegistryEntry | null>(null)
   const [configValues, setConfigValues] = useState<Record<string, unknown>>({})
+  const [customInitData, setCustomInitData] = useState<Hex | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const { availableModules } = useModuleRegistry()
@@ -49,6 +55,13 @@ export function InstallModuleWizard({
     return availableModules.filter((m) => m.metadata.type === selectedType)
   }, [selectedType, availableModules])
 
+  // Check if selected module is WebAuthn validator
+  const isWebAuthnValidator = useMemo(() => {
+    if (!selectedModule) return false
+    const name = selectedModule.metadata.name.toLowerCase()
+    return name.includes('webauthn') || name.includes('passkey')
+  }, [selectedModule])
+
   // Handle type selection
   const handleTypeSelect = (type: ModuleType) => {
     setSelectedType(type)
@@ -58,8 +71,17 @@ export function InstallModuleWizard({
   // Handle module selection
   const handleModuleSelect = (module: ModuleRegistryEntry) => {
     setSelectedModule(module)
-    // If module has no config, skip to confirm
-    if (module.configSchema.fields.length === 0) {
+    setCustomInitData(null) // Reset custom init data
+
+    // Check for special module types that need custom config UIs
+    const moduleName = module.metadata.name.toLowerCase()
+    const isWebAuthn = moduleName.includes('webauthn') || moduleName.includes('passkey')
+
+    if (isWebAuthn) {
+      // WebAuthn needs special config UI
+      setStep('configure')
+    } else if (module.configSchema.fields.length === 0) {
+      // No config needed, skip to confirm
       setStep('confirm')
     } else {
       setStep('configure')
@@ -69,6 +91,27 @@ export function InstallModuleWizard({
   // Handle configuration complete
   const handleConfigComplete = (values: Record<string, unknown>) => {
     setConfigValues(values)
+    setStep('confirm')
+  }
+
+  // Handle WebAuthn config complete
+  const handleWebAuthnComplete = async (initData: Hex, config: WebAuthnValidatorConfig) => {
+    setCustomInitData(initData)
+    setConfigValues({
+      pubKeyX: config.pubKeyX.toString(),
+      pubKeyY: config.pubKeyY.toString(),
+      credentialId: config.credentialId,
+    })
+
+    // Save credential to storage for later use
+    await saveWebAuthnCredential(account.address, {
+      id: `webauthn_${Date.now()}`,
+      credentialId: config.credentialId,
+      pubKeyX: config.pubKeyX,
+      pubKeyY: config.pubKeyY,
+      createdAt: new Date().toISOString(),
+    })
+
     setStep('confirm')
   }
 
@@ -84,6 +127,7 @@ export function InstallModuleWizard({
         account: account.address,
         module: selectedModule,
         config: configValues,
+        initData: customInitData ?? undefined,
       })
       onComplete()
     } catch (err) {
@@ -92,7 +136,7 @@ export function InstallModuleWizard({
     }
   }
 
-  const hasConfig = (selectedModule?.configSchema.fields.length ?? 0) > 0
+  const hasConfig = isWebAuthnValidator || (selectedModule?.configSchema.fields.length ?? 0) > 0
 
   return (
     <div className="install-module-wizard">
@@ -130,12 +174,20 @@ export function InstallModuleWizard({
 
         {/* Step: Configure */}
         {step === 'configure' && selectedModule && (
-          <ModuleConfigForm
-            module={selectedModule}
-            initialValues={configValues}
-            onSubmit={handleConfigComplete}
-            onBack={() => setStep('select-module')}
-          />
+          isWebAuthnValidator ? (
+            <WebAuthnConfig
+              accountAddress={account.address}
+              onSubmit={handleWebAuthnComplete}
+              onBack={() => setStep('select-module')}
+            />
+          ) : (
+            <ModuleConfigForm
+              module={selectedModule}
+              initialValues={configValues}
+              onSubmit={handleConfigComplete}
+              onBack={() => setStep('select-module')}
+            />
+          )
         )}
 
         {/* Step: Confirm */}
