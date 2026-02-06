@@ -189,12 +189,21 @@ const handlers: Record<string, RpcHandler> = {
       return null
     }
 
+    // Validate required rpcUrls
+    const rpcUrl = chainParams.rpcUrls[0]
+    if (!rpcUrl) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'At least one RPC URL is required',
+      })
+    }
+
     // Request user approval
     const result = await approvalController.requestAddNetwork(
       origin,
       chainId,
       chainParams.chainName,
-      chainParams.rpcUrls[0],
+      rpcUrl,
       chainParams.nativeCurrency,
       chainParams.blockExplorerUrls?.[0]
     )
@@ -203,11 +212,11 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.USER_REJECTED)
     }
 
-    // Add network to wallet
+    // Add network to wallet (bundlerUrl is optional for custom networks)
     await walletState.addNetwork({
       chainId,
       name: chainParams.chainName,
-      rpcUrl: chainParams.rpcUrls[0],
+      rpcUrl,
       currency: chainParams.nativeCurrency,
       explorerUrl: chainParams.blockExplorerUrls?.[0],
       isCustom: true,
@@ -262,7 +271,7 @@ const handlers: Record<string, RpcHandler> = {
         effectiveGasPrice: receipt.effectiveGasPrice
           ? `0x${receipt.effectiveGasPrice.toString(16)}`
           : undefined,
-        type: `0x${receipt.type.toString(16)}`,
+        type: formatTransactionType(receipt.type),
       }
     } catch {
       return null
@@ -312,7 +321,7 @@ const handlers: Record<string, RpcHandler> = {
         v: `0x${tx.v.toString(16)}`,
         r: tx.r,
         s: tx.s,
-        type: `0x${tx.type.toString(16)}`,
+        type: formatTransactionType(tx.type),
         chainId: tx.chainId ? `0x${tx.chainId.toString(16)}` : undefined,
       }
     } catch {
@@ -366,20 +375,24 @@ const handlers: Record<string, RpcHandler> = {
       transport: http(network.rpcUrl),
     })
 
-    const logs = await client.getLogs({
-      address: filter.address,
-      fromBlock: filter.fromBlock
-        ? filter.fromBlock === 'latest'
-          ? 'latest'
-          : BigInt(filter.fromBlock)
-        : undefined,
-      toBlock: filter.toBlock
-        ? filter.toBlock === 'latest'
-          ? 'latest'
-          : BigInt(filter.toBlock)
-        : undefined,
-      blockHash: filter.blockHash,
-    })
+    // Build logs filter - blockHash is mutually exclusive with fromBlock/toBlock
+    const logsFilter = filter.blockHash
+      ? { address: filter.address, blockHash: filter.blockHash }
+      : {
+          address: filter.address,
+          fromBlock: filter.fromBlock
+            ? filter.fromBlock === 'latest'
+              ? ('latest' as const)
+              : BigInt(filter.fromBlock)
+            : undefined,
+          toBlock: filter.toBlock
+            ? filter.toBlock === 'latest'
+              ? ('latest' as const)
+              : BigInt(filter.toBlock)
+            : undefined,
+        }
+
+    const logs = await client.getLogs(logsFilter)
 
     return logs.map((log) => ({
       address: log.address,
@@ -409,11 +422,10 @@ const handlers: Record<string, RpcHandler> = {
       transport: http(network.rpcUrl),
     })
 
-    const block = await client.getBlock({
-      blockNumber: blockNumber === 'latest' ? undefined : BigInt(blockNumber),
-      blockTag: blockNumber === 'latest' ? 'latest' : undefined,
-      includeTransactions,
-    })
+    // Use either blockTag or blockNumber, not both
+    const block = blockNumber === 'latest'
+      ? await client.getBlock({ blockTag: 'latest', includeTransactions })
+      : await client.getBlock({ blockNumber: BigInt(blockNumber), includeTransactions })
 
     if (!block) return null
 
@@ -1566,6 +1578,22 @@ function parseBigInt(value: unknown, defaultValue: bigint): bigint {
     return BigInt(value)
   }
   return defaultValue
+}
+
+/**
+ * Format transaction type to hex string
+ * Converts viem's string type (e.g., "legacy", "eip1559") to JSON-RPC hex format
+ */
+function formatTransactionType(type: string): Hex {
+  const typeMap: Record<string, number> = {
+    legacy: 0,
+    eip2930: 1,
+    eip1559: 2,
+    eip4844: 3,
+    eip7702: 4,
+  }
+  const typeNumber = typeMap[type] ?? 0
+  return `0x${typeNumber.toString(16)}` as Hex
 }
 
 /**
