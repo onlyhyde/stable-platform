@@ -7,6 +7,7 @@ import {
   type ModuleType,
   type ModuleRegistryEntry,
   type WebAuthnValidatorConfig,
+  type SessionKeyConfig,
 } from '@stablenet/core'
 import type { Hex } from 'viem'
 
@@ -14,6 +15,7 @@ import { useModuleRegistry } from './hooks/useModuleRegistry'
 import { useModuleInstall } from './hooks/useModuleInstall'
 import { ModuleConfigForm } from './ModuleConfig'
 import { WebAuthnConfig } from './WebAuthnConfig'
+import { SessionKeyConfigUI } from './SessionKeyConfig'
 import { saveWebAuthnCredential } from './hooks/useWebAuthn'
 
 // ============================================================================
@@ -62,6 +64,13 @@ export function InstallModuleWizard({
     return name.includes('webauthn') || name.includes('passkey')
   }, [selectedModule])
 
+  // Check if selected module is Session Key executor
+  const isSessionKeyExecutor = useMemo(() => {
+    if (!selectedModule) return false
+    const name = selectedModule.metadata.name.toLowerCase()
+    return name.includes('session') && (name.includes('key') || name.includes('executor'))
+  }, [selectedModule])
+
   // Handle type selection
   const handleTypeSelect = (type: ModuleType) => {
     setSelectedType(type)
@@ -76,9 +85,10 @@ export function InstallModuleWizard({
     // Check for special module types that need custom config UIs
     const moduleName = module.metadata.name.toLowerCase()
     const isWebAuthn = moduleName.includes('webauthn') || moduleName.includes('passkey')
+    const isSessionKey = moduleName.includes('session') && (moduleName.includes('key') || moduleName.includes('executor'))
 
-    if (isWebAuthn) {
-      // WebAuthn needs special config UI
+    if (isWebAuthn || isSessionKey) {
+      // Special modules need custom config UI
       setStep('configure')
     } else if (module.configSchema.fields.length === 0) {
       // No config needed, skip to confirm
@@ -115,6 +125,21 @@ export function InstallModuleWizard({
     setStep('confirm')
   }
 
+  // Handle Session Key config complete
+  const handleSessionKeyComplete = (initData: Hex, config: SessionKeyConfig) => {
+    setCustomInitData(initData)
+    setConfigValues({
+      sessionKey: config.sessionKey,
+      allowedTargets: config.allowedTargets.join(', '),
+      allowedSelectors: config.allowedSelectors.join(', '),
+      maxValuePerTx: config.maxValuePerTx.toString(),
+      validAfter: new Date(config.validAfter * 1000).toISOString(),
+      validUntil: new Date(config.validUntil * 1000).toISOString(),
+    })
+
+    setStep('confirm')
+  }
+
   // Handle install
   const handleInstall = async () => {
     if (!selectedModule) return
@@ -136,7 +161,7 @@ export function InstallModuleWizard({
     }
   }
 
-  const hasConfig = isWebAuthnValidator || (selectedModule?.configSchema.fields.length ?? 0) > 0
+  const hasConfig = isWebAuthnValidator || isSessionKeyExecutor || (selectedModule?.configSchema.fields.length ?? 0) > 0
 
   return (
     <div className="install-module-wizard">
@@ -178,6 +203,12 @@ export function InstallModuleWizard({
             <WebAuthnConfig
               accountAddress={account.address}
               onSubmit={handleWebAuthnComplete}
+              onBack={() => setStep('select-module')}
+            />
+          ) : isSessionKeyExecutor ? (
+            <SessionKeyConfigUI
+              accountAddress={account.address}
+              onSubmit={handleSessionKeyComplete}
               onBack={() => setStep('select-module')}
             />
           ) : (
