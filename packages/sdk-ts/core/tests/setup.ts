@@ -4,7 +4,7 @@
  * Global test configuration and setup for the core package.
  */
 
-import { beforeAll, afterAll, vi } from 'vitest'
+import { afterAll, beforeAll, vi } from 'vitest'
 
 // Mock crypto for environments that don't have it
 if (typeof globalThis.crypto === 'undefined') {

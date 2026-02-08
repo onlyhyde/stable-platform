@@ -9,7 +9,7 @@
  * - Completion
  */
 
-import { type Page, type Locator, expect } from '@playwright/test'
+import { type Locator, type Page, expect } from '@playwright/test'
 
 export class OnboardingPage {
   readonly page: Page
@@ -152,7 +152,7 @@ export class OnboardingPage {
         // Extract word index from data-testid (e.g., "seed-word-3" -> 3)
         const match = testId.match(/seed-word-(\d+)/)
         if (match) {
-          const wordIndex = parseInt(match[1], 10) - 1 // Convert to 0-based
+          const wordIndex = Number.parseInt(match[1], 10) - 1 // Convert to 0-based
           if (wordIndex >= 0 && wordIndex < seedPhrase.length) {
             await input.fill(seedPhrase[wordIndex])
           }

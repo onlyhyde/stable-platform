@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react'
+import { type ReactNode, createContext, useContext, useEffect, useRef } from 'react'
 import { RegistryClient } from '../client'
 import type { RegistryClientOptions } from '../types'
 
@@ -22,11 +22,7 @@ export function RegistryProvider({ options, children }: RegistryProviderProps) {
     }
   }, [])
 
-  return (
-    <RegistryContext.Provider value={clientRef.current}>
-      {children}
-    </RegistryContext.Provider>
-  )
+  return <RegistryContext.Provider value={clientRef.current}>{children}</RegistryContext.Provider>
 }
 
 export function useRegistryClient(): RegistryClient {

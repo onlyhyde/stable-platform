@@ -68,19 +68,19 @@ export const DEFAULT_NETWORKS: readonly NetworkConfig[] = [
 export const NATIVE_CURRENCY_SYMBOLS: Record<number, string> = {
   // Ethereum mainnet and L2s
   1: 'ETH',
-  10: 'ETH',      // Optimism
-  42161: 'ETH',   // Arbitrum
-  8453: 'ETH',    // Base
+  10: 'ETH', // Optimism
+  42161: 'ETH', // Arbitrum
+  8453: 'ETH', // Base
   // Other chains
-  137: 'MATIC',   // Polygon
-  56: 'BNB',      // BSC
-  43114: 'AVAX',  // Avalanche
+  137: 'MATIC', // Polygon
+  56: 'BNB', // BSC
+  43114: 'AVAX', // Avalanche
   // Testnets
   11155111: 'ETH', // Sepolia
-  31337: 'ETH',    // Anvil/Hardhat
+  31337: 'ETH', // Anvil/Hardhat
   // StableNet
-  8283: 'WKRC',    // StableNet Local
-  82830: 'WKRC',   // StableNet Testnet
+  8283: 'WKRC', // StableNet Local
+  82830: 'WKRC', // StableNet Testnet
 }
 
 /**

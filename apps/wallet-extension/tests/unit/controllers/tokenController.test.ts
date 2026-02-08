@@ -4,10 +4,10 @@
  */
 
 import {
+  type Token,
+  type TokenBalance,
   TokenController,
-  TokenControllerState,
-  Token,
-  TokenBalance,
+  type TokenControllerState,
 } from '../../../src/background/controllers/TokenController'
 
 describe('TokenController', () => {
@@ -120,9 +120,7 @@ describe('TokenController', () => {
     })
 
     it('should reject invalid token addresses', async () => {
-      await expect(controller.addToken('invalid-address')).rejects.toThrow(
-        'Invalid token address'
-      )
+      await expect(controller.addToken('invalid-address')).rejects.toThrow('Invalid token address')
     })
   })
 
@@ -154,7 +152,9 @@ describe('TokenController', () => {
 
       controller.removeToken(mockUSDC.address)
 
-      expect(controller.state.balances[mockAccount]?.[mockUSDC.address.toLowerCase()]).toBeUndefined()
+      expect(
+        controller.state.balances[mockAccount]?.[mockUSDC.address.toLowerCase()]
+      ).toBeUndefined()
     })
 
     it('should handle non-existent token gracefully', () => {
@@ -217,9 +217,9 @@ describe('TokenController', () => {
     it('should handle provider errors', async () => {
       mockProvider.request.mockRejectedValueOnce(new Error('Network error'))
 
-      await expect(
-        controller.getTokenBalance(mockUSDC.address, mockAccount)
-      ).rejects.toThrow('Failed to fetch token balance')
+      await expect(controller.getTokenBalance(mockUSDC.address, mockAccount)).rejects.toThrow(
+        'Failed to fetch token balance'
+      )
     })
   })
 
@@ -239,12 +239,8 @@ describe('TokenController', () => {
 
     it('should fetch all token balances for account', async () => {
       mockProvider.request
-        .mockResolvedValueOnce(
-          '0x00000000000000000000000000000000000000000000000000000000000f4240'
-        )
-        .mockResolvedValueOnce(
-          '0x0000000000000000000000000000000000000000000000008ac7230489e80000'
-        )
+        .mockResolvedValueOnce('0x00000000000000000000000000000000000000000000000000000000000f4240')
+        .mockResolvedValueOnce('0x0000000000000000000000000000000000000000000000008ac7230489e80000')
 
       const balances = await controller.getAllTokenBalances(mockAccount)
 
@@ -255,12 +251,8 @@ describe('TokenController', () => {
 
     it('should return formatted balances', async () => {
       mockProvider.request
-        .mockResolvedValueOnce(
-          '0x00000000000000000000000000000000000000000000000000000000000f4240'
-        ) // 1 USDC
-        .mockResolvedValueOnce(
-          '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'
-        ) // 1 DAI
+        .mockResolvedValueOnce('0x00000000000000000000000000000000000000000000000000000000000f4240') // 1 USDC
+        .mockResolvedValueOnce('0x0000000000000000000000000000000000000000000000000de0b6b3a7640000') // 1 DAI
 
       const balances = await controller.getAllTokenBalances(mockAccount)
 
@@ -319,11 +311,7 @@ describe('TokenController', () => {
       const recipient = '0xabcdef1234567890abcdef1234567890abcdef12'
       const amount = '1000000' // 1 USDC
 
-      const tx = controller.buildTransferTransaction(
-        mockUSDC.address,
-        recipient,
-        amount
-      )
+      const tx = controller.buildTransferTransaction(mockUSDC.address, recipient, amount)
 
       expect(tx.to).toBe(mockUSDC.address)
       expect(tx.data).toContain('a9059cbb') // transfer selector
@@ -334,11 +322,7 @@ describe('TokenController', () => {
       const recipient = '0xabcdef1234567890abcdef1234567890abcdef12'
       const amount = '1000000'
 
-      const tx = controller.buildTransferTransaction(
-        mockUSDC.address,
-        recipient,
-        amount
-      )
+      const tx = controller.buildTransferTransaction(mockUSDC.address, recipient, amount)
 
       // Data should contain: selector (4 bytes) + recipient (32 bytes) + amount (32 bytes)
       expect(tx.data.length).toBe(2 + 8 + 64 + 64) // 0x + selector + recipient + amount
@@ -348,11 +332,7 @@ describe('TokenController', () => {
       const recipient = '0xabcdef1234567890abcdef1234567890abcdef12'
       const amount = '1000000000000000000' // 1 ETH worth
 
-      const tx = controller.buildTransferTransaction(
-        mockUSDC.address,
-        recipient,
-        amount
-      )
+      const tx = controller.buildTransferTransaction(mockUSDC.address, recipient, amount)
 
       expect(tx.data).toBeDefined()
     })

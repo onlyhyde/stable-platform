@@ -1,12 +1,12 @@
 import type { Address, Hex } from 'viem'
+import type { SponsorPolicyManager } from '../policy/sponsorPolicy'
+import type { PaymasterSigner } from '../signer/paymasterSigner'
 import type {
-  UserOperationRpc,
+  GetPaymasterDataParams,
   PackedUserOperationRpc,
   PaymasterDataResponse,
-  GetPaymasterDataParams,
+  UserOperationRpc,
 } from '../types'
-import type { PaymasterSigner } from '../signer/paymasterSigner'
-import type { SponsorPolicyManager } from '../policy/sponsorPolicy'
 
 export type { GetPaymasterDataParams }
 
@@ -39,13 +39,8 @@ export async function handleGetPaymasterData(
   config: GetPaymasterDataConfig
 ): Promise<GetPaymasterDataResult> {
   const { userOp, entryPoint, chainId, context } = params
-  const {
-    paymasterAddress,
-    signer,
-    policyManager,
-    supportedChainIds,
-    supportedEntryPoints,
-  } = config
+  const { paymasterAddress, signer, policyManager, supportedChainIds, supportedEntryPoints } =
+    config
 
   // Validate chain ID
   const chainIdNum = Number.parseInt(chainId, 16)
@@ -63,9 +58,7 @@ export async function handleGetPaymasterData(
   // Validate entry point (if configured)
   if (supportedEntryPoints && supportedEntryPoints.length > 0) {
     const entryPointLower = entryPoint.toLowerCase()
-    const isSupported = supportedEntryPoints.some(
-      (ep) => ep.toLowerCase() === entryPointLower
-    )
+    const isSupported = supportedEntryPoints.some((ep) => ep.toLowerCase() === entryPointLower)
     if (!isSupported) {
       return {
         success: false,
@@ -86,11 +79,7 @@ export async function handleGetPaymasterData(
   const estimatedGasCost = estimateGasCost(normalizedUserOp)
 
   // Check policy with gas cost
-  const policyResult = policyManager.checkPolicy(
-    normalizedUserOp,
-    policyId,
-    estimatedGasCost
-  )
+  const policyResult = policyManager.checkPolicy(normalizedUserOp, policyId, estimatedGasCost)
 
   if (!policyResult.allowed) {
     return {
@@ -100,11 +89,7 @@ export async function handleGetPaymasterData(
   }
 
   // Generate signed paymaster data
-  const { paymasterData } = await signer.generateSignedData(
-    userOp,
-    entryPoint,
-    BigInt(chainIdNum)
-  )
+  const { paymasterData } = await signer.generateSignedData(userOp, entryPoint, BigInt(chainIdNum))
 
   // Record spending (gas cost will be finalized after execution)
   // For now, we record the estimated cost
@@ -122,9 +107,7 @@ export async function handleGetPaymasterData(
 /**
  * Normalize UserOperation to unpacked format
  */
-function normalizeUserOp(
-  userOp: UserOperationRpc | PackedUserOperationRpc
-): UserOperationRpc {
+function normalizeUserOp(userOp: UserOperationRpc | PackedUserOperationRpc): UserOperationRpc {
   if ('callGasLimit' in userOp) {
     return userOp
   }

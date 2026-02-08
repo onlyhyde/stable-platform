@@ -4,7 +4,7 @@ import {
   type GasPaymentConfig,
   type SponsorPolicy,
 } from '@stablenet/core'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Address } from 'viem'
 import { formatEther, formatUnits } from 'viem'
 
@@ -13,6 +13,11 @@ import { usePaymasterClient } from './hooks/usePaymasterClient'
 // ============================================================================
 // Types
 // ============================================================================
+
+interface CustomGasSettings {
+  maxFeePerGas?: string
+  maxPriorityFeePerGas?: string
+}
 
 interface GasPaymentSelectorProps {
   /** Current gas payment configuration */
@@ -29,6 +34,9 @@ interface GasPaymentSelectorProps {
 
   /** Smart Account address (for policy check) */
   accountAddress?: Address
+
+  /** Custom gas settings change handler */
+  onCustomGasChange?: (settings: CustomGasSettings) => void
 }
 
 interface PaymentOption {
@@ -56,7 +64,12 @@ export function GasPaymentSelector({
   gasEstimate,
   isLoading = false,
   accountAddress,
+  onCustomGasChange,
 }: GasPaymentSelectorProps) {
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [customMaxFee, setCustomMaxFee] = useState('')
+  const [customPriorityFee, setCustomPriorityFee] = useState('')
+
   const {
     supportedTokens,
     sponsorPolicy,
@@ -158,12 +171,12 @@ export function GasPaymentSelector({
 
   return (
     <div className="gas-payment-selector">
-      <label
+      <span
         className="block text-sm font-medium mb-2"
         style={{ color: 'rgb(var(--foreground-secondary))' }}
       >
         Gas Payment
-      </label>
+      </span>
 
       {/* Payment Options */}
       <div className="payment-options space-y-2">
@@ -190,6 +203,94 @@ export function GasPaymentSelector({
       {gasPayment.type === GAS_PAYMENT_TYPE.ERC20 && isLoadingEstimate && (
         <div className="mt-2 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
           Estimating token amount...
+        </div>
+      )}
+
+      {/* Advanced Gas Settings */}
+      {gasPayment.type === GAS_PAYMENT_TYPE.NATIVE && onCustomGasChange && (
+        <div className="mt-3">
+          <button
+            type="button"
+            className="text-xs flex items-center gap-1"
+            style={{ color: 'rgb(var(--muted-foreground))' }}
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
+            <svg
+              className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-90' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            Advanced Gas Settings
+          </button>
+
+          {showAdvanced && (
+            <div
+              className="mt-2 p-3 rounded-lg space-y-2"
+              style={{ backgroundColor: 'rgb(var(--secondary))' }}
+            >
+              <div>
+                <label
+                  htmlFor="max-fee-per-gas"
+                  className="text-xs block mb-1"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                >
+                  Max Fee Per Gas (Gwei)
+                </label>
+                <input
+                  id="max-fee-per-gas"
+                  type="text"
+                  placeholder={
+                    gasEstimate
+                      ? (
+                          Number(gasEstimate.estimatedCost) /
+                          1e9 /
+                          Number(gasEstimate.gasLimit || 21000n)
+                        ).toFixed(2)
+                      : 'auto'
+                  }
+                  value={customMaxFee}
+                  onChange={(e) => {
+                    setCustomMaxFee(e.target.value)
+                    onCustomGasChange({
+                      maxFeePerGas: e.target.value || undefined,
+                      maxPriorityFeePerGas: customPriorityFee || undefined,
+                    })
+                  }}
+                  className="input-base w-full p-1.5 rounded text-xs font-mono"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="max-priority-fee"
+                  className="text-xs block mb-1"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                >
+                  Max Priority Fee (Gwei)
+                </label>
+                <input
+                  id="max-priority-fee"
+                  type="text"
+                  placeholder="auto"
+                  value={customPriorityFee}
+                  onChange={(e) => {
+                    setCustomPriorityFee(e.target.value)
+                    onCustomGasChange({
+                      maxFeePerGas: customMaxFee || undefined,
+                      maxPriorityFeePerGas: e.target.value || undefined,
+                    })
+                  }}
+                  className="input-base w-full p-1.5 rounded text-xs font-mono"
+                />
+              </div>
+              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Leave empty to use network-estimated values.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -341,8 +442,6 @@ export function GasPaymentDisplay({ gasPayment, gasEstimate }: GasPaymentDisplay
           return `${formatUnits(gasPayment.estimatedAmount, gasPayment.tokenDecimals ?? 18)} ${gasPayment.tokenSymbol}`
         }
         return `Pay with ${gasPayment.tokenSymbol || 'Token'}`
-
-      case GAS_PAYMENT_TYPE.NATIVE:
       default:
         return `${formatEther(gasEstimate.estimatedCost)} ETH`
     }

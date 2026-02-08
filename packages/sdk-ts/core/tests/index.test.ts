@@ -1,26 +1,26 @@
-import { describe, it, expect } from 'vitest'
+import type { UserOperation } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
+import { describe, expect, it } from 'vitest'
 import {
+  createAuthorization,
+  createAuthorizationHash,
+  createRevocationAuthorization,
+  createSignedAuthorization,
+  extractDelegateAddress,
+  formatAuthorization,
+  getDelegatePresets,
+  getDelegationStatus,
+  isDelegatedAccount,
+  isRevocationAuthorization,
+  isValidAddress,
+  parseSignature,
+} from '../src/eip7702/authorization'
+import { DELEGATION_PREFIX, ZERO_ADDRESS } from '../src/eip7702/constants'
+import {
+  getUserOperationHash,
   packUserOperation,
   unpackUserOperation,
-  getUserOperationHash,
 } from '../src/utils/userOperation'
-import {
-  createAuthorizationHash,
-  createAuthorization,
-  createRevocationAuthorization,
-  parseSignature,
-  createSignedAuthorization,
-  isDelegatedAccount,
-  extractDelegateAddress,
-  getDelegationStatus,
-  isValidAddress,
-  getDelegatePresets,
-  isRevocationAuthorization,
-  formatAuthorization,
-} from '../src/eip7702/authorization'
-import { ZERO_ADDRESS, DELEGATION_PREFIX } from '../src/eip7702/constants'
-import type { UserOperation } from '@stablenet/sdk-types'
 
 describe('UserOperation Utils', () => {
   const mockUserOp: UserOperation = {
@@ -70,7 +70,9 @@ describe('UserOperation Utils', () => {
 
       const packed = packUserOperation(userOpWithPaymaster)
 
-      expect(packed.paymasterAndData.toLowerCase()).toContain('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
+      expect(packed.paymasterAndData.toLowerCase()).toContain(
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+      )
     })
 
     it('should correctly encode accountGasLimits', () => {
@@ -301,10 +303,9 @@ describe('EIP-7702 Authorization', () => {
   })
 
   describe('parseSignature', () => {
-    const validSignature =
-      '0x1234567890123456789012345678901234567890123456789012345678901234' +
+    const validSignature = ('0x1234567890123456789012345678901234567890123456789012345678901234' +
       '5678901234567890123456789012345678901234567890123456789012345678' +
-      '1b' as Hex
+      '1b') as Hex
 
     it('should parse r, s, v correctly', () => {
       const { r, s, v } = parseSignature(validSignature)
@@ -315,30 +316,27 @@ describe('EIP-7702 Authorization', () => {
     })
 
     it('should normalize v value from 27/28 to 0/1', () => {
-      const sigWith27 =
-        '0x1234567890123456789012345678901234567890123456789012345678901234' +
+      const sigWith27 = ('0x1234567890123456789012345678901234567890123456789012345678901234' +
         '5678901234567890123456789012345678901234567890123456789012345678' +
-        '1b' as Hex // 27 in hex
+        '1b') as Hex // 27 in hex
 
       const { v } = parseSignature(sigWith27)
       expect(v).toBe(0)
     })
 
     it('should normalize v=28 to v=1', () => {
-      const sigWith28 =
-        '0x1234567890123456789012345678901234567890123456789012345678901234' +
+      const sigWith28 = ('0x1234567890123456789012345678901234567890123456789012345678901234' +
         '5678901234567890123456789012345678901234567890123456789012345678' +
-        '1c' as Hex // 28 in hex
+        '1c') as Hex // 28 in hex
 
       const { v } = parseSignature(sigWith28)
       expect(v).toBe(1)
     })
 
     it('should keep v=0 as is', () => {
-      const sigWith0 =
-        '0x1234567890123456789012345678901234567890123456789012345678901234' +
+      const sigWith0 = ('0x1234567890123456789012345678901234567890123456789012345678901234' +
         '5678901234567890123456789012345678901234567890123456789012345678' +
-        '00' as Hex
+        '00') as Hex
 
       const { v } = parseSignature(sigWith0)
       expect(v).toBe(0)
@@ -346,10 +344,9 @@ describe('EIP-7702 Authorization', () => {
   })
 
   describe('createSignedAuthorization', () => {
-    const mockSignature =
-      '0x1234567890123456789012345678901234567890123456789012345678901234' +
+    const mockSignature = ('0x1234567890123456789012345678901234567890123456789012345678901234' +
       '5678901234567890123456789012345678901234567890123456789012345678' +
-      '1b' as Hex
+      '1b') as Hex
 
     it('should create signed authorization with all fields', () => {
       const auth = createAuthorization(mockChainId, mockDelegateAddress, mockNonce)
@@ -366,8 +363,7 @@ describe('EIP-7702 Authorization', () => {
 
   describe('isDelegatedAccount', () => {
     it('should return true for delegated bytecode', () => {
-      const delegatedCode = (DELEGATION_PREFIX +
-        '1234567890123456789012345678901234567890') as Hex
+      const delegatedCode = (DELEGATION_PREFIX + '1234567890123456789012345678901234567890') as Hex
 
       expect(isDelegatedAccount(delegatedCode)).toBe(true)
     })

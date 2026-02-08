@@ -2,12 +2,12 @@ import type { FastifyInstance } from 'fastify'
 import { nanoid } from 'nanoid'
 import type { ModuleStore } from '../../store/memory-store'
 import {
+  CreateInstallationSchema,
   CreateModuleSchema,
-  UpdateModuleSchema,
+  CreateReviewSchema,
   ModuleQuerySchema,
   SearchQuerySchema,
-  CreateInstallationSchema,
-  CreateReviewSchema,
+  UpdateModuleSchema,
 } from '../schemas/module'
 
 export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
@@ -15,7 +15,9 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
   app.get('/api/v1/modules', async (request, reply) => {
     const query = ModuleQuerySchema.safeParse(request.query)
     if (!query.success) {
-      return reply.status(400).send({ error: 'Invalid query parameters', details: query.error.issues })
+      return reply
+        .status(400)
+        .send({ error: 'Invalid query parameters', details: query.error.issues })
     }
 
     const { limit, offset, ...filters } = query.data
@@ -35,7 +37,7 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
 
   // ─── Get Popular Modules ───
   app.get('/api/v1/modules/popular', async (request) => {
-    const { limit } = (request.query as Record<string, string>)
+    const { limit } = request.query as Record<string, string>
     return { data: store.getPopularModules(limit ? Number.parseInt(limit, 10) : 10) }
   })
 
@@ -117,7 +119,9 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
   app.post('/api/v1/installations', async (request, reply) => {
     const body = CreateInstallationSchema.safeParse(request.body)
     if (!body.success) {
-      return reply.status(400).send({ error: 'Invalid installation data', details: body.error.issues })
+      return reply
+        .status(400)
+        .send({ error: 'Invalid installation data', details: body.error.issues })
     }
 
     const module = store.getModule(body.data.moduleId)

@@ -1,7 +1,7 @@
-import type { Address } from 'viem'
 import type { ChainAddresses, ChainConfig, ServiceUrls, TokenDefinition } from '@stablenet/types'
+import type { Address } from 'viem'
 import { ENTRY_POINT_V07 } from './entryPoints'
-import { getAnvilConfig, getSepoliaConfig } from './env'
+import { getAnvilConfig, getLocalConfig, getSepoliaConfig } from './env'
 
 /**
  * Chain Configuration
@@ -77,6 +77,69 @@ export const ANVIL_SERVICES: ServiceUrls = getAnvilServices()
 export const ANVIL_TOKENS: TokenDefinition[] = []
 
 /**
+ * StableNet Local addresses (Chain ID 8283)
+ * These are deployed on the StableNet Local chain during development
+ */
+export const LOCAL_ADDRESSES: ChainAddresses = {
+  chainId: 8283,
+  core: {
+    entryPoint: ENTRY_POINT_V07,
+    kernel: ZERO_ADDRESS,
+    kernelFactory: ZERO_ADDRESS,
+  },
+  validators: {
+    ecdsaValidator: ZERO_ADDRESS,
+    webAuthnValidator: ZERO_ADDRESS,
+    multiEcdsaValidator: ZERO_ADDRESS,
+  },
+  executors: {
+    ownableExecutor: ZERO_ADDRESS,
+  },
+  hooks: {
+    spendingLimitHook: ZERO_ADDRESS,
+  },
+  paymasters: {
+    verifyingPaymaster: ZERO_ADDRESS,
+    tokenPaymaster: ZERO_ADDRESS,
+  },
+  privacy: {
+    stealthAnnouncer: ZERO_ADDRESS,
+    stealthRegistry: ZERO_ADDRESS,
+  },
+  compliance: {
+    kycRegistry: ZERO_ADDRESS,
+    complianceValidator: ZERO_ADDRESS,
+  },
+  delegatePresets: [],
+}
+
+/**
+ * Get StableNet Local service URLs (with environment overrides)
+ */
+export function getLocalServices(): ServiceUrls {
+  const config = getLocalConfig()
+  return {
+    bundler: config.bundlerUrl,
+    paymaster: config.paymasterUrl,
+    stealthServer: config.stealthServerUrl,
+  }
+}
+
+/**
+ * StableNet Local service URLs (for backward compatibility)
+ * Configurable via:
+ * - STABLENET_LOCAL_BUNDLER_URL
+ * - STABLENET_LOCAL_PAYMASTER_URL
+ * - STABLENET_LOCAL_STEALTH_SERVER_URL
+ */
+export const LOCAL_SERVICES: ServiceUrls = getLocalServices()
+
+/**
+ * StableNet Local tokens
+ */
+export const LOCAL_TOKENS: TokenDefinition[] = []
+
+/**
  * Sepolia testnet addresses
  */
 export const SEPOLIA_ADDRESSES: ChainAddresses = {
@@ -150,6 +213,11 @@ export const SEPOLIA_TOKENS: TokenDefinition[] = [
  * Complete chain configurations by chain ID
  */
 export const CHAIN_CONFIGS: Record<number, ChainConfig> = {
+  8283: {
+    addresses: LOCAL_ADDRESSES,
+    services: LOCAL_SERVICES,
+    tokens: LOCAL_TOKENS,
+  },
   31337: {
     addresses: ANVIL_ADDRESSES,
     services: ANVIL_SERVICES,

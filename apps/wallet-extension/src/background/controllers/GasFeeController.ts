@@ -298,9 +298,9 @@ export class GasFeeController {
     if (!this.gasEstimator) {
       return {
         gasLimit: estimate.gasLimit.toString(),
-        maxFeePerGas: estimate.maxFeePerGas.toString() + ' wei',
-        estimatedCost: estimate.estimatedCost.toString() + ' wei',
-        estimatedCostEth: (Number(estimate.estimatedCost) / 1e18).toFixed(6) + ' ETH',
+        maxFeePerGas: `${estimate.maxFeePerGas.toString()} wei`,
+        estimatedCost: `${estimate.estimatedCost.toString()} wei`,
+        estimatedCostEth: `${(Number(estimate.estimatedCost) / 1e18).toFixed(6)} ETH`,
       }
     }
 
@@ -327,7 +327,7 @@ export class GasFeeController {
       this.addToHistory(gasPrice)
 
       return gasPrice
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Failed to fetch gas price')
     }
   }
@@ -663,6 +663,6 @@ export class GasFeeController {
   }
 
   private toHex(value: bigint): string {
-    return '0x' + value.toString(16)
+    return `0x${value.toString(16)}`
   }
 }

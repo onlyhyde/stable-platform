@@ -2,7 +2,7 @@
  * useChainId - Hook for tracking the current chain ID
  */
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { StableNetProvider } from '../provider/StableNetProvider'
 
 interface UseChainIdOptions {

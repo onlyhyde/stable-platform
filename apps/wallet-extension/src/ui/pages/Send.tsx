@@ -103,7 +103,7 @@ export function Send() {
         setSelectedAsset(firstAsset)
       }
     }
-  }, [assetList])
+  }, [assetList, selectedAsset])
 
   const isValidRecipient = recipient === '' || isAddress(recipient)
   const isValidAmount = amount === '' || (!Number.isNaN(Number(amount)) && Number(amount) > 0)
@@ -197,12 +197,12 @@ export function Send() {
       <div className="space-y-4">
         {/* Asset Selector */}
         <div>
-          <label
+          <span
             className="block text-sm font-medium mb-1"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
             Asset
-          </label>
+          </span>
           <div className="relative">
             <button
               type="button"
@@ -239,7 +239,9 @@ export function Send() {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                role="img"
               >
+                <title>Toggle asset selector</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"

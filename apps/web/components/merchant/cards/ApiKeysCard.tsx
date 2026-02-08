@@ -90,6 +90,7 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
           {apiKeys.length === 0 ? (
             <div className="text-center py-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
               <svg
+                aria-hidden="true"
                 className="w-12 h-12 mx-auto mb-4"
                 style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
                 fill="none"
@@ -213,6 +214,7 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
                       </td>
                       <td className="py-3 px-4 text-right">
                         <button
+                          type="button"
                           onClick={() => onRevokeKey(key.id)}
                           className="text-sm"
                           style={{ color: 'rgb(var(--destructive))' }}
@@ -237,12 +239,12 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
       >
         <div className="space-y-4">
           <div>
-            <label
+            <span
               className="block text-sm font-medium mb-1"
               style={{ color: 'rgb(var(--foreground) / 0.8)' }}
             >
               Key Name
-            </label>
+            </span>
             <Input
               placeholder="e.g., Production Server"
               value={newKeyName}
@@ -250,12 +252,12 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
             />
           </div>
           <div>
-            <label
+            <span
               className="block text-sm font-medium mb-2"
               style={{ color: 'rgb(var(--foreground) / 0.8)' }}
             >
               Permissions
-            </label>
+            </span>
             <div className="space-y-2">
               {AVAILABLE_PERMISSIONS.map((permission) => (
                 <label
@@ -303,6 +305,7 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
           >
             <div className="flex items-start gap-2">
               <svg
+                aria-hidden="true"
                 className="w-5 h-5 mt-0.5"
                 style={{ color: 'rgb(var(--warning))' }}
                 fill="none"
@@ -327,12 +330,12 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
             </div>
           </div>
           <div>
-            <label
+            <span
               className="block text-sm font-medium mb-1"
               style={{ color: 'rgb(var(--foreground) / 0.8)' }}
             >
               Your API Key
-            </label>
+            </span>
             <div className="flex items-center gap-2">
               <code
                 className="flex-1 text-sm font-mono px-3 py-2 rounded break-all"

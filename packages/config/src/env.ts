@@ -30,6 +30,14 @@ export const SDK_ENV_VARS = {
   ANVIL_PAYMASTER_URL: 'STABLENET_ANVIL_PAYMASTER_URL',
   ANVIL_STEALTH_SERVER_URL: 'STABLENET_ANVIL_STEALTH_SERVER_URL',
 
+  // StableNet Local (Chain ID 8283)
+  LOCAL_RPC_URL: 'STABLENET_LOCAL_RPC_URL',
+  LOCAL_BUNDLER_URL: 'STABLENET_LOCAL_BUNDLER_URL',
+  LOCAL_PAYMASTER_URL: 'STABLENET_LOCAL_PAYMASTER_URL',
+  LOCAL_STEALTH_SERVER_URL: 'STABLENET_LOCAL_STEALTH_SERVER_URL',
+  LOCAL_EXPLORER_URL: 'STABLENET_LOCAL_EXPLORER_URL',
+  LOCAL_INDEXER_URL: 'STABLENET_LOCAL_INDEXER_URL',
+
   // Devnet
   DEVNET_RPC_URL: 'STABLENET_DEVNET_RPC_URL',
   DEVNET_BUNDLER_URL: 'STABLENET_DEVNET_BUNDLER_URL',
@@ -63,6 +71,14 @@ const DEFAULTS = {
   ANVIL_BUNDLER_URL: 'http://127.0.0.1:4337',
   ANVIL_PAYMASTER_URL: 'http://127.0.0.1:4338',
   ANVIL_STEALTH_SERVER_URL: 'http://127.0.0.1:4339',
+
+  // StableNet Local (Chain ID 8283)
+  LOCAL_RPC_URL: 'http://127.0.0.1:8501',
+  LOCAL_BUNDLER_URL: 'http://127.0.0.1:4337',
+  LOCAL_PAYMASTER_URL: 'http://127.0.0.1:4338',
+  LOCAL_STEALTH_SERVER_URL: 'http://127.0.0.1:4339',
+  LOCAL_EXPLORER_URL: 'http://127.0.0.1:3001',
+  LOCAL_INDEXER_URL: 'http://127.0.0.1:8080',
 
   // Devnet
   DEVNET_RPC_URL: 'http://localhost:8545',
@@ -117,7 +133,27 @@ export function getAnvilConfig() {
     rpcUrl: getEnvString(SDK_ENV_VARS.ANVIL_RPC_URL, DEFAULTS.ANVIL_RPC_URL),
     bundlerUrl: getEnvString(SDK_ENV_VARS.ANVIL_BUNDLER_URL, DEFAULTS.ANVIL_BUNDLER_URL),
     paymasterUrl: getEnvString(SDK_ENV_VARS.ANVIL_PAYMASTER_URL, DEFAULTS.ANVIL_PAYMASTER_URL),
-    stealthServerUrl: getEnvString(SDK_ENV_VARS.ANVIL_STEALTH_SERVER_URL, DEFAULTS.ANVIL_STEALTH_SERVER_URL),
+    stealthServerUrl: getEnvString(
+      SDK_ENV_VARS.ANVIL_STEALTH_SERVER_URL,
+      DEFAULTS.ANVIL_STEALTH_SERVER_URL
+    ),
+  }
+}
+
+/**
+ * Get StableNet Local network configuration from environment
+ */
+export function getLocalConfig() {
+  return {
+    rpcUrl: getEnvString(SDK_ENV_VARS.LOCAL_RPC_URL, DEFAULTS.LOCAL_RPC_URL),
+    bundlerUrl: getEnvString(SDK_ENV_VARS.LOCAL_BUNDLER_URL, DEFAULTS.LOCAL_BUNDLER_URL),
+    paymasterUrl: getEnvString(SDK_ENV_VARS.LOCAL_PAYMASTER_URL, DEFAULTS.LOCAL_PAYMASTER_URL),
+    stealthServerUrl: getEnvString(
+      SDK_ENV_VARS.LOCAL_STEALTH_SERVER_URL,
+      DEFAULTS.LOCAL_STEALTH_SERVER_URL
+    ),
+    explorerUrl: getEnvString(SDK_ENV_VARS.LOCAL_EXPLORER_URL, DEFAULTS.LOCAL_EXPLORER_URL),
+    indexerUrl: getEnvString(SDK_ENV_VARS.LOCAL_INDEXER_URL, DEFAULTS.LOCAL_INDEXER_URL),
   }
 }
 
@@ -129,7 +165,10 @@ export function getDevnetConfig() {
     rpcUrl: getEnvString(SDK_ENV_VARS.DEVNET_RPC_URL, DEFAULTS.DEVNET_RPC_URL),
     bundlerUrl: getEnvString(SDK_ENV_VARS.DEVNET_BUNDLER_URL, DEFAULTS.DEVNET_BUNDLER_URL),
     paymasterUrl: getEnvString(SDK_ENV_VARS.DEVNET_PAYMASTER_URL, DEFAULTS.DEVNET_PAYMASTER_URL),
-    stealthServerUrl: getEnvString(SDK_ENV_VARS.DEVNET_STEALTH_SERVER_URL, DEFAULTS.DEVNET_STEALTH_SERVER_URL),
+    stealthServerUrl: getEnvString(
+      SDK_ENV_VARS.DEVNET_STEALTH_SERVER_URL,
+      DEFAULTS.DEVNET_STEALTH_SERVER_URL
+    ),
   }
 }
 
@@ -141,7 +180,10 @@ export function getSepoliaConfig() {
     rpcUrl: getEnvString(SDK_ENV_VARS.SEPOLIA_RPC_URL, DEFAULTS.SEPOLIA_RPC_URL),
     bundlerUrl: getEnvString(SDK_ENV_VARS.SEPOLIA_BUNDLER_URL, DEFAULTS.SEPOLIA_BUNDLER_URL),
     paymasterUrl: getEnvString(SDK_ENV_VARS.SEPOLIA_PAYMASTER_URL, DEFAULTS.SEPOLIA_PAYMASTER_URL),
-    stealthServerUrl: getEnvString(SDK_ENV_VARS.SEPOLIA_STEALTH_SERVER_URL, DEFAULTS.SEPOLIA_STEALTH_SERVER_URL),
+    stealthServerUrl: getEnvString(
+      SDK_ENV_VARS.SEPOLIA_STEALTH_SERVER_URL,
+      DEFAULTS.SEPOLIA_STEALTH_SERVER_URL
+    ),
     explorerUrl: getEnvString(SDK_ENV_VARS.SEPOLIA_EXPLORER_URL, DEFAULTS.SEPOLIA_EXPLORER_URL),
   }
 }
@@ -154,7 +196,10 @@ export function getMainnetConfig() {
     rpcUrl: getEnvString(SDK_ENV_VARS.MAINNET_RPC_URL, DEFAULTS.MAINNET_RPC_URL),
     bundlerUrl: getEnvString(SDK_ENV_VARS.MAINNET_BUNDLER_URL, DEFAULTS.MAINNET_BUNDLER_URL),
     paymasterUrl: getEnvString(SDK_ENV_VARS.MAINNET_PAYMASTER_URL, DEFAULTS.MAINNET_PAYMASTER_URL),
-    stealthServerUrl: getEnvString(SDK_ENV_VARS.MAINNET_STEALTH_SERVER_URL, DEFAULTS.MAINNET_STEALTH_SERVER_URL),
+    stealthServerUrl: getEnvString(
+      SDK_ENV_VARS.MAINNET_STEALTH_SERVER_URL,
+      DEFAULTS.MAINNET_STEALTH_SERVER_URL
+    ),
     explorerUrl: getEnvString(SDK_ENV_VARS.MAINNET_EXPLORER_URL, DEFAULTS.MAINNET_EXPLORER_URL),
   }
 }
@@ -169,16 +214,20 @@ export function getDefaultChainId(): number {
 /**
  * Get network configuration by chain ID
  */
-export function getNetworkConfigByChainId(chainId: number): {
-  rpcUrl: string
-  bundlerUrl: string
-  paymasterUrl?: string
-  stealthServerUrl?: string
-  explorerUrl?: string
-} | undefined {
+export function getNetworkConfigByChainId(chainId: number):
+  | {
+      rpcUrl: string
+      bundlerUrl: string
+      paymasterUrl?: string
+      stealthServerUrl?: string
+      explorerUrl?: string
+    }
+  | undefined {
   switch (chainId) {
     case 31337: // Anvil
       return getAnvilConfig()
+    case 8283: // StableNet Local
+      return getLocalConfig()
     case 1337: // Devnet
       return getDevnetConfig()
     case 11155111: // Sepolia
@@ -240,6 +289,14 @@ Anvil (Local - Chain ID 31337):
   ${SDK_ENV_VARS.ANVIL_BUNDLER_URL}          Bundler URL (default: http://127.0.0.1:4337)
   ${SDK_ENV_VARS.ANVIL_PAYMASTER_URL}        Paymaster URL (default: http://127.0.0.1:4338)
   ${SDK_ENV_VARS.ANVIL_STEALTH_SERVER_URL}   Stealth Server URL (default: http://127.0.0.1:4339)
+
+StableNet Local (Chain ID 8283):
+  ${SDK_ENV_VARS.LOCAL_RPC_URL}              RPC URL (default: http://127.0.0.1:8501)
+  ${SDK_ENV_VARS.LOCAL_BUNDLER_URL}          Bundler URL (default: http://127.0.0.1:4337)
+  ${SDK_ENV_VARS.LOCAL_PAYMASTER_URL}        Paymaster URL (default: http://127.0.0.1:4338)
+  ${SDK_ENV_VARS.LOCAL_STEALTH_SERVER_URL}   Stealth Server URL (default: http://127.0.0.1:4339)
+  ${SDK_ENV_VARS.LOCAL_EXPLORER_URL}         Explorer URL (default: http://127.0.0.1:3001)
+  ${SDK_ENV_VARS.LOCAL_INDEXER_URL}          Indexer URL (default: http://127.0.0.1:8080)
 
 Devnet (Chain ID 1337):
   ${SDK_ENV_VARS.DEVNET_RPC_URL}             RPC URL (default: http://localhost:8545)

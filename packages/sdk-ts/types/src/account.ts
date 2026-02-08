@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
-import type { TransactionMode } from './transaction'
 import type { InstalledModule } from './module'
+import type { TransactionMode } from './transaction'
 
 // ============================================================================
 // Constants

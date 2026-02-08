@@ -5,7 +5,7 @@ import { useSessionKey } from '../../hooks/useSessionKey'
 import { useWallet } from '../../hooks/useWallet'
 
 export default function SessionKeysPage() {
-  const { isConnected, address } = useWallet()
+  const { isConnected, address: _address } = useWallet()
   const {
     sessionKeys,
     isLoading,
@@ -15,7 +15,7 @@ export default function SessionKeysPage() {
     createSessionKey,
     revokeSessionKey,
     refresh,
-    clearError,
+    clearError: _clearError,
   } = useSessionKey()
 
   if (!isConnected) {
@@ -29,6 +29,7 @@ export default function SessionKeysPage() {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -77,6 +78,7 @@ export default function SessionKeysPage() {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -126,6 +128,7 @@ export default function SessionKeysPage() {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"

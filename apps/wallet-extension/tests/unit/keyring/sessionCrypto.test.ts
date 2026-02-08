@@ -5,21 +5,19 @@
  */
 
 import {
+  type EncryptedSessionData,
+  decryptSessionData,
   deriveSessionKey,
   encryptSessionData,
-  decryptSessionData,
   isEncryptedSessionData,
   secureClear,
-  type EncryptedSessionData,
 } from '../../../src/background/keyring/sessionCrypto'
 
 describe('sessionCrypto', () => {
   // Test salt (32 bytes)
   const testSalt = new Uint8Array([
-    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-    0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
-    0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
-    0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20,
+    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
+    0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20,
   ])
 
   describe('deriveSessionKey', () => {
@@ -153,13 +151,17 @@ describe('sessionCrypto', () => {
 
     it('should handle large data', async () => {
       const largeData = {
-        keyrings: Array(10).fill(null).map((_, i) => ({
-          type: 'hd',
-          accounts: Array(100).fill(null).map((_, j) => ({
-            address: `0x${i.toString(16).padStart(2, '0')}${j.toString(16).padStart(2, '0')}`,
-            privateKey: `0x${'a'.repeat(64)}`,
+        keyrings: Array(10)
+          .fill(null)
+          .map((_, i) => ({
+            type: 'hd',
+            accounts: Array(100)
+              .fill(null)
+              .map((_, j) => ({
+                address: `0x${i.toString(16).padStart(2, '0')}${j.toString(16).padStart(2, '0')}`,
+                privateKey: `0x${'a'.repeat(64)}`,
+              })),
           })),
-        })),
       }
 
       const encrypted = await encryptSessionData(largeData, testSalt)
@@ -385,9 +387,7 @@ describe('sessionCrypto', () => {
       // Flip a single bit in ciphertext
       const bytes = atob(encrypted.ciphertext)
       const flipped =
-        bytes.slice(0, 10) +
-        String.fromCharCode(bytes.charCodeAt(10) ^ 1) +
-        bytes.slice(11)
+        bytes.slice(0, 10) + String.fromCharCode(bytes.charCodeAt(10) ^ 1) + bytes.slice(11)
       const tampered: EncryptedSessionData = {
         ...encrypted,
         ciphertext: btoa(flipped),

@@ -1,12 +1,12 @@
 import type { Address, Hex } from 'viem'
+import type { SponsorPolicyManager } from '../policy/sponsorPolicy'
+import type { PaymasterSigner } from '../signer/paymasterSigner'
 import type {
-  UserOperationRpc,
+  GetPaymasterStubDataParams,
   PackedUserOperationRpc,
   PaymasterStubDataResponse,
-  GetPaymasterStubDataParams,
+  UserOperationRpc,
 } from '../types'
-import type { PaymasterSigner } from '../signer/paymasterSigner'
-import type { SponsorPolicyManager } from '../policy/sponsorPolicy'
 
 export type { GetPaymasterStubDataParams }
 
@@ -76,9 +76,7 @@ export function handleGetPaymasterStubData(
   // Validate entry point (if configured)
   if (supportedEntryPoints && supportedEntryPoints.length > 0) {
     const entryPointLower = entryPoint.toLowerCase()
-    const isSupported = supportedEntryPoints.some(
-      (ep) => ep.toLowerCase() === entryPointLower
-    )
+    const isSupported = supportedEntryPoints.some((ep) => ep.toLowerCase() === entryPointLower)
     if (!isSupported) {
       return {
         success: false,
@@ -133,9 +131,7 @@ export function handleGetPaymasterStubData(
 /**
  * Normalize UserOperation to unpacked format for policy checking
  */
-function normalizeUserOp(
-  userOp: UserOperationRpc | PackedUserOperationRpc
-): UserOperationRpc {
+function normalizeUserOp(userOp: UserOperationRpc | PackedUserOperationRpc): UserOperationRpc {
   if ('callGasLimit' in userOp) {
     return userOp
   }

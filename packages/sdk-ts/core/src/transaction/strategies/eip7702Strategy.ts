@@ -8,7 +8,6 @@
 import type { Account, MultiModeTransactionRequest, TransactionResult } from '@stablenet/sdk-types'
 import { ACCOUNT_TYPE, TRANSACTION_MODE } from '@stablenet/sdk-types'
 import type { Hash } from 'viem'
-import { DEFAULT_CONFIRMATION_TIMEOUT } from '../../config'
 import { createTransactionError } from '../../errors'
 import { createEIP7702TransactionBuilder } from '../eip7702Transaction'
 import type {
@@ -134,20 +133,14 @@ export function createEIP7702Strategy(config: BaseStrategyConfig): TransactionSt
     /**
      * Wait for transaction confirmation
      *
-     * Note: EIP-7702 uses standard transaction confirmation
+     * Delegates to the EIP-7702 transaction builder's waitForReceipt,
+     * following the same pattern as EOA strategy.
      */
     async waitForConfirmation(
-      _hash: Hash,
+      hash: Hash,
       options?: { confirmations?: number; timeout?: number }
     ): Promise<void> {
-      const _timeout = options?.timeout ?? DEFAULT_CONFIRMATION_TIMEOUT
-
-      // EIP-7702 confirmation would be similar to EOA
-      // For now, we just wait the timeout as a placeholder
-      // In production, this would poll for the transaction receipt
-      throw createTransactionError('EIP-7702 confirmation waiting not yet implemented', {
-        reason: 'NOT_IMPLEMENTED',
-      })
+      await builder.waitForReceipt(hash, options)
     },
   }
 }

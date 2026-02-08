@@ -1,5 +1,5 @@
-import { z } from 'zod'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
+import { z } from 'zod'
 import type { InMemoryStore } from '../../store/memory-store'
 import { createAuthHook } from '../middleware/auth'
 import { validateBody } from '../middleware/validation'

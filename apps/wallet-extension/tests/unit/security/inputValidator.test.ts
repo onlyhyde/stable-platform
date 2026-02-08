@@ -8,12 +8,11 @@ jest.unmock('@stablenet/core')
 
 import {
   InputValidator,
-  type InputValidationResult as ValidationResult,
   isValidInputAddress as isValidAddress,
-  isValidHex,
   isValidChainId,
-  isValidTransactionObject,
+  isValidHex,
   isValidRpcRequest,
+  isValidTransactionObject,
   sanitizeString,
 } from '@stablenet/core'
 
@@ -32,26 +31,20 @@ describe('InputValidator', () => {
 
   describe('validateAddress', () => {
     it('should accept valid checksummed addresses', () => {
-      const result = validator.validateAddress(
-        '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
-      )
+      const result = validator.validateAddress('0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed')
 
       expect(result.isValid).toBe(true)
       expect(result.errors).toHaveLength(0)
     })
 
     it('should accept valid lowercase addresses', () => {
-      const result = validator.validateAddress(
-        '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
-      )
+      const result = validator.validateAddress('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed')
 
       expect(result.isValid).toBe(true)
     })
 
     it('should reject addresses without 0x prefix', () => {
-      const result = validator.validateAddress(
-        '5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
-      )
+      const result = validator.validateAddress('5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed')
 
       expect(result.isValid).toBe(false)
       expect(result.errors).toContain('Address must start with 0x')
@@ -65,9 +58,7 @@ describe('InputValidator', () => {
     })
 
     it('should reject addresses with invalid characters', () => {
-      const result = validator.validateAddress(
-        '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1GGGGZ'
-      )
+      const result = validator.validateAddress('0x5aAeb6053F3E94C9b9A09f33669435E7Ef1GGGGZ')
 
       expect(result.isValid).toBe(false)
       expect(result.errors).toContain('Address contains invalid characters')
@@ -81,9 +72,7 @@ describe('InputValidator', () => {
 
     it('should warn about mixed case without checksum', () => {
       // Mixed case but invalid checksum
-      const result = validator.validateAddress(
-        '0x5aAeB6053f3E94c9b9a09F33669435E7EF1beAed'
-      )
+      const result = validator.validateAddress('0x5aAeB6053f3E94c9b9a09F33669435E7EF1beAed')
 
       expect(result.warnings?.length).toBeGreaterThan(0)
     })
@@ -386,9 +375,7 @@ describe('InputValidator', () => {
 describe('Utility Functions', () => {
   describe('isValidAddress', () => {
     it('should return true for valid address', () => {
-      expect(
-        isValidAddress('0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed')
-      ).toBe(true)
+      expect(isValidAddress('0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed')).toBe(true)
     })
 
     it('should return false for invalid address', () => {

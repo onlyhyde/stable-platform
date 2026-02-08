@@ -131,12 +131,7 @@ export interface UserOpLog {
 /**
  * UserOperation status in mempool
  */
-export type UserOperationStatus =
-  | 'pending'
-  | 'submitted'
-  | 'included'
-  | 'failed'
-  | 'dropped'
+export type UserOperationStatus = 'pending' | 'submitted' | 'included' | 'failed' | 'dropped'
 
 /**
  * Builder options for creating UserOperations

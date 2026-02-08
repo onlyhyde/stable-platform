@@ -1,13 +1,13 @@
 import { EventEmitter } from 'node:events'
 import { generateId } from '../utils/id'
 import type {
-  ContractEntry,
   AddressSet,
-  ResolvedAddressSet,
+  ContractEntry,
   ContractFilter,
   CreateContractInput,
   CreateSetInput,
   ImportResult,
+  ResolvedAddressSet,
 } from './types'
 
 function contractKey(chainId: number, name: string): string {
@@ -160,5 +160,4 @@ export class InMemoryStore extends EventEmitter {
       this.sets.set(setKey(s.chainId, s.name), s)
     }
   }
-
 }

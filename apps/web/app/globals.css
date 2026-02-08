@@ -1,9 +1,9 @@
+/* Import Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import Google Fonts */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
 
 @layer base {
   /* ==========================================
@@ -225,8 +225,8 @@
   /* Focus styles */
   :focus-visible {
     @apply outline-none ring-2 ring-offset-2;
-    ring-color: rgb(var(--ring));
-    ring-offset-color: rgb(var(--background));
+    --tw-ring-color: rgb(var(--ring));
+    --tw-ring-offset-color: rgb(var(--background));
   }
 
   /* Selection */
@@ -366,14 +366,14 @@
            focus:outline-none focus:ring-2 focus:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none
            active:scale-[0.98];
-    ring-offset-color: rgb(var(--background));
+    --tw-ring-offset-color: rgb(var(--background));
   }
 
   .btn-primary {
     @apply btn;
     background: linear-gradient(135deg, rgb(16 185 129), rgb(5 150 105));
     color: rgb(var(--primary-foreground));
-    ring-color: rgb(var(--primary));
+    --tw-ring-color: rgb(var(--primary));
   }
 
   .btn-primary:hover:not(:disabled) {
@@ -386,7 +386,7 @@
     background-color: rgb(var(--secondary));
     color: rgb(var(--secondary-foreground));
     border: 1px solid rgb(var(--border));
-    ring-color: rgb(var(--border));
+    --tw-ring-color: rgb(var(--border));
   }
 
   .btn-secondary:hover:not(:disabled) {
@@ -398,7 +398,7 @@
     @apply btn;
     background: linear-gradient(135deg, rgb(139 92 246), rgb(124 58 237));
     color: rgb(var(--accent-foreground));
-    ring-color: rgb(var(--accent));
+    --tw-ring-color: rgb(var(--accent));
   }
 
   .btn-accent:hover:not(:disabled) {
@@ -422,7 +422,7 @@
     background-color: rgb(239 68 68 / 0.1);
     color: rgb(248 113 113);
     border: 1px solid rgb(239 68 68 / 0.2);
-    ring-color: rgb(var(--destructive));
+    --tw-ring-color: rgb(var(--destructive));
   }
 
   .btn-danger:hover:not(:disabled) {
@@ -436,7 +436,7 @@
     background-color: transparent;
     color: rgb(var(--primary));
     border: 2px solid rgb(var(--primary));
-    ring-color: rgb(var(--primary));
+    --tw-ring-color: rgb(var(--primary));
   }
 
   .btn-outline:hover:not(:disabled) {

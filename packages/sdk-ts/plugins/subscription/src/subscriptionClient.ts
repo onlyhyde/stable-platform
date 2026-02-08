@@ -1,14 +1,14 @@
 import type { Address, Hex, PublicClient } from 'viem'
 import { encodeFunctionData } from 'viem'
+import { NATIVE_TOKEN } from './constants'
 import type {
-  SubscriptionManagerConfig,
   CreatePlanParams,
-  SubscribeParams,
   Plan,
+  SubscribeParams,
   Subscription,
+  SubscriptionManagerConfig,
 } from './types'
 import { SUBSCRIPTION_MANAGER_ABI } from './types'
-import { NATIVE_TOKEN } from './constants'
 
 /**
  * SubscriptionManager client
@@ -88,7 +88,7 @@ export interface SubscriptionManagerClient {
  * ```
  */
 export function createSubscriptionManager(
-  config: SubscriptionManagerConfig,
+  config: SubscriptionManagerConfig
 ): SubscriptionManagerClient {
   const { managerAddress } = config
 
@@ -173,12 +173,12 @@ export function createSubscriptionManager(
     // ---- Read functions ----
 
     async getPlan(client: PublicClient, planId: bigint): Promise<Plan> {
-      const result = await client.readContract({
+      const result = (await client.readContract({
         address: managerAddress,
         abi: SUBSCRIPTION_MANAGER_ABI,
         functionName: 'getPlan',
         args: [planId],
-      }) as {
+      })) as {
         merchant: Address
         amount: bigint
         period: bigint
@@ -208,12 +208,12 @@ export function createSubscriptionManager(
     },
 
     async getSubscription(client: PublicClient, subscriptionId: Hex): Promise<Subscription> {
-      const result = await client.readContract({
+      const result = (await client.readContract({
         address: managerAddress,
         abi: SUBSCRIPTION_MANAGER_ABI,
         functionName: 'getSubscription',
         args: [subscriptionId],
-      }) as {
+      })) as {
         planId: bigint
         subscriber: Address
         permissionId: Hex
@@ -269,7 +269,7 @@ export function createSubscriptionManager(
 
     async getDueSubscriptions(
       client: PublicClient,
-      subscriptionIds: readonly Hex[],
+      subscriptionIds: readonly Hex[]
     ): Promise<Hex[]> {
       return client.readContract({
         address: managerAddress,

@@ -3,13 +3,13 @@
  * TDD tests for EIP-191 personal message signing
  */
 
+import type { Address, Hex } from 'viem'
+import { approvalController } from '../../../src/background/controllers/approvalController'
+import { keyringController } from '../../../src/background/keyring'
 import { handleRpcRequest } from '../../../src/background/rpc/handler'
 import { walletState } from '../../../src/background/state/store'
-import { keyringController } from '../../../src/background/keyring'
 import { RPC_ERRORS } from '../../../src/shared/constants'
-import { approvalController } from '../../../src/background/controllers/approvalController'
 import type { JsonRpcRequest } from '../../../src/types'
-import type { Address, Hex } from 'viem'
 import { TEST_ACCOUNTS, TEST_ORIGINS } from '../../utils/testUtils'
 
 // Mock dependencies
@@ -43,7 +43,7 @@ describe('personal_sign', () => {
   const testAddress = TEST_ACCOUNTS.account1.address
   const testMessage = '0x48656c6c6f20576f726c64' as Hex // "Hello World" in hex
   const testOrigin = TEST_ORIGINS.trusted
-  const mockSignature = '0x' + '1'.repeat(130) as Hex
+  const mockSignature = ('0x' + '1'.repeat(130)) as Hex
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -137,10 +137,7 @@ describe('personal_sign', () => {
       const request = createRequest(testMessage, testAddress)
       const response = await handleRpcRequest(request, testOrigin)
 
-      expect(mockKeyringController.signMessage).toHaveBeenCalledWith(
-        testAddress,
-        testMessage
-      )
+      expect(mockKeyringController.signMessage).toHaveBeenCalledWith(testAddress, testMessage)
       expect(response.result).toBe(mockSignature)
     })
 
@@ -205,9 +202,7 @@ describe('personal_sign', () => {
 
     it('should handle checksummed addresses', async () => {
       // The address comparison should be case-insensitive
-      mockWalletState.getConnectedAccounts.mockReturnValue([
-        testAddress.toLowerCase() as Address,
-      ])
+      mockWalletState.getConnectedAccounts.mockReturnValue([testAddress.toLowerCase() as Address])
 
       const request = createRequest(testMessage, testAddress)
       const response = await handleRpcRequest(request, testOrigin)

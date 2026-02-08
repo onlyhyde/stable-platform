@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest'
-import type { Address, Hex, PublicClient, WalletClient, Account } from 'viem'
+import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RpcServer } from '../../src/rpc/server'
 import type { BundlerConfig } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
@@ -396,7 +396,7 @@ describe('RPC Server E2E', () => {
         const op1 = createPackedUserOp({ nonce: '0x0' })
         const op2 = createPackedUserOp({
           nonce: '0x1',
-          sender: '0x1111111111111111111111111111111111111111' as Address
+          sender: '0x1111111111111111111111111111111111111111' as Address,
         })
 
         await rpcCall(TEST_PORT, 'eth_sendUserOperation', [op1, ENTRY_POINT])

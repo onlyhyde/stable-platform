@@ -7,7 +7,7 @@
  * - Signature requests
  */
 
-import { type Page, type Locator, expect } from '@playwright/test'
+import { type Locator, type Page, expect } from '@playwright/test'
 
 export class ApprovalPage {
   readonly page: Page
@@ -86,7 +86,9 @@ export class ApprovalPage {
   /**
    * Get the type of approval request
    */
-  async getApprovalType(): Promise<'connect' | 'transaction' | 'signature' | 'network' | 'unknown'> {
+  async getApprovalType(): Promise<
+    'connect' | 'transaction' | 'signature' | 'network' | 'unknown'
+  > {
     if (await this.connectTitle.isVisible()) return 'connect'
     if (await this.transactionTitle.isVisible()) return 'transaction'
     if (await this.signatureTitle.isVisible()) return 'signature'

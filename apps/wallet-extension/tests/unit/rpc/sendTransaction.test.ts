@@ -3,14 +3,14 @@
  * TDD tests for transaction signing and broadcasting
  */
 
+import type { Address, Hex } from 'viem'
+import { approvalController } from '../../../src/background/controllers/approvalController'
+import { keyringController } from '../../../src/background/keyring'
 import { handleRpcRequest } from '../../../src/background/rpc/handler'
 import { walletState } from '../../../src/background/state/store'
-import { keyringController } from '../../../src/background/keyring'
 import { RPC_ERRORS } from '../../../src/shared/constants'
-import { approvalController } from '../../../src/background/controllers/approvalController'
 import type { JsonRpcRequest } from '../../../src/types'
-import type { Address, Hex } from 'viem'
-import { TEST_ACCOUNTS, TEST_ORIGINS, TEST_CHAIN_IDS } from '../../utils/testUtils'
+import { TEST_ACCOUNTS, TEST_CHAIN_IDS, TEST_ORIGINS } from '../../utils/testUtils'
 
 // Mock dependencies
 jest.mock('../../../src/background/state/store', () => ({
@@ -19,6 +19,7 @@ jest.mock('../../../src/background/state/store', () => ({
     isConnected: jest.fn(),
     getState: jest.fn(),
     getCurrentNetwork: jest.fn(),
+    addPendingTransaction: jest.fn().mockResolvedValue(undefined),
   },
 }))
 
@@ -44,9 +45,7 @@ jest.mock('viem', () => {
       estimateGas: jest.fn(() => Promise.resolve(BigInt(21000))),
       getGasPrice: jest.fn(() => Promise.resolve(BigInt(20000000000))),
       getTransactionCount: jest.fn(() => Promise.resolve(0)),
-      sendRawTransaction: jest.fn(() =>
-        Promise.resolve('0x' + '1'.repeat(64) as Hex)
-      ),
+      sendRawTransaction: jest.fn(() => Promise.resolve(('0x' + '1'.repeat(64)) as Hex)),
     })),
   }
 })
@@ -59,8 +58,8 @@ describe('eth_sendTransaction', () => {
   const testAddress = TEST_ACCOUNTS.account1.address
   const testToAddress = TEST_ACCOUNTS.account2.address
   const testOrigin = TEST_ORIGINS.trusted
-  const mockSignedTx = '0x' + '2'.repeat(200) as Hex
-  const mockTxHash = '0x' + '3'.repeat(64) as Hex
+  const mockSignedTx = ('0x' + '2'.repeat(200)) as Hex
+  const mockTxHash = ('0x' + '3'.repeat(64)) as Hex
 
   const mockNetwork = {
     chainId: TEST_CHAIN_IDS.mainnet,

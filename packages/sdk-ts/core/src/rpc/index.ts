@@ -12,3 +12,5 @@ export {
   createPaymasterRpcClient,
   type JsonRpcClient,
 } from './jsonRpcClient'
+export { RequestCache, type RequestCacheConfig } from './requestCache'
+export { CircuitBreaker, type CircuitBreakerConfig, type CircuitState } from './circuitBreaker'

@@ -73,14 +73,14 @@ export function validateAuthorizationParams(params: {
 
   if (params.chainId !== undefined) {
     const chainId = Number(params.chainId)
-    if (isNaN(chainId) || chainId <= 0) {
+    if (Number.isNaN(chainId) || chainId <= 0) {
       errors.push('Invalid chain ID')
     }
   }
 
   if (params.nonce !== undefined) {
     const nonce = Number(params.nonce)
-    if (isNaN(nonce) || nonce < 0) {
+    if (Number.isNaN(nonce) || nonce < 0) {
       errors.push('Invalid nonce')
     }
   }

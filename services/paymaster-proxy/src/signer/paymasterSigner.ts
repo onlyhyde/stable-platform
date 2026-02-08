@@ -1,14 +1,7 @@
-import {
-  type Address,
-  type Hex,
-  concat,
-  encodeAbiParameters,
-  keccak256,
-  toHex,
-} from 'viem'
+import { type Address, type Hex, concat, encodeAbiParameters, keccak256, toHex } from 'viem'
 import { privateKeyToAccount, signMessage } from 'viem/accounts'
-import type { UserOperationRpc, PackedUserOperationRpc } from '../types'
 import { getSignerConfig } from '../config/constants'
+import type { PackedUserOperationRpc, UserOperationRpc } from '../types'
 
 /**
  * Paymaster signature mode
@@ -56,9 +49,7 @@ export class PaymasterSigner {
    * - PAYMASTER_VALIDITY_SECONDS: Signature validity (default: 3600 = 1 hour)
    * - PAYMASTER_CLOCK_SKEW_SECONDS: Allowed clock skew (default: 60)
    */
-  generateStubData(
-    validitySeconds?: number
-  ): {
+  generateStubData(validitySeconds?: number): {
     paymasterData: Hex
     validUntil: number
     validAfter: number
@@ -109,13 +100,7 @@ export class PaymasterSigner {
     const validAfter = now - signerConfig.clockSkewSeconds
 
     // Create hash for signing
-    const hash = this.createPaymasterHash(
-      userOp,
-      entryPoint,
-      chainId,
-      validUntil,
-      validAfter
-    )
+    const hash = this.createPaymasterHash(userOp, entryPoint, chainId, validUntil, validAfter)
 
     // Sign the hash
     const signature = await signMessage({
@@ -222,9 +207,7 @@ export class PaymasterSigner {
 
     // Unpacked format
     const initCode =
-      userOp.factory && userOp.factoryData
-        ? concat([userOp.factory, userOp.factoryData])
-        : '0x'
+      userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
 
     return {
       sender: userOp.sender,

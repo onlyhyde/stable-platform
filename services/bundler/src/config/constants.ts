@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
-import type { ReputationConfig } from '../validation/types'
 import type { MempoolConfig, PriorityStrategy } from '../mempool/mempool'
+import type { ReputationConfig } from '../validation/types'
 
 /**
  * Environment variable names for bundler constants
@@ -215,14 +215,8 @@ export function getReputationConfig(): ReputationConfig {
       CONSTANTS_ENV_VARS.REP_THROTTLING_SLACK,
       REPUTATION_DEFAULTS.throttlingSlack
     ),
-    banSlack: getEnvNumber(
-      CONSTANTS_ENV_VARS.REP_BAN_SLACK,
-      REPUTATION_DEFAULTS.banSlack
-    ),
-    minStake: getEnvBigInt(
-      CONSTANTS_ENV_VARS.REP_MIN_STAKE,
-      REPUTATION_DEFAULTS.minStake
-    ),
+    banSlack: getEnvNumber(CONSTANTS_ENV_VARS.REP_BAN_SLACK, REPUTATION_DEFAULTS.banSlack),
+    minStake: getEnvBigInt(CONSTANTS_ENV_VARS.REP_MIN_STAKE, REPUTATION_DEFAULTS.minStake),
     minUnstakeDelay: getEnvNumber(
       CONSTANTS_ENV_VARS.REP_MIN_UNSTAKE_DELAY,
       REPUTATION_DEFAULTS.minUnstakeDelay
@@ -231,10 +225,7 @@ export function getReputationConfig(): ReputationConfig {
       CONSTANTS_ENV_VARS.REP_DECAY_INTERVAL_MS,
       REPUTATION_DEFAULTS.decayIntervalMs
     ),
-    decayAmount: getEnvNumber(
-      CONSTANTS_ENV_VARS.REP_DECAY_AMOUNT,
-      REPUTATION_DEFAULTS.decayAmount
-    ),
+    decayAmount: getEnvNumber(CONSTANTS_ENV_VARS.REP_DECAY_AMOUNT, REPUTATION_DEFAULTS.decayAmount),
     throttleAutoReleaseDurationMs: getEnvNumber(
       CONSTANTS_ENV_VARS.REP_THROTTLE_AUTO_RELEASE_MS,
       REPUTATION_DEFAULTS.throttleAutoReleaseDurationMs
@@ -247,18 +238,12 @@ export function getReputationConfig(): ReputationConfig {
  */
 export function getMempoolConfig(): Required<MempoolConfig> {
   return {
-    maxSize: getEnvNumber(
-      CONSTANTS_ENV_VARS.MEMPOOL_MAX_SIZE,
-      MEMPOOL_DEFAULTS.maxSize
-    ),
+    maxSize: getEnvNumber(CONSTANTS_ENV_VARS.MEMPOOL_MAX_SIZE, MEMPOOL_DEFAULTS.maxSize),
     maxOpsPerSender: getEnvNumber(
       CONSTANTS_ENV_VARS.MEMPOOL_MAX_OPS_PER_SENDER,
       MEMPOOL_DEFAULTS.maxOpsPerSender
     ),
-    ttlMs: getEnvNumber(
-      CONSTANTS_ENV_VARS.MEMPOOL_TTL_MS,
-      MEMPOOL_DEFAULTS.ttlMs
-    ),
+    ttlMs: getEnvNumber(CONSTANTS_ENV_VARS.MEMPOOL_TTL_MS, MEMPOOL_DEFAULTS.ttlMs),
     minGasPriceIncrease: getEnvNumber(
       CONSTANTS_ENV_VARS.MEMPOOL_MIN_GAS_PRICE_INCREASE,
       MEMPOOL_DEFAULTS.minGasPriceIncrease
@@ -295,22 +280,13 @@ export function getMempoolConfig(): Required<MempoolConfig> {
  */
 export function getServerConfig() {
   return {
-    bodyLimit: getEnvNumber(
-      CONSTANTS_ENV_VARS.BODY_LIMIT,
-      SERVER_DEFAULTS.bodyLimit
-    ),
-    rateLimitMax: getEnvNumber(
-      CONSTANTS_ENV_VARS.RATE_LIMIT_MAX,
-      SERVER_DEFAULTS.rateLimitMax
-    ),
+    bodyLimit: getEnvNumber(CONSTANTS_ENV_VARS.BODY_LIMIT, SERVER_DEFAULTS.bodyLimit),
+    rateLimitMax: getEnvNumber(CONSTANTS_ENV_VARS.RATE_LIMIT_MAX, SERVER_DEFAULTS.rateLimitMax),
     rateLimitWindowMs: getEnvNumber(
       CONSTANTS_ENV_VARS.RATE_LIMIT_WINDOW_MS,
       SERVER_DEFAULTS.rateLimitWindowMs
     ),
-    txTimeoutMs: getEnvNumber(
-      CONSTANTS_ENV_VARS.TX_TIMEOUT_MS,
-      SERVER_DEFAULTS.txTimeoutMs
-    ),
+    txTimeoutMs: getEnvNumber(CONSTANTS_ENV_VARS.TX_TIMEOUT_MS, SERVER_DEFAULTS.txTimeoutMs),
   }
 }
 

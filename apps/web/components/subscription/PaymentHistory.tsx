@@ -71,6 +71,7 @@ export const PaymentHistory: FC<PaymentHistoryProps> = ({
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <svg
+              aria-hidden="true"
               className="w-6 h-6"
               style={{ color: 'rgb(var(--muted-foreground))' }}
               fill="none"
@@ -130,6 +131,7 @@ const PaymentHistoryItem: FC<PaymentHistoryItemProps> = ({ payment }) => {
         >
           {payment.status === 'success' ? (
             <svg
+              aria-hidden="true"
               className="w-5 h-5"
               style={{ color: 'rgb(var(--success))' }}
               fill="none"
@@ -145,6 +147,7 @@ const PaymentHistoryItem: FC<PaymentHistoryItemProps> = ({ payment }) => {
             </svg>
           ) : (
             <svg
+              aria-hidden="true"
               className="w-5 h-5"
               style={{ color: 'rgb(var(--destructive))' }}
               fill="none"

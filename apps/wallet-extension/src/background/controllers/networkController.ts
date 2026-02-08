@@ -212,14 +212,53 @@ export class NetworkController {
   }
 
   /**
-   * Validate an RPC URL
+   * Validate an RPC URL format.
    */
   validateRpcUrl(url: string): boolean {
     try {
       const parsed = new URL(url)
-      return ['http:', 'https:', 'ws:', 'wss:'].includes(parsed.protocol)
+      if (!['http:', 'https:', 'ws:', 'wss:'].includes(parsed.protocol)) return false
+      if (!parsed.hostname) return false
+      // Block obvious localhost in production if needed
+      return true
     } catch {
       return false
+    }
+  }
+
+  /**
+   * Validate an RPC URL by connecting and verifying chain ID.
+   * Returns the actual chain ID from the endpoint, or null if unreachable.
+   */
+  async validateRpcUrlWithChainId(url: string, expectedChainId?: number): Promise<number | null> {
+    if (!this.validateRpcUrl(url)) return null
+
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10_000)
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_chainId', params: [] }),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeout)
+
+      if (!response.ok) return null
+
+      const data = (await response.json()) as { result?: string }
+      if (!data.result) return null
+
+      const actualChainId = Number.parseInt(data.result, 16)
+      if (expectedChainId !== undefined && actualChainId !== expectedChainId) {
+        return null
+      }
+
+      return actualChainId
+    } catch {
+      return null
     }
   }
 
@@ -259,6 +298,130 @@ export class NetworkController {
    */
   off(event: NetworkEventType, handler: EventHandler): void {
     this.eventHandlers.get(event)?.delete(handler)
+  }
+
+  // ============================================================================
+  // Health Check & Failover
+  // ============================================================================
+
+  private healthCheckTimer: ReturnType<typeof setInterval> | null = null
+
+  /**
+   * Start periodic health checks for the selected network.
+   * Checks every `intervalMs` (default: 30s).
+   */
+  startHealthChecks(intervalMs = 30_000): void {
+    this.stopHealthChecks()
+    this.healthCheckTimer = setInterval(() => {
+      this.checkSelectedNetworkHealth().catch(() => {})
+    }, intervalMs)
+  }
+
+  /**
+   * Stop periodic health checks.
+   */
+  stopHealthChecks(): void {
+    if (this.healthCheckTimer) {
+      clearInterval(this.healthCheckTimer)
+      this.healthCheckTimer = null
+    }
+  }
+
+  /**
+   * Perform a health check on the selected network.
+   * On failure, attempts failover to backup RPCs.
+   */
+  async checkSelectedNetworkHealth(): Promise<boolean> {
+    const chainId = this.state.selectedChainId
+    const network = this.state.networks[chainId]
+    if (!network) return false
+
+    const rpcUrl = network.activeRpcUrl ?? network.config.rpcUrl
+    const healthy = await this.pingRpc(rpcUrl)
+
+    if (healthy) {
+      network.status = 'connected'
+      network.lastHealthCheck = Date.now()
+      network.consecutiveFailures = 0
+      return true
+    }
+
+    // RPC failed - increment failure count
+    network.consecutiveFailures = (network.consecutiveFailures ?? 0) + 1
+    network.lastError = `RPC ${rpcUrl} unreachable`
+
+    // Attempt failover after 3 consecutive failures
+    if (network.consecutiveFailures >= 3) {
+      const didFailover = await this.attemptFailover(chainId)
+      if (!didFailover) {
+        network.status = 'error'
+        this.emit('network:statusChanged', chainId, 'error')
+      }
+      return didFailover
+    }
+
+    return false
+  }
+
+  /**
+   * Try each fallback RPC until one responds.
+   * Returns true if failover succeeded.
+   */
+  private async attemptFailover(chainId: number): Promise<boolean> {
+    const network = this.state.networks[chainId]
+    if (!network) return false
+
+    const fallbacks = network.config.fallbackRpcUrls ?? []
+    const currentUrl = network.activeRpcUrl ?? network.config.rpcUrl
+
+    // Try primary URL first (if not already the active one)
+    const candidates = [network.config.rpcUrl, ...fallbacks].filter((url) => url !== currentUrl)
+
+    for (const url of candidates) {
+      const healthy = await this.pingRpc(url)
+      if (healthy) {
+        network.activeRpcUrl = url
+        network.status = 'connected'
+        network.consecutiveFailures = 0
+        network.lastHealthCheck = Date.now()
+        this.emit('network:statusChanged', chainId, 'connected')
+        return true
+      }
+    }
+
+    return false
+  }
+
+  /**
+   * Ping an RPC endpoint with eth_chainId to check availability.
+   * Returns true if the endpoint responds within timeout.
+   */
+  private async pingRpc(url: string, timeoutMs = 5_000): Promise<boolean> {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_chainId', params: [] }),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeout)
+      return response.ok
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * Get the active RPC URL for a network (considers failover state).
+   */
+  getActiveRpcUrl(chainId: number): string | undefined {
+    const network = this.state.networks[chainId]
+    if (!network) return undefined
+    return network.activeRpcUrl ?? network.config.rpcUrl
   }
 
   // Private methods

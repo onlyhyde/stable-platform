@@ -80,6 +80,7 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
           {plan.trialPeriod > 0n && (
             <div className="flex items-center gap-2 text-sm">
               <svg
+                aria-hidden="true"
                 className="w-5 h-5 flex-shrink-0"
                 style={{ color: 'rgb(var(--success))' }}
                 fill="none"
@@ -102,6 +103,7 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
           {plan.gracePeriod > 0n && (
             <div className="flex items-center gap-2 text-sm">
               <svg
+                aria-hidden="true"
                 className="w-5 h-5 flex-shrink-0"
                 style={{ color: 'rgb(var(--success))' }}
                 fill="none"
@@ -123,6 +125,7 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
 
           <div className="flex items-center gap-2 text-sm">
             <svg
+              aria-hidden="true"
               className="w-5 h-5 flex-shrink-0"
               style={{ color: 'rgb(var(--success))' }}
               fill="none"
@@ -141,6 +144,7 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
 
           <div className="flex items-center gap-2 text-sm">
             <svg
+              aria-hidden="true"
               className="w-5 h-5 flex-shrink-0"
               style={{ color: 'rgb(var(--success))' }}
               fill="none"
@@ -183,7 +187,7 @@ export const SubscriptionPlanCard: FC<SubscriptionPlanCardProps> = ({
       <CardFooter className="pt-0">
         {isSubscribed ? (
           <Button variant="secondary" className="w-full" disabled>
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

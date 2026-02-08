@@ -1,7 +1,16 @@
 import { z } from 'zod'
 
 const moduleTypes = ['validator', 'executor', 'hook', 'fallback'] as const
-const categories = ['security', 'defi', 'governance', 'social-recovery', 'automation', 'privacy', 'identity', 'utility'] as const
+const categories = [
+  'security',
+  'defi',
+  'governance',
+  'social-recovery',
+  'automation',
+  'privacy',
+  'identity',
+  'utility',
+] as const
 const auditStatuses = ['unaudited', 'community-reviewed', 'audited', 'verified'] as const
 
 export const CreateModuleSchema = z.object({

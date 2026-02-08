@@ -1,5 +1,5 @@
-import type { ZodSchema, ZodError } from 'zod'
-import type { FastifyRequest, FastifyReply } from 'fastify'
+import type { FastifyReply, FastifyRequest } from 'fastify'
+import type { ZodError, ZodSchema } from 'zod'
 
 function formatZodError(error: ZodError): string {
   return error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')

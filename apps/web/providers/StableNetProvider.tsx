@@ -1,10 +1,10 @@
 'use client'
 
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
-import { useAccount, useChainId } from 'wagmi'
-import { createPublicClient, http, type PublicClient } from 'viem'
+import { getConfigByChainId, getStablenetLocal } from '@/lib/chains'
 import { getContractAddresses, getServiceUrls } from '@/lib/constants'
-import { getStablenetLocal, getConfigByChainId } from '@/lib/chains'
+import { type ReactNode, createContext, useContext, useMemo } from 'react'
+import { http, type PublicClient, createPublicClient } from 'viem'
+import { useAccount, useChainId } from 'wagmi'
 
 interface StableNetContextValue {
   publicClient: PublicClient
@@ -65,11 +65,7 @@ export function StableNetProvider({ children }: StableNetProviderProps) {
     }
   }, [chainId, isConnected])
 
-  return (
-    <StableNetContext.Provider value={value}>
-      {children}
-    </StableNetContext.Provider>
-  )
+  return <StableNetContext.Provider value={value}>{children}</StableNetContext.Provider>
 }
 
 export function useStableNetContext(): StableNetContextValue {

@@ -68,12 +68,12 @@ export default function SendPage() {
           {/* Asset Selector (for StableNet wallet) */}
           {isSupported && tokens.length > 0 && (
             <div>
-              <label
+              <span
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'rgb(var(--foreground))' }}
               >
                 Select Asset
-              </label>
+              </span>
               <div className="grid grid-cols-2 gap-2">
                 {/* Native token option */}
                 <button

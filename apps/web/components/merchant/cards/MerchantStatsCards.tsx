@@ -77,7 +77,7 @@ export function MerchantStatsCards({ stats }: MerchantStatsCardsProps) {
         value={formatCurrency(stats.totalRevenue)}
         change={stats.revenueChange}
         icon={
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -92,7 +92,7 @@ export function MerchantStatsCards({ stats }: MerchantStatsCardsProps) {
         value={stats.activeSubscriptions.toLocaleString()}
         change={stats.subscriptionChange}
         icon={
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -108,7 +108,7 @@ export function MerchantStatsCards({ stats }: MerchantStatsCardsProps) {
         change={stats.paymentSuccessRate}
         changeLabel="success rate"
         icon={
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -123,7 +123,7 @@ export function MerchantStatsCards({ stats }: MerchantStatsCardsProps) {
         value={formatCurrency(stats.avgTransactionValue)}
         change={stats.avgValueChange}
         icon={
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

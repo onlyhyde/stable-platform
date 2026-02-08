@@ -1,25 +1,25 @@
-import { describe, it, expect, beforeEach } from 'vitest'
 import type { Hex } from 'viem'
-import { hexToBytes, bytesToHex } from 'viem'
+import { hexToBytes } from 'viem'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  generatePrivateKey,
-  derivePublicKey,
-  generateStealthKeyPair,
-  generateStealthAddressCrypto,
-  computeStealthPrivateKey,
-  checkViewTag,
-  parseStealthMetaAddress,
-  encodeStealthMetaAddress,
-  parseStealthMetaAddressUri,
-  encodeStealthMetaAddressUri,
-  computeViewTag,
-  extractViewTag,
-  createMetadata,
-  viewTagsMatch,
-  validateMetadata,
+  COMPRESSED_PUBKEY_SIZE,
   SCHEME_ID,
   VIEW_TAG_SIZE,
-  COMPRESSED_PUBKEY_SIZE,
+  checkViewTag,
+  computeStealthPrivateKey,
+  computeViewTag,
+  createMetadata,
+  derivePublicKey,
+  encodeStealthMetaAddress,
+  encodeStealthMetaAddressUri,
+  extractViewTag,
+  generatePrivateKey,
+  generateStealthAddressCrypto,
+  generateStealthKeyPair,
+  parseStealthMetaAddress,
+  parseStealthMetaAddressUri,
+  validateMetadata,
+  viewTagsMatch,
 } from '../src'
 
 describe('stealth plugin', () => {
@@ -370,7 +370,9 @@ describe('stealth plugin', () => {
       })
 
       it('should throw for metadata without 0x prefix', () => {
-        expect(() => validateMetadata('ab1234' as Hex)).toThrow('must be a hex string starting with 0x')
+        expect(() => validateMetadata('ab1234' as Hex)).toThrow(
+          'must be a hex string starting with 0x'
+        )
       })
 
       it('should throw for oversized metadata', () => {
@@ -426,7 +428,9 @@ describe('stealth plugin', () => {
       it('should throw for invalid length', () => {
         const invalidLength = '0xabcd' as Hex
 
-        expect(() => parseStealthMetaAddress(invalidLength)).toThrow('Invalid stealth meta-address length')
+        expect(() => parseStealthMetaAddress(invalidLength)).toThrow(
+          'Invalid stealth meta-address length'
+        )
       })
 
       it('should round-trip encode/parse', () => {
@@ -463,8 +467,16 @@ describe('stealth plugin', () => {
       })
 
       it('should support different chain prefixes', () => {
-        const uriEth = encodeStealthMetaAddressUri('eth', spendingKeyPair.publicKey, viewingKeyPair.publicKey)
-        const uriStablenet = encodeStealthMetaAddressUri('stablenet', spendingKeyPair.publicKey, viewingKeyPair.publicKey)
+        const uriEth = encodeStealthMetaAddressUri(
+          'eth',
+          spendingKeyPair.publicKey,
+          viewingKeyPair.publicKey
+        )
+        const uriStablenet = encodeStealthMetaAddressUri(
+          'stablenet',
+          spendingKeyPair.publicKey,
+          viewingKeyPair.publicKey
+        )
 
         expect(uriEth).toMatch(/^st:eth:/)
         expect(uriStablenet).toMatch(/^st:stablenet:/)
@@ -491,13 +503,23 @@ describe('stealth plugin', () => {
       })
 
       it('should throw for empty chain prefix', () => {
-        const encoded = encodeStealthMetaAddress(spendingKeyPair.publicKey, viewingKeyPair.publicKey)
-        expect(() => parseStealthMetaAddressUri(`st::${encoded}`)).toThrow('chain prefix cannot be empty')
+        const encoded = encodeStealthMetaAddress(
+          spendingKeyPair.publicKey,
+          viewingKeyPair.publicKey
+        )
+        expect(() => parseStealthMetaAddressUri(`st::${encoded}`)).toThrow(
+          'chain prefix cannot be empty'
+        )
       })
 
       it('should throw for invalid chain prefix characters', () => {
-        const encoded = encodeStealthMetaAddress(spendingKeyPair.publicKey, viewingKeyPair.publicKey)
-        expect(() => parseStealthMetaAddressUri(`st:eth@invalid:${encoded}`)).toThrow('chain prefix must be alphanumeric')
+        const encoded = encodeStealthMetaAddress(
+          spendingKeyPair.publicKey,
+          viewingKeyPair.publicKey
+        )
+        expect(() => parseStealthMetaAddressUri(`st:eth@invalid:${encoded}`)).toThrow(
+          'chain prefix must be alphanumeric'
+        )
       })
 
       it('should throw for empty address', () => {
@@ -505,12 +527,18 @@ describe('stealth plugin', () => {
       })
 
       it('should throw for non-hex address', () => {
-        expect(() => parseStealthMetaAddressUri('st:eth:notahexstring')).toThrow('must be a hex string')
+        expect(() => parseStealthMetaAddressUri('st:eth:notahexstring')).toThrow(
+          'must be a hex string'
+        )
       })
 
       it('should throw for null or undefined', () => {
-        expect(() => parseStealthMetaAddressUri(null as unknown as string)).toThrow('must be a non-empty string')
-        expect(() => parseStealthMetaAddressUri(undefined as unknown as string)).toThrow('must be a non-empty string')
+        expect(() => parseStealthMetaAddressUri(null as unknown as string)).toThrow(
+          'must be a non-empty string'
+        )
+        expect(() => parseStealthMetaAddressUri(undefined as unknown as string)).toThrow(
+          'must be a non-empty string'
+        )
       })
 
       it('should round-trip encode/parse URI', () => {
@@ -645,19 +673,14 @@ describe('stealth plugin', () => {
       // This just verifies the code doesn't crash on various inputs
       const keyPair = generateStealthKeyPair()
 
-      expect(() =>
-        generateStealthAddressCrypto(keyPair.publicKey, keyPair.publicKey)
-      ).not.toThrow()
+      expect(() => generateStealthAddressCrypto(keyPair.publicKey, keyPair.publicKey)).not.toThrow()
     })
 
     it('should handle same spending and viewing keys', () => {
       const keyPair = generateStealthKeyPair()
 
       // Using same key for both spending and viewing (not recommended but valid)
-      const generated = generateStealthAddressCrypto(
-        keyPair.publicKey,
-        keyPair.publicKey
-      )
+      const generated = generateStealthAddressCrypto(keyPair.publicKey, keyPair.publicKey)
 
       const computed = computeStealthPrivateKey(
         generated.ephemeralPubKey,

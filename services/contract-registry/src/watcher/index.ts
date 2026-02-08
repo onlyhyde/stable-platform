@@ -1,9 +1,9 @@
-import { watch, type FSWatcher } from 'chokidar'
 import { readFile } from 'node:fs/promises'
-import { parseFoundryBroadcast } from './foundry-parser'
-import { mapArtifactName } from './artifact-mapper'
+import { type FSWatcher, watch } from 'chokidar'
 import type { InMemoryStore } from '../store/memory-store'
 import type { Logger } from '../utils/logger'
+import { mapArtifactName } from './artifact-mapper'
+import { parseFoundryBroadcast } from './foundry-parser'
 
 export interface FileWatcherOptions {
   readonly watchDir: string
@@ -18,7 +18,10 @@ export class FileWatcher {
   private watcher: FSWatcher | null = null
   private debounceTimer: ReturnType<typeof setTimeout> | null = null
   private pendingFiles = new Set<string>()
-  private readonly options: Required<Pick<FileWatcherOptions, 'watchDir' | 'store' | 'logger' | 'debounceMs'>> & FileWatcherOptions
+  private readonly options: Required<
+    Pick<FileWatcherOptions, 'watchDir' | 'store' | 'logger' | 'debounceMs'>
+  > &
+    FileWatcherOptions
 
   constructor(options: FileWatcherOptions) {
     this.options = {

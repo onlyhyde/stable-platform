@@ -1,5 +1,5 @@
-import { defineConfig } from 'vitest/config'
 import { resolve } from 'path'
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
@@ -22,8 +22,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@stablenet/sdk-types': resolve(__dirname, '../../../types/src'),
-      '@stablenet/config': resolve(__dirname, '../../../config/src'),
+      '@stablenet/sdk-types': resolve(__dirname, '../types/src'),
+      '@stablenet/config': resolve(__dirname, '../config/src'),
     },
   },
 })

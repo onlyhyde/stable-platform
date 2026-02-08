@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import type { Address, Hex } from 'viem'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Mempool, type MempoolConfig } from '../../src/mempool/mempool'
 import type { UserOperation } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
@@ -16,7 +16,7 @@ const TEST_SENDER_2 = '0x2222222222222222222222222222222222222222' as Address
 function createTestUserOp(
   sender: Address,
   nonce: bigint,
-  maxFeePerGas: bigint = 1000000000n
+  maxFeePerGas = 1000000000n
 ): UserOperation {
   return {
     sender,
@@ -189,22 +189,14 @@ describe('Mempool', () => {
 
       // Add 4 operations from same sender
       for (let i = 0; i < 4; i++) {
-        mempool.add(
-          createTestUserOp(TEST_SENDER_1, BigInt(i)),
-          createHash(i),
-          ENTRY_POINT
-        )
+        mempool.add(createTestUserOp(TEST_SENDER_1, BigInt(i)), createHash(i), ENTRY_POINT)
       }
 
       expect(mempool.getBySender(TEST_SENDER_1).length).toBe(4)
 
       // 5th should fail
       expect(() => {
-        mempool.add(
-          createTestUserOp(TEST_SENDER_1, 4n),
-          createHash(5),
-          ENTRY_POINT
-        )
+        mempool.add(createTestUserOp(TEST_SENDER_1, 4n), createHash(5), ENTRY_POINT)
       }).toThrow('sender has too many pending operations')
     })
 
@@ -265,11 +257,7 @@ describe('Mempool', () => {
 
       // Try to replace with only 5% higher
       const newGas = (originalGas * 105n) / 100n
-      const success = mempool.replace(
-        hash,
-        createTestUserOp(TEST_SENDER_1, 0n, newGas),
-        hash
-      )
+      const success = mempool.replace(hash, createTestUserOp(TEST_SENDER_1, 0n, newGas), hash)
 
       expect(success).toBe(false)
       expect(mempool.get(hash)?.userOp.maxFeePerGas).toBe(originalGas)
@@ -308,22 +296,14 @@ describe('Mempool', () => {
 
       // Default maxOpsPerSender is 4, so we can only add 4 from same sender
       for (let i = 0; i < 4; i++) {
-        mempool.add(
-          createTestUserOp(TEST_SENDER_1, BigInt(i)),
-          createHash(i),
-          ENTRY_POINT
-        )
+        mempool.add(createTestUserOp(TEST_SENDER_1, BigInt(i)), createHash(i), ENTRY_POINT)
       }
 
       expect(mempool.size).toBe(4)
 
       // But we can add from different senders
       for (let i = 4; i < 8; i++) {
-        mempool.add(
-          createTestUserOp(TEST_SENDER_2, BigInt(i - 4)),
-          createHash(i),
-          ENTRY_POINT
-        )
+        mempool.add(createTestUserOp(TEST_SENDER_2, BigInt(i - 4)), createHash(i), ENTRY_POINT)
       }
 
       expect(mempool.size).toBe(8)
@@ -354,7 +334,7 @@ describe('Mempool', () => {
       const ops = mempool.getBySender(TEST_SENDER_1)
 
       // Should be sorted by nonce
-      const nonces = ops.map(op => op.userOp.nonce)
+      const nonces = ops.map((op) => op.userOp.nonce)
       expect(nonces).toEqual([0n, 1n, 2n])
     })
   })
@@ -449,7 +429,7 @@ describe('Mempool', () => {
       mempool.add(createTestUserOp(TEST_SENDER_1, 1n), createHash(2), ENTRY_POINT)
 
       expect(mempool.size).toBe(3)
-      const nonces = mempool.getBySender(TEST_SENDER_1).map(e => e.userOp.nonce)
+      const nonces = mempool.getBySender(TEST_SENDER_1).map((e) => e.userOp.nonce)
       expect(nonces).toEqual([0n, 1n, 2n])
     })
 
@@ -589,7 +569,11 @@ describe('Mempool', () => {
 
         // Add ops with different gas prices
         mempool.add(createUserOpWithGas(TEST_SENDER_1, 0n, 1000n, 500n), createHash(1), ENTRY_POINT)
-        mempool.add(createUserOpWithGas(TEST_SENDER_2, 0n, 3000n, 1500n), createHash(2), ENTRY_POINT)
+        mempool.add(
+          createUserOpWithGas(TEST_SENDER_2, 0n, 3000n, 1500n),
+          createHash(2),
+          ENTRY_POINT
+        )
         const sender3 = '0x3333333333333333333333333333333333333333' as Address
         mempool.add(createUserOpWithGas(sender3, 0n, 2000n, 1000n), createHash(3), ENTRY_POINT)
 
@@ -607,7 +591,11 @@ describe('Mempool', () => {
 
         // Add ops with different priority fees (but same maxFeePerGas)
         mempool.add(createUserOpWithGas(TEST_SENDER_1, 0n, 5000n, 500n), createHash(1), ENTRY_POINT)
-        mempool.add(createUserOpWithGas(TEST_SENDER_2, 0n, 5000n, 1500n), createHash(2), ENTRY_POINT)
+        mempool.add(
+          createUserOpWithGas(TEST_SENDER_2, 0n, 5000n, 1500n),
+          createHash(2),
+          ENTRY_POINT
+        )
         const sender3 = '0x3333333333333333333333333333333333333333' as Address
         mempool.add(createUserOpWithGas(sender3, 0n, 5000n, 1000n), createHash(3), ENTRY_POINT)
 
@@ -624,9 +612,17 @@ describe('Mempool', () => {
         mempool = new Mempool(mockLogger, { priorityStrategy: 'fifo' })
 
         // Add ops at different times
-        mempool.add(createUserOpWithGas(TEST_SENDER_1, 0n, 3000n, 1500n), createHash(1), ENTRY_POINT)
+        mempool.add(
+          createUserOpWithGas(TEST_SENDER_1, 0n, 3000n, 1500n),
+          createHash(1),
+          ENTRY_POINT
+        )
         vi.advanceTimersByTime(1000)
-        mempool.add(createUserOpWithGas(TEST_SENDER_2, 0n, 5000n, 2500n), createHash(2), ENTRY_POINT)
+        mempool.add(
+          createUserOpWithGas(TEST_SENDER_2, 0n, 5000n, 2500n),
+          createHash(2),
+          ENTRY_POINT
+        )
         vi.advanceTimersByTime(1000)
         const sender3 = '0x3333333333333333333333333333333333333333' as Address
         mempool.add(createUserOpWithGas(sender3, 0n, 1000n, 500n), createHash(3), ENTRY_POINT)
@@ -654,7 +650,11 @@ describe('Mempool', () => {
         vi.advanceTimersByTime(30000)
 
         // Add a high-gas op
-        mempool.add(createUserOpWithGas(TEST_SENDER_2, 0n, 2000n, 1000n), createHash(2), ENTRY_POINT)
+        mempool.add(
+          createUserOpWithGas(TEST_SENDER_2, 0n, 2000n, 1000n),
+          createHash(2),
+          ENTRY_POINT
+        )
 
         const pending = mempool.getPending(ENTRY_POINT)
 
@@ -677,7 +677,11 @@ describe('Mempool', () => {
         vi.advanceTimersByTime(10 * 60 * 1000)
 
         // Add a high-gas op
-        mempool.add(createUserOpWithGas(TEST_SENDER_2, 0n, 10000n, 5000n), createHash(2), ENTRY_POINT)
+        mempool.add(
+          createUserOpWithGas(TEST_SENDER_2, 0n, 10000n, 5000n),
+          createHash(2),
+          ENTRY_POINT
+        )
 
         const pending = mempool.getPending(ENTRY_POINT)
 
@@ -696,7 +700,11 @@ describe('Mempool', () => {
         mempool.add(createUserOpWithGas(TEST_SENDER_1, 0n, 2000n, 500n), createHash(1), ENTRY_POINT)
 
         // Op2: total gas = 250000, priority = 1000 → profit = 250,000,000
-        mempool.add(createUserOpWithGas(TEST_SENDER_2, 0n, 2000n, 1000n), createHash(2), ENTRY_POINT)
+        mempool.add(
+          createUserOpWithGas(TEST_SENDER_2, 0n, 2000n, 1000n),
+          createHash(2),
+          ENTRY_POINT
+        )
 
         const pending = mempool.getPending(ENTRY_POINT)
 
@@ -739,8 +747,8 @@ describe('Mempool', () => {
 
       // Sender 1's ops should come before Sender 2's (higher total gas)
       // But within each sender, nonce order is maintained
-      const sender1Ops = pending.filter(e => e.userOp.sender === TEST_SENDER_1)
-      const sender2Ops = pending.filter(e => e.userOp.sender === TEST_SENDER_2)
+      const sender1Ops = pending.filter((e) => e.userOp.sender === TEST_SENDER_1)
+      const sender2Ops = pending.filter((e) => e.userOp.sender === TEST_SENDER_2)
 
       // Sender 1: nonce 0 before nonce 1
       expect(sender1Ops[0].userOp.nonce).toBe(0n)
@@ -767,14 +775,14 @@ describe('Mempool', () => {
 
       // Sender 1: only nonce 1 (nonce 3 skipped due to gap)
       // Sender 2: all 3 nonces (consecutive)
-      const sender1Ops = pending.filter(e => e.userOp.sender === TEST_SENDER_1)
-      const sender2Ops = pending.filter(e => e.userOp.sender === TEST_SENDER_2)
+      const sender1Ops = pending.filter((e) => e.userOp.sender === TEST_SENDER_1)
+      const sender2Ops = pending.filter((e) => e.userOp.sender === TEST_SENDER_2)
 
       expect(sender1Ops.length).toBe(1)
       expect(sender1Ops[0].userOp.nonce).toBe(1n)
 
       expect(sender2Ops.length).toBe(3)
-      expect(sender2Ops.map(e => e.userOp.nonce)).toEqual([0n, 1n, 2n])
+      expect(sender2Ops.map((e) => e.userOp.nonce)).toEqual([0n, 1n, 2n])
     })
   })
 

@@ -1,12 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { Address, Hex, PublicClient } from 'viem'
-import { AggregatorValidator } from '../../src/validation/aggregatorValidator'
-import { createLogger } from '../../src/utils/logger'
-import type {
-  PackedUserOperation,
-  StakeInfo,
-} from '../../src/validation/types'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RpcError } from '../../src/types'
+import { createLogger } from '../../src/utils/logger'
+import { AggregatorValidator } from '../../src/validation/aggregatorValidator'
+import type { PackedUserOperation, StakeInfo } from '../../src/validation/types'
 
 describe('AggregatorValidator', () => {
   const logger = createLogger('error', false)
@@ -19,7 +16,7 @@ describe('AggregatorValidator', () => {
 
   const createMockUserOp = (
     sender: Address = '0x3333333333333333333333333333333333333333' as Address,
-    nonce: bigint = 0n
+    nonce = 0n
   ): PackedUserOperation => ({
     sender,
     nonce,
@@ -29,7 +26,7 @@ describe('AggregatorValidator', () => {
     preVerificationGas: 21000n,
     gasFees: '0x000000000000000000000000000000010000000000000000000000000000000a' as Hex,
     paymasterAndData: '0x' as Hex,
-    signature: '0x' + 'ab'.repeat(65) as Hex,
+    signature: ('0x' + 'ab'.repeat(65)) as Hex,
   })
 
   beforeEach(() => {
@@ -45,7 +42,7 @@ describe('AggregatorValidator', () => {
   describe('validateUserOpSignature', () => {
     it('should call aggregator.validateUserOpSignature and return sigForUserOp', async () => {
       const userOp = createMockUserOp()
-      const expectedSigForUserOp = '0x' + 'cd'.repeat(32) as Hex
+      const expectedSigForUserOp = ('0x' + 'cd'.repeat(32)) as Hex
 
       vi.mocked(mockPublicClient.readContract).mockResolvedValueOnce(expectedSigForUserOp)
 
@@ -67,9 +64,9 @@ describe('AggregatorValidator', () => {
         new Error('Aggregator rejected signature')
       )
 
-      await expect(
-        validator.validateUserOpSignature(aggregatorAddress, userOp)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validateUserOpSignature(aggregatorAddress, userOp)).rejects.toThrow(
+        RpcError
+      )
     })
 
     it('should throw RpcError with correct code for invalid aggregator', async () => {
@@ -90,7 +87,7 @@ describe('AggregatorValidator', () => {
   describe('aggregateSignatures', () => {
     it('should call aggregator.aggregateSignatures and return aggregated signature', async () => {
       const userOps = [createMockUserOp(), createMockUserOp()]
-      const expectedAggregatedSig = '0x' + 'ef'.repeat(96) as Hex
+      const expectedAggregatedSig = ('0x' + 'ef'.repeat(96)) as Hex
 
       vi.mocked(mockPublicClient.readContract).mockResolvedValueOnce(expectedAggregatedSig)
 
@@ -120,16 +117,16 @@ describe('AggregatorValidator', () => {
         new Error('Failed to aggregate')
       )
 
-      await expect(
-        validator.aggregateSignatures(aggregatorAddress, userOps)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.aggregateSignatures(aggregatorAddress, userOps)).rejects.toThrow(
+        RpcError
+      )
     })
   })
 
   describe('validateSignatures', () => {
     it('should call aggregator.validateSignatures successfully', async () => {
       const userOps = [createMockUserOp(), createMockUserOp()]
-      const aggregatedSig = '0x' + 'ef'.repeat(96) as Hex
+      const aggregatedSig = ('0x' + 'ef'.repeat(96)) as Hex
 
       vi.mocked(mockPublicClient.readContract).mockResolvedValueOnce(undefined)
 
@@ -147,7 +144,7 @@ describe('AggregatorValidator', () => {
 
     it('should throw RpcError when aggregated signature validation fails', async () => {
       const userOps = [createMockUserOp()]
-      const invalidSig = '0x' + '00'.repeat(32) as Hex
+      const invalidSig = ('0x' + '00'.repeat(32)) as Hex
 
       vi.mocked(mockPublicClient.readContract).mockRejectedValueOnce(
         new Error('Invalid aggregated signature')
@@ -160,7 +157,7 @@ describe('AggregatorValidator', () => {
 
     it('should throw with INVALID_SIGNATURE code on validation failure', async () => {
       const userOps = [createMockUserOp()]
-      const invalidSig = '0x' + '00'.repeat(32) as Hex
+      const invalidSig = ('0x' + '00'.repeat(32)) as Hex
 
       vi.mocked(mockPublicClient.readContract).mockRejectedValueOnce(
         new Error('Signature mismatch')
@@ -294,7 +291,7 @@ describe('AggregatorValidator', () => {
         { userOp: createMockUserOp(), aggregator: aggregatorAddress },
       ]
 
-      const aggregatedSig = '0x' + 'ef'.repeat(96) as Hex
+      const aggregatedSig = ('0x' + 'ef'.repeat(96)) as Hex
       vi.mocked(mockPublicClient.readContract).mockResolvedValueOnce(aggregatedSig)
 
       const result = await validator.prepareAggregatedOps(userOps)
@@ -311,8 +308,8 @@ describe('AggregatorValidator', () => {
         { userOp: createMockUserOp(), aggregator: aggregatorAddress2 },
       ]
 
-      const aggregatedSig1 = '0x' + 'aa'.repeat(96) as Hex
-      const aggregatedSig2 = '0x' + 'bb'.repeat(96) as Hex
+      const aggregatedSig1 = ('0x' + 'aa'.repeat(96)) as Hex
+      const aggregatedSig2 = ('0x' + 'bb'.repeat(96)) as Hex
 
       vi.mocked(mockPublicClient.readContract)
         .mockResolvedValueOnce(aggregatedSig1)
@@ -326,9 +323,7 @@ describe('AggregatorValidator', () => {
     })
 
     it('should throw if aggregation fails for any group', async () => {
-      const userOps = [
-        { userOp: createMockUserOp(), aggregator: aggregatorAddress },
-      ]
+      const userOps = [{ userOp: createMockUserOp(), aggregator: aggregatorAddress }]
 
       vi.mocked(mockPublicClient.readContract).mockRejectedValueOnce(
         new Error('Aggregation failed')

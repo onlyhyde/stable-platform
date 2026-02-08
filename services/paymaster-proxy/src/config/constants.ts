@@ -25,7 +25,7 @@ export const PAYMASTER_ENV_VARS = {
  * Default values
  */
 const DEFAULTS = {
-  port: 3001,
+  port: 4338,
   debug: false,
   sponsorName: 'StableNet Paymaster',
   validitySeconds: 3600, // 1 hour
@@ -34,7 +34,7 @@ const DEFAULTS = {
   maxGasCost: 10n ** 18n, // 1 ETH
   dailyLimitPerSender: 10n ** 17n, // 0.1 ETH
   globalDailyLimit: 10n ** 19n, // 10 ETH
-  supportedChainIds: [1, 11155111, 84532], // mainnet, sepolia, base-sepolia
+  supportedChainIds: [8283, 1, 11155111, 84532], // stablenet-local, mainnet, sepolia, base-sepolia
 } as const
 
 /**
@@ -111,7 +111,10 @@ export function getServerConfig() {
 export function getSignerConfig() {
   return {
     validitySeconds: getEnvNumber(PAYMASTER_ENV_VARS.VALIDITY_SECONDS, DEFAULTS.validitySeconds),
-    clockSkewSeconds: getEnvNumber(PAYMASTER_ENV_VARS.CLOCK_SKEW_SECONDS, DEFAULTS.clockSkewSeconds),
+    clockSkewSeconds: getEnvNumber(
+      PAYMASTER_ENV_VARS.CLOCK_SKEW_SECONDS,
+      DEFAULTS.clockSkewSeconds
+    ),
   }
 }
 
@@ -141,10 +144,10 @@ export function getPaymasterEnvHelp(): string {
 Paymaster Proxy Configuration Environment Variables:
 
 Server:
-  ${PAYMASTER_ENV_VARS.PORT}                           RPC server port (default: 3001)
+  ${PAYMASTER_ENV_VARS.PORT}                           RPC server port (default: 4338)
   ${PAYMASTER_ENV_VARS.DEBUG}                          Enable debug mode (default: false)
   ${PAYMASTER_ENV_VARS.SPONSOR_NAME}                   Sponsor name in responses (default: StableNet Paymaster)
-  ${PAYMASTER_ENV_VARS.SUPPORTED_CHAIN_IDS}            Supported chain IDs, comma-separated (default: 1,11155111,84532)
+  ${PAYMASTER_ENV_VARS.SUPPORTED_CHAIN_IDS}            Supported chain IDs, comma-separated (default: 8283,1,11155111,84532)
 
 Signer:
   ${PAYMASTER_ENV_VARS.VALIDITY_SECONDS}               Signature validity in seconds (default: 3600 = 1 hour)

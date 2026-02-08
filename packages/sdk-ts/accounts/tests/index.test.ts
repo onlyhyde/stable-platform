@@ -1,15 +1,15 @@
-import { describe, it, expect } from 'vitest'
-import type { Address, Hex } from 'viem'
-import {
-  encodeExecutionMode,
-  encodeSingleCall,
-  encodeBatchCalls,
-  encodeKernelExecuteCallData,
-  encodeRootValidator,
-  calculateSalt,
-} from '../src/kernel/utils'
 import { CALL_TYPE, EXEC_MODE, MODULE_TYPE } from '@stablenet/sdk-types'
 import type { Call, Validator } from '@stablenet/sdk-types'
+import type { Address, Hex } from 'viem'
+import { describe, expect, it } from 'vitest'
+import {
+  calculateSalt,
+  encodeBatchCalls,
+  encodeExecutionMode,
+  encodeKernelExecuteCallData,
+  encodeRootValidator,
+  encodeSingleCall,
+} from '../src/kernel/utils'
 
 describe('Kernel Utils', () => {
   describe('encodeExecutionMode', () => {

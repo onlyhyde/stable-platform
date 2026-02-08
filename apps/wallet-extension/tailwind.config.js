@@ -60,14 +60,14 @@ export default {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       boxShadow: {
-        'soft': '0 2px 8px -2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.03)',
+        soft: '0 2px 8px -2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.03)',
         'glow-sm': '0 0 12px -3px rgba(16, 185, 129, 0.25)',
-        'glow': '0 0 20px -5px rgba(16, 185, 129, 0.35)',
+        glow: '0 0 20px -5px rgba(16, 185, 129, 0.35)',
         'glow-lg': '0 0 30px -5px rgba(16, 185, 129, 0.45)',
       },
       borderRadius: {
-        'lg': '0.5rem',
-        'xl': '0.75rem',
+        lg: '0.5rem',
+        xl: '0.75rem',
       },
     },
   },

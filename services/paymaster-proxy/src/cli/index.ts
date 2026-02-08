@@ -4,9 +4,9 @@ import { serve } from '@hono/node-server'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { createApp } from '../app'
-import { loadConfig, createConfig } from '../config'
+import { createConfig, loadConfig } from '../config'
 import type { PaymasterProxyConfig } from '../types'
-import { createLogger, getGlobalLogger, type LogLevel } from '../utils/logger'
+import { type LogLevel, createLogger, getGlobalLogger } from '../utils/logger'
 
 // Get early logger for error handling before full initialization
 const earlyLogger = getGlobalLogger()
@@ -95,7 +95,9 @@ async function main() {
           } else {
             // Validate required arguments
             if (!args.paymaster || !args.signer || !args.rpc) {
-              logger.error('Missing required arguments: --paymaster, --signer, and --rpc are required')
+              logger.error(
+                'Missing required arguments: --paymaster, --signer, and --rpc are required'
+              )
               logger.info('Use --env to load from environment variables')
               process.exit(1)
             }

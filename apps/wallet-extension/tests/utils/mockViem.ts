@@ -9,18 +9,20 @@ import { TEST_ACCOUNTS, TEST_CHAIN_IDS } from './testUtils'
 /**
  * Create a mock public client
  */
-export function createMockPublicClient(overrides: Partial<{
-  chainId: number
-  getBalance: (args: { address: Address }) => Promise<bigint>
-  getTransactionCount: (args: { address: Address }) => Promise<number>
-  estimateGas: (args: unknown) => Promise<bigint>
-  call: (args: unknown) => Promise<Hex>
-  getBlockNumber: () => Promise<bigint>
-  getGasPrice: () => Promise<bigint>
-  getTransaction: (args: { hash: Hex }) => Promise<unknown>
-  getTransactionReceipt: (args: { hash: Hex }) => Promise<unknown>
-  waitForTransactionReceipt: (args: { hash: Hex }) => Promise<unknown>
-}> = {}): Partial<PublicClient> {
+export function createMockPublicClient(
+  overrides: Partial<{
+    chainId: number
+    getBalance: (args: { address: Address }) => Promise<bigint>
+    getTransactionCount: (args: { address: Address }) => Promise<number>
+    estimateGas: (args: unknown) => Promise<bigint>
+    call: (args: unknown) => Promise<Hex>
+    getBlockNumber: () => Promise<bigint>
+    getGasPrice: () => Promise<bigint>
+    getTransaction: (args: { hash: Hex }) => Promise<unknown>
+    getTransactionReceipt: (args: { hash: Hex }) => Promise<unknown>
+    waitForTransactionReceipt: (args: { hash: Hex }) => Promise<unknown>
+  }> = {}
+): Partial<PublicClient> {
   return {
     chain: { id: overrides.chainId ?? TEST_CHAIN_IDS.mainnet } as PublicClient['chain'],
     getBalance: overrides.getBalance ?? jest.fn(() => Promise.resolve(BigInt(1000000000000000000))),
@@ -31,29 +33,33 @@ export function createMockPublicClient(overrides: Partial<{
     getGasPrice: overrides.getGasPrice ?? jest.fn(() => Promise.resolve(BigInt(20000000000))),
     getTransaction: overrides.getTransaction ?? jest.fn(() => Promise.resolve(null)),
     getTransactionReceipt: overrides.getTransactionReceipt ?? jest.fn(() => Promise.resolve(null)),
-    waitForTransactionReceipt: overrides.waitForTransactionReceipt ?? jest.fn(() =>
-      Promise.resolve({
-        status: 'success',
-        blockNumber: BigInt(1000001),
-        transactionHash: '0x' + '1'.repeat(64) as Hex,
-      })
-    ),
+    waitForTransactionReceipt:
+      overrides.waitForTransactionReceipt ??
+      jest.fn(() =>
+        Promise.resolve({
+          status: 'success',
+          blockNumber: BigInt(1000001),
+          transactionHash: ('0x' + '1'.repeat(64)) as Hex,
+        })
+      ),
   } as Partial<PublicClient>
 }
 
 /**
  * Create a mock wallet client
  */
-export function createMockWalletClient(overrides: Partial<{
-  account: { address: Address }
-  chainId: number
-  signMessage: (args: { message: string }) => Promise<Hex>
-  signTypedData: (args: unknown) => Promise<Hex>
-  signTransaction: (args: unknown) => Promise<Hex>
-  sendTransaction: (args: unknown) => Promise<Hex>
-}> = {}): Partial<WalletClient> {
-  const mockSignature = '0x' + '1'.repeat(130) as Hex
-  const mockTxHash = '0x' + '2'.repeat(64) as Hex
+export function createMockWalletClient(
+  overrides: Partial<{
+    account: { address: Address }
+    chainId: number
+    signMessage: (args: { message: string }) => Promise<Hex>
+    signTypedData: (args: unknown) => Promise<Hex>
+    signTransaction: (args: unknown) => Promise<Hex>
+    sendTransaction: (args: unknown) => Promise<Hex>
+  }> = {}
+): Partial<WalletClient> {
+  const mockSignature = ('0x' + '1'.repeat(130)) as Hex
+  const mockTxHash = ('0x' + '2'.repeat(64)) as Hex
 
   return {
     account: overrides.account ?? { address: TEST_ACCOUNTS.account1.address },
@@ -71,30 +77,31 @@ export function createMockWalletClient(overrides: Partial<{
 export const mockViemAccount = {
   privateKeyToAccount: jest.fn((privateKey: Hex) => ({
     address: TEST_ACCOUNTS.account1.address,
-    publicKey: '0x04' + '1'.repeat(128) as Hex,
-    signMessage: jest.fn(() => Promise.resolve('0x' + '1'.repeat(130) as Hex)),
-    signTypedData: jest.fn(() => Promise.resolve('0x' + '1'.repeat(130) as Hex)),
-    signTransaction: jest.fn(() => Promise.resolve('0x' + '1'.repeat(130) as Hex)),
+    publicKey: ('0x04' + '1'.repeat(128)) as Hex,
+    signMessage: jest.fn(() => Promise.resolve(('0x' + '1'.repeat(130)) as Hex)),
+    signTypedData: jest.fn(() => Promise.resolve(('0x' + '1'.repeat(130)) as Hex)),
+    signTransaction: jest.fn(() => Promise.resolve(('0x' + '1'.repeat(130)) as Hex)),
     source: 'privateKey' as const,
     type: 'local' as const,
   })),
 
   mnemonicToAccount: jest.fn((mnemonic: string, options?: { addressIndex?: number }) => ({
     address: TEST_ACCOUNTS.account1.address,
-    publicKey: '0x04' + '1'.repeat(128) as Hex,
-    signMessage: jest.fn(() => Promise.resolve('0x' + '1'.repeat(130) as Hex)),
-    signTypedData: jest.fn(() => Promise.resolve('0x' + '1'.repeat(130) as Hex)),
-    signTransaction: jest.fn(() => Promise.resolve('0x' + '1'.repeat(130) as Hex)),
+    publicKey: ('0x04' + '1'.repeat(128)) as Hex,
+    signMessage: jest.fn(() => Promise.resolve(('0x' + '1'.repeat(130)) as Hex)),
+    signTypedData: jest.fn(() => Promise.resolve(('0x' + '1'.repeat(130)) as Hex)),
+    signTransaction: jest.fn(() => Promise.resolve(('0x' + '1'.repeat(130)) as Hex)),
     source: 'mnemonic' as const,
     type: 'local' as const,
   })),
 
-  generateMnemonic: jest.fn(() =>
-    'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+  generateMnemonic: jest.fn(
+    () =>
+      'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
   ),
 
-  generatePrivateKey: jest.fn(() =>
-    '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' as Hex
+  generatePrivateKey: jest.fn(
+    () => '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' as Hex
   ),
 }
 
@@ -119,9 +126,9 @@ export const mockViemUtils = {
   formatEther: jest.fn((wei: bigint) => (Number(wei) / 1e18).toString()),
   parseGwei: jest.fn((gwei: string) => BigInt(Number.parseFloat(gwei) * 1e9)),
   formatGwei: jest.fn((wei: bigint) => (Number(wei) / 1e9).toString()),
-  keccak256: jest.fn(() => '0x' + '3'.repeat(64) as Hex),
-  hashMessage: jest.fn(() => '0x' + '4'.repeat(64) as Hex),
-  hashTypedData: jest.fn(() => '0x' + '5'.repeat(64) as Hex),
+  keccak256: jest.fn(() => ('0x' + '3'.repeat(64)) as Hex),
+  hashMessage: jest.fn(() => ('0x' + '4'.repeat(64)) as Hex),
+  hashTypedData: jest.fn(() => ('0x' + '5'.repeat(64)) as Hex),
   recoverMessageAddress: jest.fn(() => Promise.resolve(TEST_ACCOUNTS.account1.address)),
   verifyMessage: jest.fn(() => Promise.resolve(true)),
   verifyTypedData: jest.fn(() => Promise.resolve(true)),

@@ -42,6 +42,7 @@ export function CategoryFilter({
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
             <button
+              type="button"
               key={cat.key}
               onClick={() => onCategoryChange(cat.key)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-150"
@@ -68,6 +69,7 @@ export function CategoryFilter({
         <div className="flex flex-wrap gap-2">
           {moduleTypes.map((type) => (
             <button
+              type="button"
               key={type.key}
               onClick={() => onTypeChange(type.key)}
               className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-150"

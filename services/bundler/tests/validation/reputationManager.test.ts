@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { ReputationManager } from '../../src/validation/reputationManager'
-import { createLogger } from '../../src/utils/logger'
 import type { Address } from 'viem'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createLogger } from '../../src/utils/logger'
+import { ReputationManager } from '../../src/validation/reputationManager'
 
 describe('ReputationManager', () => {
   const logger = createLogger('error', false)

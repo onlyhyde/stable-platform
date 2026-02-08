@@ -31,12 +31,6 @@ interface UseSwapConfig {
   defaultSlippage?: number
 }
 
-interface UserOpResult {
-  userOpHash: Hex
-  transactionHash?: Hex
-  success: boolean
-}
-
 // Uniswap V2 Router ABI for swapExactTokensForTokens
 const SWAP_ABI = [
   {

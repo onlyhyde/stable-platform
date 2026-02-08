@@ -9,7 +9,7 @@
  * - Transaction review and confirmation
  */
 
-import { type Page, type Locator, expect } from '@playwright/test'
+import { type Locator, type Page, expect } from '@playwright/test'
 
 export type TransactionMode = 'eoa' | 'eip7702' | 'smartAccount'
 export type GasPaymentType = 'native' | 'sponsor' | 'erc20'

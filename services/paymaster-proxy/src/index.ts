@@ -35,7 +35,11 @@ export {
 } from './handlers'
 
 // Policy
-export { SponsorPolicyManager, type PolicyRejection, type PolicyResult } from './policy/sponsorPolicy'
+export {
+  SponsorPolicyManager,
+  type PolicyRejection,
+  type PolicyResult,
+} from './policy/sponsorPolicy'
 
 // Signer
 export { PaymasterSigner, PAYMASTER_MODE, type PaymasterData } from './signer/paymasterSigner'

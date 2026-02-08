@@ -1,13 +1,13 @@
 import type { Address } from 'viem'
 import type { Logger } from '../utils/logger'
 import type {
-  ReputationEntry,
+  EntityType,
+  IReputationManager,
+  ReputationCheckResult,
   ReputationConfig,
+  ReputationEntry,
   ReputationStatus,
   StakeInfo,
-  EntityType,
-  ReputationCheckResult,
-  IReputationManager,
 } from './types'
 import { DEFAULT_REPUTATION_CONFIG } from './types'
 
@@ -160,10 +160,7 @@ export class ReputationManager implements IReputationManager {
     entry.opsSeen++
     entry.lastUpdated = Date.now()
 
-    this.logger.debug(
-      { address: normalizedAddress, opsSeen: entry.opsSeen },
-      'Updated opsSeen'
-    )
+    this.logger.debug({ address: normalizedAddress, opsSeen: entry.opsSeen }, 'Updated opsSeen')
   }
 
   /**
@@ -201,10 +198,7 @@ export class ReputationManager implements IReputationManager {
     entry.status = 'banned'
     entry.lastUpdated = Date.now()
 
-    this.logger.warn(
-      { address: normalizedAddress, reason },
-      'Address banned'
-    )
+    this.logger.warn({ address: normalizedAddress, reason }, 'Address banned')
   }
 
   /**
@@ -216,10 +210,7 @@ export class ReputationManager implements IReputationManager {
     entry.status = 'throttled'
     entry.lastUpdated = Date.now()
 
-    this.logger.warn(
-      { address: normalizedAddress, reason },
-      'Address throttled'
-    )
+    this.logger.warn({ address: normalizedAddress, reason }, 'Address throttled')
   }
 
   /**
@@ -229,10 +220,7 @@ export class ReputationManager implements IReputationManager {
     const normalizedAddress = address.toLowerCase() as Address
     this.entries.delete(normalizedAddress)
 
-    this.logger.debug(
-      { address: normalizedAddress },
-      'Cleared reputation'
-    )
+    this.logger.debug({ address: normalizedAddress }, 'Cleared reputation')
   }
 
   /**

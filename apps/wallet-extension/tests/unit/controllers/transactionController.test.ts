@@ -3,14 +3,13 @@
  * TDD tests for transaction lifecycle management
  */
 
+import type { Hex } from 'viem'
 import { TransactionController } from '../../../src/background/controllers/transactionController'
 import type {
-  TransactionParams,
-  TransactionMeta,
   TransactionControllerOptions,
+  TransactionParams,
 } from '../../../src/background/controllers/transactionController.types'
-import type { Address, Hex } from 'viem'
-import { TEST_ACCOUNTS, TEST_ORIGINS, TEST_CHAIN_IDS } from '../../utils/testUtils'
+import { TEST_ACCOUNTS, TEST_CHAIN_IDS, TEST_ORIGINS } from '../../utils/testUtils'
 
 describe('TransactionController', () => {
   let controller: TransactionController
@@ -23,8 +22,8 @@ describe('TransactionController', () => {
     mockOptions = {
       chainId: TEST_CHAIN_IDS.mainnet,
       getSelectedAddress: jest.fn(() => testAddress),
-      signTransaction: jest.fn(() => Promise.resolve('0x' + '1'.repeat(200) as Hex)),
-      publishTransaction: jest.fn(() => Promise.resolve('0x' + '2'.repeat(64) as Hex)),
+      signTransaction: jest.fn(() => Promise.resolve(('0x' + '1'.repeat(200)) as Hex)),
+      publishTransaction: jest.fn(() => Promise.resolve(('0x' + '2'.repeat(64)) as Hex)),
       getTransactionCount: jest.fn(() => Promise.resolve(0)),
       estimateGas: jest.fn(() => Promise.resolve(BigInt(21000))),
       getGasPrice: jest.fn(() => Promise.resolve(BigInt(20000000000))),
@@ -310,9 +309,7 @@ describe('TransactionController', () => {
     })
 
     it('should handle signing errors', async () => {
-      mockOptions.signTransaction = jest.fn(() =>
-        Promise.reject(new Error('Signing failed'))
-      )
+      mockOptions.signTransaction = jest.fn(() => Promise.reject(new Error('Signing failed')))
       controller = new TransactionController(mockOptions)
 
       const txParams: TransactionParams = {
@@ -390,9 +387,7 @@ describe('TransactionController', () => {
     })
 
     it('should handle broadcast errors', async () => {
-      mockOptions.publishTransaction = jest.fn(() =>
-        Promise.reject(new Error('Broadcast failed'))
-      )
+      mockOptions.publishTransaction = jest.fn(() => Promise.reject(new Error('Broadcast failed')))
       controller = new TransactionController(mockOptions)
 
       const txParams: TransactionParams = {
@@ -405,9 +400,7 @@ describe('TransactionController', () => {
       await controller.approveTransaction(txMeta.id)
       await controller.signTransaction(txMeta.id)
 
-      await expect(controller.submitTransaction(txMeta.id)).rejects.toThrow(
-        'Broadcast failed'
-      )
+      await expect(controller.submitTransaction(txMeta.id)).rejects.toThrow('Broadcast failed')
 
       const updated = controller.getTransaction(txMeta.id)
       expect(updated?.status).toBe('failed')
@@ -428,7 +421,7 @@ describe('TransactionController', () => {
       await controller.submitTransaction(txMeta.id)
       await controller.confirmTransaction(txMeta.id, {
         blockNumber: 12345,
-        blockHash: '0x' + '3'.repeat(64) as Hex,
+        blockHash: ('0x' + '3'.repeat(64)) as Hex,
         gasUsed: BigInt(21000),
       })
 
@@ -453,7 +446,7 @@ describe('TransactionController', () => {
       await controller.submitTransaction(txMeta.id)
       await controller.confirmTransaction(txMeta.id, {
         blockNumber: 12345,
-        blockHash: '0x' + '3'.repeat(64) as Hex,
+        blockHash: ('0x' + '3'.repeat(64)) as Hex,
         gasUsed: BigInt(21000),
       })
 
@@ -478,7 +471,7 @@ describe('TransactionController', () => {
       await controller.submitTransaction(txMeta.id)
       await controller.confirmTransaction(txMeta.id, {
         blockNumber: 12345,
-        blockHash: '0x' + '3'.repeat(64) as Hex,
+        blockHash: ('0x' + '3'.repeat(64)) as Hex,
         gasUsed: BigInt(21000),
       })
 
@@ -500,7 +493,7 @@ describe('TransactionController', () => {
       await controller.submitTransaction(txMeta.id)
       await controller.confirmTransaction(txMeta.id, {
         blockNumber: 12345,
-        blockHash: '0x' + '3'.repeat(64) as Hex,
+        blockHash: ('0x' + '3'.repeat(64)) as Hex,
         gasUsed: BigInt(21000),
       })
 

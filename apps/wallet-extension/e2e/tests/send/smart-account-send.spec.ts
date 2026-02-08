@@ -5,9 +5,9 @@
  * with various gas payment options.
  */
 
-import { test, expect } from '@playwright/test'
-import { WalletHomePage, SendPage, OnboardingPage } from '../../pages'
+import { expect, test } from '@playwright/test'
 import { getExtensionId, setupWalletWithFunds } from '../../fixtures/extension'
+import { SendPage, WalletHomePage } from '../../pages'
 
 test.describe('Smart Account Send', () => {
   let extensionId: string
@@ -93,9 +93,7 @@ test.describe('Smart Account Send', () => {
     expect(successMessage.toLowerCase()).toMatch(/sent|success/)
   })
 
-  test('should show insufficient balance error for ERC20 gas with no balance', async ({
-    page,
-  }) => {
+  test('should show insufficient balance error for ERC20 gas with no balance', async ({ page }) => {
     const homePage = new WalletHomePage(page)
     const sendPage = new SendPage(page)
 
@@ -154,9 +152,7 @@ test.describe('Smart Account Send', () => {
 
     // Smart Account option should be disabled or not visible
     const smartAccountOption = sendPage.smartAccountModeOption
-    const isDisabled = await smartAccountOption
-      .isDisabled()
-      .catch(() => false)
+    const isDisabled = await smartAccountOption.isDisabled().catch(() => false)
     const isHidden = !(await smartAccountOption.isVisible().catch(() => false))
 
     expect(isDisabled || isHidden).toBe(true)
@@ -219,6 +215,6 @@ test.describe('EOA Send', () => {
 
     // Amount should be filled
     const amount = await sendPage.amountInput.inputValue()
-    expect(parseFloat(amount)).toBeGreaterThan(0)
+    expect(Number.parseFloat(amount)).toBeGreaterThan(0)
   })
 })

@@ -1,12 +1,12 @@
 import EventEmitter from 'eventemitter3'
 import type {
+  ClientMessage,
   ContractEntry,
   ContractFilter,
-  ResolvedAddressSet,
   ImportResult,
   RegistryClientOptions,
+  ResolvedAddressSet,
   ServerMessage,
-  ClientMessage,
 } from './types'
 
 type ClientEvent =
@@ -88,14 +88,16 @@ export class RegistryClient extends EventEmitter<ClientEvent> {
     return res as ContractEntry
   }
 
-  async bulkImport(contracts: Array<{
-    chainId: number
-    name: string
-    address: string
-    version?: string
-    tags?: string[]
-    metadata?: Record<string, unknown>
-  }>): Promise<ImportResult> {
+  async bulkImport(
+    contracts: Array<{
+      chainId: number
+      name: string
+      address: string
+      version?: string
+      tags?: string[]
+      metadata?: Record<string, unknown>
+    }>
+  ): Promise<ImportResult> {
     const res = await this.fetch('/api/v1/bulk/import', {
       method: 'POST',
       body: JSON.stringify({
@@ -248,10 +250,8 @@ export class RegistryClient extends EventEmitter<ClientEvent> {
     })
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({})) as Record<string, unknown>
-      throw new Error(
-        (body.message as string) ?? `Request failed: ${res.status} ${res.statusText}`
-      )
+      const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
+      throw new Error((body.message as string) ?? `Request failed: ${res.status} ${res.statusText}`)
     }
 
     return res.json()

@@ -3,8 +3,8 @@
  */
 
 import type { Address } from 'viem'
-import type { ChainAddresses, ChainConfig, ServiceUrls, TokenDefinition } from './types'
 import { CHAIN_ADDRESSES, DEFAULT_TOKENS, SERVICE_URLS } from './generated/addresses'
+import type { ChainAddresses, ChainConfig, ServiceUrls, TokenDefinition } from './types'
 
 // Re-export generated data
 export { CHAIN_ADDRESSES, DEFAULT_TOKENS, SERVICE_URLS }
@@ -53,7 +53,9 @@ export function isChainSupported(chainId: number): boolean {
 export function getChainAddresses(chainId: number): ChainAddresses {
   const addresses = CHAIN_ADDRESSES[chainId]
   if (!addresses) {
-    throw new Error(`Chain ${chainId} is not supported. Supported chains: ${SUPPORTED_CHAIN_IDS.join(', ')}`)
+    throw new Error(
+      `Chain ${chainId} is not supported. Supported chains: ${SUPPORTED_CHAIN_IDS.join(', ')}`
+    )
   }
   return addresses
 }

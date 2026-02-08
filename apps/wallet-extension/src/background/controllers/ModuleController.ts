@@ -293,7 +293,7 @@ export class ModuleController {
   ): string {
     const typeHex = moduleType.toString(16).padStart(64, '0')
     const addrHex = moduleAddress.slice(2).toLowerCase().padStart(64, '0')
-    const dataOffset = '0'.repeat(62) + '60' // offset to bytes data
+    const dataOffset = `${'0'.repeat(62)}60` // offset to bytes data
     const cleanData = initData.startsWith('0x') ? initData.slice(2) : initData
     const dataLen = (cleanData.length / 2).toString(16).padStart(64, '0')
     const paddedData = cleanData.padEnd(Math.ceil(cleanData.length / 64) * 64, '0')
@@ -308,7 +308,7 @@ export class ModuleController {
   ): string {
     const typeHex = moduleType.toString(16).padStart(64, '0')
     const addrHex = moduleAddress.slice(2).toLowerCase().padStart(64, '0')
-    const dataOffset = '0'.repeat(62) + '60'
+    const dataOffset = `${'0'.repeat(62)}60`
     const cleanData = deInitData.startsWith('0x') ? deInitData.slice(2) : deInitData
     const dataLen = (cleanData.length / 2).toString(16).padStart(64, '0')
     const paddedData = cleanData.padEnd(Math.ceil(cleanData.length / 64) * 64, '0')

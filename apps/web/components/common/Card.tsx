@@ -179,7 +179,7 @@ export function StatCard({
 
   const trendIcons = {
     up: (
-      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg aria-hidden="true" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -189,7 +189,7 @@ export function StatCard({
       </svg>
     ),
     down: (
-      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg aria-hidden="true" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"

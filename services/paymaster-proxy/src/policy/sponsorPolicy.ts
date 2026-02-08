@@ -1,6 +1,6 @@
-import type { Address, } from 'viem'
-import type { SponsorPolicy, SponsorTracker, UserOperationRpc } from '../types'
+import type { Address } from 'viem'
 import { getDefaultPolicyConfig } from '../config/constants'
+import type { SponsorPolicy, SponsorTracker, UserOperationRpc } from '../types'
 
 /**
  * Get default policy configuration from environment
@@ -35,9 +35,7 @@ export interface PolicyRejection {
 /**
  * Policy check result
  */
-export type PolicyResult =
-  | { allowed: true }
-  | { allowed: false; rejection: PolicyRejection }
+export type PolicyResult = { allowed: true } | { allowed: false; rejection: PolicyRejection }
 
 /**
  * Sponsor Policy Manager
@@ -131,9 +129,7 @@ export class SponsorPolicyManager {
     // Check whitelist
     if (policy.whitelist && policy.whitelist.length > 0) {
       const senderLower = userOp.sender.toLowerCase()
-      const inWhitelist = policy.whitelist.some(
-        (addr) => addr.toLowerCase() === senderLower
-      )
+      const inWhitelist = policy.whitelist.some((addr) => addr.toLowerCase() === senderLower)
       if (!inWhitelist) {
         return {
           allowed: false,
@@ -148,9 +144,7 @@ export class SponsorPolicyManager {
     // Check blacklist
     if (policy.blacklist && policy.blacklist.length > 0) {
       const senderLower = userOp.sender.toLowerCase()
-      const inBlacklist = policy.blacklist.some(
-        (addr) => addr.toLowerCase() === senderLower
-      )
+      const inBlacklist = policy.blacklist.some((addr) => addr.toLowerCase() === senderLower)
       if (inBlacklist) {
         return {
           allowed: false,

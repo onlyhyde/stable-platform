@@ -545,12 +545,8 @@ export const ERROR_SELECTORS = {
  * Event signatures for log parsing
  */
 export const EVENT_SIGNATURES = {
-  UserOperationEvent:
-    '0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f',
-  AccountDeployed:
-    '0xd51a9c61267aa6196961883ecf5ff2da6619c37dac0fa92122513fb32c032d2d',
-  UserOperationRevertReason:
-    '0x1c4fada7374c0a9ee8841fc38afe82932dc0f8e69012e927f061a8bae611a201',
-  UserOperationPrefundTooLow:
-    '0x5e0f9bcb94d3d5e5cfe0c6eecb2f1c26c89f31fca7d32bd2be3f7b4b8f2cac1a',
+  UserOperationEvent: '0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f',
+  AccountDeployed: '0xd51a9c61267aa6196961883ecf5ff2da6619c37dac0fa92122513fb32c032d2d',
+  UserOperationRevertReason: '0x1c4fada7374c0a9ee8841fc38afe82932dc0f8e69012e927f061a8bae611a201',
+  UserOperationPrefundTooLow: '0x5e0f9bcb94d3d5e5cfe0c6eecb2f1c26c89f31fca7d32bd2be3f7b4b8f2cac1a',
 } as const

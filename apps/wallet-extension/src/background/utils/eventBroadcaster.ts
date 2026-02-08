@@ -255,7 +255,7 @@ class EventBroadcaster {
         if (!data.startsWith('0x')) return null
         return data
 
-      case PROVIDER_EVENTS.CONNECT:
+      case PROVIDER_EVENTS.CONNECT: {
         // Ensure valid connect info
         if (typeof data !== 'object' || data === null) {
           return { chainId: DEFAULT_VALUES.CHAIN_ID_HEX }
@@ -267,8 +267,9 @@ class EventBroadcaster {
               ? connectData.chainId
               : DEFAULT_VALUES.CHAIN_ID_HEX,
         }
+      }
 
-      case PROVIDER_EVENTS.DISCONNECT:
+      case PROVIDER_EVENTS.DISCONNECT: {
         // Ensure valid error object
         if (typeof data !== 'object' || data === null) {
           return { code: RPC_ERRORS.DISCONNECTED.code, message: RPC_ERRORS.DISCONNECTED.message }
@@ -281,8 +282,9 @@ class EventBroadcaster {
               ? errorData.message
               : RPC_ERRORS.DISCONNECTED.message,
         }
+      }
 
-      case 'assetsChanged':
+      case 'assetsChanged': {
         // Ensure valid assetsChanged event data
         if (typeof data !== 'object' || data === null) {
           return null
@@ -302,6 +304,7 @@ class EventBroadcaster {
           reason: assetsData.reason,
           timestamp: assetsData.timestamp,
         }
+      }
 
       default:
         return data

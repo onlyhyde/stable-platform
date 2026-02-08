@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
-import { parseEther, keccak256 } from 'viem'
-import type { LocalAccount, Hex, Address } from 'viem'
 import type { UserOperation } from '@stablenet/sdk-types'
+import type { Address, Hex, LocalAccount } from 'viem'
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createVerifyingPaymaster,
   createVerifyingPaymasterFromPrivateKey,
@@ -69,11 +68,7 @@ describe('paymaster plugin', () => {
         chainId: testChainId,
       })
 
-      const stubData = await paymaster.getPaymasterStubData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
+      const stubData = await paymaster.getPaymasterStubData(mockUserOp, testEntryPoint, testChainId)
 
       expect(stubData.paymaster).toBe(testPaymasterAddress)
     })
@@ -85,11 +80,7 @@ describe('paymaster plugin', () => {
         chainId: testChainId,
       })
 
-      const stubData = await paymaster.getPaymasterStubData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
+      const stubData = await paymaster.getPaymasterStubData(mockUserOp, testEntryPoint, testChainId)
 
       expect(stubData.paymasterVerificationGasLimit).toBeDefined()
       expect(stubData.paymasterPostOpGasLimit).toBeDefined()
@@ -104,11 +95,7 @@ describe('paymaster plugin', () => {
         chainId: testChainId,
       })
 
-      const stubData = await paymaster.getPaymasterStubData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
+      const stubData = await paymaster.getPaymasterStubData(mockUserOp, testEntryPoint, testChainId)
 
       expect(stubData.paymasterData).toBeDefined()
       expect(stubData.paymasterData).toMatch(/^0x/)
@@ -121,11 +108,7 @@ describe('paymaster plugin', () => {
         chainId: testChainId,
       })
 
-      const stubData = await paymaster.getPaymasterStubData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
+      const stubData = await paymaster.getPaymasterStubData(mockUserOp, testEntryPoint, testChainId)
 
       // Stub signature is 65 bytes of zeros
       // paymasterData format: [validUntil (6 bytes)][validAfter (6 bytes)][signature (65 bytes)]
@@ -142,11 +125,7 @@ describe('paymaster plugin', () => {
         chainId: testChainId,
       })
 
-      const data = await paymaster.getPaymasterData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
+      const data = await paymaster.getPaymasterData(mockUserOp, testEntryPoint, testChainId)
 
       expect(data.paymaster).toBe(testPaymasterAddress)
     })
@@ -158,11 +137,7 @@ describe('paymaster plugin', () => {
         chainId: testChainId,
       })
 
-      const data = await paymaster.getPaymasterData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
+      const data = await paymaster.getPaymasterData(mockUserOp, testEntryPoint, testChainId)
 
       expect(data.paymasterData).toBeDefined()
       expect(data.paymasterData).toMatch(/^0x/)
@@ -180,16 +155,8 @@ describe('paymaster plugin', () => {
       const userOp1 = { ...mockUserOp, nonce: 1n }
       const userOp2 = { ...mockUserOp, nonce: 2n }
 
-      const data1 = await paymaster.getPaymasterData(
-        userOp1,
-        testEntryPoint,
-        testChainId
-      )
-      const data2 = await paymaster.getPaymasterData(
-        userOp2,
-        testEntryPoint,
-        testChainId
-      )
+      const data1 = await paymaster.getPaymasterData(userOp1, testEntryPoint, testChainId)
+      const data2 = await paymaster.getPaymasterData(userOp2, testEntryPoint, testChainId)
 
       expect(data1.paymasterData).not.toBe(data2.paymasterData)
     })
@@ -201,16 +168,8 @@ describe('paymaster plugin', () => {
         chainId: testChainId,
       })
 
-      const data1 = await paymaster.getPaymasterData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
-      const data2 = await paymaster.getPaymasterData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
+      const data1 = await paymaster.getPaymasterData(mockUserOp, testEntryPoint, testChainId)
+      const data2 = await paymaster.getPaymasterData(mockUserOp, testEntryPoint, testChainId)
 
       // With same timestamp (mocked), same userOp should produce same signature
       expect(data1.paymasterData).toBe(data2.paymasterData)
@@ -225,15 +184,11 @@ describe('paymaster plugin', () => {
         chainId: testChainId,
       })
 
-      const stubData = await paymaster.getPaymasterStubData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
+      const stubData = await paymaster.getPaymasterStubData(mockUserOp, testEntryPoint, testChainId)
 
       // paymasterData includes validUntil in first 6 bytes
       const validUntilHex = stubData.paymasterData.slice(2, 14)
-      const validUntil = parseInt(validUntilHex, 16)
+      const validUntil = Number.parseInt(validUntilHex, 16)
       const now = Math.floor(Date.now() / 1000)
 
       // Default validity is 3600 seconds (1 hour)
@@ -250,14 +205,10 @@ describe('paymaster plugin', () => {
         validitySeconds: customValidity,
       })
 
-      const stubData = await paymaster.getPaymasterStubData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
+      const stubData = await paymaster.getPaymasterStubData(mockUserOp, testEntryPoint, testChainId)
 
       const validUntilHex = stubData.paymasterData.slice(2, 14)
-      const validUntil = parseInt(validUntilHex, 16)
+      const validUntil = Number.parseInt(validUntilHex, 16)
       const now = Math.floor(Date.now() / 1000)
 
       expect(validUntil).toBeGreaterThan(now + 3600) // More than default 1 hour
@@ -289,16 +240,8 @@ describe('paymaster plugin', () => {
         chainId: testChainId,
       })
 
-      const data1 = await paymaster1.getPaymasterData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
-      const data2 = await paymaster2.getPaymasterData(
-        mockUserOp,
-        testEntryPoint,
-        testChainId
-      )
+      const data1 = await paymaster1.getPaymasterData(mockUserOp, testEntryPoint, testChainId)
+      const data2 = await paymaster2.getPaymasterData(mockUserOp, testEntryPoint, testChainId)
 
       expect(data1.paymasterData).toBe(data2.paymasterData)
     })
@@ -318,11 +261,7 @@ describe('paymaster plugin', () => {
         factoryData: '0xabcdef' as Hex,
       }
 
-      const data = await paymaster.getPaymasterData(
-        userOpWithFactory,
-        testEntryPoint,
-        testChainId
-      )
+      const data = await paymaster.getPaymasterData(userOpWithFactory, testEntryPoint, testChainId)
 
       expect(data.paymaster).toBe(testPaymasterAddress)
       expect(data.paymasterData).toBeDefined()
@@ -342,16 +281,8 @@ describe('paymaster plugin', () => {
         chainId: 137n,
       })
 
-      const data1 = await paymaster1.getPaymasterData(
-        mockUserOp,
-        testEntryPoint,
-        1n
-      )
-      const data2 = await paymaster2.getPaymasterData(
-        mockUserOp,
-        testEntryPoint,
-        137n
-      )
+      const data1 = await paymaster1.getPaymasterData(mockUserOp, testEntryPoint, 1n)
+      const data2 = await paymaster2.getPaymasterData(mockUserOp, testEntryPoint, 137n)
 
       // Different chain IDs should produce different signatures
       expect(data1.paymasterData).not.toBe(data2.paymasterData)
@@ -370,11 +301,7 @@ describe('paymaster plugin', () => {
         verificationGasLimit: BigInt(2) ** BigInt(64) - BigInt(1),
       }
 
-      const data = await paymaster.getPaymasterData(
-        largeGasUserOp,
-        testEntryPoint,
-        testChainId
-      )
+      const data = await paymaster.getPaymasterData(largeGasUserOp, testEntryPoint, testChainId)
 
       expect(data.paymasterData).toBeDefined()
     })

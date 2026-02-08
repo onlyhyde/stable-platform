@@ -356,7 +356,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
         return null
       }
     },
-    [publicClient, getTokenInfo]
+    [publicClient, getTokenInfo, recurringPaymentManager]
   )
 
   // Check if payment is due
@@ -378,7 +378,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
         return false
       }
     },
-    [publicClient]
+    [publicClient, recurringPaymentManager]
   )
 
   // Get next payment time
@@ -400,7 +400,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
         return null
       }
     },
-    [publicClient]
+    [publicClient, recurringPaymentManager]
   )
 
   // Refresh all schedules for the account
@@ -441,7 +441,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
     } finally {
       setIsLoading(false)
     }
-  }, [targetAccount, publicClient, getSchedule])
+  }, [targetAccount, publicClient, getSchedule, recurringPaymentManager])
 
   // Load schedules on mount and when account changes
   useEffect(() => {
@@ -497,7 +497,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
         setIsCreating(false)
       }
     },
-    [walletClient, targetAccount, refresh]
+    [walletClient, targetAccount, refresh, recurringPaymentManager]
   )
 
   // Cancel a payment schedule
@@ -531,7 +531,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
         setIsCancelling(false)
       }
     },
-    [walletClient, targetAccount, refresh]
+    [walletClient, targetAccount, refresh, recurringPaymentManager]
   )
 
   // Pause a payment schedule
@@ -565,7 +565,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
         setIsUpdating(false)
       }
     },
-    [walletClient, targetAccount, refresh]
+    [walletClient, targetAccount, refresh, recurringPaymentManager]
   )
 
   // Resume a payment schedule
@@ -599,7 +599,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
         setIsUpdating(false)
       }
     },
-    [walletClient, targetAccount, refresh]
+    [walletClient, targetAccount, refresh, recurringPaymentManager]
   )
 
   // Update payment amount
@@ -633,7 +633,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
         setIsUpdating(false)
       }
     },
-    [walletClient, targetAccount, refresh]
+    [walletClient, targetAccount, refresh, recurringPaymentManager]
   )
 
   return {

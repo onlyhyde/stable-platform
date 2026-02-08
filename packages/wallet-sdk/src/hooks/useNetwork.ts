@@ -2,10 +2,10 @@
  * useNetwork - Hook for network information and management
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { type NetworkRegistry, networkRegistry } from '../config'
 import type { StableNetProvider } from '../provider/StableNetProvider'
 import type { NetworkInfo } from '../types'
-import { networkRegistry, type NetworkRegistry } from '../config'
 
 interface UseNetworkOptions {
   /** Provider instance */
@@ -127,10 +127,7 @@ export function useNetwork(options: UseNetworkOptions): UseNetworkResult {
   }, [registry])
 
   // Check if chain is supported
-  const isSupported = useCallback(
-    (id: number) => registry.hasNetwork(id),
-    [registry]
-  )
+  const isSupported = useCallback((id: number) => registry.hasNetwork(id), [registry])
 
   // Switch network
   const switchNetwork = useCallback(

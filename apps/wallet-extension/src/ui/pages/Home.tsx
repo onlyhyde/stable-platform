@@ -5,6 +5,7 @@ import { TokenList } from '../components/TokenList'
 import { useAssets, useIndexerData, useNetworkCurrency, useWalletStore } from '../hooks'
 import type { AssetToken } from '../hooks/useAssets'
 import type { TokenBalance } from '../hooks/useIndexerData'
+import { useTokenPrices } from '../hooks/useTokenPrices'
 
 export function Home() {
   const { selectedAccount, accounts, balances, updateBalance, setPage } = useWalletStore()
@@ -24,8 +25,27 @@ export function Home() {
     toggleTokenVisibility,
   } = useAssets()
 
+  // Collect all token symbols for price lookup
+  const allTokenSymbols = [
+    currencySymbol,
+    ...(tokenBalances?.map((t) => t.symbol).filter(Boolean) ?? []),
+    ...(assetTokens
+      ?.filter((t) => t.isVisible !== false)
+      .map((t) => t.symbol)
+      .filter(Boolean) ?? []),
+  ]
+  const uniqueSymbols = [...new Set(allTokenSymbols)]
+
+  // Token prices for USD display
+  const { prices: tokenPrices } = useTokenPrices(uniqueSymbols)
+
   const currentAccount = accounts.find((a) => a.address === selectedAccount)
   const balance = selectedAccount ? balances[selectedAccount] : undefined
+
+  // Calculate USD value of native balance
+  const nativePriceUsd = tokenPrices[currencySymbol] ?? tokenPrices.ETH ?? null
+  const balanceUsd =
+    balance !== undefined && nativePriceUsd ? Number(formatEther(balance)) * nativePriceUsd : null
 
   useEffect(() => {
     if (selectedAccount && balance === undefined) {
@@ -125,6 +145,9 @@ export function Home() {
             `-- ${currencySymbol}`
           )}
         </h2>
+        {balanceUsd !== null && (
+          <p className="text-sm opacity-70 mt-0.5">${balanceUsd.toFixed(2)} USD</p>
+        )}
         <div className="flex items-center gap-2 mt-2">
           <span
             className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
@@ -214,7 +237,7 @@ export function Home() {
         {currentAccount.type === 'smart' ? (
           <button
             type="button"
-            onClick={() => setPage('modules')}
+            onClick={() => setPage('dashboard')}
             className="card rounded-xl p-4 flex flex-col items-center transition-colors"
           >
             <div
@@ -238,7 +261,7 @@ export function Home() {
               </svg>
             </div>
             <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-              Modules
+              Smart Account
             </span>
           </button>
         ) : (
@@ -272,6 +295,38 @@ export function Home() {
             </span>
             <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
               EIP-7702
+            </span>
+          </button>
+        )}
+
+        {currentAccount.type === 'smart' && (
+          <button
+            type="button"
+            onClick={() => setPage('swap')}
+            className="card rounded-xl p-4 flex flex-col items-center transition-colors"
+          >
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center mb-2"
+              style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+            >
+              <svg
+                className="w-5 h-5"
+                style={{ color: 'rgb(var(--primary))' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                />
+              </svg>
+            </div>
+            <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              Swap
             </span>
           </button>
         )}
@@ -317,6 +372,8 @@ export function Home() {
         onTokenClick={handleTokenClick}
         onAddToken={handleAddToken}
         onToggleVisibility={handleToggleVisibility}
+        tokenPrices={tokenPrices}
+        nativePriceUsd={nativePriceUsd}
       />
 
       {/* Indexer Status */}

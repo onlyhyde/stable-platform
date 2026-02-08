@@ -1,9 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
+  content: ['./app/**/*.{js,ts,jsx,tsx,mdx}', './components/**/*.{js,ts,jsx,tsx,mdx}'],
   darkMode: 'class',
   theme: {
     extend: {
@@ -113,9 +110,9 @@ module.exports = {
         '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
       },
       boxShadow: {
-        'soft': '0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(30, 30, 36, 0.5)',
-        'medium': '0 4px 12px -2px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(30, 30, 36, 0.5)',
-        'strong': '0 8px 24px -4px rgba(0, 0, 0, 0.25), 0 16px 48px -8px rgba(0, 0, 0, 0.2)',
+        soft: '0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(30, 30, 36, 0.5)',
+        medium: '0 4px 12px -2px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(30, 30, 36, 0.5)',
+        strong: '0 8px 24px -4px rgba(0, 0, 0, 0.25), 0 16px 48px -8px rgba(0, 0, 0, 0.2)',
         'glow-primary': '0 0 24px -4px rgba(16, 185, 129, 0.4)',
         'glow-accent': '0 0 24px -4px rgba(139, 92, 246, 0.4)',
         'glow-primary-lg': '0 0 40px -8px rgba(16, 185, 129, 0.5)',
@@ -128,9 +125,12 @@ module.exports = {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'mesh-gradient': 'linear-gradient(135deg, #10b981 0%, #059669 25%, #8b5cf6 50%, #7c3aed 75%, #3b82f6 100%)',
-        'hero-gradient': 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
-        'ambient-glow': 'radial-gradient(ellipse at top, rgba(16, 185, 129, 0.08), transparent 50%)',
+        'mesh-gradient':
+          'linear-gradient(135deg, #10b981 0%, #059669 25%, #8b5cf6 50%, #7c3aed 75%, #3b82f6 100%)',
+        'hero-gradient':
+          'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+        'ambient-glow':
+          'radial-gradient(ellipse at top, rgba(16, 185, 129, 0.08), transparent 50%)',
         'brand-gradient': 'linear-gradient(135deg, #10b981, #059669, #8b5cf6)',
       },
       animation: {
@@ -141,7 +141,7 @@ module.exports = {
         'spin-slow': 'spin 3s linear infinite',
         'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
         'gradient-x': 'gradientX 15s ease infinite',
-        'shimmer': 'shimmer 2s linear infinite',
+        shimmer: 'shimmer 2s linear infinite',
       },
       keyframes: {
         fadeIn: {

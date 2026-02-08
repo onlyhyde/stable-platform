@@ -72,15 +72,17 @@ export async function waitFor(
 /**
  * Create a mock transaction request
  */
-export function createMockTransaction(overrides: Partial<{
-  from: Address
-  to: Address
-  value: bigint
-  data: Hex
-  gas: bigint
-  gasPrice: bigint
-  nonce: number
-}> = {}) {
+export function createMockTransaction(
+  overrides: Partial<{
+    from: Address
+    to: Address
+    value: bigint
+    data: Hex
+    gas: bigint
+    gasPrice: bigint
+    nonce: number
+  }> = {}
+) {
   return {
     from: TEST_ACCOUNTS.account1.address,
     to: TEST_ACCOUNTS.account2.address,
@@ -152,12 +154,14 @@ export function createMockRpcRequest(method: string, params: unknown[] = []) {
 /**
  * Create a mock connected site
  */
-export function createMockConnectedSite(overrides: Partial<{
-  origin: string
-  accounts: Address[]
-  chainId: number
-  connectedAt: number
-}> = {}) {
+export function createMockConnectedSite(
+  overrides: Partial<{
+    origin: string
+    accounts: Address[]
+    chainId: number
+    connectedAt: number
+  }> = {}
+) {
   return {
     origin: TEST_ORIGINS.trusted,
     accounts: [TEST_ACCOUNTS.account1.address],

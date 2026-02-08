@@ -34,6 +34,7 @@ export const SubscriptionList: FC<SubscriptionListProps> = ({
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <svg
+              aria-hidden="true"
               className="w-8 h-8"
               style={{ color: 'rgb(var(--muted-foreground))' }}
               fill="none"
@@ -116,6 +117,7 @@ const SubscriptionListItem: FC<SubscriptionListItemProps> = ({
               style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
             >
               <svg
+                aria-hidden="true"
                 className="w-6 h-6"
                 style={{ color: 'rgb(var(--primary))' }}
                 fill="none"

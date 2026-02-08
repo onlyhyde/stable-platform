@@ -119,8 +119,19 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             className="p-1"
             style={{ color: 'rgb(var(--muted-foreground))' }}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
           <h2 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
@@ -134,18 +145,19 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
           style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
         >
           <p className="text-sm" style={{ color: 'rgb(var(--primary))' }}>
-            EIP-7702 delegates your EOA to a smart contract, enabling modules, gas sponsorship, and batch transactions while keeping your existing address.
+            EIP-7702 delegates your EOA to a smart contract, enabling modules, gas sponsorship, and
+            batch transactions while keeping your existing address.
           </p>
         </div>
 
         {/* Account */}
         <div className="mb-4">
-          <label
+          <span
             className="block text-sm font-medium mb-1"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
             Account
-          </label>
+          </span>
           <div
             className="p-3 rounded-lg font-mono text-sm break-all"
             style={{ backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--foreground))' }}
@@ -157,12 +169,14 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
         {/* Delegate Address Input */}
         <div className="mb-4">
           <label
+            htmlFor="delegate-contract-address"
             className="block text-sm font-medium mb-1"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
             Delegate Contract Address
           </label>
           <input
+            id="delegate-contract-address"
             type="text"
             value={delegateAddress}
             onChange={(e) => {
@@ -174,7 +188,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             style={{
               backgroundColor: 'rgb(var(--secondary))',
               color: 'rgb(var(--foreground))',
-              border: `1px solid rgb(var(--border))`,
+              border: '1px solid rgb(var(--border))',
             }}
           />
           {delegateAddress && !isValidDelegate && (
@@ -187,12 +201,12 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
         {/* Network Info */}
         {currentNetwork && (
           <div className="mb-4">
-            <label
+            <span
               className="block text-sm font-medium mb-1"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
               Network
-            </label>
+            </span>
             <div
               className="p-3 rounded-lg text-sm"
               style={{ backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--foreground))' }}
@@ -208,7 +222,8 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
           style={{ backgroundColor: 'rgb(var(--warning) / 0.1)' }}
         >
           <p className="text-sm" style={{ color: 'rgb(var(--warning))' }}>
-            This will send a type 0x04 (SetCode) transaction. Gas fee is required. The delegation is reversible.
+            This will send a type 0x04 (SetCode) transaction. Gas fee is required. The delegation is
+            reversible.
           </p>
         </div>
 

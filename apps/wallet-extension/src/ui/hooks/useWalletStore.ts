@@ -3,7 +3,18 @@ import { create } from 'zustand'
 import { DEFAULT_NETWORKS, MESSAGE_TYPES } from '../../shared/constants'
 import type { Account, Network, PendingTransaction, WalletState } from '../../types'
 
-type Page = 'home' | 'send' | 'receive' | 'activity' | 'settings' | 'bank' | 'buy' | 'modules'
+type Page =
+  | 'home'
+  | 'send'
+  | 'receive'
+  | 'activity'
+  | 'settings'
+  | 'bank'
+  | 'buy'
+  | 'modules'
+  | 'dashboard'
+  | 'swap'
+  | 'txDetail'
 
 interface UIWalletState {
   // Keyring state
@@ -27,11 +38,15 @@ interface UIWalletState {
   isLoading: boolean
   error: string | null
 
+  // Transaction detail
+  selectedTxId: string | null
+
   // Balances (cached)
   balances: Record<Address, bigint>
 
   // Actions
   setPage: (page: Page) => void
+  setSelectedTxId: (id: string | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   selectAccount: (address: Address) => void
@@ -62,6 +77,7 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   selectedChainId: DEFAULT_NETWORKS[0]?.chainId ?? 31337,
   pendingTransactions: [],
   history: [],
+  selectedTxId: null,
   currentPage: 'home',
   isLoading: true,
   error: null,
@@ -69,6 +85,7 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
 
   // Actions
   setPage: (page) => set({ currentPage: page }),
+  setSelectedTxId: (id) => set({ selectedTxId: id }),
 
   setLoading: (isLoading) => set({ isLoading }),
 

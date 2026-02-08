@@ -1,15 +1,15 @@
-import { describe, it, expect } from 'vitest'
+import type { Hex } from 'viem'
+import { describe, expect, it } from 'vitest'
+import { ERROR_SELECTORS } from '../../src/abi'
 import {
   extractErrorData,
+  formatRevertReason,
+  isSignatureFailure,
   matchesErrorSelector,
   parseValidationData,
   validateTimestamps,
-  isSignatureFailure,
-  formatRevertReason,
 } from '../../src/validation/errors'
-import { ERROR_SELECTORS } from '../../src/abi'
 import { VALIDATION_CONSTANTS } from '../../src/validation/types'
-import type { Hex } from 'viem'
 
 describe('Error utilities', () => {
   describe('extractErrorData', () => {
@@ -241,7 +241,7 @@ describe('Error utilities', () => {
 
   describe('formatRevertReason', () => {
     it('should format AA error codes', () => {
-      const result = formatRevertReason('AA21 didn\'t pay prefund')
+      const result = formatRevertReason("AA21 didn't pay prefund")
       expect(result).toContain('Account Abstraction Error')
     })
 

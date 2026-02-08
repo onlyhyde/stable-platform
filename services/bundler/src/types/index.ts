@@ -77,12 +77,7 @@ export interface PackedUserOperation {
 /**
  * UserOperation status in mempool
  */
-export type UserOperationStatus =
-  | 'pending'
-  | 'submitted'
-  | 'included'
-  | 'failed'
-  | 'dropped'
+export type UserOperationStatus = 'pending' | 'submitted' | 'included' | 'failed' | 'dropped'
 
 /**
  * Mempool entry

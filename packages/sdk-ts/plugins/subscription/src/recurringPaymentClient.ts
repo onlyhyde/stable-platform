@@ -1,12 +1,8 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { encodeFunctionData, encodeAbiParameters } from 'viem'
-import type {
-  RecurringPaymentExecutorConfig,
-  CreateScheduleParams,
-  PaymentSchedule,
-} from './types'
-import { RECURRING_PAYMENT_EXECUTOR_ABI } from './types'
+import { encodeAbiParameters, encodeFunctionData } from 'viem'
 import { NATIVE_TOKEN } from './constants'
+import type { CreateScheduleParams, PaymentSchedule, RecurringPaymentExecutorConfig } from './types'
+import { RECURRING_PAYMENT_EXECUTOR_ABI } from './types'
 
 /**
  * RecurringPaymentExecutor client
@@ -38,17 +34,33 @@ export interface RecurringPaymentExecutorClient {
   // ---- Read functions ----
 
   /** Get a payment schedule */
-  getSchedule: (client: PublicClient, account: Address, scheduleId: bigint) => Promise<PaymentSchedule>
+  getSchedule: (
+    client: PublicClient,
+    account: Address,
+    scheduleId: bigint
+  ) => Promise<PaymentSchedule>
   /** Get all active schedule IDs for an account */
   getActiveSchedules: (client: PublicClient, account: Address) => Promise<bigint[]>
   /** Check if a payment is due */
   isPaymentDue: (client: PublicClient, account: Address, scheduleId: bigint) => Promise<boolean>
   /** Get next payment time */
-  getNextPaymentTime: (client: PublicClient, account: Address, scheduleId: bigint) => Promise<bigint>
+  getNextPaymentTime: (
+    client: PublicClient,
+    account: Address,
+    scheduleId: bigint
+  ) => Promise<bigint>
   /** Get remaining payment count */
-  getRemainingPayments: (client: PublicClient, account: Address, scheduleId: bigint) => Promise<bigint>
+  getRemainingPayments: (
+    client: PublicClient,
+    account: Address,
+    scheduleId: bigint
+  ) => Promise<bigint>
   /** Get total remaining value */
-  getTotalRemainingValue: (client: PublicClient, account: Address, scheduleId: bigint) => Promise<bigint>
+  getTotalRemainingValue: (
+    client: PublicClient,
+    account: Address,
+    scheduleId: bigint
+  ) => Promise<bigint>
   /** Check if module is initialized for an account */
   isInitialized: (client: PublicClient, account: Address) => Promise<boolean>
 }
@@ -78,7 +90,7 @@ export interface RecurringPaymentExecutorClient {
  * ```
  */
 export function createRecurringPaymentExecutor(
-  config: RecurringPaymentExecutorConfig,
+  config: RecurringPaymentExecutorConfig
 ): RecurringPaymentExecutorClient {
   const { executorAddress } = config
 
@@ -159,7 +171,7 @@ export function createRecurringPaymentExecutor(
           params.interval,
           params.startTime ?? 0n,
           params.maxPayments ?? 0n,
-        ],
+        ]
       )
     },
 
@@ -168,14 +180,14 @@ export function createRecurringPaymentExecutor(
     async getSchedule(
       client: PublicClient,
       account: Address,
-      scheduleId: bigint,
+      scheduleId: bigint
     ): Promise<PaymentSchedule> {
-      const result = await client.readContract({
+      const result = (await client.readContract({
         address: executorAddress,
         abi: RECURRING_PAYMENT_EXECUTOR_ABI,
         functionName: 'getSchedule',
         args: [account, scheduleId],
-      }) as {
+      })) as {
         recipient: Address
         token: Address
         amount: bigint
@@ -212,7 +224,7 @@ export function createRecurringPaymentExecutor(
     async isPaymentDue(
       client: PublicClient,
       account: Address,
-      scheduleId: bigint,
+      scheduleId: bigint
     ): Promise<boolean> {
       return client.readContract({
         address: executorAddress,
@@ -225,7 +237,7 @@ export function createRecurringPaymentExecutor(
     async getNextPaymentTime(
       client: PublicClient,
       account: Address,
-      scheduleId: bigint,
+      scheduleId: bigint
     ): Promise<bigint> {
       return client.readContract({
         address: executorAddress,
@@ -238,7 +250,7 @@ export function createRecurringPaymentExecutor(
     async getRemainingPayments(
       client: PublicClient,
       account: Address,
-      scheduleId: bigint,
+      scheduleId: bigint
     ): Promise<bigint> {
       return client.readContract({
         address: executorAddress,
@@ -251,7 +263,7 @@ export function createRecurringPaymentExecutor(
     async getTotalRemainingValue(
       client: PublicClient,
       account: Address,
-      scheduleId: bigint,
+      scheduleId: bigint
     ): Promise<bigint> {
       return client.readContract({
         address: executorAddress,

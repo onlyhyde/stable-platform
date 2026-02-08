@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Address, Hex, PublicClient } from 'viem'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GasEstimator } from '../../src/gas/gasEstimator'
 import type { UserOperation } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
@@ -30,7 +30,7 @@ function createTestUserOp(overrides: Partial<UserOperation> = {}): UserOperation
     paymasterVerificationGasLimit: undefined,
     paymasterPostOpGasLimit: undefined,
     paymasterData: undefined,
-    signature: '0x' + '00'.repeat(65) as Hex,
+    signature: ('0x' + '00'.repeat(65)) as Hex,
     ...overrides,
   }
 }
@@ -95,15 +95,12 @@ describe('GasEstimator', () => {
       const largeResult = await gasEstimator.estimate(largeCalldata)
 
       // Larger calldata should have higher preVerificationGas
-      expect(largeResult.preVerificationGas).toBeGreaterThan(
-        smallResult.preVerificationGas
-      )
+      expect(largeResult.preVerificationGas).toBeGreaterThan(smallResult.preVerificationGas)
 
       // The difference should be proportional to calldata size
       // Non-zero bytes cost 16 gas each
       const expectedDiff = BigInt((1000 - 4) * 16) // 996 extra bytes * 16
-      const actualDiff =
-        largeResult.preVerificationGas - smallResult.preVerificationGas
+      const actualDiff = largeResult.preVerificationGas - smallResult.preVerificationGas
 
       // Should be within 10% of expected
       expect(actualDiff).toBeGreaterThan((expectedDiff * 90n) / 100n)
@@ -119,20 +116,18 @@ describe('GasEstimator', () => {
       // The estimator should call simulateValidation multiple times
       // to find the minimum gas that doesn't revert
       let callCount = 0
-      const simulateMock = vi.fn().mockImplementation(
-        async (params: { gas?: bigint }) => {
-          callCount++
-          // Simulate: needs at least 80000 gas to succeed
-          if (params.gas && params.gas < 80000n) {
-            throw new Error('out of gas')
-          }
-          // Return ValidationResult error (expected behavior)
-          throw {
-            name: 'ContractFunctionExecutionError',
-            data: '0xe0cff05f', // ValidationResult selector
-          }
+      const simulateMock = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        callCount++
+        // Simulate: needs at least 80000 gas to succeed
+        if (params.gas && params.gas < 80000n) {
+          throw new Error('out of gas')
         }
-      )
+        // Return ValidationResult error (expected behavior)
+        throw {
+          name: 'ContractFunctionExecutionError',
+          data: '0xe0cff05f', // ValidationResult selector
+        }
+      })
       mockClient.simulateContract = simulateMock
 
       const result = await gasEstimator.estimate(userOp)
@@ -153,15 +148,13 @@ describe('GasEstimator', () => {
       })
 
       // Factory deployment needs more gas
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { gas?: bigint }) => {
-          // Needs 250000 gas for deployment
-          if (params.gas && params.gas < 250000n) {
-            throw new Error('out of gas')
-          }
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      mockClient.simulateContract = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        // Needs 250000 gas for deployment
+        if (params.gas && params.gas < 250000n) {
+          throw new Error('out of gas')
         }
-      )
+        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -172,14 +165,12 @@ describe('GasEstimator', () => {
     it('should include configurable safety margin', async () => {
       const userOp = createTestUserOp()
 
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { gas?: bigint }) => {
-          if (params.gas && params.gas < 100000n) {
-            throw new Error('out of gas')
-          }
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      mockClient.simulateContract = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        if (params.gas && params.gas < 100000n) {
+          throw new Error('out of gas')
         }
-      )
+        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      })
 
       // Create estimator with custom config
       const customEstimator = new GasEstimator(
@@ -206,8 +197,9 @@ describe('GasEstimator', () => {
 
       // Mock simulateContract for binary search
       const minGasRequired = 50000n
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { functionName: string; gas?: bigint }) => {
+      mockClient.simulateContract = vi
+        .fn()
+        .mockImplementation(async (params: { functionName: string; gas?: bigint }) => {
           if (params.functionName === 'simulateHandleOp') {
             // Simulate gas requirements
             if (params.gas && params.gas < minGasRequired) {
@@ -218,8 +210,7 @@ describe('GasEstimator', () => {
           }
           // For simulateValidation
           throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+        })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -268,14 +259,12 @@ describe('GasEstimator', () => {
       })
 
       // Mock for verification gas binary search
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { gas?: bigint }) => {
-          if (params.gas && params.gas < 60000n) {
-            throw new Error('out of gas')
-          }
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      mockClient.simulateContract = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        if (params.gas && params.gas < 60000n) {
+          throw new Error('out of gas')
         }
-      )
+        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -292,11 +281,9 @@ describe('GasEstimator', () => {
         paymasterData: '0x1234' as Hex,
       })
 
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async () => {
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+      mockClient.simulateContract = vi.fn().mockImplementation(async () => {
+        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -314,22 +301,18 @@ describe('GasEstimator', () => {
       const actualCallGas = 45000n
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { gas?: bigint }) => {
-          if (params.gas && params.gas < actualVerificationGas) {
-            throw new Error('out of gas')
-          }
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      mockClient.simulateContract = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        if (params.gas && params.gas < actualVerificationGas) {
+          throw new Error('out of gas')
         }
-      )
+        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      })
       mockClient.estimateGas = vi.fn().mockResolvedValue(actualCallGas)
 
       const result = await gasEstimator.estimate(userOp)
 
       // Estimates should always be >= actual requirements
-      expect(result.verificationGasLimit).toBeGreaterThanOrEqual(
-        actualVerificationGas
-      )
+      expect(result.verificationGasLimit).toBeGreaterThanOrEqual(actualVerificationGas)
       expect(result.callGasLimit).toBeGreaterThanOrEqual(actualCallGas)
     })
 
@@ -340,8 +323,9 @@ describe('GasEstimator', () => {
       const actualCallGas = 45000n
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { functionName: string; gas?: bigint }) => {
+      mockClient.simulateContract = vi
+        .fn()
+        .mockImplementation(async (params: { functionName: string; gas?: bigint }) => {
           if (params.functionName === 'simulateHandleOp') {
             // For call gas binary search
             if (params.gas && params.gas < actualCallGas) {
@@ -354,8 +338,7 @@ describe('GasEstimator', () => {
             throw new Error('out of gas')
           }
           throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+        })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -377,12 +360,7 @@ describe('GasEstimator', () => {
         preVerificationGasBufferPercent: 5,
       }
 
-      const customEstimator = new GasEstimator(
-        mockClient,
-        ENTRY_POINT,
-        mockLogger,
-        config
-      )
+      const customEstimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, config)
 
       expect(customEstimator).toBeDefined()
     })
@@ -393,12 +371,7 @@ describe('GasEstimator', () => {
         perUserOpOverhead: 20000n,
       }
 
-      const customEstimator = new GasEstimator(
-        mockClient,
-        ENTRY_POINT,
-        mockLogger,
-        config
-      )
+      const customEstimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, config)
 
       expect(customEstimator).toBeDefined()
     })
@@ -419,14 +392,16 @@ describe('GasEstimator', () => {
 
       // Track which function is called
       let simulateHandleOpCalled = false
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { functionName: string; gas?: bigint }) => {
+      mockClient.simulateContract = vi
+        .fn()
+        .mockImplementation(async (params: { functionName: string; gas?: bigint }) => {
           if (params.functionName === 'simulateHandleOp') {
             simulateHandleOpCalled = true
             // Return ExecutionResult error with gas used
             throw {
               name: 'ContractFunctionExecutionError',
-              data: '0x8b7ac980' + // ExecutionResult selector
+              data:
+                '0x8b7ac980' + // ExecutionResult selector
                 '0000000000000000000000000000000000000000000000000000000000010000' + // preOpGas
                 '0000000000000000000000000000000000000000000000000000000000000000' + // paid
                 '0000000000000000000000000000000000000000000000000000000000000000' + // accountValidationData
@@ -438,8 +413,7 @@ describe('GasEstimator', () => {
           }
           // For simulateValidation
           throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+        })
 
       await gasEstimator.estimate(userOp)
 
@@ -454,8 +428,9 @@ describe('GasEstimator', () => {
 
       // Simulate ExecutionResult with specific gas values
       const actualCallGasUsed = 75000n
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { functionName: string; gas?: bigint }) => {
+      mockClient.simulateContract = vi
+        .fn()
+        .mockImplementation(async (params: { functionName: string; gas?: bigint }) => {
           if (params.functionName === 'simulateHandleOp') {
             // Binary search - return success or failure based on gas
             if (params.gas && params.gas < actualCallGasUsed) {
@@ -467,8 +442,7 @@ describe('GasEstimator', () => {
             }
           }
           throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+        })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -484,12 +458,14 @@ describe('GasEstimator', () => {
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
 
       // Simulate ExecutionResult with targetSuccess = false
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { functionName: string }) => {
+      mockClient.simulateContract = vi
+        .fn()
+        .mockImplementation(async (params: { functionName: string }) => {
           if (params.functionName === 'simulateHandleOp') {
             throw {
               name: 'ContractFunctionExecutionError',
-              data: '0x8b7ac980' + // ExecutionResult selector
+              data:
+                '0x8b7ac980' + // ExecutionResult selector
                 '0000000000000000000000000000000000000000000000000000000000010000' +
                 '0000000000000000000000000000000000000000000000000000000000000000' +
                 '0000000000000000000000000000000000000000000000000000000000000000' +
@@ -499,8 +475,7 @@ describe('GasEstimator', () => {
             }
           }
           throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+        })
 
       // Should still provide gas estimate even if target execution fails
       const result = await gasEstimator.estimate(userOp)
@@ -521,8 +496,9 @@ describe('GasEstimator', () => {
       const actualPaymasterVerificationGas = 65000n
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { functionName: string; args?: unknown[] }) => {
+      mockClient.simulateContract = vi
+        .fn()
+        .mockImplementation(async (params: { functionName: string; args?: unknown[] }) => {
           if (params.functionName === 'simulateValidation') {
             binarySearchCallCount++
             // Extract paymasterVerificationGasLimit from the packed userOp
@@ -533,7 +509,8 @@ describe('GasEstimator', () => {
               // paymasterAndData format: address(20) + verificationGas(16) + postOpGas(16) + data
               // Extract verification gas from bytes 20-36
               const paymasterAndData = packedOp.paymasterAndData
-              if (paymasterAndData.length >= 72) { // 0x + 40 (address) + 32 (verificationGas)
+              if (paymasterAndData.length >= 72) {
+                // 0x + 40 (address) + 32 (verificationGas)
                 const verificationGasHex = '0x' + paymasterAndData.slice(42, 74)
                 const verificationGas = BigInt(verificationGasHex)
                 if (verificationGas < actualPaymasterVerificationGas) {
@@ -546,8 +523,7 @@ describe('GasEstimator', () => {
             throw { name: 'ContractFunctionExecutionError', data: '0x8b7ac980' }
           }
           throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+        })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -570,8 +546,9 @@ describe('GasEstimator', () => {
       const actualPostOpGas = 35000n
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { functionName: string; args?: unknown[] }) => {
+      mockClient.simulateContract = vi
+        .fn()
+        .mockImplementation(async (params: { functionName: string; args?: unknown[] }) => {
           if (params.functionName === 'simulateHandleOp') {
             // Extract paymasterPostOpGasLimit from the packed userOp
             const packedOp = params.args?.[0] as { paymasterAndData?: string } | undefined
@@ -579,7 +556,8 @@ describe('GasEstimator', () => {
               // paymasterAndData format: address(20) + verificationGas(16) + postOpGas(16) + data
               // Extract postOp gas from bytes 36-52
               const paymasterAndData = packedOp.paymasterAndData
-              if (paymasterAndData.length >= 104) { // 0x + 40 + 32 + 32
+              if (paymasterAndData.length >= 104) {
+                // 0x + 40 + 32 + 32
                 const postOpGasHex = '0x' + paymasterAndData.slice(74, 106)
                 const postOpGas = BigInt(postOpGasHex)
                 if (postOpGas < actualPostOpGas) {
@@ -590,8 +568,7 @@ describe('GasEstimator', () => {
             throw { name: 'ContractFunctionExecutionError', data: '0x8b7ac980' }
           }
           throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+        })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -608,11 +585,9 @@ describe('GasEstimator', () => {
         paymasterData: '0x1234' as Hex,
       })
 
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async () => {
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+      mockClient.simulateContract = vi.fn().mockImplementation(async () => {
+        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -620,9 +595,7 @@ describe('GasEstimator', () => {
       expect(result.paymasterVerificationGasLimit).toBeDefined()
       expect(result.paymasterPostOpGasLimit).toBeDefined()
       // They should not be the same (different operations)
-      expect(result.paymasterVerificationGasLimit).not.toBe(
-        result.paymasterPostOpGasLimit
-      )
+      expect(result.paymasterVerificationGasLimit).not.toBe(result.paymasterPostOpGasLimit)
     })
   })
 
@@ -633,32 +606,22 @@ describe('GasEstimator', () => {
       })
 
       // Create estimator with L2 config
-      const l2Estimator = new GasEstimator(
-        mockClient,
-        ENTRY_POINT,
-        mockLogger,
-        {
-          isL2Chain: true,
-          l1GasPrice: 30000000000n, // 30 gwei
-          l2GasPrice: 100000000n, // 0.1 gwei
-        }
-      )
+      const l2Estimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, {
+        isL2Chain: true,
+        l1GasPrice: 30000000000n, // 30 gwei
+        l2GasPrice: 100000000n, // 0.1 gwei
+      })
 
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async () => {
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+      mockClient.simulateContract = vi.fn().mockImplementation(async () => {
+        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      })
 
       const l2Result = await l2Estimator.estimate(userOp)
 
       // Create L1 estimator for comparison
-      const l1Estimator = new GasEstimator(
-        mockClient,
-        ENTRY_POINT,
-        mockLogger,
-        { isL2Chain: false }
-      )
+      const l1Estimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, {
+        isL2Chain: false,
+      })
       const l1Result = await l1Estimator.estimate(userOp)
 
       // L2 should have higher preVerificationGas due to L1 data cost
@@ -673,18 +636,15 @@ describe('GasEstimator', () => {
         callData: ('0x' + 'ab'.repeat(1000)) as Hex,
       })
 
-      const l2Estimator = new GasEstimator(
-        mockClient,
-        ENTRY_POINT,
-        mockLogger,
-        { isL2Chain: true, l1GasPrice: 30000000000n, l2GasPrice: 100000000n }
-      )
+      const l2Estimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, {
+        isL2Chain: true,
+        l1GasPrice: 30000000000n,
+        l2GasPrice: 100000000n,
+      })
 
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async () => {
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+      mockClient.simulateContract = vi.fn().mockImplementation(async () => {
+        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      })
 
       const smallResult = await l2Estimator.estimate(smallCalldata)
       const largeResult = await l2Estimator.estimate(largeCalldata)
@@ -708,11 +668,9 @@ describe('GasEstimator', () => {
         { isL2Chain: true } // No fixed L1 gas price
       )
 
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async () => {
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+      mockClient.simulateContract = vi.fn().mockImplementation(async () => {
+        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      })
 
       await l2Estimator.estimate(userOp)
 
@@ -731,28 +689,23 @@ describe('GasEstimator', () => {
         paymasterData: '0x1234' as Hex,
       })
 
-      const customEstimator = new GasEstimator(
-        mockClient,
-        ENTRY_POINT,
-        mockLogger,
-        {
-          verificationGasBufferPercent: 15,
-          callGasBufferPercent: 10,
-          preVerificationGasBufferPercent: 5,
-          paymasterVerificationGasBufferPercent: 20, // Higher for paymaster
-          paymasterPostOpGasBufferPercent: 25,
-        }
-      )
+      const customEstimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, {
+        verificationGasBufferPercent: 15,
+        callGasBufferPercent: 10,
+        preVerificationGasBufferPercent: 5,
+        paymasterVerificationGasBufferPercent: 20, // Higher for paymaster
+        paymasterPostOpGasBufferPercent: 25,
+      })
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
-      mockClient.simulateContract = vi.fn().mockImplementation(
-        async (params: { functionName: string }) => {
+      mockClient.simulateContract = vi
+        .fn()
+        .mockImplementation(async (params: { functionName: string }) => {
           if (params.functionName === 'simulateHandleOp') {
             throw { name: 'ContractFunctionExecutionError', data: '0x8b7ac980' }
           }
           throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
-        }
-      )
+        })
 
       const result = await customEstimator.estimate(userOp)
 
@@ -777,12 +730,7 @@ describe('GasEstimator', () => {
 
     it('should validate buffer percentage is not negative', () => {
       expect(() => {
-        new GasEstimator(
-          mockClient,
-          ENTRY_POINT,
-          mockLogger,
-          { callGasBufferPercent: -10 }
-        )
+        new GasEstimator(mockClient, ENTRY_POINT, mockLogger, { callGasBufferPercent: -10 })
       }).toThrow()
     })
   })

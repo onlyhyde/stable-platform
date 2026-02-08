@@ -25,7 +25,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const { createWallet, restoreWallet } = useWalletStore()
 
   const [step, setStep] = useState<OnboardingStep>('welcome')
-  const [password, setPassword] = useState('')
+  const [_password, setPassword] = useState('')
   const [mnemonic, setMnemonic] = useState('')
   const [createdAddress, setCreatedAddress] = useState<Address | null>(null)
   const [isLoading, setIsLoading] = useState(false)

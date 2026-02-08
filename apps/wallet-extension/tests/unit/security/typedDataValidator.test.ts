@@ -1,12 +1,7 @@
 // Unmock to test real implementation
 jest.unmock('@stablenet/core')
 
-import {
-  TypedDataValidator,
-  createTypedDataValidator,
-  type TypedData,
-  type TypedDataDomain,
-} from '@stablenet/core'
+import { type TypedData, TypedDataValidator, createTypedDataValidator } from '@stablenet/core'
 
 const typedDataValidator = createTypedDataValidator()
 
@@ -46,33 +41,21 @@ describe('TypedDataValidator', () => {
   describe('validateTypedData', () => {
     describe('structure validation', () => {
       it('should validate correct typed data structure', () => {
-        const result = validator.validateTypedData(
-          validTypedData,
-          1,
-          'https://myapp.com'
-        )
+        const result = validator.validateTypedData(validTypedData, 1, 'https://myapp.com')
 
         expect(result.isValid).toBe(true)
         expect(result.errors).toHaveLength(0)
       })
 
       it('should reject non-object typed data', () => {
-        const result = validator.validateTypedData(
-          'invalid',
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData('invalid', 1, 'https://example.com')
 
         expect(result.isValid).toBe(false)
         expect(result.errors).toContain('Typed data must be an object')
       })
 
       it('should reject null typed data', () => {
-        const result = validator.validateTypedData(
-          null,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(null, 1, 'https://example.com')
 
         expect(result.isValid).toBe(false)
         expect(result.errors).toContain('Typed data must be an object')
@@ -80,11 +63,7 @@ describe('TypedDataValidator', () => {
 
       it('should require types field', () => {
         const data = { ...validTypedData, types: undefined }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
         expect(result.isValid).toBe(false)
         expect(result.errors).toContain('Typed data must have "types" field')
@@ -92,11 +71,7 @@ describe('TypedDataValidator', () => {
 
       it('should require primaryType field', () => {
         const data = { ...validTypedData, primaryType: undefined }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
         expect(result.isValid).toBe(false)
         expect(result.errors).toContain('Typed data must have "primaryType" field')
@@ -104,11 +79,7 @@ describe('TypedDataValidator', () => {
 
       it('should require message field', () => {
         const data = { ...validTypedData, message: undefined }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
         expect(result.isValid).toBe(false)
         expect(result.errors).toContain('Typed data must have "message" field')
@@ -116,11 +87,7 @@ describe('TypedDataValidator', () => {
 
       it('should require domain field', () => {
         const data = { ...validTypedData, domain: undefined }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
         expect(result.isValid).toBe(false)
         expect(result.errors).toContain('Typed data must have "domain" field')
@@ -153,11 +120,7 @@ describe('TypedDataValidator', () => {
             verifyingContract: '0x1234567890123456789012345678901234567890',
           },
         }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
         const warning = result.warnings.find((w) => w.type === 'missing_chain_id')
         expect(warning).toBeDefined()
@@ -169,15 +132,9 @@ describe('TypedDataValidator', () => {
           ...validTypedData,
           domain: { ...validTypedData.domain, chainId: '0x1' },
         }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
-        const chainMismatchWarning = result.warnings.find(
-          (w) => w.type === 'chain_mismatch'
-        )
+        const chainMismatchWarning = result.warnings.find((w) => w.type === 'chain_mismatch')
         expect(chainMismatchWarning).toBeUndefined()
       })
 
@@ -186,15 +143,9 @@ describe('TypedDataValidator', () => {
           ...validTypedData,
           domain: { ...validTypedData.domain, chainId: '1' },
         }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
-        const chainMismatchWarning = result.warnings.find(
-          (w) => w.type === 'chain_mismatch'
-        )
+        const chainMismatchWarning = result.warnings.find((w) => w.type === 'chain_mismatch')
         expect(chainMismatchWarning).toBeUndefined()
       })
     })
@@ -205,15 +156,9 @@ describe('TypedDataValidator', () => {
           ...validTypedData,
           domain: { name: 'My App', chainId: 1 },
         }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
-        const warning = result.warnings.find(
-          (w) => w.type === 'missing_verifying_contract'
-        )
+        const warning = result.warnings.find((w) => w.type === 'missing_verifying_contract')
         expect(warning).toBeDefined()
         expect(warning?.severity).toBe('low')
       })
@@ -226,15 +171,9 @@ describe('TypedDataValidator', () => {
             verifyingContract: 'invalid-address',
           },
         }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
-        const warning = result.warnings.find(
-          (w) => w.type === 'invalid_verifying_contract'
-        )
+        const warning = result.warnings.find((w) => w.type === 'invalid_verifying_contract')
         expect(warning).toBeDefined()
         expect(warning?.severity).toBe('high')
       })
@@ -249,15 +188,9 @@ describe('TypedDataValidator', () => {
             name: 'SomeOtherApp',
           },
         }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://myapp.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://myapp.com')
 
-        const warning = result.warnings.find(
-          (w) => w.type === 'domain_origin_mismatch'
-        )
+        const warning = result.warnings.find((w) => w.type === 'domain_origin_mismatch')
         expect(warning).toBeDefined()
       })
 
@@ -275,9 +208,7 @@ describe('TypedDataValidator', () => {
           'https://fake-uniswap.com' // Not legitimate Uniswap domain
         )
 
-        const warning = result.warnings.find(
-          (w) => w.type === 'domain_origin_mismatch'
-        )
+        const warning = result.warnings.find((w) => w.type === 'domain_origin_mismatch')
         expect(warning).toBeDefined()
         expect(warning?.severity).toBe('critical')
       })
@@ -290,11 +221,7 @@ describe('TypedDataValidator', () => {
             name: 'Uniswap V3',
           },
         }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://app.uniswap.org'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://app.uniswap.org')
 
         const criticalMismatch = result.warnings.find(
           (w) => w.type === 'domain_origin_mismatch' && w.severity === 'critical'
@@ -310,15 +237,9 @@ describe('TypedDataValidator', () => {
             name: 'OpenSea',
           },
         }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://opensea-phishing.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://opensea-phishing.com')
 
-        const warning = result.warnings.find(
-          (w) => w.type === 'domain_origin_mismatch'
-        )
+        const warning = result.warnings.find((w) => w.type === 'domain_origin_mismatch')
         expect(warning).toBeDefined()
         expect(warning?.severity).toBe('critical')
       })
@@ -340,15 +261,9 @@ describe('TypedDataValidator', () => {
             ...validTypedData,
             domain: { ...validTypedData.domain, name },
           }
-          const result = validator.validateTypedData(
-            data,
-            1,
-            'https://example.com'
-          )
+          const result = validator.validateTypedData(data, 1, 'https://example.com')
 
-          const warning = result.warnings.find(
-            (w) => w.type === 'suspicious_domain_name'
-          )
+          const warning = result.warnings.find((w) => w.type === 'suspicious_domain_name')
           expect(warning).toBeDefined()
         }
       })
@@ -360,11 +275,7 @@ describe('TypedDataValidator', () => {
           ...validTypedData,
           domain: {},
         }
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
         const warning = result.warnings.find((w) => w.type === 'empty_domain')
         expect(warning).toBeDefined()
@@ -406,11 +317,7 @@ describe('TypedDataValidator', () => {
           },
         }
 
-        const result = validator.validateTypedData(
-          permitData,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(permitData, 1, 'https://example.com')
 
         const warning = result.warnings.find((w) => w.type === 'permit_signature')
         expect(warning).toBeDefined()
@@ -440,11 +347,7 @@ describe('TypedDataValidator', () => {
           },
         }
 
-        const result = validator.validateTypedData(
-          permit2Data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(permit2Data, 1, 'https://example.com')
 
         const warning = result.warnings.find((w) => w.type === 'permit_signature')
         expect(warning).toBeDefined()
@@ -464,15 +367,9 @@ describe('TypedDataValidator', () => {
           },
         }
 
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
-        const warning = result.warnings.find(
-          (w) => w.type === 'high_value_approval'
-        )
+        const warning = result.warnings.find((w) => w.type === 'high_value_approval')
         expect(warning).toBeDefined()
         expect(warning?.severity).toBe('critical')
       })
@@ -481,19 +378,14 @@ describe('TypedDataValidator', () => {
         const data = {
           ...validTypedData,
           message: {
-            amount: '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+            amount:
+              '115792089237316195423570985008687907853269984665640564039457584007913129639935',
           },
         }
 
-        const result = validator.validateTypedData(
-          data,
-          1,
-          'https://example.com'
-        )
+        const result = validator.validateTypedData(data, 1, 'https://example.com')
 
-        const warning = result.warnings.find(
-          (w) => w.type === 'high_value_approval'
-        )
+        const warning = result.warnings.find((w) => w.type === 'high_value_approval')
         expect(warning).toBeDefined()
       })
     })
@@ -543,10 +435,22 @@ describe('TypedDataValidator', () => {
   describe('formatWarningsForDisplay', () => {
     it('should format warnings with severity icons', () => {
       const warnings = [
-        { type: 'chain_mismatch' as const, message: 'Chain mismatch', severity: 'critical' as const },
-        { type: 'permit_signature' as const, message: 'Permit detected', severity: 'high' as const },
+        {
+          type: 'chain_mismatch' as const,
+          message: 'Chain mismatch',
+          severity: 'critical' as const,
+        },
+        {
+          type: 'permit_signature' as const,
+          message: 'Permit detected',
+          severity: 'high' as const,
+        },
         { type: 'empty_domain' as const, message: 'Empty domain', severity: 'medium' as const },
-        { type: 'missing_verifying_contract' as const, message: 'Missing contract', severity: 'low' as const },
+        {
+          type: 'missing_verifying_contract' as const,
+          message: 'Missing contract',
+          severity: 'low' as const,
+        },
       ]
 
       const formatted = validator.formatWarningsForDisplay(warnings)

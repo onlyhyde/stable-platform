@@ -110,6 +110,9 @@ export type MessageType =
   | 'TOKEN_REMOVED'
   | 'SET_TOKEN_VISIBILITY'
   | 'TOKEN_VISIBILITY_SET'
+  // Token price messages
+  | 'GET_TOKEN_PRICES'
+  | 'TOKEN_PRICES'
 
 export interface ExtensionMessage<T = unknown> {
   type: MessageType

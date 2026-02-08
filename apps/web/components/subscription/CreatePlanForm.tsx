@@ -95,12 +95,12 @@ export const CreatePlanForm: FC<CreatePlanFormProps> = ({
             />
 
             <div>
-              <label
+              <span
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground) / 0.8)' }}
               >
                 Description
-              </label>
+              </span>
               <textarea
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none resize-none"
                 style={{
@@ -123,12 +123,12 @@ export const CreatePlanForm: FC<CreatePlanFormProps> = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label
+                <span
                   className="block text-sm font-medium mb-1"
                   style={{ color: 'rgb(var(--foreground) / 0.8)' }}
                 >
                   Price
-                </label>
+                </span>
                 <div className="relative">
                   <input
                     type="number"
@@ -163,12 +163,12 @@ export const CreatePlanForm: FC<CreatePlanFormProps> = ({
               </div>
 
               <div>
-                <label
+                <span
                   className="block text-sm font-medium mb-1"
                   style={{ color: 'rgb(var(--foreground) / 0.8)' }}
                 >
                   Billing Interval
-                </label>
+                </span>
                 <select
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none"
                   style={{

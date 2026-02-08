@@ -202,10 +202,11 @@ export function RecurringPaymentConfigUI({
           </p>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="recipient-address" className="block text-sm font-medium text-gray-700 mb-1">
               Recipient Address
             </label>
             <input
+              id="recipient-address"
               type="text"
               value={form.recipient}
               onChange={(e) => setForm((f) => ({ ...f, recipient: e.target.value }))}
@@ -218,7 +219,7 @@ export function RecurringPaymentConfigUI({
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Token</label>
+            <span className="block text-sm font-medium text-gray-700 mb-2">Payment Token</span>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -249,10 +250,11 @@ export function RecurringPaymentConfigUI({
 
           {form.tokenType === 'custom' && (
             <div className="mt-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="token-contract-address" className="block text-sm font-medium text-gray-700 mb-1">
                 Token Contract Address
               </label>
               <input
+                id="token-contract-address"
                 type="text"
                 value={form.customToken}
                 onChange={(e) => setForm((f) => ({ ...f, customToken: e.target.value }))}
@@ -270,10 +272,11 @@ export function RecurringPaymentConfigUI({
           <p className="text-sm text-gray-500">Set the amount to be transferred in each payment.</p>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="amount-per-payment" className="block text-sm font-medium text-gray-700 mb-1">
               Amount per Payment ({form.tokenType === 'native' ? 'ETH' : 'Tokens'})
             </label>
             <input
+              id="amount-per-payment"
               type="text"
               value={form.amountEth}
               onChange={(e) => setForm((f) => ({ ...f, amountEth: e.target.value }))}
@@ -309,9 +312,9 @@ export function RecurringPaymentConfigUI({
           </p>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <span className="block text-sm font-medium text-gray-700 mb-2">
               Payment Frequency
-            </label>
+            </span>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(INTERVAL_PRESETS).map(([key, preset]) => (
                 <button
@@ -337,7 +340,7 @@ export function RecurringPaymentConfigUI({
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
+            <span className="block text-sm font-medium text-gray-700 mb-2">Duration</span>
             <div className="flex items-center gap-2 mb-3">
               <input
                 type="checkbox"
@@ -370,10 +373,11 @@ export function RecurringPaymentConfigUI({
                   ))}
                 </div>
                 <div className="mt-3">
-                  <label className="block text-sm text-gray-600 mb-1">
+                  <label htmlFor="custom-max-payments" className="block text-sm text-gray-600 mb-1">
                     Custom number of payments
                   </label>
                   <input
+                    id="custom-max-payments"
                     type="number"
                     min="1"
                     max="1000"

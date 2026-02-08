@@ -1,5 +1,6 @@
 import type { Address, Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
+import { clearSensitiveMap } from '../../shared/security/memorySanitizer'
 import type { KeyringAccount, SimpleKeyringData } from '../../types'
 
 /**
@@ -42,7 +43,7 @@ export class SimpleKeyring {
     let viemAccount: ReturnType<typeof privateKeyToAccount>
     try {
       viemAccount = privateKeyToAccount(normalizedKey)
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Invalid private key')
     }
 
@@ -220,5 +221,14 @@ export class SimpleKeyring {
    */
   hasAccount(address: Address): boolean {
     return this.accounts.some((a) => a.address.toLowerCase() === address.toLowerCase())
+  }
+
+  /**
+   * Sanitize sensitive data from memory.
+   * Called when the wallet is locked.
+   */
+  sanitize(): void {
+    clearSensitiveMap(this.privateKeys)
+    this.accounts = []
   }
 }

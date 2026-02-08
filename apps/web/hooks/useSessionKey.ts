@@ -288,7 +288,7 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
         return null
       }
     },
-    [targetAccount, publicClient]
+    [targetAccount, publicClient, sessionKeyManager]
   )
 
   // Check if session key has specific permission
@@ -310,7 +310,7 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
         return false
       }
     },
-    [targetAccount, publicClient]
+    [targetAccount, publicClient, sessionKeyManager]
   )
 
   // Refresh all session keys for the account
@@ -351,7 +351,7 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [targetAccount, publicClient, getSessionKeyState])
+  }, [targetAccount, publicClient, getSessionKeyState, sessionKeyManager])
 
   // Load session keys on mount and when account changes
   useEffect(() => {
@@ -419,7 +419,7 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
         setIsCreating(false)
       }
     },
-    [walletClient, targetAccount, refresh]
+    [walletClient, targetAccount, refresh, sessionKeyManager]
   )
 
   // Revoke a session key
@@ -453,7 +453,7 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
         setIsRevoking(false)
       }
     },
-    [walletClient, targetAccount, refresh]
+    [walletClient, targetAccount, refresh, sessionKeyManager]
   )
 
   // Grant permission to a session key
@@ -492,7 +492,7 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
         setIsGranting(false)
       }
     },
-    [walletClient, targetAccount, refresh]
+    [walletClient, targetAccount, refresh, sessionKeyManager]
   )
 
   // Revoke permission from a session key
@@ -530,7 +530,7 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
         setIsGranting(false)
       }
     },
-    [walletClient, targetAccount, refresh]
+    [walletClient, targetAccount, refresh, sessionKeyManager]
   )
 
   return {

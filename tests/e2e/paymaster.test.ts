@@ -16,52 +16,33 @@
  * - ERC-4337 contracts deployed (EntryPoint, VerifyingPaymaster)
  */
 
-import { describe, it, expect, beforeAll } from 'vitest'
 import {
-  createPublicClient,
-  createWalletClient,
   http,
-  parseEther,
-  formatEther,
-  parseAbi,
   type Address,
   type Hex,
   type PublicClient,
   type WalletClient,
+  createPublicClient,
+  createWalletClient,
+  formatEther,
+  parseAbi,
 } from 'viem'
-import { privateKeyToAccount, generatePrivateKey, type LocalAccount } from 'viem/accounts'
+import { type LocalAccount, generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { foundry } from 'viem/chains'
-import { TEST_CONFIG, isNetworkAvailable, isBundlerAvailable } from '../setup'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { TEST_CONFIG, isBundlerAvailable, isNetworkAvailable } from '../setup'
 
 // SDK Imports
 import {
+  DEFAULT_VALIDITY_SECONDS,
+  createSponsorPaymaster,
   createVerifyingPaymaster,
   createVerifyingPaymasterFromPrivateKey,
-  createSponsorPaymaster,
-  DEFAULT_VALIDITY_SECONDS,
 } from '../../packages/sdk/plugins/paymaster/src'
 
-import {
-  createBundlerClient,
-  createSmartAccountClient,
-  packUserOperation,
-  getUserOperationHash,
-} from '../../packages/sdk/packages/core/src'
+import { getUserOperationHash, packUserOperation } from '../../packages/sdk/packages/core/src'
 
-import {
-  toKernelSmartAccount,
-} from '../../packages/sdk/packages/accounts/src'
-
-import {
-  createEcdsaValidator,
-} from '../../packages/sdk/plugins/ecdsa/src'
-
-import type {
-  UserOperation,
-  PaymasterClient,
-  PaymasterStubData,
-  PaymasterData,
-} from '../../packages/sdk/packages/types/src'
+import type { PaymasterClient, UserOperation } from '../../packages/sdk/packages/types/src'
 
 // ============================================================================
 // ABIs
@@ -126,7 +107,7 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
   }
 
   // Mock UserOperation for testing
-  const createMockUserOp = (sender: Address, nonce: bigint = 0n): UserOperation => ({
+  const createMockUserOp = (sender: Address, nonce = 0n): UserOperation => ({
     sender,
     nonce,
     factory: null,
@@ -164,9 +145,7 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       transport: http(TEST_CONFIG.rpcUrl),
     })
 
-    ctx.account = privateKeyToAccount(
-      TEST_CONFIG.accounts.user1.privateKey as Hex
-    )
+    ctx.account = privateKeyToAccount(TEST_CONFIG.accounts.user1.privateKey as Hex)
 
     ctx.walletClient = createWalletClient({
       chain,
@@ -349,8 +328,8 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       const validUntilHex = stubData.paymasterData.slice(2, 14)
       const validAfterHex = stubData.paymasterData.slice(14, 26)
 
-      const validUntil = parseInt(validUntilHex, 16)
-      const validAfter = parseInt(validAfterHex, 16)
+      const validUntil = Number.parseInt(validUntilHex, 16)
+      const validAfter = Number.parseInt(validAfterHex, 16)
       const now = Math.floor(Date.now() / 1000)
 
       expect(validAfter).toBe(0) // Default is 0
@@ -907,7 +886,7 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
     it('should handle different sender addresses', async () => {
       if (!ctx.networkAvailable || !ctx.paymasterClient) return
 
-      const randomSender = '0x' + 'a'.repeat(40) as Address
+      const randomSender = ('0x' + 'a'.repeat(40)) as Address
       const userOp = createMockUserOp(randomSender)
 
       const data = await ctx.paymasterClient.getPaymasterData(

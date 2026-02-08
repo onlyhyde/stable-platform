@@ -49,10 +49,7 @@ export const packedUserOperationSchema = z.object({
 /**
  * Either unpacked or packed UserOperation
  */
-export const anyUserOperationSchema = z.union([
-  userOperationSchema,
-  packedUserOperationSchema,
-])
+export const anyUserOperationSchema = z.union([userOperationSchema, packedUserOperationSchema])
 
 /**
  * Context schema
@@ -72,30 +69,26 @@ export const jsonRpcRequestSchema = z.object({
 /**
  * pm_getPaymasterStubData params schema
  */
-export const getPaymasterStubDataParamsSchema = z.tuple([
-  anyUserOperationSchema,  // UserOperation
-  addressSchema,           // EntryPoint
-  hexSchema,               // Chain ID
-  contextSchema,           // Context (optional)
-]).or(z.tuple([
-  anyUserOperationSchema,
-  addressSchema,
-  hexSchema,
-]))
+export const getPaymasterStubDataParamsSchema = z
+  .tuple([
+    anyUserOperationSchema, // UserOperation
+    addressSchema, // EntryPoint
+    hexSchema, // Chain ID
+    contextSchema, // Context (optional)
+  ])
+  .or(z.tuple([anyUserOperationSchema, addressSchema, hexSchema]))
 
 /**
  * pm_getPaymasterData params schema
  */
-export const getPaymasterDataParamsSchema = z.tuple([
-  anyUserOperationSchema,  // UserOperation
-  addressSchema,           // EntryPoint
-  hexSchema,               // Chain ID
-  contextSchema,           // Context (optional)
-]).or(z.tuple([
-  anyUserOperationSchema,
-  addressSchema,
-  hexSchema,
-]))
+export const getPaymasterDataParamsSchema = z
+  .tuple([
+    anyUserOperationSchema, // UserOperation
+    addressSchema, // EntryPoint
+    hexSchema, // Chain ID
+    contextSchema, // Context (optional)
+  ])
+  .or(z.tuple([anyUserOperationSchema, addressSchema, hexSchema]))
 
 export type UserOperationInput = z.infer<typeof userOperationSchema>
 export type PackedUserOperationInput = z.infer<typeof packedUserOperationSchema>

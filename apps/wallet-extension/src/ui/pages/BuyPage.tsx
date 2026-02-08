@@ -41,14 +41,42 @@ export function BuyPage({ onBack }: BuyPageProps) {
   // Bank accounts for payment
   const [linkedBankAccounts, setLinkedBankAccounts] = useState<LinkedBankAccount[]>([])
 
+  // KYC state
+  const [kycStatus, setKycStatus] = useState<'none' | 'pending' | 'verified' | 'rejected'>('none')
+  const [isLoadingKyc, setIsLoadingKyc] = useState(true)
+
   // Payment instructions modal
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [pendingOrder, setPendingOrder] = useState<OnRampOrder | null>(null)
 
+  // Order polling for status updates
+  const [_isPollingOrder, setIsPollingOrder] = useState(false)
+
+  // Supported currencies (loaded dynamically)
+  const [supportedFiat, setSupportedFiat] = useState<FiatCurrency[]>([])
+  const [supportedCrypto, setSupportedCrypto] = useState<CryptoCurrency[]>([])
+  const [_isLoadingCurrencies, setIsLoadingCurrencies] = useState(true)
+
   useEffect(() => {
     loadBankAccounts()
     loadOrders()
+    loadKycStatus()
+    loadSupportedCurrencies()
   }, [])
+
+  // Poll pending orders for status updates
+  useEffect(() => {
+    const hasPendingOrders = orders.some((o) => o.status === 'pending' || o.status === 'processing')
+    if (!hasPendingOrders) return
+
+    const pollInterval = setInterval(async () => {
+      setIsPollingOrder(true)
+      await loadOrders()
+      setIsPollingOrder(false)
+    }, 15_000)
+
+    return () => clearInterval(pollInterval)
+  }, [orders])
 
   // Quote expiration timer
   useEffect(() => {
@@ -89,6 +117,42 @@ export function BuyPage({ onBack }: BuyPageProps) {
       // Silent fail
     } finally {
       setIsLoadingOrders(false)
+    }
+  }
+
+  async function loadKycStatus() {
+    if (!selectedAccount) {
+      setIsLoadingKyc(false)
+      return
+    }
+    setIsLoadingKyc(true)
+    try {
+      const response = await fetch(`http://localhost:3002/api/v1/kyc/status/${selectedAccount}`)
+      if (response.ok) {
+        const data = await response.json()
+        setKycStatus(data.status ?? 'none')
+      }
+    } catch {
+      // KYC service unavailable, allow proceeding without
+      setKycStatus('none')
+    } finally {
+      setIsLoadingKyc(false)
+    }
+  }
+
+  async function loadSupportedCurrencies() {
+    setIsLoadingCurrencies(true)
+    try {
+      const response = await fetch('http://localhost:3002/api/v1/supported-assets')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.fiatCurrencies?.length) setSupportedFiat(data.fiatCurrencies)
+        if (data.cryptoCurrencies?.length) setSupportedCrypto(data.cryptoCurrencies)
+      }
+    } catch {
+      // API unavailable, use defaults
+    } finally {
+      setIsLoadingCurrencies(false)
     }
   }
 
@@ -173,20 +237,36 @@ export function BuyPage({ onBack }: BuyPageProps) {
     }
   }
 
-  const fiatCurrencyOptions: { value: FiatCurrency; label: string }[] = [
-    { value: 'USD', label: 'USD - US Dollar' },
-    { value: 'EUR', label: 'EUR - Euro' },
-    { value: 'GBP', label: 'GBP - British Pound' },
-    { value: 'KRW', label: 'KRW - Korean Won' },
-    { value: 'JPY', label: 'JPY - Japanese Yen' },
-  ]
+  const FIAT_LABELS: Record<FiatCurrency, string> = {
+    USD: 'USD - US Dollar',
+    EUR: 'EUR - Euro',
+    GBP: 'GBP - British Pound',
+    KRW: 'KRW - Korean Won',
+    JPY: 'JPY - Japanese Yen',
+  }
 
-  const cryptoCurrencyOptions: { value: CryptoCurrency; label: string }[] = [
-    { value: 'ETH', label: 'ETH - Ethereum' },
-    { value: 'USDC', label: 'USDC - USD Coin' },
-    { value: 'USDT', label: 'USDT - Tether' },
-    { value: 'DAI', label: 'DAI - Dai' },
-  ]
+  const CRYPTO_LABELS: Record<CryptoCurrency, string> = {
+    ETH: 'ETH - Ethereum',
+    USDC: 'USDC - USD Coin',
+    USDT: 'USDT - Tether',
+    DAI: 'DAI - Dai',
+  }
+
+  const DEFAULT_FIAT: FiatCurrency[] = ['USD', 'EUR', 'GBP', 'KRW', 'JPY']
+  const DEFAULT_CRYPTO: CryptoCurrency[] = ['ETH', 'USDC', 'USDT', 'DAI']
+
+  const fiatList = supportedFiat.length > 0 ? supportedFiat : DEFAULT_FIAT
+  const cryptoList = supportedCrypto.length > 0 ? supportedCrypto : DEFAULT_CRYPTO
+
+  const fiatCurrencyOptions = fiatList.map((c) => ({
+    value: c,
+    label: FIAT_LABELS[c] ?? c,
+  }))
+
+  const cryptoCurrencyOptions = cryptoList.map((c) => ({
+    value: c,
+    label: CRYPTO_LABELS[c] ?? c,
+  }))
 
   return (
     <div className="min-h-full" style={{ backgroundColor: 'rgb(var(--background))' }}>
@@ -273,6 +353,31 @@ export function BuyPage({ onBack }: BuyPageProps) {
       <div className="p-4">
         {activeView === 'buy' ? (
           <div className="space-y-4">
+            {/* KYC Status Banner */}
+            {!isLoadingKyc && kycStatus === 'rejected' && (
+              <div
+                className="p-3 text-sm rounded-lg"
+                style={{
+                  backgroundColor: 'rgb(var(--destructive) / 0.1)',
+                  color: 'rgb(var(--destructive))',
+                }}
+              >
+                KYC verification was rejected. Please contact support to resolve this issue.
+              </div>
+            )}
+            {!isLoadingKyc && kycStatus === 'pending' && (
+              <div
+                className="p-3 text-sm rounded-lg"
+                style={{
+                  backgroundColor: 'rgb(var(--warning, 245 158 11) / 0.1)',
+                  color: 'rgb(var(--warning, 245 158 11))',
+                }}
+              >
+                KYC verification is pending. Some features may be limited until verification is
+                complete.
+              </div>
+            )}
+
             {/* Amount Input */}
             <Card padding="lg">
               <div className="space-y-4">

@@ -9,10 +9,10 @@
 
 import type { Address, Hex } from 'viem'
 import {
-  encodeAbiParameters,
-  parseAbiParameters,
-  encodeFunctionData,
   decodeFunctionResult,
+  encodeAbiParameters,
+  encodeFunctionData,
+  parseAbiParameters,
 } from 'viem'
 
 // ============================================================================
@@ -279,10 +279,11 @@ export interface Execution {
  * Encode single execution for ERC-7579
  */
 export function encodeExecution(execution: Execution): Hex {
-  return encodeAbiParameters(
-    parseAbiParameters('address target, uint256 value, bytes callData'),
-    [execution.target, execution.value, execution.callData]
-  )
+  return encodeAbiParameters(parseAbiParameters('address target, uint256 value, bytes callData'), [
+    execution.target,
+    execution.value,
+    execution.callData,
+  ])
 }
 
 /**
@@ -298,22 +299,17 @@ export function encodeBatchExecution(executions: Execution[]): Hex {
 /**
  * Encode execute call for ERC-7579 accounts
  */
-export function encodeExecuteCall(
-  mode: Hex,
-  executionCalldata: Hex
-): Hex {
-  return encodeAbiParameters(
-    parseAbiParameters('bytes32 mode, bytes executionCalldata'),
-    [mode as `0x${string}`, executionCalldata]
-  )
+export function encodeExecuteCall(mode: Hex, executionCalldata: Hex): Hex {
+  return encodeAbiParameters(parseAbiParameters('bytes32 mode, bytes executionCalldata'), [
+    mode as `0x${string}`,
+    executionCalldata,
+  ])
 }
 
 /**
  * Create batch execution calldata for ERC-7579 account
  */
-export function createBatchExecutionCalldata(
-  calls: Call[]
-): { mode: Hex; calldata: Hex } {
+export function createBatchExecutionCalldata(calls: Call[]): { mode: Hex; calldata: Hex } {
   const executions: Execution[] = calls.map((c) => ({
     target: c.target,
     value: c.value ?? 0n,
@@ -364,11 +360,7 @@ export class BatchBuilder {
   /**
    * Add an encoded function call
    */
-  add(
-    target: Address,
-    data: Hex,
-    options?: { value?: bigint; allowFailure?: boolean }
-  ): this {
+  add(target: Address, data: Hex, options?: { value?: bigint; allowFailure?: boolean }): this {
     this.calls.push({
       target,
       data,
@@ -433,7 +425,6 @@ export class BatchBuilder {
       case 'tryAggregate':
         data = encodeTryAggregate(this.calls)
         break
-      case 'aggregate3':
       default:
         data = this.calls.some((c) => c.value && c.value > 0n)
           ? encodeAggregate3Value(this.calls)
@@ -481,10 +472,7 @@ export function createBatchBuilder(): BatchBuilder {
 /**
  * Decode multicall results
  */
-export function decodeMulticallResults(
-  data: Hex,
-  mode: BatchMode
-): CallResult[] {
+export function decodeMulticallResults(data: Hex, mode: BatchMode): CallResult[] {
   // Implementation depends on the specific ABI decoding
   // This is a simplified version
   if (mode === 'strict') {

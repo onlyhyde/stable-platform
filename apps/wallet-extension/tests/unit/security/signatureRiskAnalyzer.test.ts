@@ -7,11 +7,10 @@
 jest.unmock('@stablenet/core')
 
 import {
+  SignatureMethod,
   SignatureRiskAnalyzer,
-  type SignatureRiskResult,
   SignatureRiskLevel,
   SignatureRiskType,
-  SignatureMethod,
 } from '@stablenet/core'
 
 describe('SignatureRiskAnalyzer', () => {
@@ -30,10 +29,7 @@ describe('SignatureRiskAnalyzer', () => {
   describe('analyzeSignature', () => {
     describe('eth_sign (blind signing)', () => {
       it('should flag eth_sign as high risk (blind signing)', () => {
-        const result = analyzer.analyzeSignature(
-          SignatureMethod.ETH_SIGN,
-          '0xdeadbeef'
-        )
+        const result = analyzer.analyzeSignature(SignatureMethod.ETH_SIGN, '0xdeadbeef')
 
         expect(result.riskLevel).toBe(SignatureRiskLevel.CRITICAL)
         expect(result.riskTypes).toContain(SignatureRiskType.BLIND_SIGNING)
@@ -41,10 +37,7 @@ describe('SignatureRiskAnalyzer', () => {
       })
 
       it('should include warning about raw data signing', () => {
-        const result = analyzer.analyzeSignature(
-          SignatureMethod.ETH_SIGN,
-          '0xabcdef'
-        )
+        const result = analyzer.analyzeSignature(SignatureMethod.ETH_SIGN, '0xabcdef')
 
         expect(result.warnings).toContain(
           'eth_sign signs arbitrary data without human-readable context'
@@ -55,10 +48,7 @@ describe('SignatureRiskAnalyzer', () => {
     describe('personal_sign', () => {
       it('should be low risk for simple text messages', () => {
         const message = 'Login to MyDApp - Nonce: 12345'
-        const result = analyzer.analyzeSignature(
-          SignatureMethod.PERSONAL_SIGN,
-          message
-        )
+        const result = analyzer.analyzeSignature(SignatureMethod.PERSONAL_SIGN, message)
 
         expect(result.riskLevel).toBe(SignatureRiskLevel.LOW)
         expect(result.decodedMessage).toBe(message)
@@ -67,20 +57,14 @@ describe('SignatureRiskAnalyzer', () => {
       it('should detect hex-encoded messages', () => {
         // "Hello World" in hex
         const hexMessage = '0x48656c6c6f20576f726c64'
-        const result = analyzer.analyzeSignature(
-          SignatureMethod.PERSONAL_SIGN,
-          hexMessage
-        )
+        const result = analyzer.analyzeSignature(SignatureMethod.PERSONAL_SIGN, hexMessage)
 
         expect(result.decodedMessage).toBe('Hello World')
       })
 
       it('should warn about potentially dangerous message patterns', () => {
         const message = 'I approve spending unlimited tokens'
-        const result = analyzer.analyzeSignature(
-          SignatureMethod.PERSONAL_SIGN,
-          message
-        )
+        const result = analyzer.analyzeSignature(SignatureMethod.PERSONAL_SIGN, message)
 
         expect(result.riskLevel).toBe(SignatureRiskLevel.MEDIUM)
         expect(result.warnings.length).toBeGreaterThan(0)
@@ -157,8 +141,7 @@ describe('SignatureRiskAnalyzer', () => {
             owner: '0xOwner',
             spender: '0xSpender',
             // Max uint256 = unlimited approval
-            value:
-              '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+            value: '115792089237316195423570985008687907853269984665640564039457584007913129639935',
             nonce: 0,
             deadline: 1893456000,
           },
@@ -241,10 +224,7 @@ describe('SignatureRiskAnalyzer', () => {
 
   describe('getRiskScore', () => {
     it('should return numeric risk score', () => {
-      const result = analyzer.analyzeSignature(
-        SignatureMethod.PERSONAL_SIGN,
-        'Simple message'
-      )
+      const result = analyzer.analyzeSignature(SignatureMethod.PERSONAL_SIGN, 'Simple message')
 
       expect(typeof result.riskScore).toBe('number')
       expect(result.riskScore).toBeGreaterThanOrEqual(0)
@@ -252,15 +232,9 @@ describe('SignatureRiskAnalyzer', () => {
     })
 
     it('should return higher score for riskier operations', () => {
-      const lowRisk = analyzer.analyzeSignature(
-        SignatureMethod.PERSONAL_SIGN,
-        'Login message'
-      )
+      const lowRisk = analyzer.analyzeSignature(SignatureMethod.PERSONAL_SIGN, 'Login message')
 
-      const highRisk = analyzer.analyzeSignature(
-        SignatureMethod.ETH_SIGN,
-        '0xdeadbeef'
-      )
+      const highRisk = analyzer.analyzeSignature(SignatureMethod.ETH_SIGN, '0xdeadbeef')
 
       expect(highRisk.riskScore).toBeGreaterThan(lowRisk.riskScore)
     })
@@ -300,10 +274,7 @@ describe('SignatureRiskAnalyzer', () => {
 
   describe('formatRiskSummary', () => {
     it('should provide human-readable risk summary', () => {
-      const result = analyzer.analyzeSignature(
-        SignatureMethod.ETH_SIGN,
-        '0xdeadbeef'
-      )
+      const result = analyzer.analyzeSignature(SignatureMethod.ETH_SIGN, '0xdeadbeef')
 
       expect(result.summary).toBeDefined()
       expect(typeof result.summary).toBe('string')

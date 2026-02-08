@@ -195,10 +195,11 @@ export function StakingExecutorConfigUI({
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="custom-pool-limit" className="block text-sm font-medium text-gray-700 mb-1">
               Custom Limit (ETH)
             </label>
             <input
+              id="custom-pool-limit"
               type="text"
               value={form.maxStakePerPoolEth}
               onChange={(e) => setForm((f) => ({ ...f, maxStakePerPoolEth: e.target.value }))}
@@ -250,10 +251,11 @@ export function StakingExecutorConfigUI({
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="custom-daily-stake-limit" className="block text-sm font-medium text-gray-700 mb-1">
               Custom Limit (ETH)
             </label>
             <input
+              id="custom-daily-stake-limit"
               type="text"
               value={form.dailyStakeLimitEth}
               onChange={(e) => setForm((f) => ({ ...f, dailyStakeLimitEth: e.target.value }))}

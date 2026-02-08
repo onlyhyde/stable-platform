@@ -15,43 +15,39 @@
  *   - Contracts deployed (`make deploy-full`)
  */
 
-import { describe, it, expect, beforeAll } from 'vitest'
 import {
-  createPublicClient,
-  createWalletClient,
   http,
-  parseEther,
-  formatEther,
+  type Address,
+  type Chain,
+  type Hex,
   type PublicClient,
   type WalletClient,
-  type Address,
-  type Hex,
-  type Chain,
+  createPublicClient,
+  createWalletClient,
+  formatEther,
+  parseEther,
 } from 'viem'
-import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
+import { type PrivateKeyAccount, privateKeyToAccount } from 'viem/accounts'
 import { foundry } from 'viem/chains'
-import { TEST_CONFIG, isNetworkAvailable } from '../setup'
+import { beforeAll, describe, expect, it } from 'vitest'
 import {
-  createSubscriptionManager,
-  createRecurringPaymentExecutor,
-  createSubscriptionPermissionClient,
   INTERVALS,
   NATIVE_TOKEN,
   PERMISSION_TYPES,
-  RULE_TYPES,
-  type SubscriptionManagerClient,
   type RecurringPaymentExecutorClient,
+  type SubscriptionManagerClient,
   type SubscriptionPermissionClient,
+  createRecurringPaymentExecutor,
+  createSubscriptionManager,
+  createSubscriptionPermissionClient,
 } from '../../packages/sdk/plugins/subscription/src'
+import { TEST_CONFIG, isNetworkAvailable } from '../setup'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function isContractDeployed(
-  client: PublicClient,
-  address: string,
-): Promise<boolean> {
+async function isContractDeployed(client: PublicClient, address: string): Promise<boolean> {
   if (!address || address === NATIVE_TOKEN) return false
   try {
     const code = await client.getCode({ address: address as Address })
@@ -97,8 +93,16 @@ describe('Subscription Plugin Integration', () => {
     merchantAccount = privateKeyToAccount(TEST_CONFIG.accounts.deployer.privateKey as Hex)
     subscriberAccount = privateKeyToAccount(TEST_CONFIG.accounts.user1.privateKey as Hex)
 
-    merchantWallet = createWalletClient({ chain, transport: http(TEST_CONFIG.rpcUrl), account: merchantAccount })
-    subscriberWallet = createWalletClient({ chain, transport: http(TEST_CONFIG.rpcUrl), account: subscriberAccount })
+    merchantWallet = createWalletClient({
+      chain,
+      transport: http(TEST_CONFIG.rpcUrl),
+      account: merchantAccount,
+    })
+    subscriberWallet = createWalletClient({
+      chain,
+      transport: http(TEST_CONFIG.rpcUrl),
+      account: subscriberAccount,
+    })
 
     // Create plugin clients
     const smAddr = TEST_CONFIG.contracts.subscriptionManager as Address
@@ -115,9 +119,13 @@ describe('Subscription Plugin Integration', () => {
     recurringPaymentExecutorDeployed = await isContractDeployed(publicClient, rpAddr)
 
     console.log('--- Subscription Contract Deployment Status ---')
-    console.log(`  SubscriptionManager:       ${subscriptionManagerDeployed ? '✅' : '❌'} ${smAddr}`)
+    console.log(
+      `  SubscriptionManager:       ${subscriptionManagerDeployed ? '✅' : '❌'} ${smAddr}`
+    )
     console.log(`  PermissionManager:         ${permissionManagerDeployed ? '✅' : '❌'} ${pmAddr}`)
-    console.log(`  RecurringPaymentExecutor:  ${recurringPaymentExecutorDeployed ? '✅' : '❌'} ${rpAddr}`)
+    console.log(
+      `  RecurringPaymentExecutor:  ${recurringPaymentExecutorDeployed ? '✅' : '❌'} ${rpAddr}`
+    )
   })
 
   // ---- 1. Contract deployment verification ----
@@ -138,7 +146,7 @@ describe('Subscription Plugin Integration', () => {
       console.log(
         recurringPaymentExecutorDeployed
           ? '✅ RecurringPaymentExecutor deployed'
-          : '⚠️ RecurringPaymentExecutor not yet deployed (zero address)',
+          : '⚠️ RecurringPaymentExecutor not yet deployed (zero address)'
       )
       // Non-blocking — executor is optional at this stage
       expect(true).toBe(true)
@@ -170,7 +178,7 @@ describe('Subscription Plugin Integration', () => {
 
       const isProcessor = await subscriptionMgr.isAuthorizedProcessor(
         publicClient,
-        merchantAccount.address,
+        merchantAccount.address
       )
       // deployer might or might not be an authorized processor
       expect(typeof isProcessor).toBe('boolean')
@@ -268,7 +276,7 @@ describe('Subscription Plugin Integration', () => {
         planId,
         parseEther('0.02'), // new amount
         INTERVALS.MONTHLY,
-        true, // still active
+        true // still active
       )
 
       const hash = await merchantWallet.sendTransaction({
@@ -290,7 +298,7 @@ describe('Subscription Plugin Integration', () => {
 
       const supported = await permissionClient.isPermissionTypeSupported(
         publicClient,
-        PERMISSION_TYPES.SUBSCRIPTION,
+        PERMISSION_TYPES.SUBSCRIPTION
       )
       expect(typeof supported).toBe('boolean')
       console.log(`  Subscription permission type supported: ${supported}`)
@@ -326,7 +334,7 @@ describe('Subscription Plugin Integration', () => {
     it('should encode revokePermission', () => {
       if (!networkAvailable) return
 
-      const fakePermissionId = '0x' + 'ab'.repeat(32) as Hex
+      const fakePermissionId = ('0x' + 'ab'.repeat(32)) as Hex
       const calldata = permissionClient.encodeRevokePermission(fakePermissionId)
       expect(calldata).toMatch(/^0x/)
       console.log(`  Encoded revokePermission calldata: ${calldata.slice(0, 66)}...`)
@@ -371,7 +379,7 @@ describe('Subscription Plugin Integration', () => {
 
       const schedules = await recurringPay.getActiveSchedules(
         publicClient,
-        subscriberAccount.address,
+        subscriberAccount.address
       )
       expect(Array.isArray(schedules)).toBe(true)
       console.log(`  Active schedules for subscriber: ${schedules.length}`)
@@ -380,10 +388,7 @@ describe('Subscription Plugin Integration', () => {
     it('should check initialization status (if deployed)', async () => {
       if (!networkAvailable || !recurringPaymentExecutorDeployed) return
 
-      const initialized = await recurringPay.isInitialized(
-        publicClient,
-        subscriberAccount.address,
-      )
+      const initialized = await recurringPay.isInitialized(publicClient, subscriberAccount.address)
       expect(typeof initialized).toBe('boolean')
       console.log(`  Subscriber module initialized: ${initialized}`)
     })
@@ -405,7 +410,7 @@ describe('Subscription Plugin Integration', () => {
     it('should encode subscribe transaction', () => {
       if (!networkAvailable || !subscriptionManagerDeployed || planId === 0n) return
 
-      const fakePermissionId = '0x' + 'cc'.repeat(32) as Hex
+      const fakePermissionId = ('0x' + 'cc'.repeat(32)) as Hex
       const calldata = subscriptionMgr.encodeSubscribe({
         planId,
         permissionId: fakePermissionId,
@@ -420,7 +425,7 @@ describe('Subscription Plugin Integration', () => {
 
       const subs = await subscriptionMgr.getSubscriberSubscriptions(
         publicClient,
-        subscriberAccount.address,
+        subscriberAccount.address
       )
       expect(Array.isArray(subs)).toBe(true)
       console.log(`  Subscriber subscription count: ${subs.length}`)
@@ -429,10 +434,7 @@ describe('Subscription Plugin Integration', () => {
     it('should get merchant plans', async () => {
       if (!networkAvailable || !subscriptionManagerDeployed) return
 
-      const plans = await subscriptionMgr.getMerchantPlans(
-        publicClient,
-        merchantAccount.address,
-      )
+      const plans = await subscriptionMgr.getMerchantPlans(publicClient, merchantAccount.address)
       expect(Array.isArray(plans)).toBe(true)
       console.log(`  Merchant plan count: ${plans.length}`)
     })
@@ -440,10 +442,7 @@ describe('Subscription Plugin Integration', () => {
     it('should encode batch process payments', () => {
       if (!networkAvailable || !subscriptionManagerDeployed) return
 
-      const fakeSubIds: Hex[] = [
-        '0x' + 'aa'.repeat(32) as Hex,
-        '0x' + 'bb'.repeat(32) as Hex,
-      ]
+      const fakeSubIds: Hex[] = [('0x' + 'aa'.repeat(32)) as Hex, ('0x' + 'bb'.repeat(32)) as Hex]
       const calldata = subscriptionMgr.encodeBatchProcessPayments(fakeSubIds)
       expect(calldata).toMatch(/^0x/)
       console.log(`  Encoded batchProcessPayments: ${calldata.slice(0, 66)}...`)

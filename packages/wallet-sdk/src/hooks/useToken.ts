@@ -2,10 +2,10 @@
  * useToken - Hook for ERC20 token balance and information
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
 import type { StableNetProvider } from '../provider/StableNetProvider'
-import type { TokenInfo, BalanceInfo } from '../types'
+import type { BalanceInfo, TokenInfo } from '../types'
 
 // ERC20 ABI for balance and token info
 const ERC20_BALANCE_OF = '0x70a08231' // balanceOf(address)
@@ -146,9 +146,7 @@ export function useToken(options: UseTokenOptions): UseTokenResult {
 
       // Fetch balance if account is provided
       if (account) {
-        const balanceData =
-          ERC20_BALANCE_OF +
-          account.slice(2).toLowerCase().padStart(64, '0')
+        const balanceData = ERC20_BALANCE_OF + account.slice(2).toLowerCase().padStart(64, '0')
 
         const balanceResult = await provider.request<string>({
           method: 'eth_call',
@@ -156,9 +154,7 @@ export function useToken(options: UseTokenOptions): UseTokenResult {
         })
 
         const raw = decodeUint256(balanceResult)
-        const formatted = (Number(raw) / 10 ** decimals).toFixed(
-          Math.min(decimals, 6)
-        )
+        const formatted = (Number(raw) / 10 ** decimals).toFixed(Math.min(decimals, 6))
 
         const balanceInfo: BalanceInfo = {
           raw,
@@ -173,9 +169,7 @@ export function useToken(options: UseTokenOptions): UseTokenResult {
 
       setToken(tokenInfo)
     } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error('Failed to fetch token data')
-      )
+      setError(err instanceof Error ? err : new Error('Failed to fetch token data'))
       setToken(null)
       setBalance(null)
     } finally {
@@ -192,20 +186,17 @@ export function useToken(options: UseTokenOptions): UseTokenResult {
   useEffect(() => {
     if (!watch || !provider) return
 
-    const handleAccountsChanged = () => {
+    const unsubAccount = provider.on('accountsChanged', () => {
       fetchToken()
-    }
+    })
 
-    const handleChainChanged = () => {
+    const unsubChain = provider.on('chainChanged', () => {
       fetchToken()
-    }
-
-    provider.on('accountsChanged', handleAccountsChanged)
-    provider.on('chainChanged', handleChainChanged)
+    })
 
     return () => {
-      provider.removeListener('accountsChanged', handleAccountsChanged as (...args: unknown[]) => void)
-      provider.removeListener('chainChanged', handleChainChanged as (...args: unknown[]) => void)
+      unsubAccount()
+      unsubChain()
     }
   }, [watch, provider, fetchToken])
 

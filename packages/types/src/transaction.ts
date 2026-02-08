@@ -38,8 +38,7 @@ export const TRANSACTION_MODE = {
   SMART_ACCOUNT: 'smartAccount',
 } as const
 
-export type TransactionMode =
-  (typeof TRANSACTION_MODE)[keyof typeof TRANSACTION_MODE]
+export type TransactionMode = (typeof TRANSACTION_MODE)[keyof typeof TRANSACTION_MODE]
 
 /**
  * Gas payment strategies for Smart Account mode
@@ -53,8 +52,7 @@ export const GAS_PAYMENT_TYPE = {
   ERC20: 'erc20',
 } as const
 
-export type GasPaymentType =
-  (typeof GAS_PAYMENT_TYPE)[keyof typeof GAS_PAYMENT_TYPE]
+export type GasPaymentType = (typeof GAS_PAYMENT_TYPE)[keyof typeof GAS_PAYMENT_TYPE]
 
 // ============================================================================
 // Interfaces
@@ -203,9 +201,7 @@ export function isEIP7702Mode(mode: TransactionMode): mode is 'eip7702' {
 /**
  * Check if mode is Smart Account
  */
-export function isSmartAccountMode(
-  mode: TransactionMode
-): mode is 'smartAccount' {
+export function isSmartAccountMode(mode: TransactionMode): mode is 'smartAccount' {
   return mode === TRANSACTION_MODE.SMART_ACCOUNT
 }
 

@@ -41,7 +41,7 @@ export function Bank({ onBack }: BankPageProps) {
       if (response?.accounts) {
         setLinkedAccounts(response.accounts)
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load bank accounts')
     } finally {
       setIsLoading(false)
@@ -73,7 +73,7 @@ export function Bank({ onBack }: BankPageProps) {
       } else if (response?.error) {
         setError(response.error)
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to link bank account')
     } finally {
       setIsLinking(false)

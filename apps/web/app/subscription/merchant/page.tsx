@@ -52,6 +52,7 @@ export default function MerchantDashboardPage() {
               style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
             >
               <svg
+                aria-hidden="true"
                 className="w-8 h-8"
                 style={{ color: 'rgb(var(--primary))' }}
                 fill="none"
@@ -92,7 +93,7 @@ export default function MerchantDashboardPage() {
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" onClick={() => router.push('/subscription')}>
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -105,7 +106,7 @@ export default function MerchantDashboardPage() {
           <Button variant="primary" onClick={() => setShowCreateForm(!showCreateForm)}>
             {showCreateForm ? (
               <>
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -117,7 +118,7 @@ export default function MerchantDashboardPage() {
               </>
             ) : (
               <>
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -229,6 +230,7 @@ export default function MerchantDashboardPage() {
                 style={{ backgroundColor: 'rgb(var(--secondary))' }}
               >
                 <svg
+                  aria-hidden="true"
                   className="w-8 h-8"
                   style={{ color: 'rgb(var(--muted-foreground))' }}
                   fill="none"
@@ -285,8 +287,8 @@ function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
     <div
       className="flex items-center justify-between px-6 py-4 transition-colors"
       style={{ backgroundColor: 'transparent' }}
-      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgb(var(--secondary))')}
-      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgb(var(--secondary))' }}
+      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
     >
       <div className="flex items-center gap-4">
         <div
@@ -296,6 +298,7 @@ function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
           }}
         >
           <svg
+            aria-hidden="true"
             className="w-6 h-6"
             style={{
               color: plan.isActive ? 'rgb(var(--success))' : 'rgb(var(--muted-foreground))',

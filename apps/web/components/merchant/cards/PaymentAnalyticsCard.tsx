@@ -55,6 +55,7 @@ export function PaymentAnalyticsCard({
           <div className="flex gap-2">
             {(['7d', '30d', '90d'] as const).map((range) => (
               <button
+                type="button"
                 key={range}
                 onClick={() => onTimeRangeChange(range)}
                 className="px-3 py-1 text-sm rounded-md transition-colors"
@@ -122,6 +123,7 @@ export function PaymentAnalyticsCard({
         {/* Chart Tabs */}
         <div className="flex mb-4" style={{ borderBottom: '1px solid rgb(var(--border))' }}>
           <button
+            type="button"
             onClick={() => setActiveTab('payments')}
             className="px-4 py-2 text-sm font-medium transition-colors"
             style={{
@@ -136,6 +138,7 @@ export function PaymentAnalyticsCard({
             Payments
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('revenue')}
             className="px-4 py-2 text-sm font-medium transition-colors"
             style={{
@@ -158,7 +161,7 @@ export function PaymentAnalyticsCard({
               activeTab === 'payments' && maxValue > 0 ? (d.successful / maxValue) * 100 : height
 
             return (
-              <div key={index} className="flex-1 flex flex-col items-center group relative">
+              <div key={`${d.date}-${index}`} className="flex-1 flex flex-col items-center group relative">
                 {/* Tooltip */}
                 <div
                   className="absolute bottom-full mb-2 hidden group-hover:block text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10"

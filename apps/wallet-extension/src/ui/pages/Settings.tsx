@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ConnectedSite, Network } from '../../types'
 import { useWalletStore } from '../hooks/useWalletStore'
 
@@ -15,6 +15,8 @@ export function Settings() {
   const {
     networks,
     selectedChainId,
+    selectedAccount,
+    accounts,
     selectNetwork,
     lockWallet,
     importPrivateKey,
@@ -22,6 +24,14 @@ export function Settings() {
     removeNetwork,
     syncWithBackground,
   } = useWalletStore()
+
+  // Determine if current account is a smart account
+  const currentAccount = useMemo(() => {
+    if (!selectedAccount) return null
+    return accounts.find((a) => a.address === selectedAccount) ?? null
+  }, [accounts, selectedAccount])
+
+  const isSmartAccount = currentAccount?.type === 'smart'
 
   const [metaMaskMode, setMetaMaskMode] = useState(false)
   const [autoLockMinutes, setAutoLockMinutes] = useState(5)
@@ -60,6 +70,22 @@ export function Settings() {
   const [showConnectedSites, setShowConnectedSites] = useState(false)
   const [connectedSites, setConnectedSites] = useState<ConnectedSite[]>([])
   const [isLoadingSites, setIsLoadingSites] = useState(false)
+
+  // Smart Account state
+  const [showSmartAccount, setShowSmartAccount] = useState(false)
+  const [saInfo, setSaInfo] = useState<{
+    accountType: string
+    isDeployed: boolean
+    rootValidator: string | null
+    accountId: string | null
+    delegationTarget: string | null
+    isDelegated: boolean
+  } | null>(null)
+  const [isLoadingSaInfo, setIsLoadingSaInfo] = useState(false)
+  const [newValidator, setNewValidator] = useState('')
+  const [isSettingValidator, setIsSettingValidator] = useState(false)
+  const [validatorError, setValidatorError] = useState<string | null>(null)
+  const [validatorSuccess, setValidatorSuccess] = useState<string | null>(null)
 
   // Load settings on mount
   useEffect(() => {
@@ -168,7 +194,7 @@ export function Settings() {
       setNetworkError('Network name is required')
       return
     }
-    if (!networkForm.chainId.trim() || isNaN(Number(networkForm.chainId))) {
+    if (!networkForm.chainId.trim() || Number.isNaN(Number(networkForm.chainId))) {
       setNetworkError('Valid Chain ID is required')
       return
     }
@@ -322,6 +348,79 @@ export function Settings() {
     setExportError(null)
     setShowKey(false)
   }, [])
+
+  // Load Smart Account Info
+  const loadSmartAccountInfo = useCallback(async () => {
+    if (!selectedAccount || !selectedChainId) return
+    setIsLoadingSaInfo(true)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'RPC_REQUEST',
+        id: `sa-info-${Date.now()}`,
+        payload: {
+          jsonrpc: '2.0',
+          id: Date.now(),
+          method: 'stablenet_getSmartAccountInfo',
+          params: [{ account: selectedAccount, chainId: selectedChainId }],
+        },
+      })
+      if (response?.payload?.result) {
+        setSaInfo(response.payload.result)
+      }
+    } catch {
+      // Silent fail
+    } finally {
+      setIsLoadingSaInfo(false)
+    }
+  }, [selectedAccount, selectedChainId])
+
+  // Open Smart Account section
+  const handleOpenSmartAccount = useCallback(() => {
+    setShowSmartAccount(true)
+    loadSmartAccountInfo()
+  }, [loadSmartAccountInfo])
+
+  // Set Root Validator handler
+  const handleSetRootValidator = useCallback(async () => {
+    if (!newValidator.trim()) {
+      setValidatorError('Please enter a validator address')
+      return
+    }
+    if (!newValidator.match(/^0x[0-9a-fA-F]{40}$/)) {
+      setValidatorError('Invalid address format')
+      return
+    }
+
+    setIsSettingValidator(true)
+    setValidatorError(null)
+    setValidatorSuccess(null)
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'RPC_REQUEST',
+        id: `set-validator-${Date.now()}`,
+        payload: {
+          jsonrpc: '2.0',
+          id: Date.now(),
+          method: 'stablenet_setRootValidator',
+          params: [{ account: selectedAccount, validator: newValidator, chainId: selectedChainId }],
+        },
+      })
+
+      if (response?.payload?.result) {
+        setValidatorSuccess('Root validator updated successfully')
+        setNewValidator('')
+        // Refresh SA info
+        await loadSmartAccountInfo()
+      } else if (response?.payload?.error) {
+        setValidatorError(response.payload.error.message ?? 'Failed to set root validator')
+      }
+    } catch (err) {
+      setValidatorError(err instanceof Error ? err.message : 'Failed to set root validator')
+    } finally {
+      setIsSettingValidator(false)
+    }
+  }, [newValidator, selectedAccount, selectedChainId, loadSmartAccountInfo])
 
   return (
     <div
@@ -500,7 +599,9 @@ export function Settings() {
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
+                        role="img"
                       >
+                        <title>Remove</title>
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -697,6 +798,7 @@ export function Settings() {
                     <>
                       <div className="mb-4">
                         <label
+                          htmlFor="exported-private-key"
                           className="text-xs block mb-1"
                           style={{ color: 'rgb(var(--muted-foreground))' }}
                         >
@@ -704,6 +806,7 @@ export function Settings() {
                         </label>
                         <div className="relative">
                           <input
+                            id="exported-private-key"
                             type={showKey ? 'text' : 'password'}
                             readOnly
                             value={exportedKey}
@@ -794,7 +897,9 @@ export function Settings() {
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
+                        role="img"
                       >
+                        <title>Close</title>
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -866,6 +971,244 @@ export function Settings() {
             )}
           </div>
         </section>
+
+        {/* Smart Account Settings */}
+        {isSmartAccount && (
+          <section>
+            <h3
+              className="text-sm font-medium mb-3"
+              style={{ color: 'rgb(var(--foreground-secondary))' }}
+            >
+              Smart Account
+            </h3>
+            <div className="space-y-3">
+              {/* SA Info Button */}
+              <button
+                type="button"
+                onClick={handleOpenSmartAccount}
+                className="w-full p-3 rounded-lg flex items-center justify-between transition-colors"
+                style={{ border: '1px solid rgb(var(--border))' }}
+              >
+                <div className="flex items-center gap-2">
+                  <span style={{ color: 'rgb(var(--foreground))' }}>Account Info & Validator</span>
+                </div>
+                <svg
+                  className="w-5 h-5"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+
+              {/* Smart Account Modal */}
+              {showSmartAccount && (
+                <div
+                  className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm"
+                  style={{ backgroundColor: 'rgb(var(--overlay) / 0.6)' }}
+                >
+                  <div
+                    className="rounded-lg p-4 w-80 max-h-[90vh] overflow-y-auto"
+                    style={{
+                      backgroundColor: 'rgb(var(--card-hover))',
+                      border: '1px solid rgb(var(--border))',
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+                        Smart Account
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowSmartAccount(false)
+                          setValidatorError(null)
+                          setValidatorSuccess(null)
+                          setNewValidator('')
+                        }}
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          role="img"
+                        >
+                          <title>Close</title>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {isLoadingSaInfo ? (
+                      <p
+                        className="text-sm text-center py-4"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
+                        Loading...
+                      </p>
+                    ) : saInfo ? (
+                      <div className="space-y-4">
+                        {/* Account Type */}
+                        <div
+                          className="p-3 rounded-lg"
+                          style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                        >
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Type</span>
+                              <span
+                                className="font-medium"
+                                style={{ color: 'rgb(var(--foreground))' }}
+                              >
+                                {saInfo.accountType === 'delegated'
+                                  ? 'EIP-7702 Delegated'
+                                  : saInfo.accountType === 'smart'
+                                    ? 'Smart Account'
+                                    : 'EOA'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span style={{ color: 'rgb(var(--muted-foreground))' }}>
+                                Deployed
+                              </span>
+                              <span
+                                style={{
+                                  color: saInfo.isDeployed
+                                    ? 'rgb(var(--success))'
+                                    : 'rgb(var(--muted-foreground))',
+                                }}
+                              >
+                                {saInfo.isDeployed ? 'Yes' : 'No'}
+                              </span>
+                            </div>
+                            {saInfo.accountId && (
+                              <div className="flex justify-between">
+                                <span style={{ color: 'rgb(var(--muted-foreground))' }}>
+                                  Account ID
+                                </span>
+                                <span
+                                  className="font-mono text-xs truncate max-w-[150px]"
+                                  style={{ color: 'rgb(var(--foreground))' }}
+                                >
+                                  {saInfo.accountId}
+                                </span>
+                              </div>
+                            )}
+                            {saInfo.isDelegated && saInfo.delegationTarget && (
+                              <div className="flex justify-between">
+                                <span style={{ color: 'rgb(var(--muted-foreground))' }}>
+                                  Delegation
+                                </span>
+                                <span
+                                  className="font-mono text-xs"
+                                  style={{ color: 'rgb(var(--foreground))' }}
+                                >
+                                  {saInfo.delegationTarget.slice(0, 8)}...
+                                  {saInfo.delegationTarget.slice(-6)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Root Validator */}
+                        <div
+                          className="p-3 rounded-lg"
+                          style={{ border: '1px solid rgb(var(--border))' }}
+                        >
+                          <h4
+                            className="text-sm font-medium mb-2"
+                            style={{ color: 'rgb(var(--foreground))' }}
+                          >
+                            Root Validator
+                          </h4>
+                          {saInfo.rootValidator ? (
+                            <p
+                              className="text-xs font-mono break-all mb-3"
+                              style={{ color: 'rgb(var(--muted-foreground))' }}
+                            >
+                              {saInfo.rootValidator}
+                            </p>
+                          ) : (
+                            <p
+                              className="text-xs mb-3"
+                              style={{ color: 'rgb(var(--muted-foreground))' }}
+                            >
+                              Not set
+                            </p>
+                          )}
+
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              placeholder="New validator address (0x...)"
+                              value={newValidator}
+                              onChange={(e) => setNewValidator(e.target.value)}
+                              className="input-base w-full p-2 rounded-lg text-xs font-mono"
+                            />
+                            {validatorError && (
+                              <p className="text-xs" style={{ color: 'rgb(var(--destructive))' }}>
+                                {validatorError}
+                              </p>
+                            )}
+                            {validatorSuccess && (
+                              <p className="text-xs" style={{ color: 'rgb(var(--success))' }}>
+                                {validatorSuccess}
+                              </p>
+                            )}
+                            <button
+                              type="button"
+                              onClick={handleSetRootValidator}
+                              disabled={isSettingValidator}
+                              className="btn-primary w-full py-2 rounded-lg text-sm disabled:opacity-50"
+                            >
+                              {isSettingValidator ? 'Updating...' : 'Change Root Validator'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p
+                        className="text-sm text-center py-4"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
+                        Unable to load account info
+                      </p>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSmartAccount(false)
+                        setValidatorError(null)
+                        setValidatorSuccess(null)
+                        setNewValidator('')
+                      }}
+                      className="btn-secondary w-full mt-4 py-2 rounded-lg text-sm"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Advanced Settings */}
         <section>

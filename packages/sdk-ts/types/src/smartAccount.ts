@@ -98,17 +98,11 @@ export interface PaymasterData {
  */
 export interface UserOperationMiddleware {
   /** Modify the user operation before gas estimation */
-  gasEstimation?: (
-    userOperation: UserOperation
-  ) => Promise<UserOperationGasEstimation>
+  gasEstimation?: (userOperation: UserOperation) => Promise<UserOperationGasEstimation>
   /** Modify the user operation before sponsorship */
-  sponsorship?: (
-    userOperation: UserOperation
-  ) => Promise<UserOperation>
+  sponsorship?: (userOperation: UserOperation) => Promise<UserOperation>
   /** Modify the user operation before signing */
-  signature?: (
-    userOperation: UserOperation
-  ) => Promise<UserOperation>
+  signature?: (userOperation: UserOperation) => Promise<UserOperation>
 }
 
 /**
@@ -155,8 +149,5 @@ export interface AccountFactoryConfig {
   /** Factory contract address */
   address: Address
   /** Create account call data generator */
-  getCreateAccountData: (
-    validator: Validator,
-    index?: bigint
-  ) => Promise<Hex>
+  getCreateAccountData: (validator: Validator, index?: bigint) => Promise<Hex>
 }

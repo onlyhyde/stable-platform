@@ -2,20 +2,22 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import type { Address, Hex } from 'viem'
-import type { PaymasterProxyConfig, JsonRpcResponse, UserOperationRpc, PackedUserOperationRpc } from './types'
-import { RPC_ERROR_CODES } from './types'
-import {
-  jsonRpcRequestSchema,
-  getPaymasterStubDataParamsSchema,
-  getPaymasterDataParamsSchema,
-} from './schemas'
-import {
-  handleGetPaymasterStubData,
-  handleGetPaymasterData,
-} from './handlers'
-import { PaymasterSigner } from './signer/paymasterSigner'
-import { SponsorPolicyManager } from './policy/sponsorPolicy'
 import { getServerConfig } from './config/constants'
+import { handleGetPaymasterData, handleGetPaymasterStubData } from './handlers'
+import { SponsorPolicyManager } from './policy/sponsorPolicy'
+import {
+  getPaymasterDataParamsSchema,
+  getPaymasterStubDataParamsSchema,
+  jsonRpcRequestSchema,
+} from './schemas'
+import { PaymasterSigner } from './signer/paymasterSigner'
+import type {
+  JsonRpcResponse,
+  PackedUserOperationRpc,
+  PaymasterProxyConfig,
+  UserOperationRpc,
+} from './types'
+import { RPC_ERROR_CODES } from './types'
 
 /**
  * Create the Paymaster Proxy application
@@ -79,7 +81,8 @@ export function createApp(config: PaymasterProxyConfig): Hono {
   let errorCount = 0
   app.get('/metrics', (c) => {
     const uptime = Math.floor((Date.now() - startTime.getTime()) / 1000)
-    return c.text(`# HELP paymaster_proxy_up Service up status
+    return c.text(
+      `# HELP paymaster_proxy_up Service up status
 # TYPE paymaster_proxy_up gauge
 paymaster_proxy_up{service="paymaster-proxy"} 1
 # HELP paymaster_proxy_uptime_seconds Service uptime in seconds
@@ -91,7 +94,10 @@ paymaster_proxy_requests_total{service="paymaster-proxy"} ${requestCount}
 # HELP paymaster_proxy_errors_total Total HTTP errors
 # TYPE paymaster_proxy_errors_total counter
 paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
-`, 200, { 'Content-Type': 'text/plain; charset=utf-8' })
+`,
+      200,
+      { 'Content-Type': 'text/plain; charset=utf-8' }
+    )
   })
 
   // Metrics tracking middleware
@@ -121,9 +127,7 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
 
     // Handle batch requests
     if (Array.isArray(body)) {
-      const results = await Promise.all(
-        body.map((req) => handleJsonRpcRequest(req, handlerConfig))
-      )
+      const results = await Promise.all(body.map((req) => handleJsonRpcRequest(req, handlerConfig)))
       return c.json(results)
     }
 
@@ -137,9 +141,7 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
 
     // Handle batch requests
     if (Array.isArray(body)) {
-      const results = await Promise.all(
-        body.map((req) => handleJsonRpcRequest(req, handlerConfig))
-      )
+      const results = await Promise.all(body.map((req) => handleJsonRpcRequest(req, handlerConfig)))
       return c.json(results)
     }
 
@@ -168,7 +170,7 @@ async function handleJsonRpcRequest(
   if (!parseResult.success) {
     return {
       jsonrpc: '2.0',
-      id: (req as { id?: number | string })?.id ?? null as unknown as number,
+      id: (req as { id?: number | string })?.id ?? (null as unknown as number),
       error: {
         code: RPC_ERROR_CODES.INVALID_REQUEST,
         message: 'Invalid JSON-RPC request',
@@ -249,10 +251,7 @@ async function callMethod(
       return handlePmGetPaymasterData(params, config)
 
     default:
-      throw new RpcError(
-        `Method ${method} not found`,
-        RPC_ERROR_CODES.METHOD_NOT_FOUND
-      )
+      throw new RpcError(`Method ${method} not found`, RPC_ERROR_CODES.METHOD_NOT_FOUND)
   }
 }
 
@@ -294,11 +293,7 @@ function handlePmGetPaymasterStubData(
   )
 
   if (!result.success) {
-    throw new RpcError(
-      result.error.message,
-      result.error.code,
-      result.error.data
-    )
+    throw new RpcError(result.error.message, result.error.code, result.error.data)
   }
 
   return result.data
@@ -342,11 +337,7 @@ async function handlePmGetPaymasterData(
   )
 
   if (!result.success) {
-    throw new RpcError(
-      result.error.message,
-      result.error.code,
-      result.error.data
-    )
+    throw new RpcError(result.error.message, result.error.code, result.error.data)
   }
 
   return result.data

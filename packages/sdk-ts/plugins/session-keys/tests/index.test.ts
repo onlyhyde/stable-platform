@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
-import { encodeFunctionData, keccak256, encodePacked } from 'viem'
-import type { LocalAccount, Hex, Address } from 'viem'
+import { encodeFunctionData } from 'viem'
+import type { Address, Hex, LocalAccount } from 'viem'
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createSessionKeyExecutor,
   generateSessionKey,
@@ -283,11 +283,7 @@ describe('session-keys plugin', () => {
         0n
       )
 
-      const callData = executor.encodeExecuteOnBehalf(
-        testAccountAddress,
-        request,
-        signature
-      )
+      const callData = executor.encodeExecuteOnBehalf(testAccountAddress, request, signature)
 
       expect(callData).toMatch(/^0x/)
       expect(callData.length).toBeGreaterThan(10)

@@ -1,9 +1,9 @@
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import type { ContractEntry, AddressSet } from './types'
-import type { InMemoryStore } from './memory-store'
 import type { Logger } from '../utils/logger'
+import type { InMemoryStore } from './memory-store'
+import type { AddressSet, ContractEntry } from './types'
 
 interface PersistedData<T> {
   readonly version: 1
@@ -31,10 +31,7 @@ export class FilePersistence {
 
     store.loadFromData(contracts, sets)
 
-    this.logger.info(
-      { contracts: contracts.length, sets: sets.length },
-      'Loaded persisted data'
-    )
+    this.logger.info({ contracts: contracts.length, sets: sets.length }, 'Loaded persisted data')
   }
 
   scheduleSave(store: InMemoryStore): void {
@@ -44,7 +41,10 @@ export class FilePersistence {
 
     this.debounceTimer = setTimeout(() => {
       this.save(store).catch((err) => {
-        this.logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Failed to persist data')
+        this.logger.error(
+          { error: err instanceof Error ? err.message : String(err) },
+          'Failed to persist data'
+        )
       })
     }, this.debounceMs)
   }

@@ -3,13 +3,13 @@
  * TDD tests for network management
  */
 
+import type { Hex } from 'viem'
 import { NetworkController } from '../../../src/background/controllers/networkController'
 import type {
+  AddNetworkParams,
   NetworkConfig,
   NetworkControllerOptions,
-  AddNetworkParams,
 } from '../../../src/background/controllers/networkController.types'
-import type { Hex } from 'viem'
 import { TEST_CHAIN_IDS } from '../../utils/testUtils'
 
 describe('NetworkController', () => {
@@ -99,9 +99,7 @@ describe('NetworkController', () => {
         rpcUrls: ['not-a-valid-url'],
       }
 
-      await expect(controller.addNetwork(invalidNetwork)).rejects.toThrow(
-        'Invalid RPC URL'
-      )
+      await expect(controller.addNetwork(invalidNetwork)).rejects.toThrow('Invalid RPC URL')
     })
 
     it('should reject duplicate chain ID', async () => {
@@ -238,9 +236,7 @@ describe('NetworkController', () => {
     })
 
     it('should throw for unknown network', async () => {
-      await expect(controller.switchNetwork(99999)).rejects.toThrow(
-        'Network not found'
-      )
+      await expect(controller.switchNetwork(99999)).rejects.toThrow('Network not found')
     })
   })
 

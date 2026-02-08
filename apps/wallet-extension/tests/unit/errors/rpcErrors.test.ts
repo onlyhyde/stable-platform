@@ -4,25 +4,25 @@
  */
 
 import {
-  RpcError,
   ProviderRpcError,
-  parseError,
+  RpcError,
+  chainDisconnected,
+  disconnected,
+  internalError,
+  invalidParams,
   invalidRequest,
   methodNotFound,
-  invalidParams,
-  internalError,
-  userRejectedRequest,
+  parseError,
+  resourceNotFound,
+  transactionRejected,
   unauthorized,
   unsupportedMethod,
-  disconnected,
-  chainDisconnected,
-  transactionRejected,
-  resourceNotFound,
+  userRejectedRequest,
 } from '../../../src/shared/errors/rpcErrors'
 import {
+  ETH_RPC_ERROR_CODES,
   JSON_RPC_ERROR_CODES,
   PROVIDER_ERROR_CODES,
-  ETH_RPC_ERROR_CODES,
 } from '../../../src/shared/errors/rpcErrors.types'
 
 describe('RpcError', () => {

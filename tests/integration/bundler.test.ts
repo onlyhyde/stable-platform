@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { TEST_CONFIG, isBundlerAvailable } from '../setup'
 
 interface JsonRpcResponse<T = unknown> {
@@ -93,7 +93,10 @@ describe('Bundler Integration Tests', () => {
       // May fail if contracts not deployed, but should return valid error
       if (response.error) {
         expect(response.error.message).toBeDefined()
-        console.log('Gas estimation error (expected if contracts not deployed):', response.error.message)
+        console.log(
+          'Gas estimation error (expected if contracts not deployed):',
+          response.error.message
+        )
       } else {
         expect(response.result).toBeDefined()
       }
@@ -176,7 +179,7 @@ describe('Bundler Unit Tests', () => {
 
   it('should parse hex values correctly', () => {
     const hexValue = '0x186A0' // 100000 in hex
-    const parsedValue = parseInt(hexValue, 16)
+    const parsedValue = Number.parseInt(hexValue, 16)
 
     expect(parsedValue).toBe(100000)
   })

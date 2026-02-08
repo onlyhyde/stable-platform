@@ -47,7 +47,7 @@ const LIMIT_PRESETS = ['0.1', '0.5', '1', '5', '10', '50']
 // ============================================================================
 
 export function SpendingLimitConfigUI({
-  accountAddress,
+  accountAddress: _accountAddress,
   onSubmit,
   onBack,
 }: SpendingLimitConfigProps) {
@@ -184,6 +184,7 @@ export function SpendingLimitConfigUI({
 
           <div className="space-y-3">
             <button
+              type="button"
               className="w-full p-4 rounded-lg text-left flex items-center gap-3"
               style={{
                 backgroundColor:
@@ -207,6 +208,7 @@ export function SpendingLimitConfigUI({
             </button>
 
             <button
+              type="button"
               className="w-full p-4 rounded-lg text-left flex items-center gap-3"
               style={{
                 backgroundColor:
@@ -232,12 +234,14 @@ export function SpendingLimitConfigUI({
             {form.tokenType === 'erc20' && (
               <div className="mt-4">
                 <label
+                  htmlFor="spending-limit-token-address"
                   className="block text-sm font-medium mb-1"
                   style={{ color: 'rgb(var(--foreground-secondary))' }}
                 >
                   Token Contract Address
                 </label>
                 <input
+                  id="spending-limit-token-address"
                   type="text"
                   className="w-full px-3 py-2 rounded-lg input-base font-mono text-sm"
                   placeholder="0x..."
@@ -269,12 +273,14 @@ export function SpendingLimitConfigUI({
           <div className="space-y-4">
             <div>
               <label
+                htmlFor="spending-limit-amount"
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
                 Limit Amount ({form.tokenType === 'native' ? 'ETH' : 'Tokens'})
               </label>
               <input
+                id="spending-limit-amount"
                 type="number"
                 className="w-full px-3 py-2 rounded-lg input-base text-lg"
                 placeholder="1.0"
@@ -288,6 +294,7 @@ export function SpendingLimitConfigUI({
             <div className="grid grid-cols-3 gap-2">
               {LIMIT_PRESETS.map((preset) => (
                 <button
+                  type="button"
                   key={preset}
                   className="px-3 py-2 rounded-lg text-sm"
                   style={{
@@ -324,6 +331,7 @@ export function SpendingLimitConfigUI({
           <div className="space-y-2">
             {PERIOD_OPTIONS.map((option) => (
               <button
+                type="button"
                 key={option.value}
                 className="w-full p-4 rounded-lg text-left"
                 style={{
@@ -363,8 +371,8 @@ export function SpendingLimitConfigUI({
                 color: 'rgb(var(--destructive))',
               }}
             >
-              {errors.map((err, i) => (
-                <p key={i} className="text-sm">
+              {errors.map((err) => (
+                <p key={err} className="text-sm">
                   {err}
                 </p>
               ))}
@@ -379,8 +387,8 @@ export function SpendingLimitConfigUI({
                 color: 'rgb(var(--warning))',
               }}
             >
-              {warnings.map((warn, i) => (
-                <p key={i} className="text-sm">
+              {warnings.map((warn) => (
+                <p key={warn} className="text-sm">
                   {warn}
                 </p>
               ))}
@@ -449,15 +457,16 @@ export function SpendingLimitConfigUI({
 
       {/* Actions */}
       <div className="flex gap-3 mt-6">
-        <button className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
+        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
           {step === 'token' ? 'Cancel' : 'Back'}
         </button>
         {step === 'review' ? (
-          <button className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
+          <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
             Install Hook
           </button>
         ) : (
           <button
+            type="button"
             className="btn-primary flex-1 py-3 rounded-lg font-medium"
             onClick={nextStep}
             disabled={!canProceed()}
@@ -484,7 +493,7 @@ interface SpendingLimitDisplayProps {
 }
 
 export function SpendingLimitDisplay({
-  token,
+  token: _token,
   tokenSymbol,
   limit,
   spent,

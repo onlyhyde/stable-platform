@@ -71,7 +71,10 @@ function parseCorsOriginsFromEnv(): string[] | undefined {
   const value = getEnv(ENV_VARS.CORS_ORIGINS)
   if (!value) return undefined
   if (value === '*') return ['*']
-  return value.split(',').map((origin) => origin.trim()).filter(Boolean)
+  return value
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
 }
 
 /**
@@ -109,6 +112,10 @@ export const NETWORK_PRESETS: Record<
     entryPoints: Address[]
   }
 > = {
+  local: {
+    rpcUrl: 'http://localhost:8501',
+    entryPoints: ['0x0000000071727De22E5E9d8BAf0edAc6f37da032'],
+  },
   devnet: {
     rpcUrl: 'http://localhost:8545',
     entryPoints: ['0x0000000071727De22E5E9d8BAf0edAc6f37da032'],
@@ -211,14 +218,18 @@ export function parseConfig(options: CliOptions): BundlerConfig {
   const maxNonceGap = maxNonceGapNum !== undefined ? BigInt(maxNonceGapNum) : undefined
 
   // Min validUntil buffer: CLI > env > default (30)
-  const minValidUntilBufferNum = options.minValidUntilBuffer ?? getEnvNumber(ENV_VARS.MIN_VALID_UNTIL_BUFFER)
-  const minValidUntilBuffer = minValidUntilBufferNum !== undefined ? BigInt(minValidUntilBufferNum) : undefined
+  const minValidUntilBufferNum =
+    options.minValidUntilBuffer ?? getEnvNumber(ENV_VARS.MIN_VALID_UNTIL_BUFFER)
+  const minValidUntilBuffer =
+    minValidUntilBufferNum !== undefined ? BigInt(minValidUntilBufferNum) : undefined
 
   // Validate nonce continuity: CLI > env > default (false)
-  const validateNonceContinuity = options.validateNonceContinuity ?? getEnvBool(ENV_VARS.VALIDATE_NONCE_CONTINUITY)
+  const validateNonceContinuity =
+    options.validateNonceContinuity ?? getEnvBool(ENV_VARS.VALIDATE_NONCE_CONTINUITY)
 
   // Mempool max nonce gap: CLI > env > default (0)
-  const mempoolMaxNonceGap = options.mempoolMaxNonceGap ?? getEnvNumber(ENV_VARS.MEMPOOL_MAX_NONCE_GAP)
+  const mempoolMaxNonceGap =
+    options.mempoolMaxNonceGap ?? getEnvNumber(ENV_VARS.MEMPOOL_MAX_NONCE_GAP)
 
   // CORS origins: CLI > env > default (localhost only, or all in debug mode)
   const corsOrigins = options.corsOrigins ?? parseCorsOriginsFromEnv()
@@ -230,9 +241,7 @@ export function parseConfig(options: CliOptions): BundlerConfig {
     beneficiary: beneficiary as Address,
     rpcUrl,
     privateKey: privateKey as Hex,
-    minBalance: options.minBalance
-      ? BigInt(options.minBalance)
-      : DEFAULT_CONFIG.minBalance!,
+    minBalance: options.minBalance ? BigInt(options.minBalance) : DEFAULT_CONFIG.minBalance!,
     bundleInterval: options.bundleInterval ?? DEFAULT_CONFIG.bundleInterval!,
     maxBundleSize: options.maxBundleSize ?? DEFAULT_CONFIG.maxBundleSize!,
     logLevel,
@@ -255,7 +264,7 @@ Environment Variables:
   ${ENV_VARS.PRIVATE_KEY.join(' or ')}     Private key for signing bundles
   ${ENV_VARS.BENEFICIARY.join(' or ')}     Beneficiary address for bundle fees
   ${ENV_VARS.RPC_URL.join(' or ')}         RPC URL for the chain
-  ${ENV_VARS.NETWORK.join(' or ')}         Network name (devnet, sepolia, mainnet)
+  ${ENV_VARS.NETWORK.join(' or ')}         Network name (local, devnet, sepolia, mainnet)
   ${ENV_VARS.PORT.join(' or ')}            RPC server port
   ${ENV_VARS.LOG_LEVEL.join(' or ')}       Log level (debug, info, warn, error)
   ${ENV_VARS.DEBUG.join(' or ')}           Enable debug mode (true/false)

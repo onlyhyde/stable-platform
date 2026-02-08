@@ -112,11 +112,7 @@ export interface TokenInfo {
 /**
  * Wallet connection state
  */
-export type ConnectionStatus =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'reconnecting'
+export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
 
 /**
  * Wallet state
@@ -160,12 +156,7 @@ export interface TransactionRequest {
 /**
  * Transaction status
  */
-export type TransactionStatus =
-  | 'pending'
-  | 'submitted'
-  | 'confirmed'
-  | 'failed'
-  | 'cancelled'
+export type TransactionStatus = 'pending' | 'submitted' | 'confirmed' | 'failed' | 'cancelled'
 
 /**
  * Transaction record (post-submission)
@@ -300,7 +291,7 @@ export const RPC_ERROR_CODES = {
   CHAIN_NOT_ADDED: 4902,
 } as const
 
-export type RpcErrorCode = typeof RPC_ERROR_CODES[keyof typeof RPC_ERROR_CODES]
+export type RpcErrorCode = (typeof RPC_ERROR_CODES)[keyof typeof RPC_ERROR_CODES]
 
 // ============================================================================
 // Utility Types
@@ -309,9 +300,7 @@ export type RpcErrorCode = typeof RPC_ERROR_CODES[keyof typeof RPC_ERROR_CODES]
 /**
  * Result type for async operations
  */
-export type Result<T, E = Error> =
-  | { success: true; data: T }
-  | { success: false; error: E }
+export type Result<T, E = Error> = { success: true; data: T } | { success: false; error: E }
 
 /**
  * Async state

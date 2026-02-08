@@ -3,13 +3,13 @@
  * TDD tests for EIP-712 typed data signing
  */
 
+import type { Address, Hex } from 'viem'
+import { approvalController } from '../../../src/background/controllers/approvalController'
+import { keyringController } from '../../../src/background/keyring'
 import { handleRpcRequest } from '../../../src/background/rpc/handler'
 import { walletState } from '../../../src/background/state/store'
-import { keyringController } from '../../../src/background/keyring'
 import { RPC_ERRORS } from '../../../src/shared/constants'
-import { approvalController } from '../../../src/background/controllers/approvalController'
 import type { JsonRpcRequest } from '../../../src/types'
-import type { Address, Hex } from 'viem'
 import { TEST_ACCOUNTS, TEST_ORIGINS, createMockTypedData } from '../../utils/testUtils'
 
 // Mock dependencies
@@ -42,7 +42,7 @@ const mockApprovalController = approvalController as jest.Mocked<typeof approval
 describe('eth_signTypedData_v4', () => {
   const testAddress = TEST_ACCOUNTS.account1.address
   const testOrigin = TEST_ORIGINS.trusted
-  const mockSignature = '0x' + '1'.repeat(130) as Hex
+  const mockSignature = ('0x' + '1'.repeat(130)) as Hex
   const testTypedData = createMockTypedData()
 
   beforeEach(() => {

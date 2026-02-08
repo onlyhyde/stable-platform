@@ -9,6 +9,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { formatEther, isAddress, parseEther } from 'viem'
 import type { Address } from 'viem'
 
+import type { TransactionResult } from '@stablenet/core'
 import { useNetworkCurrency, useSelectedNetwork, useWalletStore } from '../../hooks'
 import { SendForm } from './SendForm'
 import { useGasEstimate } from './hooks/useGasEstimate'
@@ -32,7 +33,7 @@ type SendStep = 'form' | 'review' | 'pending' | 'success' | 'error'
 
 export function SendPage() {
   const { accounts, selectedAccount: selectedAddress, setPage } = useWalletStore()
-  const currentNetwork = useSelectedNetwork()
+  const _currentNetwork = useSelectedNetwork()
   const { symbol: currencySymbol } = useNetworkCurrency()
 
   // Get the full account object
@@ -60,6 +61,7 @@ export function SendPage() {
   // UI state
   const [step, setStep] = useState<SendStep>('form')
   const [error, setError] = useState<string | null>(null)
+  const [txResult, setTxResult] = useState<TransactionResult | null>(null)
 
   // Hooks
   const { sendTransaction, isPending } = useSendTransaction()
@@ -110,7 +112,7 @@ export function SendPage() {
       setStep('pending')
       setError(null)
 
-      await sendTransaction({
+      const result = await sendTransaction({
         mode: transactionMode,
         from: selectedAddress,
         to: formData.recipient as Address,
@@ -119,6 +121,7 @@ export function SendPage() {
         gasPayment: transactionMode === TRANSACTION_MODE.SMART_ACCOUNT ? gasPayment : undefined,
       })
 
+      setTxResult(result)
       setStep('success')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Transaction failed')
@@ -138,6 +141,7 @@ export function SendPage() {
     setFormData({ recipient: '', amount: '', data: '0x' })
     setStep('form')
     setError(null)
+    setTxResult(null)
   }, [])
 
   // Guard: No account selected
@@ -159,12 +163,12 @@ export function SendPage() {
 
       {/* Transaction Mode Selector */}
       <div className="mb-4">
-        <label
+        <span
           className="block text-sm font-medium mb-2"
           style={{ color: 'rgb(var(--foreground-secondary))' }}
         >
           Transaction Mode
-        </label>
+        </span>
         <div className="flex gap-2">
           {availableModes.map((mode) => (
             <button
@@ -199,12 +203,12 @@ export function SendPage() {
           {/* Gas Payment Selector (Smart Account only) */}
           {transactionMode === TRANSACTION_MODE.SMART_ACCOUNT && (
             <div className="mt-4">
-              <label
+              <span
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
                 Gas Payment
-              </label>
+              </span>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -367,6 +371,45 @@ export function SendPage() {
           <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Your transaction has been submitted
           </p>
+
+          {/* Tx Hash Display */}
+          {txResult?.hash && (
+            <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Transaction Hash
+              </p>
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <span className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
+                  {txResult.hash.slice(0, 10)}...{txResult.hash.slice(-8)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(txResult.hash)}
+                  className="p-1"
+                  style={{ color: 'rgb(var(--primary))' }}
+                  title="Copy hash"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Explorer Link */}
+              {_currentNetwork?.explorerUrl && (
+                <a
+                  href={`${_currentNetwork.explorerUrl}/tx/${txResult.hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-2 text-xs font-medium"
+                  style={{ color: 'rgb(var(--primary))' }}
+                >
+                  View on Explorer
+                </a>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-2 mt-6">
             <button
               type="button"
@@ -377,10 +420,10 @@ export function SendPage() {
             </button>
             <button
               type="button"
-              onClick={() => setPage('home')}
+              onClick={() => setPage('activity')}
               className="flex-1 py-3 rounded-lg font-medium btn-primary"
             >
-              Done
+              View Activity
             </button>
           </div>
         </div>

@@ -3,7 +3,20 @@ import { Header } from './components/Header'
 import { Navigation } from './components/Navigation'
 import { Spinner } from './components/common'
 import { useWalletStore } from './hooks/useWalletStore'
-import { Activity, Bank, BuyPage, Home, Lock, ModulesPage, Receive, Send, Settings } from './pages'
+import {
+  Activity,
+  Bank,
+  BuyPage,
+  Home,
+  Lock,
+  ModulesPage,
+  Receive,
+  Send,
+  Settings,
+  SmartAccountDashboard,
+  SwapPage,
+  TransactionDetail,
+} from './pages'
 import { Onboarding } from './pages/Onboarding'
 import './styles/globals.css'
 
@@ -95,6 +108,12 @@ export function App() {
         return <BuyPage />
       case 'modules':
         return <ModulesPage />
+      case 'dashboard':
+        return <SmartAccountDashboard />
+      case 'swap':
+        return <SwapPage />
+      case 'txDetail':
+        return <TransactionDetail />
       default:
         return <Home />
     }

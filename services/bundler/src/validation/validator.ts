@@ -1,20 +1,20 @@
 import type { Address, PublicClient } from 'viem'
 import type { UserOperation } from '../types'
-import { RpcError, RPC_ERROR_CODES } from '../types'
+import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
+import { FormatValidator } from './formatValidator'
+import { ReputationManager } from './reputationManager'
+import { SimulationValidator } from './simulationValidator'
 import type {
-  ValidationResult,
+  IFormatValidator,
+  IOpcodeValidator,
+  IReputationManager,
+  ISimulationValidator,
   ReputationConfig,
   StakeInfo,
-  IFormatValidator,
-  ISimulationValidator,
-  IReputationManager,
-  IOpcodeValidator,
+  ValidationResult,
 } from './types'
 import { DEFAULT_REPUTATION_CONFIG } from './types'
-import { FormatValidator } from './formatValidator'
-import { SimulationValidator } from './simulationValidator'
-import { ReputationManager } from './reputationManager'
 
 /**
  * Configuration for UserOperationValidator
@@ -72,11 +72,7 @@ export class UserOperationValidator {
   /**
    * Create validator with injected dependencies (recommended for production/testing)
    */
-  constructor(
-    config: ValidatorConfig,
-    logger: Logger,
-    dependencies: ValidatorDependencies
-  ) {
+  constructor(config: ValidatorConfig, logger: Logger, dependencies: ValidatorDependencies) {
     this.config = config
     this.logger = logger.child({ module: 'validator' })
     this.formatValidator = dependencies.formatValidator
@@ -96,11 +92,7 @@ export class UserOperationValidator {
   ): UserOperationValidator {
     const dependencies: ValidatorDependencies = {
       formatValidator: new FormatValidator(),
-      simulationValidator: new SimulationValidator(
-        publicClient,
-        config.entryPoint,
-        logger
-      ),
+      simulationValidator: new SimulationValidator(publicClient, config.entryPoint, logger),
       reputationManager: new ReputationManager(
         logger,
         config.reputation ?? DEFAULT_REPUTATION_CONFIG
@@ -200,10 +192,7 @@ export class UserOperationValidator {
     const status = this.reputationManager.checkReputation(address)
 
     if (status === 'banned') {
-      throw new RpcError(
-        `${entityType} ${address} is banned`,
-        RPC_ERROR_CODES.BANNED_OR_THROTTLED
-      )
+      throw new RpcError(`${entityType} ${address} is banned`, RPC_ERROR_CODES.BANNED_OR_THROTTLED)
     }
 
     if (status === 'throttled') {
@@ -235,10 +224,7 @@ export class UserOperationValidator {
     const nonceSequence = userOp.nonce & ((1n << 64n) - 1n)
 
     try {
-      const onChainNonce = await this.simulationValidator.getNonce(
-        userOp.sender,
-        nonceKey
-      )
+      const onChainNonce = await this.simulationValidator.getNonce(userOp.sender, nonceKey)
 
       // Extract on-chain sequence
       const onChainSequence = onChainNonce & ((1n << 64n) - 1n)
@@ -262,10 +248,7 @@ export class UserOperationValidator {
       if (error instanceof RpcError) throw error
 
       this.logger.error({ error }, 'Failed to validate nonce')
-      throw new RpcError(
-        'Failed to validate nonce',
-        RPC_ERROR_CODES.INTERNAL_ERROR
-      )
+      throw new RpcError('Failed to validate nonce', RPC_ERROR_CODES.INTERNAL_ERROR)
     }
   }
 
@@ -295,11 +278,7 @@ export class UserOperationValidator {
     }
 
     try {
-      await this.opcodeValidator.validate(
-        userOp.sender,
-        userOp.factory,
-        userOp.paymaster
-      )
+      await this.opcodeValidator.validate(userOp.sender, userOp.factory, userOp.paymaster)
     } catch (error) {
       this.logger.debug({ error }, 'Opcode validation failed')
       throw error
@@ -309,10 +288,7 @@ export class UserOperationValidator {
   /**
    * Phase 5: Validate simulation result
    */
-  private validateSimulationResult(
-    result: ValidationResult,
-    userOp: UserOperation
-  ): void {
+  private validateSimulationResult(result: ValidationResult, userOp: UserOperation): void {
     // Validate signatures
     this.simulationValidator.validateSignature(
       result.returnInfo.accountValidationData,

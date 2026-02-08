@@ -7,8 +7,8 @@
  * - Managing extension state
  */
 
-import { test as base, chromium, type BrowserContext, type Page } from '@playwright/test'
 import path from 'path'
+import { type BrowserContext, type Page, test as base, chromium } from '@playwright/test'
 
 // Extension paths
 const EXTENSION_PATH = path.join(__dirname, '../../dist')

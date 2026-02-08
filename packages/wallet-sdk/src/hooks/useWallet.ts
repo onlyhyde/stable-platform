@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
-import { StableNetProvider } from '../provider/StableNetProvider'
+import type { StableNetProvider } from '../provider/StableNetProvider'
 import { detectProvider } from '../provider/detect'
-import type { WalletState, WalletSDKConfig } from '../types'
+import type { WalletSDKConfig, WalletState } from '../types'
 
 const initialState: WalletState = {
   isConnected: false,
@@ -21,6 +21,7 @@ export function useWallet(config: WalletSDKConfig = {}) {
   const [state, setState] = useState<WalletState>(initialState)
   const [error, setError] = useState<Error | null>(null)
   const providerRef = useRef<StableNetProvider | null>(null)
+  const unsubscribesRef = useRef<Array<() => void>>([])
 
   // Initialize provider
   useEffect(() => {
@@ -34,37 +35,49 @@ export function useWallet(config: WalletSDKConfig = {}) {
         if (provider) {
           providerRef.current = provider
 
-          // Setup event listeners
-          provider.on('connect', (info) => {
-            if (!mounted) return
-            setState((prev) => ({
-              ...prev,
-              isConnected: true,
-              chainId: Number.parseInt(info.chainId, 16),
-            }))
-          })
+          // Setup event listeners and track unsubscribe functions
+          const unsubs: Array<() => void> = []
 
-          provider.on('disconnect', () => {
-            if (!mounted) return
-            setState(initialState)
-          })
+          unsubs.push(
+            provider.on('connect', (info) => {
+              if (!mounted) return
+              setState((prev) => ({
+                ...prev,
+                isConnected: true,
+                chainId: Number.parseInt(info.chainId, 16),
+              }))
+            })
+          )
 
-          provider.on('accountsChanged', (accounts) => {
-            if (!mounted) return
-            setState((prev) => ({
-              ...prev,
-              isConnected: accounts.length > 0,
-              account: accounts[0] ?? null,
-            }))
-          })
+          unsubs.push(
+            provider.on('disconnect', () => {
+              if (!mounted) return
+              setState(initialState)
+            })
+          )
 
-          provider.on('chainChanged', (chainId) => {
-            if (!mounted) return
-            setState((prev) => ({
-              ...prev,
-              chainId: Number.parseInt(chainId, 16),
-            }))
-          })
+          unsubs.push(
+            provider.on('accountsChanged', (accounts) => {
+              if (!mounted) return
+              setState((prev) => ({
+                ...prev,
+                isConnected: accounts.length > 0,
+                account: accounts[0] ?? null,
+              }))
+            })
+          )
+
+          unsubs.push(
+            provider.on('chainChanged', (chainId) => {
+              if (!mounted) return
+              setState((prev) => ({
+                ...prev,
+                chainId: Number.parseInt(chainId, 16),
+              }))
+            })
+          )
+
+          unsubscribesRef.current = unsubs
 
           // Check existing connection
           const accounts = await provider.getAccounts()
@@ -102,6 +115,11 @@ export function useWallet(config: WalletSDKConfig = {}) {
 
     return () => {
       mounted = false
+      // Clean up all event listeners on unmount
+      for (const unsub of unsubscribesRef.current) {
+        unsub()
+      }
+      unsubscribesRef.current = []
     }
   }, [config.autoConnect, config.timeout])
 

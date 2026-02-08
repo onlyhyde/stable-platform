@@ -74,7 +74,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             className="mt-2 text-sm flex items-center gap-1.5"
             style={{ color: 'rgb(var(--destructive))' }}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

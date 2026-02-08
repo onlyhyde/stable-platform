@@ -21,8 +21,9 @@ export function parseFoundryBroadcast(content: string): FoundryBroadcast | null 
     if (!Array.isArray(rawTxs)) return null
 
     const transactions: FoundryTransaction[] = rawTxs
-      .filter((tx: Record<string, unknown>) =>
-        tx.transactionType === 'CREATE' || tx.transactionType === 'CREATE2'
+      .filter(
+        (tx: Record<string, unknown>) =>
+          tx.transactionType === 'CREATE' || tx.transactionType === 'CREATE2'
       )
       .map((tx: Record<string, unknown>) => ({
         hash: String(tx.hash ?? ''),

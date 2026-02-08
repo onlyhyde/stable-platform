@@ -7,7 +7,7 @@
  * - Forgot password link
  */
 
-import { type Page, type Locator, expect } from '@playwright/test'
+import { type Locator, type Page, expect } from '@playwright/test'
 
 export class LockPage {
   readonly page: Page

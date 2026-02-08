@@ -1,21 +1,9 @@
-import type { Address, Hex, PublicClient } from 'viem'
-import {
-  concat,
-  encodeFunctionData,
-  getContractAddress,
-  keccak256,
-} from 'viem'
 import type { Call, SmartAccount, Validator } from '@stablenet/sdk-types'
-import {
-  ENTRY_POINT_V07_ADDRESS,
-  KERNEL_V3_1_FACTORY_ADDRESS,
-} from '@stablenet/sdk-types'
+import { ENTRY_POINT_V07_ADDRESS, KERNEL_V3_1_FACTORY_ADDRESS } from '@stablenet/sdk-types'
+import type { Address, Hex, PublicClient } from 'viem'
+import { concat, encodeFunctionData, getContractAddress, keccak256 } from 'viem'
 import { EntryPointAbi, KernelFactoryAbi } from './abi'
-import {
-  calculateSalt,
-  encodeKernelExecuteCallData,
-  encodeKernelInitializeData,
-} from './utils'
+import { calculateSalt, encodeKernelExecuteCallData, encodeKernelInitializeData } from './utils'
 
 /**
  * Configuration for creating a Kernel smart account

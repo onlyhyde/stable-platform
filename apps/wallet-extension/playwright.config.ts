@@ -5,8 +5,8 @@
  * It uses a persistent context with the extension loaded.
  */
 
-import { defineConfig, devices } from '@playwright/test'
 import path from 'path'
+import { defineConfig, devices } from '@playwright/test'
 
 // Path to the built extension
 const EXTENSION_PATH = path.join(__dirname, 'dist')
@@ -17,10 +17,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Single worker for extension testing
-  reporter: [
-    ['html', { outputFolder: 'e2e-report' }],
-    ['list'],
-  ],
+  reporter: [['html', { outputFolder: 'e2e-report' }], ['list']],
   timeout: 60000, // 60 seconds per test
   expect: {
     timeout: 10000, // 10 seconds for assertions

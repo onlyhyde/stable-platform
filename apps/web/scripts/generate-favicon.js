@@ -12,7 +12,7 @@ const SIZES = [16, 32, 48, 180, 192, 512]
 // Brand color - Indigo
 const COLORS = {
   primary: { r: 79, g: 70, b: 229 },
-  secondary: { r: 99, g: 102, b: 241 }
+  secondary: { r: 99, g: 102, b: 241 },
 }
 
 const crcTable = (() => {
@@ -104,7 +104,8 @@ function isInSLetter(x, y, size) {
   const topDy = y - topArcCenterY
   const topDist = Math.sqrt(topDx * topDx + topDy * topDy)
   if (topDist >= arcRadius - halfStroke && topDist <= arcRadius + halfStroke) {
-    if (x >= topArcCenterX - arcRadius * 0.3 && y >= letterTop && y <= letterTop + arcHeight) return true
+    if (x >= topArcCenterX - arcRadius * 0.3 && y >= letterTop && y <= letterTop + arcHeight)
+      return true
   }
 
   const middleY = letterTop + arcHeight
@@ -185,16 +186,16 @@ function generatePNG(size) {
  * Generate ICO file from PNG data
  */
 function generateICO(sizes) {
-  const images = sizes.map(size => {
+  const images = sizes.map((size) => {
     const png = generatePNG(size)
     return { size, data: png }
   })
 
   // ICO header
   const header = Buffer.alloc(6)
-  header.writeUInt16LE(0, 0)              // Reserved
-  header.writeUInt16LE(1, 2)              // Type (1 = ICO)
-  header.writeUInt16LE(images.length, 4)  // Number of images
+  header.writeUInt16LE(0, 0) // Reserved
+  header.writeUInt16LE(1, 2) // Type (1 = ICO)
+  header.writeUInt16LE(images.length, 4) // Number of images
 
   // Directory entries
   const directories = []
@@ -202,19 +203,19 @@ function generateICO(sizes) {
 
   for (const img of images) {
     const dir = Buffer.alloc(16)
-    dir.writeUInt8(img.size >= 256 ? 0 : img.size, 0)   // Width
-    dir.writeUInt8(img.size >= 256 ? 0 : img.size, 1)   // Height
-    dir.writeUInt8(0, 2)                                 // Color palette
-    dir.writeUInt8(0, 3)                                 // Reserved
-    dir.writeUInt16LE(1, 4)                              // Color planes
-    dir.writeUInt16LE(32, 6)                             // Bits per pixel
-    dir.writeUInt32LE(img.data.length, 8)               // Image size
-    dir.writeUInt32LE(offset, 12)                        // Image offset
+    dir.writeUInt8(img.size >= 256 ? 0 : img.size, 0) // Width
+    dir.writeUInt8(img.size >= 256 ? 0 : img.size, 1) // Height
+    dir.writeUInt8(0, 2) // Color palette
+    dir.writeUInt8(0, 3) // Reserved
+    dir.writeUInt16LE(1, 4) // Color planes
+    dir.writeUInt16LE(32, 6) // Bits per pixel
+    dir.writeUInt32LE(img.data.length, 8) // Image size
+    dir.writeUInt32LE(offset, 12) // Image offset
     directories.push(dir)
     offset += img.data.length
   }
 
-  return Buffer.concat([header, ...directories, ...images.map(i => i.data)])
+  return Buffer.concat([header, ...directories, ...images.map((i) => i.data)])
 }
 
 // Generate SVG for scalable contexts
@@ -244,9 +245,15 @@ fs.writeFileSync(path.join(publicDir, 'favicon.ico'), icoData)
 console.log('Generated: favicon.ico')
 
 // Generate PNG files
-const pngSizes = { 16: 'favicon-16x16.png', 32: 'favicon-32x32.png', 180: 'apple-touch-icon.png', 192: 'icon-192.png', 512: 'icon-512.png' }
+const pngSizes = {
+  16: 'favicon-16x16.png',
+  32: 'favicon-32x32.png',
+  180: 'apple-touch-icon.png',
+  192: 'icon-192.png',
+  512: 'icon-512.png',
+}
 for (const [size, filename] of Object.entries(pngSizes)) {
-  const png = generatePNG(parseInt(size))
+  const png = generatePNG(Number.parseInt(size))
   fs.writeFileSync(path.join(publicDir, filename), png)
   console.log(`Generated: ${filename}`)
 }

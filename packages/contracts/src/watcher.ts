@@ -3,9 +3,9 @@
  * Used in development to automatically reload addresses when deployment changes
  */
 
-import { watch, type FSWatcher } from 'chokidar'
-import { readFile } from 'node:fs/promises'
 import { EventEmitter } from 'node:events'
+import { readFile } from 'node:fs/promises'
+import { type FSWatcher, watch } from 'chokidar'
 import type { AddressUpdateEvent, ChainAddresses, WatcherOptions } from './types'
 
 /**
@@ -130,7 +130,7 @@ export class ContractAddressWatcher extends EventEmitter {
           const chainId = Number.parseInt(chainIdStr, 10)
           if (Number.isNaN(chainId)) continue
 
-          const addresses = this.parseChainAddresses({ chainId, ...chainData as object })
+          const addresses = this.parseChainAddresses({ chainId, ...(chainData as object) })
           const oldAddresses = this.currentAddresses.get(chainId)
 
           if (!this.addressesEqual(oldAddresses, addresses)) {
@@ -152,7 +152,10 @@ export class ContractAddressWatcher extends EventEmitter {
     const ZERO = '0x0000000000000000000000000000000000000000' as const
 
     const getAddr = (primary: unknown, secondary?: unknown, tertiary?: unknown) => {
-      return ((primary as string) || (secondary as string) || (tertiary as string) || ZERO) as `0x${string}`
+      return ((primary as string) ||
+        (secondary as string) ||
+        (tertiary as string) ||
+        ZERO) as `0x${string}`
     }
 
     const coreData = data.core as Record<string, string> | undefined
@@ -183,7 +186,11 @@ export class ContractAddressWatcher extends EventEmitter {
         spendingLimitHook: getAddr(data.spendingLimitHook, hooksData?.spendingLimitHook),
       },
       paymasters: {
-        verifyingPaymaster: getAddr(data.verifyingPaymaster, data.paymaster, paymastersData?.verifyingPaymaster),
+        verifyingPaymaster: getAddr(
+          data.verifyingPaymaster,
+          data.paymaster,
+          paymastersData?.verifyingPaymaster
+        ),
         tokenPaymaster: getAddr(data.tokenPaymaster, paymastersData?.tokenPaymaster),
       },
       privacy: {
@@ -195,9 +202,19 @@ export class ContractAddressWatcher extends EventEmitter {
         complianceValidator: getAddr(data.complianceValidator, complianceData?.complianceValidator),
       },
       subscriptions: {
-        subscriptionManager: getAddr(data.subscriptionManager, subscriptionsData?.subscriptionManager),
-        recurringPaymentExecutor: getAddr(data.recurringPaymentExecutor, subscriptionsData?.recurringPaymentExecutor),
-        permissionManager: getAddr(data.erc7715PermissionManager, data.permissionManager, subscriptionsData?.permissionManager),
+        subscriptionManager: getAddr(
+          data.subscriptionManager,
+          subscriptionsData?.subscriptionManager
+        ),
+        recurringPaymentExecutor: getAddr(
+          data.recurringPaymentExecutor,
+          subscriptionsData?.recurringPaymentExecutor
+        ),
+        permissionManager: getAddr(
+          data.erc7715PermissionManager,
+          data.permissionManager,
+          subscriptionsData?.permissionManager
+        ),
       },
       delegatePresets: (data.delegatePresets as ChainAddresses['delegatePresets']) || [],
     }

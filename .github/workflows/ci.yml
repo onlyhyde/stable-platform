@@ -30,8 +30,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -53,6 +51,14 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Upload wallet extension build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wallet-extension-${{ github.sha }}
+          path: apps/wallet-extension/dist/
+          retention-days: 7
 
   # ===================
   # Go Projects
@@ -95,6 +101,62 @@ jobs:
         run: go test -v ./...
 
   # ===================
+  # E2E Tests
+  # ===================
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [typescript]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download wallet extension build
+        uses: actions/download-artifact@v4
+        with:
+          name: wallet-extension-${{ github.sha }}
+          path: apps/wallet-extension/dist/
+
+      - name: Install Playwright browsers
+        working-directory: apps/wallet-extension
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: apps/wallet-extension
+        run: npx playwright test
+        env:
+          CI: true
+
+      - name: Upload E2E test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-${{ github.sha }}
+          path: apps/wallet-extension/e2e-report/
+          retention-days: 7
+
+      - name: Upload E2E test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ github.sha }}
+          path: apps/wallet-extension/e2e-results/
+          retention-days: 7
+
+  # ===================
   # Docker Build Test
   # ===================
   docker:
@@ -127,8 +189,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

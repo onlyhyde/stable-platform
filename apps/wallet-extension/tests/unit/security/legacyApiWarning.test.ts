@@ -6,18 +6,18 @@
 jest.unmock('@stablenet/core')
 
 import {
-  hasApiWarning,
-  getApiWarning,
-  shouldBlockMethod,
-  getAllApiWarnings,
-  getWarningsByStatus,
-  formatApiWarningForUI as formatWarningForUI,
-  createConsoleDeprecationNotice,
-  updateEthSignSettings,
-  getEthSignSettings,
-  isEthSignAllowed,
-  shouldShowEthSignWarning,
   DeprecationStatus,
+  createConsoleDeprecationNotice,
+  formatApiWarningForUI as formatWarningForUI,
+  getAllApiWarnings,
+  getApiWarning,
+  getEthSignSettings,
+  getWarningsByStatus,
+  hasApiWarning,
+  isEthSignAllowed,
+  shouldBlockMethod,
+  shouldShowEthSignWarning,
+  updateEthSignSettings,
 } from '@stablenet/core'
 
 describe('legacyApiWarning', () => {

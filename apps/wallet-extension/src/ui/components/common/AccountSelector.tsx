@@ -46,6 +46,7 @@ export function AccountSelector({
     <div className="relative" ref={dropdownRef}>
       {/* Current Account Display (Clickable) */}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 w-full text-left rounded-lg p-2 -m-2 transition-colors"
         style={{ backgroundColor: isOpen ? 'rgb(var(--primary) / 0.1)' : 'transparent' }}
@@ -71,7 +72,9 @@ export function AccountSelector({
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          role="img"
         >
+          <title>Toggle dropdown</title>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -90,6 +93,7 @@ export function AccountSelector({
             const isSelected = account.address === selectedAccount
             return (
               <button
+                type="button"
                 key={account.address}
                 onClick={() => handleSelect(account.address)}
                 className="w-full flex items-center gap-3 px-3 py-2 transition-colors"
@@ -124,7 +128,9 @@ export function AccountSelector({
                     style={{ color: 'rgb(var(--primary))' }}
                     fill="currentColor"
                     viewBox="0 0 20 20"
+                    role="img"
                   >
+                    <title>Selected</title>
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -141,6 +147,7 @@ export function AccountSelector({
 
           {/* Add Account Button */}
           <button
+            type="button"
             onClick={handleAddAccount}
             className="w-full flex items-center gap-3 px-3 py-2 transition-colors"
             style={{ color: 'rgb(var(--primary))' }}
@@ -149,7 +156,8 @@ export function AccountSelector({
               className="w-8 h-8 rounded-full flex items-center justify-center"
               style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" role="img">
+                <title>Add account</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"

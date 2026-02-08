@@ -3,9 +3,9 @@
  * TDD tests for the SimpleKeyring class that manages imported private keys
  */
 
+import type { Address, Hex } from 'viem'
 import { SimpleKeyring } from '../../../src/background/keyring/simpleKeyring'
 import type { SimpleKeyringData } from '../../../src/types'
-import type { Address, Hex } from 'viem'
 
 // Test private keys (DO NOT USE IN PRODUCTION)
 const TEST_PRIVATE_KEY_1 =
@@ -58,17 +58,13 @@ describe('SimpleKeyring', () => {
     it('should reject invalid private key', () => {
       const invalidKey = '0xinvalid' as Hex
 
-      expect(() => simpleKeyring.importAccount(invalidKey)).toThrow(
-        'Invalid private key'
-      )
+      expect(() => simpleKeyring.importAccount(invalidKey)).toThrow('Invalid private key')
     })
 
     it('should reject private key with wrong length', () => {
       const shortKey = '0x1234' as Hex
 
-      expect(() => simpleKeyring.importAccount(shortKey)).toThrow(
-        'Invalid private key'
-      )
+      expect(() => simpleKeyring.importAccount(shortKey)).toThrow('Invalid private key')
     })
 
     it('should reject duplicate account', () => {
@@ -104,9 +100,7 @@ describe('SimpleKeyring', () => {
     it('should throw for non-existing account', () => {
       const unknownAddress = '0x0000000000000000000000000000000000000001' as Address
 
-      expect(() => simpleKeyring.removeAccount(unknownAddress)).toThrow(
-        'Account not found'
-      )
+      expect(() => simpleKeyring.removeAccount(unknownAddress)).toThrow('Account not found')
     })
 
     it('should be case insensitive', () => {
@@ -166,12 +160,8 @@ describe('SimpleKeyring', () => {
     })
 
     it('should be case insensitive', () => {
-      expect(
-        simpleKeyring.hasAccount(KNOWN_ADDRESS_1.toLowerCase() as Address)
-      ).toBe(true)
-      expect(
-        simpleKeyring.hasAccount(KNOWN_ADDRESS_1.toUpperCase() as Address)
-      ).toBe(true)
+      expect(simpleKeyring.hasAccount(KNOWN_ADDRESS_1.toLowerCase() as Address)).toBe(true)
+      expect(simpleKeyring.hasAccount(KNOWN_ADDRESS_1.toUpperCase() as Address)).toBe(true)
     })
   })
 
@@ -201,9 +191,9 @@ describe('SimpleKeyring', () => {
       const unknownAddress = '0x0000000000000000000000000000000000000001' as Address
       const message = '0x48656c6c6f' as Hex
 
-      await expect(
-        simpleKeyring.signMessage(unknownAddress, message)
-      ).rejects.toThrow('Account not found in keyring')
+      await expect(simpleKeyring.signMessage(unknownAddress, message)).rejects.toThrow(
+        'Account not found in keyring'
+      )
     })
 
     it('should be case insensitive for address', async () => {
@@ -257,9 +247,9 @@ describe('SimpleKeyring', () => {
         message: { name: 'Alice' },
       }
 
-      await expect(
-        simpleKeyring.signTypedData(unknownAddress, typedData)
-      ).rejects.toThrow('Account not found in keyring')
+      await expect(simpleKeyring.signTypedData(unknownAddress, typedData)).rejects.toThrow(
+        'Account not found in keyring'
+      )
     })
   })
 
@@ -296,9 +286,9 @@ describe('SimpleKeyring', () => {
         gas: BigInt(21000),
       }
 
-      await expect(
-        simpleKeyring.signTransaction(unknownAddress, tx)
-      ).rejects.toThrow('Account not found in keyring')
+      await expect(simpleKeyring.signTransaction(unknownAddress, tx)).rejects.toThrow(
+        'Account not found in keyring'
+      )
     })
   })
 
@@ -315,15 +305,11 @@ describe('SimpleKeyring', () => {
     it('should throw for non-existing account', () => {
       const unknownAddress = '0x0000000000000000000000000000000000000001' as Address
 
-      expect(() => simpleKeyring.exportPrivateKey(unknownAddress)).toThrow(
-        'Account not found'
-      )
+      expect(() => simpleKeyring.exportPrivateKey(unknownAddress)).toThrow('Account not found')
     })
 
     it('should be case insensitive', () => {
-      const exportedKey = simpleKeyring.exportPrivateKey(
-        KNOWN_ADDRESS_1.toLowerCase() as Address
-      )
+      const exportedKey = simpleKeyring.exportPrivateKey(KNOWN_ADDRESS_1.toLowerCase() as Address)
       expect(exportedKey).toBe(TEST_PRIVATE_KEY_1)
     })
   })

@@ -1,6 +1,6 @@
-import type { Address, Hex, LocalAccount } from 'viem'
 import type { Validator } from '@stablenet/sdk-types'
 import { ECDSA_VALIDATOR_ADDRESS } from '@stablenet/sdk-types'
+import type { Address, Hex, LocalAccount } from 'viem'
 
 /**
  * Configuration for creating an ECDSA validator
@@ -33,9 +33,7 @@ export interface CreateEcdsaValidatorConfig {
  * })
  * ```
  */
-export async function createEcdsaValidator(
-  config: CreateEcdsaValidatorConfig
-): Promise<Validator> {
+export async function createEcdsaValidator(config: CreateEcdsaValidatorConfig): Promise<Validator> {
   const { signer, validatorAddress = ECDSA_VALIDATOR_ADDRESS } = config
 
   const address = validatorAddress

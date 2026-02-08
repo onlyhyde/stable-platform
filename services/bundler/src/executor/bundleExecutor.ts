@@ -1,11 +1,11 @@
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
 import { concat, decodeEventLog, encodeFunctionData, pad, toHex } from 'viem'
-import type { MempoolEntry, UserOperation } from '../types'
+import { ENTRY_POINT_V07_ABI, EVENT_SIGNATURES, HANDLE_AGGREGATED_OPS_ABI } from '../abi'
 import type { Mempool } from '../mempool/mempool'
-import type { UserOperationValidator, AggregatorValidator } from '../validation'
-import { ENTRY_POINT_V07_ABI, HANDLE_AGGREGATED_OPS_ABI, EVENT_SIGNATURES } from '../abi'
-import type { UserOperationEventData, UserOpsPerAggregator } from '../validation/types'
+import type { MempoolEntry, UserOperation } from '../types'
 import type { Logger } from '../utils/logger'
+import type { AggregatorValidator, UserOperationValidator } from '../validation'
+import type { UserOperationEventData, UserOpsPerAggregator } from '../validation/types'
 import { VALIDATION_CONSTANTS } from '../validation/types'
 
 /**
@@ -61,10 +61,7 @@ export class BundleExecutor {
       })
     }, this.config.bundleInterval)
 
-    this.logger.info(
-      { interval: this.config.bundleInterval },
-      'Bundle executor started'
-    )
+    this.logger.info({ interval: this.config.bundleInterval }, 'Bundle executor started')
   }
 
   /**
@@ -91,19 +88,13 @@ export class BundleExecutor {
    * Try to create and submit a bundle
    */
   async tryBundle(): Promise<Hex | null> {
-    const pending = this.mempool.getPending(
-      this.config.entryPoint,
-      this.config.maxBundleSize
-    )
+    const pending = this.mempool.getPending(this.config.entryPoint, this.config.maxBundleSize)
 
     if (pending.length === 0) {
       return null
     }
 
-    this.logger.debug(
-      { count: pending.length },
-      'Creating bundle from pending operations'
-    )
+    this.logger.debug({ count: pending.length }, 'Creating bundle from pending operations')
 
     // Pre-flight validation
     const validEntries = await this.preflightValidation(pending)
@@ -120,9 +111,7 @@ export class BundleExecutor {
    * Pre-flight validation before bundling
    * Re-validates operations to ensure they're still valid
    */
-  private async preflightValidation(
-    entries: MempoolEntry[]
-  ): Promise<MempoolEntry[]> {
+  private async preflightValidation(entries: MempoolEntry[]): Promise<MempoolEntry[]> {
     const valid: MempoolEntry[] = []
     const simulationValidator = this.validator.getSimulationValidator()
 
@@ -134,13 +123,7 @@ export class BundleExecutor {
       } catch (error) {
         // Remove invalid operation from mempool
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        this.mempool.updateStatus(
-          entry.userOpHash,
-          'dropped',
-          undefined,
-          undefined,
-          errorMessage
-        )
+        this.mempool.updateStatus(entry.userOpHash, 'dropped', undefined, undefined, errorMessage)
 
         this.logger.warn(
           { userOpHash: entry.userOpHash, error: errorMessage },
@@ -212,10 +195,7 @@ export class BundleExecutor {
         gas: gasLimit,
       })
 
-      this.logger.info(
-        { hash, opCount: entries.length },
-        'Bundle submitted successfully'
-      )
+      this.logger.info({ hash, opCount: entries.length }, 'Bundle submitted successfully')
 
       // Update transaction hash for all operations
       for (const entry of entries) {
@@ -249,10 +229,7 @@ export class BundleExecutor {
   /**
    * Wait for bundle transaction receipt and update statuses
    */
-  private async waitForReceipt(
-    hash: Hex,
-    entries: MempoolEntry[]
-  ): Promise<void> {
+  private async waitForReceipt(hash: Hex, entries: MempoolEntry[]): Promise<void> {
     try {
       const receipt = await this.publicClient.waitForTransactionReceipt({
         hash,
@@ -368,10 +345,7 @@ export class BundleExecutor {
             })
           }
         } catch (error) {
-          this.logger.warn(
-            { error, log },
-            'Failed to decode UserOperationEvent'
-          )
+          this.logger.warn({ error, log }, 'Failed to decode UserOperationEvent')
         }
       }
     }
@@ -395,9 +369,7 @@ export class BundleExecutor {
   } {
     // Build initCode
     const initCode =
-      userOp.factory && userOp.factoryData
-        ? concat([userOp.factory, userOp.factoryData])
-        : '0x'
+      userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
 
     // Build accountGasLimits (verificationGasLimit + callGasLimit)
     const accountGasLimits = concat([
@@ -446,10 +418,7 @@ export class BundleExecutor {
     const nonAggregatedEntries: MempoolEntry[] = []
 
     for (const entry of entries) {
-      if (
-        entry.aggregator &&
-        entry.aggregator !== VALIDATION_CONSTANTS.ZERO_ADDRESS
-      ) {
+      if (entry.aggregator && entry.aggregator !== VALIDATION_CONSTANTS.ZERO_ADDRESS) {
         aggregatedEntries.push(entry)
       } else {
         nonAggregatedEntries.push(entry)

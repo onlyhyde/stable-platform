@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { parseConfig, getEnvHelp } from './config'
 import { RegistryServer } from '../server/index'
-import { FileWatcher } from '../watcher/index'
 import { createLogger, getGlobalLogger } from '../utils/logger'
+import { FileWatcher } from '../watcher/index'
+import { getEnvHelp, parseConfig } from './config'
 
 const earlyLogger = getGlobalLogger()
 
@@ -65,7 +65,11 @@ async function main() {
             demandOption: true,
           })
           .option('api-key', { type: 'string', description: 'API key' })
-          .option('url', { type: 'string', description: 'Registry URL', default: 'http://localhost:4400' })
+          .option('url', {
+            type: 'string',
+            description: 'Registry URL',
+            default: 'http://localhost:4400',
+          })
       },
       async (argv) => {
         await importContracts(argv)
@@ -77,7 +81,11 @@ async function main() {
       (yargs) => {
         return yargs
           .option('chain', { type: 'number', description: 'Filter by chain ID' })
-          .option('url', { type: 'string', description: 'Registry URL', default: 'http://localhost:4400' })
+          .option('url', {
+            type: 'string',
+            description: 'Registry URL',
+            default: 'http://localhost:4400',
+          })
       },
       async (argv) => {
         await exportContracts(argv)
@@ -90,7 +98,11 @@ async function main() {
         return yargs
           .option('chain', { type: 'number', description: 'Filter by chain ID' })
           .option('tag', { type: 'string', description: 'Filter by tag' })
-          .option('url', { type: 'string', description: 'Registry URL', default: 'http://localhost:4400' })
+          .option('url', {
+            type: 'string',
+            description: 'Registry URL',
+            default: 'http://localhost:4400',
+          })
       },
       async (argv) => {
         await listContracts(argv)
@@ -157,7 +169,9 @@ async function importContracts(argv: { file: string; apiKey?: string; url: strin
   const content = await readFile(argv.file, 'utf-8')
   const data = JSON.parse(content) as unknown
 
-  const contracts = Array.isArray(data) ? data : (data as Record<string, unknown>).contracts ?? [data]
+  const contracts = Array.isArray(data)
+    ? data
+    : ((data as Record<string, unknown>).contracts ?? [data])
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (argv.apiKey) headers['X-API-Key'] = argv.apiKey
@@ -169,11 +183,11 @@ async function importContracts(argv: { file: string; apiKey?: string; url: strin
   })
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as Record<string, unknown>
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
     throw new Error(`Import failed: ${body.message ?? res.statusText}`)
   }
 
-  const result = await res.json() as { created: number; updated: number }
+  const result = (await res.json()) as { created: number; updated: number }
   process.stdout.write(`Imported: ${result.created} created, ${result.updated} updated\n`)
 }
 
@@ -197,7 +211,13 @@ async function listContracts(argv: { chain?: number; tag?: string; url: string }
 
   if (!res.ok) throw new Error(`List failed: ${res.statusText}`)
 
-  const contracts = await res.json() as Array<{ chainId: number; name: string; address: string; version: string; tags: string[] }>
+  const contracts = (await res.json()) as Array<{
+    chainId: number
+    name: string
+    address: string
+    version: string
+    tags: string[]
+  }>
 
   if (contracts.length === 0) {
     process.stdout.write('No contracts found\n')

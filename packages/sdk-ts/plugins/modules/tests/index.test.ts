@@ -2,42 +2,39 @@
  * Tests for @stablenet/plugin-modules
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
+  ECDSAValidatorAbi,
+  IModuleAbi,
+  InvalidModuleTypeError,
+  // ABIs
+  KernelModuleAbi,
   // Types and constants
   MODULE_TYPES,
   ModuleError,
   ModuleInstallationError,
   ModuleNotInstalledError,
-  InvalidModuleTypeError,
-
-  // ABIs
-  KernelModuleAbi,
-  IModuleAbi,
-  ECDSAValidatorAbi,
   SessionKeyExecutorAbi,
   SpendingLimitHookAbi,
-
-  // Actions
-  encodeInstallModule,
-  encodeUninstallModule,
+  buildBatchInstallModuleCalls,
   buildInstallModuleCall,
   buildUninstallModuleCall,
-  buildBatchInstallModuleCalls,
-  validateModuleType,
-  getModuleTypeName,
-
   // Init data encoders
   encodeECDSAValidatorInitData,
-  encodeWebAuthnValidatorInitData,
-  encodeMultiSigValidatorInitData,
-  encodeSessionKeyExecutorInitData,
-  encodeSwapExecutorInitData,
-  encodeLendingExecutorInitData,
-  encodeStakingExecutorInitData,
-  encodeSpendingLimitHookInitData,
   encodeHealthFactorHookInitData,
+  // Actions
+  encodeInstallModule,
+  encodeLendingExecutorInitData,
+  encodeMultiSigValidatorInitData,
   encodePolicyHookInitData,
+  encodeSessionKeyExecutorInitData,
+  encodeSpendingLimitHookInitData,
+  encodeStakingExecutorInitData,
+  encodeSwapExecutorInitData,
+  encodeUninstallModule,
+  encodeWebAuthnValidatorInitData,
+  getModuleTypeName,
+  validateModuleType,
 } from '../src'
 import { TEST_ADDRESSES, TEST_VALUES } from './setup'
 
@@ -179,9 +176,7 @@ describe('@stablenet/plugin-modules', () => {
   describe('buildBatchInstallModuleCalls', () => {
     it('should build batch install calls for validators', () => {
       const calls = buildBatchInstallModuleCalls(TEST_ADDRESSES.SMART_ACCOUNT, {
-        validators: [
-          { address: TEST_ADDRESSES.VALIDATOR, initData: TEST_ADDRESSES.OWNER },
-        ],
+        validators: [{ address: TEST_ADDRESSES.VALIDATOR, initData: TEST_ADDRESSES.OWNER }],
       })
 
       expect(calls.length).toBe(1)

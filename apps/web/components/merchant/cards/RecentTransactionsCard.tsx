@@ -90,6 +90,7 @@ export function RecentTransactionsCard({
         {transactions.length === 0 ? (
           <div className="text-center py-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
             <svg
+              aria-hidden="true"
               className="w-12 h-12 mx-auto mb-4"
               style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
               fill="none"
@@ -213,6 +214,7 @@ export function RecentTransactionsCard({
                         )}
                         {tx.status === 'failed' && onRetry && (
                           <button
+                            type="button"
                             onClick={() => onRetry(tx.id)}
                             className="text-xs"
                             style={{ color: 'rgb(var(--primary))' }}

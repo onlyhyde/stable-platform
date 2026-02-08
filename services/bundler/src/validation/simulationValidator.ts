@@ -1,24 +1,24 @@
 import type { Address, Hex, PublicClient } from 'viem'
 import { concat, pad, toHex } from 'viem'
-import type { UserOperation } from '../types'
-import { RpcError, RPC_ERROR_CODES } from '../types'
-import type { Logger } from '../utils/logger'
 import { ENTRY_POINT_V07_ABI } from '../abi'
-import type { ValidationResult, ExecutionResult, StakeInfo, ISimulationValidator } from './types'
+import type { UserOperation } from '../types'
+import { RPC_ERROR_CODES, RpcError } from '../types'
+import type { Logger } from '../utils/logger'
+import type { ExecutionResult, ISimulationValidator, StakeInfo, ValidationResult } from './types'
 import { VALIDATION_CONSTANTS } from './types'
 
 const { ZERO_ADDRESS } = VALIDATION_CONSTANTS
 import {
-  extractErrorData,
-  matchesErrorSelector,
-  decodeValidationResult,
-  decodeValidationResultWithAggregation,
+  decodeExecutionResult,
   decodeFailedOp,
   decodeFailedOpWithRevert,
-  decodeExecutionResult,
+  decodeValidationResult,
+  decodeValidationResultWithAggregation,
+  extractErrorData,
+  isSignatureFailure,
+  matchesErrorSelector,
   parseValidationData,
   validateTimestamps,
-  isSignatureFailure,
 } from './errors'
 
 /**
@@ -86,11 +86,7 @@ export class SimulationValidator implements ISimulationValidator {
   private entryPoint: Address
   private logger: Logger
 
-  constructor(
-    publicClient: PublicClient,
-    entryPoint: Address,
-    logger: Logger
-  ) {
+  constructor(publicClient: PublicClient, entryPoint: Address, logger: Logger) {
     this.publicClient = publicClient
     this.entryPoint = entryPoint
     this.logger = logger.child({ module: 'simulation' })
@@ -153,10 +149,7 @@ export class SimulationValidator implements ISimulationValidator {
   /**
    * Validate timestamps from validation data
    */
-  validateTimestamps(
-    accountValidationData: bigint,
-    paymasterValidationData?: bigint
-  ): void {
+  validateTimestamps(accountValidationData: bigint, paymasterValidationData?: bigint): void {
     // Parse and validate account timestamps
     const accountParsed = parseValidationData(accountValidationData)
     const accountTimestampResult = validateTimestamps(
@@ -191,16 +184,10 @@ export class SimulationValidator implements ISimulationValidator {
   /**
    * Validate signature from validation data
    */
-  validateSignature(
-    accountValidationData: bigint,
-    paymasterValidationData?: bigint
-  ): void {
+  validateSignature(accountValidationData: bigint, paymasterValidationData?: bigint): void {
     // Check account signature
     if (isSignatureFailure(accountValidationData)) {
-      throw new RpcError(
-        'Account signature validation failed',
-        RPC_ERROR_CODES.INVALID_SIGNATURE
-      )
+      throw new RpcError('Account signature validation failed', RPC_ERROR_CODES.INVALID_SIGNATURE)
     }
 
     // Check paymaster signature if present
@@ -222,10 +209,7 @@ export class SimulationValidator implements ISimulationValidator {
 
     // Check for signature failure marker
     if (aggregator === VALIDATION_CONSTANTS.SIG_VALIDATION_FAILED) {
-      throw new RpcError(
-        'Signature validation failed',
-        RPC_ERROR_CODES.INVALID_SIGNATURE
-      )
+      throw new RpcError('Signature validation failed', RPC_ERROR_CODES.INVALID_SIGNATURE)
     }
 
     // Check for success marker (no aggregator)
@@ -275,10 +259,7 @@ export class SimulationValidator implements ISimulationValidator {
       return nonce as bigint
     } catch (error) {
       this.logger.error({ error, sender, key }, 'Failed to get nonce')
-      throw new RpcError(
-        'Failed to get nonce from EntryPoint',
-        RPC_ERROR_CODES.INTERNAL_ERROR
-      )
+      throw new RpcError('Failed to get nonce from EntryPoint', RPC_ERROR_CODES.INTERNAL_ERROR)
     }
   }
 
@@ -332,10 +313,7 @@ export class SimulationValidator implements ISimulationValidator {
       return balance as bigint
     } catch (error) {
       this.logger.error({ error, account }, 'Failed to get balance')
-      throw new RpcError(
-        'Failed to get balance from EntryPoint',
-        RPC_ERROR_CODES.INTERNAL_ERROR
-      )
+      throw new RpcError('Failed to get balance from EntryPoint', RPC_ERROR_CODES.INTERNAL_ERROR)
     }
   }
 
@@ -470,7 +448,7 @@ export class SimulationValidator implements ISimulationValidator {
 
     if (reason.startsWith('AA2')) {
       // AA2x: Sender/Account errors
-      if (reason === 'AA21 didn\'t pay prefund' || reason.includes('prefund')) {
+      if (reason === "AA21 didn't pay prefund" || reason.includes('prefund')) {
         return new RpcError(message, RPC_ERROR_CODES.REJECTED_BY_EP_OR_ACCOUNT)
       }
       if (reason === 'AA23 reverted' || reason === 'AA24 signature error') {

@@ -65,7 +65,7 @@ export default function PlansPage() {
           </p>
         </div>
         <Button variant="secondary" onClick={() => router.push('/subscription')}>
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -88,6 +88,7 @@ export default function PlansPage() {
           <div className="flex items-center gap-6">
             <div className="hidden md:flex w-16 h-16 rounded-full items-center justify-center bg-white/20">
               <svg
+                aria-hidden="true"
                 className="w-8 h-8 text-white"
                 fill="none"
                 stroke="currentColor"
@@ -146,6 +147,7 @@ export default function PlansPage() {
               style={{ backgroundColor: 'rgb(var(--secondary))' }}
             >
               <svg
+                aria-hidden="true"
                 className="w-10 h-10"
                 style={{ color: 'rgb(var(--muted-foreground))' }}
                 fill="none"

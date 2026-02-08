@@ -36,6 +36,8 @@ export function MetaMaskUnsupportedModal({ isOpen, onClose }: MetaMaskUnsupporte
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ backgroundColor: 'rgb(var(--overlay) / 0.6)' }}
       onClick={handleBackdropClick}
+      onKeyDown={undefined}
+      aria-hidden="true"
     >
       <div
         className="rounded-xl shadow-xl max-w-md w-full mx-4 overflow-hidden"
@@ -55,6 +57,7 @@ export function MetaMaskUnsupportedModal({ isOpen, onClose }: MetaMaskUnsupporte
               style={{ backgroundColor: 'rgb(var(--warning) / 0.2)' }}
             >
               <svg
+                aria-hidden="true"
                 className="w-6 h-6"
                 style={{ color: 'rgb(var(--warning))' }}
                 fill="none"
@@ -150,6 +153,7 @@ export function MetaMaskUnsupportedModal({ isOpen, onClose }: MetaMaskUnsupporte
             자세히 알아보기
           </a>
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
             style={{

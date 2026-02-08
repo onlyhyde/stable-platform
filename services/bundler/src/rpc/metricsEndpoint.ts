@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
-import type { IMetricsCollector, BundlerMetrics } from '../metrics/types'
+import type { BundlerMetrics, IMetricsCollector } from '../metrics/types'
 
 /**
  * JSON serializer for BigInt values
@@ -28,18 +28,14 @@ export function registerMetricsEndpoint(
   // GET /metrics - Prometheus format
   app.get('/metrics', async (_request: FastifyRequest, reply: FastifyReply) => {
     const prometheus = metricsCollector.toPrometheus()
-    return reply
-      .header('Content-Type', 'text/plain; charset=utf-8')
-      .send(prometheus)
+    return reply.header('Content-Type', 'text/plain; charset=utf-8').send(prometheus)
   })
 
   // GET /metrics/json - JSON format
   app.get('/metrics/json', async (_request: FastifyRequest, reply: FastifyReply) => {
     const metrics = metricsCollector.getMetrics()
     const serialized = serializeMetrics(metrics)
-    return reply
-      .header('Content-Type', 'application/json')
-      .send(serialized)
+    return reply.header('Content-Type', 'application/json').send(serialized)
   })
 
   // POST /metrics/reset - Reset all metrics

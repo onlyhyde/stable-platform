@@ -5,7 +5,7 @@
  * Covers Task 6.1 (event system), 6.2 (account types), 6.3 (page refresh)
  */
 
-import { TEST_ACCOUNTS, TEST_CHAIN_IDS, delay } from '../../utils/testUtils'
+import { TEST_ACCOUNTS, TEST_CHAIN_IDS } from '../../utils/testUtils'
 
 // Mock constants
 jest.mock('../../../src/shared/constants', () => ({
@@ -92,7 +92,7 @@ describe('StableNetProvider', () => {
       it('should emit connect event when receiving PROVIDER_EVENT connect', async () => {
         // Dynamically create a minimal provider for testing
         const eventListeners = new Map<string, Set<Function>>()
-        let chainId: string | null = null
+        const chainId: string | null = null
 
         const testProvider = {
           on(event: string, listener: Function) {
@@ -294,10 +294,7 @@ describe('StableNetProvider', () => {
 
     it('should handle imported account addresses correctly', () => {
       // Imported accounts are from external private keys
-      const importedAccounts = [
-        TEST_ACCOUNTS.account1.address,
-        TEST_ACCOUNTS.account2.address,
-      ]
+      const importedAccounts = [TEST_ACCOUNTS.account1.address, TEST_ACCOUNTS.account2.address]
 
       // Verify addresses are valid format
       importedAccounts.forEach((addr) => {
@@ -306,10 +303,7 @@ describe('StableNetProvider', () => {
     })
 
     it('should select first account as primary', () => {
-      const accounts = [
-        TEST_ACCOUNTS.account1.address,
-        TEST_ACCOUNTS.account2.address,
-      ]
+      const accounts = [TEST_ACCOUNTS.account1.address, TEST_ACCOUNTS.account2.address]
 
       // First account should be selected by default
       const selectedAddress = accounts[0]

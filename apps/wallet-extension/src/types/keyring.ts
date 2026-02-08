@@ -56,7 +56,23 @@ export interface VaultData {
  */
 export interface SerializedKeyring {
   type: KeyringType
-  data: HDKeyringData | SimpleKeyringData
+  data: HDKeyringData | SimpleKeyringData | HardwareKeyringData
+}
+
+/**
+ * Hardware keyring data for storage
+ */
+export interface HardwareKeyringData {
+  deviceType: HardwareDeviceType
+  accounts: HardwareAccountInfo[]
+}
+
+export type HardwareDeviceType = 'ledger' | 'trezor'
+
+export interface HardwareAccountInfo {
+  address: Address
+  path: string
+  index: number
 }
 
 export interface HDKeyringData {

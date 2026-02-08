@@ -1,5 +1,5 @@
 import type { Address, Hex } from 'viem'
-import { RpcError, RPC_ERROR_CODES } from '../types'
+import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 
 /**
@@ -139,10 +139,7 @@ export class OpcodeValidator {
     factory: Address | undefined,
     paymaster: Address | undefined
   ): Promise<void> {
-    this.logger.debug(
-      { sender, factory, paymaster },
-      'Starting opcode validation'
-    )
+    this.logger.debug({ sender, factory, paymaster }, 'Starting opcode validation')
 
     // Get trace from tracer
     let trace: TraceResult
@@ -150,10 +147,7 @@ export class OpcodeValidator {
       trace = await this.tracer.trace(sender, factory, paymaster)
     } catch (error) {
       this.logger.error({ error }, 'Failed to get trace')
-      throw new RpcError(
-        'Failed to trace UserOperation validation',
-        RPC_ERROR_CODES.INTERNAL_ERROR
-      )
+      throw new RpcError('Failed to trace UserOperation validation', RPC_ERROR_CODES.INTERNAL_ERROR)
     }
 
     // Build entity set for identification
@@ -189,10 +183,7 @@ export class OpcodeValidator {
   /**
    * Get entity type for an address
    */
-  private getEntityType(
-    address: Address,
-    entities: Map<string, EntityType>
-  ): EntityType {
+  private getEntityType(address: Address, entities: Map<string, EntityType>): EntityType {
     return entities.get(address.toLowerCase()) ?? 'unknown'
   }
 

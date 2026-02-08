@@ -88,6 +88,7 @@ export function Footer() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"

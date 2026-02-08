@@ -124,10 +124,10 @@ export class PermissionManager {
    * ```
    */
   async requestPermissions(requests: PermissionRequest): Promise<Permission[]> {
-    const permissions = await this.provider.request({
+    const permissions = (await this.provider.request({
       method: 'wallet_requestPermissions',
       params: [requests],
-    }) as Permission[]
+    })) as Permission[]
 
     // Update cache
     this.cachedPermissions = permissions
@@ -149,9 +149,9 @@ export class PermissionManager {
       return this.cachedPermissions
     }
 
-    const permissions = await this.provider.request({
+    const permissions = (await this.provider.request({
       method: 'wallet_getPermissions',
-    }) as Permission[]
+    })) as Permission[]
 
     this.cachedPermissions = permissions
     this.lastFetchTime = Date.now()
@@ -171,7 +171,9 @@ export class PermissionManager {
     }
 
     // Check for expiry caveat
-    const expiryCaveat = permission.caveats?.find((c) => c.type === 'expiresAt') as ExpiryCaveat | undefined
+    const expiryCaveat = permission.caveats?.find((c) => c.type === 'expiresAt') as
+      | ExpiryCaveat
+      | undefined
     if (expiryCaveat && expiryCaveat.value < Date.now()) {
       return {
         granted: false,
@@ -218,9 +220,9 @@ export class PermissionManager {
       return null
     }
 
-    const chainCaveat = result.permission.caveats?.find(
-      (c) => c.type === 'restrictChains'
-    ) as ChainCaveat | undefined
+    const chainCaveat = result.permission.caveats?.find((c) => c.type === 'restrictChains') as
+      | ChainCaveat
+      | undefined
 
     return chainCaveat?.value ?? null
   }
@@ -236,9 +238,7 @@ export class PermissionManager {
       })
 
       // Clear cache
-      this.cachedPermissions = this.cachedPermissions.filter(
-        (p) => p.parentCapability !== target
-      )
+      this.cachedPermissions = this.cachedPermissions.filter((p) => p.parentCapability !== target)
     } catch (error) {
       // wallet_revokePermissions is not standardized, might not be supported
       throw new Error('Permission revocation not supported by this wallet')

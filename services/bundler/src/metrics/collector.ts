@@ -1,9 +1,4 @@
-import type {
-  IMetricsCollector,
-  BundlerMetrics,
-  HistogramMetric,
-  HistogramBucket,
-} from './types'
+import type { BundlerMetrics, HistogramBucket, HistogramMetric, IMetricsCollector } from './types'
 import { DEFAULT_RESPONSE_TIME_BUCKETS, METRIC_NAMES } from './types'
 
 /**
@@ -126,12 +121,7 @@ export class MetricsCollector implements IMetricsCollector {
   }
 
   // Reputation metrics
-  setReputationMetrics(
-    total: number,
-    ok: number,
-    throttled: number,
-    banned: number
-  ): void {
+  setReputationMetrics(total: number, ok: number, throttled: number, banned: number): void {
     this.reputationTotal = total
     this.reputationOk = ok
     this.reputationThrottled = throttled
@@ -183,13 +173,13 @@ export class MetricsCollector implements IMetricsCollector {
 
   getMetrics(): BundlerMetrics {
     const uptimeSeconds = Math.floor((Date.now() - this.startTime) / 1000)
-    const utilization = this.mempoolMaxSize > 0
-      ? Math.round((this.mempoolSize / this.mempoolMaxSize) * 100)
-      : 0
+    const utilization =
+      this.mempoolMaxSize > 0 ? Math.round((this.mempoolSize / this.mempoolMaxSize) * 100) : 0
 
-    const avgTimeMs = this.gasEstimationTotal > 0
-      ? Math.round(this.gasEstimationTotalTimeMs / this.gasEstimationTotal)
-      : 0
+    const avgTimeMs =
+      this.gasEstimationTotal > 0
+        ? Math.round(this.gasEstimationTotalTimeMs / this.gasEstimationTotal)
+        : 0
 
     const histogramBuckets: HistogramBucket[] = DEFAULT_RESPONSE_TIME_BUCKETS.map((le, i) => ({
       le,
@@ -300,21 +290,9 @@ export class MetricsCollector implements IMetricsCollector {
     )
 
     // Bundle counters
-    addCounter(
-      METRIC_NAMES.BUNDLE_ATTEMPTED,
-      'Total bundle attempts',
-      metrics.bundles.attempted
-    )
-    addCounter(
-      METRIC_NAMES.BUNDLE_SUBMITTED,
-      'Total bundles submitted',
-      metrics.bundles.submitted
-    )
-    addCounter(
-      METRIC_NAMES.BUNDLE_FAILED,
-      'Total bundle failures',
-      metrics.bundles.failed
-    )
+    addCounter(METRIC_NAMES.BUNDLE_ATTEMPTED, 'Total bundle attempts', metrics.bundles.attempted)
+    addCounter(METRIC_NAMES.BUNDLE_SUBMITTED, 'Total bundles submitted', metrics.bundles.submitted)
+    addCounter(METRIC_NAMES.BUNDLE_FAILED, 'Total bundle failures', metrics.bundles.failed)
     addCounter(
       METRIC_NAMES.BUNDLE_GAS_USED,
       'Total gas used by bundles',
@@ -327,16 +305,8 @@ export class MetricsCollector implements IMetricsCollector {
     )
 
     // Mempool gauges
-    addGauge(
-      METRIC_NAMES.MEMPOOL_SIZE,
-      'Current mempool size',
-      metrics.mempool.size
-    )
-    addGauge(
-      METRIC_NAMES.MEMPOOL_MAX_SIZE,
-      'Maximum mempool size',
-      metrics.mempool.maxSize
-    )
+    addGauge(METRIC_NAMES.MEMPOOL_SIZE, 'Current mempool size', metrics.mempool.size)
+    addGauge(METRIC_NAMES.MEMPOOL_MAX_SIZE, 'Maximum mempool size', metrics.mempool.maxSize)
     addGauge(
       METRIC_NAMES.MEMPOOL_UTILIZATION,
       'Mempool utilization percentage',
@@ -374,11 +344,7 @@ export class MetricsCollector implements IMetricsCollector {
       'Total tracked entities',
       metrics.reputation.totalEntities
     )
-    addGauge(
-      METRIC_NAMES.REPUTATION_OK,
-      'Entities with ok status',
-      metrics.reputation.byStatus.ok
-    )
+    addGauge(METRIC_NAMES.REPUTATION_OK, 'Entities with ok status', metrics.reputation.byStatus.ok)
     addGauge(
       METRIC_NAMES.REPUTATION_THROTTLED,
       'Entities with throttled status',
@@ -391,11 +357,7 @@ export class MetricsCollector implements IMetricsCollector {
     )
 
     // RPC counters
-    addCounter(
-      METRIC_NAMES.RPC_REQUESTS_TOTAL,
-      'Total RPC requests',
-      metrics.rpc.totalRequests
-    )
+    addCounter(METRIC_NAMES.RPC_REQUESTS_TOTAL, 'Total RPC requests', metrics.rpc.totalRequests)
     addCounter(
       METRIC_NAMES.RPC_REQUESTS_FAILED,
       'Total failed RPC requests',
@@ -408,7 +370,9 @@ export class MetricsCollector implements IMetricsCollector {
     for (const bucket of metrics.rpc.responseTimeMs.buckets) {
       lines.push(`${METRIC_NAMES.RPC_RESPONSE_TIME}_bucket{le="${bucket.le}"} ${bucket.count}`)
     }
-    lines.push(`${METRIC_NAMES.RPC_RESPONSE_TIME}_bucket{le="+Inf"} ${metrics.rpc.responseTimeMs.count}`)
+    lines.push(
+      `${METRIC_NAMES.RPC_RESPONSE_TIME}_bucket{le="+Inf"} ${metrics.rpc.responseTimeMs.count}`
+    )
     lines.push(`${METRIC_NAMES.RPC_RESPONSE_TIME}_sum ${metrics.rpc.responseTimeMs.sum}`)
     lines.push(`${METRIC_NAMES.RPC_RESPONSE_TIME}_count ${metrics.rpc.responseTimeMs.count}`)
 
@@ -435,11 +399,7 @@ export class MetricsCollector implements IMetricsCollector {
     )
 
     // System metrics
-    addGauge(
-      METRIC_NAMES.UPTIME_SECONDS,
-      'Bundler uptime in seconds',
-      metrics.uptimeSeconds
-    )
+    addGauge(METRIC_NAMES.UPTIME_SECONDS, 'Bundler uptime in seconds', metrics.uptimeSeconds)
 
     return lines.join('\n')
   }

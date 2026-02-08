@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import Fastify from 'fastify'
 import type { FastifyInstance } from 'fastify'
-import { InMemoryStore } from '../../src/store/memory-store'
-import { registerHealthRoutes } from '../../src/server/routes/health'
-import { registerContractRoutes } from '../../src/server/routes/contracts'
-import { registerSetRoutes } from '../../src/server/routes/sets'
-import { registerChainRoutes } from '../../src/server/routes/chains'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { registerBulkRoutes } from '../../src/server/routes/bulk'
+import { registerChainRoutes } from '../../src/server/routes/chains'
+import { registerContractRoutes } from '../../src/server/routes/contracts'
+import { registerHealthRoutes } from '../../src/server/routes/health'
+import { registerSetRoutes } from '../../src/server/routes/sets'
+import { InMemoryStore } from '../../src/store/memory-store'
 
 describe('Contract Registry API', () => {
   let app: FastifyInstance

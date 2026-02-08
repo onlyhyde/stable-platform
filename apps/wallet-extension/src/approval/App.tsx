@@ -40,7 +40,7 @@ export function ApprovalApp() {
       } else {
         setError('Approval not found or expired')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load approval')
     } finally {
       setLoading(false)
@@ -63,7 +63,7 @@ export function ApprovalApp() {
 
       // Close window
       window.close()
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to approve request')
     }
   }
@@ -83,7 +83,7 @@ export function ApprovalApp() {
 
       // Close window
       window.close()
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to reject request')
     }
   }

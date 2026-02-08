@@ -8,8 +8,8 @@
  * - EIP-712 typed data signing
  */
 
-import { test, expect } from '../fixtures/extension'
-import { OnboardingPage, WalletHomePage, ApprovalPage } from '../pages'
+import { expect, test } from '../fixtures/extension'
+import { ApprovalPage, OnboardingPage, WalletHomePage } from '../pages'
 
 // Test password
 const TEST_PASSWORD = 'TestP@ssword123!'
@@ -37,20 +37,20 @@ test.describe('Transaction Signing', () => {
       await dappPage.goto(TEST_DAPP_URL)
 
       // Request connection via ethereum provider
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
-      }).catch(() => {
-        // Expected to fail/timeout - we just want to trigger the popup
-      })
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        })
+        .catch(() => {
+          // Expected to fail/timeout - we just want to trigger the popup
+        })
 
       // Wait for approval popup
       await dappPage.waitForTimeout(1000)
 
       // Find the approval popup
       const pages = extensionContext.pages()
-      const approvalPopup = pages.find((p) =>
-        p.url().includes('approval.html')
-      )
+      const approvalPopup = pages.find((p) => p.url().includes('approval.html'))
 
       if (approvalPopup) {
         const approval = new ApprovalPage(approvalPopup)
@@ -68,10 +68,7 @@ test.describe('Transaction Signing', () => {
       await dappPage.close()
     })
 
-    test('should approve connection request', async ({
-      extensionContext,
-      extensionId,
-    }) => {
+    test('should approve connection request', async ({ extensionContext, extensionId }) => {
       const dappPage = await extensionContext.newPage()
       await dappPage.goto(TEST_DAPP_URL)
 
@@ -85,9 +82,7 @@ test.describe('Transaction Signing', () => {
 
       // Find and approve
       const pages = extensionContext.pages()
-      const approvalPopup = pages.find((p) =>
-        p.url().includes('approval.html')
-      )
+      const approvalPopup = pages.find((p) => p.url().includes('approval.html'))
 
       if (approvalPopup) {
         const approval = new ApprovalPage(approvalPopup)
@@ -109,10 +104,7 @@ test.describe('Transaction Signing', () => {
       await dappPage.close()
     })
 
-    test('should reject connection request', async ({
-      extensionContext,
-      extensionId,
-    }) => {
+    test('should reject connection request', async ({ extensionContext, extensionId }) => {
       const dappPage = await extensionContext.newPage()
       await dappPage.goto(TEST_DAPP_URL)
 
@@ -126,9 +118,7 @@ test.describe('Transaction Signing', () => {
 
       // Find and reject
       const pages = extensionContext.pages()
-      const approvalPopup = pages.find((p) =>
-        p.url().includes('approval.html')
-      )
+      const approvalPopup = pages.find((p) => p.url().includes('approval.html'))
 
       if (approvalPopup) {
         const approval = new ApprovalPage(approvalPopup)
@@ -159,9 +149,11 @@ test.describe('Transaction Signing', () => {
       await dappPage.goto(TEST_DAPP_URL)
 
       // First connect
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
-      }).catch(() => {})
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        })
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 
@@ -176,17 +168,21 @@ test.describe('Transaction Signing', () => {
       }
 
       // Send transaction
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({
-          method: 'eth_sendTransaction',
-          params: [{
-            from: '0x0000000000000000000000000000000000000001',
-            to: '0x0000000000000000000000000000000000000002',
-            value: '0x1',
-            gas: '0x5208',
-          }],
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({
+            method: 'eth_sendTransaction',
+            params: [
+              {
+                from: '0x0000000000000000000000000000000000000001',
+                to: '0x0000000000000000000000000000000000000002',
+                value: '0x1',
+                gas: '0x5208',
+              },
+            ],
+          })
         })
-      }).catch(() => {})
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 
@@ -210,17 +206,16 @@ test.describe('Transaction Signing', () => {
       await dappPage.close()
     })
 
-    test('should approve transaction', async ({
-      extensionContext,
-      extensionId,
-    }) => {
+    test('should approve transaction', async ({ extensionContext, extensionId }) => {
       const dappPage = await extensionContext.newPage()
       await dappPage.goto(TEST_DAPP_URL)
 
       // Connect first
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
-      }).catch(() => {})
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        })
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 
@@ -238,10 +233,12 @@ test.describe('Transaction Signing', () => {
       const txPromise = dappPage.evaluate(() => {
         return (window as any).ethereum?.request({
           method: 'eth_sendTransaction',
-          params: [{
-            to: '0x0000000000000000000000000000000000000002',
-            value: '0x1',
-          }],
+          params: [
+            {
+              to: '0x0000000000000000000000000000000000000002',
+              value: '0x1',
+            },
+          ],
         })
       })
 
@@ -270,17 +267,16 @@ test.describe('Transaction Signing', () => {
       await dappPage.close()
     })
 
-    test('should reject transaction', async ({
-      extensionContext,
-      extensionId,
-    }) => {
+    test('should reject transaction', async ({ extensionContext, extensionId }) => {
       const dappPage = await extensionContext.newPage()
       await dappPage.goto(TEST_DAPP_URL)
 
       // Connect and approve
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
-      }).catch(() => {})
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        })
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 
@@ -297,10 +293,12 @@ test.describe('Transaction Signing', () => {
       const txPromise = dappPage.evaluate(() => {
         return (window as any).ethereum?.request({
           method: 'eth_sendTransaction',
-          params: [{
-            to: '0x0000000000000000000000000000000000000002',
-            value: '0x1',
-          }],
+          params: [
+            {
+              to: '0x0000000000000000000000000000000000000002',
+              value: '0x1',
+            },
+          ],
         })
       })
 
@@ -336,9 +334,11 @@ test.describe('Transaction Signing', () => {
       await dappPage.goto(TEST_DAPP_URL)
 
       // Connect
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
-      }).catch(() => {})
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        })
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 
@@ -353,13 +353,15 @@ test.describe('Transaction Signing', () => {
 
       // Request signature
       const message = 'Hello, StableNet!'
-      await dappPage.evaluate((msg) => {
-        const accounts = (window as any).ethereum?.selectedAddress
-        return (window as any).ethereum?.request({
-          method: 'personal_sign',
-          params: [msg, accounts || '0x0000000000000000000000000000000000000001'],
-        })
-      }, message).catch(() => {})
+      await dappPage
+        .evaluate((msg) => {
+          const accounts = (window as any).ethereum?.selectedAddress
+          return (window as any).ethereum?.request({
+            method: 'personal_sign',
+            params: [msg, accounts || '0x0000000000000000000000000000000000000001'],
+          })
+        }, message)
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 
@@ -377,17 +379,16 @@ test.describe('Transaction Signing', () => {
       await dappPage.close()
     })
 
-    test('should approve signature request', async ({
-      extensionContext,
-      extensionId,
-    }) => {
+    test('should approve signature request', async ({ extensionContext, extensionId }) => {
       const dappPage = await extensionContext.newPage()
       await dappPage.goto(TEST_DAPP_URL)
 
       // Connect and approve
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
-      }).catch(() => {})
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        })
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 

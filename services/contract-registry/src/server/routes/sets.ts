@@ -3,12 +3,12 @@ import type { InMemoryStore } from '../../store/memory-store'
 import { createAuthHook } from '../middleware/auth'
 import { validateBody, validateParams, validateQuery } from '../middleware/validation'
 import {
-  createSetSchema,
-  setParamsSchema,
-  setQuerySchema,
   type CreateSetBody,
   type SetParams,
   type SetQuery,
+  createSetSchema,
+  setParamsSchema,
+  setQuerySchema,
 } from '../schemas/set.schema'
 
 export function registerSetRoutes(

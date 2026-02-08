@@ -68,7 +68,8 @@ export function Modal({
       />
 
       {/* Modal */}
-      <div
+      <dialog
+        open
         className={`
           relative rounded-xl shadow-xl
           w-full ${sizeStyles[size]}
@@ -78,9 +79,8 @@ export function Modal({
         style={{
           backgroundColor: 'rgb(var(--card-hover))',
           border: '1px solid rgb(var(--border))',
+          padding: 0,
         }}
-        role="dialog"
-        aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}
         aria-describedby={description ? 'modal-description' : undefined}
       >
@@ -139,7 +139,7 @@ export function Modal({
 
         {/* Content */}
         <div className="p-4 overflow-y-auto max-h-[calc(90vh-8rem)]">{children}</div>
-      </div>
+      </dialog>
     </div>
   )
 }

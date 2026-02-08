@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { Address, Hex } from 'viem'
-import {
-  OpcodeValidator,
-  BANNED_OPCODES,
-  type TraceResult,
-  type OpcodeValidatorConfig,
-} from '../../src/validation/opcodeValidator'
-import { RpcError, RPC_ERROR_CODES } from '../../src/types'
+import type { Address } from 'viem'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { RPC_ERROR_CODES, RpcError } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
+import {
+  BANNED_OPCODES,
+  OpcodeValidator,
+  type OpcodeValidatorConfig,
+  type TraceResult,
+} from '../../src/validation/opcodeValidator'
 
 // Mock logger
 const mockLogger = createLogger('error', false)
@@ -90,29 +90,21 @@ describe('OpcodeValidator', () => {
   describe('validateOpcodes', () => {
     it('should pass for trace with no banned opcodes', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['CALL', 'SLOAD', 'SSTORE', 'RETURN']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['CALL', 'SLOAD', 'SSTORE', 'RETURN'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
       // Should not throw
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).resolves.not.toThrow()
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).resolves.not.toThrow()
     })
 
     it('should reject GASPRICE opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['CALL', 'GASPRICE', 'RETURN']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['CALL', 'GASPRICE', 'RETURN'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
 
       try {
         await validator.validate(TEST_SENDER, undefined, undefined)
@@ -125,128 +117,90 @@ describe('OpcodeValidator', () => {
 
     it('should reject CREATE opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['CALL', 'CREATE', 'RETURN']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['CALL', 'CREATE', 'RETURN'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
 
     it('should reject SELFDESTRUCT opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['SELFDESTRUCT']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['SELFDESTRUCT'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
 
     it('should reject TIMESTAMP opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['CALL', 'TIMESTAMP', 'RETURN']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['CALL', 'TIMESTAMP', 'RETURN'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
 
     it('should reject ORIGIN opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['CALL', 'ORIGIN', 'RETURN']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['CALL', 'ORIGIN', 'RETURN'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
 
     it('should reject COINBASE opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['COINBASE']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['COINBASE'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
 
     it('should reject BALANCE opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['BALANCE']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['BALANCE'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
 
     it('should reject BLOCKHASH opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['BLOCKHASH']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['BLOCKHASH'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
 
     it('should reject NUMBER opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['NUMBER']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['NUMBER'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
 
     it('should reject PREVRANDAO opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['PREVRANDAO']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['PREVRANDAO'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
   })
 
   describe('Entity-specific validation', () => {
     it('should identify sender using banned opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['TIMESTAMP']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['TIMESTAMP'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
@@ -260,9 +214,7 @@ describe('OpcodeValidator', () => {
 
     it('should identify factory using banned opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_FACTORY, ENTRY_POINT, ['CREATE']),
-        ],
+        calls: [createTraceCall(TEST_FACTORY, ENTRY_POINT, ['CREATE'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
@@ -276,9 +228,7 @@ describe('OpcodeValidator', () => {
 
     it('should identify paymaster using banned opcode', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_PAYMASTER, ENTRY_POINT, ['GASPRICE']),
-        ],
+        calls: [createTraceCall(TEST_PAYMASTER, ENTRY_POINT, ['GASPRICE'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
@@ -302,9 +252,7 @@ describe('OpcodeValidator', () => {
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).resolves.not.toThrow()
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).resolves.not.toThrow()
     })
 
     it('should reject sender accessing other account storage', async () => {
@@ -318,9 +266,7 @@ describe('OpcodeValidator', () => {
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
 
     it('should allow factory to access associated storage slots', async () => {
@@ -333,9 +279,7 @@ describe('OpcodeValidator', () => {
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, TEST_FACTORY, undefined)
-      ).resolves.not.toThrow()
+      await expect(validator.validate(TEST_SENDER, TEST_FACTORY, undefined)).resolves.not.toThrow()
     })
 
     it('should allow paymaster to access own storage', async () => {
@@ -364,51 +308,41 @@ describe('OpcodeValidator', () => {
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, TEST_PAYMASTER)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, TEST_PAYMASTER)).rejects.toThrow(
+        RpcError
+      )
     })
   })
 
   describe('CREATE2 validation', () => {
     it('should allow factory to use CREATE2', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_FACTORY, ENTRY_POINT, ['CREATE2']),
-        ],
+        calls: [createTraceCall(TEST_FACTORY, ENTRY_POINT, ['CREATE2'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
       // CREATE2 is allowed only for factory during account deployment
-      await expect(
-        validator.validate(TEST_SENDER, TEST_FACTORY, undefined)
-      ).resolves.not.toThrow()
+      await expect(validator.validate(TEST_SENDER, TEST_FACTORY, undefined)).resolves.not.toThrow()
     })
 
     it('should reject sender using CREATE2', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['CREATE2']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['CREATE2'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
 
     it('should reject paymaster using CREATE2', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_PAYMASTER, ENTRY_POINT, ['CREATE2']),
-        ],
+        calls: [createTraceCall(TEST_PAYMASTER, ENTRY_POINT, ['CREATE2'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, TEST_PAYMASTER)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, TEST_PAYMASTER)).rejects.toThrow(
+        RpcError
+      )
     })
   })
 
@@ -419,12 +353,7 @@ describe('OpcodeValidator', () => {
         strictStorageAccess: false,
       }
 
-      const customValidator = new OpcodeValidator(
-        mockTracer,
-        ENTRY_POINT,
-        mockLogger,
-        customConfig
-      )
+      const customValidator = new OpcodeValidator(mockTracer, ENTRY_POINT, mockLogger, customConfig)
 
       expect(customValidator).toBeDefined()
     })
@@ -435,17 +364,10 @@ describe('OpcodeValidator', () => {
         strictStorageAccess: true,
       }
 
-      const customValidator = new OpcodeValidator(
-        mockTracer,
-        ENTRY_POINT,
-        mockLogger,
-        customConfig
-      )
+      const customValidator = new OpcodeValidator(mockTracer, ENTRY_POINT, mockLogger, customConfig)
 
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['TIMESTAMP']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['TIMESTAMP'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
@@ -458,9 +380,7 @@ describe('OpcodeValidator', () => {
   describe('Error messages', () => {
     it('should provide detailed error message with opcode and entity', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['GASPRICE']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['GASPRICE'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
@@ -499,15 +419,11 @@ describe('OpcodeValidator', () => {
   describe('Multiple violations', () => {
     it('should report first violation when multiple banned opcodes used', async () => {
       const trace = createMockTrace({
-        calls: [
-          createTraceCall(TEST_SENDER, ENTRY_POINT, ['TIMESTAMP', 'GASPRICE', 'COINBASE']),
-        ],
+        calls: [createTraceCall(TEST_SENDER, ENTRY_POINT, ['TIMESTAMP', 'GASPRICE', 'COINBASE'])],
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
 
     it('should validate all entities in order', async () => {
@@ -534,17 +450,13 @@ describe('OpcodeValidator', () => {
     it('should handle empty trace', async () => {
       mockTracer.trace.mockResolvedValue(createMockTrace({ calls: [] }))
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).resolves.not.toThrow()
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).resolves.not.toThrow()
     })
 
     it('should handle trace error gracefully', async () => {
       mockTracer.trace.mockRejectedValue(new Error('Trace failed'))
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow()
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow()
     })
 
     it('should handle nested calls', async () => {
@@ -560,9 +472,7 @@ describe('OpcodeValidator', () => {
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, undefined, undefined)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
     })
   })
 })

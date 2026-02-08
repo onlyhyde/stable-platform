@@ -9,6 +9,7 @@
  */
 
 import { MESSAGE_TYPES, RPC_ERRORS } from '../shared/constants'
+import { validatePostMessageEnvelope } from '../shared/validation/messageSchema'
 import type { ExtensionMessage } from '../types'
 
 // Get MetaMask mode setting and inject inpage script
@@ -72,17 +73,16 @@ function setupMessageRelay(): void {
     // Only accept messages from the same window
     if (event.source !== window) return
 
-    // Only handle StableNet provider messages
-    if (event.data?.target !== 'stablenet-contentscript') return
+    // Validate message envelope structure (target + well-formed ExtensionMessage)
+    const validated = validatePostMessageEnvelope(event.data)
+    if (!validated) return
 
-    const message = event.data.data as ExtensionMessage
+    const message = validated.data
 
     try {
-      // Forward to background
-      const response = await chrome.runtime.sendMessage({
-        ...message,
-        origin: window.location.origin,
-      })
+      // Forward to background - origin is derived from sender.tab.url (SEC-3)
+      // Do NOT attach origin here; the background uses chrome.runtime.MessageSender
+      const response = await chrome.runtime.sendMessage(message)
 
       // Send response back to inpage
       window.postMessage(
@@ -93,7 +93,14 @@ function setupMessageRelay(): void {
         window.location.origin
       )
     } catch (error) {
-      // Send error response
+      // Preserve original RPC error code if present (e.g., user rejection = 4001)
+      const errorCode =
+        typeof error === 'object' && error !== null && 'code' in error
+          ? (error as { code: number }).code
+          : RPC_ERRORS.INTERNAL_ERROR.code
+      const errorMessage =
+        error instanceof Error ? error.message : RPC_ERRORS.INTERNAL_ERROR.message
+
       window.postMessage(
         {
           target: 'stablenet-inpage',
@@ -102,8 +109,8 @@ function setupMessageRelay(): void {
             id: message.id,
             payload: {
               error: {
-                code: RPC_ERRORS.INTERNAL_ERROR.code,
-                message: error instanceof Error ? error.message : RPC_ERRORS.INTERNAL_ERROR.message,
+                code: errorCode,
+                message: errorMessage,
               },
             },
           },

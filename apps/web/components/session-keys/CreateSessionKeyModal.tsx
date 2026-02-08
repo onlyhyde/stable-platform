@@ -204,12 +204,12 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
           <div className="space-y-4">
             {/* Expiry */}
             <div>
-              <label
+              <span
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'rgb(var(--muted-foreground))' }}
               >
                 Expiry
-              </label>
+              </span>
               <div className="grid grid-cols-3 gap-2">
                 {EXPIRY_OPTIONS.map((option) => (
                   <button
@@ -264,12 +264,12 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
 
             {/* Spending Limit */}
             <div>
-              <label
+              <span
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'rgb(var(--muted-foreground))' }}
               >
                 Spending Limit (ETH)
-              </label>
+              </span>
               <input
                 type="text"
                 placeholder="0 = unlimited"
@@ -297,7 +297,7 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
               <div className="space-y-2">
                 {permissions.map((perm, idx) => (
                   <div
-                    key={idx}
+                    key={`${perm.target}-${perm.selector}-${idx}`}
                     className="flex items-center justify-between p-3 rounded-lg"
                     style={{ backgroundColor: 'rgb(var(--secondary))' }}
                   >
@@ -314,6 +314,7 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
                       style={{ color: 'rgb(var(--destructive))' }}
                     >
                       <svg
+                        aria-hidden="true"
                         className="w-5 h-5"
                         fill="none"
                         stroke="currentColor"
@@ -421,6 +422,7 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
               style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}
             >
               <svg
+                aria-hidden="true"
                 className="w-8 h-8"
                 style={{ color: 'rgb(var(--success))' }}
                 fill="none"

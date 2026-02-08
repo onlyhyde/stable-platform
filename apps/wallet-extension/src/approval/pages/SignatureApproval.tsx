@@ -146,9 +146,9 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
               Security Warnings
             </p>
             <ul className="space-y-1">
-              {data.riskWarnings.map((warning, index) => (
+              {data.riskWarnings.map((warning) => (
                 <li
-                  key={index}
+                  key={warning}
                   className="flex items-start gap-2 text-sm"
                   style={{ color: 'rgb(var(--destructive) / 0.8)' }}
                 >

@@ -1,5 +1,6 @@
 import type { Address, Hex } from 'viem'
 import { english, generateMnemonic, mnemonicToAccount } from 'viem/accounts'
+import { clearString } from '../../shared/security/memorySanitizer'
 import type { HDKeyringData, KeyringAccount } from '../../types'
 
 /**
@@ -42,7 +43,7 @@ export class HDKeyring {
     // Validate mnemonic by trying to derive an account
     try {
       mnemonicToAccount(mnemonic, { addressIndex: 0 })
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Invalid mnemonic phrase')
     }
 
@@ -229,5 +230,14 @@ export class HDKeyring {
     // Convert Uint8Array to hex string
     const privateKeyHex = `0x${Buffer.from(hdKey.privateKey).toString('hex')}` as Hex
     return privateKeyHex
+  }
+
+  /**
+   * Sanitize sensitive data from memory.
+   * Called when the wallet is locked.
+   */
+  sanitize(): void {
+    this.mnemonic = clearString(this.mnemonic)
+    this.accounts = []
   }
 }

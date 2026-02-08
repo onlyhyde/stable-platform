@@ -15,6 +15,9 @@ import type {
   TransactionApprovalRequest,
 } from '../../types'
 import { generateRandomHex } from '../keyring/crypto'
+import { decodeCallData } from '../security/callDataDecoder'
+import { simulateTransaction } from '../security/transactionSimulator'
+import { walletState } from '../state/store'
 
 const logger = createLogger('ApprovalController')
 
@@ -82,7 +85,8 @@ export class ApprovalController {
    */
   async requestConnect(
     origin: string,
-    favicon?: string
+    favicon?: string,
+    phishingWarnings?: { warnings: string[]; riskLevel: 'low' | 'medium' | 'high' }
   ): Promise<{ accounts: Address[]; permissions: string[] }> {
     const approval: ConnectApprovalRequest = {
       id: generateRandomHex(16),
@@ -94,6 +98,10 @@ export class ApprovalController {
       expiresAt: Date.now() + getApprovalExpiryMs(),
       data: {
         requestedPermissions: ['eth_accounts'],
+        ...(phishingWarnings && {
+          warnings: phishingWarnings.warnings,
+          riskLevel: phishingWarnings.riskLevel,
+        }),
       },
     }
 
@@ -220,6 +228,58 @@ export class ApprovalController {
   ): Promise<{ txHash?: string; userOpHash?: string }> {
     const warnings = this.assessTransactionRisk(to, value, data)
 
+    // Run transaction simulation to check for reverts
+    let simulationFailed = false
+    let simulationData: TransactionApprovalRequest['data']['simulation'] | undefined
+    try {
+      const state = walletState.getState()
+      const network = state.networks.networks.find(
+        (n) => n.chainId === state.networks.selectedChainId
+      )
+      if (network) {
+        const simResult = await simulateTransaction(
+          { from, to, value, data: data as Hex | undefined },
+          network
+        )
+        if (!simResult.success) {
+          simulationFailed = true
+          warnings.push(`Simulation failed: ${simResult.revertReason ?? 'transaction may revert'}`)
+        }
+        warnings.push(...simResult.warnings.filter((w) => !warnings.includes(w)))
+
+        // Serialize simulation results for the approval UI
+        // (bigint values must be converted to strings for JSON serialization)
+        simulationData = {
+          success: simResult.success,
+          revertReason: simResult.revertReason,
+          decodedCallData: simResult.decodedCallData ?? undefined,
+          balanceChanges: simResult.balanceChanges.map((bc) => ({
+            asset: bc.asset,
+            symbol: bc.symbol,
+            amount: bc.amount.toString(),
+            direction: bc.direction,
+          })),
+        }
+      }
+    } catch {
+      // Simulation errors should not block the approval flow
+    }
+
+    // Determine risk level based on warning severity
+    let riskLevel: 'low' | 'medium' | 'high' = 'low'
+    const hasHighRisk = warnings.some(
+      (w) =>
+        w.includes('UNLIMITED') ||
+        w.includes('ALL your') ||
+        w.includes('Critical:') ||
+        w.includes('permanently lost')
+    )
+    if (simulationFailed || hasHighRisk) {
+      riskLevel = 'high'
+    } else if (warnings.length > 0) {
+      riskLevel = 'medium'
+    }
+
     const approval: TransactionApprovalRequest = {
       id: generateRandomHex(16),
       type: 'transaction',
@@ -235,8 +295,9 @@ export class ApprovalController {
         data: data as `0x${string}` | undefined,
         methodName,
         estimatedGasCost,
-        riskLevel: warnings.length > 0 ? 'medium' : 'low',
+        riskLevel,
         warnings,
+        simulation: simulationData,
       },
     }
 
@@ -621,19 +682,74 @@ export class ApprovalController {
   }
 
   /**
-   * Assess transaction risk
+   * Assess transaction risk using calldata decoding
+   *
+   * Detects: approve(), setApprovalForAll(), increaseAllowance(),
+   * transferFrom(), high-value sends, zero-address sends, and unknown contracts.
    */
   private assessTransactionRisk(to: Address, value: bigint, data?: string): string[] {
     const warnings: string[] = []
+    const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
-    // Check for high value transactions
-    if (value > BigInt(10) * BigInt(10 ** 18)) {
-      warnings.push('High value transaction (>10 ETH)')
+    // Check for zero-address recipient (funds will be permanently lost)
+    if (to.toLowerCase() === ZERO_ADDRESS) {
+      warnings.push('Sending to the zero address - funds will be permanently lost!')
     }
 
-    // Check for contract interaction
+    // Check for high value transactions with tiered thresholds
+    const ONE_ETH = BigInt(10 ** 18)
+    if (value >= 100n * ONE_ETH) {
+      warnings.push('Critical: Very high value transaction (>=100 ETH equivalent)')
+    } else if (value > 10n * ONE_ETH) {
+      warnings.push('High value transaction (>10 ETH equivalent)')
+    } else if (value > ONE_ETH) {
+      warnings.push('Moderate value transaction (>1 ETH equivalent)')
+    }
+
+    // Decode and analyze contract interaction data
     if (data && data !== '0x' && data.length > 2) {
-      warnings.push('This transaction includes contract interaction')
+      const decoded = decodeCallData(data)
+      if (decoded) {
+        warnings.push(decoded.description)
+
+        // Token approval detection (ERC-20 approve)
+        if (decoded.functionName === 'approve') {
+          const amountArg = decoded.args.find((a) => a.name === 'amount')
+          if (amountArg?.value === 'UNLIMITED') {
+            warnings.push('UNLIMITED token approval - spender can take all your tokens')
+          } else {
+            warnings.push('Token approval requested - verify the spender address')
+          }
+        }
+
+        // Increase allowance (similar risk to approve)
+        if (decoded.functionName === 'increaseAllowance') {
+          warnings.push('Increasing token spending allowance - verify the spender address')
+        }
+
+        // NFT setApprovalForAll (ERC-721/1155)
+        if (decoded.functionName === 'setApprovalForAll') {
+          const approvedArg = decoded.args.find((a) => a.name === 'approved')
+          if (approvedArg?.value === 'true') {
+            warnings.push('Grants full access to ALL your NFTs in this collection')
+          }
+        }
+
+        // Token/NFT transfer from another address
+        if (
+          decoded.functionName === 'transferFrom' ||
+          decoded.functionName === 'safeTransferFrom'
+        ) {
+          warnings.push('Transferring assets - verify the recipient address')
+        }
+
+        // Unknown contract interaction
+        if (decoded.functionName === 'unknown') {
+          warnings.push('Unknown contract interaction - proceed with caution')
+        }
+      } else {
+        warnings.push('This transaction includes contract interaction data')
+      }
     }
 
     return warnings

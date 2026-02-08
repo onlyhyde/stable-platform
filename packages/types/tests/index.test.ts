@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  ENTRY_POINT_V07_ADDRESS,
-  KERNEL_V3_1_FACTORY_ADDRESS,
-  ECDSA_VALIDATOR_ADDRESS,
-  KERNEL_ADDRESSES,
-  MODULE_TYPE,
-  EXEC_MODE,
-  CALL_TYPE,
   BUNDLER_ERROR_CODES,
+  CALL_TYPE,
+  ECDSA_VALIDATOR_ADDRESS,
+  ENTRY_POINT_V07_ADDRESS,
+  EXEC_MODE,
+  KERNEL_ADDRESSES,
+  KERNEL_V3_1_FACTORY_ADDRESS,
+  MODULE_TYPE,
 } from '../src'
 
 describe('Constants', () => {

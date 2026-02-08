@@ -1,3 +1,16 @@
+import {
+  http,
+  type Address,
+  type Hex,
+  type PublicClient,
+  type WalletClient,
+  createPublicClient,
+  createWalletClient,
+  parseAbi,
+  parseEther,
+} from 'viem'
+import { type LocalAccount, privateKeyToAccount } from 'viem/accounts'
+import { foundry } from 'viem/chains'
 /**
  * Subscription E2E Test Suite
  *
@@ -18,23 +31,8 @@
  *   - PermissionManager
  *   - RecurringPaymentExecutor
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-  parseEther,
-  formatEther,
-  parseAbi,
-  encodeFunctionData,
-  type Address,
-  type Hex,
-  type PublicClient,
-  type WalletClient,
-} from 'viem'
-import { privateKeyToAccount, type LocalAccount } from 'viem/accounts'
-import { foundry } from 'viem/chains'
-import { TEST_CONFIG, isNetworkAvailable, isBundlerAvailable } from '../setup'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { TEST_CONFIG, isBundlerAvailable, isNetworkAvailable } from '../setup'
 
 // ============================================================================
 // Subscription Executor API Types
@@ -127,7 +125,7 @@ class SubscriptionExecutorClient {
     })
 
     if (!response.ok) {
-      const error = await response.json() as ErrorResponse
+      const error = (await response.json()) as ErrorResponse
       throw new Error(error.error)
     }
 
@@ -138,7 +136,7 @@ class SubscriptionExecutorClient {
     const response = await fetch(`${this.baseUrl}/api/v1/subscriptions/${id}`)
 
     if (!response.ok) {
-      const error = await response.json() as ErrorResponse
+      const error = (await response.json()) as ErrorResponse
       throw new Error(error.error)
     }
 
@@ -149,7 +147,7 @@ class SubscriptionExecutorClient {
     const response = await fetch(`${this.baseUrl}/api/v1/subscriptions/account/${account}`)
 
     if (!response.ok) {
-      const error = await response.json() as ErrorResponse
+      const error = (await response.json()) as ErrorResponse
       throw new Error(error.error)
     }
 
@@ -162,7 +160,7 @@ class SubscriptionExecutorClient {
     })
 
     if (!response.ok) {
-      const error = await response.json() as ErrorResponse
+      const error = (await response.json()) as ErrorResponse
       throw new Error(error.error)
     }
 
@@ -175,7 +173,7 @@ class SubscriptionExecutorClient {
     })
 
     if (!response.ok) {
-      const error = await response.json() as ErrorResponse
+      const error = (await response.json()) as ErrorResponse
       throw new Error(error.error)
     }
 
@@ -188,7 +186,7 @@ class SubscriptionExecutorClient {
     })
 
     if (!response.ok) {
-      const error = await response.json() as ErrorResponse
+      const error = (await response.json()) as ErrorResponse
       throw new Error(error.error)
     }
 
@@ -227,8 +225,8 @@ async function sleep(ms: number): Promise<void> {
 
 async function waitForCondition(
   condition: () => Promise<boolean>,
-  timeout: number = 30000,
-  interval: number = 1000
+  timeout = 30000,
+  interval = 1000
 ): Promise<boolean> {
   const startTime = Date.now()
   while (Date.now() - startTime < timeout) {
@@ -285,13 +283,9 @@ describe('Subscription E2E Flow', () => {
       transport: http(TEST_CONFIG.rpcUrl),
     })
 
-    ctx.account = privateKeyToAccount(
-      TEST_CONFIG.accounts.user1.privateKey as Hex
-    )
+    ctx.account = privateKeyToAccount(TEST_CONFIG.accounts.user1.privateKey as Hex)
 
-    ctx.recipient = privateKeyToAccount(
-      TEST_CONFIG.accounts.user2.privateKey as Hex
-    )
+    ctx.recipient = privateKeyToAccount(TEST_CONFIG.accounts.user2.privateKey as Hex)
 
     ctx.walletClient = createWalletClient({
       chain,
@@ -300,10 +294,7 @@ describe('Subscription E2E Flow', () => {
     })
 
     // Check if required contracts are deployed
-    const [
-      subscriptionManagerCode,
-      permissionManagerCode,
-    ] = await Promise.all([
+    const [subscriptionManagerCode, permissionManagerCode] = await Promise.all([
       ctx.publicClient.getCode({
         address: TEST_CONFIG.contracts.subscriptionManager as Address,
       }),
@@ -313,8 +304,10 @@ describe('Subscription E2E Flow', () => {
     ])
 
     ctx.contractsDeployed = !!(
-      subscriptionManagerCode && subscriptionManagerCode !== '0x' &&
-      permissionManagerCode && permissionManagerCode !== '0x'
+      subscriptionManagerCode &&
+      subscriptionManagerCode !== '0x' &&
+      permissionManagerCode &&
+      permissionManagerCode !== '0x'
     )
 
     if (!ctx.contractsDeployed) {
@@ -437,9 +430,7 @@ describe('Subscription E2E Flow', () => {
         return
       }
 
-      const subscriptions = await ctx.executorClient.getSubscriptionsByAccount(
-        ctx.account.address
-      )
+      const subscriptions = await ctx.executorClient.getSubscriptionsByAccount(ctx.account.address)
 
       expect(Array.isArray(subscriptions)).toBe(true)
       // Should have at least the one we just created
@@ -553,9 +544,7 @@ describe('Subscription E2E Flow', () => {
         return
       }
 
-      await expect(
-        ctx.executorClient.resumeSubscription(subscriptionId)
-      ).rejects.toThrow()
+      await expect(ctx.executorClient.resumeSubscription(subscriptionId)).rejects.toThrow()
     })
   })
 
@@ -580,12 +569,12 @@ describe('Subscription E2E Flow', () => {
 
       // Grant permission via direct contract call
       // Note: Using any type due to viem 2.x strict typing requirements
-      const txHash = await (ctx.walletClient.writeContract as any)({
+      const txHash = (await (ctx.walletClient.writeContract as any)({
         address: permissionManagerAddress,
         abi: PERMISSION_MANAGER_ABI,
         functionName: 'grantPermission',
         args: [recurringPaymentExecutor, token, allowance, period, validUntil],
-      }) as Hex
+      })) as Hex
 
       expect(txHash).toBeDefined()
       expect(txHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
@@ -682,7 +671,7 @@ describe('Subscription E2E Flow', () => {
       })
 
       expect(response1.ok).toBe(true)
-      const subscription1 = await response1.json() as SubscriptionResponse
+      const subscription1 = (await response1.json()) as SubscriptionResponse
 
       // Second request with same idempotency key should return same result
       const response2 = await fetch(`${SUBSCRIPTION_EXECUTOR_URL}/api/v1/subscriptions`, {
@@ -695,7 +684,7 @@ describe('Subscription E2E Flow', () => {
       })
 
       expect(response2.ok).toBe(true)
-      const subscription2 = await response2.json() as SubscriptionResponse
+      const subscription2 = (await response2.json()) as SubscriptionResponse
 
       // Should get the same subscription ID (idempotent)
       expect(subscription2.id).toBe(subscription1.id)

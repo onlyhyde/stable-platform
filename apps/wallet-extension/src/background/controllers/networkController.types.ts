@@ -13,6 +13,8 @@ export interface NetworkConfig {
   chainIdHex: Hex
   name: string
   rpcUrl: string
+  /** Backup RPC URLs for automatic failover */
+  fallbackRpcUrls?: string[]
   nativeCurrency: {
     name: string
     symbol: string
@@ -36,6 +38,12 @@ export interface NetworkState {
   status: NetworkStatus
   latestBlock?: number
   lastError?: string
+  /** Timestamp of last successful health check */
+  lastHealthCheck?: number
+  /** Current active RPC URL (may differ from config.rpcUrl if failover occurred) */
+  activeRpcUrl?: string
+  /** Number of consecutive failures for the active RPC */
+  consecutiveFailures?: number
 }
 
 /**

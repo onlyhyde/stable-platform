@@ -68,12 +68,25 @@ export type SupportedMethod =
   | 'eth_gasPrice'
   | 'eth_maxPriorityFeePerGas'
   | 'eth_feeHistory'
+  | 'eth_estimateGas'
+  | 'eth_getTransactionCount'
+  | 'eth_sendRawTransaction'
+  // Network methods
+  | 'net_version'
   // Permission methods
   | 'wallet_requestPermissions'
   | 'wallet_getPermissions'
   // Module management methods (ERC-7579)
   | 'stablenet_installModule'
   | 'stablenet_uninstallModule'
+  // Smart Account management
+  | 'stablenet_getSmartAccountInfo'
+  | 'stablenet_getRegistryModules'
+  | 'stablenet_speedUpTransaction'
+  | 'stablenet_cancelTransaction'
+  | 'stablenet_setRootValidator'
+  // Swap methods
+  | 'stablenet_executeSwap'
 
 /**
  * RPC method parameters

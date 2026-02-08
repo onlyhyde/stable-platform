@@ -31,7 +31,10 @@ function getDefaults() {
  */
 function parseChainIds(value: string | undefined): number[] {
   if (!value) return getDefaults().supportedChainIds
-  return value.split(',').map((id) => Number.parseInt(id.trim(), 10)).filter((id) => !Number.isNaN(id))
+  return value
+    .split(',')
+    .map((id) => Number.parseInt(id.trim(), 10))
+    .filter((id) => !Number.isNaN(id))
 }
 
 /**

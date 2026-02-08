@@ -1,10 +1,10 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { encodeFunctionData, encodeAbiParameters } from 'viem'
+import { encodeAbiParameters, encodeFunctionData } from 'viem'
 import type {
-  PermissionManagerConfig,
   GrantPermissionParams,
   GrantPermissionWithSignatureParams,
   GrantSubscriptionPermissionParams,
+  PermissionManagerConfig,
   PermissionRecord,
 } from './types'
 import { PERMISSION_MANAGER_ABI, PERMISSION_TYPES, RULE_TYPES } from './types'
@@ -50,7 +50,7 @@ export interface SubscriptionPermissionClient {
     grantee: Address,
     target: Address,
     permissionType: string,
-    nonce: bigint,
+    nonce: bigint
   ) => Promise<Hex>
   /** Get remaining allowance for the current period */
   getRemainingAllowance: (client: PublicClient, permissionId: Hex) => Promise<bigint>
@@ -87,7 +87,7 @@ export interface SubscriptionPermissionClient {
  * ```
  */
 export function createSubscriptionPermissionClient(
-  config: PermissionManagerConfig,
+  config: PermissionManagerConfig
 ): SubscriptionPermissionClient {
   const { managerAddress } = config
 
@@ -136,10 +136,7 @@ export function createSubscriptionPermissionClient(
     },
 
     encodeGrantSubscriptionPermission(params: GrantSubscriptionPermissionParams): Hex {
-      const spendingLimitData = encodeAbiParameters(
-        [{ type: 'uint256' }],
-        [params.spendingLimit],
-      )
+      const spendingLimitData = encodeAbiParameters([{ type: 'uint256' }], [params.spendingLimit])
 
       const rules: Array<{ ruleType: string; data: Hex }> = []
 
@@ -174,12 +171,12 @@ export function createSubscriptionPermissionClient(
     // ---- Read functions ----
 
     async getPermission(client: PublicClient, permissionId: Hex): Promise<PermissionRecord> {
-      const result = await client.readContract({
+      const result = (await client.readContract({
         address: managerAddress,
         abi: PERMISSION_MANAGER_ABI,
         functionName: 'getPermission',
         args: [permissionId],
-      }) as {
+      })) as {
         granter: Address
         grantee: Address
         chainId: bigint
@@ -196,7 +193,8 @@ export function createSubscriptionPermissionClient(
         chainId: result.chainId,
         target: result.target,
         permission: {
-          permissionType: result.permission.permissionType as PermissionRecord['permission']['permissionType'],
+          permissionType: result.permission
+            .permissionType as PermissionRecord['permission']['permissionType'],
           isAdjustmentAllowed: result.permission.isAdjustmentAllowed,
           data: result.permission.data,
         },
@@ -224,7 +222,7 @@ export function createSubscriptionPermissionClient(
       grantee: Address,
       target: Address,
       permissionType: string,
-      nonce: bigint,
+      nonce: bigint
     ): Promise<Hex> {
       return client.readContract({
         address: managerAddress,
@@ -254,7 +252,7 @@ export function createSubscriptionPermissionClient(
 
     async isPermissionTypeSupported(
       client: PublicClient,
-      permissionType: string,
+      permissionType: string
     ): Promise<boolean> {
       return client.readContract({
         address: managerAddress,

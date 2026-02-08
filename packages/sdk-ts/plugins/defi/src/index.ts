@@ -64,13 +64,11 @@ export type {
   DefiPluginConfig,
   TransactionRequest,
   ModuleInstallation,
-
   // SwapExecutor
   SwapAccountConfig,
   SwapTokenConfig,
   SwapParams,
   SwapExecutorInitData,
-
   // LendingExecutor
   LendingAccountConfig,
   LendingAssetConfig,
@@ -80,7 +78,6 @@ export type {
   WithdrawParams,
   BorrowParams,
   RepayParams,
-
   // StakingExecutor
   StakingAccountConfig,
   StakingPoolInfo,
@@ -89,17 +86,14 @@ export type {
   UnstakeParams,
   ClaimRewardsParams,
   CompoundRewardsParams,
-
   // HealthFactorHook
   HealthFactorAccountConfig,
   HealthFactorHookInitData,
   HealthFactorCheckResult,
-
   // MerchantRegistry
   Merchant,
   MerchantRegistration,
   MerchantStats,
-
   // Events
   SwapExecutedEvent,
   SuppliedEvent,
@@ -185,7 +179,9 @@ export function calculateHealthFactor(
   }
 
   // HF = (collateralValue * liquidationThreshold) / (debtValue * BPS)
-  return (collateralValue * BigInt(liquidationThreshold) * SCALE.WAD) / (debtValue * BigInt(SCALE.BPS))
+  return (
+    (collateralValue * BigInt(liquidationThreshold) * SCALE.WAD) / (debtValue * BigInt(SCALE.BPS))
+  )
 }
 
 /**

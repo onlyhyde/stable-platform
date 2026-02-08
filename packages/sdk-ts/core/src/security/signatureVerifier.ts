@@ -11,14 +11,14 @@ import {
   type Address,
   type Hex,
   type PublicClient,
+  type TypedData,
+  type TypedDataDomain,
+  getAddress,
+  hashMessage,
+  hashTypedData,
   isAddress,
   verifyMessage,
   verifyTypedData,
-  hashMessage,
-  hashTypedData,
-  type TypedDataDomain,
-  type TypedData,
-  getAddress,
 } from 'viem'
 
 // ============================================================================
@@ -280,9 +280,7 @@ export class SignatureVerifier {
   /**
    * Verify typed data signature (EIP-712)
    */
-  async verifyTypedData(
-    params: VerifyTypedDataParams
-  ): Promise<SignatureVerificationResult> {
+  async verifyTypedData(params: VerifyTypedDataParams): Promise<SignatureVerificationResult> {
     const { domain, types, primaryType, message, signature, signer, options } = params
 
     // Validate signer address

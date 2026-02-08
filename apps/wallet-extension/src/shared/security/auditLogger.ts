@@ -205,7 +205,7 @@ export class AuditLogger {
     // Hash sensitive data if present
     if (data.sensitiveData) {
       event.dataHash = await this.hashData(String(data.sensitiveData))
-      delete event.data.sensitiveData
+      event.data.sensitiveData = undefined
     }
 
     // Console logging for development

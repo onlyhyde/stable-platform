@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { MetricsCollector } from '../../src/metrics/collector'
 import { METRIC_NAMES } from '../../src/metrics/types'
 
@@ -146,22 +146,22 @@ describe('MetricsCollector', () => {
 
     it('should correctly bucket response times', () => {
       // Add times in different buckets
-      collector.observeRpcResponseTime('test', 5)   // <= 5ms bucket
-      collector.observeRpcResponseTime('test', 20)  // <= 25ms bucket
-      collector.observeRpcResponseTime('test', 75)  // <= 100ms bucket
+      collector.observeRpcResponseTime('test', 5) // <= 5ms bucket
+      collector.observeRpcResponseTime('test', 20) // <= 25ms bucket
+      collector.observeRpcResponseTime('test', 75) // <= 100ms bucket
       collector.observeRpcResponseTime('test', 3000) // <= 5000ms bucket
 
       const metrics = collector.getMetrics()
       const buckets = metrics.rpc.responseTimeMs.buckets
 
       // Find specific buckets
-      const bucket5 = buckets.find(b => b.le === 5)
-      const bucket25 = buckets.find(b => b.le === 25)
-      const bucket100 = buckets.find(b => b.le === 100)
-      const bucket5000 = buckets.find(b => b.le === 5000)
+      const bucket5 = buckets.find((b) => b.le === 5)
+      const bucket25 = buckets.find((b) => b.le === 25)
+      const bucket100 = buckets.find((b) => b.le === 100)
+      const bucket5000 = buckets.find((b) => b.le === 5000)
 
       expect(bucket5?.count).toBe(1)
-      expect(bucket25?.count).toBe(2)  // cumulative
+      expect(bucket25?.count).toBe(2) // cumulative
       expect(bucket100?.count).toBe(3) // cumulative
       expect(bucket5000?.count).toBe(4) // cumulative
     })
@@ -198,7 +198,7 @@ describe('MetricsCollector', () => {
   describe('System metrics', () => {
     it('should track uptime', async () => {
       // Wait a bit to accumulate uptime
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100))
       const metrics = collector.getMetrics()
       expect(metrics.uptimeSeconds).toBeGreaterThanOrEqual(0)
       expect(metrics.startTime).toBeLessThanOrEqual(Date.now())

@@ -3,8 +3,8 @@
  */
 
 import {
-  sanitizeErrorMessage,
   createSanitizedError,
+  sanitizeErrorMessage,
   withSanitizedErrors,
 } from '../../../src/shared/security/errorSanitizer'
 
@@ -103,12 +103,8 @@ describe('errorSanitizer', () => {
         expect(sanitizeErrorMessage('Cannot read property x of undefined')).toBe(
           'Internal error occurred'
         )
-        expect(sanitizeErrorMessage('undefined is not a function')).toBe(
-          'Internal error occurred'
-        )
-        expect(sanitizeErrorMessage('null is not an object')).toBe(
-          'Internal error occurred'
-        )
+        expect(sanitizeErrorMessage('undefined is not a function')).toBe('Internal error occurred')
+        expect(sanitizeErrorMessage('null is not an object')).toBe('Internal error occurred')
       })
 
       it('should replace chrome API errors', () => {
@@ -156,7 +152,7 @@ describe('errorSanitizer', () => {
         const error = { message: 'Auth failed at /internal/auth/service.ts:42:5' }
         const result = sanitizeErrorMessage(error, {
           category: 'authentication',
-          allowSafeMessages: false
+          allowSafeMessages: false,
         })
         expect(result).toBe('Authentication failed. Please try again.')
       })

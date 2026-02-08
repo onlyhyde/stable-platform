@@ -4,9 +4,9 @@
  * Tests for installing and uninstalling Smart Account modules.
  */
 
-import { test, expect } from '@playwright/test'
-import { WalletHomePage, ModulesPage, OnboardingPage } from '../../pages'
+import { expect, test } from '@playwright/test'
 import { getExtensionId, setupSmartAccountWallet } from '../../fixtures/extension'
+import { ModulesPage, WalletHomePage } from '../../pages'
 
 test.describe('Module Installation', () => {
   let extensionId: string

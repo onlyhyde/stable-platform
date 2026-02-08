@@ -29,6 +29,10 @@ interface TokenListProps {
   onToggleVisibility?: (address: string) => void
   /** Show hidden tokens */
   showHidden?: boolean
+  /** Token prices in USD (keyed by symbol) */
+  tokenPrices?: Record<string, number>
+  /** Native token price in USD */
+  nativePriceUsd?: number | null
 }
 
 /**
@@ -101,6 +105,8 @@ export function TokenList({
   onAddToken,
   onToggleVisibility,
   showHidden = false,
+  tokenPrices = {},
+  nativePriceUsd,
 }: TokenListProps) {
   const { symbol: nativeSymbol, name: nativeName } = useNetworkCurrency()
   const [showMenu, setShowMenu] = useState<string | null>(null)
@@ -217,13 +223,17 @@ export function TokenList({
             <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
               {nativeBalance !== undefined ? formatBalance(nativeBalance) : '--'}
             </p>
+            {nativePriceUsd != null && nativeBalance !== undefined && (
+              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                ${(Number(formatBalance(nativeBalance)) * nativePriceUsd).toFixed(2)}
+              </p>
+            )}
           </div>
         </button>
 
         {/* ERC-20 Tokens */}
         {visibleTokens.length > 0 && (
-          <>
-            {visibleTokens.map((token) => {
+          visibleTokens.map((token) => {
               const isHidden = 'isVisible' in token && token.isVisible === false
 
               return (
@@ -280,7 +290,7 @@ export function TokenList({
                           className="text-xs truncate max-w-[120px]"
                           style={{ color: 'rgb(var(--muted-foreground))' }}
                         >
-                          {token.name || token.address.slice(0, 10) + '...'}
+                          {token.name || `${token.address.slice(0, 10)}...`}
                         </p>
                       </div>
                     </div>
@@ -289,6 +299,15 @@ export function TokenList({
                         <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                           {token.formattedBalance || formatBalance(token.balance, token.decimals)}
                         </p>
+                        {token.symbol && tokenPrices[token.symbol] != null && (
+                          <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                            $
+                            {(
+                              Number(formatBalance(token.balance, token.decimals)) *
+                              tokenPrices[token.symbol]!
+                            ).toFixed(2)}
+                          </p>
+                        )}
                       </div>
                       {/* Token Menu Button */}
                       {onToggleVisibility && (
@@ -303,7 +322,9 @@ export function TokenList({
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
+                            role="img"
                           >
+                            <title>More options</title>
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -338,7 +359,9 @@ export function TokenList({
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
+                              role="img"
                             >
+                              <title>Show token</title>
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -361,7 +384,9 @@ export function TokenList({
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
+                              role="img"
                             >
+                              <title>Hide token</title>
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -377,8 +402,7 @@ export function TokenList({
                   )}
                 </div>
               )
-            })}
-          </>
+            })
         )}
 
         {/* Loading State */}

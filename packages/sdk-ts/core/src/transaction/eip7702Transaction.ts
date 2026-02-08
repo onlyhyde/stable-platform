@@ -1,5 +1,6 @@
 import type { GasEstimate, SignedAuthorization, TransactionResult } from '@stablenet/sdk-types'
-import type { Address, Hex } from 'viem'
+import type { Address, Hash, Hex } from 'viem'
+import { keccak256, serializeTransaction } from 'viem'
 import {
   EIP7702_AUTH_GAS,
   GAS_PER_AUTHORIZATION,
@@ -197,19 +198,12 @@ export function createEIP7702TransactionBuilder(config: EIP7702TransactionConfig
   }
 
   /**
-   * Build a delegation transaction
+   * Internal: build a delegation/revocation transaction (no ZERO_ADDRESS check)
    */
-  async function buildDelegation(
+  async function buildDelegationInternal(
     request: DelegationRequest,
     signer: AuthorizationSigner
   ): Promise<BuiltEIP7702Transaction> {
-    // Validate
-    if (request.delegateAddress === ZERO_ADDRESS) {
-      throw createTransactionError('Use buildRevocation() to revoke delegation', {
-        reason: 'INVALID_REQUEST',
-      })
-    }
-
     // Create signed authorization
     const authorization = await createAuthorization(request, signer)
 
@@ -224,8 +218,30 @@ export function createEIP7702TransactionBuilder(config: EIP7702TransactionConfig
       estimatedCost: gas * maxFeePerGas,
     }
 
+    // Serialize the EIP-7702 (Type 4) transaction using viem
+    const serializedTransaction = serializeTransaction({
+      type: 'eip7702',
+      to: request.account,
+      value: 0n,
+      chainId,
+      nonce: Number(request.nonce ?? (await getAccountNonce(request.account))),
+      maxFeePerGas,
+      maxPriorityFeePerGas,
+      gas: gas,
+      authorizationList: [
+        {
+          chainId: authorization.chainId,
+          address: authorization.address,
+          nonce: Number(authorization.nonce),
+          r: authorization.r,
+          s: authorization.s,
+          yParity: authorization.yParity,
+        },
+      ],
+    })
+
     return {
-      serializedTransaction: '0x' as Hex, // Placeholder - needs actual serialization with viem 2.22+
+      serializedTransaction,
       authorizationList: [authorization],
       gasEstimate,
       account: request.account,
@@ -235,24 +251,32 @@ export function createEIP7702TransactionBuilder(config: EIP7702TransactionConfig
   }
 
   /**
+   * Build a delegation transaction
+   */
+  async function buildDelegation(
+    request: DelegationRequest,
+    signer: AuthorizationSigner
+  ): Promise<BuiltEIP7702Transaction> {
+    if (request.delegateAddress === ZERO_ADDRESS) {
+      throw createTransactionError('Use buildRevocation() to revoke delegation', {
+        reason: 'INVALID_REQUEST',
+      })
+    }
+    return buildDelegationInternal(request, signer)
+  }
+
+  /**
    * Build a revocation transaction
    */
   async function buildRevocation(
     request: Omit<DelegationRequest, 'delegateAddress'>,
     signer: AuthorizationSigner
   ): Promise<BuiltEIP7702Transaction> {
-    const built = await buildDelegation(
-      {
-        ...request,
-        delegateAddress: ZERO_ADDRESS,
-      },
+    const built = await buildDelegationInternal(
+      { ...request, delegateAddress: ZERO_ADDRESS },
       signer
     )
-
-    return {
-      ...built,
-      isRevocation: true,
-    }
+    return { ...built, isRevocation: true }
   }
 
   /**
@@ -261,19 +285,50 @@ export function createEIP7702TransactionBuilder(config: EIP7702TransactionConfig
    * Note: This requires a node that supports EIP-7702 (Type 4 transactions)
    */
   async function send(
-    _built: BuiltEIP7702Transaction,
-    _txSigner: AuthorizationSigner
+    built: BuiltEIP7702Transaction,
+    txSigner: AuthorizationSigner
   ): Promise<TransactionResult> {
-    // For now, this is a placeholder
-    // Actual implementation depends on node support for EIP-7702
-    // When EIP-7702 is fully supported:
-    // 1. Build the Type 4 transaction
-    // 2. Sign the transaction envelope
-    // 3. Send via eth_sendRawTransaction
+    // Sign the transaction envelope
+    const txHash = keccak256(built.serializedTransaction)
+    const signature = await txSigner.signAuthorization(txHash)
 
-    throw createTransactionError('EIP-7702 transaction sending requires node support', {
-      reason: 'NOT_IMPLEMENTED',
-    })
+    // Re-serialize with the transaction signature
+    const nonce = await getAccountNonce(built.account)
+    const signedTransaction = serializeTransaction(
+      {
+        type: 'eip7702',
+        to: built.account,
+        value: 0n,
+        chainId,
+        nonce: Number(nonce),
+        maxFeePerGas: built.gasEstimate.maxFeePerGas,
+        maxPriorityFeePerGas: built.gasEstimate.maxPriorityFeePerGas,
+        gas: built.gasEstimate.gasLimit,
+        authorizationList: built.authorizationList.map((auth) => ({
+          chainId: auth.chainId,
+          address: auth.address,
+          nonce: Number(auth.nonce),
+          r: auth.r,
+          s: auth.s,
+          yParity: auth.yParity,
+        })),
+      },
+      {
+        r: signature.r,
+        s: signature.s,
+        yParity: signature.v % 2 === 0 ? 0 : 1,
+      }
+    )
+
+    // Send the signed transaction
+    const hash = await provider.sendRawTransaction(signedTransaction)
+
+    return {
+      hash,
+      mode: 'eip7702',
+      chainId,
+      timestamp: Date.now(),
+    }
   }
 
   /**
@@ -302,6 +357,20 @@ export function createEIP7702TransactionBuilder(config: EIP7702TransactionConfig
     return `0x${addressHex}` as Address
   }
 
+  /**
+   * Wait for a transaction receipt
+   */
+  async function waitForReceipt(
+    hash: Hash,
+    options: { confirmations?: number; timeout?: number } = {}
+  ) {
+    const { confirmations = 1, timeout = 60_000 } = options
+    return provider.waitForTransactionReceipt(hash, {
+      confirmations,
+      timeout,
+    })
+  }
+
   return {
     createAuthorization,
     buildDelegation,
@@ -311,6 +380,7 @@ export function createEIP7702TransactionBuilder(config: EIP7702TransactionConfig
     getDelegateAddress,
     getAccountNonce,
     getGasPrices,
+    waitForReceipt,
   }
 }
 

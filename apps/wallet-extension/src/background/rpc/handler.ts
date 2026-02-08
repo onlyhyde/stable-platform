@@ -16,9 +16,12 @@ import {
 import type { Address, Hex } from 'viem'
 import { http, createPublicClient, isAddress } from 'viem'
 import { DEFAULT_VALUES, ENTRY_POINT_ADDRESSES, RPC_ERRORS } from '../../shared/constants'
+import { handleApprovalError } from '../../shared/errors/WalletError'
+import { RpcError } from '../../shared/errors/rpcErrors'
 import type { JsonRpcRequest, JsonRpcResponse, SupportedMethod } from '../../types'
 import { approvalController } from '../controllers/approvalController'
 import { keyringController } from '../keyring'
+import { checkOrigin } from '../security/phishingGuard'
 import { walletState } from '../state/store'
 import { eventBroadcaster } from '../utils/eventBroadcaster'
 
@@ -33,6 +36,18 @@ import {
 
 // Singleton validator instance
 const inputValidator = new InputValidator()
+
+// Cache createPublicClient instances by rpcUrl to avoid redundant instantiation
+const publicClientCache = new Map<string, ReturnType<typeof createPublicClient>>()
+
+function getPublicClient(rpcUrl: string) {
+  let client = publicClientCache.get(rpcUrl)
+  if (!client) {
+    client = createPublicClient({ transport: http(rpcUrl) })
+    publicClientCache.set(rpcUrl, client)
+  }
+  return client
+}
 
 type RpcHandler = (params: unknown[] | undefined, origin: string) => Promise<unknown>
 
@@ -68,6 +83,15 @@ const handlers: Record<string, RpcHandler> = {
    * Shows approval popup for user to select accounts
    */
   eth_requestAccounts: async (_params, origin) => {
+    // Phishing detection: block critical threats, warn on suspicious origins
+    const phishingResult = checkOrigin(origin)
+    if (!phishingResult.isSafe && phishingResult.riskLevel === 'critical') {
+      throw createRpcError({
+        code: RPC_ERRORS.UNAUTHORIZED.code,
+        message: phishingResult.reason ?? 'This site has been identified as a phishing threat',
+      })
+    }
+
     const state = walletState.getState()
 
     // If already connected, return accounts with selected first
@@ -86,9 +110,18 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
     }
 
+    // Build phishing warnings for non-critical but suspicious origins
+    const phishingWarnings =
+      !phishingResult.isSafe && phishingResult.reason
+        ? {
+            warnings: [phishingResult.reason],
+            riskLevel: phishingResult.riskLevel as 'low' | 'medium' | 'high',
+          }
+        : undefined
+
     // Request user approval via popup
     try {
-      const result = await approvalController.requestConnect(origin)
+      const result = await approvalController.requestConnect(origin, undefined, phishingWarnings)
 
       // Save connected site with approved accounts
       await walletState.addConnectedSite({
@@ -116,8 +149,7 @@ const handlers: Record<string, RpcHandler> = {
 
       return result.accounts
     } catch (error) {
-      // User rejected or timeout
-      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+      handleApprovalError(error, { method: 'eth_requestAccounts', origin })
     }
   },
 
@@ -230,9 +262,7 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
     }
 
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     try {
       const receipt = await client.getTransactionReceipt({ hash: txHash })
@@ -283,9 +313,7 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
     }
 
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     try {
       const tx = await client.getTransaction({ hash: txHash })
@@ -331,9 +359,7 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
     }
 
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     const code = await client.getCode({
       address,
@@ -362,9 +388,7 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
     }
 
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     // Build logs filter - blockHash is mutually exclusive with fromBlock/toBlock
     const logsFilter = filter.blockHash
@@ -409,9 +433,7 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
     }
 
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     // Use either blockTag or blockNumber, not both
     const block =
@@ -435,9 +457,7 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
     }
 
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     const block = await client.getBlock({
       blockHash,
@@ -485,9 +505,7 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
     }
 
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     const balance = await client.getBalance({ address })
     return `0x${balance.toString(16)}`
@@ -507,9 +525,7 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
     }
 
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     const result = await client.call({
       to: callObject.to,
@@ -530,9 +546,7 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
     }
 
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     const blockNumber = await client.getBlockNumber()
     return `0x${blockNumber.toString(16)}`
@@ -582,12 +596,7 @@ const handlers: Record<string, RpcHandler> = {
         throw createRpcError(RPC_ERRORS.USER_REJECTED)
       }
     } catch (error) {
-      // If it's already an RPC error, re-throw
-      if ((error as { code?: number }).code) {
-        throw error
-      }
-      // Otherwise, it's a timeout or other error
-      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+      handleApprovalError(error, { method: 'personal_sign', origin })
     }
 
     // Sign the message
@@ -678,10 +687,7 @@ const handlers: Record<string, RpcHandler> = {
         throw createRpcError(RPC_ERRORS.USER_REJECTED)
       }
     } catch (error) {
-      if ((error as { code?: number }).code) {
-        throw error
-      }
-      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+      handleApprovalError(error, { method: 'eth_signTypedData_v4', origin })
     }
 
     // Sign the typed data
@@ -770,9 +776,7 @@ const handlers: Record<string, RpcHandler> = {
       // Get current nonce from the network
       const network = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
       if (network) {
-        const client = createPublicClient({
-          transport: http(network.rpcUrl),
-        })
+        const client = getPublicClient(network.rpcUrl)
         const transactionCount = await client.getTransactionCount({ address: account })
         nonce = BigInt(transactionCount)
       } else {
@@ -790,10 +794,7 @@ const handlers: Record<string, RpcHandler> = {
         nonce
       )
     } catch (error) {
-      if ((error as { code?: number }).code) {
-        throw error
-      }
-      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+      handleApprovalError(error, { method: 'wallet_grantPermissions', origin })
     }
 
     // After approval, sign the authorization
@@ -919,7 +920,7 @@ const handlers: Record<string, RpcHandler> = {
         undefined
       )
     } catch (error) {
-      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+      handleApprovalError(error, { method: 'eth_sendUserOperation', origin })
     }
 
     // Sign the UserOperation
@@ -1151,9 +1152,7 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // Create public client for gas estimation and broadcasting
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     // Get nonce if not provided
     let nonce = txParams.nonce ? Number.parseInt(txParams.nonce, 16) : undefined
@@ -1204,7 +1203,7 @@ const handlers: Record<string, RpcHandler> = {
         undefined // favicon
       )
     } catch (error) {
-      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+      handleApprovalError(error, { method: 'eth_sendTransaction', origin })
     }
 
     // Build transaction object for signing
@@ -1242,6 +1241,25 @@ const handlers: Record<string, RpcHandler> = {
       const txHash = await client.sendRawTransaction({
         serializedTransaction: signedTx,
       })
+
+      // Track pending transaction in wallet state
+      const txId = `tx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      await walletState.addPendingTransaction({
+        id: txId,
+        from: txParams.from,
+        to: txParams.to ?? ('0x' as Address),
+        value: txParams.value ? BigInt(txParams.value) : 0n,
+        data: txParams.data,
+        chainId: network.chainId,
+        status: 'submitted',
+        type: 'send',
+        txHash,
+        timestamp: Date.now(),
+        gasPrice,
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+      })
+
       return txHash
     } catch (error) {
       throw createRpcError({
@@ -1280,9 +1298,7 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // Get native balance
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     let nativeBalance: bigint
     try {
@@ -1406,9 +1422,7 @@ const handlers: Record<string, RpcHandler> = {
     let decimals = tokenParams.decimals
 
     if (!symbol || !name || decimals === undefined) {
-      const client = createPublicClient({
-        transport: http(network.rpcUrl),
-      })
+      const client = getPublicClient(network.rpcUrl)
 
       try {
         // Fetch missing metadata
@@ -1438,7 +1452,7 @@ const handlers: Record<string, RpcHandler> = {
       } catch (error) {
         return {
           success: false,
-          error: 'Failed to fetch token metadata: ' + (error as Error).message,
+          error: `Failed to fetch token metadata: ${(error as Error).message}`,
         }
       }
     }
@@ -1559,9 +1573,7 @@ const handlers: Record<string, RpcHandler> = {
 
     // Build a UserOperation to execute the module installation
     // This calls the smart account's installModule function
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     // Get current nonce
     const nonce = await client
@@ -1624,7 +1636,7 @@ const handlers: Record<string, RpcHandler> = {
         undefined
       )
     } catch (error) {
-      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+      handleApprovalError(error, { method: 'wallet_installModule', origin })
     }
 
     // Sign the UserOperation
@@ -1737,9 +1749,7 @@ const handlers: Record<string, RpcHandler> = {
     })
 
     // Build a UserOperation to execute the module uninstallation
-    const client = createPublicClient({
-      transport: http(network.rpcUrl),
-    })
+    const client = getPublicClient(network.rpcUrl)
 
     // Get current nonce
     const nonce = await client
@@ -1802,7 +1812,7 @@ const handlers: Record<string, RpcHandler> = {
         undefined
       )
     } catch (error) {
-      throw createRpcError(RPC_ERRORS.USER_REJECTED)
+      handleApprovalError(error, { method: 'wallet_uninstallModule', origin })
     }
 
     // Sign the UserOperation
@@ -1832,6 +1842,694 @@ const handlers: Record<string, RpcHandler> = {
         data: err.data,
       })
     }
+  },
+
+  // =========================================================================
+  // Smart Account Info Methods
+  // =========================================================================
+
+  /**
+   * Get Smart Account information (root validator, delegation, module counts)
+   */
+  stablenet_getSmartAccountInfo: async (params) => {
+    const [requestParams] = params as [{ account: string; chainId: number }]
+    const { account, chainId } = requestParams
+
+    if (!account || !isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Valid account address is required',
+      })
+    }
+
+    const network = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = getPublicClient(network.rpcUrl)
+    const accountAddr = account as Address
+
+    // Check if account has code (is smart account or delegated)
+    const code = await client.getCode({ address: accountAddr }).catch(() => undefined)
+    const hasCode = !!code && code !== '0x'
+    const isDelegated = hasCode && code!.toLowerCase().startsWith('0xef0100')
+
+    let accountType: 'eoa' | 'delegated' | 'smart' = 'eoa'
+    let delegationTarget: string | null = null
+
+    if (isDelegated) {
+      accountType = 'delegated'
+      delegationTarget = `0x${code!.slice(8, 48)}`
+    } else if (hasCode) {
+      accountType = 'smart'
+    }
+
+    let rootValidator: string | null = null
+    let accountId: string | null = null
+
+    // Only query on-chain data if account is smart or delegated
+    if (accountType === 'smart' || accountType === 'delegated') {
+      try {
+        const { KERNEL_ABI } = await import('@stablenet/core')
+        rootValidator = (await client
+          .readContract({
+            address: accountAddr,
+            abi: KERNEL_ABI,
+            functionName: 'rootValidator',
+          })
+          .catch(() => null)) as string | null
+
+        accountId = (await client
+          .readContract({
+            address: accountAddr,
+            abi: KERNEL_ABI,
+            functionName: 'accountId',
+          })
+          .catch(() => null)) as string | null
+      } catch {
+        // Contract may not support these methods
+      }
+    }
+
+    return {
+      accountType,
+      isDeployed: hasCode,
+      rootValidator,
+      accountId,
+      delegationTarget,
+      isDelegated,
+    }
+  },
+
+  /**
+   * Get module registry entries (for marketplace browsing)
+   */
+  stablenet_getRegistryModules: async (params) => {
+    const [requestParams] = params as [{ chainId?: number; type?: number } | undefined]
+
+    try {
+      const { createModuleRegistry } = await import('@stablenet/core')
+      const chainId = requestParams?.chainId ?? walletState.getCurrentNetwork()?.chainId ?? 1
+      const registry = createModuleRegistry({ chainId })
+
+      let modules = registry.getAll()
+
+      // Filter by type if specified
+      const filterType = requestParams?.type
+      if (filterType !== undefined) {
+        const filterBigInt = BigInt(filterType)
+        modules = modules.filter((m) => m.metadata.type === filterBigInt)
+      }
+
+      return { modules }
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'Failed to fetch registry modules',
+      })
+    }
+  },
+
+  // =========================================================================
+  // Smart Account Management
+  // =========================================================================
+
+  /**
+   * Set the root validator for a Smart Account (Kernel)
+   */
+  stablenet_setRootValidator: async (params, origin) => {
+    const [requestParams] = params as [
+      { account: string; validator: string; validatorData?: string; chainId: number },
+    ]
+    const { account, validator, validatorData, chainId } = requestParams
+
+    if (!account || !isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Valid account address is required',
+      })
+    }
+    if (!validator || !isAddress(validator)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Valid validator address is required',
+      })
+    }
+
+    const network = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    try {
+      const { KERNEL_ABI } = await import('@stablenet/core')
+      const { encodeFunctionData } = await import('viem')
+
+      const callData = encodeFunctionData({
+        abi: KERNEL_ABI,
+        functionName: 'setRootValidator',
+        args: [validator as Address, (validatorData ?? '0x') as `0x${string}`],
+      })
+
+      // Send as a transaction to the smart account
+      const tx = {
+        from: account,
+        to: account, // Call on the smart account itself
+        data: callData,
+        value: '0x0',
+      }
+
+      return await handlers.eth_sendTransaction!([tx], origin ?? 'internal')
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'Failed to set root validator',
+      })
+    }
+  },
+
+  // =========================================================================
+  // Swap Execution
+  // =========================================================================
+
+  /**
+   * Execute a token swap through the installed Swap Executor module (ERC-7579)
+   * Encodes the swap calldata and submits as a UserOperation
+   */
+  stablenet_executeSwap: async (params, origin) => {
+    const [swapParams] = params as [
+      {
+        account: Address
+        swapExecutorAddress: Address
+        tokenIn: Address
+        tokenOut: Address
+        fee: number
+        amountIn: string
+        amountOutMinimum: string
+        deadline: string
+        chainId: number
+      },
+    ]
+
+    if (!swapParams) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Missing swap parameters',
+      })
+    }
+
+    const {
+      account,
+      swapExecutorAddress,
+      tokenIn,
+      tokenOut,
+      fee,
+      amountIn,
+      amountOutMinimum,
+      deadline,
+      chainId,
+    } = swapParams
+
+    // Validate addresses
+    if (!isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid account address',
+      })
+    }
+    if (!isAddress(swapExecutorAddress)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid swap executor address',
+      })
+    }
+    if (!isAddress(tokenIn) || !isAddress(tokenOut)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid token address',
+      })
+    }
+
+    // Verify account is connected
+    const connectedAccounts = walletState.getConnectedAccounts(origin)
+    const normalizedAccount = account.toLowerCase()
+    const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === normalizedAccount)
+    if (!isAuthorized) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    if (!keyringController.isUnlocked()) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: 'Wallet is locked',
+      })
+    }
+
+    const network = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+    if (!network.bundlerUrl) {
+      throw createRpcError({
+        code: RPC_ERRORS.RESOURCE_UNAVAILABLE.code,
+        message: 'Bundler not configured for this network',
+      })
+    }
+
+    // Encode swap calldata using SWAP_EXECUTOR_ABI
+    const { encodeFunctionData } = await import('viem')
+    const { SWAP_EXECUTOR_ABI } = await import('@stablenet/core')
+
+    const swapCalldata = encodeFunctionData({
+      abi: SWAP_EXECUTOR_ABI,
+      functionName: 'swapExactInputSingle',
+      args: [tokenIn, tokenOut, fee, BigInt(amountIn), BigInt(amountOutMinimum), BigInt(deadline)],
+    })
+
+    // Encode execution through the Smart Account's execute function
+    // The swap executor is called as a module via the Kernel's execute
+    const { KERNEL_ABI } = await import('@stablenet/core')
+    const { concatHex, numberToHex, pad } = await import('viem')
+
+    // ExecMode: single call (0x00), default exec type
+    const execMode = pad('0x00' as `0x${string}`, { size: 32 })
+
+    // executionCalldata: abi.encodePacked(target, value, callData)
+    const targetBytes = swapExecutorAddress as `0x${string}`
+    const valueBytes = pad(numberToHex(0n), { size: 32 })
+    const executionCalldata = concatHex([targetBytes, valueBytes, swapCalldata])
+
+    const callData = encodeFunctionData({
+      abi: KERNEL_ABI,
+      functionName: 'execute',
+      args: [execMode, executionCalldata],
+    })
+
+    // Build UserOperation
+    const client = getPublicClient(network.rpcUrl)
+
+    const nonce = await client
+      .readContract({
+        address: account,
+        abi: [
+          {
+            inputs: [{ name: 'key', type: 'uint192' }],
+            name: 'getNonce',
+            outputs: [{ name: '', type: 'uint256' }],
+            stateMutability: 'view',
+            type: 'function',
+          },
+        ],
+        functionName: 'getNonce',
+        args: [0n],
+      })
+      .catch(() => 0n)
+
+    const feeData = await client.estimateFeesPerGas().catch(() => ({
+      maxFeePerGas: BigInt(1e9),
+      maxPriorityFeePerGas: BigInt(1e8),
+    }))
+
+    const userOp: UserOperation = {
+      sender: account,
+      nonce,
+      factory: undefined,
+      factoryData: undefined,
+      callData,
+      callGasLimit: BigInt(500000),
+      verificationGasLimit: BigInt(500000),
+      preVerificationGas: BigInt(100000),
+      maxFeePerGas: feeData.maxFeePerGas ?? BigInt(1e9),
+      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ?? BigInt(1e8),
+      paymaster: undefined,
+      paymasterVerificationGasLimit: undefined,
+      paymasterPostOpGasLimit: undefined,
+      paymasterData: undefined,
+      signature: '0x',
+    }
+
+    const estimatedGasCost =
+      (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
+      userOp.maxFeePerGas
+
+    // Request user approval
+    try {
+      await approvalController.requestTransaction(
+        origin,
+        account,
+        swapExecutorAddress,
+        BigInt(0),
+        swapCalldata,
+        estimatedGasCost,
+        'Swap Tokens',
+        undefined
+      )
+    } catch (error) {
+      handleApprovalError(error, { method: 'stablenet_executeSwap', origin })
+    }
+
+    // Sign the UserOperation
+    const entryPoint = ENTRY_POINT_ADDRESSES.V07
+    let signedUserOp: UserOperation
+    try {
+      const hash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
+      const signature = await keyringController.signMessage(account, hash)
+      signedUserOp = { ...userOp, signature }
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'UserOperation signing failed',
+      })
+    }
+
+    // Submit to bundler
+    try {
+      const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+      const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
+      return { hash: userOpHash }
+    } catch (error) {
+      const err = error as Error & { code?: number; data?: unknown }
+      throw createRpcError({
+        code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+        message: err.message || 'Swap execution failed',
+        data: err.data,
+      })
+    }
+  },
+
+  // =========================================================================
+  // Transaction Speed Up / Cancel
+  // =========================================================================
+
+  /**
+   * Speed up a pending transaction by resubmitting with higher gas
+   */
+  stablenet_speedUpTransaction: async (params) => {
+    const requestParams = params?.[0] as { hash?: string } | undefined
+    if (!requestParams?.hash) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Missing transaction hash',
+      })
+    }
+
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    try {
+      const client = getPublicClient(network.rpcUrl)
+      const tx = await client.getTransaction({ hash: requestParams.hash as `0x${string}` })
+
+      // Build replacement transaction with 10% higher gas
+      const bumpFactor = 110n
+      const bumpDivisor = 100n
+
+      const replacementTx: Record<string, string> = {
+        from: tx.from,
+        to: tx.to ?? tx.from,
+        nonce: `0x${tx.nonce.toString(16)}`,
+        value: `0x${tx.value.toString(16)}`,
+        data: tx.input,
+      }
+
+      if (tx.maxFeePerGas != null) {
+        // EIP-1559
+        const newMaxFee = (tx.maxFeePerGas * bumpFactor) / bumpDivisor
+        const newPriorityFee = ((tx.maxPriorityFeePerGas ?? 0n) * bumpFactor) / bumpDivisor
+        replacementTx.maxFeePerGas = `0x${newMaxFee.toString(16)}`
+        replacementTx.maxPriorityFeePerGas = `0x${newPriorityFee.toString(16)}`
+      } else if (tx.gasPrice != null) {
+        // Legacy
+        const newGasPrice = (tx.gasPrice * bumpFactor) / bumpDivisor
+        replacementTx.gasPrice = `0x${newGasPrice.toString(16)}`
+      }
+
+      if (tx.gas) {
+        replacementTx.gas = `0x${tx.gas.toString(16)}`
+      }
+
+      // Send the replacement transaction via the existing eth_sendTransaction handler
+      return await handlers.eth_sendTransaction!([replacementTx], 'internal')
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'Failed to speed up transaction',
+      })
+    }
+  },
+
+  /**
+   * Cancel a pending transaction by sending a zero-value self-transfer with same nonce
+   */
+  stablenet_cancelTransaction: async (params) => {
+    const requestParams = params?.[0] as { hash?: string } | undefined
+    if (!requestParams?.hash) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Missing transaction hash',
+      })
+    }
+
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    try {
+      const client = getPublicClient(network.rpcUrl)
+      const tx = await client.getTransaction({ hash: requestParams.hash as `0x${string}` })
+
+      // Build cancel transaction: same nonce, to=self, value=0, data=0x, higher gas
+      const bumpFactor = 110n
+      const bumpDivisor = 100n
+
+      const cancelTx: Record<string, string> = {
+        from: tx.from,
+        to: tx.from, // Self-transfer
+        nonce: `0x${tx.nonce.toString(16)}`,
+        value: '0x0',
+        data: '0x',
+      }
+
+      if (tx.maxFeePerGas != null) {
+        const newMaxFee = (tx.maxFeePerGas * bumpFactor) / bumpDivisor
+        const newPriorityFee = ((tx.maxPriorityFeePerGas ?? 0n) * bumpFactor) / bumpDivisor
+        cancelTx.maxFeePerGas = `0x${newMaxFee.toString(16)}`
+        cancelTx.maxPriorityFeePerGas = `0x${newPriorityFee.toString(16)}`
+      } else if (tx.gasPrice != null) {
+        const newGasPrice = (tx.gasPrice * bumpFactor) / bumpDivisor
+        cancelTx.gasPrice = `0x${newGasPrice.toString(16)}`
+      }
+
+      // Minimal gas for a simple transfer
+      cancelTx.gas = '0x5208' // 21000
+
+      return await handlers.eth_sendTransaction!([cancelTx], 'internal')
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'Failed to cancel transaction',
+      })
+    }
+  },
+
+  // =========================================================================
+  // Gas & Fee Methods
+  // =========================================================================
+
+  /**
+   * Get current gas price
+   */
+  eth_gasPrice: async () => {
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = getPublicClient(network.rpcUrl)
+    const gasPrice = await client.getGasPrice()
+    return `0x${gasPrice.toString(16)}`
+  },
+
+  /**
+   * Get max priority fee per gas (EIP-1559)
+   */
+  eth_maxPriorityFeePerGas: async () => {
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = getPublicClient(network.rpcUrl)
+    try {
+      const fee = await client.estimateMaxPriorityFeePerGas()
+      return `0x${fee.toString(16)}`
+    } catch {
+      // Fallback: 1.5 gwei
+      return '0x59682f00'
+    }
+  },
+
+  /**
+   * Get fee history for EIP-1559 gas estimation
+   */
+  eth_feeHistory: async (params) => {
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const [blockCount, _newestBlock, rewardPercentiles] = params as [
+      string | number,
+      string,
+      number[] | undefined,
+    ]
+
+    const client = getPublicClient(network.rpcUrl)
+    const result = await client.getFeeHistory({
+      blockCount: typeof blockCount === 'string' ? Number.parseInt(blockCount, 16) : blockCount,
+      rewardPercentiles: rewardPercentiles ?? [],
+    })
+
+    return {
+      oldestBlock: `0x${result.oldestBlock.toString(16)}`,
+      baseFeePerGas: result.baseFeePerGas.map((f) => `0x${f.toString(16)}`),
+      gasUsedRatio: result.gasUsedRatio,
+      reward: result.reward?.map((r) => r.map((v) => `0x${v.toString(16)}`)),
+    }
+  },
+
+  /**
+   * Estimate gas for a transaction
+   */
+  eth_estimateGas: async (params) => {
+    const [txObject] = params as [
+      { from?: Address; to?: Address; value?: Hex; data?: Hex; gas?: Hex },
+    ]
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = getPublicClient(network.rpcUrl)
+    const gas = await client.estimateGas({
+      account: txObject.from,
+      to: txObject.to,
+      value: txObject.value ? BigInt(txObject.value) : undefined,
+      data: txObject.data,
+    })
+
+    return `0x${gas.toString(16)}`
+  },
+
+  // =========================================================================
+  // Account State Methods
+  // =========================================================================
+
+  /**
+   * Get transaction count (nonce) for an address
+   */
+  eth_getTransactionCount: async (params) => {
+    const [address, block] = params as [Address, string]
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = getPublicClient(network.rpcUrl)
+    const count = await client.getTransactionCount({
+      address,
+      blockTag: (block === 'latest' || block === 'pending' || block === 'earliest'
+        ? block
+        : 'latest') as 'latest' | 'pending' | 'earliest',
+    })
+
+    return `0x${count.toString(16)}`
+  },
+
+  /**
+   * Send a signed raw transaction
+   */
+  eth_sendRawTransaction: async (params) => {
+    const [signedTx] = params as [Hex]
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = getPublicClient(network.rpcUrl)
+    const hash = await client.request({
+      method: 'eth_sendRawTransaction',
+      params: [signedTx],
+    })
+
+    return hash
+  },
+
+  // =========================================================================
+  // Network Methods
+  // =========================================================================
+
+  /**
+   * Get network version (net_version)
+   */
+  net_version: async () => {
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+    return network.chainId.toString()
+  },
+
+  // =========================================================================
+  // Permission Methods (EIP-2255)
+  // =========================================================================
+
+  /**
+   * Request permissions from user
+   */
+  wallet_requestPermissions: async (params, origin) => {
+    const [requested] = (params ?? [{}]) as [Record<string, unknown>]
+    const requestedMethods = Object.keys(requested)
+
+    // For now, treat permission request like a connect request
+    // If eth_accounts is requested and not already connected, trigger connect flow
+    if (requestedMethods.includes('eth_accounts')) {
+      const connected = walletState.getConnectedAccounts(origin)
+      if (connected.length === 0) {
+        // Delegate to eth_requestAccounts handler
+        const handler = handlers['eth_requestAccounts']
+        if (handler) {
+          await handler(params, origin)
+        }
+      }
+    }
+
+    // Return granted permissions
+    return requestedMethods.map((method) => ({
+      parentCapability: method,
+      date: Date.now(),
+    }))
+  },
+
+  /**
+   * Get current permissions
+   */
+  wallet_getPermissions: async (_params, origin) => {
+    const connected = walletState.getConnectedAccounts(origin)
+    const permissions: Array<{ parentCapability: string; date: number }> = []
+
+    if (connected.length > 0) {
+      permissions.push({
+        parentCapability: 'eth_accounts',
+        date: Date.now(),
+      })
+    }
+
+    return permissions
   },
 }
 
@@ -1918,16 +2616,10 @@ function formatTransactionType(type: string): Hex {
 }
 
 /**
- * Create an RPC error
+ * Create a typed RPC error
  */
-function createRpcError(error: { code: number; message: string; data?: unknown }) {
-  const err = new Error(error.message) as Error & {
-    code: number
-    data?: unknown
-  }
-  err.code = error.code
-  err.data = error.data
-  return err
+function createRpcError(error: { code: number; message: string; data?: unknown }): RpcError {
+  return new RpcError(error.code, error.message, error.data)
 }
 
 /**
@@ -2292,6 +2984,23 @@ function validateRpcParams(method: string, params: unknown[] | undefined): void 
     case 'eth_chainId':
     case 'eth_blockNumber':
     case 'eth_supportedEntryPoints':
+    case 'eth_gasPrice':
+    case 'eth_maxPriorityFeePerGas':
+    case 'eth_feeHistory':
+    case 'eth_estimateGas':
+    case 'eth_getTransactionCount':
+    case 'eth_sendRawTransaction':
+    case 'net_version':
+    case 'wallet_requestPermissions':
+    case 'wallet_getPermissions':
+      break
+
+    case 'stablenet_getSmartAccountInfo':
+    case 'stablenet_getRegistryModules':
+    case 'stablenet_speedUpTransaction':
+    case 'stablenet_cancelTransaction':
+    case 'stablenet_setRootValidator':
+    case 'stablenet_executeSwap':
       break
 
     case 'stablenet_installModule':
@@ -2470,8 +3179,12 @@ export async function handleRpcRequest(
       result,
     }
   } catch (error) {
-    const err = error as Error & { code?: number; data?: unknown }
+    // Use RpcError's serialize() if available, otherwise extract code/message
+    if (error instanceof RpcError) {
+      return { jsonrpc: '2.0', id, error: error.serialize() }
+    }
 
+    const err = error as Error & { code?: number; data?: unknown }
     return {
       jsonrpc: '2.0',
       id,

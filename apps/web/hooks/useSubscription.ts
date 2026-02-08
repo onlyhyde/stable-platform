@@ -203,6 +203,18 @@ interface UseSubscriptionReturn {
   clearError: () => void
 }
 
+// Helper: Get subscription status from enum
+const getStatusFromEnum = (statusEnum: number): SubscriptionStatus => {
+  const statusMap: Record<number, SubscriptionStatus> = {
+    0: 'active',
+    1: 'trial',
+    2: 'grace',
+    3: 'cancelled',
+    4: 'expired',
+  }
+  return statusMap[statusEnum] || 'expired'
+}
+
 export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscriptionReturn {
   const { autoRefresh = false, refreshInterval = 30000 } = config
 
@@ -287,18 +299,6 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     []
   )
 
-  // Helper: Get subscription status from enum
-  const getStatusFromEnum = (statusEnum: number): SubscriptionStatus => {
-    const statusMap: Record<number, SubscriptionStatus> = {
-      0: 'active',
-      1: 'trial',
-      2: 'grace',
-      3: 'cancelled',
-      4: 'expired',
-    }
-    return statusMap[statusEnum] || 'expired'
-  }
-
   // Load all plans
   const loadPlans = useCallback(async () => {
     if (!publicClient) return
@@ -334,7 +334,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     } finally {
       setIsLoading(false)
     }
-  }, [publicClient, toPlanDisplayInfo])
+  }, [publicClient, toPlanDisplayInfo, subscriptionManager])
 
   // Load user's subscriptions
   const loadMySubscriptions = useCallback(async () => {
@@ -396,7 +396,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     } finally {
       setIsLoading(false)
     }
-  }, [publicClient, address, toPlanDisplayInfo])
+  }, [publicClient, address, toPlanDisplayInfo, subscriptionManager])
 
   // Load merchant's plans
   const loadMerchantPlans = useCallback(async () => {
@@ -444,7 +444,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
     } finally {
       setIsLoading(false)
     }
-  }, [publicClient, address, toPlanDisplayInfo])
+  }, [publicClient, address, toPlanDisplayInfo, subscriptionManager])
 
   // Request ERC-7715 permission
   const requestPermission = useCallback(
@@ -486,9 +486,10 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
 
       try {
         // Try ERC-7715 wallet_grantPermissions first (modern wallets)
-        const response = await walletClient.request({
-          method: 'wallet_grantPermissions' as any,
-          params: [permissionRequest] as any,
+        // biome-ignore lint/suspicious/noExplicitAny: wallet_grantPermissions is a non-standard ERC-7715 RPC method not typed in viem
+        const response = await (walletClient as any).request({
+          method: 'wallet_grantPermissions',
+          params: [permissionRequest],
         })
 
         // Extract permissionId from response
@@ -559,7 +560,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         throw err
       }
     },
-    [walletClient, publicClient, address]
+    [walletClient, publicClient, address, permissionManager, recurringPaymentExecutor]
   )
 
   // Subscribe to a plan
@@ -607,7 +608,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         setIsSubscribing(false)
       }
     },
-    [publicClient, address, walletClient, toPlanDisplayInfo, requestPermission]
+    [publicClient, address, walletClient, toPlanDisplayInfo, requestPermission, subscriptionManager]
   )
 
   // Cancel subscription
@@ -641,7 +642,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         setIsCancelling(false)
       }
     },
-    [address, walletClient, publicClient]
+    [address, walletClient, publicClient, subscriptionManager]
   )
 
   // Create a new plan (for merchants)
@@ -691,7 +692,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         setIsCreatingPlan(false)
       }
     },
-    [address, walletClient, publicClient]
+    [address, walletClient, publicClient, subscriptionManager]
   )
 
   // Refetch all data

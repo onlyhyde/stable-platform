@@ -5,9 +5,9 @@
  * Verifies EIP-1193 events and privacy protection (SEC-1)
  */
 
-import { mockChrome } from '../../utils/mockChrome'
-import { TEST_ACCOUNTS, TEST_ORIGINS, TEST_CHAIN_IDS } from '../../utils/testUtils'
 import type { Address } from 'viem'
+import { mockChrome } from '../../utils/mockChrome'
+import { TEST_ACCOUNTS, TEST_ORIGINS } from '../../utils/testUtils'
 
 // Mock the logger
 jest.mock('../../../src/shared/utils/logger', () => ({
@@ -29,7 +29,10 @@ jest.mock('../../../src/shared/constants', () => ({
   },
   RPC_ERRORS: {
     DISCONNECTED: { code: 4900, message: 'The provider is disconnected from all chains' },
-    CHAIN_DISCONNECTED: { code: 4901, message: 'The provider is disconnected from the specified chain' },
+    CHAIN_DISCONNECTED: {
+      code: 4901,
+      message: 'The provider is disconnected from the specified chain',
+    },
   },
   DEFAULT_VALUES: {
     CHAIN_ID_HEX: '0x1',
@@ -273,10 +276,7 @@ describe('EventBroadcaster', () => {
       )
 
       // Tab 2 should NOT have received origin A's accounts
-      expect(mockChrome.tabs.sendMessage).not.toHaveBeenCalledWith(
-        2,
-        expect.any(Object)
-      )
+      expect(mockChrome.tabs.sendMessage).not.toHaveBeenCalledWith(2, expect.any(Object))
     })
 
     it('should handle multiple tabs from same origin', async () => {
@@ -287,7 +287,9 @@ describe('EventBroadcaster', () => {
         { id: 3, url: 'https://app.com/dashboard' },
       ])
 
-      await broadcaster.broadcastAccountsChanged('https://app.com', [TEST_ACCOUNTS.account1.address])
+      await broadcaster.broadcastAccountsChanged('https://app.com', [
+        TEST_ACCOUNTS.account1.address,
+      ])
 
       expect(mockChrome.tabs.sendMessage).toHaveBeenCalledTimes(3)
     })

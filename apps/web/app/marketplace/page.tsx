@@ -234,6 +234,7 @@ export default function MarketplacePage() {
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
+          aria-hidden="true"
         >
           <path
             strokeLinecap="round"
@@ -290,6 +291,7 @@ export default function MarketplacePage() {
                 No modules found matching your criteria.
               </p>
               <button
+                type="button"
                 className="mt-2 text-sm font-medium"
                 style={{ color: 'rgb(var(--primary))' }}
                 onClick={() => {

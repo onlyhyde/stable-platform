@@ -92,7 +92,7 @@ function getProvider(): {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
 } | null {
   if (typeof window === 'undefined') return null
-  const ethereum = (window as { ethereum?: { request?: Function } }).ethereum
+  const ethereum = (window as { ethereum?: { request?: (...args: unknown[]) => unknown } }).ethereum
   if (!ethereum?.request) return null
   return ethereum as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
 }
@@ -314,7 +314,7 @@ export function useWalletAssets(): UseWalletAssetsResult {
     } else {
       setAssets(null)
     }
-  }, [isConnected, isSupported, fetchAssets])
+  }, [isConnected, fetchAssets])
 
   // Re-fetch when chain or account changes
   useEffect(() => {
@@ -332,7 +332,7 @@ export function useWalletAssets(): UseWalletAssetsResult {
     const provider = getProvider()
     if (!provider) return
 
-    const ethereum = window as { ethereum?: { on?: Function; removeListener?: Function } }
+    const ethereum = window as { ethereum?: { on?: (...args: unknown[]) => void; removeListener?: (...args: unknown[]) => void } }
     if (!ethereum.ethereum?.on) return
 
     const handleAssetsChanged = () => {
@@ -350,7 +350,7 @@ export function useWalletAssets(): UseWalletAssetsResult {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const ethereum = window as { ethereum?: { on?: Function; removeListener?: Function } }
+    const ethereum = window as { ethereum?: { on?: (...args: unknown[]) => void; removeListener?: (...args: unknown[]) => void } }
     if (!ethereum.ethereum?.on) return
 
     const handleChainChanged = () => {

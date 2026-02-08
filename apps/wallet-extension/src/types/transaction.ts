@@ -28,6 +28,8 @@ export interface PendingTransaction {
   // Decoded info
   methodName?: string
   tokenTransfer?: TokenTransferInfo
+  // Receipt info
+  blockNumber?: bigint
   // Error info
   error?: string
 }

@@ -29,9 +29,15 @@
 // Re-export everything from main entry
 export * from './index'
 
+// React Context Provider
+export { WalletProvider, useWalletContext } from './context/WalletProvider'
+export type { WalletContextValue, WalletProviderProps } from './context/WalletProvider'
+
 // React hooks
 export { useWallet } from './hooks/useWallet'
 export { useBalance } from './hooks/useBalance'
 export { useChainId } from './hooks/useChainId'
 export { useNetwork } from './hooks/useNetwork'
 export { useToken } from './hooks/useToken'
+export { useContractRead } from './hooks/useContractRead'
+export { useContractWrite } from './hooks/useContractWrite'

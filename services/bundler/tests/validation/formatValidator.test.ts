@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
-import { FormatValidator } from '../../src/validation/formatValidator'
+import { describe, expect, it } from 'vitest'
 import type { UserOperation } from '../../src/types'
 import { RpcError } from '../../src/types'
+import { FormatValidator } from '../../src/validation/formatValidator'
 import { VALIDATION_CONSTANTS } from '../../src/validation/types'
 
 describe('FormatValidator', () => {
@@ -205,7 +205,7 @@ describe('FormatValidator', () => {
 
   describe('helper methods', () => {
     it('validateSignatureFormat should return true for valid signature', () => {
-      const result = validator.validateSignatureFormat('0x' + '00'.repeat(65) as `0x${string}`)
+      const result = validator.validateSignatureFormat(('0x' + '00'.repeat(65)) as `0x${string}`)
       expect(result).toBe(true)
     })
 
@@ -237,7 +237,8 @@ describe('FormatValidator', () => {
 
   describe('data length bounds checking', () => {
     it('should reject callData exceeding maximum length', () => {
-      const oversizedCallData = '0x' + 'ab'.repeat(VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH) as `0x${string}`
+      const oversizedCallData = ('0x' +
+        'ab'.repeat(VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH)) as `0x${string}`
       const invalidOp: UserOperation = {
         ...validUserOp,
         callData: oversizedCallData,
@@ -248,7 +249,7 @@ describe('FormatValidator', () => {
 
     it('should accept callData within maximum length', () => {
       // 1KB of callData (well within 50KB limit)
-      const validCallData = '0x' + 'ab'.repeat(1024) as `0x${string}`
+      const validCallData = ('0x' + 'ab'.repeat(1024)) as `0x${string}`
       const validOp: UserOperation = {
         ...validUserOp,
         callData: validCallData,
@@ -257,7 +258,8 @@ describe('FormatValidator', () => {
     })
 
     it('should reject factoryData exceeding maximum length', () => {
-      const oversizedFactoryData = '0x' + 'ab'.repeat(VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH) as `0x${string}`
+      const oversizedFactoryData = ('0x' +
+        'ab'.repeat(VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH)) as `0x${string}`
       const invalidOp: UserOperation = {
         ...validUserOp,
         factory: '0x1234567890123456789012345678901234567890',
@@ -268,7 +270,8 @@ describe('FormatValidator', () => {
     })
 
     it('should reject paymasterData exceeding maximum length', () => {
-      const oversizedPaymasterData = '0x' + 'ab'.repeat(VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH) as `0x${string}`
+      const oversizedPaymasterData = ('0x' +
+        'ab'.repeat(VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH)) as `0x${string}`
       const invalidOp: UserOperation = {
         ...validUserOp,
         paymaster: '0x1234567890123456789012345678901234567890',
@@ -282,7 +285,8 @@ describe('FormatValidator', () => {
 
     it('should reject signature exceeding maximum length', () => {
       // Create a signature that exceeds the 2KB max (VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH)
-      const oversizedSignature = '0x' + 'ab'.repeat(VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH) as `0x${string}`
+      const oversizedSignature = ('0x' +
+        'ab'.repeat(VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH)) as `0x${string}`
       const invalidOp: UserOperation = {
         ...validUserOp,
         signature: oversizedSignature,
@@ -293,7 +297,7 @@ describe('FormatValidator', () => {
 
     it('should accept signature within bounds', () => {
       // 65 bytes is the minimum, 2KB is the maximum
-      const validSignature = '0x' + '00'.repeat(65) as `0x${string}`
+      const validSignature = ('0x' + '00'.repeat(65)) as `0x${string}`
       const validOp: UserOperation = {
         ...validUserOp,
         signature: validSignature,
@@ -303,7 +307,7 @@ describe('FormatValidator', () => {
 
     it('should accept larger but valid signature (for aggregators)', () => {
       // 256 bytes signature (valid for some aggregator schemes)
-      const validSignature = '0x' + '00'.repeat(256) as `0x${string}`
+      const validSignature = ('0x' + '00'.repeat(256)) as `0x${string}`
       const validOp: UserOperation = {
         ...validUserOp,
         signature: validSignature,

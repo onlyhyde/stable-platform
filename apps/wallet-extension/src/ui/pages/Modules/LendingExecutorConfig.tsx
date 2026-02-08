@@ -71,7 +71,7 @@ function bpsToPercent(bps: number): string {
 function parseHealthFactor(value: string): bigint {
   try {
     const num = Number.parseFloat(value)
-    if (isNaN(num) || num <= 0) return 0n
+    if (Number.isNaN(num) || num <= 0) return 0n
     // Health factor is scaled by 1e18
     return BigInt(Math.floor(num * 1e18))
   } catch {
@@ -200,11 +200,12 @@ export function LendingExecutorConfigUI({
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="custom-ltv-bps" className="block text-sm font-medium text-gray-700 mb-1">
               Custom LTV (basis points)
             </label>
             <div className="flex items-center gap-2">
               <input
+                id="custom-ltv-bps"
                 type="number"
                 min="1000"
                 max="9500"
@@ -251,10 +252,11 @@ export function LendingExecutorConfigUI({
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="custom-health-factor" className="block text-sm font-medium text-gray-700 mb-1">
               Custom Health Factor
             </label>
             <input
+              id="custom-health-factor"
               type="text"
               value={form.minHealthFactor}
               onChange={(e) => setForm((f) => ({ ...f, minHealthFactor: e.target.value }))}
@@ -323,10 +325,11 @@ export function LendingExecutorConfigUI({
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="custom-borrow-limit" className="block text-sm font-medium text-gray-700 mb-1">
               Custom Limit (ETH equivalent)
             </label>
             <input
+              id="custom-borrow-limit"
               type="text"
               value={form.dailyBorrowLimitEth}
               onChange={(e) => setForm((f) => ({ ...f, dailyBorrowLimitEth: e.target.value }))}

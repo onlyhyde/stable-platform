@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, type ReactNode } from 'react'
-import { WagmiProvider } from 'wagmi'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { wagmiConfig } from '@/lib/wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { type ReactNode, useEffect, useState } from 'react'
+import { WagmiProvider } from 'wagmi'
 
 function makeQueryClient() {
   return new QueryClient({
@@ -43,9 +43,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
   return (
     <WagmiProvider config={wagmiConfig} reconnectOnMount={true}>
-      <QueryClientProvider client={queryClient}>
-        {mounted ? children : null}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{mounted ? children : null}</QueryClientProvider>
     </WagmiProvider>
   )
 }

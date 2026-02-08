@@ -29,9 +29,7 @@ export function unpackUserOperation(packed: Record<string, Hex>): UserOperation 
       callGasLimit = BigInt(`0x${limits.slice(34, 66)}`)
     }
   } else {
-    verificationGasLimit = packed.verificationGasLimit
-      ? BigInt(packed.verificationGasLimit)
-      : 0n
+    verificationGasLimit = packed.verificationGasLimit ? BigInt(packed.verificationGasLimit) : 0n
     callGasLimit = packed.callGasLimit ? BigInt(packed.callGasLimit) : 0n
   }
 
@@ -47,9 +45,7 @@ export function unpackUserOperation(packed: Record<string, Hex>): UserOperation 
       maxFeePerGas = BigInt(`0x${fees.slice(34, 66)}`)
     }
   } else {
-    maxPriorityFeePerGas = packed.maxPriorityFeePerGas
-      ? BigInt(packed.maxPriorityFeePerGas)
-      : 0n
+    maxPriorityFeePerGas = packed.maxPriorityFeePerGas ? BigInt(packed.maxPriorityFeePerGas) : 0n
     maxFeePerGas = packed.maxFeePerGas ? BigInt(packed.maxFeePerGas) : 0n
   }
 
@@ -59,15 +55,15 @@ export function unpackUserOperation(packed: Record<string, Hex>): UserOperation 
   let paymasterPostOpGasLimit: bigint | undefined
   let paymasterData: Hex | undefined
 
-  if (packed.paymasterAndData && packed.paymasterAndData !== '0x' && packed.paymasterAndData.length > 42) {
+  if (
+    packed.paymasterAndData &&
+    packed.paymasterAndData !== '0x' &&
+    packed.paymasterAndData.length > 42
+  ) {
     paymaster = `0x${packed.paymasterAndData.slice(2, 42)}` as Address
     if (packed.paymasterAndData.length >= 106) {
-      paymasterVerificationGasLimit = BigInt(
-        `0x${packed.paymasterAndData.slice(42, 74)}`
-      )
-      paymasterPostOpGasLimit = BigInt(
-        `0x${packed.paymasterAndData.slice(74, 106)}`
-      )
+      paymasterVerificationGasLimit = BigInt(`0x${packed.paymasterAndData.slice(42, 74)}`)
+      paymasterPostOpGasLimit = BigInt(`0x${packed.paymasterAndData.slice(74, 106)}`)
       if (packed.paymasterAndData.length > 106) {
         paymasterData = `0x${packed.paymasterAndData.slice(106)}` as Hex
       }
@@ -118,9 +114,7 @@ export function packUserOperation(userOp: UserOperation): {
 } {
   // Build initCode
   const initCode =
-    userOp.factory && userOp.factoryData
-      ? concat([userOp.factory, userOp.factoryData])
-      : '0x'
+    userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
 
   // Build accountGasLimits
   const accountGasLimits = concat([

@@ -59,6 +59,7 @@ export default function SubscriptionPage() {
               style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
             >
               <svg
+                aria-hidden="true"
                 className="w-8 h-8"
                 style={{ color: 'rgb(var(--primary))' }}
                 fill="none"
@@ -98,7 +99,7 @@ export default function SubscriptionPage() {
           </p>
         </div>
         <Button variant="primary" onClick={() => router.push('/subscription/plans')}>
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Browse Plans
@@ -115,6 +116,7 @@ export default function SubscriptionPage() {
                 style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}
               >
                 <svg
+                  aria-hidden="true"
                   className="w-6 h-6"
                   style={{ color: 'rgb(var(--success))' }}
                   fill="none"
@@ -152,6 +154,7 @@ export default function SubscriptionPage() {
                 style={{ backgroundColor: 'rgb(var(--warning) / 0.1)' }}
               >
                 <svg
+                  aria-hidden="true"
                   className="w-6 h-6"
                   style={{ color: 'rgb(var(--warning))' }}
                   fill="none"
@@ -186,6 +189,7 @@ export default function SubscriptionPage() {
                 style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
               >
                 <svg
+                  aria-hidden="true"
                   className="w-6 h-6"
                   style={{ color: 'rgb(var(--primary))' }}
                   fill="none"
@@ -294,6 +298,7 @@ export default function SubscriptionPage() {
                 style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
               >
                 <svg
+                  aria-hidden="true"
                   className="w-6 h-6"
                   style={{ color: 'rgb(var(--primary))' }}
                   fill="none"
@@ -332,6 +337,7 @@ export default function SubscriptionPage() {
                 style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}
               >
                 <svg
+                  aria-hidden="true"
                   className="w-6 h-6"
                   style={{ color: 'rgb(var(--success))' }}
                   fill="none"

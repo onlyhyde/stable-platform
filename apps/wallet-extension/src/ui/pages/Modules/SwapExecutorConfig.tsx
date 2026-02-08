@@ -168,11 +168,12 @@ export function SwapExecutorConfigUI({
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="custom-slippage-bps" className="block text-sm font-medium text-gray-700 mb-1">
               Custom Slippage (basis points)
             </label>
             <div className="flex items-center gap-2">
               <input
+                id="custom-slippage-bps"
                 type="number"
                 min="1"
                 max="5000"
@@ -234,10 +235,11 @@ export function SwapExecutorConfigUI({
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="custom-swap-daily-limit" className="block text-sm font-medium text-gray-700 mb-1">
               Custom Limit (ETH)
             </label>
             <input
+              id="custom-swap-daily-limit"
               type="text"
               value={form.dailyLimitEth}
               onChange={(e) => setForm((f) => ({ ...f, dailyLimitEth: e.target.value }))}

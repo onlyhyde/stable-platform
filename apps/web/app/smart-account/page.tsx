@@ -19,7 +19,7 @@ import {
   UpgradeCard,
 } from '@/components/smart-account'
 import { useSmartAccount, useWallet } from '@/hooks'
-import type { SigningMethod } from '@/hooks/useSmartAccount'
+import type { SigningMethod, UpgradeResult } from '@/hooks/useSmartAccount'
 import { getDelegatePresets } from '@/lib/eip7702'
 import { sanitizeErrorMessage } from '@/lib/utils'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -107,7 +107,7 @@ export default function SmartAccountPage() {
     })
 
     try {
-      let result
+      let result: UpgradeResult
       if (signingMethod === 'stablenet') {
         result = await upgradeWithStableNet(selectedDelegate)
       } else {
@@ -157,7 +157,7 @@ export default function SmartAccountPage() {
     })
 
     try {
-      let result
+      let result: UpgradeResult
       if (signingMethod === 'stablenet') {
         result = await revokeWithStableNet()
       } else {

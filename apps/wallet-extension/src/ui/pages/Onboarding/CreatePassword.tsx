@@ -165,24 +165,26 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
             {password && (
               <div className="mt-2">
                 <div className="flex gap-1 h-1">
-                  {[...Array(5)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="flex-1 rounded-full"
-                      style={{
-                        backgroundColor:
-                          i < passwordStrength
-                            ? [
-                                'rgb(var(--destructive))',
-                                'rgb(239 68 68)',
-                                'rgb(var(--warning))',
-                                'rgb(132 204 22)',
-                                'rgb(var(--success))',
-                              ][passwordStrength - 1]
-                            : 'rgb(var(--border))',
-                      }}
-                    />
-                  ))}
+                  {(['very-weak', 'weak', 'fair', 'strong', 'very-strong'] as const).map(
+                    (level, i) => (
+                      <div
+                        key={level}
+                        className="flex-1 rounded-full"
+                        style={{
+                          backgroundColor:
+                            i < passwordStrength
+                              ? [
+                                  'rgb(var(--destructive))',
+                                  'rgb(239 68 68)',
+                                  'rgb(var(--warning))',
+                                  'rgb(132 204 22)',
+                                  'rgb(var(--success))',
+                                ][passwordStrength - 1]
+                              : 'rgb(var(--border))',
+                        }}
+                      />
+                    )
+                  )}
                 </div>
                 <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
                   {strengthLabels[passwordStrength - 1] ?? 'Enter password'}

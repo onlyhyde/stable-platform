@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest'
-import type { Address, Hex, PublicClient, WalletClient, Account, Log } from 'viem'
+import type { Account, Address, Hex, Log, PublicClient, WalletClient } from 'viem'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { EVENT_SIGNATURES } from '../../src/abi'
 import { RpcServer } from '../../src/rpc/server'
 import type { BundlerConfig } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
-import { EVENT_SIGNATURES } from '../../src/abi'
 
 // Mock logger
 const mockLogger = createLogger('error', false)
@@ -19,7 +19,9 @@ const TEST_ACCOUNT = '0x9999999999999999999999999999999999999999' as Address
 const TEST_PORT = 4338 // Different port from main E2E tests
 
 // Helper to create a packed UserOperation for RPC
-function createPackedUserOp(overrides: Partial<Record<string, Hex | Address>> = {}): Record<string, Hex> {
+function createPackedUserOp(
+  overrides: Partial<Record<string, Hex | Address>> = {}
+): Record<string, Hex> {
   return {
     sender: TEST_SENDER,
     nonce: '0x0',
@@ -71,7 +73,7 @@ describe('Bundle Execution E2E', () => {
   const userOpEventLogs: Map<Hex, { success: boolean; actualGasCost: bigint }> = new Map()
 
   beforeAll(async () => {
-    lastTxHash = '0x' + '00'.repeat(32) as Hex
+    lastTxHash = ('0x' + '00'.repeat(32)) as Hex
     bundleCallCount = 0
 
     // Setup mock clients with more realistic behavior
@@ -116,7 +118,9 @@ describe('Bundle Execution E2E', () => {
             ] as [Hex, ...Hex[]],
             data: ('0x' +
               '0000000000000000000000000000000000000000000000000000000000000000' + // nonce
-              (eventData.success ? '0000000000000000000000000000000000000000000000000000000000000001' : '0000000000000000000000000000000000000000000000000000000000000000') + // success
+              (eventData.success
+                ? '0000000000000000000000000000000000000000000000000000000000000001'
+                : '0000000000000000000000000000000000000000000000000000000000000000') + // success
               '0000000000000000000000000000000000000000000000000000000002faf080' + // actualGasCost
               '0000000000000000000000000000000000000000000000000000000000030d40') as Hex, // actualGasUsed
             blockHash: '0xblockhash' as Hex,
@@ -184,22 +188,19 @@ describe('Bundle Execution E2E', () => {
       const packedOp = createPackedUserOp()
 
       // Step 1: Submit UserOperation
-      const { result: userOpHash, error } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [packedOp, ENTRY_POINT]
-      )
+      const { result: userOpHash, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        packedOp,
+        ENTRY_POINT,
+      ])
 
       expect(error).toBeUndefined()
       expect(userOpHash).toBeDefined()
       expect(typeof userOpHash).toBe('string')
 
       // Step 2: Verify in mempool with pending status
-      const { result: mempool } = await rpcCall(
-        TEST_PORT,
-        'debug_bundler_dumpMempool',
-        [ENTRY_POINT]
-      )
+      const { result: mempool } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [
+        ENTRY_POINT,
+      ])
 
       const mempoolArray = mempool as Array<{ userOpHash: Hex; status: string }>
       expect(mempoolArray.length).toBe(1)
@@ -211,18 +212,13 @@ describe('Bundle Execution E2E', () => {
       const packedOp = createPackedUserOp()
 
       // Submit UserOperation
-      const { result: userOpHash } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [packedOp, ENTRY_POINT]
-      )
+      const { result: userOpHash } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        packedOp,
+        ENTRY_POINT,
+      ])
 
       // Get by hash - should return null since not yet included
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_getUserOperationByHash',
-        [userOpHash]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_getUserOperationByHash', [userOpHash])
 
       expect(error).toBeUndefined()
       expect(result).toBeNull()
@@ -236,11 +232,10 @@ describe('Bundle Execution E2E', () => {
         nonce: '0x64', // nonce 100, but on-chain is 0
       })
 
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [packedOp, ENTRY_POINT]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        packedOp,
+        ENTRY_POINT,
+      ])
 
       // Should be rejected due to nonce gap (default maxNonceGap is 10)
       expect(result).toBeUndefined()
@@ -255,16 +250,27 @@ describe('Bundle Execution E2E', () => {
       const op3 = createPackedUserOp({ sender: TEST_SENDER_3 as Hex })
 
       // Submit all operations
-      const { result: hash1 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [op1, ENTRY_POINT])
-      const { result: hash2 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [op2, ENTRY_POINT])
-      const { result: hash3 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [op3, ENTRY_POINT])
+      const { result: hash1 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        op1,
+        ENTRY_POINT,
+      ])
+      const { result: hash2 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        op2,
+        ENTRY_POINT,
+      ])
+      const { result: hash3 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        op3,
+        ENTRY_POINT,
+      ])
 
       expect(hash1).toBeDefined()
       expect(hash2).toBeDefined()
       expect(hash3).toBeDefined()
 
       // Verify all in mempool
-      const { result: mempool } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [ENTRY_POINT])
+      const { result: mempool } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [
+        ENTRY_POINT,
+      ])
       const mempoolArray = mempool as Array<{ userOpHash: Hex }>
       expect(mempoolArray.length).toBe(3)
     })
@@ -273,14 +279,22 @@ describe('Bundle Execution E2E', () => {
       const op1 = createPackedUserOp({ sender: TEST_SENDER as Hex, nonce: '0x0' })
       const op2 = createPackedUserOp({ sender: TEST_SENDER as Hex, nonce: '0x1' })
 
-      const { result: hash1 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [op1, ENTRY_POINT])
-      const { result: hash2 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [op2, ENTRY_POINT])
+      const { result: hash1 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        op1,
+        ENTRY_POINT,
+      ])
+      const { result: hash2 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        op2,
+        ENTRY_POINT,
+      ])
 
       expect(hash1).toBeDefined()
       expect(hash2).toBeDefined()
 
       // Verify both in mempool
-      const { result: mempool } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [ENTRY_POINT])
+      const { result: mempool } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [
+        ENTRY_POINT,
+      ])
       expect((mempool as unknown[]).length).toBe(2)
     })
   })
@@ -289,11 +303,10 @@ describe('Bundle Execution E2E', () => {
     it('should estimate gas for UserOperation without paymaster', async () => {
       const packedOp = createPackedUserOp()
 
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_estimateUserOperationGas',
-        [packedOp, ENTRY_POINT]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_estimateUserOperationGas', [
+        packedOp,
+        ENTRY_POINT,
+      ])
 
       expect(error).toBeUndefined()
       const gasResult = result as {
@@ -322,11 +335,10 @@ describe('Bundle Execution E2E', () => {
         paymasterData: '0x1234' as Hex,
       })
 
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_estimateUserOperationGas',
-        [packedOp, ENTRY_POINT]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_estimateUserOperationGas', [
+        packedOp,
+        ENTRY_POINT,
+      ])
 
       expect(error).toBeUndefined()
       const gasResult = result as {
@@ -360,11 +372,10 @@ describe('Bundle Execution E2E', () => {
         factoryData: '0x1234' as Hex,
       })
 
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [packedOp, ENTRY_POINT]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        packedOp,
+        ENTRY_POINT,
+      ])
 
       expect(result).toBeUndefined()
       expect(error).toBeDefined()
@@ -384,11 +395,10 @@ describe('Bundle Execution E2E', () => {
         paymasterData: '0x' as Hex,
       })
 
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [packedOp, ENTRY_POINT]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        packedOp,
+        ENTRY_POINT,
+      ])
 
       expect(result).toBeUndefined()
       expect(error).toBeDefined()
@@ -403,11 +413,10 @@ describe('Bundle Execution E2E', () => {
 
       const packedOp = createPackedUserOp()
 
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [packedOp, ENTRY_POINT]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        packedOp,
+        ENTRY_POINT,
+      ])
 
       expect(error).toBeUndefined()
       expect(result).toBeDefined()
@@ -423,11 +432,10 @@ describe('Bundle Execution E2E', () => {
         paymasterData: '0x1234567890' as Hex,
       })
 
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [packedOp, ENTRY_POINT]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        packedOp,
+        ENTRY_POINT,
+      ])
 
       expect(error).toBeUndefined()
       expect(result).toBeDefined()
@@ -440,11 +448,10 @@ describe('Bundle Execution E2E', () => {
         paymasterData: '0x1234' as Hex,
       })
 
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [packedOp, ENTRY_POINT]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        packedOp,
+        ENTRY_POINT,
+      ])
 
       // Should fail validation due to missing paymaster gas limits
       expect(result).toBeUndefined()
@@ -459,11 +466,10 @@ describe('Bundle Execution E2E', () => {
         signature: '0x00' as Hex, // Too short
       })
 
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [packedOp, ENTRY_POINT]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        packedOp,
+        ENTRY_POINT,
+      ])
 
       expect(result).toBeUndefined()
       expect(error).toBeDefined()
@@ -482,11 +488,10 @@ describe('Bundle Execution E2E', () => {
       await rpcCall(TEST_PORT, 'debug_bundler_setReputation', [
         [{ address: TEST_SENDER_2, opsSeen: 100, opsIncluded: 0, status: 'banned' }],
       ])
-      const { error: bannedError } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [createPackedUserOp({ sender: TEST_SENDER_2 as Hex }), ENTRY_POINT]
-      )
+      const { error: bannedError } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        createPackedUserOp({ sender: TEST_SENDER_2 as Hex }),
+        ENTRY_POINT,
+      ])
       expect(bannedError?.code).toBe(-32504) // BANNED_OR_THROTTLED
     })
   })
@@ -505,11 +510,10 @@ describe('Bundle Execution E2E', () => {
       }
 
       // 5th should fail (exceeds maxOpsPerSender)
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [ops[4], ENTRY_POINT]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        ops[4],
+        ENTRY_POINT,
+      ])
 
       expect(result).toBeUndefined()
       expect(error).toBeDefined()
@@ -534,15 +538,23 @@ describe('Bundle Execution E2E', () => {
       })
 
       // Submit first operation
-      const { result: hash1 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [op1, ENTRY_POINT])
+      const { result: hash1 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        op1,
+        ENTRY_POINT,
+      ])
       expect(hash1).toBeDefined()
 
       // Submit second operation with same nonce (different hash due to different signature/gas)
-      const { result: hash2 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [op2, ENTRY_POINT])
+      const { result: hash2 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+        op2,
+        ENTRY_POINT,
+      ])
       expect(hash2).toBeDefined()
 
       // Both are in mempool (different hashes, though same nonce is allowed if < maxOpsPerSender)
-      const { result: mempool } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [ENTRY_POINT])
+      const { result: mempool } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [
+        ENTRY_POINT,
+      ])
       expect((mempool as unknown[]).length).toBe(2)
     })
 
@@ -557,11 +569,7 @@ describe('Bundle Execution E2E', () => {
       expect(hash1).toBeDefined()
 
       // Submit exact same operation again (same hash)
-      const { result, error } = await rpcCall(
-        TEST_PORT,
-        'eth_sendUserOperation',
-        [op, ENTRY_POINT]
-      )
+      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [op, ENTRY_POINT])
 
       expect(result).toBeUndefined()
       expect(error).toBeDefined()

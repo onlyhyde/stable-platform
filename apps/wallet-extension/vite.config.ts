@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { copyFileSync, existsSync, mkdirSync } from 'fs'
 import { resolve } from 'path'
-import { copyFileSync, mkdirSync, existsSync } from 'fs'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
 import { build } from 'vite'
 
 // Plugin to copy manifest and assets
@@ -9,11 +9,13 @@ function copyManifestPlugin() {
   return {
     name: 'copy-manifest',
     closeBundle() {
+      // Ensure dist directory exists
+      const distDir = resolve(__dirname, 'dist')
+      if (!existsSync(distDir)) {
+        mkdirSync(distDir, { recursive: true })
+      }
       // Copy manifest.json
-      copyFileSync(
-        resolve(__dirname, 'manifest.json'),
-        resolve(__dirname, 'dist/manifest.json')
-      )
+      copyFileSync(resolve(__dirname, 'manifest.json'), resolve(__dirname, 'dist/manifest.json'))
       // Create icons directory if not exists
       const iconsDir = resolve(__dirname, 'dist/icons')
       if (!existsSync(iconsDir)) {

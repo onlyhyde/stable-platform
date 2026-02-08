@@ -1,8 +1,8 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { concat, pad, toHex, hexToBytes, encodeAbiParameters } from 'viem'
+import { concat, encodeAbiParameters, hexToBytes, pad, toHex } from 'viem'
+import { ENTRY_POINT_V07_ABI } from '../abi'
 import type { GasEstimation, UserOperation } from '../types'
 import type { Logger } from '../utils/logger'
-import { ENTRY_POINT_V07_ABI } from '../abi'
 
 /**
  * Gas estimator configuration
@@ -103,7 +103,10 @@ export class GasEstimator {
     validateBufferPercent(config.verificationGasBufferPercent, 'verificationGasBufferPercent')
     validateBufferPercent(config.callGasBufferPercent, 'callGasBufferPercent')
     validateBufferPercent(config.preVerificationGasBufferPercent, 'preVerificationGasBufferPercent')
-    validateBufferPercent(config.paymasterVerificationGasBufferPercent, 'paymasterVerificationGasBufferPercent')
+    validateBufferPercent(
+      config.paymasterVerificationGasBufferPercent,
+      'paymasterVerificationGasBufferPercent'
+    )
     validateBufferPercent(config.paymasterPostOpGasBufferPercent, 'paymasterPostOpGasBufferPercent')
 
     this.client = client
@@ -132,8 +135,7 @@ export class GasEstimator {
     let paymasterPostOpGasLimit: bigint | undefined
 
     if (userOp.paymaster) {
-      paymasterVerificationGasLimit =
-        await this.estimatePaymasterVerificationGas(userOp)
+      paymasterVerificationGasLimit = await this.estimatePaymasterVerificationGas(userOp)
       paymasterPostOpGasLimit = await this.estimatePaymasterPostOpGas(userOp)
     }
 
@@ -145,10 +147,7 @@ export class GasEstimator {
       paymasterPostOpGasLimit,
     }
 
-    this.logger.debug(
-      { estimation: this.formatEstimation(estimation) },
-      'Gas estimation complete'
-    )
+    this.logger.debug({ estimation: this.formatEstimation(estimation) }, 'Gas estimation complete')
 
     return estimation
   }
@@ -170,8 +169,7 @@ export class GasEstimator {
       }
     }
 
-    let baseGas =
-      calldataGas + this.config.fixedOverhead + this.config.perUserOpOverhead
+    let baseGas = calldataGas + this.config.fixedOverhead + this.config.perUserOpOverhead
 
     // Add L1 data cost for L2 chains
     if (this.config.isL2Chain) {
@@ -180,8 +178,7 @@ export class GasEstimator {
     }
 
     // Apply buffer
-    const buffer =
-      (baseGas * BigInt(this.config.preVerificationGasBufferPercent)) / 100n
+    const buffer = (baseGas * BigInt(this.config.preVerificationGasBufferPercent)) / 100n
     return baseGas + buffer
   }
 
@@ -232,9 +229,7 @@ export class GasEstimator {
   private packUserOpForGasCalculation(userOp: UserOperation): Uint8Array {
     // Build initCode
     const initCode =
-      userOp.factory && userOp.factoryData
-        ? concat([userOp.factory, userOp.factoryData])
-        : '0x'
+      userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
 
     // Build accountGasLimits (verificationGasLimit || callGasLimit)
     const accountGasLimits = concat([
@@ -291,21 +286,15 @@ export class GasEstimator {
   /**
    * Estimate verification gas limit using binary search simulation
    */
-  private async estimateVerificationGas(
-    userOp: UserOperation
-  ): Promise<bigint> {
+  private async estimateVerificationGas(userOp: UserOperation): Promise<bigint> {
     // Try to use binary search simulation
     try {
       const estimatedGas = await this.binarySearchVerificationGas(userOp)
       // Apply buffer
-      const buffer =
-        (estimatedGas * BigInt(this.config.verificationGasBufferPercent)) / 100n
+      const buffer = (estimatedGas * BigInt(this.config.verificationGasBufferPercent)) / 100n
       return estimatedGas + buffer
     } catch (error) {
-      this.logger.warn(
-        { error },
-        'Binary search simulation failed, using fallback estimation'
-      )
+      this.logger.warn({ error }, 'Binary search simulation failed, using fallback estimation')
       return this.fallbackVerificationGasEstimate(userOp)
     }
   }
@@ -313,9 +302,7 @@ export class GasEstimator {
   /**
    * Binary search to find minimum verification gas
    */
-  private async binarySearchVerificationGas(
-    userOp: UserOperation
-  ): Promise<bigint> {
+  private async binarySearchVerificationGas(userOp: UserOperation): Promise<bigint> {
     let low = 10000n
     let high = this.config.initialGasUpperBound
     let result = high
@@ -344,10 +331,7 @@ export class GasEstimator {
   /**
    * Try to simulate validation with a given gas limit
    */
-  private async trySimulateValidation(
-    userOp: UserOperation,
-    gasLimit: bigint
-  ): Promise<boolean> {
+  private async trySimulateValidation(userOp: UserOperation, gasLimit: bigint): Promise<boolean> {
     try {
       const packedOp = this.packUserOpForSimulation(userOp)
 
@@ -413,10 +397,7 @@ export class GasEstimator {
       if (typeof errObj.data === 'string') {
         // FailedOp selector: 0x220266b6
         // FailedOpWithRevert selector: 0x65c8fd4d
-        return (
-          errObj.data.startsWith('0x220266b6') ||
-          errObj.data.startsWith('0x65c8fd4d')
-        )
+        return errObj.data.startsWith('0x220266b6') || errObj.data.startsWith('0x65c8fd4d')
       }
     }
     return false
@@ -451,9 +432,7 @@ export class GasEstimator {
     signature: Hex
   } {
     const initCode =
-      userOp.factory && userOp.factoryData
-        ? concat([userOp.factory, userOp.factoryData])
-        : '0x'
+      userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
 
     const accountGasLimits = concat([
       pad(toHex(userOp.verificationGasLimit), { size: 16 }),
@@ -500,8 +479,7 @@ export class GasEstimator {
     }
 
     // Apply buffer
-    const buffer =
-      (baseGas * BigInt(this.config.verificationGasBufferPercent)) / 100n
+    const buffer = (baseGas * BigInt(this.config.verificationGasBufferPercent)) / 100n
     return baseGas + buffer
   }
 
@@ -560,10 +538,7 @@ export class GasEstimator {
   /**
    * Try to simulate handle op with a given gas limit
    */
-  private async trySimulateHandleOp(
-    userOp: UserOperation,
-    gasLimit: bigint
-  ): Promise<boolean> {
+  private async trySimulateHandleOp(userOp: UserOperation, gasLimit: bigint): Promise<boolean> {
     try {
       const packedOp = this.packUserOpForSimulation(userOp)
 
@@ -645,9 +620,7 @@ export class GasEstimator {
   /**
    * Estimate paymaster verification gas using binary search
    */
-  private async estimatePaymasterVerificationGas(
-    userOp: UserOperation
-  ): Promise<bigint> {
+  private async estimatePaymasterVerificationGas(userOp: UserOperation): Promise<bigint> {
     try {
       // Use binary search with simulateValidation
       const estimatedGas = await this.binarySearchPaymasterVerificationGas(userOp)
@@ -656,14 +629,10 @@ export class GasEstimator {
         (estimatedGas * BigInt(this.config.paymasterVerificationGasBufferPercent)) / 100n
       return estimatedGas + buffer
     } catch (error) {
-      this.logger.warn(
-        { error },
-        'Failed to estimate paymaster verification gas, using default'
-      )
+      this.logger.warn({ error }, 'Failed to estimate paymaster verification gas, using default')
       // Return reasonable default with buffer
       const defaultGas = 100000n
-      const buffer =
-        (defaultGas * BigInt(this.config.paymasterVerificationGasBufferPercent)) / 100n
+      const buffer = (defaultGas * BigInt(this.config.paymasterVerificationGasBufferPercent)) / 100n
       return defaultGas + buffer
     }
   }
@@ -671,9 +640,7 @@ export class GasEstimator {
   /**
    * Binary search to find minimum paymaster verification gas
    */
-  private async binarySearchPaymasterVerificationGas(
-    userOp: UserOperation
-  ): Promise<bigint> {
+  private async binarySearchPaymasterVerificationGas(userOp: UserOperation): Promise<bigint> {
     let low = 10000n
     let high = 500000n // Paymasters typically need less gas
     let result = high
@@ -707,25 +674,18 @@ export class GasEstimator {
   /**
    * Estimate paymaster postOp gas using simulation
    */
-  private async estimatePaymasterPostOpGas(
-    userOp: UserOperation
-  ): Promise<bigint> {
+  private async estimatePaymasterPostOpGas(userOp: UserOperation): Promise<bigint> {
     try {
       // Use binary search with simulateHandleOp
       const estimatedGas = await this.binarySearchPaymasterPostOpGas(userOp)
       // Apply buffer
-      const buffer =
-        (estimatedGas * BigInt(this.config.paymasterPostOpGasBufferPercent)) / 100n
+      const buffer = (estimatedGas * BigInt(this.config.paymasterPostOpGasBufferPercent)) / 100n
       return estimatedGas + buffer
     } catch (error) {
-      this.logger.warn(
-        { error },
-        'Failed to estimate paymaster postOp gas, using default'
-      )
+      this.logger.warn({ error }, 'Failed to estimate paymaster postOp gas, using default')
       // Return reasonable default with buffer
       const defaultGas = 50000n
-      const buffer =
-        (defaultGas * BigInt(this.config.paymasterPostOpGasBufferPercent)) / 100n
+      const buffer = (defaultGas * BigInt(this.config.paymasterPostOpGasBufferPercent)) / 100n
       return defaultGas + buffer
     }
   }
@@ -733,9 +693,7 @@ export class GasEstimator {
   /**
    * Binary search to find minimum paymaster postOp gas
    */
-  private async binarySearchPaymasterPostOpGas(
-    userOp: UserOperation
-  ): Promise<bigint> {
+  private async binarySearchPaymasterPostOpGas(userOp: UserOperation): Promise<bigint> {
     let low = 5000n
     let high = 200000n // PostOp typically needs less gas than verification
     let result = high
@@ -774,10 +732,8 @@ export class GasEstimator {
       preVerificationGas: est.preVerificationGas.toString(),
       verificationGasLimit: est.verificationGasLimit.toString(),
       callGasLimit: est.callGasLimit.toString(),
-      paymasterVerificationGasLimit:
-        est.paymasterVerificationGasLimit?.toString() || 'N/A',
-      paymasterPostOpGasLimit:
-        est.paymasterPostOpGasLimit?.toString() || 'N/A',
+      paymasterVerificationGasLimit: est.paymasterVerificationGasLimit?.toString() || 'N/A',
+      paymasterPostOpGasLimit: est.paymasterPostOpGasLimit?.toString() || 'N/A',
     }
   }
 }

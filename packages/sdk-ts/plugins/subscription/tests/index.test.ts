@@ -1,19 +1,19 @@
-import { describe, it, expect } from 'vitest'
-import { parseEther, decodeFunctionData, type Address, type Hex } from 'viem'
+import { type Address, type Hex, decodeFunctionData, parseEther } from 'viem'
+import { describe, expect, it } from 'vitest'
 import {
-  createSubscriptionManager,
-  createRecurringPaymentExecutor,
-  createSubscriptionPermissionClient,
-  SUBSCRIPTION_MANAGER_ABI,
-  RECURRING_PAYMENT_EXECUTOR_ABI,
-  PERMISSION_MANAGER_ABI,
-  INTERVALS,
-  PERIOD_LIMITS,
   FEE_LIMITS,
-  NATIVE_TOKEN,
+  INTERVALS,
   MODULE_TYPE_EXECUTOR,
+  NATIVE_TOKEN,
+  PERIOD_LIMITS,
+  PERMISSION_MANAGER_ABI,
   PERMISSION_TYPES,
+  RECURRING_PAYMENT_EXECUTOR_ABI,
   RULE_TYPES,
+  SUBSCRIPTION_MANAGER_ABI,
+  createRecurringPaymentExecutor,
+  createSubscriptionManager,
+  createSubscriptionPermissionClient,
 } from '../src/index'
 
 const MOCK_MANAGER_ADDRESS: Address = '0x1234567890123456789012345678901234567890'
@@ -22,7 +22,8 @@ const MOCK_PERMISSION_ADDRESS: Address = '0x987654321098765432109876543210987654
 const MOCK_ACCOUNT: Address = '0x1111111111111111111111111111111111111111'
 const MOCK_RECIPIENT: Address = '0x2222222222222222222222222222222222222222'
 const MOCK_TOKEN: Address = '0x3333333333333333333333333333333333333333'
-const MOCK_SUBSCRIPTION_ID: Hex = '0x4444444444444444444444444444444444444444444444444444444444444444'
+const MOCK_SUBSCRIPTION_ID: Hex =
+  '0x4444444444444444444444444444444444444444444444444444444444444444'
 
 // ============================================================
 //                        Constants
@@ -499,9 +500,7 @@ describe('createSubscriptionPermissionClient', () => {
           isAdjustmentAllowed: true,
           data: '0x',
         },
-        rules: [
-          { ruleType: RULE_TYPES.EXPIRY, data: expiryData },
-        ],
+        rules: [{ ruleType: RULE_TYPES.EXPIRY, data: expiryData }],
       })
 
       const decoded = decodeFunctionData({
@@ -584,7 +583,11 @@ describe('createSubscriptionPermissionClient', () => {
       expect(decoded.functionName).toBe('grantPermission')
 
       // Verify permission type is subscription
-      const permission = decoded.args[2] as { permissionType: string; isAdjustmentAllowed: boolean; data: Hex }
+      const permission = decoded.args[2] as {
+        permissionType: string
+        isAdjustmentAllowed: boolean
+        data: Hex
+      }
       expect(permission.permissionType).toBe(PERMISSION_TYPES.SUBSCRIPTION)
       expect(permission.isAdjustmentAllowed).toBe(false)
 
@@ -642,7 +645,11 @@ describe('createSubscriptionPermissionClient', () => {
         data: calldata,
       })
 
-      const permission = decoded.args[2] as { permissionType: string; isAdjustmentAllowed: boolean; data: Hex }
+      const permission = decoded.args[2] as {
+        permissionType: string
+        isAdjustmentAllowed: boolean
+        data: Hex
+      }
       expect(permission.isAdjustmentAllowed).toBe(true)
     })
   })

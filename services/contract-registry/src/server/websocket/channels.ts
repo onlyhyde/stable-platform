@@ -1,6 +1,6 @@
 import type { WebSocket } from 'ws'
 import type { ContractEntry, ResolvedAddressSet } from '../../store/types'
-import { serializeMessage, type ServerMessage } from './protocol'
+import { type ServerMessage, serializeMessage } from './protocol'
 
 interface ClientState {
   readonly socket: WebSocket
@@ -57,19 +57,13 @@ export class ChannelManager {
 
   broadcastContractDelete(chainId: number, name: string): void {
     const msg: ServerMessage = { type: 'contract:deleted', chainId, name }
-    const channels = [
-      'contracts:*',
-      `contracts:${chainId}`,
-      `contracts:${chainId}:${name}`,
-    ]
+    const channels = ['contracts:*', `contracts:${chainId}`, `contracts:${chainId}:${name}`]
     this.broadcast(channels, msg)
   }
 
   broadcastSetUpdate(resolved: ResolvedAddressSet): void {
     const msg: ServerMessage = { type: 'set:updated', data: resolved }
-    const channels = [
-      `sets:${resolved.chainId}:${resolved.name}`,
-    ]
+    const channels = [`sets:${resolved.chainId}:${resolved.name}`]
     this.broadcast(channels, msg)
   }
 

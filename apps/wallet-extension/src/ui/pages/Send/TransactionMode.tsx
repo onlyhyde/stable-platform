@@ -117,12 +117,12 @@ export function TransactionModeSelector({
 
   return (
     <div className="transaction-mode-selector mb-4">
-      <label
+      <span
         className="block text-sm font-medium mb-2"
         style={{ color: 'rgb(var(--foreground-secondary))' }}
       >
         Transaction Mode
-      </label>
+      </span>
 
       {/* Mode Cards */}
       <div className="mode-cards space-y-2">
@@ -237,8 +237,8 @@ function ModeCard({ mode, isSelected, isDisabled, showDescription, onSelect }: M
               Features:
             </p>
             <ul className="text-xs space-y-1" style={{ color: 'rgb(var(--foreground))' }}>
-              {mode.features.map((feature, i) => (
-                <li key={i} className="flex items-center gap-1">
+              {mode.features.map((feature) => (
+                <li key={feature} className="flex items-center gap-1">
                   <span style={{ color: 'rgb(var(--success))' }}>✓</span>
                   {feature}
                 </li>

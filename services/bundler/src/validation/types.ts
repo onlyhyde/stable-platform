@@ -3,12 +3,7 @@ import type { Address, Hex } from 'viem'
 /**
  * Validation phases for tracking where validation failed
  */
-export type ValidationPhase =
-  | 'format'
-  | 'reputation'
-  | 'state'
-  | 'simulation'
-  | 'preflight'
+export type ValidationPhase = 'format' | 'reputation' | 'state' | 'simulation' | 'preflight'
 
 /**
  * Return info from simulation
@@ -236,14 +231,8 @@ export interface ISimulationValidator {
     target?: Address,
     targetCallData?: Hex
   ): Promise<ExecutionResult>
-  validateTimestamps(
-    accountValidationData: bigint,
-    paymasterValidationData?: bigint
-  ): void
-  validateSignature(
-    accountValidationData: bigint,
-    paymasterValidationData?: bigint
-  ): void
+  validateTimestamps(accountValidationData: bigint, paymasterValidationData?: bigint): void
+  validateSignature(accountValidationData: bigint, paymasterValidationData?: bigint): void
   validateAggregator(accountValidationData: bigint): Address | null
   validateStakeInfo(
     stakeInfo: StakeInfo,
@@ -374,18 +363,12 @@ export interface IAggregatorValidator {
    * Validate individual UserOp signature through aggregator
    * Returns the signature to be used for aggregation
    */
-  validateUserOpSignature(
-    aggregator: Address,
-    userOp: PackedUserOperation
-  ): Promise<Hex>
+  validateUserOpSignature(aggregator: Address, userOp: PackedUserOperation): Promise<Hex>
 
   /**
    * Aggregate multiple UserOp signatures
    */
-  aggregateSignatures(
-    aggregator: Address,
-    userOps: PackedUserOperation[]
-  ): Promise<Hex>
+  aggregateSignatures(aggregator: Address, userOps: PackedUserOperation[]): Promise<Hex>
 
   /**
    * Validate aggregated signature for multiple UserOps

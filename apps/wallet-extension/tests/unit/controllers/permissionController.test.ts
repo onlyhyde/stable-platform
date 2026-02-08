@@ -5,11 +5,9 @@
 
 import { PermissionController } from '../../../src/background/controllers/permissionController'
 import type {
-  PermissionType,
-  PermissionRequest,
   PermissionControllerOptions,
+  PermissionType,
 } from '../../../src/background/controllers/permissionController.types'
-import type { Address } from 'viem'
 import { TEST_ACCOUNTS, TEST_ORIGINS } from '../../utils/testUtils'
 
 describe('PermissionController', () => {
@@ -128,9 +126,9 @@ describe('PermissionController', () => {
     })
 
     it('should throw if request not found', async () => {
-      await expect(
-        controller.approvePermissions('nonexistent', [testAddress])
-      ).rejects.toThrow('Permission request not found')
+      await expect(controller.approvePermissions('nonexistent', [testAddress])).rejects.toThrow(
+        'Permission request not found'
+      )
     })
 
     it('should create permissions with caveats for restricted accounts', async () => {

@@ -146,10 +146,7 @@ export function getDefaultTransactionMode(account: Account): TransactionMode {
  * Check if account supports Smart Account features
  */
 export function supportsSmartAccount(account: Account): boolean {
-  return (
-    account.type === ACCOUNT_TYPE.SMART ||
-    account.type === ACCOUNT_TYPE.DELEGATED
-  )
+  return account.type === ACCOUNT_TYPE.SMART || account.type === ACCOUNT_TYPE.DELEGATED
 }
 
 /**

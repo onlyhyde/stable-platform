@@ -14,7 +14,9 @@
 import type { Address, Hex } from 'viem'
 import { STORAGE_KEYS, getSecurityConfig } from '../config'
 import { MESSAGE_TYPES } from '../shared/constants'
+import { originFromUrl, resolveOrigin } from '../shared/security/originVerifier'
 import { createLogger } from '../shared/utils/logger'
+import { validateExtensionMessage } from '../shared/validation/messageSchema'
 import type { ExtensionMessage, JsonRpcRequest, Network } from '../types'
 import { accountController } from './controller/accountController'
 import { networkController } from './controller/networkController'
@@ -22,6 +24,7 @@ import { approvalController } from './controllers/approvalController'
 import { keyringController } from './keyring'
 import { handleRpcRequest } from './rpc/handler'
 import { type IndexerClient, createIndexerClient } from './services/IndexerClient'
+import { transactionWatcher } from './services/transactionWatcher'
 import { walletState } from './state/store'
 import { eventBroadcaster } from './utils/eventBroadcaster'
 
@@ -101,19 +104,6 @@ interface PendingRequest {
 const tabSubscriptions: Map<string, TabSubscription> = new Map()
 const pendingRequests: Map<string, PendingRequest> = new Map()
 const tabOrigins: Map<number, string> = new Map()
-
-/**
- * Get origin from URL
- */
-function originFromUrl(url: string | undefined): string {
-  if (!url) return ''
-  try {
-    const urlObj = new URL(url)
-    return urlObj.origin
-  } catch {
-    return ''
-  }
-}
 
 /**
  * Recursively convert BigInt values to strings for JSON-safe serialization.
@@ -393,16 +383,32 @@ async function handleTabActivated(activeInfo: chrome.tabs.TabActiveInfo): Promis
 /**
  * Handle messages from content scripts and popup
  */
-chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
+  // Validate message structure before processing
+  const validated = validateExtensionMessage(message)
+  if (!validated) {
+    sendResponse({
+      type: MESSAGE_TYPES.RPC_RESPONSE,
+      id: 'unknown',
+      payload: {
+        error: {
+          code: -32600,
+          message: 'Invalid message format',
+        },
+      },
+    })
+    return true
+  }
+
   // Update last activity time on any message
   updateLastActivity()
 
-  handleMessage(message, sender)
+  handleMessage(validated, sender)
     .then(sendResponse)
     .catch((error) => {
       sendResponse({
         type: MESSAGE_TYPES.RPC_RESPONSE,
-        id: message.id,
+        id: validated.id,
         payload: {
           error: {
             code: -32603,
@@ -428,33 +434,14 @@ async function handleMessage(
   message: ExtensionMessage,
   sender: chrome.runtime.MessageSender
 ): Promise<ExtensionMessage> {
-  // SEC-3: Never trust message.origin - always derive from sender
-  // Priority: sender.tab.url (content script) > sender.origin (popup/extension pages)
-  let origin: string
-  if (sender.tab?.url) {
-    const tabOrigin = originFromUrl(sender.tab.url)
-    // Approval popup windows (chrome.windows.create) have sender.tab set
-    // with chrome-extension:// URLs - treat as internal extension origin
-    origin = tabOrigin.startsWith('chrome-extension://') ? 'extension' : tabOrigin
-  } else if (sender.origin) {
-    // Popup and extension pages have chrome-extension:// origin - treat as internal
-    if (sender.origin.startsWith('chrome-extension://')) {
-      origin = 'extension'
-    } else {
-      origin = sender.origin
-    }
-  } else {
-    // Only allow internal extension messages without origin
-    origin = 'extension'
-  }
+  // SEC-3: Derive origin from sender (chrome.tabs API), never from message.origin
+  const resolved = resolveOrigin(sender)
+  const origin = resolved.origin
+  const tabId = resolved.tabId
 
-  // Validate origin format for external requests
-  if (origin !== 'extension' && !origin.startsWith('http://') && !origin.startsWith('https://')) {
+  if (!resolved.isExtension && !resolved.isValidExternal) {
     logger.warn('Invalid origin format', { origin, messageType: message.type })
-    origin = 'unknown'
   }
-
-  const tabId = sender.tab?.id
 
   switch (message.type) {
     case MESSAGE_TYPES.RPC_REQUEST: {
@@ -1249,6 +1236,17 @@ async function handleMessage(
       }
     }
 
+    case 'GET_TOKEN_PRICES': {
+      try {
+        const { handleGetTokenPrices } = await import('./services/tokenPriceService')
+        const symbols = (message as ExtensionMessage<{ symbols?: string[] }>).payload?.symbols
+        const prices = await handleGetTokenPrices(symbols)
+        return { type: 'TOKEN_PRICES' as const, id: message.id, payload: { prices } }
+      } catch {
+        return { type: 'TOKEN_PRICES' as const, id: message.id, payload: { prices: {} } }
+      }
+    }
+
     default:
       return {
         type: MESSAGE_TYPES.RPC_RESPONSE,
@@ -1383,6 +1381,9 @@ async function initialize(): Promise<void> {
 
   // Setup auto-lock alarm
   await setupAutoLockAlarm()
+
+  // Start transaction watcher for receipt polling
+  transactionWatcher.start()
 
   // Update icon state
   await updateIconState()

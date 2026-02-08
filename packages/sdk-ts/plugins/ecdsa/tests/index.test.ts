@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
 import { keccak256, toHex } from 'viem'
-import type { LocalAccount, Hex } from 'viem'
+import type { Hex, LocalAccount } from 'viem'
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   createEcdsaValidator,
   createEcdsaValidatorFromPrivateKey,

@@ -30,7 +30,7 @@ export function TransferForm({ accounts, onTransfer, isLoading = false }: Transf
     }
 
     const amountNum = Number.parseFloat(amount)
-    if (isNaN(amountNum) || amountNum <= 0) {
+    if (Number.isNaN(amountNum) || amountNum <= 0) {
       setError('Please enter a valid amount')
       return
     }

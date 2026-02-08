@@ -44,7 +44,7 @@ const TOKENS = [
 export function SubscriptionPlansCard({
   plans,
   onCreatePlan,
-  onUpdatePlan,
+  onUpdatePlan: _onUpdatePlan,
   onTogglePlan,
 }: SubscriptionPlansCardProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -110,6 +110,7 @@ export function SubscriptionPlansCard({
           {plans.length === 0 ? (
             <div className="text-center py-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
               <svg
+                aria-hidden="true"
                 className="w-12 h-12 mx-auto mb-4"
                 style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
                 fill="none"
@@ -202,6 +203,7 @@ export function SubscriptionPlansCard({
 
                   <div className="flex justify-between items-center">
                     <button
+                      type="button"
                       onClick={() => onTogglePlan(plan.id, !plan.isActive)}
                       className="text-sm"
                       style={{
@@ -211,6 +213,7 @@ export function SubscriptionPlansCard({
                       {plan.isActive ? 'Deactivate' : 'Activate'}
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         /* TODO: Edit modal */
                       }}
@@ -235,12 +238,12 @@ export function SubscriptionPlansCard({
       >
         <div className="space-y-4">
           <div>
-            <label
+            <span
               className="block text-sm font-medium mb-1"
               style={{ color: 'rgb(var(--foreground) / 0.8)' }}
             >
               Plan Name *
-            </label>
+            </span>
             <Input
               placeholder="e.g., Pro Plan"
               value={formData.name}
@@ -249,12 +252,12 @@ export function SubscriptionPlansCard({
           </div>
 
           <div>
-            <label
+            <span
               className="block text-sm font-medium mb-1"
               style={{ color: 'rgb(var(--foreground) / 0.8)' }}
             >
               Description
-            </label>
+            </span>
             <textarea
               className="w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2"
               style={{
@@ -271,12 +274,12 @@ export function SubscriptionPlansCard({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label
+              <span
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground) / 0.8)' }}
               >
                 Price *
-              </label>
+              </span>
               <Input
                 type="number"
                 placeholder="0.00"
@@ -285,12 +288,12 @@ export function SubscriptionPlansCard({
               />
             </div>
             <div>
-              <label
+              <span
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground) / 0.8)' }}
               >
                 Token
-              </label>
+              </span>
               <select
                 className="w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2"
                 style={{
@@ -311,12 +314,12 @@ export function SubscriptionPlansCard({
           </div>
 
           <div>
-            <label
+            <span
               className="block text-sm font-medium mb-1"
               style={{ color: 'rgb(var(--foreground) / 0.8)' }}
             >
               Billing Interval
-            </label>
+            </span>
             <select
               className="w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2"
               style={{

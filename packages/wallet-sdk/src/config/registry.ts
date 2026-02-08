@@ -5,7 +5,7 @@
  */
 
 import type { NetworkConfig, NetworkInfo } from '../types'
-import { DEFAULT_NETWORKS, toNetworkInfo, toNetworkConfig } from './networks'
+import { DEFAULT_NETWORKS, toNetworkConfig, toNetworkInfo } from './networks'
 
 /**
  * Storage interface for network persistence
@@ -39,7 +39,7 @@ class MemoryStorage implements NetworkStorage {
  * localStorage-based storage
  */
 export class LocalStorage implements NetworkStorage {
-  constructor(private prefix: string = 'stablenet_') {}
+  constructor(private prefix = 'stablenet_') {}
 
   async get(key: string): Promise<string | null> {
     try {
@@ -162,9 +162,7 @@ export class NetworkRegistry {
     if (!this.persist) return
 
     try {
-      const customNetworks = Array.from(this.networks.values()).filter(
-        (n) => n.isCustom
-      )
+      const customNetworks = Array.from(this.networks.values()).filter((n) => n.isCustom)
       await this.storage.set(STORAGE_KEY, JSON.stringify(customNetworks))
     } catch {
       // Ignore persistence errors

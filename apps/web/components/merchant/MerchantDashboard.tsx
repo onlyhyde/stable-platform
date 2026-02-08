@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
+import { useState } from 'react'
+import { ApiKeysCard } from './cards/ApiKeysCard'
 import { MerchantStatsCards } from './cards/MerchantStatsCards'
 import { PaymentAnalyticsCard } from './cards/PaymentAnalyticsCard'
 import { RecentTransactionsCard } from './cards/RecentTransactionsCard'
 import { SubscriptionPlansCard } from './cards/SubscriptionPlansCard'
 import { WebhookSettingsCard } from './cards/WebhookSettingsCard'
-import { ApiKeysCard } from './cards/ApiKeysCard'
 
 // Types
 interface MerchantStats {
@@ -92,7 +92,7 @@ interface MerchantDashboardProps {
   merchantName: string
 }
 
-export function MerchantDashboard({ merchantId, merchantName }: MerchantDashboardProps) {
+export function MerchantDashboard({ merchantId: _merchantId, merchantName }: MerchantDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
 
@@ -203,51 +203,44 @@ export function MerchantDashboard({ merchantId, merchantName }: MerchantDashboar
   ]
 
   // Handlers
-  const handleCreatePlan = async (plan: Omit<SubscriptionPlan, 'id' | 'activeSubscribers' | 'totalRevenue' | 'createdAt'>) => {
-    console.log('Create plan:', plan)
-    // TODO: API call
+  const handleCreatePlan = async (
+    _plan: Omit<SubscriptionPlan, 'id' | 'activeSubscribers' | 'totalRevenue' | 'createdAt'>
+  ) => {
+    // TODO: API call to create plan
   }
 
-  const handleUpdatePlan = async (id: string, updates: Partial<SubscriptionPlan>) => {
-    console.log('Update plan:', id, updates)
-    // TODO: API call
+  const handleUpdatePlan = async (_id: string, _updates: Partial<SubscriptionPlan>) => {
+    // TODO: API call to update plan
   }
 
-  const handleTogglePlan = async (id: string, isActive: boolean) => {
-    console.log('Toggle plan:', id, isActive)
-    // TODO: API call
+  const handleTogglePlan = async (_id: string, _isActive: boolean) => {
+    // TODO: API call to toggle plan
   }
 
-  const handleAddWebhook = async (url: string, events: string[]) => {
-    console.log('Add webhook:', url, events)
-    // TODO: API call
+  const handleAddWebhook = async (_url: string, _events: string[]) => {
+    // TODO: API call to add webhook
   }
 
-  const handleDeleteWebhook = async (id: string) => {
-    console.log('Delete webhook:', id)
-    // TODO: API call
+  const handleDeleteWebhook = async (_id: string) => {
+    // TODO: API call to delete webhook
   }
 
-  const handleToggleWebhook = async (id: string, active: boolean) => {
-    console.log('Toggle webhook:', id, active)
-    // TODO: API call
+  const handleToggleWebhook = async (_id: string, _active: boolean) => {
+    // TODO: API call to toggle webhook
   }
 
-  const handleRegenerateSecret = async (id: string) => {
-    console.log('Regenerate secret:', id)
-    // TODO: API call
+  const handleRegenerateSecret = async (_id: string) => {
+    // TODO: API call to regenerate secret
     return 'whsec_new_secret_xyz'
   }
 
-  const handleCreateApiKey = async (name: string, permissions: string[]) => {
-    console.log('Create API key:', name, permissions)
-    // TODO: API call
+  const handleCreateApiKey = async (_name: string, _permissions: string[]) => {
+    // TODO: API call to create API key
     return { key: 'sk_live_new_key_abc123def456ghi789' }
   }
 
-  const handleRevokeApiKey = async (id: string) => {
-    console.log('Revoke API key:', id)
-    // TODO: API call
+  const handleRevokeApiKey = async (_id: string) => {
+    // TODO: API call to revoke API key
   }
 
   return (
@@ -263,12 +256,14 @@ export function MerchantDashboard({ merchantId, merchantName }: MerchantDashboar
           <nav className="flex gap-8" aria-label="Tabs">
             {TABS.map((tab) => (
               <button
+                type="button"
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className="pb-4 px-1 border-b-2 font-medium text-sm transition-colors"
                 style={{
                   borderColor: activeTab === tab.id ? 'rgb(var(--primary))' : 'transparent',
-                  color: activeTab === tab.id ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
+                  color:
+                    activeTab === tab.id ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
                 }}
               >
                 {tab.label}

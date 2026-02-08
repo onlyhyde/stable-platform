@@ -8,7 +8,7 @@
  * - Module uninstallation
  */
 
-import { type Page, type Locator, expect } from '@playwright/test'
+import { type Locator, type Page, expect } from '@playwright/test'
 
 export type ModuleType = 'validator' | 'executor' | 'hook' | 'fallback'
 
@@ -183,11 +183,7 @@ export class ModulesPage {
   /**
    * Install a module (full flow)
    */
-  async installModule(
-    type: ModuleType,
-    moduleName: string,
-    config?: Record<string, string>
-  ) {
+  async installModule(type: ModuleType, moduleName: string, config?: Record<string, string>) {
     await this.startInstallWizard()
     await this.selectModuleType(type)
     await this.selectModule(moduleName)

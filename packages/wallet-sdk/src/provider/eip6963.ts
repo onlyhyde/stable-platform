@@ -7,7 +7,8 @@
  * @see https://eips.ethereum.org/EIPS/eip-6963
  */
 
-import type { EIP1193Provider, EIP6963ProviderInfo, EIP6963ProviderDetail } from '../types'
+import { walletSdkLogger } from '../logger'
+import type { EIP1193Provider, EIP6963ProviderDetail, EIP6963ProviderInfo } from '../types'
 
 /**
  * EIP-6963 event types
@@ -212,7 +213,7 @@ export class ProviderRegistry {
       try {
         listener(event)
       } catch (error) {
-        console.error('Error in provider registry listener:', error)
+        walletSdkLogger.error('Error in provider registry listener:', error)
       }
     }
   }

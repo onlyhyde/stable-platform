@@ -1,20 +1,20 @@
-import { describe, it, expect } from 'vitest'
 import type { Address, Hex } from 'viem'
+import { describe, expect, it } from 'vitest'
 import {
-  encodeECDSAValidatorInit,
   decodeECDSAValidatorInit,
-  validateECDSAValidatorConfig,
-  encodeECDSASignature,
-  encodeWebAuthnValidatorInit,
-  decodeWebAuthnValidatorInit,
-  validateWebAuthnValidatorConfig,
-  encodeMultiSigValidatorInit,
   decodeMultiSigValidatorInit,
-  validateMultiSigValidatorConfig,
+  decodeWebAuthnValidatorInit,
+  encodeECDSASignature,
+  encodeECDSAValidatorInit,
   encodeMultiSigSignature,
+  encodeMultiSigValidatorInit,
+  encodeWebAuthnValidatorInit,
   generateSignerChangeHash,
   identifyValidatorType,
   isValidSignatureFormat,
+  validateECDSAValidatorConfig,
+  validateMultiSigValidatorConfig,
+  validateWebAuthnValidatorConfig,
 } from '../../src/modules/utils/validatorUtils'
 
 describe('validatorUtils', () => {

@@ -71,6 +71,7 @@ export function Modal({
           backdropFilter: 'blur(4px)',
         }}
         onClick={onClose}
+        onKeyDown={undefined}
         aria-hidden="true"
       />
 
@@ -87,6 +88,7 @@ export function Modal({
           }}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
+          // biome-ignore lint/a11y/useSemanticElements: Using div with role="dialog" for custom modal styling and portal rendering; native <dialog> requires different show/close API
           role="dialog"
           aria-modal="true"
           aria-labelledby={title ? 'modal-title' : undefined}
@@ -204,6 +206,7 @@ export function ConfirmModal({
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
+          aria-hidden="true"
         >
           <path
             strokeLinecap="round"
@@ -225,6 +228,7 @@ export function ConfirmModal({
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
+          aria-hidden="true"
         >
           <path
             strokeLinecap="round"
@@ -246,6 +250,7 @@ export function ConfirmModal({
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
+          aria-hidden="true"
         >
           <path
             strokeLinecap="round"
@@ -302,7 +307,7 @@ export function ConfirmModal({
             }}
           >
             {isLoading ? (
-              <svg className="w-5 h-5 mx-auto animate-spin" fill="none" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 mx-auto animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                 <circle
                   className="opacity-25"
                   cx="12"

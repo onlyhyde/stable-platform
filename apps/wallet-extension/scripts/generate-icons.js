@@ -56,7 +56,11 @@ function createChunk(type, data) {
  */
 function isInRoundedRect(x, y, rx, ry, rw, rh, radius, size) {
   const scale = size / 128
-  rx *= scale; ry *= scale; rw *= scale; rh *= scale; radius *= scale
+  rx *= scale
+  ry *= scale
+  rw *= scale
+  rh *= scale
+  radius *= scale
 
   if (x < rx || x > rx + rw || y < ry || y > ry + rh) return false
 
@@ -71,8 +75,8 @@ function isInRoundedRect(x, y, rx, ry, rw, rh, radius, size) {
   for (const corner of corners) {
     const dx = x - corner.cx
     const dy = y - corner.cy
-    const inCornerArea = (x < rx + radius || x > rx + rw - radius) &&
-                         (y < ry + radius || y > ry + rh - radius)
+    const inCornerArea =
+      (x < rx + radius || x > rx + rw - radius) && (y < ry + radius || y > ry + rh - radius)
     if (inCornerArea && dx * dx + dy * dy > radius * radius) {
       return false
     }

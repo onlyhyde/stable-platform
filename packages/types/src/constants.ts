@@ -3,20 +3,17 @@ import type { Address } from 'viem'
 /**
  * EntryPoint v0.7 address (same on all EVM chains)
  */
-export const ENTRY_POINT_V07_ADDRESS: Address =
-  '0x0000000071727De22E5E9d8BAf0edAc6f37da032'
+export const ENTRY_POINT_V07_ADDRESS: Address = '0x0000000071727De22E5E9d8BAf0edAc6f37da032'
 
 /**
  * Kernel v3.1 factory address (Sepolia/Mainnet)
  */
-export const KERNEL_V3_1_FACTORY_ADDRESS: Address =
-  '0x6723b44Abeec4E71eBE3232BD5B455805baDD22f'
+export const KERNEL_V3_1_FACTORY_ADDRESS: Address = '0x6723b44Abeec4E71eBE3232BD5B455805baDD22f'
 
 /**
  * ECDSA Validator address
  */
-export const ECDSA_VALIDATOR_ADDRESS: Address =
-  '0xd9AB5096a832b9ce79914329DAEE236f8Eea0390'
+export const ECDSA_VALIDATOR_ADDRESS: Address = '0xd9AB5096a832b9ce79914329DAEE236f8Eea0390'
 
 /**
  * Kernel implementation addresses

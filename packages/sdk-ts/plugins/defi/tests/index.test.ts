@@ -2,35 +2,35 @@
  * Tests for @stablenet/plugin-defi
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  // ABIs
-  SwapExecutorAbi,
-  LendingExecutorAbi,
-  StakingExecutorAbi,
+  DEFAULTS,
+  DefiPluginError,
   HealthFactorHookAbi,
-  MerchantRegistryAbi,
+  HealthFactorHookError,
+  LendingExecutorAbi,
+  LendingExecutorError,
   // Types
   LendingPoolType,
-  DefiPluginError,
-  SwapExecutorError,
-  LendingExecutorError,
-  StakingExecutorError,
-  HealthFactorHookError,
-  MerchantRegistryError,
   // Constants
   MODULE_TYPE,
-  DEFAULTS,
+  MerchantRegistryAbi,
+  MerchantRegistryError,
   SCALE,
+  StakingExecutorAbi,
+  StakingExecutorError,
+  // ABIs
+  SwapExecutorAbi,
+  SwapExecutorError,
+  calculateFee,
   // Helper Functions
   calculateHealthFactor,
-  isLiquidatable,
   calculateMinOutput,
-  calculateFee,
-  encodeSwapExecutorInitData,
+  encodeHealthFactorHookInitData,
   encodeLendingExecutorInitData,
   encodeStakingExecutorInitData,
-  encodeHealthFactorHookInitData,
+  encodeSwapExecutorInitData,
+  isLiquidatable,
 } from '../src'
 import { TEST_VALUES } from './setup'
 

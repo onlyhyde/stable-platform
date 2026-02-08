@@ -1,18 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Address, Hex } from 'viem'
-import { UserOperationValidator, type ValidatorDependencies } from '../../src/validation/validator'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { RPC_ERROR_CODES, RpcError } from '../../src/types'
+import { createLogger } from '../../src/utils/logger'
 import type {
   IFormatValidator,
-  ISimulationValidator,
-  IReputationManager,
   IOpcodeValidator,
-  ValidationResult,
-  StakeInfo,
+  IReputationManager,
+  ISimulationValidator,
   ReputationConfig,
   ReputationStatus,
+  StakeInfo,
+  ValidationResult,
 } from '../../src/validation/types'
-import { RpcError, RPC_ERROR_CODES } from '../../src/types'
-import { createLogger } from '../../src/utils/logger'
+import { UserOperationValidator, type ValidatorDependencies } from '../../src/validation/validator'
 
 // Test addresses
 const TEST_SENDER = '0x1234567890123456789012345678901234567890' as Address
@@ -37,7 +37,7 @@ function createTestUserOp(overrides: Partial<Record<string, unknown>> = {}) {
     paymasterVerificationGasLimit: undefined,
     paymasterPostOpGasLimit: undefined,
     paymasterData: undefined,
-    signature: '0x' + '00'.repeat(65) as Hex,
+    signature: ('0x' + '00'.repeat(65)) as Hex,
     ...overrides,
   }
 }
@@ -72,7 +72,6 @@ describe('UserOperationValidator', () => {
   let mockOpcodeValidator: IOpcodeValidator
 
   beforeEach(() => {
-
     // Create mock format validator
     mockFormatValidator = {
       validate: vi.fn(),
@@ -220,12 +219,11 @@ describe('UserOperationValidator', () => {
     })
 
     it('should throw when opcodeValidator detects banned opcode', async () => {
-      mockOpcodeValidator.validate = vi.fn().mockRejectedValue(
-        new RpcError(
-          'sender used banned opcode: GASPRICE',
-          RPC_ERROR_CODES.BANNED_OPCODE
+      mockOpcodeValidator.validate = vi
+        .fn()
+        .mockRejectedValue(
+          new RpcError('sender used banned opcode: GASPRICE', RPC_ERROR_CODES.BANNED_OPCODE)
         )
-      )
 
       const dependencies: ValidatorDependencies = {
         formatValidator: mockFormatValidator,

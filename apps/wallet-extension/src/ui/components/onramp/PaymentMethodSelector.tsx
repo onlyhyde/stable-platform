@@ -33,7 +33,7 @@ export function PaymentMethodSelector({
 }: PaymentMethodSelectorProps) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+      <span className="block text-sm font-medium text-gray-700">Payment Method</span>
       <div className="space-y-2">
         {availableMethods.map((method) => {
           const config = methodConfig[method]

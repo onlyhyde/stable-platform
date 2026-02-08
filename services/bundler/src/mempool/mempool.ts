@@ -6,11 +6,11 @@ import type { Logger } from '../utils/logger'
  * Priority strategy for bundle ordering
  */
 export type PriorityStrategy =
-  | 'gas_price'      // Sort by maxFeePerGas (default)
-  | 'priority_fee'   // Sort by maxPriorityFeePerGas
-  | 'profit'         // Sort by estimated profit (gas * priorityFee)
-  | 'fifo'           // First-in-first-out
-  | 'age_weighted'   // Gas price boosted by age
+  | 'gas_price' // Sort by maxFeePerGas (default)
+  | 'priority_fee' // Sort by maxPriorityFeePerGas
+  | 'profit' // Sort by estimated profit (gas * priorityFee)
+  | 'fifo' // First-in-first-out
+  | 'age_weighted' // Gas price boosted by age
 
 /**
  * Mempool configuration
@@ -80,11 +80,7 @@ export class Mempool {
   /**
    * Add a UserOperation to the mempool
    */
-  add(
-    userOp: UserOperation,
-    userOpHash: Hex,
-    entryPoint: Address
-  ): MempoolEntry {
+  add(userOp: UserOperation, userOpHash: Hex, entryPoint: Address): MempoolEntry {
     // Check if already exists
     if (this.pool.has(userOpHash)) {
       throw new Error(`UserOperation ${userOpHash} already in mempool`)
@@ -92,9 +88,7 @@ export class Mempool {
 
     // Check sender limits
     const senderOps = this.bySender.get(userOp.sender)
-    const senderPendingCount = senderOps
-      ? this.countPendingForSender(userOp.sender)
-      : 0
+    const senderPendingCount = senderOps ? this.countPendingForSender(userOp.sender) : 0
 
     if (senderPendingCount >= this.config.maxOpsPerSender) {
       throw new Error('sender has too many pending operations')
@@ -135,10 +129,7 @@ export class Mempool {
     }
     this.noncesBySender.get(userOp.sender)!.add(userOp.nonce)
 
-    this.logger.debug(
-      { userOpHash, sender: userOp.sender },
-      'Added UserOperation to mempool'
-    )
+    this.logger.debug({ userOpHash, sender: userOp.sender }, 'Added UserOperation to mempool')
 
     return entry
   }
@@ -147,11 +138,7 @@ export class Mempool {
    * Replace an existing UserOperation
    * @returns true if replacement was successful
    */
-  replace(
-    existingHash: Hex,
-    newUserOp: UserOperation,
-    _newHash: Hex
-  ): boolean {
+  replace(existingHash: Hex, newUserOp: UserOperation, _newHash: Hex): boolean {
     const existing = this.pool.get(existingHash)
     if (!existing) {
       return false
@@ -159,9 +146,7 @@ export class Mempool {
 
     // Check gas price increase requirement
     const minNewGasPrice =
-      (existing.userOp.maxFeePerGas *
-        (100n + BigInt(this.config.minGasPriceIncrease))) /
-      100n
+      (existing.userOp.maxFeePerGas * (100n + BigInt(this.config.minGasPriceIncrease))) / 100n
 
     if (newUserOp.maxFeePerGas < minNewGasPrice) {
       this.logger.debug(
@@ -375,7 +360,7 @@ export class Mempool {
         return entry.userOp.maxFeePerGas + ageBoost
       }
 
-default:
+      default:
         return entry.userOp.maxFeePerGas
     }
   }
@@ -426,10 +411,7 @@ default:
       entry.error = error
     }
 
-    this.logger.debug(
-      { userOpHash, status, transactionHash },
-      'Updated UserOperation status'
-    )
+    this.logger.debug({ userOpHash, status, transactionHash }, 'Updated UserOperation status')
 
     return true
   }
@@ -508,10 +490,7 @@ default:
       this.evictExpired()
     }, this.config.evictionIntervalMs)
 
-    this.logger.debug(
-      { intervalMs: this.config.evictionIntervalMs },
-      'Started auto eviction'
-    )
+    this.logger.debug({ intervalMs: this.config.evictionIntervalMs }, 'Started auto eviction')
   }
 
   /**
@@ -670,10 +649,7 @@ default:
         continue
       }
 
-      if (
-        !lowestEntry ||
-        entry.userOp.maxFeePerGas < lowestEntry.userOp.maxFeePerGas
-      ) {
+      if (!lowestEntry || entry.userOp.maxFeePerGas < lowestEntry.userOp.maxFeePerGas) {
         lowestEntry = entry
         lowestHash = hash
       }

@@ -149,9 +149,9 @@ export function AuthorizationApproval({
                 </p>
                 {data.contractInfo.features.length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {data.contractInfo.features.map((feature, index) => (
+                    {data.contractInfo.features.map((feature) => (
                       <span
-                        key={index}
+                        key={feature}
                         className="text-xs px-2 py-0.5 rounded-full"
                         style={{
                           backgroundColor: 'rgb(var(--primary) / 0.1)',
@@ -218,9 +218,9 @@ export function AuthorizationApproval({
               Security Warnings
             </p>
             <ul className="space-y-1">
-              {data.warnings.map((warning, index) => (
+              {data.warnings.map((warning) => (
                 <li
-                  key={index}
+                  key={warning}
                   className="flex items-start gap-2 text-sm"
                   style={{
                     color:

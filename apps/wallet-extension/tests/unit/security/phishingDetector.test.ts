@@ -8,9 +8,9 @@ jest.unmock('@stablenet/core')
 
 import {
   PhishingDetector,
+  PhishingPatternType,
   type PhishingResult,
   RiskLevel,
-  PhishingPatternType,
 } from '@stablenet/core'
 
 describe('PhishingDetector', () => {

@@ -257,8 +257,36 @@ func (s *Signer) SignMessage(ctx context.Context, message []byte) (types.Hex, er
 
 // SignTypedData signs EIP-712 typed data.
 func (s *Signer) SignTypedData(ctx context.Context, typedData types.TypedData) (types.Hex, error) {
-	// TODO: Implement EIP-712 signing
-	return nil, fmt.Errorf("SignTypedData not yet implemented")
+	// Compute EIP-712 domain separator hash
+	domainHash, err := hashEIP712Domain(typedData.Domain)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash domain: %w", err)
+	}
+
+	// Compute struct hash for the primary type message
+	structHash, err := hashEIP712Struct(typedData.PrimaryType, typedData.Message, typedData.Types)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash struct: %w", err)
+	}
+
+	// EIP-712: keccak256("\x19\x01" || domainSeparator || structHash)
+	rawData := make([]byte, 0, 2+32+32)
+	rawData = append(rawData, 0x19, 0x01)
+	rawData = append(rawData, domainHash[:]...)
+	rawData = append(rawData, structHash[:]...)
+	digest := ethcrypto.Keccak256(rawData)
+
+	sig, err := ethcrypto.Sign(digest, s.privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign typed data: %w", err)
+	}
+
+	// Adjust V value for Ethereum compatibility
+	if sig[64] < 27 {
+		sig[64] += 27
+	}
+
+	return types.Hex(sig), nil
 }
 
 // SignHash signs a raw hash.
@@ -282,8 +310,12 @@ type RpcClient struct {
 
 // Request makes a raw JSON-RPC request.
 func (r *RpcClient) Request(ctx context.Context, method string, params ...interface{}) (interface{}, error) {
-	// This would need direct RPC access, which ethclient doesn't expose easily
-	return nil, fmt.Errorf("raw Request not implemented, use specific methods")
+	var result interface{}
+	err := r.client.Client().CallContext(ctx, &result, method, params...)
+	if err != nil {
+		return nil, fmt.Errorf("RPC request %s failed: %w", method, err)
+	}
+	return result, nil
 }
 
 // GetChainID returns the chain ID.
@@ -385,8 +417,333 @@ func (r *RpcClient) GetMaxPriorityFeePerGas(ctx context.Context) (*big.Int, erro
 	return r.client.SuggestGasTipCap(ctx)
 }
 
-// SendRawTransaction sends a signed transaction.
+// SendRawTransaction sends a signed transaction via eth_sendRawTransaction.
 func (r *RpcClient) SendRawTransaction(ctx context.Context, signedTx types.Hex) (types.Hash, error) {
-	// TODO: Implement raw transaction sending
-	return types.Hash{}, fmt.Errorf("SendRawTransaction not yet implemented")
+	// Encode as 0x-prefixed hex string for JSON-RPC
+	hexStr := fmt.Sprintf("0x%x", []byte(signedTx))
+
+	var result common.Hash
+	err := r.client.Client().CallContext(ctx, &result, "eth_sendRawTransaction", hexStr)
+	if err != nil {
+		return types.Hash{}, fmt.Errorf("eth_sendRawTransaction failed: %w", err)
+	}
+
+	return types.Hash(result), nil
+}
+
+// ============================================================================
+// EIP-712 Helpers
+// ============================================================================
+
+// hashEIP712Domain computes the EIP-712 domain separator hash.
+func hashEIP712Domain(domain types.TypedDataDomain) (common.Hash, error) {
+	// Build EIP712Domain type hash
+	// Standard fields: name, version, chainId, verifyingContract, salt
+	typeStr := "EIP712Domain("
+	var encodedValues []byte
+	first := true
+
+	appendField := func(name, typ string) {
+		if !first {
+			typeStr += ","
+		}
+		typeStr += typ + " " + name
+		first = false
+	}
+
+	if domain.Name != "" {
+		appendField("name", "string")
+	}
+	if domain.Version != "" {
+		appendField("version", "string")
+	}
+	if domain.ChainId != nil {
+		appendField("chainId", "uint256")
+	}
+	if domain.VerifyingContract != (common.Address{}) {
+		appendField("verifyingContract", "address")
+	}
+	if domain.Salt != (common.Hash{}) {
+		appendField("salt", "bytes32")
+	}
+
+	typeStr += ")"
+	typeHash := ethcrypto.Keccak256([]byte(typeStr))
+	encodedValues = append(encodedValues, typeHash...)
+
+	if domain.Name != "" {
+		encodedValues = append(encodedValues, ethcrypto.Keccak256([]byte(domain.Name))...)
+	}
+	if domain.Version != "" {
+		encodedValues = append(encodedValues, ethcrypto.Keccak256([]byte(domain.Version))...)
+	}
+	if domain.ChainId != nil {
+		encodedValues = append(encodedValues, common.LeftPadBytes(domain.ChainId.Int.Bytes(), 32)...)
+	}
+	if domain.VerifyingContract != (common.Address{}) {
+		encodedValues = append(encodedValues, common.LeftPadBytes(domain.VerifyingContract.Bytes(), 32)...)
+	}
+	if domain.Salt != (common.Hash{}) {
+		encodedValues = append(encodedValues, domain.Salt.Bytes()...)
+	}
+
+	return common.BytesToHash(ethcrypto.Keccak256(encodedValues)), nil
+}
+
+// hashEIP712Struct computes the struct hash for an EIP-712 typed message.
+func hashEIP712Struct(
+	primaryType string,
+	message map[string]interface{},
+	allTypes map[string][]types.TypedDataField,
+) (common.Hash, error) {
+	typeHash, err := hashEIP712Type(primaryType, allTypes)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	encoded := make([]byte, 0, 32+len(message)*32)
+	encoded = append(encoded, typeHash...)
+
+	fields, ok := allTypes[primaryType]
+	if !ok {
+		return common.Hash{}, fmt.Errorf("type %s not found", primaryType)
+	}
+
+	for _, field := range fields {
+		val, exists := message[field.Name]
+		if !exists {
+			// Encode zero value
+			encoded = append(encoded, make([]byte, 32)...)
+			continue
+		}
+
+		encodedField, err := encodeEIP712Value(field.Type, val, allTypes)
+		if err != nil {
+			return common.Hash{}, fmt.Errorf("failed to encode field %s: %w", field.Name, err)
+		}
+		encoded = append(encoded, encodedField...)
+	}
+
+	return common.BytesToHash(ethcrypto.Keccak256(encoded)), nil
+}
+
+// hashEIP712Type computes the type hash for an EIP-712 type.
+func hashEIP712Type(primaryType string, allTypes map[string][]types.TypedDataField) ([]byte, error) {
+	typeStr := encodeEIP712TypeString(primaryType, allTypes)
+	return ethcrypto.Keccak256([]byte(typeStr)), nil
+}
+
+// encodeEIP712TypeString builds the type encoding string for hashStruct.
+func encodeEIP712TypeString(primaryType string, allTypes map[string][]types.TypedDataField) string {
+	fields, ok := allTypes[primaryType]
+	if !ok {
+		return primaryType + "()"
+	}
+
+	// Build primary type string
+	result := primaryType + "("
+	for i, f := range fields {
+		if i > 0 {
+			result += ","
+		}
+		result += f.Type + " " + f.Name
+	}
+	result += ")"
+
+	// Collect and sort referenced types (exclude primary and atomic types)
+	referenced := make(map[string]bool)
+	collectReferencedTypes(primaryType, allTypes, referenced)
+	delete(referenced, primaryType)
+
+	// Sort and append referenced types
+	sorted := make([]string, 0, len(referenced))
+	for t := range referenced {
+		sorted = append(sorted, t)
+	}
+	// Simple sort
+	for i := 0; i < len(sorted); i++ {
+		for j := i + 1; j < len(sorted); j++ {
+			if sorted[i] > sorted[j] {
+				sorted[i], sorted[j] = sorted[j], sorted[i]
+			}
+		}
+	}
+
+	for _, t := range sorted {
+		f := allTypes[t]
+		result += t + "("
+		for i, field := range f {
+			if i > 0 {
+				result += ","
+			}
+			result += field.Type + " " + field.Name
+		}
+		result += ")"
+	}
+
+	return result
+}
+
+// collectReferencedTypes collects all struct types referenced by a type.
+func collectReferencedTypes(typeName string, allTypes map[string][]types.TypedDataField, collected map[string]bool) {
+	if collected[typeName] {
+		return
+	}
+	fields, ok := allTypes[typeName]
+	if !ok {
+		return
+	}
+	collected[typeName] = true
+	for _, f := range fields {
+		baseType := stripArraySuffix(f.Type)
+		if _, isStruct := allTypes[baseType]; isStruct {
+			collectReferencedTypes(baseType, allTypes, collected)
+		}
+	}
+}
+
+// stripArraySuffix removes array suffixes like "[]" from a type name.
+func stripArraySuffix(t string) string {
+	for len(t) > 2 && t[len(t)-2:] == "[]" {
+		t = t[:len(t)-2]
+	}
+	return t
+}
+
+// encodeEIP712Value encodes a single value according to EIP-712 rules.
+func encodeEIP712Value(
+	fieldType string,
+	value interface{},
+	allTypes map[string][]types.TypedDataField,
+) ([]byte, error) {
+	// Handle dynamic types
+	switch fieldType {
+	case "string":
+		s, ok := value.(string)
+		if !ok {
+			return nil, fmt.Errorf("expected string, got %T", value)
+		}
+		return ethcrypto.Keccak256([]byte(s)), nil
+
+	case "bytes":
+		var b []byte
+		switch v := value.(type) {
+		case []byte:
+			b = v
+		case string:
+			h, err := types.HexFromString(v)
+			if err != nil {
+				return nil, err
+			}
+			b = h.Bytes()
+		default:
+			return nil, fmt.Errorf("expected bytes, got %T", value)
+		}
+		return ethcrypto.Keccak256(b), nil
+	}
+
+	// Handle atomic types
+	switch fieldType {
+	case "address":
+		addr, err := toAddress(value)
+		if err != nil {
+			return nil, err
+		}
+		return common.LeftPadBytes(addr.Bytes(), 32), nil
+
+	case "bool":
+		b, ok := value.(bool)
+		if !ok {
+			return nil, fmt.Errorf("expected bool, got %T", value)
+		}
+		if b {
+			return common.LeftPadBytes([]byte{1}, 32), nil
+		}
+		return make([]byte, 32), nil
+
+	case "uint256", "int256", "uint128", "int128", "uint64", "int64",
+		"uint32", "int32", "uint16", "int16", "uint8", "int8":
+		n, err := toBigInt(value)
+		if err != nil {
+			return nil, err
+		}
+		return common.LeftPadBytes(n.Bytes(), 32), nil
+
+	case "bytes32", "bytes16", "bytes8", "bytes4", "bytes2", "bytes1":
+		b, err := toFixedBytes(value, 32)
+		if err != nil {
+			return nil, err
+		}
+		return b, nil
+	}
+
+	// Handle struct types
+	if _, isStruct := allTypes[fieldType]; isStruct {
+		msg, ok := value.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("expected map for struct type %s, got %T", fieldType, value)
+		}
+		hash, err := hashEIP712Struct(fieldType, msg, allTypes)
+		if err != nil {
+			return nil, err
+		}
+		return hash.Bytes(), nil
+	}
+
+	return nil, fmt.Errorf("unsupported EIP-712 type: %s", fieldType)
+}
+
+// toAddress converts a value to common.Address.
+func toAddress(v interface{}) (common.Address, error) {
+	switch val := v.(type) {
+	case common.Address:
+		return val, nil
+	case string:
+		return common.HexToAddress(val), nil
+	default:
+		return common.Address{}, fmt.Errorf("cannot convert %T to address", v)
+	}
+}
+
+// toBigInt converts a value to *big.Int.
+func toBigInt(v interface{}) (*big.Int, error) {
+	switch val := v.(type) {
+	case *big.Int:
+		return val, nil
+	case int64:
+		return big.NewInt(val), nil
+	case float64:
+		return new(big.Int).SetInt64(int64(val)), nil
+	case string:
+		n := new(big.Int)
+		if _, ok := n.SetString(val, 0); !ok {
+			return nil, fmt.Errorf("invalid integer string: %s", val)
+		}
+		return n, nil
+	default:
+		return nil, fmt.Errorf("cannot convert %T to big.Int", v)
+	}
+}
+
+// toFixedBytes converts a value to a 32-byte padded slice.
+func toFixedBytes(v interface{}, size int) ([]byte, error) {
+	var b []byte
+	switch val := v.(type) {
+	case []byte:
+		b = val
+	case [32]byte:
+		b = val[:]
+	case string:
+		h, err := types.HexFromString(val)
+		if err != nil {
+			return nil, err
+		}
+		b = h.Bytes()
+	default:
+		return nil, fmt.Errorf("cannot convert %T to fixed bytes", v)
+	}
+	// Right-pad to size
+	result := make([]byte, size)
+	copy(result, b)
+	return result, nil
 }

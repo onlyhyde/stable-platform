@@ -182,6 +182,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
 
           <div className="space-y-3 mb-4">
             {form.signers.map((signer, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: editable signer inputs have no stable identifier
               <div key={index} className="signer-row">
                 <div className="flex items-center gap-2 mb-1">
                   <span
@@ -212,6 +213,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
                   />
                   {form.signers.length > MIN_SIGNERS && (
                     <button
+                      type="button"
                       className="px-3 py-2 rounded-lg"
                       style={{
                         backgroundColor: 'rgb(var(--destructive) / 0.1)',
@@ -234,6 +236,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
 
           {form.signers.length < MAX_SIGNERS && (
             <button
+              type="button"
               className="text-sm"
               style={{ color: 'rgb(var(--primary))' }}
               onClick={handleAddSigner}
@@ -278,6 +281,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
 
           <div className="flex items-center justify-center gap-4 mb-6">
             <button
+              type="button"
               className="w-12 h-12 rounded-full text-xl font-bold"
               style={{
                 backgroundColor: 'rgb(var(--secondary))',
@@ -301,6 +305,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
               {form.threshold}/{validSigners.length}
             </div>
             <button
+              type="button"
               className="w-12 h-12 rounded-full text-xl font-bold"
               style={{
                 backgroundColor: 'rgb(var(--secondary))',
@@ -325,6 +330,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
           {validSigners.length > 1 && (
             <div className="flex justify-center gap-2">
               <button
+                type="button"
                 className="px-3 py-1 rounded text-sm"
                 style={{
                   backgroundColor:
@@ -337,6 +343,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
               </button>
               {validSigners.length >= 2 && (
                 <button
+                  type="button"
                   className="px-3 py-1 rounded text-sm"
                   style={{
                     backgroundColor:
@@ -359,6 +366,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
                 </button>
               )}
               <button
+                type="button"
                 className="px-3 py-1 rounded text-sm"
                 style={{
                   backgroundColor:
@@ -407,8 +415,8 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
                 color: 'rgb(var(--destructive))',
               }}
             >
-              {errors.map((err, i) => (
-                <p key={i} className="text-sm">
+              {errors.map((err) => (
+                <p key={err} className="text-sm">
                   {err}
                 </p>
               ))}
@@ -483,15 +491,16 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
 
       {/* Actions */}
       <div className="flex gap-3 mt-6">
-        <button className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
+        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
           {step === 'signers' ? 'Cancel' : 'Back'}
         </button>
         {step === 'review' ? (
-          <button className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
+          <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
             Install Validator
           </button>
         ) : (
           <button
+            type="button"
             className="btn-primary flex-1 py-3 rounded-lg font-medium"
             onClick={nextStep}
             disabled={!canProceed()}

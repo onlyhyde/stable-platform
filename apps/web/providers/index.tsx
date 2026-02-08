@@ -1,10 +1,10 @@
 'use client'
 
-import type { ReactNode } from 'react'
-import dynamic from 'next/dynamic'
-import { ThemeProvider } from './ThemeProvider'
-import { StableNetProvider } from './StableNetProvider'
 import { ToastProvider } from '@/components/common'
+import dynamic from 'next/dynamic'
+import type { ReactNode } from 'react'
+import { StableNetProvider } from './StableNetProvider'
+import { ThemeProvider } from './ThemeProvider'
 
 // Dynamically import WalletProvider to prevent SSR issues with wagmi
 const DynamicWalletProvider = dynamic(

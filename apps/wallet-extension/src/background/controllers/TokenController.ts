@@ -158,7 +158,7 @@ function decodeString(data: string): string {
  */
 function decodeUint256(data: string): string {
   const hex = data.replace('0x', '')
-  return BigInt('0x' + hex).toString()
+  return BigInt(`0x${hex}`).toString()
 }
 
 /**

@@ -8,7 +8,7 @@ import Link from 'next/link'
 
 export default function DashboardPage() {
   const { address, isConnected, connect } = useWallet()
-  const { native, tokens, isLoading, isSupported, refetch, addToken } = useWalletAssets()
+  const { native, tokens, isLoading, isSupported, refetch, addToken: _addToken } = useWalletAssets()
 
   // For backward compatibility
   const balance = native?.balance ? BigInt(native.balance) : BigInt(0)

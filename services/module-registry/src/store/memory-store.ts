@@ -1,4 +1,10 @@
-import type { ModuleMetadata, ModuleInstallation, ModuleReview, ModuleType, ModuleCategory } from './types'
+import type {
+  ModuleCategory,
+  ModuleInstallation,
+  ModuleMetadata,
+  ModuleReview,
+  ModuleType,
+} from './types'
 
 /**
  * In-memory store for module registry data
@@ -41,19 +47,19 @@ export class ModuleStore {
 
     if (filters) {
       if (filters.moduleType) {
-        results = results.filter(m => m.moduleType === filters.moduleType)
+        results = results.filter((m) => m.moduleType === filters.moduleType)
       }
       if (filters.category) {
-        results = results.filter(m => m.category === filters.category)
+        results = results.filter((m) => m.category === filters.category)
       }
       if (filters.featured !== undefined) {
-        results = results.filter(m => m.featured === filters.featured)
+        results = results.filter((m) => m.featured === filters.featured)
       }
       if (filters.deprecated !== undefined) {
-        results = results.filter(m => m.deprecated === filters.deprecated)
+        results = results.filter((m) => m.deprecated === filters.deprecated)
       }
       if (filters.chainId !== undefined) {
-        results = results.filter(m => m.addresses[filters.chainId!] !== undefined)
+        results = results.filter((m) => m.addresses[filters.chainId!] !== undefined)
       }
     }
 
@@ -62,11 +68,12 @@ export class ModuleStore {
 
   searchModules(query: string): ModuleMetadata[] {
     const lower = query.toLowerCase()
-    return Array.from(this.modules.values()).filter(m =>
-      m.name.toLowerCase().includes(lower) ||
-      m.description.toLowerCase().includes(lower) ||
-      m.tags.some(t => t.toLowerCase().includes(lower)) ||
-      m.author.toLowerCase().includes(lower)
+    return Array.from(this.modules.values()).filter(
+      (m) =>
+        m.name.toLowerCase().includes(lower) ||
+        m.description.toLowerCase().includes(lower) ||
+        m.tags.some((t) => t.toLowerCase().includes(lower)) ||
+        m.author.toLowerCase().includes(lower)
     )
   }
 
@@ -76,13 +83,13 @@ export class ModuleStore {
 
   getFeaturedModules(): ModuleMetadata[] {
     return Array.from(this.modules.values())
-      .filter(m => m.featured && !m.deprecated)
+      .filter((m) => m.featured && !m.deprecated)
       .sort((a, b) => b.installCount - a.installCount)
   }
 
   getPopularModules(limit = 10): ModuleMetadata[] {
     return Array.from(this.modules.values())
-      .filter(m => !m.deprecated)
+      .filter((m) => !m.deprecated)
       .sort((a, b) => b.installCount - a.installCount)
       .slice(0, limit)
   }
@@ -103,13 +110,15 @@ export class ModuleStore {
   }
 
   listInstallationsForAccount(accountAddress: string): ModuleInstallation[] {
-    return Array.from(this.installations.values())
-      .filter(i => i.accountAddress.toLowerCase() === accountAddress.toLowerCase() && i.active)
+    return Array.from(this.installations.values()).filter(
+      (i) => i.accountAddress.toLowerCase() === accountAddress.toLowerCase() && i.active
+    )
   }
 
   listInstallationsForModule(moduleId: string): ModuleInstallation[] {
-    return Array.from(this.installations.values())
-      .filter(i => i.moduleId === moduleId && i.active)
+    return Array.from(this.installations.values()).filter(
+      (i) => i.moduleId === moduleId && i.active
+    )
   }
 
   deactivateInstallation(id: string): boolean {
@@ -120,7 +129,7 @@ export class ModuleStore {
   }
 
   getInstallationCount(): number {
-    return Array.from(this.installations.values()).filter(i => i.active).length
+    return Array.from(this.installations.values()).filter((i) => i.active).length
   }
 
   // ─── Reviews ───
@@ -132,7 +141,7 @@ export class ModuleStore {
 
   getReviewsForModule(moduleId: string): ModuleReview[] {
     return Array.from(this.reviews.values())
-      .filter(r => r.moduleId === moduleId)
+      .filter((r) => r.moduleId === moduleId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }
 
@@ -161,7 +170,8 @@ export class ModuleStore {
       {
         id: 'ecdsa-validator',
         name: 'ECDSA Validator',
-        description: 'Standard ECDSA signature validation for smart accounts. Essential security module for transaction signing.',
+        description:
+          'Standard ECDSA signature validation for smart accounts. Essential security module for transaction signing.',
         version: '1.0.0',
         moduleType: 'validator',
         category: 'security',
@@ -181,7 +191,8 @@ export class ModuleStore {
       {
         id: 'session-key-validator',
         name: 'Session Key Validator',
-        description: 'Temporary session keys with permission scoping. Enables gasless dApp interactions without repeated signing.',
+        description:
+          'Temporary session keys with permission scoping. Enables gasless dApp interactions without repeated signing.',
         version: '1.0.0',
         moduleType: 'validator',
         category: 'security',
@@ -201,7 +212,8 @@ export class ModuleStore {
       {
         id: 'subscription-executor',
         name: 'Subscription Executor',
-        description: 'Automated recurring payments executor. Schedule DCA, subscriptions, and periodic transfers.',
+        description:
+          'Automated recurring payments executor. Schedule DCA, subscriptions, and periodic transfers.',
         version: '1.0.0',
         moduleType: 'executor',
         category: 'automation',
@@ -221,7 +233,8 @@ export class ModuleStore {
       {
         id: 'spending-limit-hook',
         name: 'Spending Limit Hook',
-        description: 'Enforce per-transaction and daily spending limits. Protect against unauthorized large transfers.',
+        description:
+          'Enforce per-transaction and daily spending limits. Protect against unauthorized large transfers.',
         version: '1.0.0',
         moduleType: 'hook',
         category: 'security',
@@ -241,7 +254,8 @@ export class ModuleStore {
       {
         id: 'social-recovery',
         name: 'Social Recovery',
-        description: 'Recover account access using trusted guardians. Set threshold-based recovery with timelock protection.',
+        description:
+          'Recover account access using trusted guardians. Set threshold-based recovery with timelock protection.',
         version: '1.0.0',
         moduleType: 'validator',
         category: 'social-recovery',
@@ -261,7 +275,8 @@ export class ModuleStore {
       {
         id: 'dex-swap-executor',
         name: 'DEX Swap Executor',
-        description: 'Execute token swaps through Uniswap V3 directly from your smart account with built-in slippage protection.',
+        description:
+          'Execute token swaps through Uniswap V3 directly from your smart account with built-in slippage protection.',
         version: '1.0.0',
         moduleType: 'executor',
         category: 'defi',
@@ -281,7 +296,8 @@ export class ModuleStore {
       {
         id: 'stealth-address-fallback',
         name: 'Stealth Address Fallback',
-        description: 'Privacy-preserving receive addresses using stealth address protocol (ERC-5564).',
+        description:
+          'Privacy-preserving receive addresses using stealth address protocol (ERC-5564).',
         version: '1.0.0',
         moduleType: 'fallback',
         category: 'privacy',
@@ -301,7 +317,8 @@ export class ModuleStore {
       {
         id: 'multisig-validator',
         name: 'Multisig Validator',
-        description: 'Multi-signature validation requiring M-of-N signatures for transaction approval.',
+        description:
+          'Multi-signature validation requiring M-of-N signatures for transaction approval.',
         version: '1.0.0',
         moduleType: 'validator',
         category: 'governance',

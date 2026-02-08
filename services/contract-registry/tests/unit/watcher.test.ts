@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { parseFoundryBroadcast } from '../../src/watcher/foundry-parser'
+import { describe, expect, it } from 'vitest'
 import { mapArtifactName } from '../../src/watcher/artifact-mapper'
+import { parseFoundryBroadcast } from '../../src/watcher/foundry-parser'
 
 describe('Foundry Parser', () => {
   it('should parse valid broadcast JSON', () => {

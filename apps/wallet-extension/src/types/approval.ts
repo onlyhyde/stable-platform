@@ -35,6 +35,8 @@ export interface ConnectApprovalRequest extends BaseApprovalRequest {
   type: 'connect'
   data: {
     requestedPermissions: string[]
+    warnings?: string[]
+    riskLevel?: 'low' | 'medium' | 'high'
   }
   result?: {
     accounts: Address[]
@@ -85,6 +87,23 @@ export interface TransactionApprovalRequest extends BaseApprovalRequest {
     warnings?: string[]
     // Token transfers
     tokenTransfers?: TokenTransfer[]
+    // Simulation results
+    simulation?: {
+      success: boolean
+      revertReason?: string
+      decodedCallData?: {
+        functionName: string
+        selector: string
+        args: Array<{ name: string; type: string; value: string }>
+        description: string
+      }
+      balanceChanges?: Array<{
+        asset: string
+        symbol: string
+        amount: string
+        direction: 'in' | 'out'
+      }>
+    }
   }
   result?: {
     txHash?: Hex

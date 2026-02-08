@@ -81,9 +81,6 @@ export function getGlobalLogger(): Logger {
  * opLogger.info('UserOperation validated')
  * ```
  */
-export function createChildLogger(
-  parent: Logger,
-  context: Record<string, unknown>
-): Logger {
+export function createChildLogger(parent: Logger, context: Record<string, unknown>): Logger {
   return parent.child(context)
 }

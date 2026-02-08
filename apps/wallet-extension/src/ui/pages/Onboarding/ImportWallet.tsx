@@ -132,7 +132,7 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
                 .split(/\s+/)
                 .map((word, index) => (
                   <span
-                    key={index}
+                    key={`${index}-${word}`}
                     className="inline-flex items-center px-2 py-1 rounded text-xs"
                     style={{
                       backgroundColor: 'rgb(var(--surface))',

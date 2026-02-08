@@ -72,13 +72,13 @@ function generateIcon(size, color) {
 
   // IHDR chunk
   const ihdr = Buffer.alloc(13)
-  ihdr.writeUInt32BE(size, 0)  // width
-  ihdr.writeUInt32BE(size, 4)  // height
-  ihdr.writeUInt8(8, 8)        // bit depth
-  ihdr.writeUInt8(6, 9)        // color type (RGBA)
-  ihdr.writeUInt8(0, 10)       // compression
-  ihdr.writeUInt8(0, 11)       // filter
-  ihdr.writeUInt8(0, 12)       // interlace
+  ihdr.writeUInt32BE(size, 0) // width
+  ihdr.writeUInt32BE(size, 4) // height
+  ihdr.writeUInt8(8, 8) // bit depth
+  ihdr.writeUInt8(6, 9) // color type (RGBA)
+  ihdr.writeUInt8(0, 10) // compression
+  ihdr.writeUInt8(0, 11) // filter
+  ihdr.writeUInt8(0, 12) // interlace
   const ihdrChunk = createChunk('IHDR', ihdr)
 
   // Create image data (RGBA)
@@ -101,10 +101,10 @@ function generateIcon(size, color) {
 
       if (distance <= radius) {
         // Inside circle - use the color
-        rawData[pixelOffset] = color.r     // R
+        rawData[pixelOffset] = color.r // R
         rawData[pixelOffset + 1] = color.g // G
         rawData[pixelOffset + 2] = color.b // B
-        rawData[pixelOffset + 3] = 255     // A (opaque)
+        rawData[pixelOffset + 3] = 255 // A (opaque)
       } else if (distance <= radius + 1) {
         // Anti-aliasing edge
         const alpha = Math.max(0, Math.min(255, Math.round((radius + 1 - distance) * 255)))

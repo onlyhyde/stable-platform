@@ -3,16 +3,16 @@
  * TDD tests for the Vault class that manages encrypted storage
  */
 
-import { Vault } from '../../../src/background/keyring/vault'
-import { STORAGE_KEYS, SESSION_KEYS } from '../../../src/shared/constants'
-import { mockChrome } from '../../utils/mockChrome'
-import { TEST_PASSWORD, TEST_PASSWORD_WEAK } from '../../utils/testUtils'
-import type { SerializedKeyring, VaultData, VaultSessionData } from '../../../src/types'
 import {
-  isEncryptedSessionData,
-  decryptSessionData,
   type EncryptedSessionData,
+  decryptSessionData,
+  isEncryptedSessionData,
 } from '../../../src/background/keyring/sessionCrypto'
+import { Vault } from '../../../src/background/keyring/vault'
+import { SESSION_KEYS, STORAGE_KEYS } from '../../../src/shared/constants'
+import type { SerializedKeyring, VaultData, VaultSessionData } from '../../../src/types'
+import { mockChrome } from '../../utils/mockChrome'
+import { TEST_PASSWORD } from '../../utils/testUtils'
 
 /**
  * Helper to get vault salt from local storage for test decryption
@@ -25,7 +25,7 @@ async function getVaultSalt(): Promise<Uint8Array | null> {
   const hex = vault.salt
   const bytes = new Uint8Array(hex.length / 2)
   for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substr(i, 2), 16)
+    bytes[i / 2] = Number.parseInt(hex.substr(i, 2), 16)
   }
   return bytes
 }
@@ -34,7 +34,8 @@ async function getVaultSalt(): Promise<Uint8Array | null> {
 const createTestKeyring = (): SerializedKeyring => ({
   type: 'hd',
   data: {
-    mnemonic: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about',
+    mnemonic:
+      'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about',
     hdPath: "m/44'/60'/0'/0",
     accounts: [{ index: 0 }],
   },
@@ -173,9 +174,7 @@ describe('Vault', () => {
 
       // Create new vault without initialization
       const newVault = new Vault()
-      await expect(newVault.unlock(TEST_PASSWORD)).rejects.toThrow(
-        'Vault is not initialized'
-      )
+      await expect(newVault.unlock(TEST_PASSWORD)).rejects.toThrow('Vault is not initialized')
     })
 
     it('should save to session storage after unlock without password (SEC-6: encrypted)', async () => {

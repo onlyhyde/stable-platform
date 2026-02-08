@@ -25,6 +25,10 @@ interface TokenPreview {
   decimals: number
 }
 
+const isValidAddress = (address: string): boolean => {
+  return /^0x[a-fA-F0-9]{40}$/.test(address)
+}
+
 export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
   const { addToken } = useAssets()
 
@@ -39,10 +43,6 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
   const [error, setError] = useState<string | null>(null)
   const [tokenPreview, setTokenPreview] = useState<TokenPreview | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
-
-  const isValidAddress = (address: string): boolean => {
-    return /^0x[a-fA-F0-9]{40}$/.test(address)
-  }
 
   /**
    * Fetch token metadata from contract
@@ -59,7 +59,7 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
 
     try {
       // Call background to fetch token metadata
-      const response = await chrome.runtime.sendMessage({
+      const _response = await chrome.runtime.sendMessage({
         type: 'RPC_REQUEST',
         id: `fetch-metadata-${Date.now()}`,
         payload: {
@@ -132,7 +132,7 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
       setSymbol(fetchedSymbol || '')
       setName(fetchedName || '')
       setDecimals(String(fetchedDecimals))
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to fetch token metadata')
     } finally {
       setIsFetchingMetadata(false)
@@ -282,7 +282,9 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
+            role="img"
           >
+            <title>Toggle advanced</title>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
           Advanced options

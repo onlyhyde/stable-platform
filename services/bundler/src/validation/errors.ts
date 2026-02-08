@@ -2,23 +2,20 @@ import type { Address, Hex } from 'viem'
 import { decodeAbiParameters, slice } from 'viem'
 import { ERROR_SELECTORS } from '../abi'
 import type {
+  AggregatorInfo,
+  ExecutionResult,
+  ParsedValidationData,
+  ReturnInfo,
+  StakeInfo,
   ValidationResult,
   ValidationResultWithAggregation,
-  ExecutionResult,
-  StakeInfo,
-  ReturnInfo,
-  AggregatorInfo,
-  ParsedValidationData,
 } from './types'
 import { VALIDATION_CONSTANTS } from './types'
 
 /**
  * Check if error data matches a specific error selector
  */
-export function matchesErrorSelector(
-  data: Hex,
-  selector: keyof typeof ERROR_SELECTORS
-): boolean {
+export function matchesErrorSelector(data: Hex, selector: keyof typeof ERROR_SELECTORS): boolean {
   if (!data || data.length < 10) return false
   const actualSelector = slice(data, 0, 4)
   return actualSelector.toLowerCase() === ERROR_SELECTORS[selector].toLowerCase()
@@ -172,9 +169,7 @@ export function decodeValidationResult(data: Hex): ValidationResult {
 /**
  * Decode ValidationResultWithAggregation error data
  */
-export function decodeValidationResultWithAggregation(
-  data: Hex
-): ValidationResultWithAggregation {
+export function decodeValidationResultWithAggregation(data: Hex): ValidationResultWithAggregation {
   const params = slice(data, 4)
 
   const decoded = decodeAbiParameters(
@@ -233,8 +228,7 @@ export function decodeValidationResultWithAggregation(
     params
   )
 
-  const [returnInfo, senderInfo, factoryInfo, paymasterInfo, aggregatorInfo] =
-    decoded
+  const [returnInfo, senderInfo, factoryInfo, paymasterInfo, aggregatorInfo] = decoded
 
   return {
     returnInfo: returnInfo as unknown as ReturnInfo,
@@ -421,10 +415,7 @@ export function formatRevertReason(reason: string): string {
   if (reason.startsWith('0x')) {
     try {
       // Try decoding as string
-      const decoded = decodeAbiParameters(
-        [{ name: 'reason', type: 'string' }],
-        reason as Hex
-      )
+      const decoded = decodeAbiParameters([{ name: 'reason', type: 'string' }], reason as Hex)
       return decoded[0] as string
     } catch {
       // Return raw hex if decoding fails

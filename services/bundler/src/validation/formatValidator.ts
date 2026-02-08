@@ -1,42 +1,44 @@
-import { z } from 'zod'
 import type { Address, Hex } from 'viem'
 import { isAddress, isHex } from 'viem'
+import { z } from 'zod'
 import type { UserOperation } from '../types'
-import { RpcError, RPC_ERROR_CODES } from '../types'
+import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { IFormatValidator } from './types'
 import { VALIDATION_CONSTANTS } from './types'
 
 /**
  * Zod schema for validating address format
  */
-const addressSchema = z.string().refine(
-  (val): val is Address => isAddress(val),
-  { message: 'Invalid address format' }
-)
+const addressSchema = z
+  .string()
+  .refine((val): val is Address => isAddress(val), { message: 'Invalid address format' })
 
 /**
  * Zod schema for validating hex format
  */
-const hexSchema = z.string().refine(
-  (val): val is Hex => isHex(val),
-  { message: 'Invalid hex format' }
-)
+const hexSchema = z
+  .string()
+  .refine((val): val is Hex => isHex(val), { message: 'Invalid hex format' })
 
 /**
  * Zod schema for validating optional address
  */
-const optionalAddressSchema = z.string().optional().refine(
-  (val): val is Address | undefined => val === undefined || isAddress(val),
-  { message: 'Invalid address format' }
-)
+const optionalAddressSchema = z
+  .string()
+  .optional()
+  .refine((val): val is Address | undefined => val === undefined || isAddress(val), {
+    message: 'Invalid address format',
+  })
 
 /**
  * Zod schema for validating optional hex
  */
-const optionalHexSchema = z.string().optional().refine(
-  (val): val is Hex | undefined => val === undefined || isHex(val),
-  { message: 'Invalid hex format' }
-)
+const optionalHexSchema = z
+  .string()
+  .optional()
+  .refine((val): val is Hex | undefined => val === undefined || isHex(val), {
+    message: 'Invalid hex format',
+  })
 
 /**
  * Zod schema for UserOperation validation with bounds checking
@@ -49,12 +51,13 @@ export const userOperationSchema = z.object({
   factory: optionalAddressSchema,
   factoryData: optionalHexSchema.refine(
     (val) => val === undefined || val.length <= VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH,
-    { message: `factoryData exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH - 2) / 2} bytes)` }
+    {
+      message: `factoryData exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH - 2) / 2} bytes)`,
+    }
   ),
-  callData: hexSchema.refine(
-    (val) => val.length <= VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH,
-    { message: `callData exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH - 2) / 2} bytes)` }
-  ),
+  callData: hexSchema.refine((val) => val.length <= VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH, {
+    message: `callData exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH - 2) / 2} bytes)`,
+  }),
   callGasLimit: z.bigint().min(VALIDATION_CONSTANTS.MIN_CALL_GAS_LIMIT, {
     message: `callGasLimit must be at least ${VALIDATION_CONSTANTS.MIN_CALL_GAS_LIMIT}`,
   }),
@@ -75,15 +78,17 @@ export const userOperationSchema = z.object({
   paymasterPostOpGasLimit: z.bigint().optional(),
   paymasterData: optionalHexSchema.refine(
     (val) => val === undefined || val.length <= VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH,
-    { message: `paymasterData exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH - 2) / 2} bytes)` }
+    {
+      message: `paymasterData exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH - 2) / 2} bytes)`,
+    }
   ),
-  signature: hexSchema.refine(
-    (val) => val.length >= VALIDATION_CONSTANTS.MIN_SIGNATURE_LENGTH,
-    { message: `signature must be at least ${VALIDATION_CONSTANTS.MIN_SIGNATURE_LENGTH} characters (65 bytes)` }
-  ).refine(
-    (val) => val.length <= VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH,
-    { message: `signature exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH - 2) / 2} bytes)` }
-  ),
+  signature: hexSchema
+    .refine((val) => val.length >= VALIDATION_CONSTANTS.MIN_SIGNATURE_LENGTH, {
+      message: `signature must be at least ${VALIDATION_CONSTANTS.MIN_SIGNATURE_LENGTH} characters (65 bytes)`,
+    })
+    .refine((val) => val.length <= VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH, {
+      message: `signature exceeds maximum length of ${VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH} characters (${(VALIDATION_CONSTANTS.MAX_SIGNATURE_LENGTH - 2) / 2} bytes)`,
+    }),
 })
 
 /**
@@ -129,7 +134,10 @@ export class FormatValidator implements IFormatValidator {
     }
 
     // Check factoryData length
-    if (userOp.factoryData && userOp.factoryData.length > VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH) {
+    if (
+      userOp.factoryData &&
+      userOp.factoryData.length > VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH
+    ) {
       throw new RpcError(
         `factoryData too large: ${userOp.factoryData.length} chars (max: ${VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH}, ${(VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH - 2) / 2} bytes)`,
         RPC_ERROR_CODES.INVALID_PARAMS
@@ -137,7 +145,10 @@ export class FormatValidator implements IFormatValidator {
     }
 
     // Check paymasterData length
-    if (userOp.paymasterData && userOp.paymasterData.length > VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH) {
+    if (
+      userOp.paymasterData &&
+      userOp.paymasterData.length > VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH
+    ) {
       throw new RpcError(
         `paymasterData too large: ${userOp.paymasterData.length} chars (max: ${VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH}, ${(VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH - 2) / 2} bytes)`,
         RPC_ERROR_CODES.INVALID_PARAMS
@@ -168,14 +179,9 @@ export class FormatValidator implements IFormatValidator {
     const result = userOperationSchema.safeParse(userOp)
 
     if (!result.success) {
-      const errors = result.error.errors
-        .map((e) => `${e.path.join('.')}: ${e.message}`)
-        .join(', ')
+      const errors = result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')
 
-      throw new RpcError(
-        `Invalid UserOperation format: ${errors}`,
-        RPC_ERROR_CODES.INVALID_PARAMS
-      )
+      throw new RpcError(`Invalid UserOperation format: ${errors}`, RPC_ERROR_CODES.INVALID_PARAMS)
     }
   }
 
@@ -201,18 +207,12 @@ export class FormatValidator implements IFormatValidator {
 
     // If factory is specified, factoryData must also be specified
     if (hasFactory && !hasFactoryData) {
-      throw new RpcError(
-        'factory specified without factoryData',
-        RPC_ERROR_CODES.INVALID_PARAMS
-      )
+      throw new RpcError('factory specified without factoryData', RPC_ERROR_CODES.INVALID_PARAMS)
     }
 
     // If factoryData is specified, factory must also be specified
     if (hasFactoryData && !hasFactory) {
-      throw new RpcError(
-        'factoryData specified without factory',
-        RPC_ERROR_CODES.INVALID_PARAMS
-      )
+      throw new RpcError('factoryData specified without factory', RPC_ERROR_CODES.INVALID_PARAMS)
     }
   }
 
@@ -290,10 +290,7 @@ export class FormatValidator implements IFormatValidator {
     }
 
     // Calculate total gas for the operation
-    const totalGas =
-      userOp.preVerificationGas +
-      totalVerificationGas +
-      userOp.callGasLimit
+    const totalGas = userOp.preVerificationGas + totalVerificationGas + userOp.callGasLimit
 
     // Check total gas is within bounds
     if (totalGas > VALIDATION_CONSTANTS.MAX_BUNDLE_GAS) {

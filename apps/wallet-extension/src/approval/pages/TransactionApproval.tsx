@@ -2,6 +2,8 @@ import { formatEther } from 'viem'
 import type { TransactionApprovalRequest } from '../../types'
 import { Badge, Button, Card } from '../../ui/components/common'
 import { useNetworkCurrency } from '../../ui/hooks'
+import { ApprovalWarnings } from '../components/ApprovalWarnings'
+import { TransactionSimulation } from '../components/TransactionSimulation'
 
 /**
  * Convert a value that may be bigint or string (from JSON serialization) to bigint.
@@ -180,8 +182,11 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
           </Card>
         )}
 
-        {/* Contract Interaction */}
-        {data.data && data.data !== '0x' && (
+        {/* Transaction Simulation Results */}
+        {data.simulation && <TransactionSimulation simulation={data.simulation} />}
+
+        {/* Contract Interaction (raw data - only show if no decoded calldata) */}
+        {data.data && data.data !== '0x' && !data.simulation?.decodedCallData && (
           <Card padding="md">
             <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
               Contract Data
@@ -207,9 +212,9 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
               Token Transfers
             </p>
             <div className="space-y-2">
-              {data.tokenTransfers.map((transfer, index) => (
+              {data.tokenTransfers.map((transfer) => (
                 <div
-                  key={index}
+                  key={`${transfer.symbol}-${transfer.direction}-${transfer.amount}`}
                   className="flex items-center justify-between p-2 rounded-lg"
                   style={{
                     backgroundColor:
@@ -240,47 +245,8 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
           </Card>
         )}
 
-        {/* Warnings */}
-        {data.warnings && data.warnings.length > 0 && (
-          <Card
-            variant="filled"
-            padding="md"
-            style={{
-              backgroundColor: 'rgb(var(--warning) / 0.1)',
-              border: '1px solid rgb(var(--warning) / 0.2)',
-            }}
-          >
-            <p className="text-sm font-medium mb-2" style={{ color: 'rgb(234 179 8)' }}>
-              Warnings
-            </p>
-            <ul className="space-y-1">
-              {data.warnings.map((warning, index) => (
-                <li
-                  key={index}
-                  className="flex items-start gap-2 text-sm"
-                  style={{ color: 'rgb(var(--warning) / 0.8)' }}
-                >
-                  <svg
-                    className="w-4 h-4 mt-0.5 shrink-0"
-                    style={{ color: 'rgb(var(--warning))' }}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                  {warning}
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
+        {/* Warnings (severity-coded) */}
+        <ApprovalWarnings warnings={data.warnings ?? []} riskLevel={data.riskLevel} />
       </div>
 
       {/* Actions */}

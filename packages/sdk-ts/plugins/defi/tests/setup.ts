@@ -19,15 +19,11 @@ expect.extend({
     return {
       pass,
       message: () =>
-        pass
-          ? `expected ${received} not to be a BigInt`
-          : `expected ${received} to be a BigInt`,
+        pass ? `expected ${received} not to be a BigInt` : `expected ${received} to be a BigInt`,
     }
   },
   toBeValidAddress(received: unknown) {
-    const pass =
-      typeof received === 'string' &&
-      /^0x[a-fA-F0-9]{40}$/.test(received)
+    const pass = typeof received === 'string' && /^0x[a-fA-F0-9]{40}$/.test(received)
     return {
       pass,
       message: () =>
@@ -69,5 +65,7 @@ export const TEST_VALUES = {
   HEALTH_FACTOR_1_2: BigInt('1200000000000000000'),
   HEALTH_FACTOR_1_5: BigInt('1500000000000000000'),
   HEALTH_FACTOR_2_0: BigInt('2000000000000000000'),
-  MAX_UINT256: BigInt('115792089237316195423570985008687907853269984665640564039457584007913129639935'),
+  MAX_UINT256: BigInt(
+    '115792089237316195423570985008687907853269984665640564039457584007913129639935'
+  ),
 } as const

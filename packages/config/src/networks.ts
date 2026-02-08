@@ -1,10 +1,11 @@
-import type { Network, NativeCurrency } from '@stablenet/types'
+import type { NativeCurrency, Network } from '@stablenet/types'
 import {
   getAnvilConfig,
-  getDevnetConfig,
-  getSepoliaConfig,
-  getMainnetConfig,
   getDefaultChainId,
+  getDevnetConfig,
+  getLocalConfig,
+  getMainnetConfig,
+  getSepoliaConfig,
 } from './env'
 
 /**
@@ -54,6 +55,43 @@ export function getAnvilNetwork(): Network {
  * Static Anvil network (for backward compatibility)
  */
 export const ANVIL_NETWORK: Network = getAnvilNetwork()
+
+/**
+ * WKRC currency definition (for StableNet Local/Testnet)
+ */
+export const WKRC_CURRENCY: NativeCurrency = {
+  name: 'WKRC Coin',
+  symbol: 'WKRC',
+  decimals: 18,
+}
+
+/**
+ * StableNet Local network for development (Chain ID 8283)
+ * URLs configurable via environment variables:
+ * - STABLENET_LOCAL_RPC_URL
+ * - STABLENET_LOCAL_BUNDLER_URL
+ * - STABLENET_LOCAL_PAYMASTER_URL
+ * - STABLENET_LOCAL_STEALTH_SERVER_URL
+ * - STABLENET_LOCAL_EXPLORER_URL
+ */
+export function getLocalNetwork(): Network {
+  const config = getLocalConfig()
+  return {
+    chainId: 8283,
+    name: 'StableNet Local',
+    rpcUrl: config.rpcUrl,
+    bundlerUrl: config.bundlerUrl,
+    paymasterUrl: config.paymasterUrl,
+    explorerUrl: config.explorerUrl,
+    currency: WKRC_CURRENCY,
+    isTestnet: true,
+  }
+}
+
+/**
+ * Static StableNet Local network (for backward compatibility)
+ */
+export const LOCAL_NETWORK: Network = getLocalNetwork()
 
 /**
  * StableNet Devnet
@@ -137,19 +175,12 @@ export const MAINNET_NETWORK: Network = getMainnetNetwork()
 /**
  * Default networks for wallet
  */
-export const DEFAULT_NETWORKS: Network[] = [
-  ANVIL_NETWORK,
-  DEVNET_NETWORK,
-  SEPOLIA_NETWORK,
-]
+export const DEFAULT_NETWORKS: Network[] = [LOCAL_NETWORK, ANVIL_NETWORK, DEVNET_NETWORK, SEPOLIA_NETWORK]
 
 /**
  * All supported networks
  */
-export const ALL_NETWORKS: Network[] = [
-  ...DEFAULT_NETWORKS,
-  MAINNET_NETWORK,
-]
+export const ALL_NETWORKS: Network[] = [...DEFAULT_NETWORKS, MAINNET_NETWORK]
 
 /**
  * Get network by chain ID

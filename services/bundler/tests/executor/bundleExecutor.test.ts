@@ -1,17 +1,24 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { Address, Hex, PublicClient, WalletClient, Account } from 'viem'
+import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { EVENT_SIGNATURES } from '../../src/abi'
 import { BundleExecutor, type BundleExecutorConfig } from '../../src/executor/bundleExecutor'
 import { Mempool } from '../../src/mempool/mempool'
-import { UserOperationValidator, AggregatorValidator, type IAggregatorValidator, type PackedUserOperation } from '../../src/validation'
-import type { UserOperation, MempoolEntry } from '../../src/types'
+import type { UserOperation } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
-import { EVENT_SIGNATURES } from '../../src/abi'
+import type {
+  AggregatorValidator,
+  IAggregatorValidator,
+  UserOperationValidator,
+} from '../../src/validation'
 
 /**
  * Mock type for AggregatorValidator used in tests
  * Only implements the methods actually used by BundleExecutor
  */
-type MockAggregatorValidator = Pick<IAggregatorValidator, 'aggregateSignatures' | 'validateSignatures'>
+type MockAggregatorValidator = Pick<
+  IAggregatorValidator,
+  'aggregateSignatures' | 'validateSignatures'
+>
 
 // Mock logger
 const mockLogger = createLogger('error', false)
@@ -23,10 +30,7 @@ const TEST_SENDER = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address
 const TEST_ACCOUNT = '0x9999999999999999999999999999999999999999' as Address
 
 // Helper to create a UserOperation
-function createTestUserOp(
-  sender: Address = TEST_SENDER,
-  nonce: bigint = 0n
-): UserOperation {
+function createTestUserOp(sender: Address = TEST_SENDER, nonce = 0n): UserOperation {
   return {
     sender,
     nonce,
@@ -182,11 +186,7 @@ describe('BundleExecutor', () => {
 
       // Add more operations than maxBundleSize (15 > maxBundleSize of 10)
       for (let i = 0; i < 15; i++) {
-        mempool.add(
-          createTestUserOp(TEST_SENDER, BigInt(i)),
-          createHash(i),
-          ENTRY_POINT
-        )
+        mempool.add(createTestUserOp(TEST_SENDER, BigInt(i)), createHash(i), ENTRY_POINT)
       }
 
       await executor.tryBundle()
@@ -211,7 +211,13 @@ describe('BundleExecutor', () => {
       const mockSimValidator = mockValidator.getSimulationValidator()
       vi.mocked(mockSimValidator.simulate)
         .mockResolvedValueOnce({
-          returnInfo: { preOpGas: 50000n, prefund: 0n, accountValidationData: 0n, paymasterValidationData: 0n, paymasterContext: '0x' },
+          returnInfo: {
+            preOpGas: 50000n,
+            prefund: 0n,
+            accountValidationData: 0n,
+            paymasterValidationData: 0n,
+            paymasterContext: '0x',
+          },
           senderInfo: { stake: 0n, unstakeDelaySec: 0n },
           factoryInfo: { stake: 0n, unstakeDelaySec: 0n },
           paymasterInfo: { stake: 0n, unstakeDelaySec: 0n },
@@ -235,8 +241,7 @@ describe('BundleExecutor', () => {
 
       // Make all operations fail simulation
       const mockSimValidator = mockValidator.getSimulationValidator()
-      vi.mocked(mockSimValidator.simulate)
-        .mockRejectedValue(new Error('All simulations failed'))
+      vi.mocked(mockSimValidator.simulate).mockRejectedValue(new Error('All simulations failed'))
 
       const result = await executor.tryBundle()
 
@@ -261,14 +266,26 @@ describe('BundleExecutor', () => {
       const mockSimValidator = mockValidator.getSimulationValidator()
       vi.mocked(mockSimValidator.simulate)
         .mockResolvedValueOnce({
-          returnInfo: { preOpGas: 50000n, prefund: 0n, accountValidationData: 0n, paymasterValidationData: 0n, paymasterContext: '0x' },
+          returnInfo: {
+            preOpGas: 50000n,
+            prefund: 0n,
+            accountValidationData: 0n,
+            paymasterValidationData: 0n,
+            paymasterContext: '0x',
+          },
           senderInfo: { stake: 0n, unstakeDelaySec: 0n },
           factoryInfo: { stake: 0n, unstakeDelaySec: 0n },
           paymasterInfo: { stake: 0n, unstakeDelaySec: 0n },
         })
         .mockRejectedValueOnce(new Error('Second op failed'))
         .mockResolvedValueOnce({
-          returnInfo: { preOpGas: 50000n, prefund: 0n, accountValidationData: 0n, paymasterValidationData: 0n, paymasterContext: '0x' },
+          returnInfo: {
+            preOpGas: 50000n,
+            prefund: 0n,
+            accountValidationData: 0n,
+            paymasterValidationData: 0n,
+            paymasterContext: '0x',
+          },
           senderInfo: { stake: 0n, unstakeDelaySec: 0n },
           factoryInfo: { stake: 0n, unstakeDelaySec: 0n },
           paymasterInfo: { stake: 0n, unstakeDelaySec: 0n },
@@ -314,9 +331,7 @@ describe('BundleExecutor', () => {
     })
 
     it('should handle submission failure', async () => {
-      vi.mocked(mockWalletClient.sendTransaction).mockRejectedValue(
-        new Error('Transaction failed')
-      )
+      vi.mocked(mockWalletClient.sendTransaction).mockRejectedValue(new Error('Transaction failed'))
 
       const hash = createHash(1)
       mempool.add(createTestUserOp(), hash, ENTRY_POINT)
@@ -350,11 +365,12 @@ describe('BundleExecutor', () => {
               padAddress(userOp.sender), // sender as indexed topic (padded to 32 bytes)
               padAddress('0x0000000000000000000000000000000000000000' as Address), // paymaster
             ] as [Hex, ...Hex[]],
-            data: '0x' +
+            data:
+              '0x' +
               '0000000000000000000000000000000000000000000000000000000000000000' + // nonce
               '0000000000000000000000000000000000000000000000000000000000000001' + // success (true)
               '0000000000000000000000000000000000000000000000000000000000001000' + // actualGasCost
-              '0000000000000000000000000000000000000000000000000000000000000500',  // actualGasUsed
+              '0000000000000000000000000000000000000000000000000000000000000500', // actualGasUsed
           },
         ],
       } as unknown as ReturnType<PublicClient['waitForTransactionReceipt']>)
@@ -405,11 +421,12 @@ describe('BundleExecutor', () => {
               padAddress(userOp.sender),
               padAddress('0x0000000000000000000000000000000000000000' as Address),
             ] as [Hex, ...Hex[]],
-            data: '0x' +
+            data:
+              '0x' +
               '0000000000000000000000000000000000000000000000000000000000000000' + // nonce
               '0000000000000000000000000000000000000000000000000000000000000000' + // success (false)
               '0000000000000000000000000000000000000000000000000000000000001000' + // actualGasCost
-              '0000000000000000000000000000000000000000000000000000000000000500',  // actualGasUsed
+              '0000000000000000000000000000000000000000000000000000000000000500', // actualGasUsed
           },
         ],
       } as unknown as ReturnType<PublicClient['waitForTransactionReceipt']>)
@@ -448,7 +465,8 @@ describe('BundleExecutor', () => {
               padAddress(userOp1.sender),
               padAddress('0x0000000000000000000000000000000000000000' as Address),
             ] as [Hex, ...Hex[]],
-            data: '0x' +
+            data:
+              '0x' +
               '0000000000000000000000000000000000000000000000000000000000000000' +
               '0000000000000000000000000000000000000000000000000000000000000001' + // success
               '0000000000000000000000000000000000000000000000000000000000001000' +
@@ -462,7 +480,8 @@ describe('BundleExecutor', () => {
               padAddress(userOp2.sender),
               padAddress('0x0000000000000000000000000000000000000000' as Address),
             ] as [Hex, ...Hex[]],
-            data: '0x' +
+            data:
+              '0x' +
               '0000000000000000000000000000000000000000000000000000000000000000' +
               '0000000000000000000000000000000000000000000000000000000000000001' + // success
               '0000000000000000000000000000000000000000000000000000000000002000' +
@@ -498,7 +517,8 @@ describe('BundleExecutor', () => {
               padAddress(userOp.sender),
               padAddress('0x0000000000000000000000000000000000000000' as Address),
             ] as [Hex, ...Hex[]],
-            data: '0x' +
+            data:
+              '0x' +
               '0000000000000000000000000000000000000000000000000000000000000000' +
               '0000000000000000000000000000000000000000000000000000000000000001' +
               '0000000000000000000000000000000000000000000000000000000000001000' +
@@ -553,7 +573,7 @@ describe('BundleExecutor', () => {
         paymasterVerificationGasLimit: 30000n,
         paymasterPostOpGasLimit: 20000n,
         paymasterData: '0xabcd' as Hex,
-        signature: '0x' + 'ff'.repeat(65) as Hex,
+        signature: ('0x' + 'ff'.repeat(65)) as Hex,
       }
 
       mempool.add(userOp, createHash(1), ENTRY_POINT)
@@ -580,7 +600,7 @@ describe('BundleExecutor', () => {
         paymasterVerificationGasLimit: undefined,
         paymasterPostOpGasLimit: undefined,
         paymasterData: undefined,
-        signature: '0x' + '00'.repeat(65) as Hex,
+        signature: ('0x' + '00'.repeat(65)) as Hex,
       }
 
       mempool.add(userOp, createHash(1), ENTRY_POINT)
@@ -608,7 +628,7 @@ describe('BundleExecutor', () => {
         paymasterVerificationGasLimit: undefined,
         paymasterPostOpGasLimit: undefined,
         paymasterData: undefined,
-        signature: '0x' + '00'.repeat(65) as Hex,
+        signature: ('0x' + '00'.repeat(65)) as Hex,
       }
 
       mempool.add(userOp, createHash(1), ENTRY_POINT)
@@ -621,9 +641,7 @@ describe('BundleExecutor', () => {
 
   describe('error recovery', () => {
     it('should handle gas estimation failure', async () => {
-      vi.mocked(mockPublicClient.estimateGas).mockRejectedValue(
-        new Error('Gas estimation failed')
-      )
+      vi.mocked(mockPublicClient.estimateGas).mockRejectedValue(new Error('Gas estimation failed'))
 
       const hash = createHash(1)
       mempool.add(createTestUserOp(), hash, ENTRY_POINT)
@@ -727,7 +745,7 @@ describe('BundleExecutor', () => {
 
     it('should use handleAggregatedOps when operations have aggregators', async () => {
       const mockAggregatorValidator = {
-        aggregateSignatures: vi.fn().mockResolvedValue('0x' + 'ab'.repeat(96) as Hex),
+        aggregateSignatures: vi.fn().mockResolvedValue(('0x' + 'ab'.repeat(96)) as Hex),
         validateSignatures: vi.fn().mockResolvedValue(undefined),
       }
 
@@ -751,21 +769,15 @@ describe('BundleExecutor', () => {
 
     it('should group operations by aggregator', async () => {
       const mockAggregatorValidator = {
-        aggregateSignatures: vi.fn().mockResolvedValue('0x' + 'ab'.repeat(96) as Hex),
+        aggregateSignatures: vi.fn().mockResolvedValue(('0x' + 'ab'.repeat(96)) as Hex),
         validateSignatures: vi.fn().mockResolvedValue(undefined),
       }
 
       executor.setAggregatorValidator(mockAggregatorValidator as unknown as AggregatorValidator)
 
       const userOp1 = createTestUserOp(TEST_SENDER, 0n)
-      const userOp2 = createTestUserOp(
-        '0x1111111111111111111111111111111111111111' as Address,
-        0n
-      )
-      const userOp3 = createTestUserOp(
-        '0x2222222222222222222222222222222222222222' as Address,
-        0n
-      )
+      const userOp2 = createTestUserOp('0x1111111111111111111111111111111111111111' as Address, 0n)
+      const userOp3 = createTestUserOp('0x2222222222222222222222222222222222222222' as Address, 0n)
 
       mempool.add(userOp1, createHash(1), ENTRY_POINT)
       mempool.add(userOp2, createHash(2), ENTRY_POINT)
@@ -786,17 +798,14 @@ describe('BundleExecutor', () => {
 
     it('should handle mixed bundles (with and without aggregator)', async () => {
       const mockAggregatorValidator = {
-        aggregateSignatures: vi.fn().mockResolvedValue('0x' + 'ab'.repeat(96) as Hex),
+        aggregateSignatures: vi.fn().mockResolvedValue(('0x' + 'ab'.repeat(96)) as Hex),
         validateSignatures: vi.fn().mockResolvedValue(undefined),
       }
 
       executor.setAggregatorValidator(mockAggregatorValidator as unknown as AggregatorValidator)
 
       const userOp1 = createTestUserOp(TEST_SENDER, 0n)
-      const userOp2 = createTestUserOp(
-        '0x1111111111111111111111111111111111111111' as Address,
-        0n
-      )
+      const userOp2 = createTestUserOp('0x1111111111111111111111111111111111111111' as Address, 0n)
 
       mempool.add(userOp1, createHash(1), ENTRY_POINT)
       mempool.add(userOp2, createHash(2), ENTRY_POINT)
@@ -818,7 +827,7 @@ describe('BundleExecutor', () => {
 
     it('should call aggregator.aggregateSignatures for each aggregator group', async () => {
       const mockAggregatorValidator = {
-        aggregateSignatures: vi.fn().mockResolvedValue('0x' + 'ab'.repeat(96) as Hex),
+        aggregateSignatures: vi.fn().mockResolvedValue(('0x' + 'ab'.repeat(96)) as Hex),
         validateSignatures: vi.fn().mockResolvedValue(undefined),
       }
 
@@ -826,10 +835,7 @@ describe('BundleExecutor', () => {
       executor.setAggregatorValidator(mockAggregatorValidator as unknown as AggregatorValidator)
 
       const userOp1 = createTestUserOp(TEST_SENDER, 0n)
-      const userOp2 = createTestUserOp(
-        '0x1111111111111111111111111111111111111111' as Address,
-        0n
-      )
+      const userOp2 = createTestUserOp('0x1111111111111111111111111111111111111111' as Address, 0n)
 
       mempool.add(userOp1, createHash(1), ENTRY_POINT)
       mempool.add(userOp2, createHash(2), ENTRY_POINT)
@@ -848,7 +854,7 @@ describe('BundleExecutor', () => {
 
     it('should validate aggregated signature before submission', async () => {
       const mockAggregatorValidator = {
-        aggregateSignatures: vi.fn().mockResolvedValue('0x' + 'ab'.repeat(96) as Hex),
+        aggregateSignatures: vi.fn().mockResolvedValue(('0x' + 'ab'.repeat(96)) as Hex),
         validateSignatures: vi.fn().mockResolvedValue(undefined),
       }
 
@@ -866,10 +872,8 @@ describe('BundleExecutor', () => {
 
     it('should fail bundle if aggregated signature validation fails', async () => {
       const mockAggregatorValidator = {
-        aggregateSignatures: vi.fn().mockResolvedValue('0x' + 'ab'.repeat(96) as Hex),
-        validateSignatures: vi
-          .fn()
-          .mockRejectedValue(new Error('Invalid aggregated signature')),
+        aggregateSignatures: vi.fn().mockResolvedValue(('0x' + 'ab'.repeat(96)) as Hex),
+        validateSignatures: vi.fn().mockRejectedValue(new Error('Invalid aggregated signature')),
       }
 
       executor.setAggregatorValidator(mockAggregatorValidator as unknown as AggregatorValidator)
@@ -883,7 +887,7 @@ describe('BundleExecutor', () => {
 
     it('should correctly encode handleAggregatedOps call data', async () => {
       const mockAggregatorValidator = {
-        aggregateSignatures: vi.fn().mockResolvedValue('0x' + 'ab'.repeat(96) as Hex),
+        aggregateSignatures: vi.fn().mockResolvedValue(('0x' + 'ab'.repeat(96)) as Hex),
         validateSignatures: vi.fn().mockResolvedValue(undefined),
       }
 

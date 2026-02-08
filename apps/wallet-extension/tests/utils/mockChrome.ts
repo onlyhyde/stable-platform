@@ -110,9 +110,7 @@ const tabsMock = {
 
 // Windows mock
 const windowsMock = {
-  create: jest.fn((options: chrome.windows.CreateData) =>
-    Promise.resolve({ id: 1, ...options })
-  ),
+  create: jest.fn((options: chrome.windows.CreateData) => Promise.resolve({ id: 1, ...options })),
   update: jest.fn(() => Promise.resolve()),
   remove: jest.fn(() => Promise.resolve()),
   getCurrent: jest.fn(() => Promise.resolve({ id: 1, focused: true })),
@@ -161,10 +159,8 @@ const idleMock = {
 // Notifications mock
 const notificationsMock = {
   create: jest.fn(
-    (
-      _notificationId: string,
-      _options: chrome.notifications.NotificationOptions<true>
-    ) => Promise.resolve('notification-id')
+    (_notificationId: string, _options: chrome.notifications.NotificationOptions<true>) =>
+      Promise.resolve('notification-id')
   ),
   clear: jest.fn(() => Promise.resolve(true)),
   onClicked: {

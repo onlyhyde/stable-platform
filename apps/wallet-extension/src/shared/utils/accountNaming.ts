@@ -103,12 +103,12 @@ export function validateAccountName(name: string): { valid: boolean; error?: str
  */
 export function parseAccountName(name: string): { type: AccountType; index: number } | null {
   const hdMatch = name.match(/^Account\s+(\d+)$/i)
-  if (hdMatch && hdMatch[1]) {
+  if (hdMatch?.[1]) {
     return { type: 'hd', index: Number.parseInt(hdMatch[1], 10) - 1 }
   }
 
   const importedMatch = name.match(/^Imported\s+(\d+)$/i)
-  if (importedMatch && importedMatch[1]) {
+  if (importedMatch?.[1]) {
     return { type: 'imported', index: Number.parseInt(importedMatch[1], 10) - 1 }
   }
 

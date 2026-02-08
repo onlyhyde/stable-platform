@@ -3,10 +3,10 @@
  * TDD tests for the HDKeyring class that manages HD wallet accounts
  */
 
+import type { Address, Hex } from 'viem'
 import { HDKeyring } from '../../../src/background/keyring/hdKeyring'
 import type { HDKeyringData } from '../../../src/types'
 import { TEST_MNEMONIC, TEST_MNEMONIC_24 } from '../../utils/testUtils'
-import type { Address, Hex } from 'viem'
 
 // Known address derived from TEST_MNEMONIC at index 0
 // This is the first address derived from "abandon abandon ... about" mnemonic
@@ -85,9 +85,9 @@ describe('HDKeyring', () => {
     })
 
     it('should throw with invalid mnemonic', () => {
-      expect(() =>
-        hdKeyring.initializeFromMnemonic('invalid mnemonic phrase')
-      ).toThrow('Invalid mnemonic phrase')
+      expect(() => hdKeyring.initializeFromMnemonic('invalid mnemonic phrase')).toThrow(
+        'Invalid mnemonic phrase'
+      )
     })
 
     it('should throw with wrong number of words', () => {
@@ -262,9 +262,9 @@ describe('HDKeyring', () => {
       const unknownAddress = '0x0000000000000000000000000000000000000001' as Address
       const message = '0x48656c6c6f' as Hex
 
-      await expect(
-        hdKeyring.signMessage(unknownAddress, message)
-      ).rejects.toThrow('Account not found in keyring')
+      await expect(hdKeyring.signMessage(unknownAddress, message)).rejects.toThrow(
+        'Account not found in keyring'
+      )
     })
 
     it('should produce different signatures for different messages', async () => {
@@ -317,9 +317,9 @@ describe('HDKeyring', () => {
         message: { name: 'Alice' },
       }
 
-      await expect(
-        hdKeyring.signTypedData(unknownAddress, typedData)
-      ).rejects.toThrow('Account not found in keyring')
+      await expect(hdKeyring.signTypedData(unknownAddress, typedData)).rejects.toThrow(
+        'Account not found in keyring'
+      )
     })
   })
 
@@ -357,9 +357,9 @@ describe('HDKeyring', () => {
         gas: BigInt(21000),
       }
 
-      await expect(
-        hdKeyring.signTransaction(unknownAddress, tx)
-      ).rejects.toThrow('Account not found in keyring')
+      await expect(hdKeyring.signTransaction(unknownAddress, tx)).rejects.toThrow(
+        'Account not found in keyring'
+      )
     })
   })
 
@@ -400,9 +400,7 @@ describe('HDKeyring', () => {
       const keyring2 = new HDKeyring(serialized)
 
       expect(keyring2.getAccountCount()).toBe(2)
-      expect(keyring2.getAccounts()[0].address.toLowerCase()).toBe(
-        KNOWN_ADDRESS.toLowerCase()
-      )
+      expect(keyring2.getAccounts()[0].address.toLowerCase()).toBe(KNOWN_ADDRESS.toLowerCase())
     })
 
     it('should produce same addresses after restore', () => {

@@ -1,17 +1,17 @@
-import Fastify, { type FastifyInstance } from 'fastify'
 import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
+import Fastify, { type FastifyInstance } from 'fastify'
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
-import type { BundlerConfig, UserOperation, UserOperationReceipt } from '../types'
-import { RpcError, RPC_ERROR_CODES } from '../types'
-import { Mempool } from '../mempool/mempool'
-import { GasEstimator } from '../gas/gasEstimator'
-import { BundleExecutor } from '../executor/bundleExecutor'
-import { UserOperationValidator } from '../validation'
-import type { Logger } from '../utils/logger'
-import { unpackUserOperation, getUserOperationHash } from './utils'
 import { DEFAULT_CORS_ORIGINS } from '../cli/config'
 import { getServerConfig } from '../config/constants'
+import { BundleExecutor } from '../executor/bundleExecutor'
+import { GasEstimator } from '../gas/gasEstimator'
+import { Mempool } from '../mempool/mempool'
+import type { BundlerConfig, UserOperation, UserOperationReceipt } from '../types'
+import { RPC_ERROR_CODES, RpcError } from '../types'
+import type { Logger } from '../utils/logger'
+import { UserOperationValidator } from '../validation'
+import { getUserOperationHash, unpackUserOperation } from './utils'
 
 /**
  * JSON-RPC request
@@ -70,11 +70,7 @@ export class RpcServer {
     const primaryEntryPoint = config.entryPoints[0]!
 
     // Initialize gas estimator (using first entry point)
-    this.gasEstimator = new GasEstimator(
-      publicClient,
-      primaryEntryPoint,
-      logger
-    )
+    this.gasEstimator = new GasEstimator(publicClient, primaryEntryPoint, logger)
 
     // Initialize validator using factory method (DI pattern)
     this.validator = UserOperationValidator.create(
@@ -219,9 +215,7 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
 
       // Handle batch requests
       if (Array.isArray(body)) {
-        const results = await Promise.all(
-          body.map((req) => this.handleRequest(req))
-        )
+        const results = await Promise.all(body.map((req) => this.handleRequest(req)))
         return reply.send(results)
       }
 
@@ -259,7 +253,9 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
       // In production, mask internal error details to prevent information leakage
       // Only show generic message; detailed errors are logged server-side
       const errorMessage = this.config.debug
-        ? (error instanceof Error ? error.message : 'Internal error')
+        ? error instanceof Error
+          ? error.message
+          : 'Internal error'
         : 'An internal error occurred. Please try again later.'
 
       return {
@@ -312,10 +308,7 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
         return this.debugClearReputation()
 
       default:
-        throw new RpcError(
-          `Method ${method} not found`,
-          RPC_ERROR_CODES.METHOD_NOT_FOUND
-        )
+        throw new RpcError(`Method ${method} not found`, RPC_ERROR_CODES.METHOD_NOT_FOUND)
     }
   }
 
@@ -327,10 +320,7 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
 
     // Validate entry point
     if (!this.config.entryPoints.includes(entryPoint)) {
-      throw new RpcError(
-        `EntryPoint ${entryPoint} not supported`,
-        RPC_ERROR_CODES.INVALID_PARAMS
-      )
+      throw new RpcError(`EntryPoint ${entryPoint} not supported`, RPC_ERROR_CODES.INVALID_PARAMS)
     }
 
     // Unpack UserOperation
@@ -354,9 +344,7 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
   /**
    * eth_estimateUserOperationGas
    */
-  private async ethEstimateUserOperationGas(
-    params: unknown[]
-  ): Promise<{
+  private async ethEstimateUserOperationGas(params: unknown[]): Promise<{
     preVerificationGas: Hex
     verificationGasLimit: Hex
     callGasLimit: Hex
@@ -367,10 +355,7 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
 
     // Validate entry point
     if (!this.config.entryPoints.includes(entryPoint)) {
-      throw new RpcError(
-        `EntryPoint ${entryPoint} not supported`,
-        RPC_ERROR_CODES.INVALID_PARAMS
-      )
+      throw new RpcError(`EntryPoint ${entryPoint} not supported`, RPC_ERROR_CODES.INVALID_PARAMS)
     }
 
     // Unpack UserOperation
@@ -545,17 +530,12 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
         opsSeen: number
         opsIncluded: number
         status?: 'ok' | 'throttled' | 'banned'
-      }>
+      }>,
     ]
 
     const reputationManager = this.validator.getReputationManager()
     for (const entry of entries) {
-      reputationManager.setReputation(
-        entry.address,
-        entry.opsSeen,
-        entry.opsIncluded,
-        entry.status
-      )
+      reputationManager.setReputation(entry.address, entry.opsSeen, entry.opsIncluded, entry.status)
     }
 
     return { success: true }

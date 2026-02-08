@@ -109,7 +109,7 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
           >
             {words.map((word, index) => (
               <div
-                key={index}
+                key={`${index}-${word}`}
                 className="flex items-center gap-2 rounded-lg px-3 py-2"
                 style={{
                   backgroundColor: 'rgb(var(--background-raised))',

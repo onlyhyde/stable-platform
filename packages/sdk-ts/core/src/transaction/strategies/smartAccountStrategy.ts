@@ -13,6 +13,9 @@ import type {
 } from '@stablenet/sdk-types'
 import { ACCOUNT_TYPE, GAS_PAYMENT_TYPE, TRANSACTION_MODE } from '@stablenet/sdk-types'
 import type { Address, Hash, Hex } from 'viem'
+import { concat, encodeFunctionData, pad, toHex } from 'viem'
+import { ENTRY_POINT_ABI } from '../../abis/entryPoint'
+import { KERNEL_ABI } from '../../abis/kernel'
 import { createBundlerClient } from '../../clients/bundlerClient'
 import {
   DEFAULT_CALL_GAS_LIMIT,
@@ -23,6 +26,8 @@ import {
 } from '../../config'
 import { createTransactionError } from '../../errors'
 import { createPaymasterClient } from '../../paymasterClient'
+import { type RpcProvider, createViemProvider } from '../../providers'
+import { getUserOperationHash } from '../../utils/userOperation'
 import type {
   CombinedSigner,
   SmartAccountStrategyConfig,
@@ -66,12 +71,15 @@ export function createSmartAccountStrategy(
   config: SmartAccountStrategyConfig
 ): TransactionStrategy {
   const {
-    rpcUrl: _rpcUrl,
+    rpcUrl,
     chainId,
     bundlerUrl,
     paymasterUrl,
     entryPointAddress = DEFAULT_ENTRY_POINT,
   } = config
+
+  // Create provider for on-chain reads (nonce, etc.)
+  const provider: RpcProvider = createViemProvider({ rpcUrl, chainId })
 
   // Create clients
   const bundlerClient = createBundlerClient({
@@ -82,6 +90,19 @@ export function createSmartAccountStrategy(
   const paymasterClient = paymasterUrl
     ? createPaymasterClient({ url: paymasterUrl, chainId })
     : null
+
+  /**
+   * Fetch the current nonce from the EntryPoint contract
+   */
+  async function getNonce(sender: Address, key = 0n): Promise<bigint> {
+    const result = await provider.readContract<bigint>({
+      address: entryPointAddress,
+      abi: ENTRY_POINT_ABI,
+      functionName: 'getNonce',
+      args: [sender, key],
+    })
+    return BigInt(result)
+  }
 
   return {
     mode: TRANSACTION_MODE.SMART_ACCOUNT,
@@ -138,16 +159,20 @@ export function createSmartAccountStrategy(
       // Encode calldata for Smart Account
       const callData = encodeSmartAccountCall(request.to, request.value, request.data)
 
+      // Fetch nonce from EntryPoint
+      const nonce = await getNonce(request.from)
+
       // Estimate gas via bundler
       const gasEstimation = await bundlerClient.estimateUserOperationGas({
         sender: request.from,
         callData,
-        nonce: 0n, // Will be fetched properly
+        nonce,
       })
 
       // Build partial UserOperation
       const userOp: Partial<UserOperation> = {
         sender: request.from,
+        nonce,
         callData,
         callGasLimit: gasEstimation.callGasLimit,
         verificationGasLimit: gasEstimation.verificationGasLimit ?? DEFAULT_VERIFICATION_GAS_LIMIT,
@@ -165,7 +190,7 @@ export function createSmartAccountStrategy(
         const paymasterResponse = await paymasterClient.getPaymasterData(
           {
             sender: request.from,
-            nonce: 0n,
+            nonce,
             callData,
             callGasLimit: gasEstimation.callGasLimit,
             verificationGasLimit:
@@ -217,10 +242,13 @@ export function createSmartAccountStrategy(
     ): Promise<TransactionResult> {
       const preparedData = prepared.strategyData as SmartAccountPreparedData
 
+      // Fetch fresh nonce for execution (may have changed since prepare)
+      const executionNonce = preparedData.userOp.nonce ?? (await getNonce(prepared.request.from))
+
       // Build final UserOperation
       const userOp: UserOperation = {
         sender: prepared.request.from,
-        nonce: 0n, // Should be fetched from entry point
+        nonce: executionNonce,
         callData: preparedData.userOp.callData!,
         callGasLimit:
           preparedData.userOp.callGasLimit ??
@@ -244,7 +272,7 @@ export function createSmartAccountStrategy(
       }
 
       // Sign the UserOperation
-      const userOpHash = await calculateUserOpHash(userOp, entryPointAddress, chainId)
+      const userOpHash = calculateUserOpHash(userOp, entryPointAddress, chainId)
       const signature = await signer.signAuthorization(userOpHash)
       userOp.signature = encodeSignature(signature)
 
@@ -291,23 +319,34 @@ export function createSmartAccountStrategy(
 
 /**
  * Encode Smart Account execute call
+ *
+ * Encodes a call to Kernel v0.3.3's execute(bytes32 mode, bytes executionCalldata).
+ * ExecMode 0x00 = single call, default exec type, padded to 32 bytes.
+ * executionCalldata = abi.encodePacked(target, value, callData)
  */
-function encodeSmartAccountCall(_to: Address, _value: bigint, _data: Hex): Hex {
-  // Kernel's execute function encoding
-  // This is a placeholder - actual implementation would use viem's encodeFunctionData
-  return '0x' as Hex
+function encodeSmartAccountCall(to: Address, value = 0n, data: Hex = '0x'): Hex {
+  // ExecMode: 0x00 (single call), padded to 32 bytes
+  const execMode = pad('0x00' as Hex, { size: 32 })
+
+  // executionCalldata: abi.encodePacked(target[20], value[32], callData[variable])
+  const executionCalldata = concat([
+    to, // 20 bytes: target address
+    pad(toHex(value), { size: 32 }), // 32 bytes: value
+    data, // variable: callData
+  ]) as Hex
+
+  return encodeFunctionData({
+    abi: KERNEL_ABI,
+    functionName: 'execute',
+    args: [execMode, executionCalldata],
+  })
 }
 
 /**
- * Calculate UserOperation hash
+ * Calculate UserOperation hash using the already-implemented getUserOperationHash utility
  */
-async function calculateUserOpHash(
-  _userOp: UserOperation,
-  _entryPoint: Address,
-  _chainId: number
-): Promise<Hex> {
-  // This is a placeholder - actual implementation would hash the UserOp
-  return '0x' as Hex
+function calculateUserOpHash(userOp: UserOperation, entryPoint: Address, chainId: number): Hex {
+  return getUserOperationHash(userOp, entryPoint, BigInt(chainId))
 }
 
 /**

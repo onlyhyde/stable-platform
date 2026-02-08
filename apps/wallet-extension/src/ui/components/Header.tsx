@@ -19,7 +19,7 @@ export function Header() {
 
   const currentAccount = useMemo(
     () => accounts.find((a) => a.address === selectedAccount),
-    [accounts, selectedAccount],
+    [accounts, selectedAccount]
   )
 
   const handleAddAccount = async () => {

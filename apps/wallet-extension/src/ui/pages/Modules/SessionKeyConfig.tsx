@@ -51,7 +51,7 @@ const COMMON_SELECTORS = [
 // Component
 // ============================================================================
 
-export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: SessionKeyConfigProps) {
+export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, onBack }: SessionKeyConfigProps) {
   const [step, setStep] = useState<Step>('key')
   const [form, setForm] = useState<FormState>({
     sessionKey: '',
@@ -212,6 +212,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
           <div className="space-y-3">
             <div>
               <label
+                htmlFor="session-key-address"
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
@@ -219,6 +220,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
               </label>
               <div className="flex gap-2">
                 <input
+                  id="session-key-address"
                   type="text"
                   className="flex-1 px-3 py-2 rounded-lg input-base font-mono text-sm"
                   placeholder="0x..."
@@ -226,6 +228,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
                   onChange={(e) => setForm((prev) => ({ ...prev, sessionKey: e.target.value }))}
                 />
                 <button
+                  type="button"
                   className="px-3 py-2 rounded-lg text-sm font-medium"
                   style={{ backgroundColor: 'rgb(var(--secondary))' }}
                   onClick={generateSessionKey}
@@ -236,15 +239,16 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
             </div>
 
             <div>
-              <label
+              <span
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
                 Validity Duration
-              </label>
+              </span>
               <div className="grid grid-cols-4 gap-2">
                 {DURATION_PRESETS.map((preset) => (
                   <button
+                    type="button"
                     key={preset.label}
                     className="px-3 py-2 rounded-lg text-sm"
                     style={{
@@ -288,6 +292,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
 
           <div className="space-y-2 mb-4">
             {form.allowedTargets.map((target, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: editable target inputs have no stable identifier
               <div key={index} className="flex gap-2">
                 <input
                   type="text"
@@ -298,6 +303,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
                 />
                 {form.allowedTargets.length > 1 && (
                   <button
+                    type="button"
                     className="px-3 py-2 rounded-lg"
                     style={{
                       backgroundColor: 'rgb(var(--destructive) / 0.1)',
@@ -313,6 +319,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
           </div>
 
           <button
+            type="button"
             className="text-sm"
             style={{ color: 'rgb(var(--primary))' }}
             onClick={handleAddTarget}
@@ -330,6 +337,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
             <div className="grid grid-cols-2 gap-2">
               {COMMON_SELECTORS.map((sel) => (
                 <button
+                  type="button"
                   key={sel.selector}
                   className="p-2 rounded-lg text-left text-sm"
                   style={{
@@ -378,12 +386,14 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
           <div className="space-y-4">
             <div>
               <label
+                htmlFor="max-value-per-tx"
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
                 Max Value Per Transaction (ETH)
               </label>
               <input
+                id="max-value-per-tx"
                 type="number"
                 className="w-full px-3 py-2 rounded-lg input-base"
                 placeholder="0.1"
@@ -395,6 +405,7 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
               <div className="flex gap-2 mt-2">
                 {['0', '0.1', '1', '10'].map((val) => (
                   <button
+                    type="button"
                     key={val}
                     className="px-3 py-1 rounded text-sm"
                     style={{ backgroundColor: 'rgb(var(--secondary))' }}
@@ -408,12 +419,14 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
 
             <div>
               <label
+                htmlFor="start-delay"
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
                 Start Delay (Optional)
               </label>
               <select
+                id="start-delay"
                 className="w-full px-3 py-2 rounded-lg input-base"
                 value={form.validAfterDelay}
                 onChange={(e) =>
@@ -444,8 +457,8 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
                 color: 'rgb(var(--destructive))',
               }}
             >
-              {errors.map((err, i) => (
-                <p key={i} className="text-sm">
+              {errors.map((err) => (
+                <p key={err} className="text-sm">
                   {err}
                 </p>
               ))}
@@ -506,15 +519,16 @@ export function SessionKeyConfigUI({ accountAddress, onSubmit, onBack }: Session
 
       {/* Actions */}
       <div className="flex gap-3 mt-6">
-        <button className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
+        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
           {step === 'key' ? 'Cancel' : 'Back'}
         </button>
         {step === 'review' ? (
-          <button className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
+          <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
             Install Executor
           </button>
         ) : (
           <button
+            type="button"
             className="btn-primary flex-1 py-3 rounded-lg font-medium"
             onClick={nextStep}
             disabled={!canProceed()}
@@ -613,6 +627,7 @@ export function SessionKeyList({ sessionKeys, onRevoke }: SessionKeyListProps) {
               </div>
               {onRevoke && !isExpired && (
                 <button
+                  type="button"
                   className="px-3 py-1 rounded text-sm"
                   style={{
                     backgroundColor: 'rgb(var(--destructive) / 0.1)',

@@ -41,8 +41,7 @@ export const ENTRY_POINT_ADDRESS = ENTRY_POINT_V07
 export function isEntryPoint(address: Address): boolean {
   const normalized = address.toLowerCase()
   return (
-    normalized === ENTRY_POINT_V07.toLowerCase() ||
-    normalized === ENTRY_POINT_V06.toLowerCase()
+    normalized === ENTRY_POINT_V07.toLowerCase() || normalized === ENTRY_POINT_V06.toLowerCase()
   )
 }
 

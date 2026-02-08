@@ -1,15 +1,14 @@
-import { describe, it, expect, beforeAll } from 'vitest'
 import {
+  http,
   createPublicClient,
   createWalletClient,
-  http,
-  parseEther,
   formatEther,
-  encodeFunctionData,
   parseAbi,
+  parseEther,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { foundry } from 'viem/chains'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { TEST_CONFIG, isNetworkAvailable } from '../setup'
 
 // Contract ABIs (minimal for testing)
@@ -178,7 +177,11 @@ describe('Contract Integration Tests', () => {
     })
 
     it('should compute counterfactual address', async () => {
-      if (!networkAvailable || !TEST_CONFIG.contracts.kernelFactory || !TEST_CONFIG.contracts.kernelImplementation) {
+      if (
+        !networkAvailable ||
+        !TEST_CONFIG.contracts.kernelFactory ||
+        !TEST_CONFIG.contracts.kernelImplementation
+      ) {
         return
       }
 
@@ -192,7 +195,9 @@ describe('Contract Integration Tests', () => {
 
       // For Kernel, getAddress requires valid validator data
       // Skip this test for now as it requires complex initialization
-      console.log('✅ Kernel Factory deployed, counterfactual address computation requires validator setup')
+      console.log(
+        '✅ Kernel Factory deployed, counterfactual address computation requires validator setup'
+      )
       expect(true).toBe(true)
     })
   })

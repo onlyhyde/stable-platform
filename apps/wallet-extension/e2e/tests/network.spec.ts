@@ -8,8 +8,8 @@
  * - Network switch approval
  */
 
-import { test, expect } from '../fixtures/extension'
-import { OnboardingPage, WalletHomePage, ApprovalPage } from '../pages'
+import { expect, test } from '../fixtures/extension'
+import { ApprovalPage, OnboardingPage, WalletHomePage } from '../pages'
 
 // Test password
 const TEST_PASSWORD = 'TestP@ssword123!'
@@ -42,9 +42,7 @@ test.describe('Network Management', () => {
   })
 
   test.describe('Network Display', () => {
-    test('should display current network in header', async ({
-      extensionPopup,
-    }) => {
+    test('should display current network in header', async ({ extensionPopup }) => {
       const home = new WalletHomePage(extensionPopup)
 
       // Network selector should be visible
@@ -55,9 +53,7 @@ test.describe('Network Management', () => {
       expect(networkName.length).toBeGreaterThan(0)
     })
 
-    test('should show network list when clicking selector', async ({
-      extensionPopup,
-    }) => {
+    test('should show network list when clicking selector', async ({ extensionPopup }) => {
       const home = new WalletHomePage(extensionPopup)
 
       await home.openNetworkSelector()
@@ -68,9 +64,7 @@ test.describe('Network Management', () => {
   })
 
   test.describe('Network Switching in Wallet', () => {
-    test('should switch network from wallet UI', async ({
-      extensionPopup,
-    }) => {
+    test('should switch network from wallet UI', async ({ extensionPopup }) => {
       const home = new WalletHomePage(extensionPopup)
 
       // Get initial network
@@ -80,7 +74,9 @@ test.describe('Network Management', () => {
       await home.openNetworkSelector()
 
       // Find a different network option
-      const networkOptions = extensionPopup.locator('[data-testid="network-list"] [data-testid^="network-"]')
+      const networkOptions = extensionPopup.locator(
+        '[data-testid="network-list"] [data-testid^="network-"]'
+      )
       const count = await networkOptions.count()
 
       if (count > 1) {
@@ -101,9 +97,7 @@ test.describe('Network Management', () => {
       }
     })
 
-    test('should persist network selection after lock/unlock', async ({
-      extensionPopup,
-    }) => {
+    test('should persist network selection after lock/unlock', async ({ extensionPopup }) => {
       const home = new WalletHomePage(extensionPopup)
 
       // Switch to a specific network
@@ -139,9 +133,11 @@ test.describe('Network Management', () => {
       await dappPage.goto(TEST_DAPP_URL)
 
       // Connect first
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
-      }).catch(() => {})
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        })
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 
@@ -156,12 +152,14 @@ test.describe('Network Management', () => {
       }
 
       // Request network switch
-      await dappPage.evaluate((chainId) => {
-        return (window as any).ethereum?.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId }],
-        })
-      }, NETWORKS.sepolia.chainId).catch(() => {})
+      await dappPage
+        .evaluate((chainId) => {
+          return (window as any).ethereum?.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId }],
+          })
+        }, NETWORKS.sepolia.chainId)
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 
@@ -192,9 +190,11 @@ test.describe('Network Management', () => {
       await dappPage.goto(TEST_DAPP_URL)
 
       // Connect
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
-      }).catch(() => {})
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        })
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 
@@ -236,17 +236,16 @@ test.describe('Network Management', () => {
       await dappPage.close()
     })
 
-    test('should reject network switch request', async ({
-      extensionContext,
-      extensionId,
-    }) => {
+    test('should reject network switch request', async ({ extensionContext, extensionId }) => {
       const dappPage = await extensionContext.newPage()
       await dappPage.goto(TEST_DAPP_URL)
 
       // Connect
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
-      }).catch(() => {})
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        })
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 
@@ -290,17 +289,16 @@ test.describe('Network Management', () => {
   })
 
   test.describe('Add Network via dApp', () => {
-    test('should display add network request', async ({
-      extensionContext,
-      extensionId,
-    }) => {
+    test('should display add network request', async ({ extensionContext, extensionId }) => {
       const dappPage = await extensionContext.newPage()
       await dappPage.goto(TEST_DAPP_URL)
 
       // Connect
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
-      }).catch(() => {})
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        })
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 
@@ -314,22 +312,26 @@ test.describe('Network Management', () => {
       }
 
       // Request to add a new network
-      await dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: '0x89', // Polygon
-            chainName: 'Polygon Mainnet',
-            nativeCurrency: {
-              name: 'MATIC',
-              symbol: 'MATIC',
-              decimals: 18,
-            },
-            rpcUrls: ['https://polygon-rpc.com'],
-            blockExplorerUrls: ['https://polygonscan.com'],
-          }],
+      await dappPage
+        .evaluate(() => {
+          return (window as any).ethereum?.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId: '0x89', // Polygon
+                chainName: 'Polygon Mainnet',
+                nativeCurrency: {
+                  name: 'MATIC',
+                  symbol: 'MATIC',
+                  decimals: 18,
+                },
+                rpcUrls: ['https://polygon-rpc.com'],
+                blockExplorerUrls: ['https://polygonscan.com'],
+              },
+            ],
+          })
         })
-      }).catch(() => {})
+        .catch(() => {})
 
       await dappPage.waitForTimeout(2000)
 

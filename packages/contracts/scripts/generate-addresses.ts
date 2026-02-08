@@ -8,9 +8,9 @@
  *   pnpm generate --input ../../poc-contract/deployments
  */
 
-import { readFile, writeFile, readdir, stat } from 'node:fs/promises'
-import { join, resolve, dirname } from 'node:path'
 import { existsSync } from 'node:fs'
+import { readFile, readdir, writeFile } from 'node:fs/promises'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -119,37 +119,69 @@ function generateAddressesTs(deployments: ChainDeployment[]): string {
     lines.push(`  ${chainId}: {`)
     lines.push(`    chainId: ${chainId},`)
     lines.push('    core: {')
-    lines.push(`      entryPoint: '${addresses.entryPoint || addresses.EntryPoint || ZERO_ADDRESS}',`)
+    lines.push(
+      `      entryPoint: '${addresses.entryPoint || addresses.EntryPoint || ZERO_ADDRESS}',`
+    )
     lines.push(`      kernel: '${addresses.kernel || addresses.Kernel || ZERO_ADDRESS}',`)
-    lines.push(`      kernelFactory: '${addresses.kernelFactory || addresses.KernelFactory || addresses.accountFactory || ZERO_ADDRESS}',`)
+    lines.push(
+      `      kernelFactory: '${addresses.kernelFactory || addresses.KernelFactory || addresses.accountFactory || ZERO_ADDRESS}',`
+    )
     lines.push('    },')
     lines.push('    validators: {')
-    lines.push(`      ecdsaValidator: '${addresses.ecdsaValidator || addresses.ECDSAValidator || ZERO_ADDRESS}',`)
-    lines.push(`      webAuthnValidator: '${addresses.webAuthnValidator || addresses.WebAuthnValidator || ZERO_ADDRESS}',`)
-    lines.push(`      multiEcdsaValidator: '${addresses.multiEcdsaValidator || addresses.MultiECDSAValidator || ZERO_ADDRESS}',`)
+    lines.push(
+      `      ecdsaValidator: '${addresses.ecdsaValidator || addresses.ECDSAValidator || ZERO_ADDRESS}',`
+    )
+    lines.push(
+      `      webAuthnValidator: '${addresses.webAuthnValidator || addresses.WebAuthnValidator || ZERO_ADDRESS}',`
+    )
+    lines.push(
+      `      multiEcdsaValidator: '${addresses.multiEcdsaValidator || addresses.MultiECDSAValidator || ZERO_ADDRESS}',`
+    )
     lines.push('    },')
     lines.push('    executors: {')
-    lines.push(`      ownableExecutor: '${addresses.ownableExecutor || addresses.OwnableExecutor || ZERO_ADDRESS}',`)
+    lines.push(
+      `      ownableExecutor: '${addresses.ownableExecutor || addresses.OwnableExecutor || ZERO_ADDRESS}',`
+    )
     lines.push('    },')
     lines.push('    hooks: {')
-    lines.push(`      spendingLimitHook: '${addresses.spendingLimitHook || addresses.SpendingLimitHook || ZERO_ADDRESS}',`)
+    lines.push(
+      `      spendingLimitHook: '${addresses.spendingLimitHook || addresses.SpendingLimitHook || ZERO_ADDRESS}',`
+    )
     lines.push('    },')
     lines.push('    paymasters: {')
-    lines.push(`      verifyingPaymaster: '${addresses.verifyingPaymaster || addresses.VerifyingPaymaster || addresses.paymaster || ZERO_ADDRESS}',`)
-    lines.push(`      tokenPaymaster: '${addresses.tokenPaymaster || addresses.TokenPaymaster || ZERO_ADDRESS}',`)
+    lines.push(
+      `      verifyingPaymaster: '${addresses.verifyingPaymaster || addresses.VerifyingPaymaster || addresses.paymaster || ZERO_ADDRESS}',`
+    )
+    lines.push(
+      `      tokenPaymaster: '${addresses.tokenPaymaster || addresses.TokenPaymaster || ZERO_ADDRESS}',`
+    )
     lines.push('    },')
     lines.push('    privacy: {')
-    lines.push(`      stealthAnnouncer: '${addresses.stealthAnnouncer || addresses.StealthAnnouncer || ZERO_ADDRESS}',`)
-    lines.push(`      stealthRegistry: '${addresses.stealthRegistry || addresses.StealthRegistry || ZERO_ADDRESS}',`)
+    lines.push(
+      `      stealthAnnouncer: '${addresses.stealthAnnouncer || addresses.StealthAnnouncer || ZERO_ADDRESS}',`
+    )
+    lines.push(
+      `      stealthRegistry: '${addresses.stealthRegistry || addresses.StealthRegistry || ZERO_ADDRESS}',`
+    )
     lines.push('    },')
     lines.push('    compliance: {')
-    lines.push(`      kycRegistry: '${addresses.kycRegistry || addresses.KYCRegistry || ZERO_ADDRESS}',`)
-    lines.push(`      complianceValidator: '${addresses.complianceValidator || addresses.ComplianceValidator || ZERO_ADDRESS}',`)
+    lines.push(
+      `      kycRegistry: '${addresses.kycRegistry || addresses.KYCRegistry || ZERO_ADDRESS}',`
+    )
+    lines.push(
+      `      complianceValidator: '${addresses.complianceValidator || addresses.ComplianceValidator || ZERO_ADDRESS}',`
+    )
     lines.push('    },')
     lines.push('    subscriptions: {')
-    lines.push(`      subscriptionManager: '${addresses.subscriptionManager || addresses.SubscriptionManager || ZERO_ADDRESS}',`)
-    lines.push(`      recurringPaymentExecutor: '${addresses.recurringPaymentExecutor || addresses.RecurringPaymentExecutor || ZERO_ADDRESS}',`)
-    lines.push(`      permissionManager: '${addresses.erc7715PermissionManager || addresses.ERC7715PermissionManager || addresses.permissionManager || ZERO_ADDRESS}',`)
+    lines.push(
+      `      subscriptionManager: '${addresses.subscriptionManager || addresses.SubscriptionManager || ZERO_ADDRESS}',`
+    )
+    lines.push(
+      `      recurringPaymentExecutor: '${addresses.recurringPaymentExecutor || addresses.RecurringPaymentExecutor || ZERO_ADDRESS}',`
+    )
+    lines.push(
+      `      permissionManager: '${addresses.erc7715PermissionManager || addresses.ERC7715PermissionManager || addresses.permissionManager || ZERO_ADDRESS}',`
+    )
     lines.push('    },')
     lines.push('    delegatePresets: [')
 
@@ -176,7 +208,9 @@ function generateAddressesTs(deployments: ChainDeployment[]): string {
   lines.push('/**')
   lines.push(' * Service URLs by chain ID')
   lines.push(' */')
-  lines.push('export const SERVICE_URLS: Record<number, { bundler: string; paymaster: string; stealthServer: string }> = {')
+  lines.push(
+    'export const SERVICE_URLS: Record<number, { bundler: string; paymaster: string; stealthServer: string }> = {'
+  )
 
   for (const deployment of deployments) {
     const { chainId } = deployment
@@ -195,7 +229,9 @@ function generateAddressesTs(deployments: ChainDeployment[]): string {
   lines.push('/**')
   lines.push(' * Default tokens by chain ID')
   lines.push(' */')
-  lines.push("export const DEFAULT_TOKENS: Record<number, Array<{ address: `0x${string}`; name: string; symbol: string; decimals: number; logoUrl?: string }>> = {")
+  lines.push(
+    'export const DEFAULT_TOKENS: Record<number, Array<{ address: `0x${string}`; name: string; symbol: string; decimals: number; logoUrl?: string }>> = {'
+  )
 
   for (const deployment of deployments) {
     const { chainId, addresses } = deployment
@@ -227,7 +263,11 @@ function getChainName(chainId: number): string {
   return names[chainId] || `Chain ${chainId}`
 }
 
-function getServiceUrls(chainId: number): { bundler: string; paymaster: string; stealthServer: string } {
+function getServiceUrls(chainId: number): {
+  bundler: string
+  paymaster: string
+  stealthServer: string
+} {
   const urls: Record<number, { bundler: string; paymaster: string; stealthServer: string }> = {
     31337: {
       bundler: 'http://localhost:4337',
@@ -248,7 +288,10 @@ function getServiceUrls(chainId: number): { bundler: string; paymaster: string; 
   return urls[chainId] || urls[31337]
 }
 
-function getDefaultTokens(chainId: number, addresses: DeploymentOutput): Array<{ address: string; name: string; symbol: string; decimals: number }> {
+function getDefaultTokens(
+  chainId: number,
+  addresses: DeploymentOutput
+): Array<{ address: string; name: string; symbol: string; decimals: number }> {
   const baseTokens = [
     {
       address: ZERO_ADDRESS,

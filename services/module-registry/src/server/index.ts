@@ -1,10 +1,10 @@
-import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
+import Fastify from 'fastify'
 import { ModuleStore } from '../store/memory-store'
+import type { Logger } from '../utils/logger'
 import { registerHealthRoutes } from './routes/health'
 import { registerModuleRoutes } from './routes/modules'
-import type { Logger } from '../utils/logger'
 
 export interface RegistryServerConfig {
   port: number
@@ -52,7 +52,9 @@ export class ModuleRegistryServer {
 
     await this.app.listen({ port: this.config.port, host: this.config.host })
     this.logger.info(`Module Registry listening on ${this.config.host}:${this.config.port}`)
-    this.logger.info(`Modules: ${this.store.getModuleCount()}, Installations: ${this.store.getInstallationCount()}`)
+    this.logger.info(
+      `Modules: ${this.store.getModuleCount()}, Installations: ${this.store.getInstallationCount()}`
+    )
   }
 
   async stop(): Promise<void> {

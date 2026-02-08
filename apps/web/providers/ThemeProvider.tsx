@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-  type ReactNode,
-} from 'react'
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react'
 
 type Theme = 'light' | 'dark' | 'system'
 type ResolvedTheme = 'light' | 'dark'
@@ -69,10 +62,7 @@ export function ThemeProvider({ children, defaultTheme = 'dark' }: ThemeProvider
     // Update meta theme-color
     const metaThemeColor = document.querySelector('meta[name="theme-color"]')
     if (metaThemeColor) {
-      metaThemeColor.setAttribute(
-        'content',
-        resolved === 'dark' ? '#09090b' : '#fafafa'
-      )
+      metaThemeColor.setAttribute('content', resolved === 'dark' ? '#09090b' : '#fafafa')
     }
   }, [theme, mounted])
 
@@ -101,11 +91,7 @@ export function ThemeProvider({ children, defaultTheme = 'dark' }: ThemeProvider
 
   // Prevent flash of wrong theme - default to dark
   if (!mounted) {
-    return (
-      <div className="min-h-screen bg-[#09090b]">
-        {children}
-      </div>
-    )
+    return <div className="min-h-screen bg-[#09090b]">{children}</div>
   }
 
   return (
@@ -154,7 +140,8 @@ export function ThemeToggle({ className = '' }: ThemeToggleProps) {
     >
       {resolvedTheme === 'light' ? (
         // Moon icon for switching to dark
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" role="img">
+          <title>Dark mode</title>
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -164,7 +151,8 @@ export function ThemeToggle({ className = '' }: ThemeToggleProps) {
         </svg>
       ) : (
         // Sun icon for switching to light
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" role="img">
+          <title>Light mode</title>
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -191,8 +179,13 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
       value: 'light',
       label: 'Light',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+          />
         </svg>
       ),
     },
@@ -200,8 +193,13 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
       value: 'dark',
       label: 'Dark',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+          />
         </svg>
       ),
     },
@@ -209,8 +207,13 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
       value: 'system',
       label: 'System',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
         </svg>
       ),
     },
@@ -230,14 +233,13 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
         "
       >
         {options.find((o) => o.value === theme)?.icon}
-        <span className="text-sm font-medium">
-          {options.find((o) => o.value === theme)?.label}
-        </span>
+        <span className="text-sm font-medium">{options.find((o) => o.value === theme)?.label}</span>
         <svg
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
+          aria-hidden="true"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -245,17 +247,16 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
 
       {isOpen && (
         <>
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} onKeyDown={undefined} aria-hidden="true" />
           <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="
+            className="
             absolute right-0 mt-2 w-40 py-2 z-20
             bg-surface-elevated
             rounded-xl shadow-medium
             border border-dark-700
             animate-scale-in origin-top-right
-          ">
+          "
+          >
             {options.map((option) => (
               <button
                 key={option.value}
@@ -277,8 +278,19 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
                 {option.icon}
                 {option.label}
                 {theme === option.value && (
-                  <svg className="w-4 h-4 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 ml-auto"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 )}
               </button>

@@ -9,14 +9,22 @@
 
 import {
   type Account,
+  type BundlerClient,
+  DEFAULT_CALL_GAS_LIMIT,
+  DEFAULT_PRE_VERIFICATION_GAS,
+  DEFAULT_VERIFICATION_GAS_LIMIT,
+  ENTRY_POINT_V07_ADDRESS,
   type GasEstimate,
   type MultiModeTransactionRequest,
   TRANSACTION_MODE,
   type TransactionMode,
   type TransactionRouter,
+  type UserOperation,
+  createBundlerClient,
   createTransactionRouter,
   getAvailableTransactionModes,
   getDefaultTransactionMode,
+  getUserOperationHash,
 } from '@stablenet/core'
 import type { Address, Hex } from 'viem'
 import { createLogger } from '../../shared/utils/logger'
@@ -63,6 +71,7 @@ export class MultiModeTransactionController {
   private options: MultiModeTransactionControllerOptions
   private eventHandlers: Map<TransactionEventType, Set<EventHandler>>
   private router: TransactionRouter
+  private bundlerClient: BundlerClient | null
 
   constructor(options: MultiModeTransactionControllerOptions) {
     this.options = options
@@ -81,6 +90,15 @@ export class MultiModeTransactionController {
       paymasterUrl: options.paymasterUrl,
       entryPointAddress: options.entryPointAddress,
     })
+
+    // Initialize bundler client for Smart Account UserOp submission
+    this.bundlerClient = options.bundlerUrl
+      ? createBundlerClient({
+          url: options.bundlerUrl,
+          entryPoint: options.entryPointAddress ?? ENTRY_POINT_V07_ADDRESS,
+          chainId: BigInt(options.chainId),
+        })
+      : null
 
     logger.debug('MultiModeTransactionController initialized', {
       chainId: options.chainId,
@@ -339,7 +357,7 @@ export class MultiModeTransactionController {
           if (txMeta.txParams.delegateTo) {
             const authResult = await this.options.signAuthorization(
               txMeta.txParams.from,
-              txMeta.txParams.delegateTo as Hex // Authorization hash placeholder
+              txMeta.txParams.delegateTo as Hex
             )
             authorizationHash =
               `0x${authResult.r.slice(2)}${authResult.s.slice(2)}${authResult.v.toString(16).padStart(2, '0')}` as Hex
@@ -347,7 +365,7 @@ export class MultiModeTransactionController {
           rawTx = await this.options.signTransaction(txMeta.txParams.from, txMeta.txParams)
           break
 
-        case TRANSACTION_MODE.SMART_ACCOUNT:
+        case TRANSACTION_MODE.SMART_ACCOUNT: {
           // For Smart Account, we sign the UserOperation hash
           // The actual UserOp is built by the SDK strategy
           userOpHash = await this.buildUserOpHash(txMeta)
@@ -355,6 +373,7 @@ export class MultiModeTransactionController {
           // Store signature in rawTx for now
           rawTx = signature
           break
+        }
 
         default:
           throw new Error(`Unsupported transaction mode: ${txMeta.mode}`)
@@ -552,7 +571,7 @@ export class MultiModeTransactionController {
   updateConfig(config: Partial<MultiModeTransactionControllerOptions>): void {
     this.options = { ...this.options, ...config }
 
-    // Recreate router with new config
+    // Recreate router and bundler client with new config
     if (config.chainId || config.rpcUrl || config.bundlerUrl || config.paymasterUrl) {
       this.router = createTransactionRouter({
         rpcUrl: this.options.rpcUrl,
@@ -561,6 +580,14 @@ export class MultiModeTransactionController {
         paymasterUrl: this.options.paymasterUrl,
         entryPointAddress: this.options.entryPointAddress,
       })
+
+      this.bundlerClient = this.options.bundlerUrl
+        ? createBundlerClient({
+            url: this.options.bundlerUrl,
+            entryPoint: this.options.entryPointAddress ?? ENTRY_POINT_V07_ADDRESS,
+            chainId: BigInt(this.options.chainId),
+          })
+        : null
 
       logger.debug('TransactionRouter reconfigured', {
         chainId: this.options.chainId,
@@ -671,8 +698,6 @@ export class MultiModeTransactionController {
   }
 
   private async buildUserOpHash(txMeta: MultiModeTransactionMeta): Promise<Hex> {
-    // This would build the UserOperation and return its hash
-    // For now, return a placeholder - actual implementation would use SDK
     const account = this.options.getSelectedAccount()
     if (!account) {
       throw new Error('No account selected')
@@ -680,23 +705,88 @@ export class MultiModeTransactionController {
 
     const sdkAccount = this.toSDKAccount(account)
     const sdkRequest = this.toSDKRequest(txMeta.txParams, txMeta.mode)
-
     const prepared = await this.router.prepare(sdkRequest, sdkAccount)
 
-    // The prepared transaction would contain the UserOp hash in strategyData
-    // This is a simplified implementation
-    return `0x${Date.now().toString(16).padStart(64, '0')}` as Hex
+    // Extract the partial UserOp from the strategy's prepared data
+    const strategyData = prepared.strategyData as { userOp: Partial<UserOperation> } | undefined
+    if (!strategyData?.userOp) {
+      throw new Error('Strategy did not produce UserOperation data')
+    }
+
+    const partialUserOp = strategyData.userOp
+
+    // Build a full UserOperation with defaults for missing fields
+    const userOp: UserOperation = {
+      sender: partialUserOp.sender ?? txMeta.txParams.from,
+      nonce: partialUserOp.nonce ?? 0n,
+      callData: partialUserOp.callData ?? (txMeta.txParams.data as Hex) ?? '0x',
+      callGasLimit: partialUserOp.callGasLimit ?? prepared.gasEstimate.callGasLimit ?? DEFAULT_CALL_GAS_LIMIT,
+      verificationGasLimit: partialUserOp.verificationGasLimit ?? prepared.gasEstimate.verificationGasLimit ?? DEFAULT_VERIFICATION_GAS_LIMIT,
+      preVerificationGas: partialUserOp.preVerificationGas ?? prepared.gasEstimate.preVerificationGas ?? DEFAULT_PRE_VERIFICATION_GAS,
+      maxFeePerGas: partialUserOp.maxFeePerGas ?? prepared.gasEstimate.maxFeePerGas,
+      maxPriorityFeePerGas: partialUserOp.maxPriorityFeePerGas ?? prepared.gasEstimate.maxPriorityFeePerGas,
+      signature: '0x' as Hex,
+    }
+
+    // Add optional fields if present
+    if (partialUserOp.factory) userOp.factory = partialUserOp.factory
+    if (partialUserOp.factoryData) userOp.factoryData = partialUserOp.factoryData
+    if (partialUserOp.paymaster) userOp.paymaster = partialUserOp.paymaster
+    if (partialUserOp.paymasterData) userOp.paymasterData = partialUserOp.paymasterData
+    if (partialUserOp.paymasterVerificationGasLimit) userOp.paymasterVerificationGasLimit = partialUserOp.paymasterVerificationGasLimit
+    if (partialUserOp.paymasterPostOpGasLimit) userOp.paymasterPostOpGasLimit = partialUserOp.paymasterPostOpGasLimit
+
+    const entryPoint = this.options.entryPointAddress ?? ENTRY_POINT_V07_ADDRESS
+    return getUserOperationHash(userOp, entryPoint, BigInt(this.options.chainId))
   }
 
   private async submitUserOperation(txMeta: MultiModeTransactionMeta): Promise<Hex> {
-    // This would submit the UserOperation to the bundler
-    // Actual implementation would use the SDK's bundler client
     if (!txMeta.rawTx) {
       throw new Error('No signed UserOperation found')
     }
 
-    // For now, use the standard publish
-    // In production, this would call the bundler's eth_sendUserOperation
+    // If bundler client is available, submit via ERC-4337 bundler
+    if (this.bundlerClient) {
+      const account = this.options.getSelectedAccount()
+      if (!account) {
+        throw new Error('No account selected')
+      }
+
+      const sdkAccount = this.toSDKAccount(account)
+      const sdkRequest = this.toSDKRequest(txMeta.txParams, txMeta.mode)
+      const prepared = await this.router.prepare(sdkRequest, sdkAccount)
+
+      const strategyData = prepared.strategyData as { userOp: Partial<UserOperation> } | undefined
+      if (!strategyData?.userOp) {
+        throw new Error('Strategy did not produce UserOperation data')
+      }
+
+      const partialUserOp = strategyData.userOp
+
+      // Build full UserOperation with the signed signature
+      const userOp: UserOperation = {
+        sender: partialUserOp.sender ?? txMeta.txParams.from,
+        nonce: partialUserOp.nonce ?? 0n,
+        callData: partialUserOp.callData ?? (txMeta.txParams.data as Hex) ?? '0x',
+        callGasLimit: partialUserOp.callGasLimit ?? prepared.gasEstimate.callGasLimit ?? DEFAULT_CALL_GAS_LIMIT,
+        verificationGasLimit: partialUserOp.verificationGasLimit ?? prepared.gasEstimate.verificationGasLimit ?? DEFAULT_VERIFICATION_GAS_LIMIT,
+        preVerificationGas: partialUserOp.preVerificationGas ?? prepared.gasEstimate.preVerificationGas ?? DEFAULT_PRE_VERIFICATION_GAS,
+        maxFeePerGas: partialUserOp.maxFeePerGas ?? prepared.gasEstimate.maxFeePerGas,
+        maxPriorityFeePerGas: partialUserOp.maxPriorityFeePerGas ?? prepared.gasEstimate.maxPriorityFeePerGas,
+        signature: txMeta.rawTx, // The signed signature from signTransaction step
+      }
+
+      // Add optional paymaster fields
+      if (partialUserOp.paymaster) userOp.paymaster = partialUserOp.paymaster
+      if (partialUserOp.paymasterData) userOp.paymasterData = partialUserOp.paymasterData
+      if (partialUserOp.paymasterVerificationGasLimit) userOp.paymasterVerificationGasLimit = partialUserOp.paymasterVerificationGasLimit
+      if (partialUserOp.paymasterPostOpGasLimit) userOp.paymasterPostOpGasLimit = partialUserOp.paymasterPostOpGasLimit
+
+      return this.bundlerClient.sendUserOperation(userOp)
+    }
+
+    // Fallback: publish as standard transaction if no bundler configured
+    logger.warn('No bundler client configured, falling back to standard publish for UserOp')
     return this.options.publishTransaction(txMeta.rawTx)
   }
 

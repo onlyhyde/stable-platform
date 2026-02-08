@@ -1,3 +1,17 @@
+import {
+  http,
+  type Address,
+  type Hex,
+  type PublicClient,
+  type WalletClient,
+  createPublicClient,
+  createWalletClient,
+  formatEther,
+  parseAbi,
+  parseEther,
+} from 'viem'
+import { type LocalAccount, privateKeyToAccount } from 'viem/accounts'
+import { foundry } from 'viem/chains'
 /**
  * UserOperation E2E Test Suite
  *
@@ -12,48 +26,31 @@
  * - Bundler service running (http://127.0.0.1:4337)
  * - ERC-4337 contracts deployed (EntryPoint, Kernel Factory, ECDSA Validator)
  */
-import { describe, it, expect, beforeAll } from 'vitest'
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-  parseEther,
-  formatEther,
-  parseAbi,
-  type Address,
-  type Hex,
-  type PublicClient,
-  type WalletClient,
-} from 'viem'
-import { privateKeyToAccount, type LocalAccount } from 'viem/accounts'
-import { foundry } from 'viem/chains'
-import { TEST_CONFIG, isNetworkAvailable, isBundlerAvailable } from '../setup'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { TEST_CONFIG, isBundlerAvailable, isNetworkAvailable } from '../setup'
 
 // ============================================================================
 // SDK Imports (using relative paths for vitest compatibility)
 // ============================================================================
 
 import {
+  ENTRY_POINT_V07_ADDRESS,
   createBundlerClient,
   createSmartAccountClient,
-  packUserOperation,
   getUserOperationHash,
-  ENTRY_POINT_V07_ADDRESS,
+  packUserOperation,
 } from '../../packages/sdk/packages/core/src'
 
 import {
-  toKernelSmartAccount,
   encodeKernelExecuteCallData,
+  toKernelSmartAccount,
 } from '../../packages/sdk/packages/accounts/src'
 
-import {
-  createEcdsaValidator,
-  ECDSA_VALIDATOR_ADDRESS,
-} from '../../packages/sdk/plugins/ecdsa/src'
+import { ECDSA_VALIDATOR_ADDRESS, createEcdsaValidator } from '../../packages/sdk/plugins/ecdsa/src'
 
 import type {
-  SmartAccount,
   BundlerClient,
+  SmartAccount,
   UserOperation,
 } from '../../packages/sdk/packages/types/src'
 
@@ -121,9 +118,7 @@ describe('UserOperation E2E Flow', () => {
       transport: http(TEST_CONFIG.rpcUrl),
     })
 
-    ctx.account = privateKeyToAccount(
-      TEST_CONFIG.accounts.user1.privateKey as Hex
-    )
+    ctx.account = privateKeyToAccount(TEST_CONFIG.accounts.user1.privateKey as Hex)
 
     ctx.walletClient = createWalletClient({
       chain,
@@ -145,9 +140,12 @@ describe('UserOperation E2E Flow', () => {
     ])
 
     ctx.contractsDeployed = !!(
-      entryPointCode && entryPointCode !== '0x' &&
-      factoryCode && factoryCode !== '0x' &&
-      validatorCode && validatorCode !== '0x'
+      entryPointCode &&
+      entryPointCode !== '0x' &&
+      factoryCode &&
+      factoryCode !== '0x' &&
+      validatorCode &&
+      validatorCode !== '0x'
     )
 
     if (!ctx.contractsDeployed) {
@@ -287,7 +285,7 @@ describe('UserOperation E2E Flow', () => {
         signer: ctx.account,
       })
 
-      const testHash = '0x' + '1'.repeat(64) as Hex
+      const testHash = ('0x' + '1'.repeat(64)) as Hex
       const signature = await validator.signHash(testHash)
 
       expect(signature).toMatch(/^0x[a-fA-F0-9]+$/)
@@ -558,7 +556,12 @@ describe('UserOperation E2E Flow', () => {
     })
 
     it('should estimate gas for UserOperation', async () => {
-      if (!ctx.networkAvailable || !ctx.bundlerAvailable || !ctx.bundlerClient || !ctx.smartAccount) {
+      if (
+        !ctx.networkAvailable ||
+        !ctx.bundlerAvailable ||
+        !ctx.bundlerClient ||
+        !ctx.smartAccount
+      ) {
         console.log('⏭️ Skipping - prerequisites not met')
         return
       }
@@ -582,14 +585,16 @@ describe('UserOperation E2E Flow', () => {
         console.log(`   callGasLimit: ${estimation.callGasLimit}`)
       } catch (error) {
         // Expected if account needs funding or contracts not ready
-        console.log(`⚠️ Gas estimation failed (may need funding): ${(error as Error).message?.slice(0, 100)}`)
+        console.log(
+          `⚠️ Gas estimation failed (may need funding): ${(error as Error).message?.slice(0, 100)}`
+        )
       }
     })
 
     it('should return null for non-existent UserOp receipt', async () => {
       if (!ctx.networkAvailable || !ctx.bundlerAvailable || !ctx.bundlerClient) return
 
-      const fakeHash = '0x' + '1'.repeat(64) as Hex
+      const fakeHash = ('0x' + '1'.repeat(64)) as Hex
       const receipt = await ctx.bundlerClient.getUserOperationReceipt(fakeHash)
 
       expect(receipt).toBeNull()
@@ -599,7 +604,7 @@ describe('UserOperation E2E Flow', () => {
     it('should return null for non-existent UserOp by hash', async () => {
       if (!ctx.networkAvailable || !ctx.bundlerAvailable || !ctx.bundlerClient) return
 
-      const fakeHash = '0x' + '2'.repeat(64) as Hex
+      const fakeHash = ('0x' + '2'.repeat(64)) as Hex
       const result = await ctx.bundlerClient.getUserOperationByHash(fakeHash)
 
       expect(result).toBeNull()
@@ -621,9 +626,7 @@ describe('UserOperation E2E Flow', () => {
         signature: '0xdeadbeef' as Hex, // Invalid signature
       }
 
-      await expect(
-        ctx.bundlerClient.sendUserOperation(invalidUserOp)
-      ).rejects.toThrow()
+      await expect(ctx.bundlerClient.sendUserOperation(invalidUserOp)).rejects.toThrow()
 
       console.log('✅ Invalid UserOp correctly rejected')
     })
@@ -742,9 +745,7 @@ describe('UserOperation E2E Flow', () => {
       const entryPoint = TEST_CONFIG.contracts.entryPoint as Address
       const depositor = TEST_CONFIG.accounts.deployer.address as Address
 
-      const deployerAccount = privateKeyToAccount(
-        TEST_CONFIG.accounts.deployer.privateKey as Hex
-      )
+      const deployerAccount = privateKeyToAccount(TEST_CONFIG.accounts.deployer.privateKey as Hex)
       const deployerWallet = createWalletClient({
         chain: { ...foundry, id: TEST_CONFIG.chainId },
         transport: http(TEST_CONFIG.rpcUrl),

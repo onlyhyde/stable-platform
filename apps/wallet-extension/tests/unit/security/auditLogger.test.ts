@@ -3,8 +3,8 @@
  */
 
 import {
-  AuditLogger,
   AuditEventType,
+  AuditLogger,
   AuditSeverity,
   auditLogger,
 } from '../../../src/shared/security/auditLogger'

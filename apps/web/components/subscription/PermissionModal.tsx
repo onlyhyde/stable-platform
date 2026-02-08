@@ -111,6 +111,7 @@ export const PermissionModal: FC<PermissionModalProps> = ({
             <div className="border border-yellow-200 bg-yellow-50 rounded-lg p-4">
               <div className="flex gap-3">
                 <svg
+                  aria-hidden="true"
                   className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5"
                   fill="none"
                   stroke="currentColor"
@@ -142,6 +143,7 @@ export const PermissionModal: FC<PermissionModalProps> = ({
               <ul className="space-y-2 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 <li className="flex items-start gap-2">
                   <svg
+                    aria-hidden="true"
                     className="w-4 h-4 mt-0.5"
                     style={{ color: 'rgb(var(--success))' }}
                     fill="currentColor"
@@ -160,6 +162,7 @@ export const PermissionModal: FC<PermissionModalProps> = ({
                 </li>
                 <li className="flex items-start gap-2">
                   <svg
+                    aria-hidden="true"
                     className="w-4 h-4 mt-0.5"
                     style={{ color: 'rgb(var(--success))' }}
                     fill="currentColor"
@@ -175,6 +178,7 @@ export const PermissionModal: FC<PermissionModalProps> = ({
                 </li>
                 <li className="flex items-start gap-2">
                   <svg
+                    aria-hidden="true"
                     className="w-4 h-4 mt-0.5"
                     style={{ color: 'rgb(var(--success))' }}
                     fill="currentColor"
@@ -260,6 +264,7 @@ export const PermissionModal: FC<PermissionModalProps> = ({
               style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
             >
               <svg
+                aria-hidden="true"
                 className="w-8 h-8 animate-spin"
                 style={{ color: 'rgb(var(--primary))' }}
                 fill="none"
@@ -318,6 +323,7 @@ export const PermissionModal: FC<PermissionModalProps> = ({
               style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}
             >
               <svg
+                aria-hidden="true"
                 className="w-8 h-8"
                 style={{ color: 'rgb(var(--success))' }}
                 fill="none"

@@ -1,14 +1,14 @@
 import type { Address, Hex, PublicClient } from 'viem'
+import { AGGREGATOR_ABI, ENTRY_POINT_V07_ABI } from '../abi'
+import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import type {
+  IAggregatorValidator,
   PackedUserOperation,
   StakeInfo,
-  IAggregatorValidator,
   UserOpsPerAggregator,
 } from './types'
 import { VALIDATION_CONSTANTS } from './types'
-import { AGGREGATOR_ABI, ENTRY_POINT_V07_ABI } from '../abi'
-import { RpcError, RPC_ERROR_CODES } from '../types'
 
 /**
  * Input for groupByAggregator
@@ -36,10 +36,7 @@ export class AggregatorValidator implements IAggregatorValidator {
    * Validate individual UserOp signature through aggregator
    * Returns the signature to be used for aggregation
    */
-  async validateUserOpSignature(
-    aggregator: Address,
-    userOp: PackedUserOperation
-  ): Promise<Hex> {
+  async validateUserOpSignature(aggregator: Address, userOp: PackedUserOperation): Promise<Hex> {
     try {
       const result = await this.publicClient.readContract({
         address: aggregator,
@@ -50,10 +47,7 @@ export class AggregatorValidator implements IAggregatorValidator {
 
       return result as Hex
     } catch (error) {
-      this.logger.warn(
-        { aggregator, error },
-        'Aggregator validateUserOpSignature failed'
-      )
+      this.logger.warn({ aggregator, error }, 'Aggregator validateUserOpSignature failed')
       throw new RpcError(
         `Aggregator validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         RPC_ERROR_CODES.UNSUPPORTED_AGGREGATOR
@@ -64,10 +58,7 @@ export class AggregatorValidator implements IAggregatorValidator {
   /**
    * Aggregate multiple UserOp signatures
    */
-  async aggregateSignatures(
-    aggregator: Address,
-    userOps: PackedUserOperation[]
-  ): Promise<Hex> {
+  async aggregateSignatures(aggregator: Address, userOps: PackedUserOperation[]): Promise<Hex> {
     if (userOps.length === 0) {
       return '0x' as Hex
     }
@@ -161,9 +152,7 @@ export class AggregatorValidator implements IAggregatorValidator {
   /**
    * Group userOps by their aggregator address
    */
-  groupByAggregator(
-    userOps: UserOpWithAggregator[]
-  ): Map<Address, PackedUserOperation[]> {
+  groupByAggregator(userOps: UserOpWithAggregator[]): Map<Address, PackedUserOperation[]> {
     const groups = new Map<Address, PackedUserOperation[]>()
 
     for (const { userOp, aggregator } of userOps) {
@@ -178,9 +167,7 @@ export class AggregatorValidator implements IAggregatorValidator {
   /**
    * Prepare UserOpsPerAggregator array for handleAggregatedOps
    */
-  async prepareAggregatedOps(
-    userOps: UserOpWithAggregator[]
-  ): Promise<UserOpsPerAggregator[]> {
+  async prepareAggregatedOps(userOps: UserOpWithAggregator[]): Promise<UserOpsPerAggregator[]> {
     const groups = this.groupByAggregator(userOps)
     const result: UserOpsPerAggregator[] = []
 

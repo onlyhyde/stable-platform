@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom'
-import { TextEncoder, TextDecoder } from 'util'
 import * as crypto from 'crypto'
+import { TextDecoder, TextEncoder } from 'util'
 import { mockChrome } from './utils/mockChrome'
 
 // Mock @stablenet/core module - use real exports with specific mocks
@@ -25,7 +25,9 @@ jest.mock('@stablenet/core', () => {
     destroy: jest.fn(),
     getLimitConfig: jest.fn().mockReturnValue({ maxRequests: 100, windowMs: 60000 }),
     setLimits: jest.fn(),
-    getStats: jest.fn().mockReturnValue({ totalOrigins: 0, blockedOrigins: 0, requestsByCategory: {} }),
+    getStats: jest
+      .fn()
+      .mockReturnValue({ totalOrigins: 0, blockedOrigins: 0, requestsByCategory: {} }),
   }
 
   // Mock typed data validator instance (defined inside factory to avoid hoisting issues)
@@ -85,7 +87,6 @@ jest.mock('@stablenet/plugin-stealth', () => ({
   generateStealthAddress: jest.fn(),
   deriveStealthKeys: jest.fn(),
 }))
-
 
 // Polyfill TextEncoder/TextDecoder for Node.js environment
 global.TextEncoder = TextEncoder

@@ -8,10 +8,7 @@ const LOG_LEVEL = process.env.LOG_LEVEL ?? 'info'
 
 const logger = createLogger(LOG_LEVEL)
 
-const server = new ModuleRegistryServer(
-  { port: PORT, host: HOST, seedData: SEED_DATA },
-  logger
-)
+const server = new ModuleRegistryServer({ port: PORT, host: HOST, seedData: SEED_DATA }, logger)
 
 async function main() {
   try {

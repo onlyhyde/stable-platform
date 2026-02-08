@@ -6,6 +6,9 @@ import {
 } from '@stablenet/core'
 import { useCallback, useState } from 'react'
 import type { Hex } from 'viem'
+import { createLogger } from '../../../shared/utils/logger'
+
+const logger = createLogger('WebAuthnConfig')
 
 // ============================================================================
 // Types
@@ -121,7 +124,7 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
 
       setStep('success')
     } catch (err) {
-      console.error('WebAuthn registration failed:', err)
+      logger.error('WebAuthn registration failed:', err)
       setError(err instanceof Error ? err.message : 'Registration failed')
       setStep('error')
     }
@@ -201,10 +204,11 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
           </div>
 
           <div className="flex gap-3">
-            <button className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+            <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
               Cancel
             </button>
             <button
+              type="button"
               className="btn-primary flex-1 py-3 rounded-lg font-medium"
               onClick={handleRegister}
             >
@@ -284,12 +288,14 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
 
           <div className="flex gap-3">
             <button
+              type="button"
               className="btn-ghost flex-1 py-3 rounded-lg font-medium"
               onClick={() => setStep('intro')}
             >
               Create Another
             </button>
             <button
+              type="button"
               className="btn-primary flex-1 py-3 rounded-lg font-medium"
               onClick={handleConfirm}
             >
@@ -337,10 +343,11 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
           </div>
 
           <div className="flex gap-3">
-            <button className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+            <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
               Cancel
             </button>
             <button
+              type="button"
               className="btn-primary flex-1 py-3 rounded-lg font-medium"
               onClick={handleRegister}
             >
@@ -399,6 +406,7 @@ export function WebAuthnCredentialList({ credentials, onRemove }: WebAuthnCreden
           </div>
           {onRemove && (
             <button
+              type="button"
               className="px-3 py-1 rounded text-sm"
               style={{
                 backgroundColor: 'rgb(var(--destructive) / 0.1)',

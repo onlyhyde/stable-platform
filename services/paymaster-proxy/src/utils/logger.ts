@@ -82,9 +82,6 @@ export function getGlobalLogger(): Logger {
  * requestLogger.info('Processing paymaster request')
  * ```
  */
-export function createChildLogger(
-  parent: Logger,
-  context: Record<string, unknown>
-): Logger {
+export function createChildLogger(parent: Logger, context: Record<string, unknown>): Logger {
   return parent.child(context)
 }

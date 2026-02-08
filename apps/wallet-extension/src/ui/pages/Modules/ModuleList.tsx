@@ -80,6 +80,7 @@ function ModuleCard({ module, onClick }: ModuleCardProps) {
 
   return (
     <button
+      type="button"
       className="module-card w-full p-4 rounded-lg text-left transition-all"
       style={{
         backgroundColor: 'rgb(var(--card))',
@@ -175,7 +176,6 @@ function getStatusInfo(status: (typeof MODULE_STATUS)[keyof typeof MODULE_STATUS
       return { label: 'Installing...', color: 'rgb(var(--warning))', icon: '⏳' }
     case MODULE_STATUS.PENDING_UNINSTALL:
       return { label: 'Removing...', color: 'rgb(var(--warning))', icon: '⏳' }
-    case MODULE_STATUS.NOT_INSTALLED:
     default:
       return { label: 'Not Installed', color: 'rgb(var(--muted-foreground))', icon: '○' }
   }

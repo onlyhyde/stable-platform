@@ -5,7 +5,7 @@
 
 import {
   ControllerMessenger,
-  RestrictedControllerMessenger,
+  type RestrictedControllerMessenger,
 } from '../../../src/background/controllers/controllerMessenger'
 
 describe('ControllerMessenger', () => {

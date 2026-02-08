@@ -3,12 +3,12 @@ import type { InMemoryStore } from '../../store/memory-store'
 import { createAuthHook } from '../middleware/auth'
 import { validateBody, validateParams, validateQuery } from '../middleware/validation'
 import {
-  createContractSchema,
-  contractParamsSchema,
-  contractQuerySchema,
-  type CreateContractBody,
   type ContractParams,
   type ContractQuery,
+  type CreateContractBody,
+  contractParamsSchema,
+  contractQuerySchema,
+  createContractSchema,
 } from '../schemas/contract.schema'
 
 export function registerContractRoutes(
@@ -36,7 +36,8 @@ export function registerContractRoutes(
     '/api/v1/contracts/:chainId/:name',
     { preHandler: [validateParams(contractParamsSchema)] },
     async (request: FastifyRequest, reply) => {
-      const params = (request as FastifyRequest & { validatedParams: ContractParams }).validatedParams
+      const params = (request as FastifyRequest & { validatedParams: ContractParams })
+        .validatedParams
       const entry = store.getContract(params.chainId, params.name)
       if (!entry) {
         return reply.status(404).send({
@@ -73,7 +74,8 @@ export function registerContractRoutes(
     '/api/v1/contracts/:chainId/:name',
     { preHandler: [authHook, validateParams(contractParamsSchema)] },
     async (request: FastifyRequest, reply) => {
-      const params = (request as FastifyRequest & { validatedParams: ContractParams }).validatedParams
+      const params = (request as FastifyRequest & { validatedParams: ContractParams })
+        .validatedParams
       const deleted = store.deleteContract(params.chainId, params.name)
       if (!deleted) {
         return reply.status(404).send({

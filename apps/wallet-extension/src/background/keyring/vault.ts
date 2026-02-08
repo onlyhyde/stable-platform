@@ -1,4 +1,5 @@
 import { SESSION_KEYS, STORAGE_KEYS } from '../../shared/constants'
+import { clearString } from '../../shared/security/memorySanitizer'
 import { createLogger } from '../../shared/utils/logger'
 import type { EncryptedVault, SerializedKeyring, VaultData, VaultSessionData } from '../../types'
 import { decrypt, encrypt } from './crypto'
@@ -106,7 +107,7 @@ export class Vault {
       await this.saveToSession(data)
 
       return data
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Incorrect password')
     }
   }
@@ -115,8 +116,28 @@ export class Vault {
    * Lock the vault
    */
   lock(): void {
+    // Sanitize sensitive data before releasing references
+    if (this.cachedPassword) {
+      this.cachedPassword = clearString(this.cachedPassword)
+    }
     this.cachedPassword = null
+
+    // Clear cached keyring data which may contain mnemonics/private keys
+    if (this.cachedData?.keyrings) {
+      for (const keyring of this.cachedData.keyrings) {
+        if ('mnemonic' in keyring && typeof keyring.mnemonic === 'string') {
+          ;(keyring as Record<string, unknown>).mnemonic = clearString(keyring.mnemonic as string)
+        }
+        if ('privateKeys' in keyring && Array.isArray(keyring.privateKeys)) {
+          for (let i = 0; i < keyring.privateKeys.length; i++) {
+            keyring.privateKeys[i] = clearString(keyring.privateKeys[i] as string)
+          }
+          keyring.privateKeys.length = 0
+        }
+      }
+    }
     this.cachedData = null
+
     this.isSessionRestored = false
     this.clearAutoLock()
     // Clear session storage

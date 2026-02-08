@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import Fastify, { type FastifyInstance } from 'fastify'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { MetricsCollector } from '../../src/metrics/collector'
 import { METRIC_NAMES } from '../../src/metrics/types'
 import { registerMetricsEndpoint } from '../../src/rpc/metricsEndpoint'

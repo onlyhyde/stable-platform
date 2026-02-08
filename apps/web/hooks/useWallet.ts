@@ -1,7 +1,7 @@
 'use client'
 
+import { type StableNetProvider, detectProvider } from '@stablenet/wallet-sdk'
 import { useQueryClient } from '@tanstack/react-query'
-import { detectProvider, type StableNetProvider } from '@stablenet/wallet-sdk'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi'
 
@@ -19,9 +19,6 @@ export function useWallet() {
   // Track previous values for change detection
   const prevChainId = useRef(chainId)
   const prevAddress = useRef(address)
-
-  // Debug: Log available connectors
-  useEffect(() => {}, [connectors])
 
   // Detect StableNet provider on mount
   useEffect(() => {

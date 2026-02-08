@@ -9,28 +9,21 @@
  * - Transaction signing
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
-  privateKeyToAccount,
-  generateMnemonic,
-  mnemonicToAccount,
-  english,
-} from 'viem/accounts'
-import {
-  createPublicClient,
-  createWalletClient,
   http,
-  parseEther,
   type Address,
   type Hex,
-  hashMessage,
-  recoverMessageAddress,
-  recoverTypedDataAddress,
-  keccak256,
+  createPublicClient,
+  createWalletClient,
   encodeAbiParameters,
   parseAbiParameters,
+  parseEther,
+  recoverMessageAddress,
+  recoverTypedDataAddress,
 } from 'viem'
+import { english, generateMnemonic, mnemonicToAccount, privateKeyToAccount } from 'viem/accounts'
 import { anvil } from 'viem/chains'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { TEST_CONFIG } from '../setup'
 
 // ============================================================================
@@ -132,8 +125,7 @@ describe('HD Keyring', () => {
   })
 
   describe('account derivation', () => {
-    const TEST_MNEMONIC =
-      'test test test test test test test test test test test junk'
+    const TEST_MNEMONIC = 'test test test test test test test test test test test junk'
 
     it('should derive deterministic addresses from mnemonic', () => {
       const account0 = mnemonicToAccount(TEST_MNEMONIC, { addressIndex: 0 })
@@ -163,15 +155,12 @@ describe('HD Keyring', () => {
       // Using the well-known test mnemonic, first account should be predictable
       const account = mnemonicToAccount(TEST_MNEMONIC, { addressIndex: 0 })
       // This is the expected address for the test mnemonic with default BIP-44 path
-      expect(account.address.toLowerCase()).toBe(
-        '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
-      )
+      expect(account.address.toLowerCase()).toBe('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266')
     })
   })
 
   describe('message signing', () => {
-    const TEST_MNEMONIC =
-      'test test test test test test test test test test test junk'
+    const TEST_MNEMONIC = 'test test test test test test test test test test test junk'
 
     it('should sign a personal message', async () => {
       const account = mnemonicToAccount(TEST_MNEMONIC, { addressIndex: 0 })
@@ -209,8 +198,7 @@ describe('HD Keyring', () => {
   })
 
   describe('typed data signing (EIP-712)', () => {
-    const TEST_MNEMONIC =
-      'test test test test test test test test test test test junk'
+    const TEST_MNEMONIC = 'test test test test test test test test test test test junk'
 
     const typedData = {
       domain: {
@@ -277,13 +265,10 @@ describe('HD Keyring', () => {
 describe('Simple Keyring', () => {
   describe('private key import', () => {
     it('should create account from private key', () => {
-      const privateKey =
-        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as Hex
+      const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as Hex
       const account = privateKeyToAccount(privateKey)
 
-      expect(account.address.toLowerCase()).toBe(
-        '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
-      )
+      expect(account.address.toLowerCase()).toBe('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266')
     })
 
     it('should reject invalid private key format', () => {
@@ -300,8 +285,7 @@ describe('Simple Keyring', () => {
   })
 
   describe('signing with imported account', () => {
-    const privateKey =
-      '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as Hex
+    const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as Hex
 
     it('should sign personal message', async () => {
       const account = privateKeyToAccount(privateKey)
@@ -520,9 +504,7 @@ describe('Wallet State Management', () => {
       }
 
       expect(state.connections.connectedSites).toHaveLength(1)
-      expect(state.connections.connectedSites[0].origin).toBe(
-        'https://app.example.com'
-      )
+      expect(state.connections.connectedSites[0].origin).toBe('https://app.example.com')
     })
 
     it('should remove disconnected sites', async () => {
@@ -541,9 +523,7 @@ describe('Wallet State Management', () => {
       await mockChrome.storage.local.set({
         stablenet_wallet_state: {
           connections: {
-            connectedSites: [
-              { origin: 'https://app2.example.com', accounts: [] },
-            ],
+            connectedSites: [{ origin: 'https://app2.example.com', accounts: [] }],
           },
         },
       })
@@ -554,9 +534,7 @@ describe('Wallet State Management', () => {
       }
 
       expect(state.connections.connectedSites).toHaveLength(1)
-      expect(state.connections.connectedSites[0].origin).toBe(
-        'https://app2.example.com'
-      )
+      expect(state.connections.connectedSites[0].origin).toBe('https://app2.example.com')
     })
   })
 })
@@ -566,8 +544,7 @@ describe('Wallet State Management', () => {
 // ============================================================================
 
 describe('Transaction Signing', () => {
-  const TEST_MNEMONIC =
-    'test test test test test test test test test test test junk'
+  const TEST_MNEMONIC = 'test test test test test test test test test test test junk'
 
   it('should sign a legacy transaction', async () => {
     const account = mnemonicToAccount(TEST_MNEMONIC, { addressIndex: 0 })
@@ -625,10 +602,10 @@ describe('Transaction Signing', () => {
     const account = mnemonicToAccount(TEST_MNEMONIC, { addressIndex: 0 })
 
     // ERC20 transfer encoded data
-    const transferData = encodeAbiParameters(
-      parseAbiParameters('address to, uint256 amount'),
-      ['0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as Address, parseEther('100')]
-    )
+    const transferData = encodeAbiParameters(parseAbiParameters('address to, uint256 amount'), [
+      '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as Address,
+      parseEther('100'),
+    ])
 
     const transaction = {
       to: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC' as Address, // token address
@@ -734,9 +711,7 @@ describe('Live Network Integration', () => {
       return
     }
 
-    const account = privateKeyToAccount(
-      TEST_CONFIG.accounts.user1.privateKey as Hex
-    )
+    const account = privateKeyToAccount(TEST_CONFIG.accounts.user1.privateKey as Hex)
 
     const walletClient = createWalletClient({
       account,
@@ -793,9 +768,7 @@ describe('Vault Encryption', () => {
         },
       })
 
-      const stored = await mockChrome.storage.local.get(
-        'stablenet_encrypted_vault'
-      )
+      const stored = await mockChrome.storage.local.get('stablenet_encrypted_vault')
       expect(stored.stablenet_encrypted_vault).toBeDefined()
 
       const vault = stored.stablenet_encrypted_vault as {
@@ -835,9 +808,7 @@ describe('Vault Encryption', () => {
         stablenet_vault_session: sessionData,
       })
 
-      const stored = await mockChrome.storage.session.get(
-        'stablenet_vault_session'
-      )
+      const stored = await mockChrome.storage.session.get('stablenet_vault_session')
       expect(stored.stablenet_vault_session).toEqual(sessionData)
     })
 
@@ -852,9 +823,7 @@ describe('Vault Encryption', () => {
         stablenet_vault_session: expiredSession,
       })
 
-      const stored = await mockChrome.storage.session.get(
-        'stablenet_vault_session'
-      )
+      const stored = await mockChrome.storage.session.get('stablenet_vault_session')
       const session = stored.stablenet_vault_session as typeof expiredSession
 
       // Check if session is expired
@@ -876,11 +845,8 @@ describe('Vault Encryption', () => {
         stablenet_vault_session: sessionWithDisabledAutoLock,
       })
 
-      const stored = await mockChrome.storage.session.get(
-        'stablenet_vault_session'
-      )
-      const session =
-        stored.stablenet_vault_session as typeof sessionWithDisabledAutoLock
+      const stored = await mockChrome.storage.session.get('stablenet_vault_session')
+      const session = stored.stablenet_vault_session as typeof sessionWithDisabledAutoLock
 
       // With auto-lock disabled (0), session should not expire
       const isExpired =
@@ -989,10 +955,7 @@ describe('Provider Events (EIP-1193)', () => {
 
     // Selected account should be first
     const selectedAccount = accounts[1]
-    const sortedAccounts = [
-      selectedAccount,
-      ...accounts.filter((a) => a !== selectedAccount),
-    ]
+    const sortedAccounts = [selectedAccount, ...accounts.filter((a) => a !== selectedAccount)]
 
     expect(sortedAccounts[0]).toBe(accounts[1])
     expect(sortedAccounts).toHaveLength(2)

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
+import { http, createPublicClient, createWalletClient } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { createPublicClient, createWalletClient, http } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
-import { parseConfig, getEnvHelp } from './config'
 import { RpcServer } from '../rpc/server'
 import { createLogger, getGlobalLogger } from '../utils/logger'
+import { getEnvHelp, parseConfig } from './config'
 
 // Get early logger for error handling before full initialization
 const earlyLogger = getGlobalLogger()
@@ -99,7 +99,8 @@ async function main() {
           })
           .option('mempool-max-nonce-gap', {
             type: 'number',
-            description: 'Maximum nonce gap in mempool when continuity validation enabled (default: 0)',
+            description:
+              'Maximum nonce gap in mempool when continuity validation enabled (default: 0)',
           })
           .epilog(getEnvHelp())
       },

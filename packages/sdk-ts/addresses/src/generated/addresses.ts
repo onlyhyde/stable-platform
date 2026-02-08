@@ -50,16 +50,17 @@ export const CHAIN_ADDRESSES: Record<number, ChainAddresses> = {
       recurringPaymentExecutor: '0x998abeb3E57409262aE5b751f60747921B33613E',
       permissionManager: '0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf',
     },
-    delegatePresets: [
-    ],
+    delegatePresets: [],
   },
-
 }
 
 /**
  * Service URLs by chain ID
  */
-export const SERVICE_URLS: Record<number, { bundler: string; paymaster: string; stealthServer: string }> = {
+export const SERVICE_URLS: Record<
+  number,
+  { bundler: string; paymaster: string; stealthServer: string }
+> = {
   31337: {
     bundler: 'http://localhost:4337',
     paymaster: 'http://localhost:4338',
@@ -70,7 +71,16 @@ export const SERVICE_URLS: Record<number, { bundler: string; paymaster: string; 
 /**
  * Default tokens by chain ID
  */
-export const DEFAULT_TOKENS: Record<number, Array<{ address: `0x${string}`; name: string; symbol: string; decimals: number; logoUrl?: string }>> = {
+export const DEFAULT_TOKENS: Record<
+  number,
+  Array<{
+    address: `0x${string}`
+    name: string
+    symbol: string
+    decimals: number
+    logoUrl?: string
+  }>
+> = {
   31337: [
     {
       address: '0x0000000000000000000000000000000000000000',

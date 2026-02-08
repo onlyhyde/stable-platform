@@ -72,10 +72,10 @@ export function ModuleConfigForm({
 
       {/* Actions */}
       <div className="flex gap-3 mt-6">
-        <button className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
           Back
         </button>
-        <button className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
+        <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
           Continue
         </button>
       </div>
@@ -100,6 +100,7 @@ function ConfigField({ field, value, error, onChange }: ConfigFieldProps) {
       case 'address':
         return (
           <input
+            id={`config-field-${field.name}`}
             type="text"
             className="w-full px-3 py-2 rounded-lg input-base font-mono"
             placeholder="0x..."
@@ -113,6 +114,7 @@ function ConfigField({ field, value, error, onChange }: ConfigFieldProps) {
       case 'uint32':
         return (
           <input
+            id={`config-field-${field.name}`}
             type="text"
             className="w-full px-3 py-2 rounded-lg input-base"
             placeholder="0"
@@ -143,6 +145,7 @@ function ConfigField({ field, value, error, onChange }: ConfigFieldProps) {
       case 'bytes32':
         return (
           <textarea
+            id={`config-field-${field.name}`}
             className="w-full px-3 py-2 rounded-lg input-base font-mono text-sm"
             placeholder="0x..."
             value={(value as string) ?? ''}
@@ -157,6 +160,7 @@ function ConfigField({ field, value, error, onChange }: ConfigFieldProps) {
       default:
         return (
           <input
+            id={`config-field-${field.name}`}
             type="text"
             className="w-full px-3 py-2 rounded-lg input-base"
             placeholder={field.description}
@@ -171,6 +175,7 @@ function ConfigField({ field, value, error, onChange }: ConfigFieldProps) {
     <div className="config-field">
       {field.type !== 'bool' && (
         <label
+          htmlFor={`config-field-${field.name}`}
           className="block text-sm font-medium mb-1"
           style={{ color: 'rgb(var(--foreground-secondary))' }}
         >
@@ -216,6 +221,7 @@ function AddressArrayInput({ value, onChange }: AddressArrayInputProps) {
   return (
     <div className="address-array-input space-y-2">
       {value.map((addr, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: editable dynamic form inputs have no stable identifier
         <div key={index} className="flex gap-2">
           <input
             type="text"

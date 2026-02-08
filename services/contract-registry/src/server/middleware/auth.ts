@@ -1,4 +1,4 @@
-import type { FastifyRequest, FastifyReply } from 'fastify'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 
 export function createAuthHook(apiKey: string | undefined) {
   return async function authHook(request: FastifyRequest, reply: FastifyReply) {

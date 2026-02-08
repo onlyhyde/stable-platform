@@ -18,7 +18,7 @@ function getViteEnv(): Record<string, string | undefined> {
   // Use globalThis to access import.meta.env in a way that Jest can handle
   // Vite will replace this at build time
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: Vite/Jest compat requires any cast
     const meta = (globalThis as any).import?.meta?.env
     if (meta) {
       return meta as Record<string, string | undefined>
@@ -36,6 +36,12 @@ export const WALLET_ENV_VARS = {
   // API URLs
   BANK_API_URL: 'VITE_WALLET_BANK_API_URL',
   ONRAMP_API_URL: 'VITE_WALLET_ONRAMP_API_URL',
+
+  // Network URLs (StableNet Local)
+  LOCAL_RPC_URL: 'VITE_WALLET_LOCAL_RPC_URL',
+  LOCAL_BUNDLER_URL: 'VITE_WALLET_LOCAL_BUNDLER_URL',
+  LOCAL_PAYMASTER_URL: 'VITE_WALLET_LOCAL_PAYMASTER_URL',
+  LOCAL_STEALTH_SERVER_URL: 'VITE_WALLET_LOCAL_STEALTH_SERVER_URL',
 
   // Network URLs (Devnet)
   DEVNET_RPC_URL: 'VITE_WALLET_DEVNET_RPC_URL',
@@ -72,9 +78,15 @@ export const WALLET_ENV_VARS = {
  * Default values
  */
 const DEFAULTS = {
-  // API URLs
-  BANK_API_URL: 'http://localhost:8081/api/v1',
-  ONRAMP_API_URL: 'http://localhost:8082/api/v1',
+  // API URLs (match simulator service ports)
+  BANK_API_URL: 'http://localhost:4350/api/v1',
+  ONRAMP_API_URL: 'http://localhost:4352/api/v1',
+
+  // Network URLs (StableNet Local - Chain ID 8283)
+  LOCAL_RPC_URL: 'http://localhost:8501',
+  LOCAL_BUNDLER_URL: 'http://localhost:4337',
+  LOCAL_PAYMASTER_URL: 'http://localhost:4338',
+  LOCAL_STEALTH_SERVER_URL: 'http://localhost:4339',
 
   // Network URLs (Devnet)
   DEVNET_RPC_URL: 'http://localhost:8545',
@@ -160,6 +172,21 @@ export function getApiConfig() {
 // =============================================================================
 
 /**
+ * Get StableNet Local network configuration
+ */
+export function getLocalNetworkConfig() {
+  return {
+    rpcUrl: getEnvString(WALLET_ENV_VARS.LOCAL_RPC_URL, DEFAULTS.LOCAL_RPC_URL),
+    bundlerUrl: getEnvString(WALLET_ENV_VARS.LOCAL_BUNDLER_URL, DEFAULTS.LOCAL_BUNDLER_URL),
+    paymasterUrl: getEnvString(WALLET_ENV_VARS.LOCAL_PAYMASTER_URL, DEFAULTS.LOCAL_PAYMASTER_URL),
+    stealthServerUrl: getEnvString(
+      WALLET_ENV_VARS.LOCAL_STEALTH_SERVER_URL,
+      DEFAULTS.LOCAL_STEALTH_SERVER_URL
+    ),
+  }
+}
+
+/**
  * Get Devnet network configuration
  */
 export function getDevnetNetworkConfig() {
@@ -197,6 +224,8 @@ export function getTestnetNetworkConfig() {
  */
 export function getNetworkConfigByChainId(chainId: number) {
   switch (chainId) {
+    case 8283:
+      return getLocalNetworkConfig()
     case 31337:
       return getDevnetNetworkConfig()
     case 11155111:
@@ -338,6 +367,7 @@ export const CHAIN_IDS = {
   SEPOLIA: 11155111,
   HARDHAT: 31337,
   LOCALHOST: 1337,
+  STABLENET_LOCAL: 8283,
 } as const
 
 /**

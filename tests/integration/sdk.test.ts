@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from 'vitest'
-import { createPublicClient, createWalletClient, http, parseEther, formatEther } from 'viem'
+import { http, createPublicClient, createWalletClient, formatEther, parseEther } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { foundry } from 'viem/chains'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { TEST_CONFIG, isNetworkAvailable } from '../setup'
 
 describe('SDK Integration Tests', () => {

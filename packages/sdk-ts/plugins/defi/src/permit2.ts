@@ -11,14 +11,7 @@
  */
 
 import type { Address, Hex } from 'viem'
-import {
-  encodeAbiParameters,
-  parseAbiParameters,
-  keccak256,
-  concat,
-  toHex,
-  pad,
-} from 'viem'
+import { encodeAbiParameters, keccak256, parseAbiParameters, toHex } from 'viem'
 
 // ============================================================================
 // Constants
@@ -41,19 +34,27 @@ export const PERMIT2_ADDRESSES: Record<number, Address> = {
  */
 export const PERMIT2_TYPE_HASHES = {
   PERMIT_SINGLE: keccak256(
-    toHex('PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)')
+    toHex(
+      'PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)'
+    )
   ),
   PERMIT_BATCH: keccak256(
-    toHex('PermitBatch(PermitDetails[] details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)')
+    toHex(
+      'PermitBatch(PermitDetails[] details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)'
+    )
   ),
   PERMIT_DETAILS: keccak256(
     toHex('PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)')
   ),
   PERMIT_TRANSFER_FROM: keccak256(
-    toHex('PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)')
+    toHex(
+      'PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)'
+    )
   ),
   PERMIT_BATCH_TRANSFER_FROM: keccak256(
-    toHex('PermitBatchTransferFrom(TokenPermissions[] permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)')
+    toHex(
+      'PermitBatchTransferFrom(TokenPermissions[] permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)'
+    )
   ),
 } as const
 
@@ -271,13 +272,11 @@ export const PERMIT_BATCH_TRANSFER_FROM_TYPES = {
 /**
  * Encode permit single call data
  */
-export function encodePermitSingle(
-  owner: Address,
-  permit: PermitSingle,
-  signature: Hex
-): Hex {
+export function encodePermitSingle(owner: Address, permit: PermitSingle, signature: Hex): Hex {
   return encodeAbiParameters(
-    parseAbiParameters('address owner, ((address token, uint160 amount, uint48 expiration, uint48 nonce) details, address spender, uint256 sigDeadline) permitSingle, bytes signature'),
+    parseAbiParameters(
+      'address owner, ((address token, uint160 amount, uint48 expiration, uint48 nonce) details, address spender, uint256 sigDeadline) permitSingle, bytes signature'
+    ),
     [
       owner,
       {
@@ -298,13 +297,11 @@ export function encodePermitSingle(
 /**
  * Encode permit batch call data
  */
-export function encodePermitBatch(
-  owner: Address,
-  permit: PermitBatch,
-  signature: Hex
-): Hex {
+export function encodePermitBatch(owner: Address, permit: PermitBatch, signature: Hex): Hex {
   return encodeAbiParameters(
-    parseAbiParameters('address owner, ((address token, uint160 amount, uint48 expiration, uint48 nonce)[] details, address spender, uint256 sigDeadline) permitBatch, bytes signature'),
+    parseAbiParameters(
+      'address owner, ((address token, uint160 amount, uint48 expiration, uint48 nonce)[] details, address spender, uint256 sigDeadline) permitBatch, bytes signature'
+    ),
     [
       owner,
       {
@@ -347,7 +344,9 @@ export function encodeSignatureTransferFrom(
   signature: Hex
 ): Hex {
   return encodeAbiParameters(
-    parseAbiParameters('((address token, uint256 amount) permitted, uint256 nonce, uint256 deadline) permit, (address to, uint256 requestedAmount) transferDetails, address owner, bytes signature'),
+    parseAbiParameters(
+      '((address token, uint256 amount) permitted, uint256 nonce, uint256 deadline) permit, (address to, uint256 requestedAmount) transferDetails, address owner, bytes signature'
+    ),
     [
       {
         permitted: {

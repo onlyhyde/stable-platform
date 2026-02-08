@@ -1,10 +1,11 @@
 import type { Address, Hash } from 'viem'
+import { walletSdkLogger } from '../logger'
 import type {
-  EIP1193Provider,
+  BalanceInfo,
   ConnectInfo,
+  EIP1193Provider,
   ProviderRpcError,
   TransactionRequest,
-  BalanceInfo,
 } from '../types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,15 +109,16 @@ export class StableNetProvider {
     })
 
     this.provider.on('accountsChanged', (accounts: unknown) => {
-      const accountList = accounts as Address[]
+      const accountList = Array.isArray(accounts) ? (accounts as Address[]) : []
       this._account = accountList[0] ?? null
       this._isConnected = accountList.length > 0
       this.emit('accountsChanged', accountList)
     })
 
     this.provider.on('chainChanged', (chainId: unknown) => {
-      this._chainId = chainId as string
-      this.emit('chainChanged', chainId as string)
+      const chainIdStr = typeof chainId === 'string' ? chainId : String(chainId)
+      this._chainId = chainIdStr
+      this.emit('chainChanged', chainIdStr)
     })
   }
 
@@ -124,9 +126,10 @@ export class StableNetProvider {
    * Connect to wallet
    */
   async connect(): Promise<Address[]> {
-    const accounts = await this.provider.request({
+    const result = await this.provider.request({
       method: 'eth_requestAccounts',
-    }) as Address[]
+    })
+    const accounts = Array.isArray(result) ? (result as Address[]) : []
 
     if (accounts.length > 0) {
       this._account = accounts[0]
@@ -155,20 +158,20 @@ export class StableNetProvider {
    * Get connected accounts
    */
   async getAccounts(): Promise<Address[]> {
-    const accounts = await this.provider.request({
+    const result = await this.provider.request({
       method: 'eth_accounts',
-    }) as Address[]
-    return accounts
+    })
+    return Array.isArray(result) ? (result as Address[]) : []
   }
 
   /**
    * Get current chain ID
    */
   async getChainId(): Promise<string> {
-    const chainId = await this.provider.request({
+    const result = await this.provider.request({
       method: 'eth_chainId',
-    }) as string
-    return chainId
+    })
+    return typeof result === 'string' ? result : String(result)
   }
 
   /**
@@ -189,10 +192,10 @@ export class StableNetProvider {
       throw new Error('No account connected')
     }
 
-    const signature = await this.provider.request({
+    const signature = (await this.provider.request({
       method: 'personal_sign',
       params: [message, this._account],
-    }) as string
+    })) as string
 
     return signature
   }
@@ -205,10 +208,10 @@ export class StableNetProvider {
       throw new Error('No account connected')
     }
 
-    const signature = await this.provider.request({
+    const signature = (await this.provider.request({
       method: 'eth_signTypedData_v4',
       params: [this._account, JSON.stringify(typedData)],
-    }) as string
+    })) as string
 
     return signature
   }
@@ -217,23 +220,30 @@ export class StableNetProvider {
    * Send a transaction
    * Emits 'transactionSent' event immediately and optionally waits for confirmation
    */
-  async sendTransaction(tx: TransactionRequest, options?: { waitForConfirmation?: boolean }): Promise<Hash> {
+  async sendTransaction(
+    tx: TransactionRequest,
+    options?: { waitForConfirmation?: boolean }
+  ): Promise<Hash> {
     if (!this._account) {
       throw new Error('No account connected')
     }
 
-    const txHash = await this.provider.request({
+    const txHash = (await this.provider.request({
       method: 'eth_sendTransaction',
-      params: [{
-        ...tx,
-        from: tx.from ?? this._account,
-        value: tx.value ? `0x${BigInt(tx.value).toString(16)}` : undefined,
-        gas: tx.gas ? `0x${BigInt(tx.gas).toString(16)}` : undefined,
-        gasPrice: tx.gasPrice ? `0x${BigInt(tx.gasPrice).toString(16)}` : undefined,
-        maxFeePerGas: tx.maxFeePerGas ? `0x${BigInt(tx.maxFeePerGas).toString(16)}` : undefined,
-        maxPriorityFeePerGas: tx.maxPriorityFeePerGas ? `0x${BigInt(tx.maxPriorityFeePerGas).toString(16)}` : undefined,
-      }],
-    }) as Hash
+      params: [
+        {
+          ...tx,
+          from: tx.from ?? this._account,
+          value: tx.value ? `0x${BigInt(tx.value).toString(16)}` : undefined,
+          gas: tx.gas ? `0x${BigInt(tx.gas).toString(16)}` : undefined,
+          gasPrice: tx.gasPrice ? `0x${BigInt(tx.gasPrice).toString(16)}` : undefined,
+          maxFeePerGas: tx.maxFeePerGas ? `0x${BigInt(tx.maxFeePerGas).toString(16)}` : undefined,
+          maxPriorityFeePerGas: tx.maxPriorityFeePerGas
+            ? `0x${BigInt(tx.maxPriorityFeePerGas).toString(16)}`
+            : undefined,
+        },
+      ],
+    })) as Hash
 
     // Emit transaction sent event
     const sentEvent: TransactionSentEvent = {
@@ -248,7 +258,7 @@ export class StableNetProvider {
     // Optionally wait for confirmation
     if (options?.waitForConfirmation) {
       this.waitForTransaction(txHash).catch((error) => {
-        console.error('Transaction confirmation error:', error)
+        walletSdkLogger.error('Transaction confirmation error:', error)
       })
     }
 
@@ -260,24 +270,27 @@ export class StableNetProvider {
    * Emits 'transactionConfirmed' event when the transaction is mined
    */
   async waitForTransaction(hash: Hash, confirmations = 1): Promise<TransactionConfirmedEvent> {
-    const maxAttempts = 60 // 5 minutes with 5s interval
-    const pollInterval = 5000
+    const timeout = 300_000 // 5 minutes
+    const minInterval = 2_000
+    const maxInterval = 15_000
+    const startTime = Date.now()
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    let attempt = 0
+    while (Date.now() - startTime < timeout) {
       try {
-        const receipt = await this.provider.request({
+        const receipt = (await this.provider.request({
           method: 'eth_getTransactionReceipt',
           params: [hash],
-        }) as {
+        })) as {
           blockNumber: string
           status: string
           gasUsed: string
         } | null
 
         if (receipt?.blockNumber) {
-          const currentBlock = await this.provider.request({
+          const currentBlock = (await this.provider.request({
             method: 'eth_blockNumber',
-          }) as string
+          })) as string
 
           const receiptBlock = Number.parseInt(receipt.blockNumber, 16)
           const currentBlockNum = Number.parseInt(currentBlock, 16)
@@ -297,7 +310,10 @@ export class StableNetProvider {
         // Transaction not yet mined, continue polling
       }
 
-      await new Promise((resolve) => setTimeout(resolve, pollInterval))
+      // Exponential backoff: 2s, 4s, 8s, 15s, 15s, ...
+      const delay = Math.min(minInterval * 2 ** attempt, maxInterval)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      attempt++
     }
 
     throw new Error(`Transaction ${hash} was not confirmed within timeout`)
@@ -312,10 +328,10 @@ export class StableNetProvider {
       throw new Error('No account specified')
     }
 
-    const balance = await this.provider.request({
+    const balance = (await this.provider.request({
       method: 'eth_getBalance',
       params: [targetAddress, 'latest'],
-    }) as string
+    })) as string
 
     return BigInt(balance)
   }
@@ -328,7 +344,10 @@ export class StableNetProvider {
   on(event: 'accountsChanged', listener: (accounts: Address[]) => void): () => void
   on(event: 'chainChanged', listener: (chainId: string) => void): () => void
   on(event: 'transactionSent', listener: (event: TransactionSentEvent) => void): () => void
-  on(event: 'transactionConfirmed', listener: (event: TransactionConfirmedEvent) => void): () => void
+  on(
+    event: 'transactionConfirmed',
+    listener: (event: TransactionConfirmedEvent) => void
+  ): () => void
   on(event: 'balanceChange', listener: (event: BalanceChangeEvent) => void): () => void
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   on(event: string, listener: (...args: any[]) => void): () => void {
@@ -353,7 +372,7 @@ export class StableNetProvider {
         try {
           listener(data)
         } catch (error) {
-          console.error(`Error in ${event} listener:`, error)
+          walletSdkLogger.error(`Error in ${event} listener:`, error)
         }
       }
     }
@@ -506,13 +525,15 @@ export class StableNetProvider {
   /**
    * Get installed ERC-7579 modules for the account
    */
-  async getInstalledModules(account?: Address): Promise<{
-    address: Address
-    type: number
-    initData: Hash
-    installedAt: number
-    isActive: boolean
-  }[]> {
+  async getInstalledModules(account?: Address): Promise<
+    {
+      address: Address
+      type: number
+      initData: Hash
+      installedAt: number
+      isActive: boolean
+    }[]
+  > {
     const result = await this.provider.request({
       method: 'wallet_getInstalledModules',
       params: [{ account: account ?? this._account }],
@@ -581,15 +602,17 @@ export class StableNetProvider {
   async scanStealthPayments(options?: {
     fromBlock?: number
     toBlock?: number
-  }): Promise<{
-    stealthAddress: Address
-    ephemeralPubKey: Hash
-    txHash: Hash
-    blockNumber: number
-    amount: bigint
-    token: Address
-    timestamp: number
-  }[]> {
+  }): Promise<
+    {
+      stealthAddress: Address
+      ephemeralPubKey: Hash
+      txHash: Hash
+      blockNumber: number
+      amount: bigint
+      token: Address
+      timestamp: number
+    }[]
+  > {
     const result = await this.provider.request({
       method: 'wallet_scanStealthPayments',
       params: [options ?? {}],

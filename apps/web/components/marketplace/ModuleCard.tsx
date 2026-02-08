@@ -47,14 +47,14 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
   return (
     <div className="flex items-center gap-1">
       <div className="flex">
-        {Array.from({ length: 5 }, (_, i) => (
+        {[0, 1, 2, 3, 4].map((starIndex) => (
           <span
-            key={i}
+            key={starIndex}
             style={{
               color:
-                i < fullStars
+                starIndex < fullStars
                   ? 'rgb(var(--warning))'
-                  : i === fullStars && hasHalf
+                  : starIndex === fullStars && hasHalf
                     ? 'rgb(var(--warning) / 0.5)'
                     : 'rgb(var(--muted-foreground) / 0.3)',
             }}

@@ -164,6 +164,7 @@ export function WalletSelectorModal({
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -190,6 +191,7 @@ export function WalletSelectorModal({
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -213,7 +215,7 @@ export function WalletSelectorModal({
             style={{ backgroundColor: 'rgb(var(--primary))' }}
           >
             <span>Install MetaMask</span>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -230,7 +232,7 @@ export function WalletSelectorModal({
           className="flex items-center justify-center gap-2 text-xs"
           style={{ color: 'rgb(var(--muted-foreground))' }}
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

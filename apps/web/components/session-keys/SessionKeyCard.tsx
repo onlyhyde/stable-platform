@@ -107,6 +107,7 @@ export const SessionKeyCard: FC<SessionKeyCardProps> = ({
               style={{ backgroundColor: 'rgb(var(--secondary))' }}
             >
               <svg
+                aria-hidden="true"
                 className="w-5 h-5"
                 style={{ color: 'rgb(var(--muted-foreground))' }}
                 fill="none"
@@ -182,12 +183,14 @@ export const SessionKeyCard: FC<SessionKeyCardProps> = ({
         <div className="flex justify-between items-center text-sm">
           <span style={{ color: 'rgb(var(--muted-foreground))' }}>Permissions</span>
           <button
+            type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className="font-medium flex items-center gap-1 hover:opacity-80"
             style={{ color: 'rgb(var(--primary))' }}
           >
             {sessionKey.permissions.filter((p) => p.active).length} active
             <svg
+              aria-hidden="true"
               className={cn('w-4 h-4 transition-transform', isExpanded && 'rotate-180')}
               fill="none"
               stroke="currentColor"

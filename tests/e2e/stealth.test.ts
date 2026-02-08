@@ -12,37 +12,37 @@
  * 8. Spending verification from stealth address
  */
 
-import { describe, it, expect, beforeAll } from 'vitest'
 import {
-  createPublicClient,
-  createWalletClient,
   http,
-  parseEther,
-  formatEther,
-  type Hex,
   type Address,
+  type Hex,
   type PublicClient,
   type WalletClient,
+  createPublicClient,
+  createWalletClient,
+  formatEther,
+  parseEther,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { foundry } from 'viem/chains'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { TEST_CONFIG, isNetworkAvailable } from '../setup'
 
 // Import stealth plugin
 import {
-  generatePrivateKey,
-  derivePublicKey,
-  generateStealthKeyPair,
-  generateStealthAddressCrypto,
-  computeStealthPrivateKey,
-  checkViewTag,
-  encodeStealthMetaAddress,
-  encodeStealthMetaAddressUri,
-  parseStealthMetaAddressUri,
-  createMetadata,
   ERC5564_ANNOUNCER_ABI,
   ERC6538_REGISTRY_ABI,
   SCHEME_ID,
+  checkViewTag,
+  computeStealthPrivateKey,
+  createMetadata,
+  derivePublicKey,
+  encodeStealthMetaAddress,
+  encodeStealthMetaAddressUri,
+  generatePrivateKey,
+  generateStealthAddressCrypto,
+  generateStealthKeyPair,
+  parseStealthMetaAddressUri,
 } from '@stablenet/plugin-stealth'
 
 describe('Stealth Transfer E2E Tests', () => {
@@ -331,12 +331,7 @@ describe('Stealth Transfer E2E Tests', () => {
         address: announcerAddress,
         abi: ERC5564_ANNOUNCER_ABI,
         functionName: 'announce',
-        args: [
-          BigInt(SCHEME_ID.SECP256K1),
-          generatedStealthAddress,
-          ephemeralPubKey,
-          metadata,
-        ],
+        args: [BigInt(SCHEME_ID.SECP256K1), generatedStealthAddress, ephemeralPubKey, metadata],
       })
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
@@ -356,11 +351,7 @@ describe('Stealth Transfer E2E Tests', () => {
     it('should match view tag with correct viewing key', () => {
       if (!networkAvailable || !ephemeralPubKey || !viewTag) return
 
-      const matches = checkViewTag(
-        ephemeralPubKey,
-        recipientViewingKeyPair.privateKey,
-        viewTag
-      )
+      const matches = checkViewTag(ephemeralPubKey, recipientViewingKeyPair.privateKey, viewTag)
 
       expect(matches).toBe(true)
       console.log('✅ View tag matches with correct viewing key')
@@ -398,7 +389,9 @@ describe('Stealth Transfer E2E Tests', () => {
       // Expected: ~4 false positives (1000 / 256 ≈ 3.9)
       // Allow up to 20 for statistical variance
       expect(passed).toBeLessThan(20)
-      console.log(`✅ View tag filtered ${totalAnnouncements} announcements → ${passed} false positives (expected ~4)`)
+      console.log(
+        `✅ View tag filtered ${totalAnnouncements} announcements → ${passed} false positives (expected ~4)`
+      )
     })
   })
 
@@ -553,10 +546,7 @@ describe('Stealth Transfer E2E Tests', () => {
 
       const singleKeyPair = generateStealthKeyPair()
 
-      const result = generateStealthAddressCrypto(
-        singleKeyPair.publicKey,
-        singleKeyPair.publicKey
-      )
+      const result = generateStealthAddressCrypto(singleKeyPair.publicKey, singleKeyPair.publicKey)
 
       const computed = computeStealthPrivateKey(
         result.ephemeralPubKey,

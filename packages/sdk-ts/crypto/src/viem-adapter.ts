@@ -8,31 +8,31 @@
  */
 
 import {
-  encodeAbiParameters,
+  http,
+  type Chain,
+  type PublicClient,
+  type Abi as ViemAbi,
+  type Address as ViemAddress,
+  type Hex as ViemHex,
+  createPublicClient,
   decodeAbiParameters,
-  encodeFunctionData,
   decodeFunctionResult,
+  encodeAbiParameters,
+  encodeFunctionData,
   encodePacked,
   parseAbiParameters,
   keccak256 as viemKeccak256,
-  type Address as ViemAddress,
-  type Hex as ViemHex,
-  type Abi as ViemAbi,
-  createPublicClient,
-  http,
-  type PublicClient,
-  type Chain,
 } from 'viem'
 
 import type {
-  Address,
-  Hex,
-  Hash,
   Abi,
   AbiEncoder,
-  HashAlgorithm,
-  RpcClient,
+  Address,
   CryptoProvider,
+  Hash,
+  HashAlgorithm,
+  Hex,
+  RpcClient,
 } from './interfaces'
 
 // ============================================================================
@@ -67,10 +67,7 @@ export class ViemAbiEncoder implements AbiEncoder {
   }
 
   encodePacked(types: readonly string[], values: readonly unknown[]): Hex {
-    return encodePacked(
-      types as readonly string[],
-      values as readonly unknown[]
-    ) as Hex
+    return encodePacked(types as readonly string[], values as readonly unknown[]) as Hex
   }
 }
 

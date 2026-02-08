@@ -3,7 +3,10 @@
  * TDD tests for gas fee estimation and management
  */
 
-import { GasFeeController, GasFeeState } from '../../../src/background/controllers/GasFeeController'
+import {
+  GasFeeController,
+  type GasFeeState,
+} from '../../../src/background/controllers/GasFeeController'
 
 describe('GasFeeController', () => {
   let controller: GasFeeController
@@ -135,10 +138,12 @@ describe('GasFeeController', () => {
 
       expect(mockProvider.request).toHaveBeenCalledWith({
         method: 'eth_estimateGas',
-        params: [expect.objectContaining({
-          from: '0x1234567890123456789012345678901234567890',
-          to: '0xabcdef1234567890abcdef1234567890abcdef12',
-        })],
+        params: [
+          expect.objectContaining({
+            from: '0x1234567890123456789012345678901234567890',
+            to: '0xabcdef1234567890abcdef1234567890abcdef12',
+          }),
+        ],
       })
       expect(gas).toBe('0x5208')
     })
@@ -155,16 +160,18 @@ describe('GasFeeController', () => {
       )
 
       // 21000 * 1.2 = 25200 = 0x6270
-      expect(parseInt(gas, 16)).toBeGreaterThan(21000)
+      expect(Number.parseInt(gas, 16)).toBeGreaterThan(21000)
     })
 
     it('should handle estimation errors', async () => {
       mockProvider.request.mockRejectedValueOnce(new Error('execution reverted'))
 
-      await expect(controller.estimateGas({
-        from: '0x1234567890123456789012345678901234567890',
-        to: '0xabcdef1234567890abcdef1234567890abcdef12',
-      })).rejects.toThrow('Gas estimation failed')
+      await expect(
+        controller.estimateGas({
+          from: '0x1234567890123456789012345678901234567890',
+          to: '0xabcdef1234567890abcdef1234567890abcdef12',
+        })
+      ).rejects.toThrow('Gas estimation failed')
     })
   })
 

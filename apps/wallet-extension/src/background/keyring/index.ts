@@ -170,6 +170,14 @@ export class KeyringController {
    * Lock the vault
    */
   lock(): void {
+    // Sanitize keyring data from memory before releasing references
+    for (const keyring of this.hdKeyrings) {
+      keyring.sanitize()
+    }
+    for (const keyring of this.simpleKeyrings) {
+      keyring.sanitize()
+    }
+
     vault.lock()
     this.hdKeyrings = []
     this.simpleKeyrings = []

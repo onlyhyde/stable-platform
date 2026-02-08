@@ -57,7 +57,7 @@ export function InstallModuleWizard({
   const [error, setError] = useState<string | null>(null)
 
   const { availableModules } = useModuleRegistry()
-  const { installModule, isPending } = useModuleInstall()
+  const { installModule } = useModuleInstall()
 
   // Filter modules by selected type
   const filteredModules = useMemo(() => {
@@ -310,7 +310,7 @@ export function InstallModuleWizard({
         className="wizard-header flex items-center justify-between p-4"
         style={{ borderBottomWidth: 1, borderBottomColor: 'rgb(var(--border))' }}
       >
-        <button style={{ color: 'rgb(var(--muted-foreground))' }} onClick={onCancel}>
+        <button type="button" style={{ color: 'rgb(var(--muted-foreground))' }} onClick={onCancel}>
           ← Back
         </button>
         <h2 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
@@ -504,6 +504,7 @@ function TypeSelector({ onSelect }: TypeSelectorProps) {
       <div className="space-y-3">
         {types.map((type) => (
           <button
+            type="button"
             key={String(type.type)}
             className="type-option w-full p-4 rounded-lg text-left transition-all"
             style={{
@@ -553,6 +554,7 @@ function ModuleSelector({ modules, type, onSelect }: ModuleSelectorProps) {
         <div className="space-y-3">
           {modules.map((module) => (
             <button
+              type="button"
               key={module.metadata.address}
               className="module-option w-full p-4 rounded-lg text-left transition-all"
               style={{
@@ -674,10 +676,10 @@ function InstallConfirmation({
 
       {/* Actions */}
       <div className="flex gap-3">
-        <button className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
           Back
         </button>
-        <button className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={onConfirm}>
+        <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={onConfirm}>
           Install Module
         </button>
       </div>

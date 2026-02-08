@@ -8,16 +8,26 @@
  * - Seed phrase backup and confirmation
  */
 
-import { test, expect } from '../fixtures/extension'
-import { OnboardingPage, WalletHomePage, LockPage } from '../pages'
+import { expect, test } from '../fixtures/extension'
+import { LockPage, OnboardingPage, WalletHomePage } from '../pages'
 
 // Test password
 const TEST_PASSWORD = 'TestP@ssword123!'
 
 // Test seed phrase (12 words for testing)
 const TEST_SEED_PHRASE = [
-  'abandon', 'ability', 'able', 'about', 'above', 'absent',
-  'absorb', 'abstract', 'absurd', 'abuse', 'access', 'accident',
+  'abandon',
+  'ability',
+  'able',
+  'about',
+  'above',
+  'absent',
+  'absorb',
+  'abstract',
+  'absurd',
+  'abuse',
+  'access',
+  'accident',
 ]
 
 test.describe('Onboarding Flow', () => {
@@ -44,9 +54,7 @@ test.describe('Onboarding Flow', () => {
       await expect(onboarding.confirmPasswordInput).toBeVisible()
     })
 
-    test('should validate password requirements', async ({
-      extensionPopup,
-    }) => {
+    test('should validate password requirements', async ({ extensionPopup }) => {
       const onboarding = new OnboardingPage(extensionPopup)
 
       await onboarding.startCreateWallet()
@@ -60,9 +68,7 @@ test.describe('Onboarding Flow', () => {
       expect(isDisabled).toBe(true)
     })
 
-    test('should validate password match', async ({
-      extensionPopup,
-    }) => {
+    test('should validate password match', async ({ extensionPopup }) => {
       const onboarding = new OnboardingPage(extensionPopup)
 
       await onboarding.startCreateWallet()
@@ -76,9 +82,7 @@ test.describe('Onboarding Flow', () => {
       await expect(errorMessage.or(onboarding.continueButton)).toBeVisible()
     })
 
-    test('should display seed phrase after password creation', async ({
-      extensionPopup,
-    }) => {
+    test('should display seed phrase after password creation', async ({ extensionPopup }) => {
       const onboarding = new OnboardingPage(extensionPopup)
 
       await onboarding.startCreateWallet()
@@ -92,9 +96,7 @@ test.describe('Onboarding Flow', () => {
       expect(seedPhrase.length).toBeGreaterThanOrEqual(12)
     })
 
-    test('should require seed phrase confirmation', async ({
-      extensionPopup,
-    }) => {
+    test('should require seed phrase confirmation', async ({ extensionPopup }) => {
       const onboarding = new OnboardingPage(extensionPopup)
 
       await onboarding.startCreateWallet()
@@ -126,9 +128,7 @@ test.describe('Onboarding Flow', () => {
   })
 
   test.describe('Import Existing Wallet', () => {
-    test('should navigate to import screen', async ({
-      extensionPopup,
-    }) => {
+    test('should navigate to import screen', async ({ extensionPopup }) => {
       const onboarding = new OnboardingPage(extensionPopup)
 
       await onboarding.startImportWallet()
@@ -138,9 +138,7 @@ test.describe('Onboarding Flow', () => {
       await expect(seedInput).toBeVisible()
     })
 
-    test('should validate seed phrase format', async ({
-      extensionPopup,
-    }) => {
+    test('should validate seed phrase format', async ({ extensionPopup }) => {
       const onboarding = new OnboardingPage(extensionPopup)
 
       await onboarding.startImportWallet()
@@ -156,9 +154,7 @@ test.describe('Onboarding Flow', () => {
       expect(errorVisible || isDisabled).toBe(true)
     })
 
-    test('should import wallet with valid seed phrase', async ({
-      extensionPopup,
-    }) => {
+    test('should import wallet with valid seed phrase', async ({ extensionPopup }) => {
       const onboarding = new OnboardingPage(extensionPopup)
 
       await onboarding.importExistingWallet(TEST_SEED_PHRASE, TEST_PASSWORD)
@@ -176,9 +172,7 @@ test.describe('Onboarding Flow', () => {
       await onboarding.createNewWallet(TEST_PASSWORD)
     })
 
-    test('should lock wallet and require password to unlock', async ({
-      extensionPopup,
-    }) => {
+    test('should lock wallet and require password to unlock', async ({ extensionPopup }) => {
       const home = new WalletHomePage(extensionPopup)
       const lock = new LockPage(extensionPopup)
 
@@ -190,9 +184,7 @@ test.describe('Onboarding Flow', () => {
       await expect(lock.unlockButton).toBeVisible()
     })
 
-    test('should unlock wallet with correct password', async ({
-      extensionPopup,
-    }) => {
+    test('should unlock wallet with correct password', async ({ extensionPopup }) => {
       const home = new WalletHomePage(extensionPopup)
       const lock = new LockPage(extensionPopup)
 
@@ -205,9 +197,7 @@ test.describe('Onboarding Flow', () => {
       await home.verifyUnlocked()
     })
 
-    test('should show error with wrong password', async ({
-      extensionPopup,
-    }) => {
+    test('should show error with wrong password', async ({ extensionPopup }) => {
       const home = new WalletHomePage(extensionPopup)
       const lock = new LockPage(extensionPopup)
 

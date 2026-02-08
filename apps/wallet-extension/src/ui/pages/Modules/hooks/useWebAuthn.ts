@@ -1,6 +1,9 @@
 import { type WebAuthnSignatureData, encodeWebAuthnSignature } from '@stablenet/core'
 import { useCallback, useState } from 'react'
 import type { Hex } from 'viem'
+import { createLogger } from '../../../../shared/utils/logger'
+
+const logger = createLogger('WebAuthn')
 
 // ============================================================================
 // Types
@@ -35,7 +38,7 @@ export interface UseWebAuthnReturn {
 // ============================================================================
 
 export function useWebAuthn(options: UseWebAuthnOptions = {}): UseWebAuthnReturn {
-  const { rpId = window.location.hostname, rpName = 'StableNet Wallet' } = options
+  const { rpId = window.location.hostname, rpName: _rpName = 'StableNet Wallet' } = options
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -282,7 +285,7 @@ export async function saveWebAuthnCredential(
       },
     })
   } catch (error) {
-    console.error('Failed to save WebAuthn credential:', error)
+    logger.error('Failed to save WebAuthn credential:', error)
   }
 }
 
@@ -297,7 +300,7 @@ export async function loadWebAuthnCredentials(
     const allCredentials = result[WEBAUTHN_STORAGE_KEY] || {}
     return allCredentials[accountAddress.toLowerCase()] || []
   } catch (error) {
-    console.error('Failed to load WebAuthn credentials:', error)
+    logger.error('Failed to load WebAuthn credentials:', error)
     return []
   }
 }
@@ -320,6 +323,6 @@ export async function removeWebAuthnCredential(
       },
     })
   } catch (error) {
-    console.error('Failed to remove WebAuthn credential:', error)
+    logger.error('Failed to remove WebAuthn credential:', error)
   }
 }

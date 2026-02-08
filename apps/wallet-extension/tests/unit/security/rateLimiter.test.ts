@@ -1,12 +1,7 @@
 // Unmock to test real implementation
 jest.unmock('@stablenet/core')
 
-import {
-  RateLimiter,
-  DEFAULT_LIMITS,
-  METHOD_CATEGORIES,
-  type RateLimitConfig,
-} from '@stablenet/core'
+import { DEFAULT_LIMITS, METHOD_CATEGORIES, RateLimiter } from '@stablenet/core'
 
 describe('RateLimiter', () => {
   let rateLimiter: RateLimiter

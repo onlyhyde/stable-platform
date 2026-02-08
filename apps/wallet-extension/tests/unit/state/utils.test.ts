@@ -95,9 +95,7 @@ describe('State Utilities', () => {
         selectedAccount: '0x123',
         accounts: [{ address: '0x123', name: 'Account 1' }],
         connections: {
-          connectedSites: [
-            { origin: 'https://app.com', accounts: ['0x123'] },
-          ],
+          connectedSites: [{ origin: 'https://app.com', accounts: ['0x123'] }],
         },
         settings: {
           theme: 'dark',
@@ -119,9 +117,7 @@ describe('State Utilities', () => {
         selectedAccount: '0x456',
         accounts: [{ address: '0x123', name: 'Account 1' }],
         connections: {
-          connectedSites: [
-            { origin: 'https://app.com', accounts: ['0x123'] },
-          ],
+          connectedSites: [{ origin: 'https://app.com', accounts: ['0x123'] }],
         },
         settings: {
           theme: 'dark', // preserved
@@ -203,12 +199,8 @@ describe('State Utilities', () => {
     })
 
     it('should match full URLs with same origin', () => {
-      expect(
-        originsMatch('https://example.com/page1', 'https://example.com/page2')
-      ).toBe(true)
-      expect(
-        originsMatch('https://example.com?query=1', 'https://example.com/path')
-      ).toBe(true)
+      expect(originsMatch('https://example.com/page1', 'https://example.com/page2')).toBe(true)
+      expect(originsMatch('https://example.com?query=1', 'https://example.com/path')).toBe(true)
     })
 
     it('should NOT match different origins', () => {
@@ -247,12 +239,8 @@ describe('State Utilities', () => {
 
       // Verify state integrity
       expect(stateAfterRefresh.connections.connectedSites).toHaveLength(1)
-      expect(stateAfterRefresh.connections.connectedSites[0].origin).toBe(
-        'https://app.example.com'
-      )
-      expect(stateAfterRefresh.selectedAccount).toBe(
-        '0x1234567890123456789012345678901234567890'
-      )
+      expect(stateAfterRefresh.connections.connectedSites[0].origin).toBe('https://app.example.com')
+      expect(stateAfterRefresh.selectedAccount).toBe('0x1234567890123456789012345678901234567890')
     })
 
     it('should maintain selected account after partial state update', () => {

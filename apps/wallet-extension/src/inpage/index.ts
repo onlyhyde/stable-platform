@@ -16,6 +16,7 @@
 
 import { MESSAGE_TYPES, PROVIDER_EVENTS, TIMING } from '../shared/constants'
 import { createLogger } from '../shared/utils/logger'
+import { validateExtensionMessage } from '../shared/validation/messageSchema'
 import type { EIP1193Provider, ExtensionMessage, JsonRpcRequest, JsonRpcResponse } from '../types'
 
 // Logger for inpage provider
@@ -62,8 +63,7 @@ const WALLET_UUID = 'd8f3b2a1-5c4e-4f6d-9a8b-7e1c2d3f4a5b'
  */
 // StableNet shield logo SVG (base64 encoded)
 const STABLENET_ICON_SVG =
-  'data:image/svg+xml;base64,' +
-  btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
     <linearGradient id="g" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" style="stop-color:#6366F1"/>
@@ -72,7 +72,7 @@ const STABLENET_ICON_SVG =
   </defs>
   <path d="M16 18 Q16 12 22 12 L106 12 Q112 12 112 18 L112 76 Q112 86 104 94 L64 116 L24 94 Q16 86 16 76 Z" fill="url(#g)"/>
   <path d="M48 32 L80 32 A16 16 0 0 1 80 64 L48 64 A16 16 0 0 0 48 96 L80 96" stroke="white" stroke-width="10" stroke-linecap="round" fill="none"/>
-</svg>`)
+</svg>`)}`
 
 let walletInfo = {
   uuid: WALLET_UUID,
@@ -140,7 +140,7 @@ class StableNetProvider implements EIP1193Provider {
         isUnlocked: () => Promise.resolve(true),
       }
     } else {
-      delete this._metamask
+      this._metamask = undefined
     }
 
     // Update global mode tracker
@@ -204,7 +204,9 @@ class StableNetProvider implements EIP1193Provider {
       if (event.source !== window) return
       if (event.data?.target !== 'stablenet-inpage') return
 
-      const message = event.data.data as ExtensionMessage
+      // Validate message structure before processing
+      const message = validateExtensionMessage(event.data.data)
+      if (!message) return
 
       switch (message.type) {
         case MESSAGE_TYPES.RPC_RESPONSE: {

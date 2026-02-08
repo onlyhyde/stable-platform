@@ -2,12 +2,12 @@
 
 import {
   type StableNetProvider,
-  type TransactionSentEvent,
   type TransactionConfirmedEvent,
+  type TransactionSentEvent,
   detectProvider,
   isWalletInstalled,
 } from '@stablenet/wallet-sdk'
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address, Hash } from 'viem'
 
 interface UseStableNetWalletResult {

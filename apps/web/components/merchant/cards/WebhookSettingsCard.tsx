@@ -98,12 +98,12 @@ export function WebhookSettingsCard({
             </h4>
             <div className="space-y-4">
               <div>
-                <label
+                <span
                   className="block text-sm font-medium mb-1"
                   style={{ color: 'rgb(var(--foreground) / 0.8)' }}
                 >
                   Endpoint URL
-                </label>
+                </span>
                 <Input
                   type="url"
                   placeholder="https://your-server.com/webhook"
@@ -112,12 +112,12 @@ export function WebhookSettingsCard({
                 />
               </div>
               <div>
-                <label
+                <span
                   className="block text-sm font-medium mb-2"
                   style={{ color: 'rgb(var(--foreground) / 0.8)' }}
                 >
                   Events to Listen
-                </label>
+                </span>
                 <div className="grid grid-cols-2 gap-2">
                   {AVAILABLE_EVENTS.map((event) => (
                     <label
@@ -154,6 +154,7 @@ export function WebhookSettingsCard({
         {endpoints.length === 0 ? (
           <div className="text-center py-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
             <svg
+              aria-hidden="true"
               className="w-12 h-12 mx-auto mb-4"
               style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
               fill="none"
@@ -249,11 +250,13 @@ export function WebhookSettingsCard({
                       {showSecret[endpoint.id] ? endpoint.secret : '••••••••••••••••'}
                     </code>
                     <button
+                      type="button"
                       onClick={() => toggleSecretVisibility(endpoint.id)}
                       style={{ color: 'rgb(var(--muted-foreground))' }}
                     >
                       {showSecret[endpoint.id] ? (
                         <svg
+                          aria-hidden="true"
                           className="w-4 h-4"
                           fill="none"
                           stroke="currentColor"
@@ -268,6 +271,7 @@ export function WebhookSettingsCard({
                         </svg>
                       ) : (
                         <svg
+                          aria-hidden="true"
                           className="w-4 h-4"
                           fill="none"
                           stroke="currentColor"
@@ -289,6 +293,7 @@ export function WebhookSettingsCard({
                       )}
                     </button>
                     <button
+                      type="button"
                       onClick={() => onRegenerateSecret(endpoint.id)}
                       className="text-xs"
                       style={{ color: 'rgb(var(--primary))' }}
@@ -300,6 +305,7 @@ export function WebhookSettingsCard({
 
                 <div className="flex justify-end">
                   <button
+                    type="button"
                     onClick={() => onDeleteEndpoint(endpoint.id)}
                     className="text-sm"
                     style={{ color: 'rgb(var(--destructive))' }}
