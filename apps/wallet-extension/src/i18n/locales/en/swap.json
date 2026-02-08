@@ -1,0 +1,22 @@
+{
+  "title": "Swap",
+  "from": "From",
+  "maxBalance": "Max: {{balance}}",
+  "toEstimated": "To (estimated)",
+  "rate": "Rate",
+  "minReceived": "Min. received",
+  "slippageTolerance": "Slippage tolerance",
+  "feeTier": "Fee tier",
+  "slippageToleranceTitle": "Slippage Tolerance",
+  "swapSubmitted": "Swap submitted!",
+  "swapping": "Swapping...",
+  "smartAccountRequired": "Smart Account required",
+  "swapModuleNotInstalled": "Swap module not installed",
+  "selectToken": "Select a token",
+  "enterAmount": "Enter an amount",
+  "swapBtn": "Swap",
+  "swapRequiresSmartAccount": "Swap requires a Smart Account with Swap Executor module installed.",
+  "installSwapModule": "Install Swap Executor module",
+  "swapModuleNotInstalledDesc": "Swap Executor module not installed. Install it from Modules page.",
+  "swapFailed": "Swap failed"
+}

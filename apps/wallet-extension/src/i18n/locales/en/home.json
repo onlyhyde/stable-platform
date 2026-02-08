@@ -1,0 +1,9 @@
+{
+  "totalBalance": "Total Balance",
+  "upgrade": "Upgrade",
+  "eip7702": "EIP-7702",
+  "swap": "Swap",
+  "activity": "Activity",
+  "tokenDiscoveryUnavailable": "Token discovery unavailable. Configure indexer URL in settings.",
+  "usdValue": "${{value}} USD"
+}

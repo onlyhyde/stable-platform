@@ -1,17 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { changeLanguage } from '../../i18n'
 import type { ConnectedSite, Network } from '../../types'
 import { useWalletStore } from '../hooks/useWalletStore'
 
-const AUTO_LOCK_OPTIONS = [
-  { value: 1, label: '1 minute' },
-  { value: 5, label: '5 minutes' },
-  { value: 15, label: '15 minutes' },
-  { value: 30, label: '30 minutes' },
-  { value: 60, label: '1 hour' },
-  { value: 0, label: 'Never' },
-]
-
 export function Settings() {
+  const { t } = useTranslation('settings')
+  const { t: tc } = useTranslation('common')
+  const { i18n } = useTranslation()
+
   const {
     networks,
     selectedChainId,
@@ -158,10 +155,14 @@ export function Settings() {
     await lockWallet()
   }, [lockWallet])
 
+  const handleLanguageChange = useCallback(async (lng: string) => {
+    await changeLanguage(lng)
+  }, [])
+
   // Import Private Key handlers
   const handleImportPrivateKey = useCallback(async () => {
     if (!privateKeyInput.trim()) {
-      setImportError('Please enter a private key')
+      setImportError(t('pleaseEnterPrivateKey'))
       return
     }
 
@@ -177,36 +178,36 @@ export function Settings() {
       }
 
       const address = await importPrivateKey(key)
-      setImportSuccess(`Account imported: ${address.slice(0, 10)}...${address.slice(-8)}`)
+      setImportSuccess(t('accountImported', { address: `${address.slice(0, 10)}...${address.slice(-8)}` }))
       setPrivateKeyInput('')
       setShowImportKey(false)
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : 'Failed to import account')
+      setImportError(err instanceof Error ? err.message : t('failedToImport'))
     } finally {
       setIsImporting(false)
     }
-  }, [privateKeyInput, importPrivateKey])
+  }, [privateKeyInput, importPrivateKey, t])
 
   // Add Network handlers
   const handleAddNetwork = useCallback(async () => {
     // Validate form
     if (!networkForm.name.trim()) {
-      setNetworkError('Network name is required')
+      setNetworkError(t('networkNameRequired'))
       return
     }
     if (!networkForm.chainId.trim() || Number.isNaN(Number(networkForm.chainId))) {
-      setNetworkError('Valid Chain ID is required')
+      setNetworkError(t('validChainIdRequired'))
       return
     }
     if (!networkForm.rpcUrl.trim()) {
-      setNetworkError('RPC URL is required')
+      setNetworkError(t('rpcUrlRequired'))
       return
     }
 
     // Check for duplicate chain ID
     const chainId = Number(networkForm.chainId)
     if (networks.some((n) => n.chainId === chainId)) {
-      setNetworkError('A network with this Chain ID already exists')
+      setNetworkError(t('chainIdExists'))
       return
     }
 
@@ -231,7 +232,7 @@ export function Settings() {
       }
 
       await addNetwork(network)
-      setNetworkSuccess(`Network "${network.name}" added successfully`)
+      setNetworkSuccess(t('networkAdded', { name: network.name }))
       setNetworkForm({
         name: '',
         chainId: '',
@@ -243,15 +244,15 @@ export function Settings() {
       })
       setShowAddNetwork(false)
     } catch (err) {
-      setNetworkError(err instanceof Error ? err.message : 'Failed to add network')
+      setNetworkError(err instanceof Error ? err.message : t('failedToAddNetwork'))
     } finally {
       setIsAddingNetwork(false)
     }
-  }, [networkForm, networks, addNetwork])
+  }, [networkForm, networks, addNetwork, t])
 
   const handleRemoveNetwork = useCallback(
     async (chainId: number) => {
-      if (!confirm('Are you sure you want to remove this network?')) {
+      if (!confirm(t('removeNetworkConfirm'))) {
         return
       }
 
@@ -259,17 +260,17 @@ export function Settings() {
         await removeNetwork(chainId)
         await syncWithBackground()
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Failed to remove network')
+        alert(err instanceof Error ? err.message : t('failedToRemoveNetwork'))
       }
     },
-    [removeNetwork, syncWithBackground]
+    [removeNetwork, syncWithBackground, t]
   )
 
   // Export Private Key handler
   const handleExportPrivateKey = useCallback(async () => {
     const { selectedAccount } = useWalletStore.getState()
     if (!selectedAccount) {
-      setExportError('No account selected')
+      setExportError(t('noAccountSelected'))
       return
     }
 
@@ -287,14 +288,14 @@ export function Settings() {
       if (response?.payload?.success) {
         setExportedKey(response.payload.privateKey)
       } else {
-        setExportError(response?.payload?.error ?? 'Failed to export private key')
+        setExportError(response?.payload?.error ?? t('failedToExportKey'))
       }
     } catch (err) {
-      setExportError(err instanceof Error ? err.message : 'Failed to export private key')
+      setExportError(err instanceof Error ? err.message : t('failedToExportKey'))
     } finally {
       setIsExporting(false)
     }
-  }, [])
+  }, [t])
 
   // Load Connected Sites handler
   const loadConnectedSites = useCallback(async () => {
@@ -383,11 +384,11 @@ export function Settings() {
   // Set Root Validator handler
   const handleSetRootValidator = useCallback(async () => {
     if (!newValidator.trim()) {
-      setValidatorError('Please enter a validator address')
+      setValidatorError(t('pleaseEnterValidator'))
       return
     }
     if (!newValidator.match(/^0x[0-9a-fA-F]{40}$/)) {
-      setValidatorError('Invalid address format')
+      setValidatorError(t('invalidAddressFormat'))
       return
     }
 
@@ -408,19 +409,28 @@ export function Settings() {
       })
 
       if (response?.payload?.result) {
-        setValidatorSuccess('Root validator updated successfully')
+        setValidatorSuccess(t('validatorUpdated'))
         setNewValidator('')
         // Refresh SA info
         await loadSmartAccountInfo()
       } else if (response?.payload?.error) {
-        setValidatorError(response.payload.error.message ?? 'Failed to set root validator')
+        setValidatorError(response.payload.error.message ?? t('failedToSetValidator'))
       }
     } catch (err) {
-      setValidatorError(err instanceof Error ? err.message : 'Failed to set root validator')
+      setValidatorError(err instanceof Error ? err.message : t('failedToSetValidator'))
     } finally {
       setIsSettingValidator(false)
     }
-  }, [newValidator, selectedAccount, selectedChainId, loadSmartAccountInfo])
+  }, [newValidator, selectedAccount, selectedChainId, loadSmartAccountInfo, t])
+
+  const autoLockOptions = [
+    { value: 1, label: t('1minute') },
+    { value: 5, label: t('5minutes') },
+    { value: 15, label: t('15minutes') },
+    { value: 30, label: t('30minutes') },
+    { value: 60, label: t('1hour') },
+    { value: 0, label: t('never') },
+  ]
 
   return (
     <div
@@ -428,7 +438,7 @@ export function Settings() {
       style={{ backgroundColor: 'rgb(var(--background))' }}
     >
       <h2 className="text-xl font-bold mb-6" style={{ color: 'rgb(var(--foreground))' }}>
-        Settings
+        {t('title')}
       </h2>
 
       <div className="space-y-6">
@@ -439,7 +449,7 @@ export function Settings() {
               className="text-sm font-medium"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Network
+              {t('network')}
             </h3>
             <button
               type="button"
@@ -447,7 +457,7 @@ export function Settings() {
               className="text-sm"
               style={{ color: 'rgb(var(--primary))' }}
             >
-              {showAddNetwork ? 'Cancel' : '+ Add Network'}
+              {showAddNetwork ? tc('cancel') : t('addNetwork')}
             </button>
           </div>
 
@@ -461,40 +471,40 @@ export function Settings() {
               }}
             >
               <h4 className="text-sm font-medium mb-3" style={{ color: 'rgb(var(--foreground))' }}>
-                Add Custom Network
+                {t('addCustomNetwork')}
               </h4>
               <div className="space-y-3">
                 <input
                   type="text"
-                  placeholder="Network Name"
+                  placeholder={t('networkName')}
                   value={networkForm.name}
                   onChange={(e) => setNetworkForm({ ...networkForm, name: e.target.value })}
                   className="input-base w-full p-2 rounded-lg text-sm"
                 />
                 <input
                   type="text"
-                  placeholder="Chain ID (e.g., 1, 137, 42161)"
+                  placeholder={t('chainIdPlaceholder')}
                   value={networkForm.chainId}
                   onChange={(e) => setNetworkForm({ ...networkForm, chainId: e.target.value })}
                   className="input-base w-full p-2 rounded-lg text-sm"
                 />
                 <input
                   type="text"
-                  placeholder="RPC URL"
+                  placeholder={t('rpcUrl')}
                   value={networkForm.rpcUrl}
                   onChange={(e) => setNetworkForm({ ...networkForm, rpcUrl: e.target.value })}
                   className="input-base w-full p-2 rounded-lg text-sm"
                 />
                 <input
                   type="text"
-                  placeholder="Bundler URL (optional, defaults to RPC URL)"
+                  placeholder={t('bundlerUrlPlaceholder')}
                   value={networkForm.bundlerUrl}
                   onChange={(e) => setNetworkForm({ ...networkForm, bundlerUrl: e.target.value })}
                   className="input-base w-full p-2 rounded-lg text-sm"
                 />
                 <input
                   type="text"
-                  placeholder="Currency Symbol (e.g., ETH, MATIC)"
+                  placeholder={t('currencySymbolPlaceholder')}
                   value={networkForm.currencySymbol}
                   onChange={(e) =>
                     setNetworkForm({ ...networkForm, currencySymbol: e.target.value })
@@ -503,14 +513,14 @@ export function Settings() {
                 />
                 <input
                   type="text"
-                  placeholder="Block Explorer URL (optional)"
+                  placeholder={t('explorerUrlPlaceholder')}
                   value={networkForm.explorerUrl}
                   onChange={(e) => setNetworkForm({ ...networkForm, explorerUrl: e.target.value })}
                   className="input-base w-full p-2 rounded-lg text-sm"
                 />
                 <input
                   type="text"
-                  placeholder="Indexer URL (optional, for token balances)"
+                  placeholder={t('indexerUrlPlaceholder')}
                   value={networkForm.indexerUrl}
                   onChange={(e) => setNetworkForm({ ...networkForm, indexerUrl: e.target.value })}
                   className="input-base w-full p-2 rounded-lg text-sm"
@@ -531,7 +541,7 @@ export function Settings() {
                   disabled={isAddingNetwork}
                   className="btn-primary w-full py-2 rounded-lg text-sm disabled:opacity-50"
                 >
-                  {isAddingNetwork ? 'Adding...' : 'Add Network'}
+                  {isAddingNetwork ? t('addingNetwork') : t('addNetworkBtn')}
                 </button>
               </div>
             </div>
@@ -577,14 +587,14 @@ export function Settings() {
                         className="ml-2 text-xs"
                         style={{ color: 'rgb(var(--muted-foreground))' }}
                       >
-                        (Custom)
+                        ({tc('custom')})
                       </span>
                     )}
                   </div>
                 </button>
                 <div className="flex items-center gap-2">
                   <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                    Chain {network.chainId}
+                    {tc('chain', { id: network.chainId })}
                   </span>
                   {network.isCustom && (
                     <button
@@ -592,7 +602,7 @@ export function Settings() {
                       onClick={() => handleRemoveNetwork(network.chainId)}
                       className="p-1"
                       style={{ color: 'rgb(var(--destructive))' }}
-                      title="Remove network"
+                      title={t('removeNetwork')}
                     >
                       <svg
                         className="w-4 h-4"
@@ -601,7 +611,7 @@ export function Settings() {
                         stroke="currentColor"
                         role="img"
                       >
-                        <title>Remove</title>
+                        <title>{tc('remove')}</title>
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -624,7 +634,7 @@ export function Settings() {
               className="text-sm font-medium"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Accounts
+              {t('accounts')}
             </h3>
             <button
               type="button"
@@ -632,7 +642,7 @@ export function Settings() {
               className="text-sm"
               style={{ color: 'rgb(var(--primary))' }}
             >
-              {showImportKey ? 'Cancel' : '+ Import Account'}
+              {showImportKey ? tc('cancel') : t('importAccount')}
             </button>
           </div>
 
@@ -646,12 +656,12 @@ export function Settings() {
               }}
             >
               <h4 className="text-sm font-medium mb-3" style={{ color: 'rgb(var(--foreground))' }}>
-                Import Private Key
+                {t('importPrivateKey')}
               </h4>
               <div className="space-y-3">
                 <input
                   type="password"
-                  placeholder="Enter private key (with or without 0x prefix)"
+                  placeholder={t('enterPrivateKeyPlaceholder')}
                   value={privateKeyInput}
                   onChange={(e) => setPrivateKeyInput(e.target.value)}
                   className="input-base w-full p-2 rounded-lg text-sm font-mono"
@@ -667,8 +677,7 @@ export function Settings() {
                   </p>
                 )}
                 <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                  Warning: Never share your private key with anyone. StableNet will never ask for
-                  your private key.
+                  {t('privateKeyWarning')}
                 </p>
                 <button
                   type="button"
@@ -676,7 +685,7 @@ export function Settings() {
                   disabled={isImporting}
                   className="btn-primary w-full py-2 rounded-lg text-sm disabled:opacity-50"
                 >
-                  {isImporting ? 'Importing...' : 'Import Account'}
+                  {isImporting ? t('importing') : t('importAccountBtn')}
                 </button>
               </div>
             </div>
@@ -689,18 +698,18 @@ export function Settings() {
             className="text-sm font-medium mb-3"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
-            Security
+            {t('security')}
           </h3>
           <div className="space-y-3">
             {/* Auto-Lock Setting */}
             <div className="p-3 rounded-lg" style={{ border: '1px solid rgb(var(--border))' }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                  Auto-Lock
+                  {t('autoLock')}
                 </span>
               </div>
               <p className="text-xs mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Automatically lock wallet after being idle
+                {t('autoLockDesc')}
               </p>
               {!isLoadingSettings && (
                 <select
@@ -708,7 +717,7 @@ export function Settings() {
                   onChange={(e) => handleAutoLockChange(Number(e.target.value))}
                   className="input-base w-full p-2 rounded-lg text-sm"
                 >
-                  {AUTO_LOCK_OPTIONS.map((option) => (
+                  {autoLockOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -724,7 +733,7 @@ export function Settings() {
               className="w-full p-3 rounded-lg flex items-center justify-between transition-colors"
               style={{ border: '1px solid rgb(var(--border))' }}
             >
-              <span style={{ color: 'rgb(var(--foreground))' }}>Export Private Key</span>
+              <span style={{ color: 'rgb(var(--foreground))' }}>{t('exportPrivateKey')}</span>
               <svg
                 className="w-5 h-5"
                 style={{ color: 'rgb(var(--muted-foreground))' }}
@@ -759,7 +768,7 @@ export function Settings() {
                     className="text-lg font-bold mb-4"
                     style={{ color: 'rgb(var(--foreground))' }}
                   >
-                    Export Private Key
+                    {t('exportPrivateKey')}
                   </h3>
 
                   {!exportedKey ? (
@@ -768,8 +777,7 @@ export function Settings() {
                         className="text-sm mb-4"
                         style={{ color: 'rgb(var(--foreground-secondary))' }}
                       >
-                        Warning: Never share your private key. Anyone with your private key can
-                        steal your funds.
+                        {t('exportKeyWarning')}
                       </p>
                       {exportError && (
                         <p className="text-sm mb-3" style={{ color: 'rgb(var(--destructive))' }}>
@@ -782,7 +790,7 @@ export function Settings() {
                           onClick={handleCloseExportKey}
                           className="btn-secondary flex-1 py-2 rounded-lg text-sm"
                         >
-                          Cancel
+                          {tc('cancel')}
                         </button>
                         <button
                           type="button"
@@ -790,7 +798,7 @@ export function Settings() {
                           disabled={isExporting}
                           className="btn-danger flex-1 py-2 rounded-lg text-sm disabled:opacity-50"
                         >
-                          {isExporting ? 'Exporting...' : 'Show Key'}
+                          {isExporting ? t('exporting') : t('showKey')}
                         </button>
                       </div>
                     </>
@@ -802,7 +810,7 @@ export function Settings() {
                           className="text-xs block mb-1"
                           style={{ color: 'rgb(var(--muted-foreground))' }}
                         >
-                          Private Key
+                          {t('privateKey')}
                         </label>
                         <div className="relative">
                           <input
@@ -818,7 +826,7 @@ export function Settings() {
                             className="absolute right-2 top-1/2 -translate-y-1/2 text-xs"
                             style={{ color: 'rgb(var(--primary))' }}
                           >
-                            {showKey ? 'Hide' : 'Show'}
+                            {showKey ? tc('hide') : tc('show')}
                           </button>
                         </div>
                       </div>
@@ -826,18 +834,18 @@ export function Settings() {
                         type="button"
                         onClick={() => {
                           navigator.clipboard.writeText(exportedKey)
-                          alert('Copied to clipboard')
+                          alert(tc('copiedToClipboard'))
                         }}
                         className="btn-outline w-full py-2 mb-2 rounded-lg text-sm"
                       >
-                        Copy to Clipboard
+                        {t('copyToClipboard')}
                       </button>
                       <button
                         type="button"
                         onClick={handleCloseExportKey}
                         className="btn-secondary w-full py-2 rounded-lg text-sm"
                       >
-                        Done
+                        {tc('done')}
                       </button>
                     </>
                   )}
@@ -852,7 +860,7 @@ export function Settings() {
               className="w-full p-3 rounded-lg flex items-center justify-between transition-colors"
               style={{ border: '1px solid rgb(var(--border))' }}
             >
-              <span style={{ color: 'rgb(var(--foreground))' }}>Connected Sites</span>
+              <span style={{ color: 'rgb(var(--foreground))' }}>{t('connectedSites')}</span>
               <svg
                 className="w-5 h-5"
                 style={{ color: 'rgb(var(--muted-foreground))' }}
@@ -885,7 +893,7 @@ export function Settings() {
                 >
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-                      Connected Sites
+                      {t('connectedSites')}
                     </h3>
                     <button
                       type="button"
@@ -899,7 +907,7 @@ export function Settings() {
                         stroke="currentColor"
                         role="img"
                       >
-                        <title>Close</title>
+                        <title>{tc('close')}</title>
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -915,14 +923,14 @@ export function Settings() {
                       className="text-sm text-center py-4"
                       style={{ color: 'rgb(var(--muted-foreground))' }}
                     >
-                      Loading...
+                      {tc('loading')}
                     </p>
                   ) : connectedSites.length === 0 ? (
                     <p
                       className="text-sm text-center py-4"
                       style={{ color: 'rgb(var(--muted-foreground))' }}
                     >
-                      No connected sites
+                      {t('noConnectedSites')}
                     </p>
                   ) : (
                     <div className="space-y-2">
@@ -943,7 +951,7 @@ export function Settings() {
                               className="text-xs"
                               style={{ color: 'rgb(var(--muted-foreground))' }}
                             >
-                              {site.accounts.length} account{site.accounts.length !== 1 ? 's' : ''}
+                              {t('accountCount_other', { count: site.accounts.length })}
                             </p>
                           </div>
                           <button
@@ -952,7 +960,7 @@ export function Settings() {
                             className="ml-2 text-xs"
                             style={{ color: 'rgb(var(--destructive))' }}
                           >
-                            Disconnect
+                            {tc('disconnect')}
                           </button>
                         </div>
                       ))}
@@ -964,7 +972,7 @@ export function Settings() {
                     onClick={() => setShowConnectedSites(false)}
                     className="btn-secondary w-full mt-4 py-2 rounded-lg text-sm"
                   >
-                    Close
+                    {tc('close')}
                   </button>
                 </div>
               </div>
@@ -979,7 +987,7 @@ export function Settings() {
               className="text-sm font-medium mb-3"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Smart Account
+              {t('smartAccount')}
             </h3>
             <div className="space-y-3">
               {/* SA Info Button */}
@@ -990,7 +998,7 @@ export function Settings() {
                 style={{ border: '1px solid rgb(var(--border))' }}
               >
                 <div className="flex items-center gap-2">
-                  <span style={{ color: 'rgb(var(--foreground))' }}>Account Info & Validator</span>
+                  <span style={{ color: 'rgb(var(--foreground))' }}>{t('accountInfoValidator')}</span>
                 </div>
                 <svg
                   className="w-5 h-5"
@@ -1024,7 +1032,7 @@ export function Settings() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-                        Smart Account
+                        {t('smartAccount')}
                       </h3>
                       <button
                         type="button"
@@ -1043,7 +1051,7 @@ export function Settings() {
                           stroke="currentColor"
                           role="img"
                         >
-                          <title>Close</title>
+                          <title>{tc('close')}</title>
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -1059,7 +1067,7 @@ export function Settings() {
                         className="text-sm text-center py-4"
                         style={{ color: 'rgb(var(--muted-foreground))' }}
                       >
-                        Loading...
+                        {tc('loading')}
                       </p>
                     ) : saInfo ? (
                       <div className="space-y-4">
@@ -1070,21 +1078,21 @@ export function Settings() {
                         >
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Type</span>
+                              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('type')}</span>
                               <span
                                 className="font-medium"
                                 style={{ color: 'rgb(var(--foreground))' }}
                               >
                                 {saInfo.accountType === 'delegated'
-                                  ? 'EIP-7702 Delegated'
+                                  ? t('eip7702Delegated')
                                   : saInfo.accountType === 'smart'
-                                    ? 'Smart Account'
-                                    : 'EOA'}
+                                    ? tc('smartAccount')
+                                    : tc('eoa')}
                               </span>
                             </div>
                             <div className="flex justify-between">
                               <span style={{ color: 'rgb(var(--muted-foreground))' }}>
-                                Deployed
+                                {t('deployed')}
                               </span>
                               <span
                                 style={{
@@ -1093,13 +1101,13 @@ export function Settings() {
                                     : 'rgb(var(--muted-foreground))',
                                 }}
                               >
-                                {saInfo.isDeployed ? 'Yes' : 'No'}
+                                {saInfo.isDeployed ? tc('yes') : tc('no')}
                               </span>
                             </div>
                             {saInfo.accountId && (
                               <div className="flex justify-between">
                                 <span style={{ color: 'rgb(var(--muted-foreground))' }}>
-                                  Account ID
+                                  {t('accountId')}
                                 </span>
                                 <span
                                   className="font-mono text-xs truncate max-w-[150px]"
@@ -1112,7 +1120,7 @@ export function Settings() {
                             {saInfo.isDelegated && saInfo.delegationTarget && (
                               <div className="flex justify-between">
                                 <span style={{ color: 'rgb(var(--muted-foreground))' }}>
-                                  Delegation
+                                  {t('delegation')}
                                 </span>
                                 <span
                                   className="font-mono text-xs"
@@ -1135,7 +1143,7 @@ export function Settings() {
                             className="text-sm font-medium mb-2"
                             style={{ color: 'rgb(var(--foreground))' }}
                           >
-                            Root Validator
+                            {t('rootValidator')}
                           </h4>
                           {saInfo.rootValidator ? (
                             <p
@@ -1149,14 +1157,14 @@ export function Settings() {
                               className="text-xs mb-3"
                               style={{ color: 'rgb(var(--muted-foreground))' }}
                             >
-                              Not set
+                              {t('notSet')}
                             </p>
                           )}
 
                           <div className="space-y-2">
                             <input
                               type="text"
-                              placeholder="New validator address (0x...)"
+                              placeholder={t('newValidatorPlaceholder')}
                               value={newValidator}
                               onChange={(e) => setNewValidator(e.target.value)}
                               className="input-base w-full p-2 rounded-lg text-xs font-mono"
@@ -1177,7 +1185,7 @@ export function Settings() {
                               disabled={isSettingValidator}
                               className="btn-primary w-full py-2 rounded-lg text-sm disabled:opacity-50"
                             >
-                              {isSettingValidator ? 'Updating...' : 'Change Root Validator'}
+                              {isSettingValidator ? t('updating') : t('changeRootValidator')}
                             </button>
                           </div>
                         </div>
@@ -1187,7 +1195,7 @@ export function Settings() {
                         className="text-sm text-center py-4"
                         style={{ color: 'rgb(var(--muted-foreground))' }}
                       >
-                        Unable to load account info
+                        {t('unableToLoadInfo')}
                       </p>
                     )}
 
@@ -1201,7 +1209,7 @@ export function Settings() {
                       }}
                       className="btn-secondary w-full mt-4 py-2 rounded-lg text-sm"
                     >
-                      Close
+                      {tc('close')}
                     </button>
                   </div>
                 </div>
@@ -1216,7 +1224,7 @@ export function Settings() {
             className="text-sm font-medium mb-3"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
-            Advanced
+            {t('advanced')}
           </h3>
           <div className="space-y-3">
             {/* MetaMask Compatibility Mode */}
@@ -1224,10 +1232,10 @@ export function Settings() {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                    MetaMask Mode
+                    {t('metaMaskMode')}
                   </span>
                   <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                    Appear as MetaMask for legacy dApp compatibility
+                    {t('metaMaskModeDesc')}
                   </p>
                 </div>
                 {!isLoadingSettings && (
@@ -1251,6 +1259,44 @@ export function Settings() {
                 )}
               </div>
             </div>
+
+            {/* Language Selector */}
+            <div className="p-3 rounded-lg" style={{ border: '1px solid rgb(var(--border))' }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                  {t('language')}
+                </span>
+              </div>
+              <p className="text-xs mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {t('languageDesc')}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleLanguageChange('en')}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: i18n.language === 'en' ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                    color: i18n.language === 'en' ? 'white' : 'rgb(var(--foreground))',
+                    border: `1px solid ${i18n.language === 'en' ? 'rgb(var(--primary))' : 'rgb(var(--border))'}`,
+                  }}
+                >
+                  {t('english')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLanguageChange('ko')}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: i18n.language === 'ko' ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                    color: i18n.language === 'ko' ? 'white' : 'rgb(var(--foreground))',
+                    border: `1px solid ${i18n.language === 'ko' ? 'rgb(var(--primary))' : 'rgb(var(--border))'}`,
+                  }}
+                >
+                  {t('korean')}
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1260,31 +1306,31 @@ export function Settings() {
             className="text-sm font-medium mb-3"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
-            About
+            {t('about')}
           </h3>
           <div className="rounded-lg p-4" style={{ backgroundColor: 'rgb(var(--surface))' }}>
             <p className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
-              StableNet Wallet
+              {t('stableNetWallet')}
             </p>
             <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Version 0.1.0
+              {tc('version', { version: '0.1.0' })}
             </p>
             <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              ERC-4337 Smart Account Wallet with stealth address support.
+              {t('aboutDesc')}
             </p>
             <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgb(var(--border))' }}>
               <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Features:
+                {t('featuresTitle')}
               </p>
               <ul
                 className="text-xs mt-1 list-disc list-inside"
                 style={{ color: 'rgb(var(--muted-foreground))' }}
               >
-                <li>EIP-6963 Multi-Wallet Discovery</li>
-                <li>MetaMask Compatibility Mode</li>
-                <li>Auto-Lock Protection</li>
-                <li>Tab Subscription Management</li>
-                <li>Custom Network Support</li>
+                <li>{t('featureEip6963')}</li>
+                <li>{t('featureMetaMask')}</li>
+                <li>{t('featureAutoLock')}</li>
+                <li>{t('featureTabSubscription')}</li>
+                <li>{t('featureCustomNetwork')}</li>
               </ul>
             </div>
           </div>
@@ -1296,7 +1342,7 @@ export function Settings() {
           onClick={handleLockWallet}
           className="btn-danger w-full py-3 rounded-lg"
         >
-          Lock Wallet
+          {t('lockWallet')}
         </button>
       </div>
     </div>

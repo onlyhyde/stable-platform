@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Address } from 'viem'
 import { Button, Card } from '../../components/common'
 import { AddressDisplay } from '../../components/common'
@@ -8,6 +9,8 @@ interface CompleteProps {
 }
 
 export function Complete({ address, onFinish }: CompleteProps) {
+  const { t } = useTranslation('onboarding')
+
   return (
     <div
       className="min-h-full flex flex-col items-center justify-center p-6"
@@ -31,10 +34,10 @@ export function Complete({ address, onFinish }: CompleteProps) {
       </div>
 
       <h1 className="text-2xl font-bold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
-        Wallet Created!
+        {t('completeTitle')}
       </h1>
       <p className="text-center mb-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
-        Your wallet is ready to use
+        {t('completeSubtitle')}
       </p>
 
       {/* Account card */}
@@ -49,7 +52,7 @@ export function Complete({ address, onFinish }: CompleteProps) {
             </span>
           </div>
           <p className="font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
-            Account 1
+            {t('defaultAccountName')}
           </p>
           <AddressDisplay address={address} truncate showCopy className="justify-center" />
         </div>
@@ -80,7 +83,7 @@ export function Complete({ address, onFinish }: CompleteProps) {
               </svg>
             </div>
             <p className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
-              Keep your recovery phrase safe and never share it
+              {t('keepRecoveryPhraseSafe')}
             </p>
           </div>
         </Card>
@@ -108,7 +111,7 @@ export function Complete({ address, onFinish }: CompleteProps) {
               </svg>
             </div>
             <p className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
-              Your wallet supports smart account features
+              {t('supportsSmartAccount')}
             </p>
           </div>
         </Card>
@@ -136,14 +139,14 @@ export function Complete({ address, onFinish }: CompleteProps) {
               </svg>
             </div>
             <p className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
-              Gas fees can be sponsored by paymasters
+              {t('gasSponsoredByPaymasters')}
             </p>
           </div>
         </Card>
       </div>
 
       <Button onClick={onFinish} fullWidth size="lg">
-        Start Using StableNet
+        {t('startUsing')}
       </Button>
     </div>
   )

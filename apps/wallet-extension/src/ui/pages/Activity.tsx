@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
 import type { PendingTransaction } from '../../types'
 import { useNetworkCurrency, useWalletStore } from '../hooks'
@@ -6,6 +7,7 @@ import { useNetworkCurrency, useWalletStore } from '../hooks'
 const PENDING_POLL_INTERVAL = 5000 // 5 seconds
 
 export function Activity() {
+  const { t } = useTranslation('activity')
   const { pendingTransactions, history, setPage, syncWithBackground, setSelectedTxId } =
     useWalletStore()
 
@@ -34,7 +36,7 @@ export function Activity() {
     let currentLabel = ''
 
     for (const tx of allTransactions) {
-      const label = getDateLabel(tx.timestamp)
+      const label = getDateLabel(tx.timestamp, t)
       if (label !== currentLabel) {
         currentLabel = label
         groups.push({ label, txs: [] })
@@ -43,13 +45,13 @@ export function Activity() {
     }
 
     return groups
-  }, [allTransactions])
+  }, [allTransactions, t])
 
   if (allTransactions.length === 0) {
     return (
       <div className="p-4">
         <h2 className="text-xl font-bold mb-6" style={{ color: 'rgb(var(--foreground))' }}>
-          Activity
+          {t('title')}
         </h2>
         <div className="text-center py-12">
           <svg
@@ -67,7 +69,7 @@ export function Activity() {
               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
             />
           </svg>
-          <p style={{ color: 'rgb(var(--muted-foreground))' }}>No transactions yet</p>
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>{t('noTransactions')}</p>
         </div>
       </div>
     )
@@ -76,7 +78,7 @@ export function Activity() {
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-        Activity
+        {t('title')}
       </h2>
 
       <div className="space-y-4">
@@ -115,10 +117,11 @@ function TransactionItem({
   transaction,
   onClick,
 }: { transaction: PendingTransaction; onClick: () => void }) {
+  const { t } = useTranslation('activity')
   const { symbol: currencySymbol } = useNetworkCurrency()
 
   const isReceive = transaction.type === 'receive'
-  const label = getTransactionLabel(transaction)
+  const label = getTransactionLabel(transaction, t)
   const counterparty = isReceive ? transaction.from : transaction.to
 
   const statusStyles: Record<string, { bg: string; color: string }> = {
@@ -196,7 +199,7 @@ function TransactionItem({
               {label}
             </p>
             <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              {isReceive ? 'From' : 'To'}: {formatAddress(counterparty)}
+              {isReceive ? t('from') : t('to')}: {formatAddress(counterparty)}
             </p>
           </div>
         </div>
@@ -243,33 +246,33 @@ function formatTokenAmount(amount: bigint, decimals: number): string {
   return (Number(amount) / divisor).toFixed(4)
 }
 
-function getTransactionLabel(tx: PendingTransaction): string {
+function getTransactionLabel(tx: PendingTransaction, t: (key: string) => string): string {
   switch (tx.type) {
     case 'receive':
-      return 'Receive'
+      return t('receive')
     case 'send':
-      return 'Send'
+      return t('send')
     case 'swap':
-      return 'Swap'
+      return t('swap')
     case 'approve':
-      return tx.tokenTransfer ? `Approve ${tx.tokenTransfer.symbol}` : 'Approve'
+      return tx.tokenTransfer ? `${t('approve')} ${tx.tokenTransfer.symbol}` : t('approve')
     case 'contract':
-      return tx.methodName ?? 'Contract Interaction'
+      return tx.methodName ?? t('contractInteraction')
     case 'userOp':
-      return 'User Operation'
+      return t('userOperation')
     default:
-      return 'Transaction'
+      return t('transaction')
   }
 }
 
-function getDateLabel(timestamp: number): string {
+function getDateLabel(timestamp: number, t: (key: string) => string): string {
   const date = new Date(timestamp)
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const yesterday = new Date(today.getTime() - 86400000)
   const txDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
 
-  if (txDate.getTime() === today.getTime()) return 'Today'
-  if (txDate.getTime() === yesterday.getTime()) return 'Yesterday'
+  if (txDate.getTime() === today.getTime()) return t('today')
+  if (txDate.getTime() === yesterday.getTime()) return t('yesterday')
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }

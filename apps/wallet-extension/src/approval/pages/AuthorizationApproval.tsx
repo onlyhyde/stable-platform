@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { AuthorizationApprovalRequest } from '../../types'
 import { Badge, Button, Card } from '../../ui/components/common'
 
@@ -12,6 +13,8 @@ export function AuthorizationApproval({
   onApprove,
   onReject,
 }: AuthorizationApprovalProps) {
+  const { t } = useTranslation('approval')
+  const { t: tc } = useTranslation('common')
   const { data } = approval
 
   const getRiskColor = (level: string) => {
@@ -79,7 +82,7 @@ export function AuthorizationApproval({
                 {getOriginDisplay(approval.origin)}
               </p>
               <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                {data.isRevocation ? 'Account Revocation' : 'Account Authorization'}
+                {data.isRevocation ? t('accountRevocation') : t('accountAuthorization')}
               </p>
             </div>
           </div>
@@ -107,20 +110,20 @@ export function AuthorizationApproval({
             style={{ color: data.isRevocation ? 'rgb(var(--success))' : 'rgb(var(--primary))' }}
           >
             {data.isRevocation
-              ? 'Revoke Smart Account Delegation'
-              : 'EIP-7702 Smart Account Authorization'}
+              ? t('revokeSmartAccountTitle')
+              : t('eip7702AuthTitle')}
           </p>
           <p className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
             {data.isRevocation
-              ? 'This will remove the smart contract delegation from your account, reverting it to a regular EOA.'
-              : 'This will authorize your account to delegate its operations to a smart contract. Your account will gain smart account capabilities while you retain full control of your private key.'}
+              ? t('revokeSmartAccountDesc')
+              : t('eip7702AuthDesc')}
           </p>
         </Card>
 
         {/* Account being authorized */}
         <Card padding="md">
           <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Account to {data.isRevocation ? 'Revoke' : 'Authorize'}
+            {data.isRevocation ? t('accountToRevoke') : t('accountToAuthorize')}
           </p>
           <p className="text-sm font-mono break-all" style={{ color: 'rgb(var(--foreground))' }}>
             {data.account}
@@ -131,7 +134,7 @@ export function AuthorizationApproval({
         {!data.isRevocation && (
           <Card padding="md">
             <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Delegate to Contract
+              {t('delegateToContract')}
             </p>
             <p className="text-sm font-mono break-all" style={{ color: 'rgb(var(--foreground))' }}>
               {data.contractAddress}
@@ -173,7 +176,7 @@ export function AuthorizationApproval({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Chain ID
+                {t('chainId')}
               </p>
               <p className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                 {data.chainId}
@@ -181,7 +184,7 @@ export function AuthorizationApproval({
             </div>
             <div>
               <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Authorization Nonce
+                {t('authorizationNonce')}
               </p>
               <p className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                 {String(data.nonce)}
@@ -215,7 +218,7 @@ export function AuthorizationApproval({
                     : 'rgb(var(--warning))',
               }}
             >
-              Security Warnings
+              {t('securityWarnings')}
             </p>
             <ul className="space-y-1">
               {data.warnings.map((warning) => (
@@ -283,20 +286,19 @@ export function AuthorizationApproval({
                 />
               </svg>
               <p className="text-sm font-bold" style={{ color: 'rgb(var(--destructive))' }}>
-                CRITICAL WARNING
+                {t('criticalWarningTitle')}
               </p>
             </div>
             <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
-              Authorizing an unknown or unverified contract is extremely risky. The contract could
-              potentially:
+              {t('criticalWarningDesc')}
             </p>
             <ul className="mt-2 space-y-1 text-sm" style={{ color: 'rgb(var(--destructive))' }}>
-              <li>• Access all assets in your account</li>
-              <li>• Execute transactions on your behalf</li>
-              <li>• Drain your funds without further approval</li>
+              <li>• {t('criticalWarningAccess')}</li>
+              <li>• {t('criticalWarningExecute')}</li>
+              <li>• {t('criticalWarningDrain')}</li>
             </ul>
             <p className="text-sm font-medium mt-2" style={{ color: 'rgb(var(--destructive))' }}>
-              Only proceed if you fully trust the contract source.
+              {t('criticalWarningAdvice')}
             </p>
           </Card>
         )}
@@ -315,10 +317,10 @@ export function AuthorizationApproval({
           fullWidth
           variant={data.riskLevel === 'critical' ? 'secondary' : 'primary'}
         >
-          {data.isRevocation ? 'Revoke Authorization' : 'Authorize'}
+          {data.isRevocation ? t('revokeAuthorization') : t('authorize')}
         </Button>
         <Button onClick={onReject} variant="secondary" fullWidth>
-          Reject
+          {tc('reject')}
         </Button>
       </div>
     </div>

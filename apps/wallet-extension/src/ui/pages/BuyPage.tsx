@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type {
   CryptoCurrency,
   FiatCurrency,
@@ -18,6 +19,7 @@ interface BuyPageProps {
 }
 
 export function BuyPage({ onBack }: BuyPageProps) {
+  const { t } = useTranslation('buy')
   const { selectedAccount } = useWalletStore()
   const [activeView, setActiveView] = useState<ViewType>('buy')
 
@@ -158,7 +160,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
 
   async function handleGetQuote() {
     if (!fiatAmount || Number.parseFloat(fiatAmount) <= 0) {
-      setQuoteError('Please enter a valid amount')
+      setQuoteError(t('invalidAmount'))
       return
     }
 
@@ -182,7 +184,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
         setQuoteError(response.error)
       }
     } catch {
-      setQuoteError('Failed to get quote')
+      setQuoteError(t('failedToGetQuote'))
     } finally {
       setIsLoadingQuote(false)
     }
@@ -219,7 +221,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
         setQuoteError(response.error)
       }
     } catch {
-      setQuoteError('Failed to create order')
+      setQuoteError(t('failedToCreateOrder'))
     } finally {
       setIsCreatingOrder(false)
     }
@@ -238,18 +240,18 @@ export function BuyPage({ onBack }: BuyPageProps) {
   }
 
   const FIAT_LABELS: Record<FiatCurrency, string> = {
-    USD: 'USD - US Dollar',
-    EUR: 'EUR - Euro',
-    GBP: 'GBP - British Pound',
-    KRW: 'KRW - Korean Won',
-    JPY: 'JPY - Japanese Yen',
+    USD: t('usd'),
+    EUR: t('eur'),
+    GBP: t('gbp'),
+    KRW: t('krw'),
+    JPY: t('jpy'),
   }
 
   const CRYPTO_LABELS: Record<CryptoCurrency, string> = {
-    ETH: 'ETH - Ethereum',
-    USDC: 'USDC - USD Coin',
-    USDT: 'USDT - Tether',
-    DAI: 'DAI - Dai',
+    ETH: t('eth'),
+    USDC: t('usdc'),
+    USDT: t('usdt'),
+    DAI: t('dai'),
   }
 
   const DEFAULT_FIAT: FiatCurrency[] = ['USD', 'EUR', 'GBP', 'KRW', 'JPY']
@@ -304,7 +306,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
               </button>
             )}
             <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
-              Buy Crypto
+              {t('title')}
             </h1>
           </div>
         </div>
@@ -320,7 +322,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
               color: activeView === 'buy' ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
             }}
           >
-            Buy
+            {t('buyTab')}
           </button>
           <button
             type="button"
@@ -332,7 +334,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
                 activeView === 'orders' ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
             }}
           >
-            Orders
+            {t('ordersTab')}
             {orders.filter((o) => o.status === 'pending' || o.status === 'processing').length >
               0 && (
               <span
@@ -362,7 +364,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
                   color: 'rgb(var(--destructive))',
                 }}
               >
-                KYC verification was rejected. Please contact support to resolve this issue.
+                {t('kycRejected')}
               </div>
             )}
             {!isLoadingKyc && kycStatus === 'pending' && (
@@ -373,8 +375,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
                   color: 'rgb(var(--warning, 245 158 11))',
                 }}
               >
-                KYC verification is pending. Some features may be limited until verification is
-                complete.
+                {t('kycPending')}
               </div>
             )}
 
@@ -384,7 +385,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Input
-                      label="You Pay"
+                      label={t('youPay')}
                       type="number"
                       value={fiatAmount}
                       onChange={(e) => {
@@ -398,7 +399,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
                   </div>
                   <div className="w-32">
                     <Select
-                      label="Currency"
+                      label={t('currency')}
                       value={fiatCurrency}
                       onChange={(e) => {
                         setFiatCurrency(e.target.value as FiatCurrency)
@@ -429,7 +430,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
                 </div>
 
                 <Select
-                  label="You Receive"
+                  label={t('youReceive')}
                   value={cryptoCurrency}
                   onChange={(e) => {
                     setCryptoCurrency(e.target.value as CryptoCurrency)
@@ -444,7 +445,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
                   isLoading={isLoadingQuote}
                   disabled={!fiatAmount || Number.parseFloat(fiatAmount) <= 0}
                 >
-                  Get Quote
+                  {t('getQuote')}
                 </Button>
               </div>
             </Card>
@@ -472,14 +473,14 @@ export function BuyPage({ onBack }: BuyPageProps) {
                 {paymentMethod === 'bank_transfer' && linkedBankAccounts.length > 0 && (
                   <div className="mt-4">
                     <Select
-                      label="Select Bank Account"
+                      label={t('selectBankAccount')}
                       value={selectedBankAccount}
                       onChange={(e) => setSelectedBankAccount(e.target.value)}
                       options={[
-                        { value: '', label: 'Select account' },
+                        { value: '', label: t('selectAccount') },
                         ...linkedBankAccounts.map((acc) => ({
                           value: acc.accountNo,
-                          label: `${acc.accountType === 'checking' ? 'Checking' : 'Savings'} - ****${acc.accountNo.slice(-4)}`,
+                          label: `${acc.accountType === 'checking' ? t('checking') : t('savings')} - ****${acc.accountNo.slice(-4)}`,
                         })),
                       ]}
                     />
@@ -498,7 +499,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
                       !selectedBankAccount)
                   }
                 >
-                  Continue to Payment
+                  {t('continueToPayment')}
                 </Button>
               </Card>
             )}
@@ -527,9 +528,9 @@ export function BuyPage({ onBack }: BuyPageProps) {
                     />
                   </svg>
                 </div>
-                <p className="text-sm text-gray-500 mb-3">No orders yet</p>
+                <p className="text-sm text-gray-500 mb-3">{t('noOrders')}</p>
                 <Button size="sm" onClick={() => setActiveView('buy')}>
-                  Buy Crypto
+                  {t('title')}
                 </Button>
               </Card>
             ) : (
@@ -552,20 +553,20 @@ export function BuyPage({ onBack }: BuyPageProps) {
           setShowPaymentModal(false)
           setPendingOrder(null)
         }}
-        title="Payment Instructions"
+        title={t('paymentInstructions')}
         size="md"
       >
         {pendingOrder && (
           <div className="space-y-4">
             <Card padding="md" variant="filled" className="bg-amber-50">
               <p className="text-sm text-amber-800">
-                Please complete your payment within 30 minutes to secure this rate.
+                {t('completePaymentWithin')}
               </p>
             </Card>
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Amount to Pay</span>
+                <span className="text-gray-500">{t('amountToPay')}</span>
                 <span className="font-medium text-gray-900">
                   {new Intl.NumberFormat('en-US', {
                     style: 'currency',
@@ -574,18 +575,18 @@ export function BuyPage({ onBack }: BuyPageProps) {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Reference</span>
+                <span className="text-gray-500">{t('reference')}</span>
                 <span className="font-mono text-gray-900">{pendingOrder.id.slice(0, 12)}</span>
               </div>
             </div>
 
             {pendingOrder.paymentMethod === 'bank_transfer' && (
               <Card padding="md">
-                <p className="text-xs text-gray-500 mb-2">Transfer to</p>
+                <p className="text-xs text-gray-500 mb-2">{t('transferTo')}</p>
                 <div className="space-y-1 text-sm">
-                  <p className="text-gray-900">Bank: StableNet Bank</p>
-                  <p className="text-gray-900">Account: 1234567890</p>
-                  <p className="text-gray-900">Routing: 021000021</p>
+                  <p className="text-gray-900">{t('bankName')}</p>
+                  <p className="text-gray-900">{t('bankAccount')}</p>
+                  <p className="text-gray-900">{t('bankRouting')}</p>
                 </div>
               </Card>
             )}
@@ -597,7 +598,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
               }}
               fullWidth
             >
-              I've Completed Payment
+              {t('completedPayment')}
             </Button>
           </div>
         )}

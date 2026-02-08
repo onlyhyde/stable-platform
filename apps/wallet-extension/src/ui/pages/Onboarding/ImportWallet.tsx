@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Card, TextArea } from '../../components/common'
 
 interface ImportWalletProps {
@@ -9,6 +10,8 @@ interface ImportWalletProps {
 }
 
 export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalletProps) {
+  const { t } = useTranslation('onboarding')
+  const { t: tc } = useTranslation('common')
   const [mnemonic, setMnemonic] = useState('')
   const [validationError, setValidationError] = useState('')
 
@@ -25,7 +28,7 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
     const cleanedMnemonic = mnemonic.trim().toLowerCase()
 
     if (!validateMnemonic(cleanedMnemonic)) {
-      setValidationError('Please enter a valid 12 or 24 word seed phrase')
+      setValidationError(t('invalidSeedPhrase'))
       return
     }
 
@@ -61,13 +64,13 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          Back
+          {tc('back')}
         </button>
         <h1 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-          Import Wallet
+          {t('importWalletTitle')}
         </h1>
         <p className="mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Enter your 12 or 24 word seed phrase
+          {t('importWalletSubtitle')}
         </p>
       </div>
 
@@ -100,10 +103,10 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
               </svg>
               <div className="text-sm">
                 <p className="font-medium" style={{ color: 'rgb(234 179 8)' }}>
-                  Only import on trusted devices
+                  {t('importOnTrustedDevices')}
                 </p>
                 <p style={{ color: 'rgb(var(--warning) / 0.8)' }}>
-                  Never enter your seed phrase on websites or share it with anyone.
+                  {t('neverEnterOnWebsites')}
                 </p>
               </div>
             </div>
@@ -111,16 +114,16 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
 
           <div>
             <TextArea
-              label="Secret Recovery Phrase"
+              label={t('secretRecoveryPhrase')}
               value={mnemonic}
               onChange={(e) => setMnemonic(e.target.value)}
-              placeholder="Enter your seed phrase with spaces between words"
+              placeholder={t('enterSeedPhrase')}
               rows={4}
               error={validationError || error}
               className="font-mono"
             />
             <p className="mt-2 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              {wordCount} / 12 or 24 words
+              {t('wordCount', { count: wordCount })}
             </p>
           </div>
 
@@ -151,11 +154,11 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
 
         <div className="mt-6 space-y-3">
           <Button type="submit" fullWidth disabled={wordCount < 12} isLoading={isLoading}>
-            Import Wallet
+            {t('importWalletBtn')}
           </Button>
 
           <p className="text-xs text-center" style={{ color: 'rgb(var(--foreground-tertiary))' }}>
-            Importing will create a new wallet with your seed phrase
+            {t('importingWillCreate')}
           </p>
         </div>
       </form>

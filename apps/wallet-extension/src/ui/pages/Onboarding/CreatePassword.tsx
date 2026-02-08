@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Card, Input, Toggle } from '../../components/common'
 
 interface CreatePasswordProps {
@@ -8,6 +9,8 @@ interface CreatePasswordProps {
 }
 
 export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordProps) {
+  const { t } = useTranslation('onboarding')
+  const { t: tc } = useTranslation('common')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -16,16 +19,16 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
 
   const validatePassword = (pwd: string): string | null => {
     if (pwd.length < 8) {
-      return 'Password must be at least 8 characters'
+      return t('passwordMinLength')
     }
     if (!/[A-Z]/.test(pwd)) {
-      return 'Password must contain at least one uppercase letter'
+      return t('passwordUppercase')
     }
     if (!/[a-z]/.test(pwd)) {
-      return 'Password must contain at least one lowercase letter'
+      return t('passwordLowercase')
     }
     if (!/[0-9]/.test(pwd)) {
-      return 'Password must contain at least one number'
+      return t('passwordNumber')
     }
     return null
   }
@@ -41,12 +44,12 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
+      setError(t('passwordsDoNotMatch'))
       return
     }
 
     if (!agreedToTerms) {
-      setError('Please agree to the terms of use')
+      setError(t('agreeToTerms'))
       return
     }
 
@@ -65,7 +68,7 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
   })()
 
   // Strength colors are now handled inline with CSS variables
-  const strengthLabels = ['Very Weak', 'Weak', 'Fair', 'Strong', 'Very Strong']
+  const strengthLabels = [t('strengthVeryWeak'), t('strengthWeak'), t('strengthFair'), t('strengthStrong'), t('strengthVeryStrong')]
 
   return (
     <div
@@ -94,13 +97,13 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          Back
+          {tc('back')}
         </button>
         <h1 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-          Create Password
+          {t('createPasswordTitle')}
         </h1>
         <p className="mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          This password will unlock your wallet
+          {t('createPasswordSubtitle')}
         </p>
       </div>
 
@@ -109,11 +112,11 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
         <div className="space-y-4 flex-1">
           <div>
             <Input
-              label="Password"
+              label={t('password')}
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
+              placeholder={t('enterPassword')}
               rightElement={
                 <button
                   type="button"
@@ -194,13 +197,13 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
           </div>
 
           <Input
-            label="Confirm Password"
+            label={t('confirmPassword')}
             type={showPassword ? 'text' : 'password'}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Confirm password"
+            placeholder={t('confirmPasswordPlaceholder')}
             error={
-              confirmPassword && password !== confirmPassword ? 'Passwords do not match' : undefined
+              confirmPassword && password !== confirmPassword ? t('passwordsDoNotMatch') : undefined
             }
           />
 
@@ -223,10 +226,10 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
               </svg>
               <div className="text-sm">
                 <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                  Remember your password
+                  {t('rememberPassword')}
                 </p>
                 <p style={{ color: 'rgb(var(--muted-foreground))' }}>
-                  StableNet cannot recover your password. Make sure to store it safely.
+                  {t('cannotRecoverPassword')}
                 </p>
               </div>
             </div>
@@ -235,7 +238,7 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
           <Toggle
             enabled={agreedToTerms}
             onChange={setAgreedToTerms}
-            label="I understand that StableNet cannot recover this password"
+            label={t('agreeCannotRecover')}
             size="sm"
           />
 
@@ -252,7 +255,7 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
           disabled={!password || !confirmPassword || !agreedToTerms}
           isLoading={isLoading}
         >
-          Create Password
+          {t('createPasswordBtn')}
         </Button>
       </form>
     </div>

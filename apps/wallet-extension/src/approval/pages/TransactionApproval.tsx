@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
 import type { TransactionApprovalRequest } from '../../types'
 import { Badge, Button, Card } from '../../ui/components/common'
@@ -22,6 +23,8 @@ interface TransactionApprovalProps {
 }
 
 export function TransactionApproval({ approval, onApprove, onReject }: TransactionApprovalProps) {
+  const { t } = useTranslation('approval')
+  const { t: tc } = useTranslation('common')
   const { data } = approval
   const { symbol: currencySymbol } = useNetworkCurrency()
 
@@ -90,7 +93,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
                 {getOriginDisplay(approval.origin)}
               </p>
               <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Transaction Request
+                {t('txRequestTitle')}
               </p>
             </div>
           </div>
@@ -104,7 +107,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
       <div className="flex-1 p-6 space-y-4">
         {/* Transaction Summary */}
         <Card padding="lg" variant="gradient" className="text-center">
-          <p className="text-sm opacity-80 mb-1">{data.methodName ?? 'Send'}</p>
+          <p className="text-sm opacity-80 mb-1">{data.methodName ?? tc('send')}</p>
           <p className="text-2xl font-bold">
             {formatEther(toBigInt(data.value))} {currencySymbol}
           </p>
@@ -115,7 +118,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                From
+                {t('txFrom')}
               </span>
               <span className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                 {formatAddress(data.from)}
@@ -140,7 +143,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                To
+                {t('txTo')}
               </span>
               <span className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                 {formatAddress(data.to)}
@@ -153,11 +156,11 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
         {data.estimatedGasCost && (
           <Card padding="md">
             <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Estimated Gas Cost
+              {t('estimatedGasCost')}
             </p>
             <div className="flex items-center justify-between">
               <span className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
-                Network Fee
+                {t('networkFee')}
               </span>
               <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                 ~{formatEther(toBigInt(data.estimatedGasCost))} {currencySymbol}
@@ -172,7 +175,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
                   className="text-sm font-medium"
                   style={{ color: 'rgb(var(--foreground-secondary))' }}
                 >
-                  Total
+                  {t('total')}
                 </span>
                 <span className="text-sm font-bold" style={{ color: 'rgb(var(--foreground))' }}>
                   ~{formatEther(toBigInt(data.estimatedTotalCost))} {currencySymbol}
@@ -189,7 +192,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
         {data.data && data.data !== '0x' && !data.simulation?.decodedCallData && (
           <Card padding="md">
             <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Contract Data
+              {t('contractData')}
             </p>
             <div
               className="rounded-lg p-3 max-h-24 overflow-y-auto"
@@ -209,7 +212,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
         {data.tokenTransfers && data.tokenTransfers.length > 0 && (
           <Card padding="md">
             <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Token Transfers
+              {t('tokenTransfers')}
             </p>
             <div className="space-y-2">
               {data.tokenTransfers.map((transfer) => (
@@ -224,7 +227,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
                   }}
                 >
                   <span className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
-                    {transfer.direction === 'out' ? 'Send' : 'Receive'}
+                    {transfer.direction === 'out' ? t('txSend') : t('txReceive')}
                   </span>
                   <span
                     className="text-sm font-medium"
@@ -258,10 +261,10 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
         }}
       >
         <Button onClick={() => onApprove()} fullWidth>
-          Confirm
+          {tc('confirm')}
         </Button>
         <Button onClick={onReject} variant="secondary" fullWidth>
-          Reject
+          {tc('reject')}
         </Button>
       </div>
     </div>

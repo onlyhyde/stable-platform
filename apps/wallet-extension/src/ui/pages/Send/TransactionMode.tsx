@@ -1,5 +1,6 @@
 import { ACCOUNT_TYPE, type Account, TRANSACTION_MODE, type TransactionMode } from '@stablenet/core'
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 
 // ============================================================================
 // Types
@@ -40,52 +41,48 @@ interface ModeInfo {
 // Mode Information
 // ============================================================================
 
-const MODE_INFO: Record<TransactionMode, ModeInfo> = {
-  [TRANSACTION_MODE.EOA]: {
-    id: TRANSACTION_MODE.EOA,
-    name: 'Direct (EOA)',
-    shortDescription: 'Standard transaction',
-    longDescription:
-      'Send a standard Ethereum transaction directly from your wallet. ' +
-      'This is the simplest and most compatible method.',
-    icon: '📤',
-    features: ['Maximum compatibility', 'Lowest gas overhead', 'Works everywhere'],
-    requirements: ['ETH for gas'],
-    gasInfo: 'Pay gas with ETH',
-  },
-  [TRANSACTION_MODE.EIP7702]: {
-    id: TRANSACTION_MODE.EIP7702,
-    name: 'Setup Smart Account',
-    shortDescription: 'Upgrade to Smart Account',
-    longDescription:
-      'Delegate your EOA to a Smart Account contract using EIP-7702. ' +
-      'This enables advanced features while keeping your existing address.',
-    icon: '⚙️',
-    features: [
-      'Keep your existing address',
-      'Enable Smart Account features',
-      'Reversible (can revoke)',
-    ],
-    requirements: ['ETH for gas', 'One-time setup'],
-    gasInfo: 'One-time gas cost',
-  },
-  [TRANSACTION_MODE.SMART_ACCOUNT]: {
-    id: TRANSACTION_MODE.SMART_ACCOUNT,
-    name: 'Smart Account',
-    shortDescription: 'Advanced features',
-    longDescription:
-      'Use Smart Account features including gas sponsorship, ' +
-      'batched transactions, and modular security.',
-    icon: '🔷',
-    features: [
-      'Gas sponsorship available',
-      'Pay gas with tokens',
-      'Batch multiple operations',
-      'Session keys & limits',
-    ],
-    requirements: ['Smart Account enabled'],
-    gasInfo: 'Flexible gas options',
-  },
+function getModeInfo(t: (key: string) => string): Record<TransactionMode, ModeInfo> {
+  return {
+    [TRANSACTION_MODE.EOA]: {
+      id: TRANSACTION_MODE.EOA,
+      name: t('directEoa'),
+      shortDescription: t('standardTransaction'),
+      longDescription: t('directEoaDesc'),
+      icon: '📤',
+      features: [t('maxCompatibility'), t('lowestGasOverhead'), t('worksEverywhere')],
+      requirements: [t('ethForGas')],
+      gasInfo: t('payGasWithEth'),
+    },
+    [TRANSACTION_MODE.EIP7702]: {
+      id: TRANSACTION_MODE.EIP7702,
+      name: t('setupSmartAccount'),
+      shortDescription: t('upgradeToSmartAccount'),
+      longDescription: t('setupSmartAccountDesc'),
+      icon: '⚙️',
+      features: [
+        t('keepExistingAddress'),
+        t('enableSmartAccountFeatures'),
+        t('reversible'),
+      ],
+      requirements: [t('ethForGas'), t('oneTimeSetup')],
+      gasInfo: t('oneTimeGasCost'),
+    },
+    [TRANSACTION_MODE.SMART_ACCOUNT]: {
+      id: TRANSACTION_MODE.SMART_ACCOUNT,
+      name: t('smartAccountMode'),
+      shortDescription: t('advancedFeatures'),
+      longDescription: t('smartAccountDesc'),
+      icon: '🔷',
+      features: [
+        t('gasSponsorshipAvailable'),
+        t('payGasWithTokens'),
+        t('batchOperations'),
+        t('sessionKeysAndLimits'),
+      ],
+      requirements: [t('smartAccountEnabled')],
+      gasInfo: t('flexibleGasOptions'),
+    },
+  }
 }
 
 // ============================================================================
@@ -100,10 +97,13 @@ export function TransactionModeSelector({
   showDescriptions = true,
   disabled = false,
 }: TransactionModeSelectorProps) {
+  const { t } = useTranslation('send')
+  const modeInfo = useMemo(() => getModeInfo(t), [t])
+
   // Filter to only show available modes
   const modes = useMemo(
-    () => availableModes.map((mode) => MODE_INFO[mode]).filter(Boolean),
-    [availableModes]
+    () => availableModes.map((mode) => modeInfo[mode]).filter(Boolean),
+    [availableModes, modeInfo]
   )
 
   // Check if account needs setup
@@ -121,7 +121,7 @@ export function TransactionModeSelector({
         className="block text-sm font-medium mb-2"
         style={{ color: 'rgb(var(--foreground-secondary))' }}
       >
-        Transaction Mode
+        {t('transactionMode')}
       </span>
 
       {/* Mode Cards */}
@@ -152,10 +152,10 @@ export function TransactionModeSelector({
             <span style={{ color: 'rgb(var(--primary))' }}>💡</span>
             <div>
               <p className="text-sm font-medium" style={{ color: 'rgb(var(--primary))' }}>
-                Enable Smart Account features
+                {t('enableSmartAccountFeatures')}
               </p>
               <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Select "Setup Smart Account" to unlock gas sponsorship, spending limits, and more.
+                {t('enableSmartAccountHint')}
               </p>
             </div>
           </div>
@@ -181,6 +181,7 @@ interface ModeCardProps {
 }
 
 function ModeCard({ mode, isSelected, isDisabled, showDescription, onSelect }: ModeCardProps) {
+  const { t } = useTranslation('send')
   return (
     <button
       type="button"
@@ -208,7 +209,7 @@ function ModeCard({ mode, isSelected, isDisabled, showDescription, onSelect }: M
             </span>
             {isSelected && (
               <span className="text-sm" style={{ color: 'rgb(var(--primary))' }}>
-                ✓ Selected
+                {t('selectedCheck')}
               </span>
             )}
           </div>
@@ -234,7 +235,7 @@ function ModeCard({ mode, isSelected, isDisabled, showDescription, onSelect }: M
               className="text-xs font-medium mb-1"
               style={{ color: 'rgb(var(--muted-foreground))' }}
             >
-              Features:
+              {t('features')}
             </p>
             <ul className="text-xs space-y-1" style={{ color: 'rgb(var(--foreground))' }}>
               {mode.features.map((feature) => (
@@ -267,27 +268,28 @@ interface AccountTypeInfoProps {
 }
 
 function AccountTypeInfo({ account }: AccountTypeInfoProps) {
+  const { t } = useTranslation('send')
   const typeInfo = useMemo(() => {
     switch (account.type) {
       case ACCOUNT_TYPE.EOA:
         return {
-          label: 'Standard Wallet (EOA)',
-          description: 'Your wallet is a standard Externally Owned Account',
+          label: t('standardWalletEoa'),
+          description: t('standardWalletDesc'),
         }
       case ACCOUNT_TYPE.DELEGATED:
         return {
-          label: 'Smart Account (Delegated)',
-          description: 'Your EOA is delegated to a Smart Account contract',
+          label: t('smartAccountDelegated'),
+          description: t('smartAccountDelegatedDesc'),
         }
       case ACCOUNT_TYPE.SMART:
         return {
-          label: 'Smart Account',
-          description: 'Your wallet is a Smart Contract Account',
+          label: t('smartAccountType'),
+          description: t('smartAccountTypeDesc'),
         }
       default:
         return null
     }
-  }, [account.type])
+  }, [account.type, t])
 
   if (!typeInfo) return null
 
@@ -318,13 +320,15 @@ export function CompactModeSelector({
   onModeChange,
   disabled = false,
 }: CompactModeSelectorProps) {
+  const { t } = useTranslation('send')
+  const modeInfo = useMemo(() => getModeInfo(t), [t])
   return (
     <div
       className="compact-mode-selector flex gap-1 p-1 rounded-lg"
       style={{ backgroundColor: 'rgb(var(--secondary))' }}
     >
       {availableModes.map((mode) => {
-        const info = MODE_INFO[mode]
+        const info = modeInfo[mode]
         const isSelected = selectedMode === mode
         return (
           <button
@@ -361,19 +365,21 @@ interface ModeComparisonProps {
 }
 
 export function ModeComparison({ availableModes, gasEstimates }: ModeComparisonProps) {
+  const { t } = useTranslation('send')
+  const modeInfo = useMemo(() => getModeInfo(t), [t])
   return (
     <div className="mode-comparison overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr style={{ color: 'rgb(var(--muted-foreground))', borderBottomWidth: 1 }}>
-            <th className="pb-2 text-left">Mode</th>
-            <th className="pb-2 text-left">Gas Cost</th>
-            <th className="pb-2 text-left">Features</th>
+            <th className="pb-2 text-left">{t('mode')}</th>
+            <th className="pb-2 text-left">{t('gasCost')}</th>
+            <th className="pb-2 text-left">{t('features')}</th>
           </tr>
         </thead>
         <tbody>
           {availableModes.map((mode) => {
-            const info = MODE_INFO[mode]
+            const info = modeInfo[mode]
             const estimate = gasEstimates?.[mode]
 
             return (

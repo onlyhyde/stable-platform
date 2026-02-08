@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWalletStore } from '../hooks/useWalletStore'
 
 export function Receive() {
+  const { t: tc } = useTranslation('common')
   const { selectedAccount, accounts } = useWalletStore()
   const [copied, setCopied] = useState(false)
 
@@ -18,7 +20,7 @@ export function Receive() {
   if (!currentAccount) {
     return (
       <div className="p-4 text-center" style={{ color: 'rgb(var(--muted-foreground))' }}>
-        No account selected
+        {tc('noAccountFound')}
       </div>
     )
   }
@@ -29,7 +31,7 @@ export function Receive() {
         className="text-xl font-bold mb-6 text-center"
         style={{ color: 'rgb(var(--foreground))' }}
       >
-        Receive
+        {tc('receive')}
       </h2>
 
       {/* QR Code Placeholder */}
@@ -61,7 +63,7 @@ export function Receive() {
       {/* Address Display */}
       <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
         <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Your Address
+          {tc('accountAddress')}
         </p>
         <code
           className="text-sm break-all block"
@@ -95,7 +97,7 @@ export function Receive() {
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            Copied!
+            {tc('copied')}
           </>
         ) : (
           <>
@@ -113,15 +115,14 @@ export function Receive() {
                 d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
               />
             </svg>
-            Copy Address
+            {tc('copyAddress')}
           </>
         )}
       </button>
 
       {/* Info */}
       <p className="text-xs text-center mt-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
-        Only send assets on the same network. Sending to a different network may result in loss of
-        funds.
+        {tc('receiveWarning', 'Only send assets on the same network. Sending to a different network may result in loss of funds.')}
       </p>
     </div>
   )

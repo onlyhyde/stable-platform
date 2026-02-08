@@ -5,6 +5,7 @@
  * Warnings are categorized by severity: critical, high, medium, info.
  */
 
+import { useTranslation } from 'react-i18next'
 import { Badge, Card } from '../../ui/components/common'
 
 export interface ApprovalWarning {
@@ -56,39 +57,40 @@ function classifyWarning(warning: string): ApprovalWarning {
 
 const SEVERITY_STYLES: Record<
   ApprovalWarning['severity'],
-  { bg: string; border: string; icon: string; text: string; label: string }
+  { bg: string; border: string; icon: string; text: string; labelKey: string }
 > = {
   critical: {
     bg: 'rgb(239 68 68 / 0.1)',
     border: 'rgb(239 68 68 / 0.3)',
     icon: 'rgb(239 68 68)',
     text: 'rgb(239 68 68 / 0.9)',
-    label: 'CRITICAL',
+    labelKey: 'severityCritical',
   },
   high: {
     bg: 'rgb(249 115 22 / 0.1)',
     border: 'rgb(249 115 22 / 0.3)',
     icon: 'rgb(249 115 22)',
     text: 'rgb(249 115 22 / 0.9)',
-    label: 'HIGH',
+    labelKey: 'severityHigh',
   },
   medium: {
     bg: 'rgb(234 179 8 / 0.1)',
     border: 'rgb(234 179 8 / 0.3)',
     icon: 'rgb(234 179 8)',
     text: 'rgb(234 179 8 / 0.9)',
-    label: 'WARNING',
+    labelKey: 'severityWarning',
   },
   info: {
     bg: 'rgb(var(--surface))',
     border: 'rgb(var(--border))',
     icon: 'rgb(var(--muted-foreground))',
     text: 'rgb(var(--foreground-secondary))',
-    label: 'INFO',
+    labelKey: 'severityInfo',
   },
 }
 
 export function ApprovalWarnings({ warnings, riskLevel }: ApprovalWarningsProps) {
+  const { t } = useTranslation('approval')
   if (!warnings || warnings.length === 0) return null
 
   const classified = warnings.map(classifyWarning)
@@ -145,7 +147,7 @@ export function ApprovalWarnings({ warnings, riskLevel }: ApprovalWarningsProps)
             )}
           </svg>
           <p className="text-sm font-semibold" style={{ color: overallStyle.icon }}>
-            {hasCritical ? 'Critical Warnings' : hasHigh ? 'Risk Warnings' : 'Warnings'}
+            {hasCritical ? t('criticalWarnings') : hasHigh ? t('riskWarnings') : t('warnings')}
           </p>
         </div>
         {riskLevel && (
@@ -175,7 +177,7 @@ export function ApprovalWarnings({ warnings, riskLevel }: ApprovalWarningsProps)
                   color: 'white',
                 }}
               >
-                {style.label}
+                {t(style.labelKey)}
               </span>
               <span style={{ color: style.text }}>{warning.message}</span>
             </li>

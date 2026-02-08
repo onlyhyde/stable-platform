@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Card, Input } from '../components/common'
 
 interface LockProps {
@@ -7,6 +8,8 @@ interface LockProps {
 }
 
 export function Lock({ onUnlock, error }: LockProps) {
+  const { t } = useTranslation('lock')
+  const { t: tc } = useTranslation('common')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -22,7 +25,7 @@ export function Lock({ onUnlock, error }: LockProps) {
     try {
       await onUnlock(password)
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : 'Failed to unlock')
+      setLocalError(err instanceof Error ? err.message : tc('failedToUnlock'))
     } finally {
       setIsLoading(false)
     }
@@ -44,10 +47,10 @@ export function Lock({ onUnlock, error }: LockProps) {
       </div>
 
       <h1 className="text-xl font-bold mb-1" style={{ color: 'rgb(var(--foreground))' }}>
-        Welcome Back
+        {t('welcomeBack')}
       </h1>
       <p className="text-sm mb-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
-        Enter your password to unlock
+        {t('enterPasswordToUnlock')}
       </p>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm">
@@ -56,7 +59,7 @@ export function Lock({ onUnlock, error }: LockProps) {
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter password"
+            placeholder={t('enterPassword')}
             error={localError || error}
             autoFocus
             rightElement={
@@ -108,17 +111,17 @@ export function Lock({ onUnlock, error }: LockProps) {
         </div>
 
         <Button type="submit" fullWidth isLoading={isLoading} disabled={!password}>
-          Unlock
+          {t('unlock')}
         </Button>
       </form>
 
       <button type="button" className="mt-6 text-sm" style={{ color: 'rgb(var(--primary))' }}>
-        Forgot password?
+        {t('forgotPassword')}
       </button>
 
       <Card variant="filled" padding="sm" className="mt-8 max-w-sm">
         <p className="text-xs text-center" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          If you forgot your password, you can restore your wallet using your recovery phrase.
+          {t('forgotPasswordHint')}
         </p>
       </Card>
     </div>

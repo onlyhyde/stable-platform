@@ -1,5 +1,6 @@
 import type { ModuleConfigField, ModuleRegistryEntry } from '@stablenet/core'
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 // ============================================================================
 // Types
@@ -22,6 +23,8 @@ export function ModuleConfigForm({
   onSubmit,
   onBack,
 }: ModuleConfigFormProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   const [values, setValues] = useState<Record<string, unknown>>(initialValues)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -55,7 +58,7 @@ export function ModuleConfigForm({
   return (
     <div className="module-config-form">
       <h3 className="text-lg font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-        Configure {module.metadata.name}
+        {t('configure', { name: module.metadata.name })}
       </h3>
 
       <div className="space-y-4">
@@ -73,10 +76,10 @@ export function ModuleConfigForm({
       {/* Actions */}
       <div className="flex gap-3 mt-6">
         <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
-          Back
+          {tc('back')}
         </button>
         <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
-          Continue
+          {t('continue')}
         </button>
       </div>
     </div>
@@ -204,6 +207,8 @@ interface AddressArrayInputProps {
 }
 
 function AddressArrayInput({ value, onChange }: AddressArrayInputProps) {
+  const { t } = useTranslation('modules')
+
   const handleAdd = () => {
     onChange([...value, ''])
   }
@@ -249,7 +254,7 @@ function AddressArrayInput({ value, onChange }: AddressArrayInputProps) {
         style={{ color: 'rgb(var(--primary))' }}
         onClick={handleAdd}
       >
-        + Add Address
+        {t('addAddress')}
       </button>
     </div>
   )

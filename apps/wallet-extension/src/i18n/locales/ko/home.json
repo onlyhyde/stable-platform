@@ -1,0 +1,9 @@
+{
+  "totalBalance": "총 잔액",
+  "upgrade": "업그레이드",
+  "eip7702": "EIP-7702",
+  "swap": "스왑",
+  "activity": "활동",
+  "tokenDiscoveryUnavailable": "토큰 검색을 사용할 수 없습니다. 설정에서 인덱서 URL을 구성하세요.",
+  "usdValue": "${{value}} USD"
+}

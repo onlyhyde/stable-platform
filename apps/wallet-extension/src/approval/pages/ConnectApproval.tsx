@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Address } from 'viem'
 import { createLogger } from '../../shared/utils/logger'
 import type { ConnectApprovalRequest } from '../../types'
@@ -19,6 +20,8 @@ interface ConnectApprovalProps {
 }
 
 export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprovalProps) {
+  const { t } = useTranslation('approval')
+  const { t: tc } = useTranslation('common')
   const [accounts, setAccounts] = useState<WalletAccount[]>([])
   const [selectedAccounts, setSelectedAccounts] = useState<Set<Address>>(new Set())
   const [loading, setLoading] = useState(true)
@@ -149,7 +152,7 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
               {getOriginDisplay(approval.origin)}
             </p>
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              wants to connect
+              {t('connectTitle')}
             </p>
           </div>
         </div>
@@ -163,7 +166,7 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
             className="text-sm font-medium mb-3"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
-            This site will be able to:
+            {t('connectPermissions')}
           </p>
           <ul className="space-y-2">
             <li
@@ -185,7 +188,7 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
                   d="M5 13l4 4L19 7"
                 />
               </svg>
-              View your wallet address
+              {t('viewAddress')}
             </li>
             <li
               className="flex items-center gap-2 text-sm"
@@ -206,7 +209,7 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
                   d="M5 13l4 4L19 7"
                 />
               </svg>
-              Request transaction approval
+              {t('requestTxApproval')}
             </li>
             <li
               className="flex items-center gap-2 text-sm"
@@ -227,7 +230,7 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
                   d="M5 13l4 4L19 7"
                 />
               </svg>
-              Request message signatures
+              {t('requestSignatures')}
             </li>
           </ul>
         </Card>
@@ -239,7 +242,7 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
               className="text-sm font-medium"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Select accounts to connect
+              {t('selectAccounts')}
             </p>
             {accounts.length > 1 && (
               <button
@@ -248,7 +251,7 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
                 className="text-xs font-medium"
                 style={{ color: 'rgb(var(--primary))' }}
               >
-                Select all
+                {t('selectAll')}
               </button>
             )}
           </div>
@@ -315,8 +318,7 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
             })}
           </div>
           <p className="mt-2 text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            {selectedAccounts.size} of {accounts.length} account{accounts.length > 1 ? 's' : ''}{' '}
-            selected
+            {t('accountsSelected', { selected: selectedAccounts.size, total: accounts.length })}
           </p>
         </Card>
 
@@ -349,8 +351,7 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
                 />
               </svg>
               <p className="text-xs" style={{ color: 'rgb(234 179 8)' }}>
-                Only connect to sites you trust. Malicious sites can phish your assets by requesting
-                misleading signatures.
+                {t('connectWarning')}
               </p>
             </div>
           </Card>
@@ -366,10 +367,10 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
         }}
       >
         <Button onClick={handleApprove} fullWidth disabled={selectedAccounts.size === 0}>
-          Connect ({selectedAccounts.size} account{selectedAccounts.size !== 1 ? 's' : ''})
+          {t('connectBtn', { count: selectedAccounts.size })}
         </Button>
         <Button onClick={onReject} variant="secondary" fullWidth>
-          Cancel
+          {tc('cancel')}
         </Button>
       </div>
     </div>

@@ -6,6 +6,7 @@ import {
   getDefaultTransactionMode,
 } from '@stablenet/core'
 import { useCallback, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatEther, isAddress, parseEther } from 'viem'
 import type { Address } from 'viem'
 
@@ -31,7 +32,9 @@ type SendStep = 'form' | 'review' | 'pending' | 'success' | 'error'
 // Component
 // ============================================================================
 
-export function SendPage() {
+export function Send() {
+  const { t } = useTranslation('send')
+  const { t: tc } = useTranslation('common')
   const { accounts, selectedAccount: selectedAddress, setPage } = useWalletStore()
   const _currentNetwork = useSelectedNetwork()
   const { symbol: currencySymbol } = useNetworkCurrency()
@@ -149,7 +152,7 @@ export function SendPage() {
     return (
       <div className="p-4">
         <p className="text-center" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Please select an account first
+          {t('selectAccountFirst')}
         </p>
       </div>
     )
@@ -158,7 +161,7 @@ export function SendPage() {
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-6" style={{ color: 'rgb(var(--foreground))' }}>
-        Send
+        {t('title')}
       </h2>
 
       {/* Transaction Mode Selector */}
@@ -167,7 +170,7 @@ export function SendPage() {
           className="block text-sm font-medium mb-2"
           style={{ color: 'rgb(var(--foreground-secondary))' }}
         >
-          Transaction Mode
+          {t('transactionMode')}
         </span>
         <div className="flex gap-2">
           {availableModes.map((mode) => (
@@ -189,7 +192,7 @@ export function SendPage() {
             >
               {mode === TRANSACTION_MODE.EOA && 'EOA'}
               {mode === TRANSACTION_MODE.EIP7702 && 'EIP-7702'}
-              {mode === TRANSACTION_MODE.SMART_ACCOUNT && 'Smart Account'}
+              {mode === TRANSACTION_MODE.SMART_ACCOUNT && t('smartAccountMode')}
             </button>
           ))}
         </div>
@@ -207,7 +210,7 @@ export function SendPage() {
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
-                Gas Payment
+                {t('gasPayment')}
               </span>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -218,7 +221,7 @@ export function SendPage() {
                     onChange={() => setGasPayment({ type: 'native' })}
                     className="text-primary"
                   />
-                  <span style={{ color: 'rgb(var(--foreground))' }}>Pay with {currencySymbol}</span>
+                  <span style={{ color: 'rgb(var(--foreground))' }}>{t('payWithNative', { symbol: currencySymbol })}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -228,7 +231,7 @@ export function SendPage() {
                     onChange={() => setGasPayment({ type: 'sponsor' })}
                     className="text-primary"
                   />
-                  <span style={{ color: 'rgb(var(--foreground))' }}>Sponsored (Free)</span>
+                  <span style={{ color: 'rgb(var(--foreground))' }}>{t('freeSponsored')}</span>
                 </label>
               </div>
             </div>
@@ -241,14 +244,14 @@ export function SendPage() {
               style={{ backgroundColor: 'rgb(var(--secondary))' }}
             >
               <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Estimated Gas
+                {t('estimatedGas')}
               </p>
               <p className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                 {formatEther(gasEstimate.estimatedCost)} {currencySymbol}
               </p>
               {gasPayment.type === 'sponsor' && (
                 <p className="text-sm mt-1" style={{ color: 'rgb(var(--success))' }}>
-                  Gas will be sponsored (free for you)
+                  {t('gasWillBeSponsored')}
                 </p>
               )}
             </div>
@@ -285,7 +288,7 @@ export function SendPage() {
                 : undefined
             }
           >
-            {isEstimating ? 'Estimating...' : 'Review Transaction'}
+            {isEstimating ? t('estimating') : t('reviewTransaction')}
           </button>
 
           {/* Cancel Button */}
@@ -294,7 +297,7 @@ export function SendPage() {
             onClick={() => setPage('home')}
             className="w-full py-3 rounded-lg font-medium mt-2 btn-ghost"
           >
-            Cancel
+            {tc('cancel')}
           </button>
         </>
       )}
@@ -304,31 +307,31 @@ export function SendPage() {
         <div className="space-y-4">
           <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
             <h3 className="font-medium mb-3" style={{ color: 'rgb(var(--foreground))' }}>
-              Transaction Summary
+              {t('transactionSummary')}
             </h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span style={{ color: 'rgb(var(--muted-foreground))' }}>Mode</span>
+                <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('mode')}</span>
                 <span style={{ color: 'rgb(var(--foreground))' }}>{transactionMode}</span>
               </div>
               <div className="flex justify-between">
-                <span style={{ color: 'rgb(var(--muted-foreground))' }}>To</span>
+                <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('to')}</span>
                 <span className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                   {formData.recipient.slice(0, 6)}...{formData.recipient.slice(-4)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span style={{ color: 'rgb(var(--muted-foreground))' }}>Amount</span>
+                <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('amount')}</span>
                 <span style={{ color: 'rgb(var(--foreground))' }}>
                   {formData.amount} {currencySymbol}
                 </span>
               </div>
               {gasEstimate && (
                 <div className="flex justify-between">
-                  <span style={{ color: 'rgb(var(--muted-foreground))' }}>Gas</span>
+                  <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('gas')}</span>
                   <span style={{ color: 'rgb(var(--foreground))' }}>
                     {gasPayment.type === 'sponsor'
-                      ? 'Sponsored'
+                      ? t('sponsored')
                       : `${formatEther(gasEstimate.estimatedCost)} ${currencySymbol}`}
                   </span>
                 </div>
@@ -342,7 +345,7 @@ export function SendPage() {
               onClick={() => setStep('form')}
               className="flex-1 py-3 rounded-lg font-medium btn-ghost"
             >
-              Back
+              {tc('back')}
             </button>
             <button
               type="button"
@@ -350,7 +353,7 @@ export function SendPage() {
               disabled={isPending}
               className="flex-1 py-3 rounded-lg font-medium btn-primary"
             >
-              {isPending ? 'Sending...' : 'Confirm'}
+              {isPending ? t('sending') : t('confirm')}
             </button>
           </div>
         </div>
@@ -366,17 +369,17 @@ export function SendPage() {
             <span style={{ color: 'rgb(var(--success))' }}>✓</span>
           </div>
           <h3 className="text-xl font-bold" style={{ color: 'rgb(var(--success))' }}>
-            Transaction Sent!
+            {t('transactionSent')}
           </h3>
           <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Your transaction has been submitted
+            {t('transactionSubmitted')}
           </p>
 
           {/* Tx Hash Display */}
           {txResult?.hash && (
             <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
               <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Transaction Hash
+                {t('transactionHash')}
               </p>
               <div className="flex items-center justify-center gap-2 mt-1">
                 <span className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
@@ -404,7 +407,7 @@ export function SendPage() {
                   className="inline-block mt-2 text-xs font-medium"
                   style={{ color: 'rgb(var(--primary))' }}
                 >
-                  View on Explorer
+                  {t('viewOnExplorer')}
                 </a>
               )}
             </div>
@@ -416,14 +419,14 @@ export function SendPage() {
               onClick={handleReset}
               className="flex-1 py-3 rounded-lg font-medium btn-ghost"
             >
-              Send Another
+              {t('sendAnother')}
             </button>
             <button
               type="button"
               onClick={() => setPage('activity')}
               className="flex-1 py-3 rounded-lg font-medium btn-primary"
             >
-              View Activity
+              {t('viewActivity')}
             </button>
           </div>
         </div>
@@ -436,7 +439,7 @@ export function SendPage() {
             className="w-12 h-12 mx-auto mb-4 border-4 border-t-transparent rounded-full animate-spin"
             style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
           />
-          <p style={{ color: 'rgb(var(--foreground))' }}>Sending transaction...</p>
+          <p style={{ color: 'rgb(var(--foreground))' }}>{t('sendingTransaction')}</p>
         </div>
       )}
 
@@ -450,7 +453,7 @@ export function SendPage() {
             <span style={{ color: 'rgb(var(--destructive))' }}>✗</span>
           </div>
           <h3 className="text-xl font-bold" style={{ color: 'rgb(var(--destructive))' }}>
-            Transaction Failed
+            {t('transactionFailed')}
           </h3>
           <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {error}
@@ -460,7 +463,7 @@ export function SendPage() {
             onClick={() => setStep('form')}
             className="mt-6 px-6 py-3 rounded-lg font-medium btn-ghost"
           >
-            Try Again
+            {t('tryAgain')}
           </button>
         </div>
       )}
@@ -468,4 +471,4 @@ export function SendPage() {
   )
 }
 
-export default SendPage
+export default Send

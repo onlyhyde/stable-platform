@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { LinkedBankAccount } from '../../types'
 import { BankAccountCard, TransferForm } from '../components/bank'
 import { Button, Card, Input, Modal, Select, Spinner } from '../components/common'
@@ -10,6 +11,8 @@ interface BankPageProps {
 }
 
 export function Bank({ onBack }: BankPageProps) {
+  const { t } = useTranslation('buy')
+  const { t: tc } = useTranslation('common')
   const [activeTab, setActiveTab] = useState<TabType>('accounts')
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedBankAccount[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -42,7 +45,7 @@ export function Bank({ onBack }: BankPageProps) {
         setLinkedAccounts(response.accounts)
       }
     } catch (_err) {
-      setError('Failed to load bank accounts')
+      setError(t('failedToLoadBankAccounts'))
     } finally {
       setIsLoading(false)
     }
@@ -50,7 +53,7 @@ export function Bank({ onBack }: BankPageProps) {
 
   async function handleLinkAccount() {
     if (!linkForm.accountNo || !linkForm.ownerName) {
-      setError('Please fill in all required fields')
+      setError(t('fillAllRequiredFields'))
       return
     }
 
@@ -74,7 +77,7 @@ export function Bank({ onBack }: BankPageProps) {
         setError(response.error)
       }
     } catch (_err) {
-      setError('Failed to link bank account')
+      setError(t('failedToLinkAccount'))
     } finally {
       setIsLinking(false)
     }
@@ -88,7 +91,7 @@ export function Bank({ onBack }: BankPageProps) {
       })
       setLinkedAccounts((prev) => prev.filter((a) => a.accountNo !== accountNo))
     } catch {
-      setError('Failed to unlink account')
+      setError(t('failedToUnlinkAccount'))
     }
   }
 
@@ -105,7 +108,7 @@ export function Bank({ onBack }: BankPageProps) {
         )
       }
     } catch {
-      setError('Failed to sync account')
+      setError(t('failedToSyncAccount'))
     }
   }
 
@@ -130,8 +133,8 @@ export function Bank({ onBack }: BankPageProps) {
   }
 
   const tabs: { id: TabType; label: string }[] = [
-    { id: 'accounts', label: 'Accounts' },
-    { id: 'transfer', label: 'Transfer' },
+    { id: 'accounts', label: t('accountsTab') },
+    { id: 'transfer', label: t('transferTab') },
   ]
 
   return (
@@ -170,11 +173,11 @@ export function Bank({ onBack }: BankPageProps) {
               </button>
             )}
             <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
-              Bank Accounts
+              {t('bankAccounts')}
             </h1>
           </div>
           <Button size="sm" onClick={() => setShowLinkModal(true)}>
-            Link Account
+            {t('linkAccount')}
           </Button>
         </div>
 
@@ -238,9 +241,9 @@ export function Bank({ onBack }: BankPageProps) {
                     />
                   </svg>
                 </div>
-                <p className="text-sm text-gray-500 mb-3">No linked bank accounts</p>
+                <p className="text-sm text-gray-500 mb-3">{t('noLinkedAccounts')}</p>
                 <Button size="sm" onClick={() => setShowLinkModal(true)}>
-                  Link Your First Account
+                  {t('linkFirstAccount')}
                 </Button>
               </Card>
             ) : (
@@ -258,7 +261,7 @@ export function Bank({ onBack }: BankPageProps) {
           linkedAccounts.length < 2 ? (
             <Card padding="lg" className="text-center">
               <p className="text-sm text-gray-500">
-                You need at least 2 linked accounts to make a transfer.
+                {t('needTwoAccounts')}
               </p>
             </Card>
           ) : (
@@ -275,18 +278,18 @@ export function Bank({ onBack }: BankPageProps) {
       <Modal
         isOpen={showLinkModal}
         onClose={() => setShowLinkModal(false)}
-        title="Link Bank Account"
+        title={t('linkBankAccount')}
         size="md"
       >
         <div className="space-y-4">
           <Input
-            label="Account Number"
+            label={t('accountNumber')}
             value={linkForm.accountNo}
             onChange={(e) => setLinkForm((prev) => ({ ...prev, accountNo: e.target.value }))}
-            placeholder="Enter account number"
+            placeholder={t('enterAccountNumber')}
           />
           <Select
-            label="Account Type"
+            label={t('accountType')}
             value={linkForm.accountType}
             onChange={(e) =>
               setLinkForm((prev) => ({
@@ -295,19 +298,19 @@ export function Bank({ onBack }: BankPageProps) {
               }))
             }
             options={[
-              { value: 'checking', label: 'Checking' },
-              { value: 'savings', label: 'Savings' },
+              { value: 'checking', label: t('checking') },
+              { value: 'savings', label: t('savings') },
             ]}
           />
           <Input
-            label="Owner Name"
+            label={t('ownerName')}
             value={linkForm.ownerName}
             onChange={(e) => setLinkForm((prev) => ({ ...prev, ownerName: e.target.value }))}
-            placeholder="Enter account owner name"
+            placeholder={t('enterOwnerName')}
           />
           <div className="flex gap-2 pt-2">
             <Button variant="secondary" onClick={() => setShowLinkModal(false)} fullWidth>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button
               onClick={handleLinkAccount}
@@ -315,7 +318,7 @@ export function Bank({ onBack }: BankPageProps) {
               fullWidth
               disabled={!linkForm.accountNo || !linkForm.ownerName}
             >
-              Link Account
+              {t('linkAccount')}
             </Button>
           </div>
         </div>

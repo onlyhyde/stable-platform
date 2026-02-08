@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { Address } from 'viem'
 import { useWalletStore } from '../hooks/useWalletStore'
 import { useModules } from './Modules/hooks/useModules'
@@ -10,6 +11,7 @@ import { useSmartAccountInfo } from './Modules/hooks/useSmartAccountInfo'
  * and quick actions for module management.
  */
 export function SmartAccountDashboard() {
+  const { t } = useTranslation('tx')
   const { selectedAccount, accounts, setPage } = useWalletStore()
   const currentAccount = accounts.find((a) => a.address === selectedAccount)
   const { info, isLoading: isInfoLoading } = useSmartAccountInfo(
@@ -39,7 +41,7 @@ export function SmartAccountDashboard() {
   if (!currentAccount) {
     return (
       <div className="p-4 text-center">
-        <p style={{ color: 'rgb(var(--muted-foreground))' }}>No account selected</p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>{t('noAccountSelected')}</p>
       </div>
     )
   }
@@ -70,7 +72,7 @@ export function SmartAccountDashboard() {
           </svg>
         </button>
         <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
-          Smart Account
+          {t('dashboardTitle')}
         </h1>
       </div>
 
@@ -95,9 +97,9 @@ export function SmartAccountDashboard() {
             {isLoading
               ? '...'
               : info?.accountType === 'smart'
-                ? 'Smart Account Active'
+                ? t('smartAccountActive')
                 : info?.accountType === 'delegated'
-                  ? 'Delegated (EIP-7702)'
+                  ? t('delegatedEip7702')
                   : 'EOA'}
           </span>
           {info?.isDeployed && (
@@ -105,7 +107,7 @@ export function SmartAccountDashboard() {
               className="inline-flex items-center px-2 py-0.5 rounded-full text-xs"
               style={{ backgroundColor: 'rgba(74, 222, 128, 0.2)', color: 'white' }}
             >
-              Deployed
+              {t('deployedStatus')}
             </span>
           )}
         </div>
@@ -119,7 +121,7 @@ export function SmartAccountDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Delegation Target
+                {t('delegationTarget')}
               </p>
               <p className="text-sm font-mono mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
                 {truncateAddress(info.delegationTarget)}
@@ -132,7 +134,7 @@ export function SmartAccountDashboard() {
               }}
               className="p-1.5 rounded-lg transition-colors"
               style={{ color: 'rgb(var(--primary))' }}
-              title="Copy delegation address"
+              title={t('copyDelegationAddress')}
             >
               <svg
                 className="w-4 h-4"
@@ -159,7 +161,7 @@ export function SmartAccountDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Root Validator
+                {t('rootValidator')}
               </p>
               <p className="text-sm font-mono mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
                 {truncateAddress(info.rootValidator)}
@@ -174,7 +176,7 @@ export function SmartAccountDashboard() {
                 color: 'rgb(var(--primary))',
               }}
             >
-              Change
+              {t('change')}
             </button>
           </div>
         </div>
@@ -184,14 +186,14 @@ export function SmartAccountDashboard() {
       {(info?.accountType === 'smart' || info?.accountType === 'delegated') && (
         <div>
           <h3 className="text-sm font-semibold mb-3" style={{ color: 'rgb(var(--foreground))' }}>
-            Installed Modules
+            {t('installedModules')}
           </h3>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Validators', count: moduleCounts.validator, color: '--primary' },
-              { label: 'Executors', count: moduleCounts.executor, color: '--accent' },
-              { label: 'Hooks', count: moduleCounts.hook, color: '--warning' },
-              { label: 'Fallbacks', count: moduleCounts.fallback, color: '--success' },
+              { label: t('validators'), count: moduleCounts.validator, color: '--primary' },
+              { label: t('executors'), count: moduleCounts.executor, color: '--accent' },
+              { label: t('hooks'), count: moduleCounts.hook, color: '--warning' },
+              { label: t('fallbacks'), count: moduleCounts.fallback, color: '--success' },
             ].map((item) => (
               <div
                 key={item.label}
@@ -213,7 +215,7 @@ export function SmartAccountDashboard() {
       {/* Quick Actions */}
       <div>
         <h3 className="text-sm font-semibold mb-3" style={{ color: 'rgb(var(--foreground))' }}>
-          Quick Actions
+          {t('quickActions')}
         </h3>
         <div className="space-y-2">
           <button
@@ -244,10 +246,10 @@ export function SmartAccountDashboard() {
             </div>
             <div className="text-left">
               <p className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                Install Module
+                {t('installModule')}
               </p>
               <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Add new capabilities
+                {t('installModuleDesc')}
               </p>
             </div>
           </button>
@@ -281,10 +283,10 @@ export function SmartAccountDashboard() {
               </div>
               <div className="text-left">
                 <p className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                  Enable Delegation
+                  {t('enableDelegation')}
                 </p>
                 <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                  Upgrade via EIP-7702
+                  {t('enableDelegationDesc')}
                 </p>
               </div>
             </button>
@@ -318,10 +320,10 @@ export function SmartAccountDashboard() {
             </div>
             <div className="text-left">
               <p className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                View Activity
+                {t('viewActivity')}
               </p>
               <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Transaction history
+                {t('viewActivityDesc')}
               </p>
             </div>
           </button>

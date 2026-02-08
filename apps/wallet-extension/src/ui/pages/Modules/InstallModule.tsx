@@ -10,6 +10,7 @@ import {
   getModuleTypeName,
 } from '@stablenet/core'
 import { Fragment, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Hex } from 'viem'
 import { formatEther } from 'viem'
 
@@ -49,6 +50,8 @@ export function InstallModuleWizard({
   onComplete,
   onCancel,
 }: InstallModuleWizardProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   const [step, setStep] = useState<WizardStep>(preselectedType ? 'select-module' : 'select-type')
   const [selectedType, setSelectedType] = useState<ModuleType | null>(preselectedType ?? null)
   const [selectedModule, setSelectedModule] = useState<ModuleRegistryEntry | null>(null)
@@ -287,7 +290,7 @@ export function InstallModuleWizard({
       })
       onComplete()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Installation failed')
+      setError(err instanceof Error ? err.message : t('installationFailed'))
       setStep('confirm')
     }
   }
@@ -311,10 +314,10 @@ export function InstallModuleWizard({
         style={{ borderBottomWidth: 1, borderBottomColor: 'rgb(var(--border))' }}
       >
         <button type="button" style={{ color: 'rgb(var(--muted-foreground))' }} onClick={onCancel}>
-          ← Back
+          ← {tc('back')}
         </button>
         <h2 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-          Install Module
+          {t('installModule')}
         </h2>
         <div className="w-12" /> {/* Spacer */}
       </div>
@@ -415,9 +418,9 @@ export function InstallModuleWizard({
               className="w-12 h-12 mx-auto mb-4 border-4 border-t-transparent rounded-full animate-spin"
               style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
             />
-            <p style={{ color: 'rgb(var(--foreground))' }}>Installing module...</p>
+            <p style={{ color: 'rgb(var(--foreground))' }}>{t('installingModule')}</p>
             <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Please confirm the transaction in your wallet
+              {t('confirmTransaction')}
             </p>
           </div>
         )}
@@ -469,37 +472,39 @@ interface TypeSelectorProps {
 }
 
 function TypeSelector({ onSelect }: TypeSelectorProps) {
+  const { t } = useTranslation('modules')
+
   const types = [
     {
       type: MODULE_TYPE.VALIDATOR,
       icon: '🔐',
-      name: 'Validator',
-      description: 'Control who can sign transactions',
+      name: t('validators').slice(0, -1),
+      description: t('validatorDesc'),
     },
     {
       type: MODULE_TYPE.EXECUTOR,
       icon: '⚡',
-      name: 'Executor',
-      description: 'Add automation and special execution logic',
+      name: t('executors').slice(0, -1),
+      description: t('executorDesc'),
     },
     {
       type: MODULE_TYPE.HOOK,
       icon: '🪝',
-      name: 'Hook',
-      description: 'Add pre/post transaction checks',
+      name: t('hooks').slice(0, -1),
+      description: t('hookDesc'),
     },
     {
       type: MODULE_TYPE.FALLBACK,
       icon: '🔄',
-      name: 'Fallback',
-      description: 'Handle special function calls',
+      name: t('fallbacks').slice(0, -1),
+      description: t('fallbackDesc'),
     },
   ]
 
   return (
     <div className="type-selector">
       <h3 className="text-lg font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-        What type of module?
+        {t('whatTypeOfModule')}
       </h3>
       <div className="space-y-3">
         {types.map((type) => (
@@ -540,15 +545,17 @@ interface ModuleSelectorProps {
 }
 
 function ModuleSelector({ modules, type, onSelect }: ModuleSelectorProps) {
+  const { t } = useTranslation('modules')
+
   return (
     <div className="module-selector">
       <h3 className="text-lg font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-        Select a {getModuleTypeName(type)}
+        {t('selectType', { type: getModuleTypeName(type) })}
       </h3>
 
       {modules.length === 0 ? (
         <div className="text-center py-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          No {getModuleTypeName(type).toLowerCase()}s available
+          {t('noTypeAvailable', { type: getModuleTypeName(type).toLowerCase() })}
         </div>
       ) : (
         <div className="space-y-3">
@@ -572,7 +579,7 @@ function ModuleSelector({ modules, type, onSelect }: ModuleSelectorProps) {
                     </h4>
                     {module.metadata.isVerified && (
                       <span className="text-xs" style={{ color: 'rgb(var(--success))' }}>
-                        ✓ Verified
+                        {t('verifiedCheck')}
                       </span>
                     )}
                   </div>
@@ -619,10 +626,13 @@ function InstallConfirmation({
   onConfirm,
   onBack,
 }: InstallConfirmationProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
+
   return (
     <div className="install-confirmation">
       <h3 className="text-lg font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-        Confirm Installation
+        {t('confirmInstallation')}
       </h3>
 
       {/* Module Info */}
@@ -645,7 +655,7 @@ function InstallConfirmation({
           style={{ backgroundColor: 'rgb(var(--secondary))' }}
         >
           <h5 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
-            Configuration
+            {t('configuration')}
           </h5>
           <dl className="text-sm space-y-1">
             {Object.entries(config).map(([key, value]) => (
@@ -677,10 +687,10 @@ function InstallConfirmation({
       {/* Actions */}
       <div className="flex gap-3">
         <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
-          Back
+          {tc('back')}
         </button>
         <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={onConfirm}>
-          Install Module
+          {t('installModule')}
         </button>
       </div>
     </div>

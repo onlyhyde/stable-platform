@@ -1,0 +1,22 @@
+{
+  "title": "스왑",
+  "from": "보내는 토큰",
+  "maxBalance": "최대: {{balance}}",
+  "toEstimated": "받는 토큰 (추정)",
+  "rate": "환율",
+  "minReceived": "최소 수량",
+  "slippageTolerance": "슬리피지 허용",
+  "feeTier": "수수료 등급",
+  "slippageToleranceTitle": "슬리피지 허용 범위",
+  "swapSubmitted": "스왑이 제출되었습니다!",
+  "swapping": "스왑 중...",
+  "smartAccountRequired": "스마트 계정 필요",
+  "swapModuleNotInstalled": "스왑 모듈 미설치",
+  "selectToken": "토큰을 선택하세요",
+  "enterAmount": "금액을 입력하세요",
+  "swapBtn": "스왑",
+  "swapRequiresSmartAccount": "스왑하려면 스왑 실행자 모듈이 설치된 스마트 계정이 필요합니다.",
+  "installSwapModule": "스왑 실행자 모듈 설치",
+  "swapModuleNotInstalledDesc": "스왑 실행자 모듈이 설치되지 않았습니다. 모듈 페이지에서 설치하세요.",
+  "swapFailed": "스왑 실패"
+}

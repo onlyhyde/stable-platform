@@ -1,0 +1,15 @@
+{
+  "title": "활동",
+  "noTransactions": "아직 트랜잭션이 없습니다",
+  "from": "보낸 주소",
+  "to": "받는 주소",
+  "receive": "받기",
+  "send": "보내기",
+  "swap": "스왑",
+  "approve": "승인",
+  "contractInteraction": "컨트랙트 상호작용",
+  "userOperation": "유저 오퍼레이션",
+  "transaction": "트랜잭션",
+  "today": "오늘",
+  "yesterday": "어제"
+}

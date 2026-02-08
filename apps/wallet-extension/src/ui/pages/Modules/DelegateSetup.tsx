@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { isAddress } from 'viem'
 import type { Address, Hash } from 'viem'
 
@@ -21,6 +22,8 @@ type SetupStep = 'input' | 'confirm' | 'pending' | 'success' | 'error'
 // ============================================================================
 
 export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   const [delegateAddress, setDelegateAddress] = useState('')
   const [step, setStep] = useState<SetupStep>('input')
   const [error, setError] = useState<string | null>(null)
@@ -103,7 +106,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
       // Sync wallet state to pick up account type change
       await syncWithBackground()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delegation setup failed')
+      setError(err instanceof Error ? err.message : t('delegationSetupFailed'))
       setStep('error')
     }
   }, [account, delegateAddress, isValidDelegate, currentNetwork, syncWithBackground])
@@ -135,7 +138,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             </svg>
           </button>
           <h2 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-            Enable Smart Account
+            {t('enableSmartAccount')}
           </h2>
         </div>
 
@@ -145,8 +148,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
           style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
         >
           <p className="text-sm" style={{ color: 'rgb(var(--primary))' }}>
-            EIP-7702 delegates your EOA to a smart contract, enabling modules, gas sponsorship, and
-            batch transactions while keeping your existing address.
+            {t('eip7702Info')}
           </p>
         </div>
 
@@ -156,7 +158,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             className="block text-sm font-medium mb-1"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
-            Account
+            {t('account')}
           </span>
           <div
             className="p-3 rounded-lg font-mono text-sm break-all"
@@ -173,7 +175,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             className="block text-sm font-medium mb-1"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
-            Delegate Contract Address
+            {t('delegateContractAddress')}
           </label>
           <input
             id="delegate-contract-address"
@@ -193,7 +195,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
           />
           {delegateAddress && !isValidDelegate && (
             <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
-              Invalid address format
+              {t('invalidAddressFormat')}
             </p>
           )}
         </div>
@@ -205,13 +207,13 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
               className="block text-sm font-medium mb-1"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Network
+              {t('network')}
             </span>
             <div
               className="p-3 rounded-lg text-sm"
               style={{ backgroundColor: 'rgb(var(--secondary))', color: 'rgb(var(--foreground))' }}
             >
-              {currentNetwork.name} (Chain ID: {currentNetwork.chainId})
+              {t('networkInfo', { name: currentNetwork.name, chainId: currentNetwork.chainId })}
             </div>
           </div>
         )}
@@ -222,8 +224,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
           style={{ backgroundColor: 'rgb(var(--warning) / 0.1)' }}
         >
           <p className="text-sm" style={{ color: 'rgb(var(--warning))' }}>
-            This will send a type 0x04 (SetCode) transaction. Gas fee is required. The delegation is
-            reversible.
+            {t('setCodeWarning')}
           </p>
         </div>
 
@@ -255,7 +256,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
               : undefined
           }
         >
-          Delegate Account
+          {t('delegateAccount')}
         </button>
 
         <button
@@ -263,7 +264,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
           onClick={onCancel}
           className="w-full py-3 rounded-lg font-medium mt-2 btn-ghost"
         >
-          Cancel
+          {tc('cancel')}
         </button>
       </div>
     )
@@ -279,10 +280,10 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
           />
           <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-            Setting up Smart Account...
+            {t('settingUpSmartAccount')}
           </p>
           <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Signing authorization and sending SetCode transaction
+            {t('signingAndSending')}
           </p>
         </div>
       </div>
@@ -303,17 +304,17 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             </span>
           </div>
           <h3 className="text-xl font-bold" style={{ color: 'rgb(var(--success))' }}>
-            Smart Account Enabled!
+            {t('smartAccountEnabled')}
           </h3>
           <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Your EOA has been delegated to the smart contract.
+            {t('delegationComplete')}
           </p>
           {txHash && (
             <p
               className="text-xs mt-2 font-mono break-all"
               style={{ color: 'rgb(var(--muted-foreground))' }}
             >
-              Tx: {txHash}
+              {t('txLabel', { hash: txHash })}
             </p>
           )}
           <button
@@ -321,7 +322,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             onClick={onComplete}
             className="mt-6 px-6 py-3 rounded-lg font-medium btn-primary"
           >
-            Done
+            {tc('done')}
           </button>
         </div>
       </div>

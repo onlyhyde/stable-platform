@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
 import { useAssets, useSelectedNetwork } from '../hooks'
 import { useTokenPrices } from '../hooks/useTokenPrices'
@@ -29,6 +30,7 @@ interface SwapEstimate {
  * Encodes actual swap calldata via stablenet_executeSwap RPC.
  */
 export function SwapPage() {
+  const { t } = useTranslation('swap')
   const { selectedAccount, accounts, balances, setPage } = useWalletStore()
   const { tokens: assetTokens } = useAssets()
   const currentNetwork = useSelectedNetwork()
@@ -172,7 +174,7 @@ export function SwapPage() {
     if (!form.fromAmount || !form.toToken || !selectedAccount || !currentNetwork) return
 
     if (!swapExecutorAddress) {
-      setSwapError('Swap Executor module not installed. Install it from Modules page.')
+      setSwapError(t('swapModuleNotInstalledDesc'))
       return
     }
 
@@ -217,16 +219,16 @@ export function SwapPage() {
       })
 
       if (response?.payload?.error) {
-        throw new Error(response.payload.error.message || 'Swap failed')
+        throw new Error(response.payload.error.message || t('swapFailed'))
       }
 
       const hash = response?.payload?.result?.hash
-      setSwapResult(hash ?? 'Swap submitted')
+      setSwapResult(hash ?? t('swapSubmitted'))
       // Reset form after success
       setForm((prev) => ({ ...prev, fromAmount: '' }))
       setEstimate(null)
     } catch (err) {
-      setSwapError(err instanceof Error ? err.message : 'Swap failed')
+      setSwapError(err instanceof Error ? err.message : t('swapFailed'))
     } finally {
       setIsSwapping(false)
     }
@@ -263,7 +265,7 @@ export function SwapPage() {
           </svg>
         </button>
         <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
-          Swap
+          {t('title')}
         </h1>
       </div>
 
@@ -271,7 +273,7 @@ export function SwapPage() {
       <div className="rounded-xl p-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            From
+            {t('from')}
           </span>
           {fromBalance !== null && (
             <button
@@ -280,7 +282,7 @@ export function SwapPage() {
               className="text-xs"
               style={{ color: 'rgb(var(--primary))' }}
             >
-              Max: {fromBalance}
+              {t('maxBalance', { balance: fromBalance })}
             </button>
           )}
         </div>
@@ -352,7 +354,7 @@ export function SwapPage() {
       <div className="rounded-xl p-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            To (estimated)
+            {t('toEstimated')}
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -374,7 +376,7 @@ export function SwapPage() {
               border: '1px solid rgb(var(--border))',
             }}
           >
-            <option value="">Select token</option>
+            <option value="">{t('selectToken')}</option>
             {assetTokens
               .filter((t) => t.symbol !== form.fromToken)
               .map((t) => (
@@ -398,7 +400,7 @@ export function SwapPage() {
           style={{ backgroundColor: 'rgb(var(--secondary))' }}
         >
           <div className="flex justify-between" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            <span>Rate</span>
+            <span>{t('rate')}</span>
             <span>
               1 {form.fromToken} ={' '}
               {(Number(estimate.estimatedOutput) / Number(form.fromAmount)).toFixed(6)}{' '}
@@ -406,17 +408,17 @@ export function SwapPage() {
             </span>
           </div>
           <div className="flex justify-between" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            <span>Min. received</span>
+            <span>{t('minReceived')}</span>
             <span>
               {estimate.minOutput} {form.toToken}
             </span>
           </div>
           <div className="flex justify-between" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            <span>Slippage tolerance</span>
+            <span>{t('slippageTolerance')}</span>
             <span>{form.slippage}%</span>
           </div>
           <div className="flex justify-between" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            <span>Fee tier</span>
+            <span>{t('feeTier')}</span>
             <span>{DEFAULT_SWAP_FEE / 10000}%</span>
           </div>
         </div>
@@ -425,7 +427,7 @@ export function SwapPage() {
       {/* Slippage Tolerance */}
       <div className="rounded-xl p-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
         <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Slippage Tolerance
+          {t('slippageToleranceTitle')}
         </p>
         <div className="flex gap-2">
           {slippageOptions.map((s) => (
@@ -468,7 +470,7 @@ export function SwapPage() {
             color: 'rgb(var(--success))',
           }}
         >
-          <p className="font-medium">Swap submitted!</p>
+          <p className="font-medium">{t('swapSubmitted')}</p>
           {swapResult.startsWith('0x') && (
             <p className="text-xs mt-1 font-mono break-all">{swapResult}</p>
           )}
@@ -487,21 +489,21 @@ export function SwapPage() {
         }}
       >
         {isSwapping
-          ? 'Swapping...'
+          ? t('swapping')
           : !isSmartAccount
-            ? 'Smart Account required'
+            ? t('smartAccountRequired')
             : !swapExecutorAddress
-              ? 'Swap module not installed'
+              ? t('swapModuleNotInstalled')
               : !form.toToken
-                ? 'Select a token'
+                ? t('selectToken')
                 : !form.fromAmount
-                  ? 'Enter an amount'
-                  : 'Swap'}
+                  ? t('enterAmount')
+                  : t('swapBtn')}
       </button>
 
       {!isSmartAccount && (
         <p className="text-xs text-center" style={{ color: 'rgb(var(--warning))' }}>
-          Swap requires a Smart Account with Swap Executor module installed.
+          {t('swapRequiresSmartAccount')}
         </p>
       )}
 
@@ -512,7 +514,7 @@ export function SwapPage() {
           className="w-full text-xs text-center py-2"
           style={{ color: 'rgb(var(--primary))' }}
         >
-          Install Swap Executor module →
+          {t('installSwapModule')} →
         </button>
       )}
     </div>

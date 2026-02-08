@@ -1,0 +1,15 @@
+{
+  "title": "Activity",
+  "noTransactions": "No transactions yet",
+  "from": "From",
+  "to": "To",
+  "receive": "Receive",
+  "send": "Send",
+  "swap": "Swap",
+  "approve": "Approve",
+  "contractInteraction": "Contract Interaction",
+  "userOperation": "User Operation",
+  "transaction": "Transaction",
+  "today": "Today",
+  "yesterday": "Yesterday"
+}

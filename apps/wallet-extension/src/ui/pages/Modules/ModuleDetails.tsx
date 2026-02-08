@@ -1,6 +1,7 @@
 import type { InstalledModule, ModuleConfigField, ModuleType } from '@stablenet/core'
 import { getModuleTypeName } from '@stablenet/core'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 // ============================================================================
 // Types
@@ -41,6 +42,8 @@ export function ModuleDetails({
   onUninstall,
   onInstall,
 }: ModuleDetailsProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   const [isUninstalling, setIsUninstalling] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -55,9 +58,9 @@ export function ModuleDetails({
   if (!module) {
     return (
       <div className="module-details p-4">
-        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Module not found</p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>{t('moduleNotFound')}</p>
         <button type="button" className="mt-4 btn-ghost" onClick={onBack}>
-          ← Back
+          ← {tc('back')}
         </button>
       </div>
     )
@@ -70,7 +73,7 @@ export function ModuleDetails({
     try {
       await onUninstall()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Uninstallation failed')
+      setError(err instanceof Error ? err.message : t('uninstallationFailed'))
       setIsUninstalling(false)
       setShowConfirm(false)
     }
@@ -92,7 +95,7 @@ export function ModuleDetails({
           ←
         </button>
         <h2 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-          Module Details
+          {t('moduleDetails')}
         </h2>
       </div>
 
@@ -130,7 +133,7 @@ export function ModuleDetails({
                     color: 'rgb(var(--success))',
                   }}
                 >
-                  ✓ Verified
+                  {t('verifiedCheck')}
                 </span>
               )}
               <span
@@ -140,7 +143,7 @@ export function ModuleDetails({
                   color: 'rgb(var(--muted-foreground))',
                 }}
               >
-                v{module.metadata.version}
+                {t('version', { version: module.metadata.version })}
               </span>
             </div>
           </div>
@@ -152,7 +155,7 @@ export function ModuleDetails({
             className="text-sm font-medium mb-2"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
-            Description
+            {t('description')}
           </h4>
           <p style={{ color: 'rgb(var(--foreground))' }}>{module.metadata.description}</p>
         </div>
@@ -163,7 +166,7 @@ export function ModuleDetails({
             className="text-sm font-medium mb-2"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
-            Contract Address
+            {t('contractAddress')}
           </h4>
           <p className="font-mono text-sm break-all" style={{ color: 'rgb(var(--foreground))' }}>
             {module.address}
@@ -177,7 +180,7 @@ export function ModuleDetails({
               className="text-sm font-medium mb-2"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Installed
+              {t('installedAt')}
             </h4>
             <p style={{ color: 'rgb(var(--foreground))' }}>
               {new Date(module.installedAt * 1000).toLocaleDateString()}
@@ -192,7 +195,7 @@ export function ModuleDetails({
               className="text-sm font-medium mb-2"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Tags
+              {t('tags')}
             </h4>
             <div className="flex flex-wrap gap-1">
               {module.metadata.tags.map((tag) => (
@@ -234,17 +237,16 @@ export function ModuleDetails({
           }}
         >
           <h4 className="font-medium mb-2" style={{ color: 'rgb(var(--destructive))' }}>
-            Danger Zone
+            {t('dangerZone')}
           </h4>
           <p className="text-sm mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Uninstalling this module will remove its functionality from your Smart Account. This
-            action cannot be undone.
+            {t('uninstallWarning')}
           </p>
 
           {showConfirm ? (
             <div className="space-y-3">
               <p className="text-sm font-medium" style={{ color: 'rgb(var(--destructive))' }}>
-                Are you sure you want to uninstall this module?
+                {t('uninstallConfirm')}
               </p>
               <div className="flex gap-2">
                 <button
@@ -253,7 +255,7 @@ export function ModuleDetails({
                   onClick={() => setShowConfirm(false)}
                   disabled={isUninstalling}
                 >
-                  Cancel
+                  {tc('cancel')}
                 </button>
                 <button
                   type="button"
@@ -265,7 +267,7 @@ export function ModuleDetails({
                   onClick={handleUninstall}
                   disabled={isUninstalling}
                 >
-                  {isUninstalling ? 'Uninstalling...' : 'Confirm Uninstall'}
+                  {isUninstalling ? t('uninstalling') : t('confirmUninstall')}
                 </button>
               </div>
             </div>
@@ -279,7 +281,7 @@ export function ModuleDetails({
               }}
               onClick={() => setShowConfirm(true)}
             >
-              Uninstall Module
+              {t('uninstallModule')}
             </button>
           )}
         </div>
@@ -299,6 +301,7 @@ interface RegistryModuleViewProps {
 }
 
 function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModuleViewProps) {
+  const { t } = useTranslation('modules')
   const { metadata, configSchema, supportedChains } = registryModule
 
   return (
@@ -317,7 +320,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
           ←
         </button>
         <h2 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-          Module Details
+          {t('moduleDetails')}
         </h2>
       </div>
 
@@ -350,7 +353,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
                     color: 'rgb(var(--success))',
                   }}
                 >
-                  ✓ Verified
+                  {t('verifiedCheck')}
                 </span>
               )}
               <span
@@ -360,7 +363,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
                   color: 'rgb(var(--muted-foreground))',
                 }}
               >
-                v{metadata.version}
+                {t('version', { version: metadata.version })}
               </span>
               <span
                 className="text-xs px-2 py-0.5 rounded"
@@ -369,7 +372,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
                   color: 'rgb(var(--primary))',
                 }}
               >
-                Not Installed
+                {t('notInstalled')}
               </span>
             </div>
           </div>
@@ -381,7 +384,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
             className="text-sm font-medium mb-2"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
-            Description
+            {t('description')}
           </h4>
           <p style={{ color: 'rgb(var(--foreground))' }}>{metadata.description}</p>
         </div>
@@ -392,7 +395,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
             className="text-sm font-medium mb-2"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
-            Contract Address
+            {t('contractAddress')}
           </h4>
           <p className="font-mono text-sm break-all" style={{ color: 'rgb(var(--foreground))' }}>
             {metadata.address}
@@ -406,7 +409,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
               className="text-sm font-medium mb-2"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Supported Chains
+              {t('supportedChains')}
             </h4>
             <div className="flex flex-wrap gap-1">
               {supportedChains.map((chainId) => (
@@ -418,7 +421,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
                     color: 'rgb(var(--muted-foreground))',
                   }}
                 >
-                  Chain {chainId}
+                  {t('chainId', { id: chainId })}
                 </span>
               ))}
             </div>
@@ -432,7 +435,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
               className="text-sm font-medium mb-2"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Tags
+              {t('tags')}
             </h4>
             <div className="flex flex-wrap gap-1">
               {metadata.tags.map((tag) => (
@@ -458,7 +461,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
               className="text-sm font-medium mb-2"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Configuration Fields
+              {t('configurationFields')}
             </h4>
             <div className="space-y-2">
               {configSchema.fields.map((field) => (
@@ -484,7 +487,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
                     </span>
                     {field.required && (
                       <span className="text-xs" style={{ color: 'rgb(var(--destructive))' }}>
-                        required
+                        {t('required')}
                       </span>
                     )}
                   </div>
@@ -508,7 +511,7 @@ function RegistryModuleView({ registryModule, onBack, onInstall }: RegistryModul
             }}
             onClick={() => onInstall(metadata.address, metadata.type)}
           >
-            Install Module
+            {t('installModule')}
           </button>
         )}
       </div>

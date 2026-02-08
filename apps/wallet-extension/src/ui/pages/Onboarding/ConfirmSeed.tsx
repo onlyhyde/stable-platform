@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Card } from '../../components/common'
 
 interface ConfirmSeedProps {
@@ -8,6 +9,8 @@ interface ConfirmSeedProps {
 }
 
 export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
+  const { t } = useTranslation('onboarding')
+  const { t: tc } = useTranslation('common')
   const words = mnemonic.split(' ')
 
   // Select 3 random word positions to verify
@@ -48,7 +51,7 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
     // Verify all selected words
     for (const index of verificationIndices) {
       if (selectedWords[index] !== words[index]) {
-        setError('Incorrect word selected. Please try again.')
+        setError(t('incorrectWord'))
         return
       }
     }
@@ -84,13 +87,13 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          Back
+          {tc('back')}
         </button>
         <h1 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-          Confirm Your Seed Phrase
+          {t('confirmSeedTitle')}
         </h1>
         <p className="mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Select the correct word for each position
+          {t('confirmSeedSubtitle')}
         </p>
       </div>
 
@@ -102,7 +105,7 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
               className="text-sm font-medium mb-2"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Word #{index + 1}
+              {t('wordNumber', { index: index + 1 })}
             </p>
             <div className="grid grid-cols-2 gap-2">
               {(wordOptions[index] ?? []).map((word) => (
@@ -163,7 +166,7 @@ export function ConfirmSeed({ mnemonic, onConfirm, onBack }: ConfirmSeedProps) {
 
       {/* Confirm button */}
       <Button onClick={handleConfirm} fullWidth disabled={!allSelected} className="mt-6">
-        Confirm
+        {tc('confirm')}
       </Button>
     </div>
   )

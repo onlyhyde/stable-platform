@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Badge, Card } from '../../ui/components/common'
 
 interface SimulationProps {
@@ -25,6 +26,7 @@ function formatAddress(addr: string): string {
 }
 
 export function TransactionSimulation({ simulation }: SimulationProps) {
+  const { t } = useTranslation('approval')
   const { success, revertReason, decodedCallData, balanceChanges } = simulation
 
   return (
@@ -56,7 +58,7 @@ export function TransactionSimulation({ simulation }: SimulationProps) {
               />
             </svg>
             <p className="text-sm font-medium" style={{ color: 'rgb(var(--destructive))' }}>
-              Simulation Failed
+              {t('simulationFailed')}
             </p>
           </div>
           {revertReason && (
@@ -72,7 +74,7 @@ export function TransactionSimulation({ simulation }: SimulationProps) {
         <Card padding="md">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Function Call
+              {t('functionCall')}
             </p>
             <Badge variant="default">{decodedCallData.functionName}</Badge>
           </div>
@@ -113,7 +115,7 @@ export function TransactionSimulation({ simulation }: SimulationProps) {
       {balanceChanges && balanceChanges.length > 0 && (
         <Card padding="md">
           <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Expected Balance Changes
+            {t('expectedBalanceChanges')}
           </p>
           <div className="space-y-1">
             {balanceChanges.map((change) => (
@@ -176,10 +178,10 @@ export function TransactionSimulation({ simulation }: SimulationProps) {
             </svg>
             <div>
               <p className="text-sm font-medium" style={{ color: 'rgb(234 179 8)' }}>
-                Unknown Function
+                {t('unknownFunction')}
               </p>
               <p className="text-xs" style={{ color: 'rgb(var(--warning) / 0.8)' }}>
-                Selector: {decodedCallData.selector}
+                {t('selector', { selector: decodedCallData.selector })}
               </p>
             </div>
           </div>

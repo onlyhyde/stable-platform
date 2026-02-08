@@ -30,7 +30,7 @@ describe('Receive', () => {
     setupStore({ accounts: [], selectedAccount: '0xunknown' })
 
     render(<Receive />)
-    expect(screen.getByText('No account selected')).toBeTruthy()
+    expect(screen.getByText('No account found')).toBeTruthy()
   })
 
   it('should display Receive heading', () => {
@@ -54,18 +54,18 @@ describe('Receive', () => {
     expect(screen.getByText('QR Code')).toBeTruthy()
   })
 
-  it('should display "Your Address" label', () => {
+  it('should display "Account Address" label', () => {
     setupStore()
 
     render(<Receive />)
-    expect(screen.getByText('Your Address')).toBeTruthy()
+    expect(screen.getByText('Account Address')).toBeTruthy()
   })
 
-  it('should show Copy Address button', () => {
+  it('should show copy address button', () => {
     setupStore()
 
     render(<Receive />)
-    expect(screen.getByText('Copy Address')).toBeTruthy()
+    expect(screen.getByText('Copy address')).toBeTruthy()
   })
 
   it('should copy address to clipboard when button is clicked', async () => {
@@ -74,7 +74,7 @@ describe('Receive', () => {
 
     render(<Receive />)
 
-    fireEvent.click(screen.getByText('Copy Address'))
+    fireEvent.click(screen.getByText('Copy address'))
 
     expect(mockWriteText).toHaveBeenCalledWith(TEST_ADDRESS)
 
@@ -87,7 +87,7 @@ describe('Receive', () => {
     render(<Receive />)
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Copy Address'))
+      fireEvent.click(screen.getByText('Copy address'))
     })
 
     await waitFor(() => {

@@ -306,6 +306,8 @@ class WalletStateManager {
    * Origin is normalized for consistent matching
    */
   isConnected(origin: string): boolean {
+    // Internal extension UI is always connected
+    if (origin === 'extension') return true
     return this.state.connections.connectedSites.some((s) => originsMatch(s.origin, origin))
   }
 

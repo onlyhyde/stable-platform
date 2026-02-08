@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { SignatureApprovalRequest } from '../../types'
 import { Badge, Button, Card } from '../../ui/components/common'
 
@@ -8,6 +9,8 @@ interface SignatureApprovalProps {
 }
 
 export function SignatureApproval({ approval, onApprove, onReject }: SignatureApprovalProps) {
+  const { t } = useTranslation('approval')
+  const { t: tc } = useTranslation('common')
   const { data } = approval
 
   const getRiskColor = (level?: string) => {
@@ -73,7 +76,7 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
                 {getOriginDisplay(approval.origin)}
               </p>
               <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Signature Request
+                {t('signatureRequest')}
               </p>
             </div>
           </div>
@@ -88,7 +91,7 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
         {/* Signing account */}
         <Card padding="md">
           <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Signing with
+            {t('signingWith')}
           </p>
           <p className="text-sm font-mono break-all" style={{ color: 'rgb(var(--foreground))' }}>
             {data.address}
@@ -97,7 +100,7 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
 
         <Card padding="md">
           <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Message
+            {t('message')}
           </p>
           <div
             className="rounded-lg p-3 max-h-48 overflow-y-auto"
@@ -116,7 +119,7 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
         {data.typedData !== undefined && (
           <Card padding="md">
             <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Typed Data
+              {t('typedData')}
             </p>
             <div
               className="rounded-lg p-3 max-h-48 overflow-y-auto"
@@ -143,7 +146,7 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
             }}
           >
             <p className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--destructive))' }}>
-              Security Warnings
+              {t('securityWarnings')}
             </p>
             <ul className="space-y-1">
               {data.riskWarnings.map((warning) => (
@@ -184,10 +187,10 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
         }}
       >
         <Button onClick={() => onApprove()} fullWidth>
-          Sign
+          {t('sign')}
         </Button>
         <Button onClick={onReject} variant="secondary" fullWidth>
-          Reject
+          {tc('reject')}
         </Button>
       </div>
     </div>

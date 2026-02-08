@@ -1,18 +1,19 @@
 import type React from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWalletStore } from '../hooks/useWalletStore'
 
 type Page = 'home' | 'send' | 'modules' | 'activity' | 'settings'
 
 interface NavItem {
   id: Page
-  label: string
+  labelKey: string
   icon: React.ReactNode
 }
 
 const navItems: NavItem[] = [
   {
     id: 'home',
-    label: 'Home',
+    labelKey: 'home',
     icon: (
       <svg
         className="w-5 h-5"
@@ -32,7 +33,7 @@ const navItems: NavItem[] = [
   },
   {
     id: 'send',
-    label: 'Send',
+    labelKey: 'send',
     icon: (
       <svg
         className="w-5 h-5"
@@ -52,7 +53,7 @@ const navItems: NavItem[] = [
   },
   {
     id: 'modules',
-    label: 'Modules',
+    labelKey: 'modules',
     icon: (
       <svg
         className="w-5 h-5"
@@ -72,7 +73,7 @@ const navItems: NavItem[] = [
   },
   {
     id: 'activity',
-    label: 'Activity',
+    labelKey: 'activity',
     icon: (
       <svg
         className="w-5 h-5"
@@ -92,7 +93,7 @@ const navItems: NavItem[] = [
   },
   {
     id: 'settings',
-    label: 'Settings',
+    labelKey: 'settings',
     icon: (
       <svg
         className="w-5 h-5"
@@ -118,8 +119,29 @@ const navItems: NavItem[] = [
   },
 ]
 
+const NAV_LABELS: Record<string, string> = {
+  home: 'Home',
+  send: 'Send',
+  modules: 'Modules',
+  activity: 'Activity',
+  settings: 'Settings',
+}
+
 export function Navigation() {
   const { currentPage, setPage } = useWalletStore()
+  const { t } = useTranslation('common')
+
+  const getLabel = (key: string) => {
+    // Navigation labels mapped from common namespace
+    const labelMap: Record<string, string> = {
+      home: t('home', 'Home'),
+      send: t('send'),
+      modules: t('modules', 'Modules'),
+      activity: t('activity', 'Activity'),
+      settings: t('settings', 'Settings'),
+    }
+    return labelMap[key] ?? NAV_LABELS[key] ?? key
+  }
 
   return (
     <nav
@@ -158,7 +180,7 @@ export function Navigation() {
                   fontWeight: isActive ? 600 : 400,
                 }}
               >
-                {item.label}
+                {getLabel(item.labelKey)}
               </span>
             </button>
           )

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MESSAGE_TYPES } from '../shared/constants'
 import type { ApprovalRequest } from '../types'
 import { Spinner } from '../ui/components/common'
@@ -8,6 +9,8 @@ import { SignatureApproval } from './pages/SignatureApproval'
 import { TransactionApproval } from './pages/TransactionApproval'
 
 export function ApprovalApp() {
+  const { t } = useTranslation('approval')
+  const { t: tc } = useTranslation('common')
   const [approval, setApproval] = useState<ApprovalRequest | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -18,7 +21,7 @@ export function ApprovalApp() {
     const approvalId = params.get('id')
 
     if (!approvalId) {
-      setError('No approval ID provided')
+      setError(t('noApprovalId'))
       setLoading(false)
       return
     }
@@ -38,10 +41,10 @@ export function ApprovalApp() {
       if (response?.payload?.approval) {
         setApproval(response.payload.approval)
       } else {
-        setError('Approval not found or expired')
+        setError(t('approvalNotFound'))
       }
     } catch (_err) {
-      setError('Failed to load approval')
+      setError(t('failedToLoad'))
     } finally {
       setLoading(false)
     }
@@ -64,7 +67,7 @@ export function ApprovalApp() {
       // Close window
       window.close()
     } catch (_err) {
-      setError('Failed to approve request')
+      setError(t('failedToApprove'))
     }
   }
 
@@ -84,7 +87,7 @@ export function ApprovalApp() {
       // Close window
       window.close()
     } catch (_err) {
-      setError('Failed to reject request')
+      setError(t('failedToReject'))
     }
   }
 
@@ -126,7 +129,7 @@ export function ApprovalApp() {
           </svg>
         </div>
         <p className="font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
-          Error
+          {t('error')}
         </p>
         <p className="text-sm text-center" style={{ color: 'rgb(var(--muted-foreground))' }}>
           {error}
@@ -140,7 +143,7 @@ export function ApprovalApp() {
             color: 'rgb(var(--foreground-secondary))',
           }}
         >
-          Close
+          {tc('close')}
         </button>
       </div>
     )
@@ -186,7 +189,7 @@ export function ApprovalApp() {
           className="w-full h-screen flex items-center justify-center"
           style={{ backgroundColor: 'rgb(var(--background))' }}
         >
-          <p style={{ color: 'rgb(var(--muted-foreground))' }}>Unknown approval type</p>
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>{t('unknownType')}</p>
         </div>
       )
   }

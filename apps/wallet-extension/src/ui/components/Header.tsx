@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createLogger } from '../../shared/utils/logger'
 import { useWalletStore } from '../hooks/useWalletStore'
 import { AccountSelector } from './common/AccountSelector'
@@ -6,6 +7,7 @@ import { AccountSelector } from './common/AccountSelector'
 const logger = createLogger('Header')
 
 export function Header() {
+  const { t } = useTranslation('common')
   const {
     selectedAccount,
     accounts,
@@ -49,7 +51,7 @@ export function Header() {
             backgroundClip: 'text',
           }}
         >
-          StableNet
+          {t('stableNet')}
         </h1>
 
         <div className="flex items-center gap-2">
@@ -99,13 +101,13 @@ export function Header() {
                       : 'rgb(var(--muted-foreground))',
                 }}
               >
-                {currentAccount.type === 'smart' ? 'Smart Account' : 'EOA'}
+                {currentAccount.type === 'smart' ? t('smartAccount') : t('eoa')}
               </span>
             )}
           </div>
           {isLoading && (
             <div className="mt-2 text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Loading...
+              {t('loading')}
             </div>
           )}
         </div>

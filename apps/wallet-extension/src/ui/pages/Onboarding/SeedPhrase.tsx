@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button, Card, Toggle } from '../../components/common'
 
 interface SeedPhraseProps {
@@ -8,6 +9,8 @@ interface SeedPhraseProps {
 }
 
 export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
+  const { t } = useTranslation('onboarding')
+  const { t: tc } = useTranslation('common')
   const [revealed, setRevealed] = useState(false)
   const [copied, setCopied] = useState(false)
   const [understood, setUnderstood] = useState(false)
@@ -51,13 +54,13 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          Back
+          {tc('back')}
         </button>
         <h1 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-          Secret Recovery Phrase
+          {t('seedPhraseTitle')}
         </h1>
         <p className="mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Write down these {words.length} words in order and keep them safe
+          {t('seedPhraseSubtitle', { count: words.length })}
         </p>
       </div>
 
@@ -89,10 +92,10 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
           </svg>
           <div className="text-sm">
             <p className="font-medium" style={{ color: 'rgb(var(--destructive))' }}>
-              NEVER share your recovery phrase
+              {t('neverShareSeed')}
             </p>
             <p style={{ color: 'rgb(var(--destructive) / 0.8)' }}>
-              Anyone with these words can access your wallet and steal your funds.
+              {t('neverShareSeedDesc')}
             </p>
           </div>
         </div>
@@ -155,7 +158,7 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
                   </svg>
                 }
               >
-                Reveal Seed Phrase
+                {t('revealSeedPhrase')}
               </Button>
             </div>
           )}
@@ -185,7 +188,7 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
                     d="M5 13l4 4L19 7"
                   />
                 </svg>
-                Copied!
+                {tc('copied')}
               </>
             ) : (
               <>
@@ -203,7 +206,7 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
                     d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                   />
                 </svg>
-                Copy to clipboard
+                {t('copyToClipboard')}
               </>
             )}
           </button>
@@ -215,12 +218,12 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
         <Toggle
           enabled={understood}
           onChange={setUnderstood}
-          label="I have written down my recovery phrase and stored it safely"
+          label={t('writtenDownConfirm')}
           size="sm"
         />
 
         <Button onClick={onConfirm} fullWidth disabled={!revealed || !understood}>
-          Continue
+          {t('continue')}
         </Button>
       </div>
     </div>

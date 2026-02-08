@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
 import { AddTokenModal } from '../components/AddTokenModal'
 import { TokenList } from '../components/TokenList'
@@ -8,6 +9,8 @@ import type { TokenBalance } from '../hooks/useIndexerData'
 import { useTokenPrices } from '../hooks/useTokenPrices'
 
 export function Home() {
+  const { t } = useTranslation('home')
+  const { t: tc } = useTranslation('common')
   const { selectedAccount, accounts, balances, updateBalance, setPage } = useWalletStore()
   const { symbol: currencySymbol } = useNetworkCurrency()
   const [isLoadingBalance, setIsLoadingBalance] = useState(false)
@@ -112,14 +115,14 @@ export function Home() {
       <div className="p-4">
         <div className="text-center py-8">
           <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            No account found
+            {tc('noAccountFound')}
           </p>
           <button
             type="button"
             onClick={() => setPage('settings')}
             className="btn-primary px-4 py-2 rounded-lg"
           >
-            Create Account
+            {tc('createAccount')}
           </button>
         </div>
       </div>
@@ -135,10 +138,10 @@ export function Home() {
           background: 'linear-gradient(135deg, rgb(var(--primary)), rgb(var(--accent)))',
         }}
       >
-        <p className="text-sm opacity-80">Total Balance</p>
+        <p className="text-sm opacity-80">{t('totalBalance')}</p>
         <h2 className="text-3xl font-bold mt-1">
           {isLoadingBalance ? (
-            <span className="animate-pulse">Loading...</span>
+            <span className="animate-pulse">{tc('loading')}</span>
           ) : balance !== undefined ? (
             `${Number(formatEther(balance)).toFixed(4)} ${currencySymbol}`
           ) : (
@@ -156,7 +159,7 @@ export function Home() {
               color: 'white',
             }}
           >
-            {currentAccount.type === 'smart' ? 'Smart Account' : 'EOA'}
+            {currentAccount.type === 'smart' ? tc('smartAccount') : tc('eoa')}
           </span>
           {currentAccount.isDeployed === false && (
             <span
@@ -166,7 +169,7 @@ export function Home() {
                 color: 'rgba(255, 255, 255, 0.8)',
               }}
             >
-              Not Deployed
+              {tc('notDeployed')}
             </span>
           )}
         </div>
@@ -200,7 +203,7 @@ export function Home() {
             </svg>
           </div>
           <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-            Send
+            {tc('send')}
           </span>
         </button>
 
@@ -230,7 +233,7 @@ export function Home() {
             </svg>
           </div>
           <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-            Receive
+            {tc('receive')}
           </span>
         </button>
 
@@ -261,7 +264,7 @@ export function Home() {
               </svg>
             </div>
             <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-              Smart Account
+              {tc('smartAccount')}
             </span>
           </button>
         ) : (
@@ -291,10 +294,10 @@ export function Home() {
               </svg>
             </div>
             <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-              Upgrade
+              {t('upgrade')}
             </span>
             <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              EIP-7702
+              {t('eip7702')}
             </span>
           </button>
         )}
@@ -326,7 +329,7 @@ export function Home() {
               </svg>
             </div>
             <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-              Swap
+              {t('swap')}
             </span>
           </button>
         )}
@@ -357,7 +360,7 @@ export function Home() {
             </svg>
           </div>
           <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-            Activity
+            {t('activity')}
           </span>
         </button>
       </div>
@@ -379,14 +382,14 @@ export function Home() {
       {/* Indexer Status */}
       {!isIndexerAvailable && !isLoadingTokens && (
         <p className="text-xs text-center mt-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Token discovery unavailable. Configure indexer URL in settings.
+          {t('tokenDiscoveryUnavailable')}
         </p>
       )}
 
       {/* Account Address */}
       <div className="rounded-xl p-4 mt-6" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
         <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Account Address
+          {tc('accountAddress')}
         </p>
         <div className="flex items-center gap-2">
           <code className="text-sm break-all" style={{ color: 'rgb(var(--foreground-secondary))' }}>
@@ -396,7 +399,7 @@ export function Home() {
             type="button"
             onClick={() => navigator.clipboard.writeText(currentAccount.address)}
             style={{ color: 'rgb(var(--primary))' }}
-            title="Copy address"
+            title={tc('copyAddress')}
           >
             <svg
               className="w-4 h-4"

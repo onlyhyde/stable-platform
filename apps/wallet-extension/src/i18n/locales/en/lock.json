@@ -1,0 +1,8 @@
+{
+  "welcomeBack": "Welcome Back",
+  "enterPasswordToUnlock": "Enter your password to unlock",
+  "enterPassword": "Enter password",
+  "unlock": "Unlock",
+  "forgotPassword": "Forgot password?",
+  "forgotPasswordHint": "If you forgot your password, you can restore your wallet using your recovery phrase."
+}

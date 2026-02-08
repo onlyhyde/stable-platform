@@ -907,20 +907,23 @@ const handlers: Record<string, RpcHandler> = {
       (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
       userOp.maxFeePerGas
 
-    // Request user approval
-    try {
-      await approvalController.requestTransaction(
-        origin,
-        userOp.sender,
-        userOp.sender, // Smart account is both from and to
-        BigInt(0), // UserOp value is in callData
-        userOp.callData,
-        estimatedGasCost,
-        'UserOperation',
-        undefined
-      )
-    } catch (error) {
-      handleApprovalError(error, { method: 'eth_sendUserOperation', origin })
+    // Request user approval (skip for internal wallet UI - user already confirmed)
+    const isInternalRequest = origin === 'extension' || origin === 'internal'
+    if (!isInternalRequest) {
+      try {
+        await approvalController.requestTransaction(
+          origin,
+          userOp.sender,
+          userOp.sender, // Smart account is both from and to
+          BigInt(0), // UserOp value is in callData
+          userOp.callData,
+          estimatedGasCost,
+          'UserOperation',
+          undefined
+        )
+      } catch (error) {
+        handleApprovalError(error, { method: 'eth_sendUserOperation', origin })
+      }
     }
 
     // Sign the UserOperation
@@ -1190,20 +1193,23 @@ const handlers: Record<string, RpcHandler> = {
     // Calculate estimated gas cost
     const estimatedGasCost = gas * (maxFeePerGas ?? gasPrice ?? BigInt(0))
 
-    // Request user approval
-    try {
-      await approvalController.requestTransaction(
-        origin,
-        txParams.from,
-        txParams.to ?? ('0x' as Address), // Contract deployment if no 'to'
-        txParams.value ? BigInt(txParams.value) : BigInt(0),
-        txParams.data,
-        estimatedGasCost,
-        undefined, // methodName
-        undefined // favicon
-      )
-    } catch (error) {
-      handleApprovalError(error, { method: 'eth_sendTransaction', origin })
+    // Request user approval (skip for internal wallet UI - user already confirmed)
+    const isInternalRequest = origin === 'extension' || origin === 'internal'
+    if (!isInternalRequest) {
+      try {
+        await approvalController.requestTransaction(
+          origin,
+          txParams.from,
+          txParams.to ?? ('0x' as Address), // Contract deployment if no 'to'
+          txParams.value ? BigInt(txParams.value) : BigInt(0),
+          txParams.data,
+          estimatedGasCost,
+          undefined, // methodName
+          undefined // favicon
+        )
+      } catch (error) {
+        handleApprovalError(error, { method: 'eth_sendTransaction', origin })
+      }
     }
 
     // Build transaction object for signing
@@ -1623,20 +1629,22 @@ const handlers: Record<string, RpcHandler> = {
       (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
       userOp.maxFeePerGas
 
-    // Request user approval
-    try {
-      await approvalController.requestTransaction(
-        origin,
-        account,
-        account, // Smart account is both from and to
-        BigInt(0),
-        moduleCalldata.data,
-        estimatedGasCost,
-        `Install ${moduleTypeNameStr} Module`,
-        undefined
-      )
-    } catch (error) {
-      handleApprovalError(error, { method: 'wallet_installModule', origin })
+    // Request user approval (skip for internal wallet UI)
+    if (origin !== 'extension' && origin !== 'internal') {
+      try {
+        await approvalController.requestTransaction(
+          origin,
+          account,
+          account, // Smart account is both from and to
+          BigInt(0),
+          moduleCalldata.data,
+          estimatedGasCost,
+          `Install ${moduleTypeNameStr} Module`,
+          undefined
+        )
+      } catch (error) {
+        handleApprovalError(error, { method: 'wallet_installModule', origin })
+      }
     }
 
     // Sign the UserOperation
@@ -1799,20 +1807,22 @@ const handlers: Record<string, RpcHandler> = {
       (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
       userOp.maxFeePerGas
 
-    // Request user approval
-    try {
-      await approvalController.requestTransaction(
-        origin,
-        account,
-        account,
-        BigInt(0),
-        moduleCalldata.data,
-        estimatedGasCost,
-        `Uninstall ${moduleTypeNameStr} Module`,
-        undefined
-      )
-    } catch (error) {
-      handleApprovalError(error, { method: 'wallet_uninstallModule', origin })
+    // Request user approval (skip for internal wallet UI requests)
+    if (origin !== 'extension' && origin !== 'internal') {
+      try {
+        await approvalController.requestTransaction(
+          origin,
+          account,
+          account,
+          BigInt(0),
+          moduleCalldata.data,
+          estimatedGasCost,
+          `Uninstall ${moduleTypeNameStr} Module`,
+          undefined
+        )
+      } catch (error) {
+        handleApprovalError(error, { method: 'wallet_uninstallModule', origin })
+      }
     }
 
     // Sign the UserOperation
@@ -2173,20 +2183,22 @@ const handlers: Record<string, RpcHandler> = {
       (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
       userOp.maxFeePerGas
 
-    // Request user approval
-    try {
-      await approvalController.requestTransaction(
-        origin,
-        account,
-        swapExecutorAddress,
-        BigInt(0),
-        swapCalldata,
-        estimatedGasCost,
-        'Swap Tokens',
-        undefined
-      )
-    } catch (error) {
-      handleApprovalError(error, { method: 'stablenet_executeSwap', origin })
+    // Request user approval (skip for internal wallet UI requests)
+    if (origin !== 'extension' && origin !== 'internal') {
+      try {
+        await approvalController.requestTransaction(
+          origin,
+          account,
+          swapExecutorAddress,
+          BigInt(0),
+          swapCalldata,
+          estimatedGasCost,
+          'Swap Tokens',
+          undefined
+        )
+      } catch (error) {
+        handleApprovalError(error, { method: 'stablenet_executeSwap', origin })
+      }
     }
 
     // Sign the UserOperation
@@ -2332,6 +2344,88 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError({
         code: RPC_ERRORS.INTERNAL_ERROR.code,
         message: (error as Error).message || 'Failed to cancel transaction',
+      })
+    }
+  },
+
+  // =========================================================================
+  // Gas Estimation (Custom)
+  // =========================================================================
+
+  /**
+   * Estimate gas for multi-mode transactions
+   * Used by the Send UI to show estimated gas cost before sending
+   */
+  stablenet_estimateGas: async (params) => {
+    const [estimateParams] = params as [
+      {
+        mode?: string
+        from?: string
+        to?: string
+        value?: string
+        data?: string
+        chainId?: number
+      },
+    ]
+
+    if (!estimateParams?.from || !estimateParams?.to) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Missing from or to address',
+      })
+    }
+
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = getPublicClient(network.rpcUrl)
+
+    try {
+      // Parse value - handle both hex and decimal string formats
+      let parsedValue = 0n
+      if (estimateParams.value) {
+        const val = estimateParams.value
+        parsedValue = val.startsWith('0x') ? BigInt(val) : BigInt(val)
+      }
+
+      // Estimate gas limit
+      const gasLimit = await client.estimateGas({
+        account: estimateParams.from as Address,
+        to: estimateParams.to as Address,
+        value: parsedValue,
+        data: (estimateParams.data as `0x${string}`) || undefined,
+      }).catch(() => 21000n) // Default to simple transfer gas
+
+      // Get current gas price (try EIP-1559 first)
+      let maxFeePerGas = 0n
+      let maxPriorityFeePerGas = 0n
+
+      try {
+        const block = await client.getBlock({ blockTag: 'latest' })
+        const baseFee = block.baseFeePerGas ?? 0n
+        maxPriorityFeePerGas = await client.estimateMaxPriorityFeePerGas().catch(() => 1000000000n) // 1 gwei fallback
+        maxFeePerGas = baseFee * 2n + maxPriorityFeePerGas
+      } catch {
+        // Fallback to legacy gas price
+        const gasPrice = await client.getGasPrice()
+        maxFeePerGas = gasPrice
+        maxPriorityFeePerGas = gasPrice
+      }
+
+      const estimatedCost = gasLimit * maxFeePerGas
+
+      return {
+        gasLimit: gasLimit.toString(),
+        maxFeePerGas: maxFeePerGas.toString(),
+        maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+        estimatedCost: estimatedCost.toString(),
+      }
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'Failed to estimate gas',
       })
     }
   },
@@ -3001,6 +3095,7 @@ function validateRpcParams(method: string, params: unknown[] | undefined): void 
     case 'stablenet_cancelTransaction':
     case 'stablenet_setRootValidator':
     case 'stablenet_executeSwap':
+    case 'stablenet_estimateGas':
       break
 
     case 'stablenet_installModule':

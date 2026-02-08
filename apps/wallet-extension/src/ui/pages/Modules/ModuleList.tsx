@@ -1,5 +1,6 @@
 import type { InstalledModule } from '@stablenet/core'
 import { MODULE_STATUS, getModuleTypeName } from '@stablenet/core'
+import { useTranslation } from 'react-i18next'
 
 // ============================================================================
 // Types
@@ -15,16 +16,17 @@ interface ModuleListProps {
 // ============================================================================
 
 export function ModuleList({ modules, onModuleClick }: ModuleListProps) {
+  const { t } = useTranslation('modules')
+
   if (modules.length === 0) {
     return (
       <div className="empty-state text-center py-8">
         <span className="text-4xl mb-4 block">📦</span>
         <h3 className="text-lg font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
-          No Modules Installed
+          {t('noModulesInstalled')}
         </h3>
         <p style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Add modules to enhance your Smart Account with features like spending limits, session
-          keys, and more.
+          {t('noModulesInstalledDesc')}
         </p>
       </div>
     )
@@ -76,7 +78,8 @@ interface ModuleCardProps {
 }
 
 function ModuleCard({ module, onClick }: ModuleCardProps) {
-  const statusInfo = getStatusInfo(module.status)
+  const { t } = useTranslation('modules')
+  const statusInfo = getStatusInfo(module.status, t)
 
   return (
     <button
@@ -130,7 +133,7 @@ function ModuleCard({ module, onClick }: ModuleCardProps) {
                   color: 'rgb(var(--success))',
                 }}
               >
-                ✓ Verified
+                {t('verifiedCheck')}
               </span>
             )}
             <span
@@ -140,7 +143,7 @@ function ModuleCard({ module, onClick }: ModuleCardProps) {
                 color: 'rgb(var(--muted-foreground))',
               }}
             >
-              v{module.metadata.version}
+              {t('version', { version: module.metadata.version })}
             </span>
           </div>
         </div>
@@ -164,19 +167,22 @@ function getModuleIcon(type: bigint): string {
   return icons[String(type)] ?? '📦'
 }
 
-function getStatusInfo(status: (typeof MODULE_STATUS)[keyof typeof MODULE_STATUS]): {
+function getStatusInfo(
+  status: (typeof MODULE_STATUS)[keyof typeof MODULE_STATUS],
+  t: (key: string) => string
+): {
   label: string
   color: string
   icon: string
 } {
   switch (status) {
     case MODULE_STATUS.INSTALLED:
-      return { label: 'Active', color: 'rgb(var(--success))', icon: '✓' }
+      return { label: t('active'), color: 'rgb(var(--success))', icon: '✓' }
     case MODULE_STATUS.PENDING_INSTALL:
-      return { label: 'Installing...', color: 'rgb(var(--warning))', icon: '⏳' }
+      return { label: t('installing'), color: 'rgb(var(--warning))', icon: '⏳' }
     case MODULE_STATUS.PENDING_UNINSTALL:
-      return { label: 'Removing...', color: 'rgb(var(--warning))', icon: '⏳' }
+      return { label: t('removing'), color: 'rgb(var(--warning))', icon: '⏳' }
     default:
-      return { label: 'Not Installed', color: 'rgb(var(--muted-foreground))', icon: '○' }
+      return { label: t('notInstalled'), color: 'rgb(var(--muted-foreground))', icon: '○' }
   }
 }

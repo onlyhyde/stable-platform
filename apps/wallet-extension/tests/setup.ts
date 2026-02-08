@@ -1,7 +1,64 @@
 import '@testing-library/jest-dom'
 import * as crypto from 'crypto'
+import type React from 'react'
 import { TextDecoder, TextEncoder } from 'util'
 import { mockChrome } from './utils/mockChrome'
+
+// Import English locale files for i18n mock
+import enActivity from '../src/i18n/locales/en/activity.json'
+import enApproval from '../src/i18n/locales/en/approval.json'
+import enBuy from '../src/i18n/locales/en/buy.json'
+import enCommon from '../src/i18n/locales/en/common.json'
+import enHome from '../src/i18n/locales/en/home.json'
+import enLock from '../src/i18n/locales/en/lock.json'
+import enModules from '../src/i18n/locales/en/modules.json'
+import enOnboarding from '../src/i18n/locales/en/onboarding.json'
+import enSend from '../src/i18n/locales/en/send.json'
+import enSettings from '../src/i18n/locales/en/settings.json'
+import enSwap from '../src/i18n/locales/en/swap.json'
+import enTx from '../src/i18n/locales/en/tx.json'
+
+// Mock react-i18next - return English translations so existing tests work
+const enResources: Record<string, Record<string, string>> = {
+  common: enCommon,
+  home: enHome,
+  lock: enLock,
+  onboarding: enOnboarding,
+  send: enSend,
+  activity: enActivity,
+  settings: enSettings,
+  approval: enApproval,
+  modules: enModules,
+  swap: enSwap,
+  buy: enBuy,
+  tx: enTx,
+}
+
+function createTFunction(ns: string) {
+  return (key: string, params?: Record<string, unknown>) => {
+    const resource = enResources[ns] ?? enResources.common
+    let value = resource[key] ?? enResources.common[key] ?? key
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        value = value.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), String(v))
+      }
+    }
+    return value
+  }
+}
+
+jest.mock('react-i18next', () => ({
+  useTranslation: (ns?: string) => ({
+    t: createTFunction(ns ?? 'common'),
+    i18n: {
+      language: 'en',
+      changeLanguage: jest.fn().mockResolvedValue(undefined),
+    },
+  }),
+  Trans: ({ children }: { children: React.ReactNode }) => children,
+  initReactI18next: { type: '3rdParty', init: jest.fn() },
+  I18nextProvider: ({ children }: { children: React.ReactNode }) => children,
+}))
 
 // Mock @stablenet/core module - use real exports with specific mocks
 // Note: jest.mock is hoisted, so mock objects must be defined inside the factory function

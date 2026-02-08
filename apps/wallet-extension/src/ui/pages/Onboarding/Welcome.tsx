@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button, Card } from '../../components/common'
 
 interface WelcomeProps {
@@ -6,6 +7,8 @@ interface WelcomeProps {
 }
 
 export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
+  const { t } = useTranslation('onboarding')
+
   return (
     <div
       className="min-h-full flex flex-col items-center justify-center p-6"
@@ -22,10 +25,10 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
       </div>
 
       <h1 className="text-2xl font-bold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
-        Welcome to StableNet
+        {t('welcomeTitle')}
       </h1>
       <p className="text-center mb-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
-        Your gateway to the decentralized future
+        {t('welcomeSubtitle')}
       </p>
 
       <div className="w-full space-y-4">
@@ -53,13 +56,13 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold mb-1" style={{ color: 'rgb(var(--foreground))' }}>
-                Create a new wallet
+                {t('createNewWallet')}
               </h3>
               <p className="text-sm mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Generate a new seed phrase and set up your wallet
+                {t('createNewWalletDesc')}
               </p>
               <Button onClick={onCreateNew} fullWidth>
-                Create New Wallet
+                {t('createNewWalletBtn')}
               </Button>
             </div>
           </div>
@@ -89,13 +92,13 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold mb-1" style={{ color: 'rgb(var(--foreground))' }}>
-                Import existing wallet
+                {t('importWallet')}
               </h3>
               <p className="text-sm mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Restore your wallet using a seed phrase
+                {t('importWalletDesc')}
               </p>
               <Button onClick={onImport} variant="secondary" fullWidth>
-                Import Wallet
+                {t('importWalletBtn')}
               </Button>
             </div>
           </div>
@@ -103,7 +106,7 @@ export function Welcome({ onCreateNew, onImport }: WelcomeProps) {
       </div>
 
       <p className="text-xs mt-8 text-center" style={{ color: 'rgb(var(--foreground-tertiary))' }}>
-        By continuing, you agree to our Terms of Service and Privacy Policy
+        {t('termsAgreement')}
       </p>
     </div>
   )

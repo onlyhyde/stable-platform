@@ -5,6 +5,7 @@ import {
   type SponsorPolicy,
 } from '@stablenet/core'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Address } from 'viem'
 import { formatEther, formatUnits } from 'viem'
 
@@ -66,6 +67,7 @@ export function GasPaymentSelector({
   accountAddress,
   onCustomGasChange,
 }: GasPaymentSelectorProps) {
+  const { t } = useTranslation('send')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [customMaxFee, setCustomMaxFee] = useState('')
   const [customPriorityFee, setCustomPriorityFee] = useState('')
@@ -88,18 +90,18 @@ export function GasPaymentSelector({
       // Native ETH
       {
         type: GAS_PAYMENT_TYPE.NATIVE,
-        label: 'Pay with ETH',
-        description: 'Use ETH from your wallet for gas',
+        label: t('payWithNative', { symbol: 'ETH' }),
+        description: t('useNativeForGas', { symbol: 'ETH' }),
         icon: 'Ξ',
         available: true,
-        cost: nativeCost > 0n ? `${formatEther(nativeCost)} ETH` : 'Calculating...',
+        cost: nativeCost > 0n ? `${formatEther(nativeCost)} ETH` : t('calculating'),
       },
 
       // Sponsored
       {
         type: GAS_PAYMENT_TYPE.SPONSOR,
-        label: 'Free (Sponsored)',
-        description: 'Gas sponsored by StableNet',
+        label: t('freeSponsored'),
+        description: t('gasSponsoredByStableNet'),
         icon: '🎁',
         available: sponsorPolicy?.isAvailable ?? false,
         unavailableReason: sponsorPolicy?.reason,
@@ -113,8 +115,8 @@ export function GasPaymentSelector({
       supportedTokens.forEach((token) => {
         options.push({
           type: GAS_PAYMENT_TYPE.ERC20,
-          label: `Pay with ${token.symbol}`,
-          description: `Use ${token.symbol} for gas payment`,
+          label: t('payWithToken', { symbol: token.symbol }),
+          description: t('useTokenForGas', { symbol: token.symbol }),
           icon: '💰',
           logoUrl: token.logoUrl,
           available: true,
@@ -124,13 +126,13 @@ export function GasPaymentSelector({
           cost:
             gasPayment.tokenAddress === token.address && erc20Estimate
               ? `${formatUnits(erc20Estimate.estimatedAmount, token.decimals)} ${token.symbol}`
-              : 'Select to estimate',
+              : t('selectToEstimate'),
         })
       })
     }
 
     return options
-  }, [gasEstimate, sponsorPolicy, supportedTokens, gasPayment, erc20Estimate])
+  }, [gasEstimate, sponsorPolicy, supportedTokens, gasPayment, erc20Estimate, t])
 
   // Handle option selection
   const handleOptionSelect = (option: PaymentOption) => {
@@ -163,7 +165,7 @@ export function GasPaymentSelector({
             className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"
             style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
           />
-          <span style={{ color: 'rgb(var(--muted-foreground))' }}>Loading gas options...</span>
+          <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('loadingGasOptions')}</span>
         </div>
       </div>
     )
@@ -175,7 +177,7 @@ export function GasPaymentSelector({
         className="block text-sm font-medium mb-2"
         style={{ color: 'rgb(var(--foreground-secondary))' }}
       >
-        Gas Payment
+        {t('gasPayment')}
       </span>
 
       {/* Payment Options */}
@@ -202,7 +204,7 @@ export function GasPaymentSelector({
       {/* ERC20 Estimate Loading */}
       {gasPayment.type === GAS_PAYMENT_TYPE.ERC20 && isLoadingEstimate && (
         <div className="mt-2 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Estimating token amount...
+          {t('estimatingTokenAmount')}
         </div>
       )}
 
@@ -224,7 +226,7 @@ export function GasPaymentSelector({
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            Advanced Gas Settings
+            {t('advancedGasSettings')}
           </button>
 
           {showAdvanced && (
@@ -238,7 +240,7 @@ export function GasPaymentSelector({
                   className="text-xs block mb-1"
                   style={{ color: 'rgb(var(--muted-foreground))' }}
                 >
-                  Max Fee Per Gas (Gwei)
+                  {t('maxFeePerGas')}
                 </label>
                 <input
                   id="max-fee-per-gas"
@@ -250,7 +252,7 @@ export function GasPaymentSelector({
                           1e9 /
                           Number(gasEstimate.gasLimit || 21000n)
                         ).toFixed(2)
-                      : 'auto'
+                      : t('auto')
                   }
                   value={customMaxFee}
                   onChange={(e) => {
@@ -269,12 +271,12 @@ export function GasPaymentSelector({
                   className="text-xs block mb-1"
                   style={{ color: 'rgb(var(--muted-foreground))' }}
                 >
-                  Max Priority Fee (Gwei)
+                  {t('maxPriorityFee')}
                 </label>
                 <input
                   id="max-priority-fee"
                   type="text"
-                  placeholder="auto"
+                  placeholder={t('auto')}
                   value={customPriorityFee}
                   onChange={(e) => {
                     setCustomPriorityFee(e.target.value)
@@ -287,7 +289,7 @@ export function GasPaymentSelector({
                 />
               </div>
               <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Leave empty to use network-estimated values.
+                {t('leaveEmptyForNetwork')}
               </p>
             </div>
           )}
@@ -389,6 +391,7 @@ interface SponsorInfoProps {
 }
 
 function SponsorInfo({ policy }: SponsorInfoProps) {
+  const { t } = useTranslation('send')
   return (
     <div
       className="sponsor-info mt-3 p-3 rounded-lg"
@@ -402,16 +405,16 @@ function SponsorInfo({ policy }: SponsorInfoProps) {
         <span style={{ color: 'rgb(var(--success))' }}>✓</span>
         <div className="text-sm">
           <p className="font-medium" style={{ color: 'rgb(var(--success))' }}>
-            Gas Sponsorship Active
+            {t('gasSponsorshipActive')}
           </p>
           {policy.dailyLimitRemaining !== undefined && (
             <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Daily limit remaining: {formatEther(policy.dailyLimitRemaining)} ETH
+              {t('dailyLimitRemaining', { amount: formatEther(policy.dailyLimitRemaining) })}
             </p>
           )}
           {policy.perTxLimit !== undefined && (
             <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Per-transaction limit: {formatEther(policy.perTxLimit)} ETH
+              {t('perTxLimit', { amount: formatEther(policy.perTxLimit) })}
             </p>
           )}
         </div>
@@ -430,22 +433,23 @@ interface GasPaymentDisplayProps {
 }
 
 export function GasPaymentDisplay({ gasPayment, gasEstimate }: GasPaymentDisplayProps) {
+  const { t } = useTranslation('send')
   const displayText = useMemo(() => {
-    if (!gasEstimate) return 'Estimating...'
+    if (!gasEstimate) return t('estimating')
 
     switch (gasPayment.type) {
       case GAS_PAYMENT_TYPE.SPONSOR:
-        return 'Free (Sponsored)'
+        return t('freeSponsored')
 
       case GAS_PAYMENT_TYPE.ERC20:
         if (gasPayment.estimatedAmount && gasPayment.tokenSymbol) {
           return `${formatUnits(gasPayment.estimatedAmount, gasPayment.tokenDecimals ?? 18)} ${gasPayment.tokenSymbol}`
         }
-        return `Pay with ${gasPayment.tokenSymbol || 'Token'}`
+        return t('payWithToken', { symbol: gasPayment.tokenSymbol || 'Token' })
       default:
         return `${formatEther(gasEstimate.estimatedCost)} ETH`
     }
-  }, [gasPayment, gasEstimate])
+  }, [gasPayment, gasEstimate, t])
 
   const icon = useMemo(() => {
     switch (gasPayment.type) {
@@ -481,6 +485,7 @@ export function GasPaymentSummary({
   gasEstimate,
   tokenBalance,
 }: GasPaymentSummaryProps) {
+  const { t } = useTranslation('send')
   const isSponsored = gasPayment.type === GAS_PAYMENT_TYPE.SPONSOR
   const isERC20 = gasPayment.type === GAS_PAYMENT_TYPE.ERC20
 
@@ -490,21 +495,21 @@ export function GasPaymentSummary({
       style={{ backgroundColor: 'rgb(var(--secondary))' }}
     >
       <h4 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
-        Gas Payment
+        {t('gasPayment')}
       </h4>
 
       <div className="space-y-1 text-sm">
         {/* Payment Method */}
         <div className="flex justify-between">
-          <span style={{ color: 'rgb(var(--muted-foreground))' }}>Method:</span>
+          <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('method')}</span>
           <span style={{ color: 'rgb(var(--foreground))' }}>
-            {isSponsored ? 'Sponsored' : isERC20 ? `${gasPayment.tokenSymbol}` : 'ETH'}
+            {isSponsored ? t('sponsored') : isERC20 ? `${gasPayment.tokenSymbol}` : 'ETH'}
           </span>
         </div>
 
         {/* Cost */}
         <div className="flex justify-between">
-          <span style={{ color: 'rgb(var(--muted-foreground))' }}>Cost:</span>
+          <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('cost')}</span>
           <span
             className="font-mono"
             style={{ color: isSponsored ? 'rgb(var(--success))' : 'rgb(var(--foreground))' }}
@@ -516,7 +521,7 @@ export function GasPaymentSummary({
         {/* Balance Check (for ERC20) */}
         {isERC20 && tokenBalance !== undefined && gasPayment.estimatedAmount && (
           <div className="flex justify-between">
-            <span style={{ color: 'rgb(var(--muted-foreground))' }}>Your balance:</span>
+            <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('yourBalance')}</span>
             <span
               className="font-mono"
               style={{
@@ -544,7 +549,7 @@ export function GasPaymentSummary({
               color: 'rgb(var(--destructive))',
             }}
           >
-            Insufficient {gasPayment.tokenSymbol} balance for gas
+            {t('insufficientBalance', { symbol: gasPayment.tokenSymbol })}
           </div>
         )}
     </div>

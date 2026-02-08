@@ -58,6 +58,7 @@ describe('Activity', () => {
     setupStore()
 
     render(<Activity />)
+    // i18n keys: title => "Activity", noTransactions => "No transactions yet"
     expect(screen.getByText('Activity')).toBeTruthy()
     expect(screen.getByText('No transactions yet')).toBeTruthy()
   })

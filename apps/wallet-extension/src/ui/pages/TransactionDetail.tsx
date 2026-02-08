@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
 import { useSelectedNetwork } from '../hooks'
 import { useWalletStore } from '../hooks/useWalletStore'
@@ -9,6 +10,7 @@ import { useWalletStore } from '../hooks/useWalletStore'
  * Shows full transaction details from the store. Auto-refreshes while pending.
  */
 export function TransactionDetail() {
+  const { t } = useTranslation('tx')
   const { setPage, selectedTxId, pendingTransactions, history, syncWithBackground } =
     useWalletStore()
   const currentNetwork = useSelectedNetwork()
@@ -112,11 +114,11 @@ export function TransactionDetail() {
             </svg>
           </button>
           <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
-            Transaction Detail
+            {t('title')}
           </h1>
         </div>
         <p className="text-center" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          No transaction selected
+          {t('noTransactionSelected')}
         </p>
       </div>
     )
@@ -126,12 +128,12 @@ export function TransactionDetail() {
   const displayHash = tx.txHash ?? tx.id
   const statusLabel =
     tx.status === 'confirmed'
-      ? 'Confirmed'
+      ? t('confirmed')
       : tx.status === 'failed'
-        ? 'Failed'
+        ? t('failed')
         : tx.status === 'submitted'
-          ? 'Submitted'
-          : 'Pending'
+          ? t('submitted')
+          : t('pending')
 
   return (
     <div className="p-4 space-y-4">
@@ -159,7 +161,7 @@ export function TransactionDetail() {
           </svg>
         </button>
         <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
-          Transaction Detail
+          {t('title')}
         </h1>
       </div>
 
@@ -202,7 +204,7 @@ export function TransactionDetail() {
         {/* Transaction Hash */}
         <div>
           <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Transaction Hash
+            {t('transactionHash')}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
             <p className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
@@ -213,7 +215,7 @@ export function TransactionDetail() {
               onClick={() => copyToClipboard(displayHash)}
               className="p-1"
               style={{ color: 'rgb(var(--primary))' }}
-              title="Copy hash"
+              title={t('copyHash')}
             >
               <svg
                 className="w-3.5 h-3.5"
@@ -237,7 +239,7 @@ export function TransactionDetail() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              From
+              {t('from')}
             </p>
             <p className="text-sm font-mono mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
               {truncateHash(tx.from)}
@@ -245,7 +247,7 @@ export function TransactionDetail() {
           </div>
           <div>
             <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              To
+              {t('to')}
             </p>
             <p className="text-sm font-mono mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
               {tx.to ? truncateHash(tx.to) : '-'}
@@ -256,7 +258,7 @@ export function TransactionDetail() {
         {/* Value */}
         <div>
           <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Value
+            {t('value')}
           </p>
           <p className="text-sm font-semibold mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
             {`${Number(formatEther(tx.value)).toFixed(6)} ETH`}
@@ -268,7 +270,7 @@ export function TransactionDetail() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Gas Used
+                {t('gasUsed')}
               </p>
               <p className="text-sm mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
                 {tx.gasUsed.toString()}
@@ -277,7 +279,7 @@ export function TransactionDetail() {
             {tx.gasPrice && (
               <div>
                 <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                  Gas Price
+                  {t('gasPrice')}
                 </p>
                 <p className="text-sm mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
                   {tx.gasPrice.toString()}
@@ -291,7 +293,7 @@ export function TransactionDetail() {
         {tx.blockNumber && (
           <div>
             <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Block
+              {t('block')}
             </p>
             <p className="text-sm mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
               {tx.blockNumber.toString()}
@@ -302,7 +304,7 @@ export function TransactionDetail() {
         {/* Timestamp */}
         <div>
           <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Timestamp
+            {t('timestamp')}
           </p>
           <p className="text-sm mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
             {new Date(tx.timestamp).toLocaleString()}
@@ -313,7 +315,7 @@ export function TransactionDetail() {
         {tx.userOpHash && (
           <div>
             <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              UserOp Hash
+              {t('userOpHash')}
             </p>
             <div className="flex items-center gap-2 mt-0.5">
               <p className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
@@ -324,7 +326,7 @@ export function TransactionDetail() {
                 onClick={() => copyToClipboard(tx.userOpHash!)}
                 className="p-1"
                 style={{ color: 'rgb(var(--primary))' }}
-                title="Copy UserOp hash"
+                title={t('copyUserOpHash')}
               >
                 <svg
                   className="w-3.5 h-3.5"
@@ -359,7 +361,7 @@ export function TransactionDetail() {
               color: 'rgb(var(--warning))',
             }}
           >
-            {isSpeedingUp ? 'Speeding Up...' : 'Speed Up'}
+            {isSpeedingUp ? t('speedingUp') : t('speedUp')}
           </button>
           <button
             type="button"
@@ -371,7 +373,7 @@ export function TransactionDetail() {
               color: 'rgb(var(--destructive))',
             }}
           >
-            {isCancelling ? 'Cancelling...' : 'Cancel'}
+            {isCancelling ? t('cancelling') : t('cancelTx')}
           </button>
         </div>
       )}
@@ -388,7 +390,7 @@ export function TransactionDetail() {
             color: 'rgb(var(--primary))',
           }}
         >
-          View on Explorer
+          {t('viewOnExplorer')}
         </a>
       )}
     </div>

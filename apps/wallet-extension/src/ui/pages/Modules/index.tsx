@@ -1,5 +1,6 @@
 import { MODULE_TYPE, type ModuleType, getModuleTypeName } from '@stablenet/core'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useWalletStore } from '../../hooks'
 import { DelegateSetup } from './DelegateSetup'
@@ -22,6 +23,7 @@ type ModuleTab = 'installed' | 'browse'
 // ============================================================================
 
 export function ModulesPage() {
+  const { t } = useTranslation('modules')
   const { accounts, selectedAccount: selectedAccountAddress } = useWalletStore()
   const [view, setView] = useState<ModuleView>('list')
   const [activeTab, setActiveTab] = useState<ModuleTab>('installed')
@@ -67,14 +69,13 @@ export function ModulesPage() {
         <div className="text-center py-8">
           <span className="text-4xl mb-4 block">🔒</span>
           <h2 className="text-xl font-bold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
-            Smart Account Required
+            {t('smartAccountRequired')}
           </h2>
           <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Module management is only available for Smart Accounts. Upgrade your EOA via EIP-7702
-            delegation.
+            {t('smartAccountRequiredDesc')}
           </p>
           <button type="button" className="btn-primary px-4 py-2 rounded-lg" onClick={() => setView('delegate')}>
-            Enable Smart Account
+            {t('enableSmartAccount')}
           </button>
         </div>
       </div>
@@ -128,14 +129,14 @@ export function ModulesPage() {
         style={{ borderBottomWidth: 1, borderBottomColor: 'rgb(var(--border))' }}
       >
         <h1 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-          Modules
+          {t('title')}
         </h1>
         <button
           type="button"
           className="btn-primary px-3 py-1.5 rounded-lg text-sm font-medium"
           onClick={() => setView('install')}
         >
-          + Add Module
+          {t('addModule')}
         </button>
       </div>
 
@@ -155,7 +156,7 @@ export function ModulesPage() {
             }}
             onClick={() => setActiveTab(tab)}
           >
-            {tab === 'installed' ? `Installed (${installedModules?.length ?? 0})` : 'Browse All'}
+            {tab === 'installed' ? t('installed', { count: installedModules?.length ?? 0 }) : t('browseAll')}
           </button>
         ))}
       </div>
@@ -184,7 +185,7 @@ export function ModulesPage() {
               </div>
             ) : error ? (
               <div className="text-center py-8" style={{ color: 'rgb(var(--destructive))' }}>
-                Failed to load modules: {error.message}
+                {t('failedToLoadModules', { message: error.message })}
               </div>
             ) : (
               <ModuleList
@@ -209,7 +210,7 @@ export function ModulesPage() {
             </div>
           ) : registryModules.length === 0 ? (
             <div className="text-center py-8">
-              <p style={{ color: 'rgb(var(--muted-foreground))' }}>No modules available</p>
+              <p style={{ color: 'rgb(var(--muted-foreground))' }}>{t('noModulesAvailable')}</p>
             </div>
           ) : (
             registryModules.map((entry) => {
@@ -249,7 +250,7 @@ export function ModulesPage() {
                               color: 'rgb(var(--success))',
                             }}
                           >
-                            Installed
+                            {t('installedBadge')}
                           </span>
                         )}
                       </div>
@@ -277,7 +278,7 @@ export function ModulesPage() {
                               color: 'rgb(var(--success))',
                             }}
                           >
-                            Verified
+                            {t('verified')}
                           </span>
                         )}
                         <span
@@ -287,7 +288,7 @@ export function ModulesPage() {
                             color: 'rgb(var(--muted-foreground))',
                           }}
                         >
-                          v{entry.metadata.version}
+                          {t('version', { version: entry.metadata.version })}
                         </span>
                       </div>
                     </div>
@@ -304,7 +305,7 @@ export function ModulesPage() {
                           setView('install')
                         }}
                       >
-                        Install
+                        {t('install')}
                       </button>
                     )}
                   </div>
@@ -328,11 +329,13 @@ interface ModuleCategoryTabsProps {
 }
 
 function ModuleCategoryTabs({ modules, onInstallClick }: ModuleCategoryTabsProps) {
+  const { t } = useTranslation('modules')
+
   const categories = [
-    { type: MODULE_TYPE.VALIDATOR, icon: '🔐', label: 'Validators' },
-    { type: MODULE_TYPE.EXECUTOR, icon: '⚡', label: 'Executors' },
-    { type: MODULE_TYPE.HOOK, icon: '🪝', label: 'Hooks' },
-    { type: MODULE_TYPE.FALLBACK, icon: '🔄', label: 'Fallbacks' },
+    { type: MODULE_TYPE.VALIDATOR, icon: '🔐', label: t('validators'), singular: t('validators').slice(0, -1) },
+    { type: MODULE_TYPE.EXECUTOR, icon: '⚡', label: t('executors'), singular: t('executors').slice(0, -1) },
+    { type: MODULE_TYPE.HOOK, icon: '🪝', label: t('hooks'), singular: t('hooks').slice(0, -1) },
+    { type: MODULE_TYPE.FALLBACK, icon: '🔄', label: t('fallbacks'), singular: t('fallbacks').slice(0, -1) },
   ]
 
   return (
@@ -354,7 +357,7 @@ function ModuleCategoryTabs({ modules, onInstallClick }: ModuleCategoryTabsProps
                 </span>
               </div>
               <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                {installedCount} installed
+                {t('countInstalled', { count: installedCount })}
               </span>
             </div>
             <button
@@ -363,7 +366,7 @@ function ModuleCategoryTabs({ modules, onInstallClick }: ModuleCategoryTabsProps
               style={{ color: 'rgb(var(--primary))' }}
               onClick={() => onInstallClick(category.type)}
             >
-              + Add {category.label.slice(0, -1)}
+              {t('addCategory', { category: category.singular })}
             </button>
           </div>
         )

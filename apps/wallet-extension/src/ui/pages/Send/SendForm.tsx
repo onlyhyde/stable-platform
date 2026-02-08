@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Address } from 'viem'
 
 interface SendFormProps {
@@ -15,6 +16,7 @@ interface SendFormProps {
  * Send form component for entering transaction details
  */
 export function SendForm({ formData, onFormChange }: SendFormProps) {
+  const { t } = useTranslation('send')
   const handleRecipientChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onFormChange('recipient', e.target.value)
@@ -42,13 +44,13 @@ export function SendForm({ formData, onFormChange }: SendFormProps) {
           className="block text-sm font-medium mb-1"
           style={{ color: 'rgb(var(--foreground-secondary))' }}
         >
-          Recipient Address
+          {t('recipientAddress')}
         </label>
         <input
           id="recipient-input"
           type="text"
           className="w-full px-3 py-2 rounded-lg input-base"
-          placeholder="0x..."
+          placeholder={t('recipientPlaceholder')}
           value={formData.recipient}
           onChange={handleRecipientChange}
         />
@@ -61,14 +63,14 @@ export function SendForm({ formData, onFormChange }: SendFormProps) {
           className="block text-sm font-medium mb-1"
           style={{ color: 'rgb(var(--foreground-secondary))' }}
         >
-          Amount
+          {t('amount')}
         </label>
         <div className="relative">
           <input
             id="amount-input"
             type="text"
             className="w-full px-3 py-2 pr-16 rounded-lg input-base"
-            placeholder="0.0"
+            placeholder={t('amountPlaceholder')}
             value={formData.amount}
             onChange={handleAmountChange}
           />
@@ -87,7 +89,7 @@ export function SendForm({ formData, onFormChange }: SendFormProps) {
           className="cursor-pointer text-sm"
           style={{ color: 'rgb(var(--muted-foreground))' }}
         >
-          Advanced Options
+          {t('advancedOptions')}
         </summary>
         <div className="mt-2">
           <label
@@ -95,12 +97,12 @@ export function SendForm({ formData, onFormChange }: SendFormProps) {
             className="block text-sm font-medium mb-1"
             style={{ color: 'rgb(var(--foreground-secondary))' }}
           >
-            Data (hex)
+            {t('dataHex')}
           </label>
           <textarea
             id="data-input"
             className="w-full px-3 py-2 rounded-lg input-base font-mono text-sm"
-            placeholder="0x"
+            placeholder={t('dataPlaceholder')}
             value={formData.data}
             onChange={(e) => onFormChange('data', e.target.value)}
             rows={3}
