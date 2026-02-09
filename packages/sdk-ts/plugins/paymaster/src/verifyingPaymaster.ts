@@ -5,7 +5,7 @@ import type {
   UserOperation,
 } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import { concat, encodePacked, keccak256, pad, toHex } from 'viem'
+import { concat, encodeAbiParameters, keccak256, pad, toHex } from 'viem'
 import type { VerifyingPaymasterConfig } from './types'
 import { DEFAULT_VALIDITY_SECONDS } from './types'
 
@@ -136,19 +136,19 @@ function computePaymasterHash(
   const gasFees = packGasLimits(userOp.maxPriorityFeePerGas, userOp.maxFeePerGas)
 
   return keccak256(
-    encodePacked(
+    encodeAbiParameters(
       [
-        'address',
-        'uint256',
-        'bytes32',
-        'bytes32',
-        'bytes32',
-        'uint256',
-        'bytes32',
-        'uint256',
-        'address',
-        'uint48',
-        'uint48',
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'address' },
+        { type: 'uint48' },
+        { type: 'uint48' },
       ],
       [
         userOp.sender,

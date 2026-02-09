@@ -99,12 +99,9 @@ export async function toKernelSmartAccount(
     // Sign with the validator
     const signature = await validator.signHash(userOpHash)
 
-    // For Kernel v3, the signature format is:
-    // - 1 byte: mode (0x00 for enable mode, 0x01 for enable with signature, 0x02 for validation mode)
-    // - signature data
-    // For a simple validator signature, we use mode 0x02 (validation mode)
-    const mode = '0x02' as Hex
-    return concat([mode, signature])
+    // For Kernel v3 (ERC-7579), the validation mode is encoded in the nonce,
+    // not in the signature. The signature should be a clean 65-byte ECDSA signature.
+    return signature
   }
 
   const getFactory = async (): Promise<Address | undefined> => {
