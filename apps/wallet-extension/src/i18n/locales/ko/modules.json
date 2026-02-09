@@ -419,5 +419,18 @@
 
   "revokeSessionKeyConfirm": "이 세션 키를 취소하시겠습니까? 더 이상 사용자를 대신하여 트랜잭션에 서명할 수 없게 됩니다.",
   "revokingSessionKey": "세션 키 취소 중...",
-  "sessionKeyRevoked": "세션 키가 성공적으로 취소되었습니다"
+  "sessionKeyRevoked": "세션 키가 성공적으로 취소되었습니다",
+
+  "installByAddress": "컨트랙트 주소로 설치",
+  "installByAddressDesc": "레지스트리에 없는 모듈의 컨트랙트 주소를 입력하세요.",
+  "customModuleAddress": "모듈 컨트랙트 주소",
+  "selectModuleType": "모듈 유형",
+  "initDataOptional": "초기화 데이터 (선택사항)",
+  "initDataHint": "모듈의 hex 인코딩된 초기화 데이터",
+  "moduleNameOptional": "모듈 이름 (선택사항)",
+  "moduleNameHint": "이 모듈의 표시 이름",
+  "customModuleWarning": "커스텀 모듈은 검증되지 않았습니다. 신뢰할 수 있는 소스의 모듈만 설치하세요.",
+  "invalidModuleAddress": "유효하지 않은 컨트랙트 주소",
+  "moduleTypeRequired": "모듈 유형을 선택해 주세요",
+  "orInstallCustom": "또는 커스텀 모듈 설치"
 }

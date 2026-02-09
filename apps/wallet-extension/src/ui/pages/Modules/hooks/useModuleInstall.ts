@@ -11,8 +11,17 @@ interface InstallModuleParams {
   initData?: Hex
 }
 
+interface InstallCustomModuleParams {
+  account: Address
+  moduleAddress: Address
+  moduleType: string
+  initData?: Hex
+  name?: string
+}
+
 interface UseModuleInstallReturn {
   installModule: (params: InstallModuleParams) => Promise<Hash>
+  installCustomModule: (params: InstallCustomModuleParams) => Promise<Hash>
   uninstallModule: (params: {
     account: Address
     moduleAddress: Address
@@ -56,6 +65,52 @@ export function useModuleInstall(): UseModuleInstallReturn {
                 // Use pre-encoded initData if provided, otherwise pass config for encoding
                 initData: params.initData ?? params.config,
                 initDataEncoded: !!params.initData,
+                chainId: currentNetwork.chainId,
+              },
+            ],
+          },
+        })
+
+        if (response?.payload?.error) {
+          throw new Error(response.payload.error.message || 'Module installation failed')
+        }
+
+        return response?.payload?.result?.hash as Hash
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Module installation failed')
+        setError(error)
+        throw error
+      } finally {
+        setIsPending(false)
+      }
+    },
+    [currentNetwork]
+  )
+
+  const installCustomModule = useCallback(
+    async (params: InstallCustomModuleParams): Promise<Hash> => {
+      if (!currentNetwork) {
+        throw new Error('No network selected')
+      }
+
+      setIsPending(true)
+      setError(null)
+
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'RPC_REQUEST',
+          id: `install-module-${Date.now()}`,
+          payload: {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'stablenet_installModule',
+            params: [
+              {
+                account: params.account,
+                moduleAddress: params.moduleAddress,
+                moduleType: params.moduleType,
+                initData: params.initData ?? '0x',
+                initDataEncoded: true,
                 chainId: currentNetwork.chainId,
               },
             ],
@@ -128,6 +183,7 @@ export function useModuleInstall(): UseModuleInstallReturn {
 
   return {
     installModule,
+    installCustomModule,
     uninstallModule,
     isPending,
     error,

@@ -419,5 +419,18 @@
 
   "revokeSessionKeyConfirm": "Are you sure you want to revoke this session key? It will no longer be able to sign transactions on your behalf.",
   "revokingSessionKey": "Revoking session key...",
-  "sessionKeyRevoked": "Session key revoked successfully"
+  "sessionKeyRevoked": "Session key revoked successfully",
+
+  "installByAddress": "Install by Contract Address",
+  "installByAddressDesc": "Enter the contract address of a module not listed in the registry.",
+  "customModuleAddress": "Module Contract Address",
+  "selectModuleType": "Module Type",
+  "initDataOptional": "Init Data (Optional)",
+  "initDataHint": "Hex-encoded initialization data for the module",
+  "moduleNameOptional": "Module Name (Optional)",
+  "moduleNameHint": "A display name for this module",
+  "customModuleWarning": "Custom modules are not verified. Only install modules from trusted sources.",
+  "invalidModuleAddress": "Invalid contract address",
+  "moduleTypeRequired": "Please select a module type",
+  "orInstallCustom": "Or install a custom module"
 }

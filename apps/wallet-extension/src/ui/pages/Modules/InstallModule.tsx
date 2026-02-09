@@ -11,8 +11,8 @@ import {
 } from '@stablenet/core'
 import { Fragment, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Hex } from 'viem'
-import { formatEther } from 'viem'
+import type { Address, Hex } from 'viem'
+import { formatEther, isAddress } from 'viem'
 
 import { LendingExecutorConfigUI } from './LendingExecutorConfig'
 import { ModuleConfigForm } from './ModuleConfig'
@@ -31,7 +31,7 @@ import { saveWebAuthnCredential } from './hooks/useWebAuthn'
 // Types
 // ============================================================================
 
-type WizardStep = 'select-type' | 'select-module' | 'configure' | 'confirm' | 'pending'
+type WizardStep = 'select-type' | 'select-module' | 'configure' | 'custom-address' | 'confirm' | 'pending'
 
 interface InstallModuleWizardProps {
   account: Account
@@ -57,10 +57,14 @@ export function InstallModuleWizard({
   const [selectedModule, setSelectedModule] = useState<ModuleRegistryEntry | null>(null)
   const [configValues, setConfigValues] = useState<Record<string, unknown>>({})
   const [customInitData, setCustomInitData] = useState<Hex | null>(null)
+  const [customAddress, setCustomAddress] = useState('')
+  const [customType, setCustomType] = useState<ModuleType | null>(null)
+  const [customName, setCustomName] = useState('')
+  const [customAddrInitData, setCustomAddrInitData] = useState<Hex>('0x')
   const [error, setError] = useState<string | null>(null)
 
   const { availableModules } = useModuleRegistry()
-  const { installModule } = useModuleInstall()
+  const { installModule, installCustomModule } = useModuleInstall()
 
   // Filter modules by selected type
   const filteredModules = useMemo(() => {
@@ -276,18 +280,29 @@ export function InstallModuleWizard({
 
   // Handle install
   const handleInstall = async () => {
-    if (!selectedModule) return
-
     setStep('pending')
     setError(null)
 
     try {
-      await installModule({
-        account: account.address,
-        module: selectedModule,
-        config: configValues,
-        initData: customInitData ?? undefined,
-      })
+      if (selectedModule) {
+        await installModule({
+          account: account.address,
+          module: selectedModule,
+          config: configValues,
+          initData: customInitData ?? undefined,
+        })
+      } else if (customAddress && customType !== null) {
+        await installCustomModule({
+          account: account.address,
+          moduleAddress: customAddress as Address,
+          moduleType: String(customType),
+          initData: customAddrInitData !== '0x' ? customAddrInitData : undefined,
+          name: customName || undefined,
+        })
+      } else {
+        setStep('confirm')
+        return
+      }
       onComplete()
     } catch (err) {
       setError(err instanceof Error ? err.message : t('installationFailed'))
@@ -337,6 +352,29 @@ export function InstallModuleWizard({
             type={selectedType}
             onSelect={handleModuleSelect}
             onBack={() => setStep('select-type')}
+            onCustomInstall={() => setStep('custom-address')}
+          />
+        )}
+
+        {/* Step: Custom Address */}
+        {step === 'custom-address' && (
+          <CustomModuleInput
+            initialType={selectedType}
+            onSubmit={(address, moduleType, initData, name) => {
+              setSelectedModule(null)
+              setCustomAddress(address)
+              setCustomType(moduleType)
+              setCustomAddrInitData(initData)
+              setCustomName(name)
+              setConfigValues({
+                ...(name ? { name } : {}),
+                address,
+                type: getModuleTypeName(moduleType),
+                ...(initData !== '0x' ? { initData } : {}),
+              })
+              setStep('confirm')
+            }}
+            onBack={() => setStep('select-module')}
           />
         )}
 
@@ -411,6 +449,19 @@ export function InstallModuleWizard({
           />
         )}
 
+        {step === 'confirm' && !selectedModule && customAddress && (
+          <CustomInstallConfirmation
+            address={customAddress}
+            moduleType={customType}
+            name={customName}
+            initData={customAddrInitData}
+            config={configValues}
+            error={error}
+            onConfirm={handleInstall}
+            onBack={() => setStep('custom-address')}
+          />
+        )}
+
         {/* Step: Pending */}
         {step === 'pending' && (
           <div className="pending-state text-center py-12">
@@ -439,7 +490,10 @@ interface WizardProgressProps {
 }
 
 function WizardProgress({ currentStep, hasConfig }: WizardProgressProps) {
-  const steps = ['select-type', 'select-module', ...(hasConfig ? ['configure'] : []), 'confirm']
+  const isCustomPath = currentStep === 'custom-address'
+  const steps = isCustomPath
+    ? ['select-type', 'select-module', 'custom-address', 'confirm']
+    : ['select-type', 'select-module', ...(hasConfig ? ['configure'] : []), 'confirm']
   const currentIndex = steps.indexOf(currentStep)
 
   return (
@@ -542,9 +596,10 @@ interface ModuleSelectorProps {
   type: ModuleType
   onSelect: (module: ModuleRegistryEntry) => void
   onBack: () => void
+  onCustomInstall: () => void
 }
 
-function ModuleSelector({ modules, type, onSelect }: ModuleSelectorProps) {
+function ModuleSelector({ modules, type, onSelect, onCustomInstall }: ModuleSelectorProps) {
   const { t } = useTranslation('modules')
 
   return (
@@ -607,6 +662,41 @@ function ModuleSelector({ modules, type, onSelect }: ModuleSelectorProps) {
           ))}
         </div>
       )}
+
+      {/* Custom module install divider + button */}
+      <div className="mt-6">
+        <div
+          className="flex items-center gap-3 mb-4"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+        >
+          <div className="flex-1 h-px" style={{ backgroundColor: 'rgb(var(--border))' }} />
+          <span className="text-sm">{t('orInstallCustom')}</span>
+          <div className="flex-1 h-px" style={{ backgroundColor: 'rgb(var(--border))' }} />
+        </div>
+        <button
+          type="button"
+          className="w-full p-4 rounded-lg text-left transition-all"
+          style={{
+            backgroundColor: 'rgb(var(--card))',
+            borderWidth: 1,
+            borderColor: 'rgb(var(--border))',
+            borderStyle: 'dashed',
+          }}
+          onClick={onCustomInstall}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📋</span>
+            <div>
+              <h4 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                {t('installByAddress')}
+              </h4>
+              <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {t('installByAddressDesc')}
+              </p>
+            </div>
+          </div>
+        </button>
+      </div>
     </div>
   )
 }
@@ -670,6 +760,315 @@ function InstallConfirmation({
           </dl>
         </div>
       )}
+
+      {/* Error */}
+      {error && (
+        <div
+          className="error-message p-3 rounded-lg mb-4"
+          style={{
+            backgroundColor: 'rgb(var(--destructive) / 0.1)',
+            color: 'rgb(var(--destructive))',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+          {tc('back')}
+        </button>
+        <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={onConfirm}>
+          {t('installModule')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// Custom Module Components
+// ============================================================================
+
+interface CustomModuleInputProps {
+  initialType: ModuleType | null
+  onSubmit: (address: string, moduleType: ModuleType, initData: Hex, name: string) => void
+  onBack: () => void
+}
+
+function CustomModuleInput({ initialType, onSubmit, onBack }: CustomModuleInputProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
+
+  const [address, setAddress] = useState('')
+  const [moduleType, setModuleType] = useState<ModuleType | null>(initialType)
+  const [initData, setInitData] = useState('')
+  const [name, setName] = useState('')
+  const [addressError, setAddressError] = useState<string | null>(null)
+  const [typeError, setTypeError] = useState<string | null>(null)
+
+  const handleContinue = () => {
+    let hasError = false
+
+    if (!isAddress(address)) {
+      setAddressError(t('invalidModuleAddress'))
+      hasError = true
+    } else {
+      setAddressError(null)
+    }
+
+    if (moduleType === null) {
+      setTypeError(t('moduleTypeRequired'))
+      hasError = true
+    } else {
+      setTypeError(null)
+    }
+
+    if (hasError) return
+
+    const hexInitData: Hex = initData && initData.startsWith('0x') ? (initData as Hex) : '0x'
+    onSubmit(address, moduleType as ModuleType, hexInitData, name)
+  }
+
+  const moduleTypes = [
+    { type: MODULE_TYPE.VALIDATOR, label: 'Validator', icon: '🔐' },
+    { type: MODULE_TYPE.EXECUTOR, label: 'Executor', icon: '⚡' },
+    { type: MODULE_TYPE.HOOK, label: 'Hook', icon: '🪝' },
+    { type: MODULE_TYPE.FALLBACK, label: 'Fallback', icon: '🔄' },
+  ]
+
+  return (
+    <div className="custom-module-input">
+      <h3 className="text-lg font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
+        {t('installByAddress')}
+      </h3>
+
+      {/* Warning */}
+      <div
+        className="p-3 rounded-lg mb-4 text-sm"
+        style={{
+          backgroundColor: 'rgb(var(--warning-background, 255 243 205))',
+          color: 'rgb(var(--warning-foreground, 133 100 4))',
+          borderWidth: 1,
+          borderColor: 'rgb(var(--warning-border, 255 224 130))',
+        }}
+      >
+        {t('customModuleWarning')}
+      </div>
+
+      {/* Contract Address */}
+      <div className="mb-4">
+        <label
+          className="block text-sm font-medium mb-1"
+          style={{ color: 'rgb(var(--foreground))' }}
+        >
+          {t('customModuleAddress')}
+        </label>
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => {
+            setAddress(e.target.value)
+            setAddressError(null)
+          }}
+          placeholder="0x..."
+          className="w-full px-3 py-2 rounded-lg text-sm font-mono"
+          style={{
+            backgroundColor: 'rgb(var(--card))',
+            borderWidth: 1,
+            borderColor: addressError ? 'rgb(var(--destructive))' : 'rgb(var(--border))',
+            color: 'rgb(var(--foreground))',
+          }}
+        />
+        {addressError && (
+          <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
+            {addressError}
+          </p>
+        )}
+      </div>
+
+      {/* Module Type */}
+      <div className="mb-4">
+        <label
+          className="block text-sm font-medium mb-2"
+          style={{ color: 'rgb(var(--foreground))' }}
+        >
+          {t('selectModuleType')}
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {moduleTypes.map((mt) => (
+            <button
+              type="button"
+              key={String(mt.type)}
+              className="p-3 rounded-lg text-left transition-all"
+              style={{
+                backgroundColor:
+                  moduleType === mt.type ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--card))',
+                borderWidth: 2,
+                borderColor:
+                  moduleType === mt.type ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+              }}
+              onClick={() => {
+                setModuleType(mt.type)
+                setTypeError(null)
+              }}
+            >
+              <span className="text-lg">{mt.icon}</span>
+              <span
+                className="ml-2 text-sm font-medium"
+                style={{ color: 'rgb(var(--foreground))' }}
+              >
+                {mt.label}
+              </span>
+            </button>
+          ))}
+        </div>
+        {typeError && (
+          <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
+            {typeError}
+          </p>
+        )}
+      </div>
+
+      {/* Init Data (Optional) */}
+      <div className="mb-4">
+        <label
+          className="block text-sm font-medium mb-1"
+          style={{ color: 'rgb(var(--foreground))' }}
+        >
+          {t('initDataOptional')}
+        </label>
+        <textarea
+          value={initData}
+          onChange={(e) => setInitData(e.target.value)}
+          placeholder="0x..."
+          rows={3}
+          className="w-full px-3 py-2 rounded-lg text-sm font-mono resize-none"
+          style={{
+            backgroundColor: 'rgb(var(--card))',
+            borderWidth: 1,
+            borderColor: 'rgb(var(--border))',
+            color: 'rgb(var(--foreground))',
+          }}
+        />
+        <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          {t('initDataHint')}
+        </p>
+      </div>
+
+      {/* Module Name (Optional) */}
+      <div className="mb-6">
+        <label
+          className="block text-sm font-medium mb-1"
+          style={{ color: 'rgb(var(--foreground))' }}
+        >
+          {t('moduleNameOptional')}
+        </label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('moduleNameHint')}
+          className="w-full px-3 py-2 rounded-lg text-sm"
+          style={{
+            backgroundColor: 'rgb(var(--card))',
+            borderWidth: 1,
+            borderColor: 'rgb(var(--border))',
+            color: 'rgb(var(--foreground))',
+          }}
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+          {tc('back')}
+        </button>
+        <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleContinue}>
+          {t('continue')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+interface CustomInstallConfirmationProps {
+  address: string
+  moduleType: ModuleType | null
+  name: string
+  initData: Hex
+  config: Record<string, unknown>
+  error: string | null
+  onConfirm: () => void
+  onBack: () => void
+}
+
+function CustomInstallConfirmation({
+  address,
+  moduleType,
+  name,
+  initData,
+  error,
+  onConfirm,
+  onBack,
+}: CustomInstallConfirmationProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
+
+  const truncatedAddress = `${address.slice(0, 10)}...${address.slice(-8)}`
+
+  return (
+    <div className="install-confirmation">
+      <h3 className="text-lg font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
+        {t('confirmInstallation')}
+      </h3>
+
+      {/* Warning */}
+      <div
+        className="p-3 rounded-lg mb-4 text-sm"
+        style={{
+          backgroundColor: 'rgb(var(--warning-background, 255 243 205))',
+          color: 'rgb(var(--warning-foreground, 133 100 4))',
+          borderWidth: 1,
+          borderColor: 'rgb(var(--warning-border, 255 224 130))',
+        }}
+      >
+        {t('customModuleWarning')}
+      </div>
+
+      {/* Module Info */}
+      <div
+        className="module-info p-4 rounded-lg mb-4"
+        style={{ backgroundColor: 'rgb(var(--secondary))' }}
+      >
+        <h4 className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+          {name || t('installByAddress')}
+        </h4>
+        <dl className="text-sm space-y-2 mt-2">
+          <div className="flex justify-between">
+            <dt style={{ color: 'rgb(var(--muted-foreground))' }}>{t('contractAddress')}:</dt>
+            <dd className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>
+              {truncatedAddress}
+            </dd>
+          </div>
+          <div className="flex justify-between">
+            <dt style={{ color: 'rgb(var(--muted-foreground))' }}>{t('selectModuleType')}:</dt>
+            <dd style={{ color: 'rgb(var(--foreground))' }}>
+              {moduleType !== null ? getModuleTypeName(moduleType) : '-'}
+            </dd>
+          </div>
+          {initData !== '0x' && (
+            <div className="flex justify-between">
+              <dt style={{ color: 'rgb(var(--muted-foreground))' }}>{t('initDataOptional')}:</dt>
+              <dd className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>
+                {String(initData).slice(0, 20)}
+                {String(initData).length > 20 && '...'}
+              </dd>
+            </div>
+          )}
+        </dl>
+      </div>
 
       {/* Error */}
       {error && (
