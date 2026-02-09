@@ -32,6 +32,9 @@ export const ENTRY_POINT_V07_ABI = [
   },
 
   // ============ Simulation Functions ============
+  // v0.9 EntryPointSimulations: simulateValidation RETURNS ValidationResult on success
+  // v0.7 EntryPoint: simulateValidation always REVERTS (with ValidationResult error on success)
+  // The outputs below support v0.9's normal return behavior
   {
     type: 'function',
     name: 'simulateValidation',
@@ -52,7 +55,64 @@ export const ENTRY_POINT_V07_ABI = [
         ],
       },
     ],
-    outputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          {
+            name: 'returnInfo',
+            type: 'tuple',
+            components: [
+              { name: 'preOpGas', type: 'uint256' },
+              { name: 'prefund', type: 'uint256' },
+              { name: 'accountValidationData', type: 'uint256' },
+              { name: 'paymasterValidationData', type: 'uint256' },
+              { name: 'paymasterContext', type: 'bytes' },
+            ],
+          },
+          {
+            name: 'senderInfo',
+            type: 'tuple',
+            components: [
+              { name: 'stake', type: 'uint256' },
+              { name: 'unstakeDelaySec', type: 'uint256' },
+            ],
+          },
+          {
+            name: 'factoryInfo',
+            type: 'tuple',
+            components: [
+              { name: 'stake', type: 'uint256' },
+              { name: 'unstakeDelaySec', type: 'uint256' },
+            ],
+          },
+          {
+            name: 'paymasterInfo',
+            type: 'tuple',
+            components: [
+              { name: 'stake', type: 'uint256' },
+              { name: 'unstakeDelaySec', type: 'uint256' },
+            ],
+          },
+          {
+            name: 'aggregatorInfo',
+            type: 'tuple',
+            components: [
+              { name: 'aggregator', type: 'address' },
+              {
+                name: 'stakeInfo',
+                type: 'tuple',
+                components: [
+                  { name: 'stake', type: 'uint256' },
+                  { name: 'unstakeDelaySec', type: 'uint256' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
     stateMutability: 'nonpayable',
   },
   {

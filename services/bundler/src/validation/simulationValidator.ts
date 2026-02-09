@@ -94,6 +94,14 @@ export class SimulationValidator implements ISimulationValidator {
 
   /**
    * Simulate validation of a UserOperation
+   *
+   * Supports both EntryPoint versions:
+   * - v0.9 (EntryPointSimulations): simulateValidation RETURNS normally on success
+   * - v0.7: simulateValidation always REVERTS (with ValidationResult error on success)
+   *
+   * Strategy: Use readContract first (handles v0.9 success case).
+   * If it reverts, parse the revert data for v0.7 ValidationResult or failure errors.
+   *
    * @returns ValidationResult if successful
    * @throws RpcError if validation fails
    */
@@ -106,18 +114,88 @@ export class SimulationValidator implements ISimulationValidator {
     )
 
     try {
-      // simulateValidation always reverts - it returns data via error
-      await this.publicClient.simulateContract({
+      // v0.9 EntryPointSimulations: simulateValidation returns normally on success
+      const result = await this.publicClient.readContract({
         address: this.entryPoint,
         abi: ENTRY_POINT_V07_ABI,
         functionName: 'simulateValidation',
         args: [packedOp],
       })
 
-      // If we get here, something unexpected happened
-      throw new Error('Unexpected: simulateValidation did not revert')
+      // v0.9 success: parse the returned ValidationResult struct
+      const parsed = this.parseV09ValidationResult(result)
+
+      this.logger.debug(
+        {
+          preOpGas: parsed.returnInfo.preOpGas.toString(),
+          prefund: parsed.returnInfo.prefund.toString(),
+        },
+        'Simulation successful (v0.9 return)'
+      )
+
+      return parsed
     } catch (error) {
+      // Revert case: either v0.7 success (ValidationResult error) or failure (FailedOp)
       return this.parseSimulationError(error)
+    }
+  }
+
+  /**
+   * Parse v0.9 ValidationResult from a normal return value.
+   * The return is a tuple struct with returnInfo, senderInfo, factoryInfo,
+   * paymasterInfo, and aggregatorInfo fields.
+   */
+  private parseV09ValidationResult(result: unknown): ValidationResult {
+    // readContract with our ABI returns the decoded tuple as an object
+    const raw = result as {
+      returnInfo: {
+        preOpGas: bigint
+        prefund: bigint
+        accountValidationData: bigint
+        paymasterValidationData: bigint
+        paymasterContext: Hex
+      }
+      senderInfo: {
+        stake: bigint
+        unstakeDelaySec: bigint
+      }
+      factoryInfo: {
+        stake: bigint
+        unstakeDelaySec: bigint
+      }
+      paymasterInfo: {
+        stake: bigint
+        unstakeDelaySec: bigint
+      }
+      aggregatorInfo: {
+        aggregator: Address
+        stakeInfo: {
+          stake: bigint
+          unstakeDelaySec: bigint
+        }
+      }
+    }
+
+    return {
+      returnInfo: {
+        preOpGas: raw.returnInfo.preOpGas,
+        prefund: raw.returnInfo.prefund,
+        accountValidationData: raw.returnInfo.accountValidationData,
+        paymasterValidationData: raw.returnInfo.paymasterValidationData,
+        paymasterContext: raw.returnInfo.paymasterContext,
+      },
+      senderInfo: {
+        stake: raw.senderInfo.stake,
+        unstakeDelaySec: raw.senderInfo.unstakeDelaySec,
+      },
+      factoryInfo: {
+        stake: raw.factoryInfo.stake,
+        unstakeDelaySec: raw.factoryInfo.unstakeDelaySec,
+      },
+      paymasterInfo: {
+        stake: raw.paymasterInfo.stake,
+        unstakeDelaySec: raw.paymasterInfo.unstakeDelaySec,
+      },
     }
   }
 
