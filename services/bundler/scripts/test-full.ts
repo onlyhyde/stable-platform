@@ -65,34 +65,59 @@ const KERNEL_FACTORY_ABI = [
   },
 ] as const
 
+const PACKED_USER_OP_COMPONENTS = [
+  { name: 'sender', type: 'address' }, { name: 'nonce', type: 'uint256' },
+  { name: 'initCode', type: 'bytes' }, { name: 'callData', type: 'bytes' },
+  { name: 'accountGasLimits', type: 'bytes32' }, { name: 'preVerificationGas', type: 'uint256' },
+  { name: 'gasFees', type: 'bytes32' }, { name: 'paymasterAndData', type: 'bytes' },
+  { name: 'signature', type: 'bytes' },
+] as const
+
 const EP_ABI = [
   {
     type: 'function', name: 'getUserOpHash',
-    inputs: [{
-      name: 'userOp', type: 'tuple',
-      components: [
-        { name: 'sender', type: 'address' }, { name: 'nonce', type: 'uint256' },
-        { name: 'initCode', type: 'bytes' }, { name: 'callData', type: 'bytes' },
-        { name: 'accountGasLimits', type: 'bytes32' }, { name: 'preVerificationGas', type: 'uint256' },
-        { name: 'gasFees', type: 'bytes32' }, { name: 'paymasterAndData', type: 'bytes' },
-        { name: 'signature', type: 'bytes' },
-      ],
-    }],
+    inputs: [{ name: 'userOp', type: 'tuple', components: PACKED_USER_OP_COMPONENTS }],
     outputs: [{ type: 'bytes32' }], stateMutability: 'view',
   },
+  // v0.9 EntryPointSimulations: simulateValidation RETURNS (not reverts) on success
   {
     type: 'function', name: 'simulateValidation',
-    inputs: [{
-      name: 'userOp', type: 'tuple',
+    inputs: [{ name: 'userOp', type: 'tuple', components: PACKED_USER_OP_COMPONENTS }],
+    outputs: [{
+      name: '', type: 'tuple',
       components: [
-        { name: 'sender', type: 'address' }, { name: 'nonce', type: 'uint256' },
-        { name: 'initCode', type: 'bytes' }, { name: 'callData', type: 'bytes' },
-        { name: 'accountGasLimits', type: 'bytes32' }, { name: 'preVerificationGas', type: 'uint256' },
-        { name: 'gasFees', type: 'bytes32' }, { name: 'paymasterAndData', type: 'bytes' },
-        { name: 'signature', type: 'bytes' },
+        { name: 'returnInfo', type: 'tuple', components: [
+          { name: 'preOpGas', type: 'uint256' }, { name: 'prefund', type: 'uint256' },
+          { name: 'accountValidationData', type: 'uint256' }, { name: 'paymasterValidationData', type: 'uint256' },
+          { name: 'paymasterContext', type: 'bytes' },
+        ]},
+        { name: 'senderInfo', type: 'tuple', components: [
+          { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
+        ]},
+        { name: 'factoryInfo', type: 'tuple', components: [
+          { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
+        ]},
+        { name: 'paymasterInfo', type: 'tuple', components: [
+          { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
+        ]},
+        { name: 'aggregatorInfo', type: 'tuple', components: [
+          { name: 'aggregator', type: 'address' },
+          { name: 'stakeInfo', type: 'tuple', components: [
+            { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
+          ]},
+        ]},
       ],
     }],
-    outputs: [], stateMutability: 'nonpayable',
+    stateMutability: 'nonpayable',
+  },
+  // Error types (reverted on validation failure)
+  {
+    type: 'error', name: 'FailedOp',
+    inputs: [{ name: 'opIndex', type: 'uint256' }, { name: 'reason', type: 'string' }],
+  },
+  {
+    type: 'error', name: 'FailedOpWithRevert',
+    inputs: [{ name: 'opIndex', type: 'uint256' }, { name: 'reason', type: 'string' }, { name: 'inner', type: 'bytes' }],
   },
 ] as const
 
@@ -307,39 +332,43 @@ async function main() {
   })
   console.log('UserOp signature:', userOpSignature.slice(0, 20) + '... (', (userOpSignature.length - 2) / 2, 'bytes)')
 
-  // 8. Simulate validation
-  console.log('\n--- simulateValidation ---')
+  // 8. Simulate validation (v0.9: success = return, failure = revert)
+  console.log('\n--- simulateValidation (v0.9 EntryPointSimulations) ---')
+  let simulationPassed = false
   try {
-    await publicClient.simulateContract({
+    // v0.9 EntryPointSimulations returns ValidationResult on success (no revert)
+    const simResult = await publicClient.readContract({
       address: CONFIG.entryPoint,
       abi: EP_ABI,
       functionName: 'simulateValidation',
       args: [{ ...packedOp, signature: userOpSignature }],
     })
-    console.log('UNEXPECTED: no revert')
+    const validationResult = simResult as any
+    console.log('SUCCESS! ValidationResult returned (v0.9)')
+    console.log('  preOpGas:', validationResult.returnInfo.preOpGas.toString())
+    console.log('  prefund:', validationResult.returnInfo.prefund.toString())
+    console.log('  accountValidationData:', validationResult.returnInfo.accountValidationData.toString())
+    console.log('  paymasterValidationData:', validationResult.returnInfo.paymasterValidationData.toString())
+    console.log('  → Account + Paymaster validation passed')
+    simulationPassed = true
   } catch (err: any) {
     const raw: string = err?.cause?.raw || err?.cause?.data || ''
     const result = parseRevertResult(raw)
-    if (result.type === 'ValidationResult') {
-      console.log('SUCCESS! ValidationResult returned')
-      console.log('  → Account + Paymaster validation passed')
-      console.log('  → Ready to send to bundler')
-    } else if (result.type === 'FailedOp') {
+    if (result.type === 'FailedOp') {
       console.log(`FAILED: FailedOp "${result.reason}"`)
     } else if (result.type === 'FailedOpWithRevert') {
       console.log(`FAILED: FailedOpWithRevert "${result.reason}" inner=${result.inner}`)
     } else {
-      console.log('UNKNOWN result:', result.raw)
-
-      // Try to check if this unknown error might be ValidationResult with different encoding
-      if (raw) {
-        const selector = raw.slice(0, 10)
-        console.log('  Selector:', selector)
-      }
+      console.log('ERROR:', err?.shortMessage || err?.message)
+      if (raw) console.log('  Raw selector:', raw.slice(0, 10))
     }
   }
 
-  // 9. If simulation passed, send to bundler
+  // 9. Send to bundler
+  if (!simulationPassed) {
+    console.log('\n⛔ Simulation failed. Skipping bundler submission.')
+    return
+  }
   console.log('\n--- Send to bundler (eth_sendUserOperation) ---')
   try {
     const bundlerUrl = 'http://localhost:4337'

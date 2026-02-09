@@ -43,6 +43,11 @@ export class MetricsCollector implements IMetricsCollector {
   private rpcResponseTimeSum = 0
   private rpcResponseTimeCount = 0
 
+  // Profitability metrics
+  private bundleProfitTotal = 0n
+  private bundleProfitableCount = 0
+  private bundleUnprofitableCount = 0
+
   // Gas estimation metrics
   private gasEstimationTotal = 0
   private gasEstimationSuccessful = 0
@@ -158,6 +163,16 @@ export class MetricsCollector implements IMetricsCollector {
 
     // If larger than all buckets, nothing to do
     // The count is tracked via rpcResponseTimeCount
+  }
+
+  // Profitability metrics
+  recordBundleProfitability(netProfit: bigint, isProfitable: boolean): void {
+    this.bundleProfitTotal += netProfit
+    if (isProfitable) {
+      this.bundleProfitableCount++
+    } else {
+      this.bundleUnprofitableCount++
+    }
   }
 
   // Gas estimation metrics
@@ -441,6 +456,11 @@ export class MetricsCollector implements IMetricsCollector {
     this.initializeHistogramBuckets()
     this.rpcResponseTimeSum = 0
     this.rpcResponseTimeCount = 0
+
+    // Reset Profitability metrics
+    this.bundleProfitTotal = 0n
+    this.bundleProfitableCount = 0
+    this.bundleUnprofitableCount = 0
 
     // Reset Gas estimation metrics
     this.gasEstimationTotal = 0

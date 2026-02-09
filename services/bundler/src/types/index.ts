@@ -42,6 +42,16 @@ export interface BundlerConfig {
   corsOrigins?: string[]
   /** Enable ERC-7562 opcode validation (requires debug_traceCall support, default: true) */
   enableOpcodeValidation?: boolean
+  /** Bundle submission strategy: 'direct' | 'flashbots' (default: 'direct') */
+  bundleSubmissionStrategy?: 'direct' | 'flashbots'
+  /** Flashbots relay URL (required when strategy is 'flashbots') */
+  flashbotsRelayUrl?: string
+  /** Flashbots auth key for signing relay requests (required when strategy is 'flashbots') */
+  flashbotsAuthKey?: Hex
+  /** Enable profitability checks before bundle submission (default: false) */
+  enableProfitabilityCheck?: boolean
+  /** Minimum net profit in wei to submit a bundle (default: 0) */
+  minBundleProfit?: bigint
 }
 
 /**

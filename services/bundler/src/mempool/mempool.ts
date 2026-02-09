@@ -522,6 +522,24 @@ export class Mempool {
   }
 
   /**
+   * Get unique sender count (diagnostic)
+   */
+  get senderCount(): number {
+    return this.bySender.size
+  }
+
+  /**
+   * Get total nonce entry count across all senders (diagnostic)
+   */
+  get nonceEntryCount(): number {
+    let total = 0
+    for (const nonces of this.noncesBySender.values()) {
+      total += nonces.size
+    }
+    return total
+  }
+
+  /**
    * Get pending count
    */
   get pendingCount(): number {

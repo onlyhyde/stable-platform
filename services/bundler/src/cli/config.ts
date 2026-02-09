@@ -21,6 +21,11 @@ export const ENV_VARS = {
   MEMPOOL_MAX_NONCE_GAP: ['BUNDLER_MEMPOOL_MAX_NONCE_GAP', 'MEMPOOL_MAX_NONCE_GAP'],
   CORS_ORIGINS: ['BUNDLER_CORS_ORIGINS', 'CORS_ORIGINS'],
   ENABLE_OPCODE_VALIDATION: ['BUNDLER_ENABLE_OPCODE_VALIDATION', 'ENABLE_OPCODE_VALIDATION'],
+  BUNDLE_SUBMISSION_STRATEGY: ['BUNDLER_SUBMISSION_STRATEGY', 'BUNDLE_SUBMISSION_STRATEGY'],
+  FLASHBOTS_RELAY_URL: ['BUNDLER_FLASHBOTS_RELAY_URL', 'FLASHBOTS_RELAY_URL'],
+  FLASHBOTS_AUTH_KEY: ['BUNDLER_FLASHBOTS_AUTH_KEY', 'FLASHBOTS_AUTH_KEY'],
+  ENABLE_PROFITABILITY_CHECK: ['BUNDLER_ENABLE_PROFITABILITY_CHECK', 'ENABLE_PROFITABILITY_CHECK'],
+  MIN_BUNDLE_PROFIT: ['BUNDLER_MIN_BUNDLE_PROFIT', 'MIN_BUNDLE_PROFIT'],
 } as const
 
 /**
@@ -156,6 +161,11 @@ export interface CliOptions {
   mempoolMaxNonceGap?: number
   corsOrigins?: string[]
   enableOpcodeValidation?: boolean
+  bundleSubmissionStrategy?: string
+  flashbotsRelayUrl?: string
+  flashbotsAuthKey?: string
+  enableProfitabilityCheck?: boolean
+  minBundleProfit?: string
 }
 
 /**
@@ -251,6 +261,27 @@ export function parseConfig(options: CliOptions): BundlerConfig {
   const enableOpcodeValidation =
     options.enableOpcodeValidation ?? getEnvBool(ENV_VARS.ENABLE_OPCODE_VALIDATION) ?? true
 
+  // Bundle submission strategy: CLI > env > default (direct)
+  const bundleSubmissionStrategy = (options.bundleSubmissionStrategy ||
+    getEnv(ENV_VARS.BUNDLE_SUBMISSION_STRATEGY) ||
+    'direct') as 'direct' | 'flashbots'
+
+  // Flashbots config: CLI > env
+  const flashbotsRelayUrl =
+    options.flashbotsRelayUrl || getEnv(ENV_VARS.FLASHBOTS_RELAY_URL)
+  const flashbotsAuthKey =
+    options.flashbotsAuthKey || getEnv(ENV_VARS.FLASHBOTS_AUTH_KEY)
+
+  // Profitability: CLI > env > default (false)
+  const enableProfitabilityCheck =
+    options.enableProfitabilityCheck ??
+    getEnvBool(ENV_VARS.ENABLE_PROFITABILITY_CHECK) ??
+    false
+
+  const minBundleProfitStr =
+    options.minBundleProfit || getEnv(ENV_VARS.MIN_BUNDLE_PROFIT)
+  const minBundleProfit = minBundleProfitStr ? BigInt(minBundleProfitStr) : undefined
+
   return {
     network,
     chainId,
@@ -271,6 +302,11 @@ export function parseConfig(options: CliOptions): BundlerConfig {
     mempoolMaxNonceGap,
     corsOrigins,
     enableOpcodeValidation,
+    bundleSubmissionStrategy,
+    flashbotsRelayUrl,
+    flashbotsAuthKey: flashbotsAuthKey as Hex | undefined,
+    enableProfitabilityCheck,
+    minBundleProfit,
   }
 }
 
@@ -295,6 +331,11 @@ Environment Variables:
   ${ENV_VARS.MEMPOOL_MAX_NONCE_GAP.join(' or ')} Max nonce gap in mempool (default: 0)
   ${ENV_VARS.CORS_ORIGINS.join(' or ')}    CORS allowed origins, comma-separated (default: localhost only)
   ${ENV_VARS.ENABLE_OPCODE_VALIDATION.join(' or ')} Enable ERC-7562 opcode validation (default: true)
+  ${ENV_VARS.BUNDLE_SUBMISSION_STRATEGY.join(' or ')} Bundle submission: direct or flashbots (default: direct)
+  ${ENV_VARS.FLASHBOTS_RELAY_URL.join(' or ')} Flashbots relay URL
+  ${ENV_VARS.FLASHBOTS_AUTH_KEY.join(' or ')} Flashbots auth key (hex)
+  ${ENV_VARS.ENABLE_PROFITABILITY_CHECK.join(' or ')} Enable profitability checks (default: false)
+  ${ENV_VARS.MIN_BUNDLE_PROFIT.join(' or ')} Minimum bundle profit in wei (default: 0)
 
 Priority: CLI arguments > Environment variables > Network presets > Defaults
 `.trim()

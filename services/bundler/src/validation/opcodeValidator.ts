@@ -113,6 +113,7 @@ export class OpcodeValidator {
   private readonly logger: Logger
   private readonly config: Required<OpcodeValidatorConfig>
   private readonly bannedOpcodes: Set<string>
+  private lastTrace: TraceResult | null = null
 
   constructor(
     tracer: ITracer,
@@ -145,6 +146,7 @@ export class OpcodeValidator {
     let trace: TraceResult
     try {
       trace = await this.tracer.trace(sender, factory, paymaster)
+      this.lastTrace = trace
     } catch (error) {
       this.logger.error({ error }, 'Failed to get trace')
       throw new RpcError('Failed to trace UserOperation validation', RPC_ERROR_CODES.INTERNAL_ERROR)
@@ -286,6 +288,15 @@ export class OpcodeValidator {
         )
       }
     }
+  }
+
+  /**
+   * Get the last trace result from validation.
+   * Used by DependencyTracker to capture storage access data
+   * without re-tracing.
+   */
+  getLastTraceResult(): TraceResult | null {
+    return this.lastTrace
   }
 
   /**
