@@ -4,6 +4,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
 import { formatEther, parseEther } from 'viem'
 
@@ -69,6 +70,8 @@ export function SwapExecutorConfigUI({
   onSubmit,
   onBack,
 }: SwapExecutorConfigProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   const [step, setStep] = useState<Step>('slippage')
   const [form, setForm] = useState<FormState>({
     maxSlippageBps: 100, // 1% default
@@ -144,10 +147,9 @@ export function SwapExecutorConfigUI({
       {/* Step content */}
       {step === 'slippage' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Max Slippage Tolerance</h3>
+          <h3 className="text-lg font-semibold">{t('maxSlippageTolerance')}</h3>
           <p className="text-sm text-gray-500">
-            Set the maximum price slippage allowed for swaps. Higher values allow trades in volatile
-            markets but may result in worse prices.
+            {t('slippageDescription')}
           </p>
 
           <div className="grid grid-cols-4 gap-2">
@@ -169,7 +171,7 @@ export function SwapExecutorConfigUI({
 
           <div className="mt-4">
             <label htmlFor="custom-slippage-bps" className="block text-sm font-medium text-gray-700 mb-1">
-              Custom Slippage (basis points)
+              {t('customSlippage')}
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -188,17 +190,16 @@ export function SwapExecutorConfigUI({
               />
               <span className="text-gray-500">= {bpsToPercent(form.maxSlippageBps)}%</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">1 basis point = 0.01%, max 50% (5000 bps)</p>
+            <p className="text-xs text-gray-400 mt-1">{t('bpsDescription')}</p>
           </div>
         </div>
       )}
 
       {step === 'limits' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Daily Swap Limit</h3>
+          <h3 className="text-lg font-semibold">{t('dailySwapLimit')}</h3>
           <p className="text-sm text-gray-500">
-            Set the maximum total value that can be swapped in a 24-hour period. This protects your
-            account from excessive trading.
+            {t('dailySwapLimitDesc')}
           </p>
 
           <div className="grid grid-cols-3 gap-2">
@@ -236,14 +237,14 @@ export function SwapExecutorConfigUI({
 
           <div className="mt-4">
             <label htmlFor="custom-swap-daily-limit" className="block text-sm font-medium text-gray-700 mb-1">
-              Custom Limit (ETH)
+              {t('customLimit')}
             </label>
             <input
               id="custom-swap-daily-limit"
               type="text"
               value={form.dailyLimitEth}
               onChange={(e) => setForm((f) => ({ ...f, dailyLimitEth: e.target.value }))}
-              placeholder="Enter amount in ETH"
+              placeholder={t('enterAmountInEth')}
               className="w-full p-2 border rounded-lg"
             />
           </div>
@@ -252,32 +253,31 @@ export function SwapExecutorConfigUI({
 
       {step === 'review' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Review Configuration</h3>
+          <h3 className="text-lg font-semibold">{t('reviewConfiguration')}</h3>
           <p className="text-sm text-gray-500">
-            Review your swap executor settings before installation.
+            {t('reviewConfigDesc')}
           </p>
 
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Account</span>
+              <span className="text-gray-600">{t('account')}</span>
               <span className="font-mono text-sm">
                 {accountAddress.slice(0, 6)}...{accountAddress.slice(-4)}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Max Slippage</span>
+              <span className="text-gray-600">{t('maxSlippageLabel')}</span>
               <span className="font-medium">{bpsToPercent(form.maxSlippageBps)}%</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Daily Limit</span>
+              <span className="text-gray-600">{t('dailyLimit')}</span>
               <span className="font-medium">{form.dailyLimitEth} ETH</span>
             </div>
           </div>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
             <p className="text-sm text-yellow-800">
-              <strong>Note:</strong> This executor allows automated swaps up to your daily limit.
-              Ensure you trust the dApps you connect to.
+              <strong>{t('note')}</strong> {t('swapNote')}
             </p>
           </div>
         </div>
@@ -290,7 +290,7 @@ export function SwapExecutorConfigUI({
           onClick={handleBack}
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
         >
-          Back
+          {tc('back')}
         </button>
         {step !== 'review' ? (
           <button
@@ -298,7 +298,7 @@ export function SwapExecutorConfigUI({
             onClick={handleNext}
             className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
-            Next
+            {tc('next')}
           </button>
         ) : (
           <button
@@ -307,7 +307,7 @@ export function SwapExecutorConfigUI({
             disabled={!isValid}
             className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Install Module
+            {t('installModule')}
           </button>
         )}
       </div>
@@ -330,19 +330,20 @@ export function SwapExecutorDisplay({
   dailyLimit,
   usedToday,
 }: SwapExecutorDisplayProps) {
+  const { t } = useTranslation('modules')
   const remainingLimit = dailyLimit - usedToday
   const usagePercent = dailyLimit > 0n ? Number((usedToday * 100n) / dailyLimit) : 0
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <span className="text-gray-600">Max Slippage</span>
+        <span className="text-gray-600">{t('maxSlippageLabel')}</span>
         <span className="font-medium">{bpsToPercent(maxSlippageBps)}%</span>
       </div>
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Daily Limit Usage</span>
+          <span className="text-gray-600">{t('dailyLimitUsage')}</span>
           <span>
             {formatEther(usedToday)} / {formatEther(dailyLimit)} ETH
           </span>
@@ -359,7 +360,7 @@ export function SwapExecutorDisplay({
             style={{ width: `${Math.min(usagePercent, 100)}%` }}
           />
         </div>
-        <p className="text-xs text-gray-500">Remaining: {formatEther(remainingLimit)} ETH</p>
+        <p className="text-xs text-gray-500">{t('remainingAmount', { amount: formatEther(remainingLimit) })}</p>
       </div>
     </div>
   )

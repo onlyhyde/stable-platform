@@ -4,6 +4,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
 import { formatEther, parseEther } from 'viem'
 
@@ -87,11 +88,21 @@ function formatHealthFactor(value: bigint): string {
 // Component
 // ============================================================================
 
+const DESCRIPTION_KEYS: Record<string, string> = {
+  Conservative: 'conservative',
+  Moderate: 'moderate',
+  Aggressive: 'aggressive',
+  Safe: 'safe',
+  Risky: 'risky',
+}
+
 export function LendingExecutorConfigUI({
   accountAddress,
   onSubmit,
   onBack,
 }: LendingExecutorConfigProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   const [step, setStep] = useState<Step>('ltv')
   const [form, setForm] = useState<FormState>({
     maxLtvBps: 8000, // 80% default
@@ -175,10 +186,9 @@ export function LendingExecutorConfigUI({
       {/* Step content */}
       {step === 'ltv' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Maximum Loan-to-Value (LTV)</h3>
+          <h3 className="text-lg font-semibold">{t('maximumLTV')}</h3>
           <p className="text-sm text-gray-500">
-            Set the maximum ratio of borrowed value to collateral value. Higher LTV allows borrowing
-            more but increases liquidation risk.
+            {t('ltvDescription')}
           </p>
 
           <div className="grid grid-cols-3 gap-3">
@@ -194,14 +204,14 @@ export function LendingExecutorConfigUI({
                 }`}
               >
                 <div className="font-semibold">{preset.label}</div>
-                <div className="text-xs text-gray-500">{preset.description}</div>
+                <div className="text-xs text-gray-500">{t(DESCRIPTION_KEYS[preset.description] || preset.description)}</div>
               </button>
             ))}
           </div>
 
           <div className="mt-4">
             <label htmlFor="custom-ltv-bps" className="block text-sm font-medium text-gray-700 mb-1">
-              Custom LTV (basis points)
+              {t('customLtvBps')}
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -227,10 +237,9 @@ export function LendingExecutorConfigUI({
 
       {step === 'health' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Minimum Health Factor</h3>
+          <h3 className="text-lg font-semibold">{t('minHealthFactor')}</h3>
           <p className="text-sm text-gray-500">
-            Set the minimum health factor threshold. Transactions that would reduce health below
-            this level will be rejected. A health factor below 1.0 means liquidation.
+            {t('minHealthFactorDesc')}
           </p>
 
           <div className="grid grid-cols-3 gap-3">
@@ -246,14 +255,14 @@ export function LendingExecutorConfigUI({
                 }`}
               >
                 <div className="font-semibold">{preset.label}</div>
-                <div className="text-xs text-gray-500">{preset.description}</div>
+                <div className="text-xs text-gray-500">{t(DESCRIPTION_KEYS[preset.description] || preset.description)}</div>
               </button>
             ))}
           </div>
 
           <div className="mt-4">
             <label htmlFor="custom-health-factor" className="block text-sm font-medium text-gray-700 mb-1">
-              Custom Health Factor
+              {t('customHealthFactor')}
             </label>
             <input
               id="custom-health-factor"
@@ -264,20 +273,20 @@ export function LendingExecutorConfigUI({
               className="w-full p-2 border rounded-lg"
             />
             <p className="text-xs text-gray-400 mt-1">
-              Must be greater than 1.0 to maintain safety margin
+              {t('healthFactorMinWarning')}
             </p>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
             <p className="text-sm text-blue-800">
-              <strong>Health Factor Guide:</strong>
+              <strong>{t('healthFactorGuide')}</strong>
             </p>
             <ul className="text-xs text-blue-700 mt-1 space-y-1">
-              <li>• &gt; 2.0: Very safe position</li>
-              <li>• 1.5 - 2.0: Safe position</li>
-              <li>• 1.25 - 1.5: Moderate risk</li>
-              <li>• 1.0 - 1.25: High risk of liquidation</li>
-              <li>• &lt; 1.0: Liquidatable</li>
+              <li>{t('hfVerySafe')}</li>
+              <li>{t('hfSafe')}</li>
+              <li>{t('hfModerate')}</li>
+              <li>{t('hfHighRisk')}</li>
+              <li>{t('hfLiquidatable')}</li>
             </ul>
           </div>
         </div>
@@ -285,10 +294,9 @@ export function LendingExecutorConfigUI({
 
       {step === 'limits' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Daily Borrow Limit</h3>
+          <h3 className="text-lg font-semibold">{t('dailyBorrowLimit')}</h3>
           <p className="text-sm text-gray-500">
-            Set the maximum amount that can be borrowed in a 24-hour period. This protects against
-            excessive borrowing.
+            {t('dailyBorrowLimitDesc')}
           </p>
 
           <div className="grid grid-cols-3 gap-2">
@@ -326,14 +334,14 @@ export function LendingExecutorConfigUI({
 
           <div className="mt-4">
             <label htmlFor="custom-borrow-limit" className="block text-sm font-medium text-gray-700 mb-1">
-              Custom Limit (ETH equivalent)
+              {t('customBorrowLimit')}
             </label>
             <input
               id="custom-borrow-limit"
               type="text"
               value={form.dailyBorrowLimitEth}
               onChange={(e) => setForm((f) => ({ ...f, dailyBorrowLimitEth: e.target.value }))}
-              placeholder="Enter amount"
+              placeholder={t('enterAmount')}
               className="w-full p-2 border rounded-lg"
             />
           </div>
@@ -342,36 +350,35 @@ export function LendingExecutorConfigUI({
 
       {step === 'review' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Review Configuration</h3>
+          <h3 className="text-lg font-semibold">{t('reviewConfiguration')}</h3>
           <p className="text-sm text-gray-500">
-            Review your lending executor settings before installation.
+            {t('reviewLendingConfig')}
           </p>
 
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Account</span>
+              <span className="text-gray-600">{t('account')}</span>
               <span className="font-mono text-sm">
                 {accountAddress.slice(0, 6)}...{accountAddress.slice(-4)}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Max LTV</span>
+              <span className="text-gray-600">{t('maxLtvLabel')}</span>
               <span className="font-medium">{bpsToPercent(form.maxLtvBps)}%</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Min Health Factor</span>
+              <span className="text-gray-600">{t('minHealthFactorLabel')}</span>
               <span className="font-medium">{form.minHealthFactor}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Daily Borrow Limit</span>
+              <span className="text-gray-600">{t('dailyBorrowLimitLabel')}</span>
               <span className="font-medium">{form.dailyBorrowLimitEth} ETH</span>
             </div>
           </div>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
             <p className="text-sm text-yellow-800">
-              <strong>Warning:</strong> DeFi lending carries risks including liquidation. Ensure you
-              understand the protocols you interact with.
+              <strong>{t('warning')}</strong> {t('lendingWarning')}
             </p>
           </div>
         </div>
@@ -384,7 +391,7 @@ export function LendingExecutorConfigUI({
           onClick={handleBack}
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
         >
-          Back
+          {tc('back')}
         </button>
         {step !== 'review' ? (
           <button
@@ -392,7 +399,7 @@ export function LendingExecutorConfigUI({
             onClick={handleNext}
             className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
           >
-            Next
+            {tc('next')}
           </button>
         ) : (
           <button
@@ -401,7 +408,7 @@ export function LendingExecutorConfigUI({
             disabled={!isValid}
             className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Install Module
+            {t('installModule')}
           </button>
         )}
       </div>
@@ -428,32 +435,33 @@ export function LendingExecutorDisplay({
   dailyBorrowLimit,
   borrowedToday,
 }: LendingExecutorDisplayProps) {
+  const { t } = useTranslation('modules')
   const remainingLimit = dailyBorrowLimit - borrowedToday
   const usagePercent = dailyBorrowLimit > 0n ? Number((borrowedToday * 100n) / dailyBorrowLimit) : 0
 
   const healthStatus = useMemo(() => {
     const hf = Number(currentHealthFactor) / 1e18
-    if (hf >= 2) return { color: 'text-green-600', label: 'Very Safe' }
-    if (hf >= 1.5) return { color: 'text-green-500', label: 'Safe' }
-    if (hf >= 1.25) return { color: 'text-yellow-500', label: 'Moderate' }
-    if (hf >= 1.0) return { color: 'text-orange-500', label: 'At Risk' }
-    return { color: 'text-red-600', label: 'Liquidatable!' }
-  }, [currentHealthFactor])
+    if (hf >= 2) return { color: 'text-green-600', label: t('verySafe') }
+    if (hf >= 1.5) return { color: 'text-green-500', label: t('safe') }
+    if (hf >= 1.25) return { color: 'text-yellow-500', label: t('moderate') }
+    if (hf >= 1.0) return { color: 'text-orange-500', label: t('atRisk') }
+    return { color: 'text-red-600', label: t('liquidatable') }
+  }, [currentHealthFactor, t])
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <span className="text-gray-600">Max LTV</span>
+        <span className="text-gray-600">{t('maxLtvLabel')}</span>
         <span className="font-medium">{bpsToPercent(maxLtvBps)}%</span>
       </div>
 
       <div className="flex justify-between items-center">
-        <span className="text-gray-600">Min Health Factor</span>
+        <span className="text-gray-600">{t('minHealthFactorLabel')}</span>
         <span className="font-medium">{formatHealthFactor(minHealthFactor)}</span>
       </div>
 
       <div className="flex justify-between items-center">
-        <span className="text-gray-600">Current Health Factor</span>
+        <span className="text-gray-600">{t('currentHealthFactor')}</span>
         <span className={`font-medium ${healthStatus.color}`}>
           {formatHealthFactor(currentHealthFactor)} ({healthStatus.label})
         </span>
@@ -461,7 +469,7 @@ export function LendingExecutorDisplay({
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Daily Borrow Usage</span>
+          <span className="text-gray-600">{t('dailyBorrowUsage')}</span>
           <span>
             {formatEther(borrowedToday)} / {formatEther(dailyBorrowLimit)} ETH
           </span>
@@ -478,7 +486,7 @@ export function LendingExecutorDisplay({
             style={{ width: `${Math.min(usagePercent, 100)}%` }}
           />
         </div>
-        <p className="text-xs text-gray-500">Remaining: {formatEther(remainingLimit)} ETH</p>
+        <p className="text-xs text-gray-500">{t('remainingAmount', { amount: formatEther(remainingLimit) })}</p>
       </div>
     </div>
   )

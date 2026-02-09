@@ -4,6 +4,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
 import { formatEther, parseEther } from 'viem'
 
@@ -66,6 +67,8 @@ export function StakingExecutorConfigUI({
   onSubmit,
   onBack,
 }: StakingExecutorConfigProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   const [step, setStep] = useState<Step>('pool-limit')
   const [form, setForm] = useState<FormState>({
     maxStakePerPoolEth: '10',
@@ -149,10 +152,9 @@ export function StakingExecutorConfigUI({
       {/* Step content */}
       {step === 'pool-limit' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Max Stake Per Pool</h3>
+          <h3 className="text-lg font-semibold">{t('maxStakePerPool')}</h3>
           <p className="text-sm text-gray-500">
-            Set the maximum amount that can be staked in a single staking pool. This limits
-            concentration risk in any single protocol.
+            {t('maxStakePerPoolDesc')}
           </p>
 
           <div className="grid grid-cols-3 gap-2">
@@ -169,7 +171,7 @@ export function StakingExecutorConfigUI({
               >
                 <div>{preset.label}</div>
                 {preset.description && (
-                  <div className="text-xs text-gray-500">{preset.description}</div>
+                  <div className="text-xs text-gray-500">{preset.description === 'Validator stake' ? t('validatorStake') : preset.description}</div>
                 )}
               </button>
             ))}
@@ -188,7 +190,7 @@ export function StakingExecutorConfigUI({
               >
                 <div>{preset.label}</div>
                 {preset.description && (
-                  <div className="text-xs text-gray-500">{preset.description}</div>
+                  <div className="text-xs text-gray-500">{preset.description === 'Validator stake' ? t('validatorStake') : preset.description}</div>
                 )}
               </button>
             ))}
@@ -196,14 +198,14 @@ export function StakingExecutorConfigUI({
 
           <div className="mt-4">
             <label htmlFor="custom-pool-limit" className="block text-sm font-medium text-gray-700 mb-1">
-              Custom Limit (ETH)
+              {t('customLimitEth')}
             </label>
             <input
               id="custom-pool-limit"
               type="text"
               value={form.maxStakePerPoolEth}
               onChange={(e) => setForm((f) => ({ ...f, maxStakePerPoolEth: e.target.value }))}
-              placeholder="Enter amount in ETH"
+              placeholder={t('enterAmountInEth')}
               className="w-full p-2 border rounded-lg"
             />
           </div>
@@ -212,9 +214,9 @@ export function StakingExecutorConfigUI({
 
       {step === 'daily-limit' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Daily Staking Limit</h3>
+          <h3 className="text-lg font-semibold">{t('dailyStakingLimit')}</h3>
           <p className="text-sm text-gray-500">
-            Set the maximum total amount that can be staked across all pools in a 24-hour period.
+            {t('dailyStakingLimitDesc')}
           </p>
 
           <div className="grid grid-cols-3 gap-2">
@@ -252,22 +254,21 @@ export function StakingExecutorConfigUI({
 
           <div className="mt-4">
             <label htmlFor="custom-daily-stake-limit" className="block text-sm font-medium text-gray-700 mb-1">
-              Custom Limit (ETH)
+              {t('customLimitEth')}
             </label>
             <input
               id="custom-daily-stake-limit"
               type="text"
               value={form.dailyStakeLimitEth}
               onChange={(e) => setForm((f) => ({ ...f, dailyStakeLimitEth: e.target.value }))}
-              placeholder="Enter amount in ETH"
+              placeholder={t('enterAmountInEth')}
               className="w-full p-2 border rounded-lg"
             />
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
             <p className="text-sm text-blue-800">
-              <strong>Tip:</strong> For Ethereum validator staking, consider setting limits in
-              multiples of 32 ETH (the validator stake requirement).
+              <strong>{t('tip')}</strong> {t('stakingTip')}
             </p>
           </div>
         </div>
@@ -275,39 +276,37 @@ export function StakingExecutorConfigUI({
 
       {step === 'review' && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Review Configuration</h3>
+          <h3 className="text-lg font-semibold">{t('reviewConfiguration')}</h3>
           <p className="text-sm text-gray-500">
-            Review your staking executor settings before installation.
+            {t('reviewStakingConfig')}
           </p>
 
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Account</span>
+              <span className="text-gray-600">{t('account')}</span>
               <span className="font-mono text-sm">
                 {accountAddress.slice(0, 6)}...{accountAddress.slice(-4)}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Max Stake Per Pool</span>
+              <span className="text-gray-600">{t('maxStakePerPool')}</span>
               <span className="font-medium">{form.maxStakePerPoolEth} ETH</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Daily Stake Limit</span>
+              <span className="text-gray-600">{t('dailyStakeLimit')}</span>
               <span className="font-medium">{form.dailyStakeLimitEth} ETH</span>
             </div>
           </div>
 
           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
             <p className="text-sm text-green-800">
-              <strong>Benefits:</strong> This executor enables automated staking operations while
-              protecting against excessive exposure to any single protocol.
+              <strong>{t('benefits')}</strong> {t('stakingBenefits')}
             </p>
           </div>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
             <p className="text-sm text-yellow-800">
-              <strong>Note:</strong> Staking often involves lock-up periods. Ensure you understand
-              the unstaking requirements of each protocol.
+              <strong>{t('note')}</strong> {t('stakingNote')}
             </p>
           </div>
         </div>
@@ -320,7 +319,7 @@ export function StakingExecutorConfigUI({
           onClick={handleBack}
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
         >
-          Back
+          {tc('back')}
         </button>
         {step !== 'review' ? (
           <button
@@ -328,7 +327,7 @@ export function StakingExecutorConfigUI({
             onClick={handleNext}
             className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
           >
-            Next
+            {tc('next')}
           </button>
         ) : (
           <button
@@ -337,7 +336,7 @@ export function StakingExecutorConfigUI({
             disabled={!isValid}
             className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Install Module
+            {t('installModule')}
           </button>
         )}
       </div>
@@ -364,6 +363,7 @@ export function StakingExecutorDisplay({
   totalStaked,
   pendingRewards,
 }: StakingExecutorDisplayProps) {
+  const { t } = useTranslation('modules')
   const remainingLimit = dailyStakeLimit - stakedToday
   const usagePercent = dailyStakeLimit > 0n ? Number((stakedToday * 100n) / dailyStakeLimit) : 0
 
@@ -371,23 +371,23 @@ export function StakingExecutorDisplay({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-green-50 rounded-lg p-3">
-          <div className="text-sm text-green-600">Total Staked</div>
+          <div className="text-sm text-green-600">{t('totalStaked')}</div>
           <div className="font-semibold text-lg">{formatEther(totalStaked)} ETH</div>
         </div>
         <div className="bg-yellow-50 rounded-lg p-3">
-          <div className="text-sm text-yellow-600">Pending Rewards</div>
+          <div className="text-sm text-yellow-600">{t('pendingRewards')}</div>
           <div className="font-semibold text-lg">{formatEther(pendingRewards)} ETH</div>
         </div>
       </div>
 
       <div className="flex justify-between items-center">
-        <span className="text-gray-600">Max Stake Per Pool</span>
+        <span className="text-gray-600">{t('maxStakePerPool')}</span>
         <span className="font-medium">{formatEther(maxStakePerPool)} ETH</span>
       </div>
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Daily Stake Usage</span>
+          <span className="text-gray-600">{t('dailyStakeUsage')}</span>
           <span>
             {formatEther(stakedToday)} / {formatEther(dailyStakeLimit)} ETH
           </span>
@@ -404,7 +404,7 @@ export function StakingExecutorDisplay({
             style={{ width: `${Math.min(usagePercent, 100)}%` }}
           />
         </div>
-        <p className="text-xs text-gray-500">Remaining: {formatEther(remainingLimit)} ETH</p>
+        <p className="text-xs text-gray-500">{t('remainingAmount', { amount: formatEther(remainingLimit) })}</p>
       </div>
     </div>
   )

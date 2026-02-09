@@ -376,5 +376,11 @@
   "troubleshoot_browser": "다른 브라우저 (Chrome, Safari, Edge) 사용해 보세요",
   "troubleshoot_incognito": "시크릿/비공개 모드가 아닌지 확인하세요",
   "passkey": "패스키",
-  "createdDate": "{{date}} 생성"
+  "createdDate": "{{date}} 생성",
+
+  "now": "지금",
+  "enterAmountInEth": "ETH 금액 입력",
+  "enterAmount": "금액을 입력하세요",
+  "dailyStakeLimit": "일일 스테이킹 한도",
+  "recipientLabel": "수신자"
 }

@@ -5,6 +5,7 @@ import {
   validateWebAuthnValidatorConfig,
 } from '@stablenet/core'
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Hex } from 'viem'
 import { createLogger } from '../../../shared/utils/logger'
 
@@ -35,6 +36,8 @@ interface Credential {
 // ============================================================================
 
 export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnConfigProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   const [step, setStep] = useState<Step>('intro')
   const [credential, setCredential] = useState<Credential | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -125,7 +128,7 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
       setStep('success')
     } catch (err) {
       logger.error('WebAuthn registration failed:', err)
-      setError(err instanceof Error ? err.message : 'Registration failed')
+      setError(err instanceof Error ? err.message : t('registrationFailed'))
       setStep('error')
     }
   }, [accountAddress])
@@ -151,10 +154,10 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
         <span className="text-3xl">🔐</span>
         <div>
           <h3 className="text-lg font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-            WebAuthn Validator
+            {t('webAuthnValidator')}
           </h3>
           <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Use passkeys for secure authentication
+            {t('usePasskeys')}
           </p>
         </div>
       </div>
@@ -167,24 +170,24 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <h4 className="font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
-              What are Passkeys?
+              {t('whatArePasskeys')}
             </h4>
             <ul className="text-sm space-y-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
               <li className="flex items-start gap-2">
                 <span className="text-green-500">✓</span>
-                <span>Phishing-resistant authentication</span>
+                <span>{t('passkey_phishing')}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-500">✓</span>
-                <span>Uses device biometrics (Face ID, Touch ID, Windows Hello)</span>
+                <span>{t('passkey_biometrics')}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-500">✓</span>
-                <span>No passwords to remember or steal</span>
+                <span>{t('passkey_noPasswords')}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-500">✓</span>
-                <span>Syncs across your devices via iCloud/Google</span>
+                <span>{t('passkey_sync')}</span>
               </li>
             </ul>
           </div>
@@ -198,21 +201,20 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
             }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--warning))' }}>
-              <strong>Important:</strong> Once enabled, you'll need your passkey to sign
-              transactions. Make sure your device supports biometric authentication.
+              <strong>{t('important')}</strong> {t('passkeyImportant')}
             </p>
           </div>
 
           <div className="flex gap-3">
             <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
-              Cancel
+              {tc('cancel')}
             </button>
             <button
               type="button"
               className="btn-primary flex-1 py-3 rounded-lg font-medium"
               onClick={handleRegister}
             >
-              Create Passkey
+              {t('createPasskey')}
             </button>
           </div>
         </div>
@@ -226,10 +228,10 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
             style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
           />
           <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-            Creating your passkey...
+            {t('creatingPasskey')}
           </p>
           <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Follow the prompts on your device to complete registration
+            {t('followDevicePrompts')}
           </p>
         </div>
       )}
@@ -247,7 +249,7 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
           >
             <span className="text-4xl mb-2 block">✅</span>
             <p className="font-medium" style={{ color: 'rgb(var(--success))' }}>
-              Passkey created successfully!
+              {t('passkeyCreated')}
             </p>
           </div>
 
@@ -256,29 +258,29 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <h4 className="text-sm font-medium mb-3" style={{ color: 'rgb(var(--foreground))' }}>
-              Credential Details
+              {t('credentialDetails')}
             </h4>
             <dl className="text-sm space-y-2">
               <div className="flex justify-between">
-                <dt style={{ color: 'rgb(var(--muted-foreground))' }}>Credential ID</dt>
+                <dt style={{ color: 'rgb(var(--muted-foreground))' }}>{t('credentialId')}</dt>
                 <dd className="font-mono text-xs" style={{ color: 'rgb(var(--foreground))' }}>
                   {credential.credentialId.slice(0, 10)}...{credential.credentialId.slice(-8)}
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt style={{ color: 'rgb(var(--muted-foreground))' }}>Public Key (X)</dt>
+                <dt style={{ color: 'rgb(var(--muted-foreground))' }}>{t('publicKeyX')}</dt>
                 <dd className="font-mono text-xs" style={{ color: 'rgb(var(--foreground))' }}>
                   {credential.pubKeyX.toString(16).slice(0, 8)}...
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt style={{ color: 'rgb(var(--muted-foreground))' }}>Public Key (Y)</dt>
+                <dt style={{ color: 'rgb(var(--muted-foreground))' }}>{t('publicKeyY')}</dt>
                 <dd className="font-mono text-xs" style={{ color: 'rgb(var(--foreground))' }}>
                   {credential.pubKeyY.toString(16).slice(0, 8)}...
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt style={{ color: 'rgb(var(--muted-foreground))' }}>Created</dt>
+                <dt style={{ color: 'rgb(var(--muted-foreground))' }}>{t('created')}</dt>
                 <dd style={{ color: 'rgb(var(--foreground))' }}>
                   {new Date(credential.createdAt).toLocaleString()}
                 </dd>
@@ -292,14 +294,14 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
               className="btn-ghost flex-1 py-3 rounded-lg font-medium"
               onClick={() => setStep('intro')}
             >
-              Create Another
+              {t('createAnother')}
             </button>
             <button
               type="button"
               className="btn-primary flex-1 py-3 rounded-lg font-medium"
               onClick={handleConfirm}
             >
-              Install Validator
+              {t('installValidator')}
             </button>
           </div>
         </div>
@@ -318,7 +320,7 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
           >
             <span className="text-4xl mb-2 block">❌</span>
             <p className="font-medium" style={{ color: 'rgb(var(--destructive))' }}>
-              Registration failed
+              {t('registrationFailed')}
             </p>
             {error && (
               <p className="text-sm mt-2" style={{ color: 'rgb(var(--destructive))' }}>
@@ -332,26 +334,26 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <h4 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
-              Troubleshooting
+              {t('troubleshooting')}
             </h4>
             <ul className="text-sm space-y-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              <li>• Make sure your device supports biometric authentication</li>
-              <li>• Check that you've set up Face ID, Touch ID, or Windows Hello</li>
-              <li>• Try using a different browser (Chrome, Safari, Edge)</li>
-              <li>• Ensure you're not in incognito/private mode</li>
+              <li>• {t('troubleshoot_biometrics')}</li>
+              <li>• {t('troubleshoot_setup')}</li>
+              <li>• {t('troubleshoot_browser')}</li>
+              <li>• {t('troubleshoot_incognito')}</li>
             </ul>
           </div>
 
           <div className="flex gap-3">
             <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
-              Cancel
+              {tc('cancel')}
             </button>
             <button
               type="button"
               className="btn-primary flex-1 py-3 rounded-lg font-medium"
               onClick={handleRegister}
             >
-              Try Again
+              {t('tryAgain')}
             </button>
           </div>
         </div>
@@ -370,10 +372,12 @@ interface WebAuthnCredentialListProps {
 }
 
 export function WebAuthnCredentialList({ credentials, onRemove }: WebAuthnCredentialListProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   if (credentials.length === 0) {
     return (
       <div className="text-center py-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
-        No passkeys registered
+        {t('noPasskeys')}
       </div>
     )
   }
@@ -394,13 +398,13 @@ export function WebAuthnCredentialList({ credentials, onRemove }: WebAuthnCreden
             <span className="text-2xl">🔑</span>
             <div>
               <p className="font-medium text-sm" style={{ color: 'rgb(var(--foreground))' }}>
-                Passkey
+                {t('passkey')}
               </p>
               <p className="font-mono text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {cred.credentialId.slice(0, 10)}...{cred.credentialId.slice(-8)}
               </p>
               <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Created {new Date(cred.createdAt).toLocaleDateString()}
+                {t('createdDate', { date: new Date(cred.createdAt).toLocaleDateString() })}
               </p>
             </div>
           </div>
@@ -414,7 +418,7 @@ export function WebAuthnCredentialList({ credentials, onRemove }: WebAuthnCreden
               }}
               onClick={() => onRemove(cred.id)}
             >
-              Remove
+              {tc('remove')}
             </button>
           )}
         </div>

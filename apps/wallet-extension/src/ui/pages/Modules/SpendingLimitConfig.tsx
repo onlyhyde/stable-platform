@@ -5,6 +5,7 @@ import {
   validateSpendingLimitConfig,
 } from '@stablenet/core'
 import { useCallback, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
 import { formatEther, parseEther } from 'viem'
 
@@ -34,10 +35,10 @@ interface FormState {
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address
 
 const PERIOD_OPTIONS = [
-  { label: 'Hourly', value: PERIOD_PRESETS.HOURLY, description: 'Resets every hour' },
-  { label: 'Daily', value: PERIOD_PRESETS.DAILY, description: 'Resets every 24 hours' },
-  { label: 'Weekly', value: PERIOD_PRESETS.WEEKLY, description: 'Resets every 7 days' },
-  { label: 'Monthly', value: PERIOD_PRESETS.MONTHLY, description: 'Resets every 30 days' },
+  { labelKey: 'hourly', value: PERIOD_PRESETS.HOURLY, descKey: 'resetsEveryHour' },
+  { labelKey: 'daily', value: PERIOD_PRESETS.DAILY, descKey: 'resetsEvery24Hours' },
+  { labelKey: 'weekly', value: PERIOD_PRESETS.WEEKLY, descKey: 'resetsEvery7Days' },
+  { labelKey: 'monthly', value: PERIOD_PRESETS.MONTHLY, descKey: 'resetsEvery30Days' },
 ]
 
 const LIMIT_PRESETS = ['0.1', '0.5', '1', '5', '10', '50']
@@ -51,6 +52,8 @@ export function SpendingLimitConfigUI({
   onSubmit,
   onBack,
 }: SpendingLimitConfigProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   const [step, setStep] = useState<Step>('token')
   const [form, setForm] = useState<FormState>({
     tokenType: 'native',
@@ -72,8 +75,8 @@ export function SpendingLimitConfigUI({
   // Get period name
   const periodName = useMemo(() => {
     const option = PERIOD_OPTIONS.find((p) => p.value === form.period)
-    return option?.label || 'Custom'
-  }, [form.period])
+    return option ? t(option.labelKey) : tc('custom')
+  }, [form.period, t, tc])
 
   // Validate and submit
   const handleSubmit = useCallback(() => {
@@ -142,10 +145,10 @@ export function SpendingLimitConfigUI({
         <span className="text-3xl">💰</span>
         <div>
           <h3 className="text-lg font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-            Spending Limit Hook
+            {t('spendingLimitHook')}
           </h3>
           <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Set transaction limits per time period
+            {t('setTransactionLimits')}
           </p>
         </div>
       </div>
@@ -170,7 +173,7 @@ export function SpendingLimitConfigUI({
       {step === 'token' && (
         <div className="step-token">
           <h4 className="font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-            Select Token
+            {t('selectToken')}
           </h4>
 
           <div
@@ -178,7 +181,7 @@ export function SpendingLimitConfigUI({
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Choose which token to limit. The spending limit will reset after each period.
+              {t('selectTokenInfo')}
             </p>
           </div>
 
@@ -199,10 +202,10 @@ export function SpendingLimitConfigUI({
               <span className="text-2xl">⟠</span>
               <div>
                 <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                  Native ETH
+                  {t('nativeEth')}
                 </p>
                 <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                  Limit outgoing ETH transactions
+                  {t('limitOutgoingEth')}
                 </p>
               </div>
             </button>
@@ -223,10 +226,10 @@ export function SpendingLimitConfigUI({
               <span className="text-2xl">🪙</span>
               <div>
                 <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                  ERC-20 Token
+                  {t('erc20Token')}
                 </p>
                 <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                  Limit specific token transfers
+                  {t('limitTokenTransfers')}
                 </p>
               </div>
             </button>
@@ -238,7 +241,7 @@ export function SpendingLimitConfigUI({
                   className="block text-sm font-medium mb-1"
                   style={{ color: 'rgb(var(--foreground-secondary))' }}
                 >
-                  Token Contract Address
+                  {t('tokenContractAddress')}
                 </label>
                 <input
                   id="spending-limit-token-address"
@@ -258,7 +261,7 @@ export function SpendingLimitConfigUI({
       {step === 'limit' && (
         <div className="step-limit">
           <h4 className="font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-            Set Limit Amount
+            {t('setLimitAmount')}
           </h4>
 
           <div
@@ -266,7 +269,7 @@ export function SpendingLimitConfigUI({
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Maximum amount that can be spent during each period.
+              {t('maxAmountPerPeriod')}
             </p>
           </div>
 
@@ -277,7 +280,7 @@ export function SpendingLimitConfigUI({
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
-                Limit Amount ({form.tokenType === 'native' ? 'ETH' : 'Tokens'})
+                {t('limitAmountLabel', { unit: form.tokenType === 'native' ? tc('eth') : tc('tokens') })}
               </label>
               <input
                 id="spending-limit-amount"
@@ -304,7 +307,7 @@ export function SpendingLimitConfigUI({
                   }}
                   onClick={() => setForm((prev) => ({ ...prev, limitAmount: preset }))}
                 >
-                  {preset} {form.tokenType === 'native' ? 'ETH' : ''}
+                  {preset} {form.tokenType === 'native' ? tc('eth') : ''}
                 </button>
               ))}
             </div>
@@ -316,7 +319,7 @@ export function SpendingLimitConfigUI({
       {step === 'period' && (
         <div className="step-period">
           <h4 className="font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-            Reset Period
+            {t('resetPeriod')}
           </h4>
 
           <div
@@ -324,7 +327,7 @@ export function SpendingLimitConfigUI({
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              How often the spending limit resets.
+              {t('resetPeriodInfo')}
             </p>
           </div>
 
@@ -345,10 +348,10 @@ export function SpendingLimitConfigUI({
                 onClick={() => setForm((prev) => ({ ...prev, period: option.value }))}
               >
                 <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                  {option.label}
+                  {t(option.labelKey)}
                 </p>
                 <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                  {option.description}
+                  {t(option.descKey)}
                 </p>
               </button>
             ))}
@@ -360,7 +363,7 @@ export function SpendingLimitConfigUI({
       {step === 'review' && (
         <div className="step-review">
           <h4 className="font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-            Review Spending Limit
+            {t('reviewSpendingLimit')}
           </h4>
 
           {errors.length > 0 && (
@@ -400,11 +403,11 @@ export function SpendingLimitConfigUI({
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <div className="flex justify-between">
-              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Token</span>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('token')}</span>
               <span style={{ color: 'rgb(var(--foreground))' }}>
                 {form.tokenType === 'native' ? (
                   <span className="flex items-center gap-1">
-                    <span>⟠</span> Native ETH
+                    <span>⟠</span> {t('nativeEth')}
                   </span>
                 ) : (
                   <span className="font-mono text-xs">
@@ -414,13 +417,13 @@ export function SpendingLimitConfigUI({
               </span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Limit</span>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('limit')}</span>
               <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                {form.limitAmount} {form.tokenType === 'native' ? 'ETH' : 'tokens'}
+                {form.limitAmount} {form.tokenType === 'native' ? tc('eth') : tc('tokens')}
               </span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Reset Period</span>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('resetPeriod')}</span>
               <span style={{ color: 'rgb(var(--foreground))' }}>{periodName}</span>
             </div>
           </div>
@@ -434,8 +437,7 @@ export function SpendingLimitConfigUI({
             }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--foreground))' }}>
-              <strong>How it works:</strong> Any transaction exceeding the remaining allowance will
-              be blocked until the period resets.
+              <strong>{t('howItWorks')}</strong> {t('howItWorksDesc')}
             </p>
           </div>
 
@@ -448,8 +450,7 @@ export function SpendingLimitConfigUI({
             }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--warning))' }}>
-              <strong>Note:</strong> The hook will be applied to all transactions. Make sure the
-              limit is high enough for your normal usage.
+              <strong>{t('note')}</strong> {t('hookAppliedWarning')}
             </p>
           </div>
         </div>
@@ -458,11 +459,11 @@ export function SpendingLimitConfigUI({
       {/* Actions */}
       <div className="flex gap-3 mt-6">
         <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
-          {step === 'token' ? 'Cancel' : 'Back'}
+          {step === 'token' ? tc('cancel') : tc('back')}
         </button>
         {step === 'review' ? (
           <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
-            Install Hook
+            {t('installHook')}
           </button>
         ) : (
           <button
@@ -471,7 +472,7 @@ export function SpendingLimitConfigUI({
             onClick={nextStep}
             disabled={!canProceed()}
           >
-            Continue
+            {t('continue')}
           </button>
         )}
       </div>
@@ -500,6 +501,7 @@ export function SpendingLimitDisplay({
   period,
   resetTime,
 }: SpendingLimitDisplayProps) {
+  const { t } = useTranslation('modules')
   const remaining = limit > spent ? limit - spent : 0n
   const usedPercentage = limit > 0n ? Number((spent * 100n) / limit) : 0
   const isExceeded = spent >= limit
@@ -509,7 +511,7 @@ export function SpendingLimitDisplay({
 
   let resetIn: string
   if (secondsUntilReset === 0) {
-    resetIn = 'Now'
+    resetIn = t('now')
   } else if (secondsUntilReset < 3600) {
     resetIn = `${Math.floor(secondsUntilReset / 60)}m`
   } else if (secondsUntilReset < 86400) {
@@ -519,11 +521,11 @@ export function SpendingLimitDisplay({
   }
 
   const getPeriodLabel = () => {
-    if (period === PERIOD_PRESETS.HOURLY) return 'hourly'
-    if (period === PERIOD_PRESETS.DAILY) return 'daily'
-    if (period === PERIOD_PRESETS.WEEKLY) return 'weekly'
-    if (period === PERIOD_PRESETS.MONTHLY) return 'monthly'
-    return 'per period'
+    if (period === PERIOD_PRESETS.HOURLY) return t('hourly')
+    if (period === PERIOD_PRESETS.DAILY) return t('daily')
+    if (period === PERIOD_PRESETS.WEEKLY) return t('weekly')
+    if (period === PERIOD_PRESETS.MONTHLY) return t('monthly')
+    return t('perPeriod')
   }
 
   return (
@@ -540,7 +542,7 @@ export function SpendingLimitDisplay({
           <span className="text-xl">💰</span>
           <div>
             <p className="font-medium text-sm" style={{ color: 'rgb(var(--foreground))' }}>
-              Spending Limit
+              {t('spendingLimit')}
             </p>
             <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
               {tokenSymbol} ({getPeriodLabel()})
@@ -556,7 +558,7 @@ export function SpendingLimitDisplay({
             color: isExceeded ? 'rgb(var(--destructive))' : 'rgb(var(--success))',
           }}
         >
-          {isExceeded ? 'Exceeded' : 'Active'}
+          {isExceeded ? t('exceeded') : t('active')}
         </div>
       </div>
 
@@ -580,10 +582,10 @@ export function SpendingLimitDisplay({
         </div>
         <div className="flex justify-between mt-1">
           <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            {formatEther(spent)} used
+            {t('used', { amount: formatEther(spent) })}
           </span>
           <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            {formatEther(limit)} limit
+            {t('limitLabel', { amount: formatEther(limit) })}
           </span>
         </div>
       </div>
@@ -592,7 +594,7 @@ export function SpendingLimitDisplay({
       <div className="grid grid-cols-2 gap-2 text-center">
         <div className="p-2 rounded" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
           <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Remaining
+            {t('remaining')}
           </p>
           <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
             {formatEther(remaining)} {tokenSymbol}
@@ -600,7 +602,7 @@ export function SpendingLimitDisplay({
         </div>
         <div className="p-2 rounded" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
           <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Resets in
+            {t('resetsIn')}
           </p>
           <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
             {resetIn}

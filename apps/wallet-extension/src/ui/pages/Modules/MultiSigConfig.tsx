@@ -4,6 +4,7 @@ import {
   validateMultiSigValidatorConfig,
 } from '@stablenet/core'
 import { useCallback, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
 
 // ============================================================================
@@ -35,6 +36,8 @@ const MAX_SIGNERS = 10
 // ============================================================================
 
 export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigConfigProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   const [step, setStep] = useState<Step>('signers')
   const [form, setForm] = useState<FormState>({
     signers: [accountAddress], // Start with current account as first signer
@@ -139,10 +142,10 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
         <span className="text-3xl">👥</span>
         <div>
           <h3 className="text-lg font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-            MultiSig Validator
+            {t('multiSigValidator')}
           </h3>
           <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Require multiple signatures for transactions
+            {t('requireMultipleSignatures')}
           </p>
         </div>
       </div>
@@ -167,7 +170,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
       {step === 'signers' && (
         <div className="step-signers">
           <h4 className="font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-            Add Signers
+            {t('addSigners')}
           </h4>
 
           <div
@@ -175,8 +178,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Add wallet addresses that can sign transactions. You can add up to {MAX_SIGNERS}{' '}
-              signers.
+              {t('addSignersInfo', { max: MAX_SIGNERS })}
             </p>
           </div>
 
@@ -189,7 +191,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
                     className="text-xs font-medium"
                     style={{ color: 'rgb(var(--muted-foreground))' }}
                   >
-                    Signer {index + 1}
+                    {t('signerLabel', { index: index + 1 })}
                     {signer.toLowerCase() === accountAddress.toLowerCase() && (
                       <span
                         className="ml-2 px-1.5 py-0.5 rounded text-xs"
@@ -198,7 +200,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
                           color: 'rgb(var(--primary))',
                         }}
                       >
-                        You
+                        {t('you')}
                       </span>
                     )}
                   </span>
@@ -227,7 +229,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
                 </div>
                 {signer && signer.length !== 42 && (
                   <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
-                    Invalid address format
+                    {t('invalidAddressFormat')}
                   </p>
                 )}
               </div>
@@ -241,14 +243,15 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
               style={{ color: 'rgb(var(--primary))' }}
               onClick={handleAddSigner}
             >
-              + Add Signer
+              {t('addSigner')}
             </button>
           )}
 
           <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
             <p className="text-sm" style={{ color: 'rgb(var(--foreground))' }}>
-              <strong>{validSigners.length}</strong> valid signer
-              {validSigners.length !== 1 ? 's' : ''} added
+              {validSigners.length !== 1
+                ? t('validSignersCountPlural', { count: validSigners.length })
+                : t('validSignersCount', { count: validSigners.length })}
             </p>
           </div>
         </div>
@@ -258,7 +261,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
       {step === 'threshold' && (
         <div className="step-threshold">
           <h4 className="font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-            Set Threshold
+            {t('setThreshold')}
           </h4>
 
           <div
@@ -266,7 +269,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              How many signers must approve each transaction?
+              {t('setThresholdInfo')}
             </p>
           </div>
 
@@ -275,7 +278,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
               {form.threshold}
             </div>
             <p className="text-lg" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              of {validSigners.length} signers required
+              {t('ofSignersRequired', { count: validSigners.length })}
             </p>
           </div>
 
@@ -339,7 +342,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
                 }}
                 onClick={() => setForm((prev) => ({ ...prev, threshold: 1 }))}
               >
-                Any 1
+                {t('any1')}
               </button>
               {validSigners.length >= 2 && (
                 <button
@@ -362,7 +365,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
                     }))
                   }
                 >
-                  Majority
+                  {t('majority')}
                 </button>
               )}
               <button
@@ -378,7 +381,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
                 }}
                 onClick={() => setForm((prev) => ({ ...prev, threshold: validSigners.length }))}
               >
-                All
+                {t('all')}
               </button>
             </div>
           )}
@@ -392,9 +395,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
             }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--foreground))' }}>
-              <strong>Security tip:</strong> Higher thresholds are more secure but require more
-              coordination. A threshold of {Math.ceil(validSigners.length / 2)} (majority) is
-              recommended for most use cases.
+              <strong>{t('securityTip')}</strong> {t('securityTipDesc', { count: Math.ceil(validSigners.length / 2) })}
             </p>
           </div>
         </div>
@@ -404,7 +405,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
       {step === 'review' && (
         <div className="step-review">
           <h4 className="font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-            Review MultiSig Setup
+            {t('reviewMultiSig')}
           </h4>
 
           {errors.length > 0 && (
@@ -432,14 +433,14 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
               {form.threshold} of {validSigners.length}
             </p>
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              signatures required
+              {t('signaturesRequired')}
             </p>
           </div>
 
           {/* Signers List */}
           <div className="p-4 rounded-lg mb-4" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
             <h5 className="text-sm font-medium mb-3" style={{ color: 'rgb(var(--foreground))' }}>
-              Signers
+              {t('signers')}
             </h5>
             <div className="space-y-2">
               {validSigners.map((signer, index) => (
@@ -464,7 +465,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
                         color: 'rgb(var(--primary))',
                       }}
                     >
-                      You
+                      {t('you')}
                     </span>
                   )}
                 </div>
@@ -481,9 +482,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
             }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--warning))' }}>
-              <strong>Important:</strong> Once installed, every transaction will require{' '}
-              {form.threshold} signature{form.threshold !== 1 ? 's' : ''} from the listed addresses.
-              Make sure all signers have access to their wallets.
+              <strong>{t('important')}</strong> {t('multiSigWarning', { count: form.threshold, plural: form.threshold !== 1 ? 's' : '' })}
             </p>
           </div>
         </div>
@@ -492,11 +491,11 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
       {/* Actions */}
       <div className="flex gap-3 mt-6">
         <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
-          {step === 'signers' ? 'Cancel' : 'Back'}
+          {step === 'signers' ? tc('cancel') : tc('back')}
         </button>
         {step === 'review' ? (
           <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
-            Install Validator
+            {t('installValidator')}
           </button>
         ) : (
           <button
@@ -505,7 +504,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
             onClick={nextStep}
             disabled={!canProceed()}
           >
-            Continue
+            {t('continue')}
           </button>
         )}
       </div>
@@ -530,6 +529,7 @@ export function MultiSigDisplay({
   pendingApprovals = 0,
   requiredApprovals = threshold,
 }: MultiSigDisplayProps) {
+  const { t } = useTranslation('modules')
   return (
     <div
       className="multisig-display p-4 rounded-lg"
@@ -544,10 +544,10 @@ export function MultiSigDisplay({
           <span className="text-xl">👥</span>
           <div>
             <p className="font-medium text-sm" style={{ color: 'rgb(var(--foreground))' }}>
-              MultiSig Validator
+              {t('multiSigValidator')}
             </p>
             <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              {threshold} of {signers.length} required
+              {t('ofRequired', { threshold, total: signers.length })}
             </p>
           </div>
         </div>
@@ -559,7 +559,7 @@ export function MultiSigDisplay({
               color: 'rgb(var(--warning))',
             }}
           >
-            {pendingApprovals}/{requiredApprovals} approved
+            {t('approvedCount', { pending: pendingApprovals, required: requiredApprovals })}
           </div>
         )}
       </div>

@@ -376,5 +376,11 @@
   "troubleshoot_browser": "Try using a different browser (Chrome, Safari, Edge)",
   "troubleshoot_incognito": "Ensure you're not in incognito/private mode",
   "passkey": "Passkey",
-  "createdDate": "Created {{date}}"
+  "createdDate": "Created {{date}}",
+
+  "now": "Now",
+  "enterAmountInEth": "Enter amount in ETH",
+  "enterAmount": "Enter amount",
+  "dailyStakeLimit": "Daily Stake Limit",
+  "recipientLabel": "Recipient"
 }
