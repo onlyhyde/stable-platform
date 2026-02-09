@@ -501,7 +501,7 @@ async function handleMessage(
       return {
         type: MESSAGE_TYPES.RPC_RESPONSE,
         id: message.id,
-        payload: response,
+        payload: sanitizeForMessage(response),
       }
     }
 

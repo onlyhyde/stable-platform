@@ -1104,6 +1104,15 @@ const handlers: Record<string, RpcHandler> = {
         maxFeePerGas?: string
         maxPriorityFeePerGas?: string
         nonce?: string
+        type?: string
+        authorizationList?: Array<{
+          chainId: string | number
+          address: Address
+          nonce: string | number
+          v: string | number
+          r: string
+          s: string
+        }>
       },
     ]
 
@@ -1215,24 +1224,48 @@ const handlers: Record<string, RpcHandler> = {
       }
     }
 
+    // Check if this is an EIP-7702 SetCode transaction
+    const isEip7702 = txParams.type === '0x04' || (txParams.authorizationList && txParams.authorizationList.length > 0)
+
     // Build transaction object for signing
-    const transaction = {
-      to: txParams.to,
-      value: txParams.value ? BigInt(txParams.value) : BigInt(0),
-      data: txParams.data,
-      gas,
-      nonce,
-      chainId: network.chainId,
-      ...(maxFeePerGas
-        ? {
-            maxFeePerGas,
-            maxPriorityFeePerGas: maxPriorityFeePerGas ?? maxFeePerGas,
-            type: 'eip1559' as const,
-          }
-        : {
-            gasPrice: gasPrice ?? BigInt(0),
-          }),
-    }
+    const transaction = isEip7702
+      ? {
+          to: txParams.to,
+          value: txParams.value ? BigInt(txParams.value) : BigInt(0),
+          data: txParams.data,
+          gas,
+          nonce,
+          chainId: network.chainId,
+          maxFeePerGas: maxFeePerGas ?? gasPrice ?? await client.getGasPrice(),
+          maxPriorityFeePerGas: maxPriorityFeePerGas ?? maxFeePerGas ?? gasPrice ?? BigInt(0),
+          type: 'eip7702' as const,
+          authorizationList: (txParams.authorizationList ?? []).map((auth) => ({
+            chainId: Number(auth.chainId),
+            contractAddress: auth.address,
+            nonce: Number(auth.nonce),
+            v: BigInt(auth.v),
+            r: auth.r as Hex,
+            s: auth.s as Hex,
+            yParity: Number(auth.v) === 0 ? 0 : Number(auth.v) === 1 ? 1 : Number(auth.v) - 27,
+          })),
+        }
+      : {
+          to: txParams.to,
+          value: txParams.value ? BigInt(txParams.value) : BigInt(0),
+          data: txParams.data,
+          gas,
+          nonce,
+          chainId: network.chainId,
+          ...(maxFeePerGas
+            ? {
+                maxFeePerGas,
+                maxPriorityFeePerGas: maxPriorityFeePerGas ?? maxFeePerGas,
+                type: 'eip1559' as const,
+              }
+            : {
+                gasPrice: gasPrice ?? BigInt(0),
+              }),
+        }
 
     // Sign transaction
     let signedTx: Hex

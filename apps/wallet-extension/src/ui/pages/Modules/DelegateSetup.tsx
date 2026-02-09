@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { isAddress } from 'viem'
 import type { Address, Hash } from 'viem'
 
+import { sendMessageWithTimeout, TX_TIMEOUT_MS } from '../../../shared/utils/messaging'
 import { useSelectedNetwork, useWalletStore } from '../../hooks'
 
 // ============================================================================
@@ -42,7 +43,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
       setError(null)
 
       // Step 1: Sign the EIP-7702 authorization via wallet_signAuthorization
-      const authResponse = await chrome.runtime.sendMessage({
+      const authResponse = await sendMessageWithTimeout<Record<string, unknown>>({
         type: 'RPC_REQUEST',
         id: `auth-7702-${Date.now()}`,
         payload: {
@@ -57,17 +58,18 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             },
           ],
         },
-      })
+      }, TX_TIMEOUT_MS)
 
-      if (authResponse?.payload?.error) {
-        throw new Error(authResponse.payload.error.message || 'Authorization signing failed')
+      const authPayload = (authResponse as { payload?: { error?: { message?: string }; result?: unknown } })?.payload
+      if (authPayload?.error) {
+        throw new Error(authPayload.error.message || 'Authorization signing failed')
       }
 
-      const { signedAuthorization } = authResponse.payload.result as {
+      const { signedAuthorization } = authPayload.result as {
         signedAuthorization: {
-          chainId: bigint
+          chainId: string // BigInt serialized as string via sanitizeForMessage
           address: Address
-          nonce: bigint
+          nonce: string // BigInt serialized as string via sanitizeForMessage
           v: number
           r: string
           s: string
@@ -75,7 +77,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
       }
 
       // Step 2: Send the EIP-7702 SetCode transaction with the authorization
-      const txResponse = await chrome.runtime.sendMessage({
+      const txResponse = await sendMessageWithTimeout<Record<string, unknown>>({
         type: 'RPC_REQUEST',
         id: `send-7702-${Date.now()}`,
         payload: {
@@ -93,13 +95,14 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             },
           ],
         },
-      })
+      }, TX_TIMEOUT_MS)
 
-      if (txResponse?.payload?.error) {
-        throw new Error(txResponse.payload.error.message || 'Transaction failed')
+      const txPayload = (txResponse as { payload?: { error?: { message?: string }; result?: unknown } })?.payload
+      if (txPayload?.error) {
+        throw new Error(txPayload.error.message || 'Transaction failed')
       }
 
-      const hash = txResponse?.payload?.result as Hash
+      const hash = txPayload?.result as Hash
       setTxHash(hash)
       setStep('success')
 
