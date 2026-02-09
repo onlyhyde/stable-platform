@@ -1,7 +1,7 @@
 export { Button } from './Button'
 export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './Card'
 export { Input } from './Input'
-export { Modal } from './Modal'
+export { Modal, ModalActions } from './Modal'
 export { PageHeader } from './PageHeader'
 export { InfoBanner } from './InfoBanner'
 export { Toggle, ToggleCard } from './Toggle'

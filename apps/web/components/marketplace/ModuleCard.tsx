@@ -75,9 +75,10 @@ interface ModuleCardProps {
   onInstall?: (id: string) => void
   onViewDetails?: (id: string) => void
   installed?: boolean
+  isInstalling?: boolean
 }
 
-export function ModuleCard({ module, onInstall, onViewDetails, installed }: ModuleCardProps) {
+export function ModuleCard({ module, onInstall, onViewDetails, installed, isInstalling }: ModuleCardProps) {
   const typeStyle = moduleTypeStyles[module.moduleType] ?? {
     bg: 'rgb(var(--secondary))',
     color: 'rgb(var(--muted-foreground))',
@@ -167,9 +168,10 @@ export function ModuleCard({ module, onInstall, onViewDetails, installed }: Modu
           size="sm"
           className="flex-1"
           onClick={() => onInstall?.(module.id)}
-          disabled={installed}
+          disabled={installed || isInstalling}
+          isLoading={isInstalling}
         >
-          {installed ? 'Installed' : 'Install'}
+          {installed ? 'Installed' : isInstalling ? 'Installing...' : 'Install'}
         </Button>
       </CardFooter>
     </Card>

@@ -37,3 +37,9 @@ export type {
   UninstallModuleParams,
   ModuleCallData,
 } from './useModule'
+export { useModuleInstall } from './useModuleInstall'
+export type {
+  ModuleInstallRequest,
+  ModuleInstallResult,
+  UseModuleInstallReturn,
+} from './useModuleInstall'

@@ -1,8 +1,17 @@
 'use client'
 
-import { Card, CardContent, Input, PageHeader } from '@/components/common'
-import { CategoryFilter, ModuleCard, type ModuleCardData } from '@/components/marketplace'
-import { useMemo, useState } from 'react'
+import { Card, CardContent, ConnectWalletCard, InfoBanner, Input, PageHeader } from '@/components/common'
+import { useToast } from '@/components/common/Toast'
+import {
+  CategoryFilter,
+  InstallModuleModal,
+  ModuleCard,
+  type ModuleCardData,
+  ModuleDetailModal,
+} from '@/components/marketplace'
+import { useModuleInstall, useSmartAccount, useWallet } from '@/hooks'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Hex } from 'viem'
 
 /**
  * Default module catalog (PoC - served inline; production would fetch from module-registry API)
@@ -136,16 +145,117 @@ const MODULE_CATALOG: ModuleCardData[] = [
   },
 ]
 
+const ALL_MODULE_IDS = MODULE_CATALOG.map((m) => m.id)
+
 export default function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedType, setSelectedType] = useState('all')
-  const [installedModules] = useState<Set<string>>(new Set(['ecdsa-validator']))
+
+  // Modal state
+  const [installModalModule, setInstallModalModule] = useState<ModuleCardData | null>(null)
+  const [detailModalModule, setDetailModalModule] = useState<ModuleCardData | null>(null)
+
+  // Hooks
+  const { isConnected, isConnecting, address, connect, connectors } = useWallet()
+  const { status } = useSmartAccount()
+  const { addToast, updateToast } = useToast()
+  const {
+    installModule,
+    installedModules,
+    installingModuleId,
+    loadInstalledModules,
+  } = useModuleInstall()
+
+  // Load on-chain installed status when smart account is ready
+  useEffect(() => {
+    if (isConnected && status.isSmartAccount) {
+      loadInstalledModules(ALL_MODULE_IDS)
+    }
+  }, [isConnected, status.isSmartAccount, loadInstalledModules])
+
+  // ============================================================================
+  // Handlers
+  // ============================================================================
+
+  const findModule = useCallback(
+    (id: string) => MODULE_CATALOG.find((m) => m.id === id) ?? null,
+    []
+  )
+
+  const handleInstallClick = useCallback(
+    (moduleId: string) => {
+      if (!isConnected) {
+        addToast({ type: 'info', title: 'Connect your wallet first' })
+        return
+      }
+      if (!status.isSmartAccount) {
+        addToast({
+          type: 'info',
+          title: 'Smart Account Required',
+          message: 'Upgrade your account via the Settings page to install modules.',
+        })
+        return
+      }
+      setInstallModalModule(findModule(moduleId))
+    },
+    [isConnected, status.isSmartAccount, addToast, findModule]
+  )
+
+  const handleViewDetails = useCallback(
+    (moduleId: string) => {
+      setDetailModalModule(findModule(moduleId))
+    },
+    [findModule]
+  )
+
+  const handleInstallConfirm = useCallback(
+    async (moduleId: string, initData?: Hex) => {
+      const mod = findModule(moduleId)
+      const toastId = addToast({
+        type: 'loading',
+        title: `Installing ${mod?.name ?? moduleId}...`,
+        message: 'Please confirm the transaction in your wallet.',
+        persistent: true,
+      })
+
+      const result = await installModule({ moduleId, initData })
+
+      if (result.success) {
+        updateToast(toastId, {
+          type: 'success',
+          title: `${mod?.name ?? moduleId} installed`,
+          message: 'Module has been installed on your smart account.',
+          txHash: result.txHash,
+          persistent: false,
+        })
+        setInstallModalModule(null)
+      } else {
+        updateToast(toastId, {
+          type: 'error',
+          title: 'Installation failed',
+          message: result.error,
+          persistent: false,
+        })
+      }
+    },
+    [installModule, addToast, updateToast, findModule]
+  )
+
+  const handleDetailInstallClick = useCallback(() => {
+    if (detailModalModule) {
+      setDetailModalModule(null)
+      handleInstallClick(detailModalModule.id)
+    }
+  }, [detailModalModule, handleInstallClick])
+
+  // ============================================================================
+  // Filtering
+  // ============================================================================
 
   const filteredModules = useMemo(() => {
     let results = MODULE_CATALOG
 
-    // Filter by search
     if (searchQuery) {
       const lower = searchQuery.toLowerCase()
       results = results.filter(
@@ -156,12 +266,10 @@ export default function MarketplacePage() {
       )
     }
 
-    // Filter by category
     if (selectedCategory !== 'all') {
       results = results.filter((m) => m.category === selectedCategory)
     }
 
-    // Filter by module type
     if (selectedType !== 'all') {
       results = results.filter((m) => m.moduleType === selectedType)
     }
@@ -179,12 +287,62 @@ export default function MarketplacePage() {
     ).length,
   }
 
+  // ============================================================================
+  // Render helpers
+  // ============================================================================
+
+  const renderModuleCard = (module: ModuleCardData) => (
+    <ModuleCard
+      key={module.id}
+      module={module}
+      installed={installedModules.has(module.id)}
+      isInstalling={installingModuleId === module.id}
+      onInstall={handleInstallClick}
+      onViewDetails={handleViewDetails}
+    />
+  )
+
+  // ============================================================================
+  // Wallet not connected
+  // ============================================================================
+
+  if (!isConnected) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Module Marketplace"
+          description="Browse and install ERC-7579 modules to extend your smart account capabilities"
+        />
+        <ConnectWalletCard
+          onConnect={connect}
+          isConnecting={isConnecting}
+          title="Connect Your Wallet"
+          description="Connect your wallet to browse and install smart account modules."
+          connectors={connectors}
+        />
+      </div>
+    )
+  }
+
+  // ============================================================================
+  // Main render
+  // ============================================================================
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Module Marketplace"
         description="Browse and install ERC-7579 modules to extend your smart account capabilities"
       />
+
+      {/* Smart Account upgrade banner */}
+      {isConnected && !status.isSmartAccount && !status.isLoading && (
+        <InfoBanner
+          variant="warning"
+          title="Smart Account Required"
+          description="Upgrade your EOA to a Smart Account in Settings to install modules."
+        />
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -260,15 +418,7 @@ export default function MarketplacePage() {
             Featured Modules
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {featuredModules.map((module) => (
-              <ModuleCard
-                key={module.id}
-                module={module}
-                installed={installedModules.has(module.id)}
-                onInstall={(id) => console.info(`Install module: ${id}`)}
-                onViewDetails={(id) => console.info(`View details: ${id}`)}
-              />
-            ))}
+            {featuredModules.map(renderModuleCard)}
           </div>
         </div>
       )}
@@ -306,18 +456,30 @@ export default function MarketplacePage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredModules.map((module) => (
-              <ModuleCard
-                key={module.id}
-                module={module}
-                installed={installedModules.has(module.id)}
-                onInstall={(id) => console.info(`Install module: ${id}`)}
-                onViewDetails={(id) => console.info(`View details: ${id}`)}
-              />
-            ))}
+            {filteredModules.map(renderModuleCard)}
           </div>
         )}
       </div>
+
+      {/* Install Modal */}
+      <InstallModuleModal
+        isOpen={installModalModule !== null}
+        onClose={() => setInstallModalModule(null)}
+        module={installModalModule}
+        onInstall={handleInstallConfirm}
+        isInstalling={installingModuleId !== null}
+        isSmartAccount={status.isSmartAccount}
+        walletAddress={address}
+      />
+
+      {/* Detail Modal */}
+      <ModuleDetailModal
+        isOpen={detailModalModule !== null}
+        onClose={() => setDetailModalModule(null)}
+        module={detailModalModule}
+        installed={detailModalModule ? installedModules.has(detailModalModule.id) : false}
+        onInstallClick={handleDetailInstallClick}
+      />
     </div>
   )
 }
