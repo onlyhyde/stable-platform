@@ -13,7 +13,7 @@ import {
   getModuleTypeName,
   getUserOperationHash,
 } from '@stablenet/core'
-import type { Address, Hex } from 'viem'
+import type { Address, Hash, Hex } from 'viem'
 import { http, createPublicClient, isAddress } from 'viem'
 import { DEFAULT_VALUES, ENTRY_POINT_ADDRESSES, RPC_ERRORS } from '../../shared/constants'
 import { createLogger } from '../../shared/utils/logger'
@@ -843,6 +843,173 @@ const handlers: Record<string, RpcHandler> = {
   },
 
   /**
+   * Delegate Account via EIP-7702 (wallet_delegateAccount)
+   * Combined authorization signing + transaction sending in a single step.
+   * Handles the executor:'self' nonce adjustment automatically.
+   *
+   * This replaces the error-prone 2-step flow (wallet_signAuthorization + eth_sendTransaction)
+   * by performing both operations internally, avoiding serialization round-trips and
+   * ensuring correct nonce handling (authorization.nonce = tx.nonce + 1).
+   */
+  wallet_delegateAccount: async (params, origin) => {
+    const [request] = params as [
+      {
+        account: Address
+        contractAddress: Address
+        chainId?: number | string
+      },
+    ]
+
+    if (!request?.account || !request?.contractAddress) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Missing required parameters: account and contractAddress',
+      })
+    }
+
+    const { account, contractAddress } = request
+
+    // Validate addresses
+    if (!isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid account address format',
+      })
+    }
+    if (!isAddress(contractAddress)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid contract address format',
+      })
+    }
+
+    // Verify account is connected (internal requests always pass)
+    const isInternalRequest = origin === 'extension' || origin === 'internal'
+    if (!isInternalRequest) {
+      const connectedAccounts = walletState.getConnectedAccounts(origin)
+      const isAuthorized = connectedAccounts.some(
+        (a) => a.toLowerCase() === account.toLowerCase()
+      )
+      if (!isAuthorized) {
+        throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+      }
+    }
+
+    // Check wallet is unlocked
+    if (!keyringController.isUnlocked()) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: 'Wallet is locked',
+      })
+    }
+
+    // Get network
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = getPublicClient(network.rpcUrl)
+    const chainId = request.chainId !== undefined
+      ? (typeof request.chainId === 'string'
+          ? Number.parseInt(request.chainId, request.chainId.startsWith('0x') ? 16 : 10)
+          : request.chainId)
+      : network.chainId
+
+    // Request user approval for external requests
+    if (!isInternalRequest) {
+      try {
+        await approvalController.requestAuthorization(
+          origin, account, contractAddress, chainId, 0n
+        )
+      } catch (error) {
+        handleApprovalError(error, { method: 'wallet_delegateAccount', origin })
+      }
+    }
+
+    try {
+      // Step 1: Get the transaction nonce (N)
+      const txNonce = await client.getTransactionCount({ address: account })
+
+      // Step 2: Authorization nonce = N + 1 (executor:'self' pattern)
+      // When the EOA both signs the authorization AND sends the transaction:
+      // - Transaction uses nonce N
+      // - EVM increments sender nonce to N+1 before processing authorizations
+      // - Authorization nonce must match the authority's nonce at processing time (N+1)
+      const authNonce = BigInt(txNonce + 1)
+
+      // Step 3: Create and sign the authorization
+      const authorization = createAuthorization(chainId, contractAddress, authNonce)
+      const authorizationHash = createAuthorizationHash(authorization)
+      const signatureResult = await keyringController.signAuthorizationHash(
+        account, authorizationHash
+      )
+
+      // Step 4: Get gas prices
+      const gasPrice = await client.getGasPrice()
+      const gas = 100_000n // EIP-7702 SetCode transaction base gas
+
+      // Step 5: Build the EIP-7702 transaction with proper viem field names
+      const transaction = {
+        to: account, // Self-referencing for delegation
+        value: 0n,
+        data: '0x' as Hex,
+        gas,
+        nonce: txNonce,
+        chainId: network.chainId,
+        maxFeePerGas: gasPrice * 2n,
+        maxPriorityFeePerGas: gasPrice / 10n > 0n ? gasPrice / 10n : 1_000_000n,
+        type: 'eip7702' as const,
+        authorizationList: [
+          {
+            contractAddress,
+            chainId: chainId,
+            nonce: txNonce + 1,
+            yParity: signatureResult.v as 0 | 1,
+            r: signatureResult.r,
+            s: signatureResult.s,
+            v: BigInt(signatureResult.v),
+          },
+        ],
+      }
+
+      // Step 6: Sign the transaction
+      const signedTx = await keyringController.signTransaction(account, transaction)
+
+      // Step 7: Broadcast
+      const txHash = await client.sendRawTransaction({
+        serializedTransaction: signedTx,
+      })
+
+      // Track pending transaction
+      try {
+        const txId = `delegate-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+        await walletState.addPendingTransaction({
+          id: txId,
+          from: account,
+          to: account,
+          value: 0n,
+          data: '0x' as Hex,
+          chainId: network.chainId,
+          status: 'submitted',
+          type: 'send',
+          txHash,
+          timestamp: Date.now(),
+        })
+      } catch (err) {
+        logger.warn('Failed to track delegation transaction (tx was broadcast successfully)')
+      }
+
+      return { txHash }
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'EIP-7702 delegation failed',
+      })
+    }
+  },
+
+  /**
    * Send a UserOperation (ERC-4337)
    */
   eth_sendUserOperation: async (params, origin) => {
@@ -1313,7 +1480,7 @@ const handlers: Record<string, RpcHandler> = {
         maxPriorityFeePerGas,
       })
     } catch (err) {
-      logger.warn('Failed to track pending transaction (tx was broadcast successfully)', err)
+      logger.warn('Failed to track pending transaction (tx was broadcast successfully)')
     }
 
     return txHash

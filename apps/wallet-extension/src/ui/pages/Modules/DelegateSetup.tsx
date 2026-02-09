@@ -42,14 +42,15 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
       setStep('pending')
       setError(null)
 
-      // Step 1: Sign the EIP-7702 authorization via wallet_signAuthorization
-      const authResponse = await sendMessageWithTimeout<Record<string, unknown>>({
+      // Single RPC call: wallet_delegateAccount handles authorization signing + transaction
+      // sending internally with correct nonce handling (executor:'self' pattern)
+      const response = await sendMessageWithTimeout<Record<string, unknown>>({
         type: 'RPC_REQUEST',
-        id: `auth-7702-${Date.now()}`,
+        id: `delegate-7702-${Date.now()}`,
         payload: {
           jsonrpc: '2.0',
           id: 1,
-          method: 'wallet_signAuthorization',
+          method: 'wallet_delegateAccount',
           params: [
             {
               account,
@@ -60,50 +61,13 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
         },
       }, TX_TIMEOUT_MS)
 
-      const authPayload = (authResponse as { payload?: { error?: { message?: string }; result?: unknown } })?.payload
-      if (authPayload?.error) {
-        throw new Error(authPayload.error.message || 'Authorization signing failed')
+      const payload = (response as { payload?: { error?: { message?: string }; result?: unknown } })?.payload
+      if (payload?.error) {
+        throw new Error(payload.error.message || 'Delegation failed')
       }
 
-      const { signedAuthorization } = authPayload.result as {
-        signedAuthorization: {
-          chainId: string // BigInt serialized as string via sanitizeForMessage
-          address: Address
-          nonce: string // BigInt serialized as string via sanitizeForMessage
-          v: number
-          r: string
-          s: string
-        }
-      }
-
-      // Step 2: Send the EIP-7702 SetCode transaction with the authorization
-      const txResponse = await sendMessageWithTimeout<Record<string, unknown>>({
-        type: 'RPC_REQUEST',
-        id: `send-7702-${Date.now()}`,
-        payload: {
-          jsonrpc: '2.0',
-          id: 2,
-          method: 'eth_sendTransaction',
-          params: [
-            {
-              from: account,
-              to: account, // Self-referencing for delegation setup
-              value: '0x0',
-              data: '0x',
-              type: '0x04', // EIP-7702 SetCode transaction type
-              authorizationList: [signedAuthorization],
-            },
-          ],
-        },
-      }, TX_TIMEOUT_MS)
-
-      const txPayload = (txResponse as { payload?: { error?: { message?: string }; result?: unknown } })?.payload
-      if (txPayload?.error) {
-        throw new Error(txPayload.error.message || 'Transaction failed')
-      }
-
-      const hash = txPayload?.result as Hash
-      setTxHash(hash)
+      const result = payload?.result as { txHash: Hash }
+      setTxHash(result.txHash)
       setStep('success')
 
       // Sync wallet state to pick up account type change
