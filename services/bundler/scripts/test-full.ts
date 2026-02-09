@@ -13,7 +13,6 @@ import {
   createPublicClient,
   encodeAbiParameters,
   encodeFunctionData,
-  encodePacked,
   http,
   keccak256,
   pad,
@@ -27,13 +26,13 @@ const CONFIG = {
   entryPoint: '0xef6817fe73741a8f10088f9511c64b666a338a14' as Address,
   factory: '0xbebb0338503f9e28ffdc84c3548f8454f12dd1d3' as Address,
   ecdsaValidator: '0xb33dc2d82eaee723ca7687d70209ed9a861b3b46' as Address,
-  paymaster: '0x4217f538f989f617b5f8afdf5b18568ffd5bb271' as Address,
+  paymaster: '0xca65a420afc302a167021a503e80b97d4a22e43b' as Address,
   // Account owner
   senderPrivateKey:
     '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as Hex,
-  // Paymaster signer (signs paymaster data to approve gas sponsorship)
+  // Paymaster signer = verifyingSigner (same as account owner for this deployment)
   paymasterSignerKey:
-    '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' as Hex,
+    '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as Hex,
 }
 
 const KERNEL_ACCOUNT_ABI = [
@@ -103,6 +102,7 @@ function packGasLimits(a: bigint, b: bigint): Hex {
 
 /**
  * Compute VerifyingPaymaster hash (matches VerifyingPaymaster.sol getHash())
+ * Note: The contract uses abi.encode (NOT abi.encodePacked)
  */
 function computePaymasterHash(params: {
   sender: Address
@@ -118,19 +118,19 @@ function computePaymasterHash(params: {
   validAfter: bigint
 }): Hex {
   return keccak256(
-    encodePacked(
+    encodeAbiParameters(
       [
-        'address',   // sender
-        'uint256',   // nonce
-        'bytes32',   // keccak256(initCode)
-        'bytes32',   // keccak256(callData)
-        'bytes32',   // accountGasLimits
-        'uint256',   // preVerificationGas
-        'bytes32',   // gasFees
-        'uint256',   // chainId
-        'address',   // paymaster address
-        'uint48',    // validUntil
-        'uint48',    // validAfter
+        { type: 'address' },   // sender
+        { type: 'uint256' },   // nonce
+        { type: 'bytes32' },   // keccak256(initCode)
+        { type: 'bytes32' },   // keccak256(callData)
+        { type: 'bytes32' },   // accountGasLimits
+        { type: 'uint256' },   // preVerificationGas
+        { type: 'bytes32' },   // gasFees
+        { type: 'uint256' },   // chainId
+        { type: 'address' },   // paymaster address
+        { type: 'uint48' },    // validUntil
+        { type: 'uint48' },    // validAfter
       ],
       [
         params.sender,

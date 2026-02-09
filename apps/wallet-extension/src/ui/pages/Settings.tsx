@@ -334,9 +334,9 @@ export function Settings() {
         explorerUrl: editForm.explorerUrl.trim() || undefined,
         indexerUrl: editForm.indexerUrl.trim() || undefined,
         currency: {
-          ...editingNetwork.currency,
           name: editForm.currencySymbol.trim() || editingNetwork.currency.name,
           symbol: editForm.currencySymbol.trim() || editingNetwork.currency.symbol,
+          decimals: editingNetwork.currency.decimals,
         },
       }
 

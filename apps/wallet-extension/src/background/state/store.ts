@@ -149,8 +149,8 @@ class WalletStateManager {
       await chrome.storage.local.set({
         [STORAGE_KEYS.WALLET_STATE]: this.state,
       })
-    } catch {
-      // Silent fail for persistence
+    } catch (error) {
+      console.error('[WalletStore] Failed to persist state:', error)
     }
   }
 
