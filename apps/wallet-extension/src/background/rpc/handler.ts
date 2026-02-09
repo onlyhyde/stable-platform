@@ -787,17 +787,20 @@ const handlers: Record<string, RpcHandler> = {
       }
     }
 
-    // Request user approval
-    try {
-      await approvalController.requestAuthorization(
-        origin,
-        account,
-        contractAddress,
-        chainId,
-        nonce
-      )
-    } catch (error) {
-      handleApprovalError(error, { method: 'wallet_grantPermissions', origin })
+    // Request user approval (skip for internal wallet UI - user already confirmed in DelegateSetup)
+    const isInternalRequest = origin === 'extension' || origin === 'internal'
+    if (!isInternalRequest) {
+      try {
+        await approvalController.requestAuthorization(
+          origin,
+          account,
+          contractAddress,
+          chainId,
+          nonce
+        )
+      } catch (error) {
+        handleApprovalError(error, { method: 'wallet_grantPermissions', origin })
+      }
     }
 
     // After approval, sign the authorization
