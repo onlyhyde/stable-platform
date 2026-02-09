@@ -1,0 +1,148 @@
+import { createPublicClient, http, type Address, type Hex, concat, pad, toHex, encodeFunctionData, encodeAbiParameters, keccak256 } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const CONFIG = {
+  rpcUrl: 'http://localhost:8501',
+  entryPoint: '0xef6817fe73741a8f10088f9511c64b666a338a14' as Address,
+  factory: '0xbebb0338503f9e28ffdc84c3548f8454f12dd1d3' as Address,
+  ecdsaValidator: '0xb33dc2d82eaee723ca7687d70209ed9a861b3b46' as Address,
+  paymaster: '0x4217f538f989f617b5f8afdf5b18568ffd5bb271' as Address,
+  senderPrivateKey: '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as Hex,
+}
+
+const ENTRY_POINT_ABI = [
+  {
+    type: 'function',
+    name: 'simulateValidation',
+    inputs: [{
+      name: 'userOp',
+      type: 'tuple',
+      components: [
+        { name: 'sender', type: 'address' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'initCode', type: 'bytes' },
+        { name: 'callData', type: 'bytes' },
+        { name: 'accountGasLimits', type: 'bytes32' },
+        { name: 'preVerificationGas', type: 'uint256' },
+        { name: 'gasFees', type: 'bytes32' },
+        { name: 'paymasterAndData', type: 'bytes' },
+        { name: 'signature', type: 'bytes' },
+      ],
+    }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+] as const
+
+const KERNEL_ACCOUNT_ABI = [
+  { type: 'function', name: 'execute', inputs: [{ name: 'mode', type: 'bytes32' }, { name: 'executionCalldata', type: 'bytes' }], outputs: [], stateMutability: 'payable' },
+  { type: 'function', name: 'initialize', inputs: [{ name: 'rootValidator', type: 'bytes21' }, { name: 'hook', type: 'address' }, { name: 'validatorData', type: 'bytes' }, { name: 'hookData', type: 'bytes' }, { name: 'initConfig', type: 'bytes[]' }], outputs: [], stateMutability: 'nonpayable' },
+] as const
+
+const KERNEL_FACTORY_ABI = [
+  { type: 'function', name: 'createAccount', inputs: [{ name: 'initData', type: 'bytes' }, { name: 'salt', type: 'bytes32' }], outputs: [{ name: '', type: 'address' }], stateMutability: 'payable' },
+  { type: 'function', name: 'getAddress', inputs: [{ name: 'initData', type: 'bytes' }, { name: 'salt', type: 'bytes32' }], outputs: [{ name: '', type: 'address' }], stateMutability: 'view' },
+] as const
+
+function encodeRootValidator(validatorAddress: Address): Hex {
+  return concat([pad(toHex(1n), { size: 1 }), validatorAddress]) as Hex
+}
+
+async function main() {
+  const signer = privateKeyToAccount(CONFIG.senderPrivateKey)
+  const publicClient = createPublicClient({ transport: http(CONFIG.rpcUrl) })
+
+  // Encode init data
+  const rootValidator = encodeRootValidator(CONFIG.ecdsaValidator)
+  const initializeData = encodeFunctionData({
+    abi: KERNEL_ACCOUNT_ABI,
+    functionName: 'initialize',
+    args: [rootValidator, '0x0000000000000000000000000000000000000000' as Address, signer.address, '0x' as Hex, []],
+  })
+  const salt = pad(toHex(0n), { size: 32 })
+  
+  const smartAccountAddress = await publicClient.readContract({
+    address: CONFIG.factory, abi: KERNEL_FACTORY_ABI, functionName: 'getAddress', args: [initializeData, salt],
+  }) as Address
+  console.log('Smart Account:', smartAccountAddress)
+
+  const factoryData = encodeFunctionData({
+    abi: KERNEL_FACTORY_ABI, functionName: 'createAccount', args: [initializeData, salt],
+  })
+
+  // Simple no-op call
+  const mode = `0x${'00'.repeat(32)}` as Hex
+  const executionCalldata = encodeAbiParameters(
+    [{ type: 'address' }, { type: 'uint256' }, { type: 'bytes' }],
+    [smartAccountAddress, 0n, '0x' as Hex],
+  )
+  const callData = encodeFunctionData({
+    abi: KERNEL_ACCOUNT_ABI, functionName: 'execute', args: [mode, executionCalldata],
+  })
+
+  const gasPrice = await publicClient.getGasPrice()
+  const maxFeePerGas = gasPrice * 2n
+  const maxPriorityFeePerGas = gasPrice
+
+  // Pack for EntryPoint
+  const initCode = concat([CONFIG.factory, factoryData]) as Hex
+  const accountGasLimits = concat([
+    pad(toHex(500000n), { size: 16 }),
+    pad(toHex(200000n), { size: 16 }),
+  ]) as Hex
+  const gasFees = concat([
+    pad(toHex(maxPriorityFeePerGas), { size: 16 }),
+    pad(toHex(maxFeePerGas), { size: 16 }),
+  ]) as Hex
+  const paymasterAndData = concat([
+    CONFIG.paymaster,
+    pad(toHex(200000n), { size: 16 }),
+    pad(toHex(100000n), { size: 16 }),
+    '0x' as Hex,
+  ]) as Hex
+
+  // Compute hash for signing
+  const userOpEncoded = encodeAbiParameters(
+    [{ type: 'address' }, { type: 'uint256' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'uint256' }, { type: 'bytes32' }, { type: 'bytes32' }],
+    [smartAccountAddress, 0n, keccak256(initCode), keccak256(callData), accountGasLimits, 100000n, gasFees, keccak256(paymasterAndData)],
+  )
+  const innerHash = keccak256(userOpEncoded)
+  const userOpHash = keccak256(
+    encodeAbiParameters(
+      [{ type: 'bytes32' }, { type: 'address' }, { type: 'uint256' }],
+      [innerHash, CONFIG.entryPoint, 8283n],
+    )
+  )
+
+  const rawSignature = await signer.signMessage({ message: { raw: userOpHash } })
+  const signature = concat(['0x02' as Hex, rawSignature]) as Hex
+
+  const packedOp = {
+    sender: smartAccountAddress,
+    nonce: 0n,
+    initCode,
+    callData,
+    accountGasLimits,
+    preVerificationGas: 100000n,
+    gasFees,
+    paymasterAndData,
+    signature,
+  }
+
+  console.log('\nSimulating validation...')
+  try {
+    await publicClient.simulateContract({
+      address: CONFIG.entryPoint,
+      abi: ENTRY_POINT_ABI,
+      functionName: 'simulateValidation',
+      args: [packedOp],
+    })
+    console.log('UNEXPECTED: no revert')
+  } catch (err: any) {
+    // Parse error data
+    const errStr = JSON.stringify(err, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2)
+    console.log('Simulation result (error):', errStr.slice(0, 3000))
+  }
+}
+
+main().catch(console.error)

@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync } from 'fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -14,8 +14,11 @@ function copyManifestPlugin() {
       if (!existsSync(distDir)) {
         mkdirSync(distDir, { recursive: true })
       }
-      // Copy manifest.json
-      copyFileSync(resolve(__dirname, 'manifest.json'), resolve(__dirname, 'dist/manifest.json'))
+      // Copy manifest.json with version synced from package.json
+      const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'))
+      const manifest = JSON.parse(readFileSync(resolve(__dirname, 'manifest.json'), 'utf-8'))
+      manifest.version = pkg.version
+      writeFileSync(resolve(__dirname, 'dist/manifest.json'), JSON.stringify(manifest, null, 2))
       // Copy networks.json
       const networksJson = resolve(__dirname, 'public/networks.json')
       if (existsSync(networksJson)) {
