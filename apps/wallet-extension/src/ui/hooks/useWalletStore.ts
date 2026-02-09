@@ -66,6 +66,7 @@ interface UIWalletState {
   // Network actions
   addNetwork: (network: Network) => Promise<void>
   removeNetwork: (chainId: number) => Promise<void>
+  updateNetwork: (chainId: number, updates: Partial<Network>) => Promise<void>
 }
 
 export const useWalletStore = create<UIWalletState>((set, get) => ({
@@ -412,6 +413,34 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to remove network'
+      set({ error: message })
+      throw err
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  updateNetwork: async (chainId: number, updates: Partial<Network>) => {
+    set({ isLoading: true, error: null })
+    try {
+      const response = await sendMessageWithTimeout<{
+        payload?: { success?: boolean; error?: string }
+      }>(
+        {
+          type: 'UPDATE_NETWORK',
+          id: `update-network-${Date.now()}`,
+          payload: { chainId, updates },
+        },
+        SYNC_TIMEOUT_MS
+      )
+
+      if (response?.payload?.success) {
+        await get().syncWithBackground()
+      } else {
+        throw new Error(response?.payload?.error ?? 'Failed to update network')
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update network'
       set({ error: message })
       throw err
     } finally {

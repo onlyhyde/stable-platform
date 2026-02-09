@@ -16,6 +16,11 @@ function copyManifestPlugin() {
       }
       // Copy manifest.json
       copyFileSync(resolve(__dirname, 'manifest.json'), resolve(__dirname, 'dist/manifest.json'))
+      // Copy networks.json
+      const networksJson = resolve(__dirname, 'public/networks.json')
+      if (existsSync(networksJson)) {
+        copyFileSync(networksJson, resolve(__dirname, 'dist/networks.json'))
+      }
       // Create icons directory if not exists
       const iconsDir = resolve(__dirname, 'dist/icons')
       if (!existsSync(iconsDir)) {

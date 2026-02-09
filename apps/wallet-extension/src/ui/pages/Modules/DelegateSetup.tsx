@@ -4,6 +4,7 @@ import { isAddress } from 'viem'
 import type { Address, Hash } from 'viem'
 
 import { sendMessageWithTimeout, TX_TIMEOUT_MS } from '../../../shared/utils/messaging'
+import { ZERO_ADDRESS } from '../../../shared/utils/eip7702'
 import { useSelectedNetwork, useWalletStore } from '../../hooks'
 
 // ============================================================================
@@ -12,6 +13,7 @@ import { useSelectedNetwork, useWalletStore } from '../../hooks'
 
 interface DelegateSetupProps {
   account: Address
+  mode?: 'setup' | 'revoke'
   onComplete: () => void
   onCancel: () => void
 }
@@ -22,18 +24,19 @@ type SetupStep = 'input' | 'confirm' | 'pending' | 'success' | 'error'
 // Component
 // ============================================================================
 
-export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupProps) {
+export function DelegateSetup({ account, mode = 'setup', onComplete, onCancel }: DelegateSetupProps) {
   const { t } = useTranslation('modules')
   const { t: tc } = useTranslation('common')
-  const [delegateAddress, setDelegateAddress] = useState('')
-  const [step, setStep] = useState<SetupStep>('input')
+  const isRevokeMode = mode === 'revoke'
+  const [delegateAddress, setDelegateAddress] = useState(isRevokeMode ? ZERO_ADDRESS : '')
+  const [step, setStep] = useState<SetupStep>(isRevokeMode ? 'confirm' : 'input')
   const [error, setError] = useState<string | null>(null)
   const [txHash, setTxHash] = useState<Hash | null>(null)
 
   const currentNetwork = useSelectedNetwork()
   const { syncWithBackground } = useWalletStore()
 
-  const isValidDelegate = delegateAddress !== '' && isAddress(delegateAddress)
+  const isValidDelegate = isRevokeMode || (delegateAddress !== '' && isAddress(delegateAddress))
 
   const handleSubmit = useCallback(async () => {
     if (!isValidDelegate || !currentNetwork) return
@@ -78,7 +81,8 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
     }
   }, [account, delegateAddress, isValidDelegate, currentNetwork, syncWithBackground])
 
-  // Input Step: Enter delegate contract address
+  // Input Step: Enter delegate contract address (setup mode)
+  // Confirm Step: Confirm revocation (revoke mode skips input)
   if (step === 'input' || step === 'confirm') {
     return (
       <div className="p-4">
@@ -105,17 +109,17 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             </svg>
           </button>
           <h2 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-            {t('enableSmartAccount')}
+            {isRevokeMode ? t('revokeDelegationTitle') : t('enableSmartAccount')}
           </h2>
         </div>
 
         {/* Info Banner */}
         <div
           className="p-3 rounded-lg mb-4"
-          style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+          style={{ backgroundColor: isRevokeMode ? 'rgb(var(--destructive) / 0.1)' : 'rgb(var(--primary) / 0.1)' }}
         >
-          <p className="text-sm" style={{ color: 'rgb(var(--primary))' }}>
-            {t('eip7702Info')}
+          <p className="text-sm" style={{ color: isRevokeMode ? 'rgb(var(--destructive))' : 'rgb(var(--primary))' }}>
+            {isRevokeMode ? t('revokeDelegationDesc') : t('eip7702Info')}
           </p>
         </div>
 
@@ -135,37 +139,39 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
           </div>
         </div>
 
-        {/* Delegate Address Input */}
-        <div className="mb-4">
-          <label
-            htmlFor="delegate-contract-address"
-            className="block text-sm font-medium mb-1"
-            style={{ color: 'rgb(var(--foreground-secondary))' }}
-          >
-            {t('delegateContractAddress')}
-          </label>
-          <input
-            id="delegate-contract-address"
-            type="text"
-            value={delegateAddress}
-            onChange={(e) => {
-              setDelegateAddress(e.target.value)
-              setError(null)
-            }}
-            placeholder="0x... (Kernel, Safe, etc.)"
-            className="w-full p-3 rounded-lg text-sm font-mono"
-            style={{
-              backgroundColor: 'rgb(var(--secondary))',
-              color: 'rgb(var(--foreground))',
-              border: '1px solid rgb(var(--border))',
-            }}
-          />
-          {delegateAddress && !isValidDelegate && (
-            <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
-              {t('invalidAddressFormat')}
-            </p>
-          )}
-        </div>
+        {/* Delegate Address Input (setup mode only) */}
+        {!isRevokeMode && (
+          <div className="mb-4">
+            <label
+              htmlFor="delegate-contract-address"
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'rgb(var(--foreground-secondary))' }}
+            >
+              {t('delegateContractAddress')}
+            </label>
+            <input
+              id="delegate-contract-address"
+              type="text"
+              value={delegateAddress}
+              onChange={(e) => {
+                setDelegateAddress(e.target.value)
+                setError(null)
+              }}
+              placeholder="0x... (Kernel, Safe, etc.)"
+              className="w-full p-3 rounded-lg text-sm font-mono"
+              style={{
+                backgroundColor: 'rgb(var(--secondary))',
+                color: 'rgb(var(--foreground))',
+                border: '1px solid rgb(var(--border))',
+              }}
+            />
+            {delegateAddress && !isValidDelegate && (
+              <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
+                {t('invalidAddressFormat')}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Network Info */}
         {currentNetwork && (
@@ -191,7 +197,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
           style={{ backgroundColor: 'rgb(var(--warning) / 0.1)' }}
         >
           <p className="text-sm" style={{ color: 'rgb(var(--warning))' }}>
-            {t('setCodeWarning')}
+            {isRevokeMode ? t('revokeDelegationWarning') : t('setCodeWarning')}
           </p>
         </div>
 
@@ -212,7 +218,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
           type="button"
           onClick={handleSubmit}
           disabled={!isValidDelegate}
-          className={`w-full py-3 rounded-lg font-medium ${isValidDelegate ? 'btn-primary' : ''}`}
+          className={`w-full py-3 rounded-lg font-medium ${isValidDelegate ? (isRevokeMode ? '' : 'btn-primary') : ''}`}
           style={
             !isValidDelegate
               ? {
@@ -220,10 +226,15 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
                   color: 'rgb(var(--muted-foreground))',
                   cursor: 'not-allowed',
                 }
-              : undefined
+              : isRevokeMode
+                ? {
+                    backgroundColor: 'rgb(var(--destructive))',
+                    color: 'white',
+                  }
+                : undefined
           }
         >
-          {t('delegateAccount')}
+          {isRevokeMode ? t('revokeDelegationBtn') : t('delegateAccount')}
         </button>
 
         <button
@@ -247,7 +258,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
           />
           <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-            {t('settingUpSmartAccount')}
+            {isRevokeMode ? t('revoking') : t('settingUpSmartAccount')}
           </p>
           <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {t('signingAndSending')}
@@ -271,10 +282,10 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             </span>
           </div>
           <h3 className="text-xl font-bold" style={{ color: 'rgb(var(--success))' }}>
-            {t('smartAccountEnabled')}
+            {isRevokeMode ? t('revocationComplete') : t('smartAccountEnabled')}
           </h3>
           <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            {t('delegationComplete')}
+            {isRevokeMode ? t('revocationCompleteDesc') : t('delegationComplete')}
           </p>
           {txHash && (
             <p

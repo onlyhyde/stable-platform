@@ -19,6 +19,7 @@ export function Settings() {
     importPrivateKey,
     addNetwork,
     removeNetwork,
+    updateNetwork,
     syncWithBackground,
   } = useWalletStore()
 
@@ -55,6 +56,25 @@ export function Settings() {
   const [isAddingNetwork, setIsAddingNetwork] = useState(false)
   const [networkError, setNetworkError] = useState<string | null>(null)
   const [networkSuccess, setNetworkSuccess] = useState<string | null>(null)
+
+  // Edit Network state
+  const [editingNetwork, setEditingNetwork] = useState<Network | null>(null)
+  const [editForm, setEditForm] = useState({
+    name: '',
+    rpcUrl: '',
+    bundlerUrl: '',
+    paymasterUrl: '',
+    explorerUrl: '',
+    indexerUrl: '',
+    currencySymbol: '',
+  })
+  const [isSavingNetwork, setIsSavingNetwork] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [editSuccess, setEditSuccess] = useState<string | null>(null)
+
+  // Import/Export state
+  const [isImportingNetworks, setIsImportingNetworks] = useState(false)
+  const [importNetworkResult, setImportNetworkResult] = useState<string | null>(null)
 
   // Export Private Key state
   const [showExportKey, setShowExportKey] = useState(false)
@@ -266,6 +286,152 @@ export function Settings() {
     [removeNetwork, syncWithBackground, t]
   )
 
+  // Edit Network handlers
+  const handleStartEdit = useCallback((network: Network) => {
+    setEditingNetwork(network)
+    setEditForm({
+      name: network.name,
+      rpcUrl: network.rpcUrl,
+      bundlerUrl: network.bundlerUrl ?? '',
+      paymasterUrl: network.paymasterUrl ?? '',
+      explorerUrl: network.explorerUrl ?? '',
+      indexerUrl: network.indexerUrl ?? '',
+      currencySymbol: network.currency.symbol,
+    })
+    setEditError(null)
+    setEditSuccess(null)
+    setShowAddNetwork(false)
+  }, [])
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingNetwork(null)
+    setEditError(null)
+    setEditSuccess(null)
+  }, [])
+
+  const handleSaveNetwork = useCallback(async () => {
+    if (!editingNetwork) return
+
+    if (!editForm.name.trim()) {
+      setEditError(t('networkNameRequired'))
+      return
+    }
+    if (!editForm.rpcUrl.trim()) {
+      setEditError(t('rpcUrlRequired'))
+      return
+    }
+
+    setIsSavingNetwork(true)
+    setEditError(null)
+    setEditSuccess(null)
+
+    try {
+      const updates: Partial<Network> = {
+        name: editForm.name.trim(),
+        rpcUrl: editForm.rpcUrl.trim(),
+        bundlerUrl: editForm.bundlerUrl.trim() || undefined,
+        paymasterUrl: editForm.paymasterUrl.trim() || undefined,
+        explorerUrl: editForm.explorerUrl.trim() || undefined,
+        indexerUrl: editForm.indexerUrl.trim() || undefined,
+        currency: {
+          ...editingNetwork.currency,
+          name: editForm.currencySymbol.trim() || editingNetwork.currency.name,
+          symbol: editForm.currencySymbol.trim() || editingNetwork.currency.symbol,
+        },
+      }
+
+      await updateNetwork(editingNetwork.chainId, updates)
+      setEditSuccess(t('networkUpdated'))
+      setEditingNetwork(null)
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : t('failedToUpdateNetwork'))
+    } finally {
+      setIsSavingNetwork(false)
+    }
+  }, [editingNetwork, editForm, updateNetwork, t])
+
+  // Import Networks handler
+  const handleImportNetworks = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsImportingNetworks(true)
+    setImportNetworkResult(null)
+
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text)
+
+      const importedNetworks: Network[] = Array.isArray(data)
+        ? data
+        : Array.isArray(data.networks)
+          ? data.networks
+          : []
+
+      if (importedNetworks.length === 0) {
+        setImportNetworkResult(t('invalidNetworkFile'))
+        return
+      }
+
+      let added = 0
+      let updated = 0
+      let failed = 0
+
+      for (const net of importedNetworks) {
+        if (!net.name || !net.chainId || !net.rpcUrl) {
+          failed++
+          continue
+        }
+
+        const existing = networks.find((n) => n.chainId === net.chainId)
+        try {
+          if (existing) {
+            await updateNetwork(net.chainId, {
+              name: net.name,
+              rpcUrl: net.rpcUrl,
+              bundlerUrl: net.bundlerUrl,
+              paymasterUrl: net.paymasterUrl,
+              explorerUrl: net.explorerUrl,
+              indexerUrl: net.indexerUrl,
+              currency: net.currency,
+              isTestnet: net.isTestnet,
+            })
+            updated++
+          } else {
+            await addNetwork({ ...net, isCustom: true })
+            added++
+          }
+        } catch {
+          failed++
+        }
+      }
+
+      setImportNetworkResult(t('importResult', { added, updated, failed }))
+      await syncWithBackground()
+    } catch {
+      setImportNetworkResult(t('invalidNetworkFile'))
+    } finally {
+      setIsImportingNetworks(false)
+      // Reset file input
+      event.target.value = ''
+    }
+  }, [networks, addNetwork, updateNetwork, syncWithBackground, t])
+
+  // Export Networks handler
+  const handleExportNetworks = useCallback(() => {
+    const data = {
+      version: 1,
+      networks: networks.map(({ ...n }) => n),
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'networks.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [networks])
+
   // Export Private Key handler
   const handleExportPrivateKey = useCallback(async () => {
     const { selectedAccount } = useWalletStore.getState()
@@ -451,15 +617,55 @@ export function Settings() {
             >
               {t('network')}
             </h3>
-            <button
-              type="button"
-              onClick={() => setShowAddNetwork(!showAddNetwork)}
-              className="text-sm"
-              style={{ color: 'rgb(var(--primary))' }}
-            >
-              {showAddNetwork ? tc('cancel') : t('addNetwork')}
-            </button>
+            <div className="flex items-center gap-2">
+              <label
+                className="text-xs cursor-pointer"
+                style={{ color: 'rgb(var(--primary))' }}
+              >
+                {isImportingNetworks ? t('importingNetworks') : t('importNetworks')}
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportNetworks}
+                  disabled={isImportingNetworks}
+                  className="hidden"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={handleExportNetworks}
+                className="text-xs"
+                style={{ color: 'rgb(var(--primary))' }}
+              >
+                {t('exportNetworks')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddNetwork(!showAddNetwork)
+                  setEditingNetwork(null)
+                }}
+                className="text-sm"
+                style={{ color: 'rgb(var(--primary))' }}
+              >
+                {showAddNetwork ? tc('cancel') : t('addNetwork')}
+              </button>
+            </div>
           </div>
+
+          {/* Import Result */}
+          {importNetworkResult && (
+            <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              {importNetworkResult}
+            </p>
+          )}
+
+          {/* Edit Success */}
+          {editSuccess && (
+            <p className="text-xs mb-2" style={{ color: 'rgb(var(--success))' }}>
+              {editSuccess}
+            </p>
+          )}
 
           {/* Add Network Form */}
           {showAddNetwork && (
@@ -547,6 +753,97 @@ export function Settings() {
             </div>
           )}
 
+          {/* Edit Network Form */}
+          {editingNetwork && (
+            <div
+              className="mb-4 p-3 rounded-lg"
+              style={{
+                backgroundColor: 'rgb(var(--primary) / 0.1)',
+                border: '1px solid rgb(var(--primary) / 0.2)',
+              }}
+            >
+              <h4 className="text-sm font-medium mb-1" style={{ color: 'rgb(var(--foreground))' }}>
+                {t('editingNetwork')}
+              </h4>
+              <p className="text-xs mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {tc('chain', { id: editingNetwork.chainId })}
+              </p>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder={t('networkName')}
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="input-base w-full p-2 rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder={t('rpcUrl')}
+                  value={editForm.rpcUrl}
+                  onChange={(e) => setEditForm({ ...editForm, rpcUrl: e.target.value })}
+                  className="input-base w-full p-2 rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder={t('bundlerUrlPlaceholder')}
+                  value={editForm.bundlerUrl}
+                  onChange={(e) => setEditForm({ ...editForm, bundlerUrl: e.target.value })}
+                  className="input-base w-full p-2 rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder={t('paymasterUrlPlaceholder')}
+                  value={editForm.paymasterUrl}
+                  onChange={(e) => setEditForm({ ...editForm, paymasterUrl: e.target.value })}
+                  className="input-base w-full p-2 rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder={t('currencySymbolPlaceholder')}
+                  value={editForm.currencySymbol}
+                  onChange={(e) => setEditForm({ ...editForm, currencySymbol: e.target.value })}
+                  className="input-base w-full p-2 rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder={t('explorerUrlPlaceholder')}
+                  value={editForm.explorerUrl}
+                  onChange={(e) => setEditForm({ ...editForm, explorerUrl: e.target.value })}
+                  className="input-base w-full p-2 rounded-lg text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder={t('indexerUrlPlaceholder')}
+                  value={editForm.indexerUrl}
+                  onChange={(e) => setEditForm({ ...editForm, indexerUrl: e.target.value })}
+                  className="input-base w-full p-2 rounded-lg text-sm"
+                />
+                {editError && (
+                  <p className="text-xs" style={{ color: 'rgb(var(--destructive))' }}>
+                    {editError}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="btn-secondary flex-1 py-2 rounded-lg text-sm"
+                  >
+                    {tc('cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveNetwork}
+                    disabled={isSavingNetwork}
+                    className="btn-primary flex-1 py-2 rounded-lg text-sm disabled:opacity-50"
+                  >
+                    {isSavingNetwork ? t('savingNetwork') : t('saveNetwork')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Network List */}
           <div className="space-y-2">
             {networks.map((network) => (
@@ -596,6 +893,29 @@ export function Settings() {
                   <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                     {tc('chain', { id: network.chainId })}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => handleStartEdit(network)}
+                    className="p-1"
+                    style={{ color: 'rgb(var(--primary))' }}
+                    title={t('editNetwork')}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      role="img"
+                    >
+                      <title>{t('editNetwork')}</title>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                  </button>
                   {network.isCustom && (
                     <button
                       type="button"

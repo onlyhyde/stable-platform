@@ -31,6 +31,7 @@ export function ModulesPage() {
   const [activeTab, setActiveTab] = useState<ModuleTab>('installed')
   const [selectedModuleAddress, setSelectedModuleAddress] = useState<string | null>(null)
   const [selectedModuleType, setSelectedModuleType] = useState<ModuleType | null>(null)
+  const [delegateMode, setDelegateMode] = useState<'setup' | 'revoke'>('setup')
 
   // Find the full account object from the accounts array
   const selectedAccount = useMemo(() => {
@@ -52,16 +53,21 @@ export function ModulesPage() {
     return set
   }, [installedModules])
 
-  // View: Delegate Setup (EIP-7702)
+  // View: Delegate Setup (EIP-7702) — supports both setup and revoke modes
   if (view === 'delegate' && selectedAccountAddress) {
     return (
       <DelegateSetup
         account={selectedAccountAddress}
+        mode={delegateMode}
         onComplete={() => {
           setView('overview')
+          setDelegateMode('setup')
           refetch()
         }}
-        onCancel={() => setView('overview')}
+        onCancel={() => {
+          setView('overview')
+          setDelegateMode('setup')
+        }}
       />
     )
   }
@@ -105,7 +111,10 @@ export function ModulesPage() {
         isLoading={isLoading || isLoadingSmartInfo}
         onNavigateToModules={() => setView('list')}
         onNavigateToInstall={() => setView('install')}
-        onRevokeDelegation={() => setView('delegate')}
+        onRevokeDelegation={() => {
+          setDelegateMode('revoke')
+          setView('delegate')
+        }}
       />
     )
   }

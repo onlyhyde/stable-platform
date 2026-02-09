@@ -1,7 +1,10 @@
-import type { InstalledModule, ModuleConfigField, ModuleType } from '@stablenet/core'
+import { MODULE_TYPE, type InstalledModule, type ModuleConfigField, type ModuleType } from '@stablenet/core'
 import { getModuleTypeName } from '@stablenet/core'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { Address } from 'viem'
+
+import { useModuleInstall } from './hooks/useModuleInstall'
 
 // ============================================================================
 // Types
@@ -47,6 +50,32 @@ export function ModuleDetails({
   const [isUninstalling, setIsUninstalling] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showRevokeConfirm, setShowRevokeConfirm] = useState<Address | null>(null)
+  const [isRevoking, setIsRevoking] = useState(false)
+  const { uninstallModule } = useModuleInstall()
+
+  const isSessionKeyExecutor = module?.type === MODULE_TYPE.EXECUTOR &&
+    module?.metadata.name.toLowerCase().includes('session')
+
+  const handleRevokeSessionKey = useCallback(async (sessionKeyAddress: Address) => {
+    if (!module) return
+    setIsRevoking(true)
+    setError(null)
+    try {
+      // Get account from module's installed context (sender)
+      // The module address IS the session key executor module
+      await uninstallModule({
+        account: sessionKeyAddress, // The account that has the module installed
+        moduleAddress: module.address as Address,
+        moduleType: module.type,
+      })
+      setShowRevokeConfirm(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('uninstallationFailed'))
+    } finally {
+      setIsRevoking(false)
+    }
+  }, [module, uninstallModule, t])
 
   // Show registry module details when no installed module is present
   if (!module && registryModule) {
@@ -210,6 +239,44 @@ export function ModuleDetails({
                   {tag}
                 </span>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Session Key Revoke Confirmation */}
+        {isSessionKeyExecutor && showRevokeConfirm && (
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              backgroundColor: 'rgb(var(--warning) / 0.1)',
+              borderWidth: 1,
+              borderColor: 'rgb(var(--warning) / 0.3)',
+            }}
+          >
+            <p className="text-sm mb-3" style={{ color: 'rgb(var(--foreground))' }}>
+              {t('revokeSessionKeyConfirm')}
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="flex-1 py-2 rounded-lg font-medium btn-ghost"
+                onClick={() => setShowRevokeConfirm(null)}
+                disabled={isRevoking}
+              >
+                {tc('cancel')}
+              </button>
+              <button
+                type="button"
+                className="flex-1 py-2 rounded-lg font-medium"
+                style={{
+                  backgroundColor: 'rgb(var(--destructive))',
+                  color: 'white',
+                }}
+                onClick={() => handleRevokeSessionKey(showRevokeConfirm)}
+                disabled={isRevoking}
+              >
+                {isRevoking ? t('revokingSessionKey') : t('revoke')}
+              </button>
             </div>
           </div>
         )}

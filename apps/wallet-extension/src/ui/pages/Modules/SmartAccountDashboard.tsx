@@ -1,10 +1,13 @@
 import { MODULE_TYPE, type InstalledModule } from '@stablenet/core'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatEther } from 'viem'
 
 import type { Account } from '../../../types/account'
 import type { Network } from '../../../types/network'
+import { usePaymasterClient } from '../../pages/Send/hooks/usePaymasterClient'
 import type { SmartAccountInfo } from './hooks/useSmartAccountInfo'
+import { useSpendingLimitStatus } from './hooks/useSpendingLimitStatus'
 
 // ============================================================================
 // Types
@@ -37,6 +40,15 @@ export function SmartAccountDashboard({
 }: SmartAccountDashboardProps) {
   const { t } = useTranslation('modules')
 
+  // Paymaster data
+  const { sponsorPolicy } = usePaymasterClient(account.address)
+
+  // Spending limit data
+  const { limits: spendingLimits } = useSpendingLimitStatus(
+    account.address,
+    installedModules,
+  )
+
   const sessionKeyCount = useMemo(() => {
     if (!installedModules) return 0
     return installedModules.filter(
@@ -52,6 +64,44 @@ export function SmartAccountDashboard({
   }, [installedModules])
 
   const totalModuleCount = installedModules?.length ?? 0
+
+  // Module count by type
+  const moduleBreakdown = useMemo(() => {
+    if (!installedModules || installedModules.length === 0) return ''
+    const counts: Record<string, number> = {}
+    for (const m of installedModules) {
+      if (m.type === MODULE_TYPE.VALIDATOR) counts[t('validators')] = (counts[t('validators')] ?? 0) + 1
+      else if (m.type === MODULE_TYPE.EXECUTOR) counts[t('executors')] = (counts[t('executors')] ?? 0) + 1
+      else if (m.type === MODULE_TYPE.HOOK) counts[t('hooks')] = (counts[t('hooks')] ?? 0) + 1
+      else if (m.type === MODULE_TYPE.FALLBACK) counts[t('fallbacks')] = (counts[t('fallbacks')] ?? 0) + 1
+    }
+    return Object.entries(counts)
+      .map(([type, count]) => `${count} ${type}`)
+      .join(', ')
+  }, [installedModules, t])
+
+  // Gas sponsorship detail
+  const gasSponsorshipDetail = useMemo(() => {
+    if (!network?.paymasterUrl || !sponsorPolicy?.isAvailable) return undefined
+    if (sponsorPolicy.dailyLimitRemaining != null) {
+      return t('dashboard.dailyLimit', {
+        amount: formatBigIntAmount(BigInt(sponsorPolicy.dailyLimitRemaining.toString())),
+      })
+    }
+    return undefined
+  }, [network?.paymasterUrl, sponsorPolicy, t])
+
+  // Spending limit detail
+  const spendingLimitDetail = useMemo(() => {
+    const first = spendingLimits[0]
+    if (!first) return undefined
+    const periodLabel = getPeriodLabel(first.period)
+    return t('dashboard.limitProgress', {
+      spent: formatBigIntAmount(first.spent),
+      limit: formatBigIntAmount(first.limit),
+      period: periodLabel,
+    })
+  }, [spendingLimits, t])
 
   const truncatedAddress = smartAccountInfo?.delegationTarget
     ? `${smartAccountInfo.delegationTarget.slice(0, 8)}...${smartAccountInfo.delegationTarget.slice(-6)}`
@@ -148,6 +198,7 @@ export function SmartAccountDashboard({
           label={t('dashboard.gasSponsorship')}
           status={network?.paymasterUrl ? t('dashboard.available') : t('dashboard.notConfigured')}
           isActive={!!network?.paymasterUrl}
+          detail={gasSponsorshipDetail}
         />
         <FeatureCard
           icon="🔑"
@@ -162,12 +213,14 @@ export function SmartAccountDashboard({
           label={t('dashboard.spendingLimits')}
           status={hasSpendingLimits ? t('dashboard.active') : t('dashboard.notConfigured')}
           isActive={hasSpendingLimits}
+          detail={spendingLimitDetail}
         />
         <FeatureCard
           icon="🧩"
           label={t('dashboard.modules')}
           status={t('dashboard.installedCount', { count: totalModuleCount })}
           isActive={totalModuleCount > 0}
+          detail={moduleBreakdown || undefined}
         />
       </div>
 
@@ -215,6 +268,26 @@ export function SmartAccountDashboard({
 }
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+function formatBigIntAmount(value: bigint): string {
+  const formatted = formatEther(value)
+  const num = parseFloat(formatted)
+  if (num === 0) return '0'
+  if (num < 0.01) return '<0.01'
+  return num.toLocaleString(undefined, { maximumFractionDigits: 2 })
+}
+
+function getPeriodLabel(periodSeconds: bigint): string {
+  const hours = Number(periodSeconds) / 3600
+  if (hours <= 1) return 'hourly'
+  if (hours <= 24) return 'daily'
+  if (hours <= 168) return 'weekly'
+  return 'monthly'
+}
+
+// ============================================================================
 // Sub-Components
 // ============================================================================
 
@@ -223,9 +296,10 @@ interface FeatureCardProps {
   label: string
   status: string
   isActive: boolean
+  detail?: string
 }
 
-function FeatureCard({ icon, label, status, isActive }: FeatureCardProps) {
+function FeatureCard({ icon, label, status, isActive, detail }: FeatureCardProps) {
   return (
     <div
       className="rounded-lg p-3"
@@ -241,6 +315,14 @@ function FeatureCard({ icon, label, status, isActive }: FeatureCardProps) {
       >
         {status}
       </p>
+      {detail && (
+        <p
+          className="text-xs mt-0.5 truncate"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+        >
+          {detail}
+        </p>
+      )}
     </div>
   )
 }

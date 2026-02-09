@@ -401,5 +401,23 @@
   "dashboard.activeCount": "{{count}} Active",
   "dashboard.installedCount": "{{count}} Installed",
   "dashboard.manageModules": "Manage Modules",
-  "dashboard.revokeDelegation": "Revoke Delegation"
+  "dashboard.revokeDelegation": "Revoke Delegation",
+  "dashboard.sponsoredBy": "Sponsored by {{name}}",
+  "dashboard.dailyLimit": "Daily: {{amount}} WKRC",
+  "dashboard.activeExpired": "{{active}} active, {{expired}} expired",
+  "dashboard.nextExpiry": "Next expiry: {{date}}",
+  "dashboard.limitProgress": "{{spent}}/{{limit}} WKRC {{period}}",
+  "dashboard.moduleBreakdown": "{{breakdown}}",
+
+  "revokeDelegationTitle": "Revoke Delegation",
+  "revokeDelegationDesc": "This will remove the smart contract delegation from your EOA, reverting it to a standard account. All installed modules will stop working.",
+  "revokeDelegationWarning": "This sends a SetCode transaction with the zero address, which removes delegation. Your account will lose access to module functionality.",
+  "revoking": "Revoking delegation...",
+  "revocationComplete": "Delegation Revoked",
+  "revocationCompleteDesc": "Your account has been reverted to a standard EOA.",
+  "revokeDelegationBtn": "Revoke Delegation",
+
+  "revokeSessionKeyConfirm": "Are you sure you want to revoke this session key? It will no longer be able to sign transactions on your behalf.",
+  "revokingSessionKey": "Revoking session key...",
+  "sessionKeyRevoked": "Session key revoked successfully"
 }

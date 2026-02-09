@@ -401,5 +401,23 @@
   "dashboard.activeCount": "{{count}}개 활성",
   "dashboard.installedCount": "{{count}}개 설치됨",
   "dashboard.manageModules": "모듈 관리",
-  "dashboard.revokeDelegation": "위임 취소"
+  "dashboard.revokeDelegation": "위임 취소",
+  "dashboard.sponsoredBy": "{{name}} 후원",
+  "dashboard.dailyLimit": "일일: {{amount}} WKRC",
+  "dashboard.activeExpired": "{{active}}개 활성, {{expired}}개 만료",
+  "dashboard.nextExpiry": "다음 만료: {{date}}",
+  "dashboard.limitProgress": "{{spent}}/{{limit}} WKRC {{period}}",
+  "dashboard.moduleBreakdown": "{{breakdown}}",
+
+  "revokeDelegationTitle": "위임 취소",
+  "revokeDelegationDesc": "EOA에서 스마트 컨트랙트 위임을 제거하여 표준 계정으로 되돌립니다. 설치된 모든 모듈이 작동하지 않습니다.",
+  "revokeDelegationWarning": "제로 주소로 SetCode 트랜잭션을 전송하여 위임을 제거합니다. 모듈 기능에 대한 접근이 사라집니다.",
+  "revoking": "위임 취소 중...",
+  "revocationComplete": "위임 취소됨",
+  "revocationCompleteDesc": "계정이 표준 EOA로 되돌아갔습니다.",
+  "revokeDelegationBtn": "위임 취소",
+
+  "revokeSessionKeyConfirm": "이 세션 키를 취소하시겠습니까? 더 이상 사용자를 대신하여 트랜잭션에 서명할 수 없게 됩니다.",
+  "revokingSessionKey": "세션 키 취소 중...",
+  "sessionKeyRevoked": "세션 키가 성공적으로 취소되었습니다"
 }

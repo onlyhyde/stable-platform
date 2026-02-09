@@ -49,6 +49,25 @@ export const DEFAULT_NETWORKS: Network[] = [
 ]
 
 /**
+ * Load default networks from the bundled networks.json file.
+ * Falls back to the hardcoded DEFAULT_NETWORKS if the file cannot be loaded.
+ * This should only be called from the background service worker context.
+ */
+export async function loadDefaultNetworks(): Promise<Network[]> {
+  try {
+    const url = chrome.runtime.getURL('networks.json')
+    const response = await fetch(url)
+    const config = await response.json()
+    if (Array.isArray(config.networks) && config.networks.length > 0) {
+      return config.networks
+    }
+    return DEFAULT_NETWORKS
+  } catch {
+    return DEFAULT_NETWORKS
+  }
+}
+
+/**
  * Storage keys
  */
 export const STORAGE_KEYS = {

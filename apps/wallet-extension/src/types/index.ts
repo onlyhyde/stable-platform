@@ -64,6 +64,8 @@ export type MessageType =
   | 'NETWORK_ERROR'
   | 'REMOVE_NETWORK'
   | 'NETWORK_REMOVED'
+  | 'UPDATE_NETWORK'
+  | 'NETWORK_UPDATED'
   | 'SELECT_NETWORK'
   | 'NETWORK_SELECTED'
   // Private key export messages
@@ -163,6 +165,7 @@ export interface UIState {
  * Complete wallet state
  */
 export interface WalletState {
+  _version: number
   accounts: import('./account').AccountState
   networks: import('./network').NetworkState
   transactions: import('./transaction').TransactionState

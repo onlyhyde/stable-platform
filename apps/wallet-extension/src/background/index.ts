@@ -13,7 +13,7 @@
 
 import type { Address, Hex } from 'viem'
 import { STORAGE_KEYS, getSecurityConfig } from '../config'
-import { MESSAGE_TYPES } from '../shared/constants'
+import { DEFAULT_NETWORKS, MESSAGE_TYPES, loadDefaultNetworks } from '../shared/constants'
 import { originFromUrl, resolveOrigin } from '../shared/security/originVerifier'
 import { createLogger } from '../shared/utils/logger'
 import { validateExtensionMessage } from '../shared/validation/messageSchema'
@@ -894,6 +894,56 @@ async function handleMessage(
       }
     }
 
+    case 'UPDATE_NETWORK': {
+      const { chainId, updates } = message.payload as {
+        chainId: number
+        updates: Partial<import('../types').Network>
+      }
+
+      // Prevent chainId modification
+      if (updates.chainId !== undefined && updates.chainId !== chainId) {
+        return {
+          type: 'NETWORK_ERROR',
+          id: message.id,
+          payload: { success: false, error: 'Cannot change chain ID' },
+        }
+      }
+
+      // Validate that network exists
+      const existing = walletState.getState().networks.networks.find(
+        (n) => n.chainId === chainId
+      )
+      if (!existing) {
+        return {
+          type: 'NETWORK_ERROR',
+          id: message.id,
+          payload: { success: false, error: 'Network not found' },
+        }
+      }
+
+      try {
+        // Remove chainId from updates to satisfy Omit<Network, 'chainId'>
+        const { chainId: _ignored, ...safeUpdates } = updates
+        await walletState.updateNetwork(chainId, safeUpdates)
+        await broadcastStateUpdate()
+
+        return {
+          type: 'NETWORK_UPDATED',
+          id: message.id,
+          payload: { success: true },
+        }
+      } catch (err) {
+        return {
+          type: 'NETWORK_ERROR',
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to update network',
+          },
+        }
+      }
+    }
+
     case 'SELECT_NETWORK': {
       const { chainId } = message.payload as { chainId: number }
 
@@ -1354,10 +1404,17 @@ chrome.tabs.onActivated.addListener(handleTabActivated)
 // Installation Handler
 // =============================================================================
 
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
-    // First time installation
-    // Could open onboarding page here
+    // First time installation - initialize with defaults from networks.json
+    await walletState.initialize()
+    const defaults = await loadDefaultNetworks()
+    await walletState.mergeDefaultNetworks(defaults)
+  } else if (details.reason === 'update') {
+    // Extension update - run migrations and merge new default networks
+    await walletState.initialize()
+    const defaults = await loadDefaultNetworks()
+    await walletState.mergeDefaultNetworks(defaults)
   }
 })
 

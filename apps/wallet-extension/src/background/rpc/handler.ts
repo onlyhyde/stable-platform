@@ -962,7 +962,7 @@ const handlers: Record<string, RpcHandler> = {
         type: 'eip7702' as const,
         authorizationList: [
           {
-            contractAddress,
+            address: contractAddress,
             chainId: chainId,
             nonce: txNonce + 1,
             yParity: signatureResult.v as 0 | 1,
@@ -1096,6 +1096,19 @@ const handlers: Record<string, RpcHandler> = {
         )
       } catch (error) {
         handleApprovalError(error, { method: 'eth_sendUserOperation', origin })
+      }
+    }
+
+    // Request paymaster sponsorship if userOp doesn't already have paymaster data
+    if (!userOp.paymaster && network.paymasterUrl) {
+      const sponsorship = await requestPaymasterSponsorship(
+        network.paymasterUrl, userOp, entryPoint, network.chainId,
+      )
+      if (sponsorship) {
+        userOp.paymaster = sponsorship.paymaster
+        userOp.paymasterData = sponsorship.paymasterData
+        userOp.paymasterVerificationGasLimit = sponsorship.paymasterVerificationGasLimit
+        userOp.paymasterPostOpGasLimit = sponsorship.paymasterPostOpGasLimit
       }
     }
 
@@ -1411,7 +1424,7 @@ const handlers: Record<string, RpcHandler> = {
           type: 'eip7702' as const,
           authorizationList: (txParams.authorizationList ?? []).map((auth) => ({
             chainId: Number(auth.chainId),
-            contractAddress: auth.address,
+            address: auth.address,
             nonce: Number(auth.nonce),
             v: BigInt(auth.v),
             r: auth.r as Hex,
@@ -1835,6 +1848,19 @@ const handlers: Record<string, RpcHandler> = {
       signature: '0x',
     }
 
+    // Request paymaster sponsorship if available
+    if (network.paymasterUrl) {
+      const sponsorship = await requestPaymasterSponsorship(
+        network.paymasterUrl, userOp, ENTRY_POINT_ADDRESSES.V07, chainId,
+      )
+      if (sponsorship) {
+        userOp.paymaster = sponsorship.paymaster
+        userOp.paymasterData = sponsorship.paymasterData
+        userOp.paymasterVerificationGasLimit = sponsorship.paymasterVerificationGasLimit
+        userOp.paymasterPostOpGasLimit = sponsorship.paymasterPostOpGasLimit
+      }
+    }
+
     // Calculate estimated gas cost for display
     const estimatedGasCost =
       (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
@@ -2011,6 +2037,19 @@ const handlers: Record<string, RpcHandler> = {
       paymasterPostOpGasLimit: undefined,
       paymasterData: undefined,
       signature: '0x',
+    }
+
+    // Request paymaster sponsorship if available
+    if (network.paymasterUrl) {
+      const sponsorship = await requestPaymasterSponsorship(
+        network.paymasterUrl, userOp, ENTRY_POINT_ADDRESSES.V07, chainId,
+      )
+      if (sponsorship) {
+        userOp.paymaster = sponsorship.paymaster
+        userOp.paymasterData = sponsorship.paymasterData
+        userOp.paymasterVerificationGasLimit = sponsorship.paymasterVerificationGasLimit
+        userOp.paymasterPostOpGasLimit = sponsorship.paymasterPostOpGasLimit
+      }
     }
 
     // Calculate estimated gas cost for display
@@ -2388,6 +2427,19 @@ const handlers: Record<string, RpcHandler> = {
       paymasterPostOpGasLimit: undefined,
       paymasterData: undefined,
       signature: '0x',
+    }
+
+    // Request paymaster sponsorship if available
+    if (network.paymasterUrl) {
+      const sponsorship = await requestPaymasterSponsorship(
+        network.paymasterUrl, userOp, ENTRY_POINT_ADDRESSES.V07, chainId,
+      )
+      if (sponsorship) {
+        userOp.paymaster = sponsorship.paymaster
+        userOp.paymasterData = sponsorship.paymasterData
+        userOp.paymasterVerificationGasLimit = sponsorship.paymasterVerificationGasLimit
+        userOp.paymasterPostOpGasLimit = sponsorship.paymasterPostOpGasLimit
+      }
     }
 
     const estimatedGasCost =
@@ -2836,6 +2888,178 @@ const handlers: Record<string, RpcHandler> = {
 
     return permissions
   },
+
+  // =========================================================================
+  // Paymaster Methods
+  // =========================================================================
+
+  /**
+   * Get supported gas payment tokens
+   * Returns the native token (WKRC) as the only gas payment option
+   */
+  pm_supportedTokens: async (params) => {
+    const chainId = params?.[0] as number | undefined
+    const network = chainId
+      ? walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+      : walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!network.paymasterUrl) {
+      return { tokens: [] }
+    }
+
+    return {
+      tokens: [
+        {
+          symbol: network.currency.symbol,
+          address: '0x0000000000000000000000000000000000000000' as Address,
+          decimals: network.currency.decimals,
+          isNative: true,
+        },
+      ],
+    }
+  },
+
+  /**
+   * Get sponsor policy for an account
+   * Probes the paymaster-proxy to check if sponsorship is available
+   */
+  pm_sponsorPolicy: async (params) => {
+    const [requestParams] = params as [{ account?: Address; chainId?: number }]
+    const chainId = requestParams?.chainId
+    const network = chainId
+      ? walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+      : walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!network.paymasterUrl) {
+      return {
+        isAvailable: false,
+        reason: 'Paymaster not configured for this network',
+      }
+    }
+
+    // Probe paymaster availability with a stub UserOp
+    try {
+      const account = requestParams?.account ?? '0x0000000000000000000000000000000000000000'
+      const stubUserOp = {
+        sender: account,
+        nonce: '0x0',
+        callData: '0x',
+        callGasLimit: '0x0',
+        verificationGasLimit: '0x0',
+        preVerificationGas: '0x0',
+        maxFeePerGas: '0x0',
+        maxPriorityFeePerGas: '0x0',
+        signature: '0x',
+      }
+
+      const entryPoint = ENTRY_POINT_ADDRESSES.V07
+      await fetchFromPaymaster(network.paymasterUrl, 'pm_getPaymasterStubData', [
+        stubUserOp,
+        entryPoint,
+        `0x${(network.chainId).toString(16)}`,
+      ])
+
+      return {
+        isAvailable: true,
+        sponsor: { name: 'StableNet Paymaster' },
+        maxGas: '100000000000000', // 0.0001 WKRC
+        dailyLimit: '100000000000000000', // 0.1 WKRC
+      }
+    } catch {
+      return {
+        isAvailable: false,
+        reason: 'Paymaster is currently unavailable',
+      }
+    }
+  },
+
+  /**
+   * Estimate ERC-20 gas payment
+   * Not supported — paymaster only sponsors native token gas
+   */
+  pm_estimateERC20: async () => {
+    return { supported: false }
+  },
+
+  // =========================================================================
+  // Spending Limit Status
+  // =========================================================================
+
+  /**
+   * Get spending limit status from on-chain hook module
+   */
+  stablenet_getSpendingLimitStatus: async (params) => {
+    const [requestParams] = params as [{ account: Address; hookAddress: Address; chainId: number }]
+
+    if (!requestParams?.account || !requestParams?.hookAddress) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Missing required parameters: account and hookAddress',
+      })
+    }
+
+    const { account, hookAddress, chainId } = requestParams
+    const network = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = getPublicClient(network.rpcUrl)
+
+    // Read spending limit hook contract state
+    // Standard interface: getSpendingLimit(account) → (token, limit, spent, period, resetTime)
+    try {
+      const spendingLimitAbi = [
+        {
+          inputs: [{ name: 'account', type: 'address' }],
+          name: 'getSpendingLimit',
+          outputs: [
+            { name: 'token', type: 'address' },
+            { name: 'limit', type: 'uint256' },
+            { name: 'spent', type: 'uint256' },
+            { name: 'period', type: 'uint256' },
+            { name: 'resetTime', type: 'uint256' },
+          ],
+          stateMutability: 'view',
+          type: 'function',
+        },
+      ] as const
+
+      const result = await client.readContract({
+        address: hookAddress,
+        abi: spendingLimitAbi,
+        functionName: 'getSpendingLimit',
+        args: [account],
+      })
+
+      const [token, limit, spent, period, resetTime] = result
+
+      return {
+        token: token as Address,
+        limit: limit.toString(),
+        spent: spent.toString(),
+        period: period.toString(),
+        resetTime: resetTime.toString(),
+      }
+    } catch {
+      // Hook may not implement this interface — return empty state
+      return {
+        token: '0x0000000000000000000000000000000000000000' as Address,
+        limit: '0',
+        spent: '0',
+        period: '0',
+        resetTime: '0',
+      }
+    }
+  },
 }
 
 /**
@@ -2925,6 +3149,120 @@ function formatTransactionType(type: string): Hex {
  */
 function createRpcError(error: { code: number; message: string; data?: unknown }): RpcError {
   return new RpcError(error.code, error.message, error.data)
+}
+
+/**
+ * Send a JSON-RPC request to the paymaster-proxy service
+ */
+async function fetchFromPaymaster(
+  paymasterUrl: string,
+  method: string,
+  params: unknown[],
+): Promise<unknown> {
+  const response = await fetch(paymasterUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method,
+      params,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Paymaster request failed: ${response.status}`)
+  }
+
+  const data = await response.json() as { result?: unknown; error?: { message?: string } }
+  if (data.error) {
+    throw new Error(data.error.message ?? 'Paymaster error')
+  }
+
+  return data.result
+}
+
+/**
+ * Request paymaster sponsorship for a UserOperation
+ * Returns sponsored fields or null if paymaster is unavailable (graceful fallback)
+ */
+async function requestPaymasterSponsorship(
+  paymasterUrl: string,
+  userOp: UserOperation,
+  entryPoint: Address,
+  chainId: number,
+): Promise<{
+  paymaster: Address
+  paymasterData: Hex
+  paymasterVerificationGasLimit: bigint
+  paymasterPostOpGasLimit: bigint
+} | null> {
+  try {
+    const chainIdHex = `0x${chainId.toString(16)}`
+
+    // Convert UserOp fields to hex strings for JSON-RPC
+    const userOpHex = {
+      sender: userOp.sender,
+      nonce: `0x${userOp.nonce.toString(16)}`,
+      callData: userOp.callData,
+      callGasLimit: `0x${userOp.callGasLimit.toString(16)}`,
+      verificationGasLimit: `0x${userOp.verificationGasLimit.toString(16)}`,
+      preVerificationGas: `0x${userOp.preVerificationGas.toString(16)}`,
+      maxFeePerGas: `0x${userOp.maxFeePerGas.toString(16)}`,
+      maxPriorityFeePerGas: `0x${userOp.maxPriorityFeePerGas.toString(16)}`,
+      signature: userOp.signature,
+      factory: userOp.factory ?? undefined,
+      factoryData: userOp.factoryData ?? undefined,
+    }
+
+    // Step 1: Get stub data for gas estimation
+    const stubResult = await fetchFromPaymaster(paymasterUrl, 'pm_getPaymasterStubData', [
+      userOpHex,
+      entryPoint,
+      chainIdHex,
+    ]) as {
+      paymaster?: string
+      paymasterData?: string
+      paymasterVerificationGasLimit?: string
+      paymasterPostOpGasLimit?: string
+    } | undefined
+
+    if (!stubResult?.paymaster) {
+      return null
+    }
+
+    // Step 2: Get final signed paymaster data
+    const finalResult = await fetchFromPaymaster(paymasterUrl, 'pm_getPaymasterData', [
+      {
+        ...userOpHex,
+        paymaster: stubResult.paymaster,
+        paymasterData: stubResult.paymasterData ?? '0x',
+        paymasterVerificationGasLimit: stubResult.paymasterVerificationGasLimit ?? '0x0',
+        paymasterPostOpGasLimit: stubResult.paymasterPostOpGasLimit ?? '0x0',
+      },
+      entryPoint,
+      chainIdHex,
+    ]) as {
+      paymaster?: string
+      paymasterData?: string
+      paymasterVerificationGasLimit?: string
+      paymasterPostOpGasLimit?: string
+    } | undefined
+
+    if (!finalResult?.paymaster) {
+      return null
+    }
+
+    return {
+      paymaster: finalResult.paymaster as Address,
+      paymasterData: (finalResult.paymasterData ?? '0x') as Hex,
+      paymasterVerificationGasLimit: BigInt(finalResult.paymasterVerificationGasLimit ?? '0'),
+      paymasterPostOpGasLimit: BigInt(finalResult.paymasterPostOpGasLimit ?? '0'),
+    }
+  } catch (err) {
+    logger.warn(`Paymaster sponsorship unavailable, falling back to self-pay: ${err instanceof Error ? err.message : String(err)}`)
+    return null
+  }
 }
 
 /**

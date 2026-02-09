@@ -9,6 +9,7 @@ import type {
   WalletState,
   WalletToken,
 } from '../../types'
+import { STATE_VERSION, migrateState } from './migrations'
 import { deepMerge, normalizeOrigin, originsMatch } from './utils'
 
 /**
@@ -24,6 +25,7 @@ const initialAssetState: AssetState = {
  * Initial wallet state
  */
 const initialState: WalletState = {
+  _version: STATE_VERSION,
   accounts: {
     accounts: [],
     selectedAccount: null,
@@ -66,38 +68,49 @@ class WalletStateManager {
     try {
       const stored = await chrome.storage.local.get(STORAGE_KEYS.WALLET_STATE)
       if (stored[STORAGE_KEYS.WALLET_STATE]) {
-        const storedState = stored[STORAGE_KEYS.WALLET_STATE]
+        const rawState = stored[STORAGE_KEYS.WALLET_STATE]
+        const previousVersion = rawState._version ?? 0
+
+        // Apply migrations to bring state up to current version
+        const migratedState = migrateState(rawState) as Record<string, unknown>
+
         // Deep merge to ensure nested objects have all required properties
         this.state = {
+          _version: (migratedState._version as number) ?? STATE_VERSION,
           accounts: {
             ...initialState.accounts,
-            ...(storedState.accounts ?? {}),
+            ...((migratedState.accounts as Record<string, unknown>) ?? {}),
           },
           networks: {
             ...initialState.networks,
-            ...(storedState.networks ?? {}),
+            ...((migratedState.networks as Record<string, unknown>) ?? {}),
           },
           transactions: {
             ...initialState.transactions,
-            ...(storedState.transactions ?? {}),
+            ...((migratedState.transactions as Record<string, unknown>) ?? {}),
           },
           connections: {
             ...initialState.connections,
-            ...(storedState.connections ?? {}),
+            ...((migratedState.connections as Record<string, unknown>) ?? {}),
           },
           keyring: {
             ...initialState.keyring,
-            ...(storedState.keyring ?? {}),
+            ...((migratedState.keyring as Record<string, unknown>) ?? {}),
           },
           assets: {
             ...initialAssetState,
-            ...(storedState.assets ?? {}),
+            ...((migratedState.assets as Record<string, unknown>) ?? {}),
           },
           ui: {
             ...initialState.ui,
-            ...(storedState.ui ?? {}),
+            ...((migratedState.ui as Record<string, unknown>) ?? {}),
           },
-          isInitialized: storedState.isInitialized ?? false,
+          isInitialized: (migratedState.isInitialized as boolean) ?? false,
+        }
+
+        // Re-persist if migration was applied
+        if (previousVersion !== this.state._version) {
+          await this.persist()
         }
       }
     } catch {
@@ -213,6 +226,35 @@ class WalletStateManager {
         selectedChainId,
       },
     })
+  }
+
+  async updateNetwork(chainId: number, updates: Partial<Omit<Network, 'chainId'>>): Promise<void> {
+    const networks = this.state.networks.networks.map((n) =>
+      n.chainId === chainId ? { ...n, ...updates } : n
+    )
+    await this.setState({
+      networks: { ...this.state.networks, networks },
+    })
+  }
+
+  async mergeDefaultNetworks(defaults: Network[]): Promise<void> {
+    const current = this.state.networks.networks
+    const merged = [...current]
+
+    for (const defaultNet of defaults) {
+      const existing = current.find((n) => n.chainId === defaultNet.chainId)
+      if (!existing) {
+        // New default network - add it
+        merged.push(defaultNet)
+      }
+      // Existing networks keep user settings (no overwrite)
+    }
+
+    if (merged.length !== current.length) {
+      await this.setState({
+        networks: { ...this.state.networks, networks: merged },
+      })
+    }
   }
 
   // Transaction actions

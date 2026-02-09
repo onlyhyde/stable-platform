@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "networks": [
+    {
+      "chainId": 31337,
+      "name": "Anvil (Local)",
+      "rpcUrl": "http://127.0.0.1:8545",
+      "bundlerUrl": "http://127.0.0.1:8545",
+      "currency": {
+        "name": "Ether",
+        "symbol": "ETH",
+        "decimals": 18
+      },
+      "isTestnet": true
+    },
+    {
+      "chainId": 8283,
+      "name": "StableNet Local",
+      "rpcUrl": "http://127.0.0.1:8501",
+      "bundlerUrl": "http://127.0.0.1:4337",
+      "paymasterUrl": "http://127.0.0.1:4338",
+      "explorerUrl": "http://127.0.0.1:3001",
+      "indexerUrl": "http://127.0.0.1:8080",
+      "currency": {
+        "name": "WKRC Coin",
+        "symbol": "WKRC",
+        "decimals": 18
+      },
+      "isTestnet": true
+    },
+    {
+      "chainId": 82830,
+      "name": "StableNet Testnet",
+      "rpcUrl": "https://rpc.testnet.stablenet.dev",
+      "bundlerUrl": "https://bundler.testnet.stablenet.dev",
+      "paymasterUrl": "https://paymaster.testnet.stablenet.dev",
+      "explorerUrl": "https://explorer.testnet.stablenet.dev",
+      "indexerUrl": "https://indexer.testnet.stablenet.dev",
+      "currency": {
+        "name": "WKRC Coin",
+        "symbol": "WKRC",
+        "decimals": 18
+      },
+      "isTestnet": true
+    }
+  ]
+}
