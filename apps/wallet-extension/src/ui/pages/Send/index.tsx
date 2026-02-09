@@ -5,12 +5,14 @@ import {
   getAvailableTransactionModes,
   getDefaultTransactionMode,
 } from '@stablenet/core'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatEther, isAddress, parseEther } from 'viem'
 import type { Address } from 'viem'
 
 import type { TransactionResult } from '@stablenet/core'
+import { TransactionStepper } from '../../components/common/TransactionStepper'
+import type { TransactionStepperStatus } from '../../components/common/TransactionStepper'
 import { useNetworkCurrency, useSelectedNetwork, useWalletStore } from '../../hooks'
 import { SendForm } from './SendForm'
 import { useGasEstimate } from './hooks/useGasEstimate'
@@ -26,7 +28,7 @@ interface SendFormData {
   data: string
 }
 
-type SendStep = 'form' | 'review' | 'pending' | 'success' | 'error'
+type SendStep = 'form' | 'review' | 'pending' | 'success' | 'confirming' | 'error'
 
 // ============================================================================
 // Component
@@ -35,7 +37,14 @@ type SendStep = 'form' | 'review' | 'pending' | 'success' | 'error'
 export function Send() {
   const { t } = useTranslation('send')
   const { t: tc } = useTranslation('common')
-  const { accounts, selectedAccount: selectedAddress, setPage } = useWalletStore()
+  const {
+    accounts,
+    selectedAccount: selectedAddress,
+    setPage,
+    pendingTransactions,
+    history,
+    syncWithBackground,
+  } = useWalletStore()
   const _currentNetwork = useSelectedNetwork()
   const { symbol: currencySymbol } = useNetworkCurrency()
 
@@ -65,6 +74,12 @@ export function Send() {
   const [step, setStep] = useState<SendStep>('form')
   const [error, setError] = useState<string | null>(null)
   const [txResult, setTxResult] = useState<TransactionResult | null>(null)
+
+  // Polling ref for confirming step
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Track the confirmed block number from receipt
+  const [confirmedBlockNumber, setConfirmedBlockNumber] = useState<bigint | undefined>(undefined)
 
   // Hooks
   const { sendTransaction, isPending } = useSendTransaction()
@@ -125,7 +140,7 @@ export function Send() {
       })
 
       setTxResult(result)
-      setStep('success')
+      setStep('confirming')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Transaction failed')
       setStep('error')
@@ -141,11 +156,75 @@ export function Send() {
 
   // Reset form
   const handleReset = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current)
+      pollingRef.current = null
+    }
     setFormData({ recipient: '', amount: '', data: '0x' })
     setStep('form')
     setError(null)
     setTxResult(null)
+    setConfirmedBlockNumber(undefined)
   }, [])
+
+  // Poll for receipt while confirming
+  useEffect(() => {
+    if (step !== 'confirming' || !txResult?.hash) return
+
+    const poll = () => {
+      syncWithBackground().catch(() => {})
+    }
+
+    // Initial sync
+    poll()
+    pollingRef.current = setInterval(poll, 3000)
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }
+  }, [step, txResult?.hash, syncWithBackground])
+
+  // Track tx status from store while confirming
+  const trackedTx = useMemo(() => {
+    if (!txResult?.hash) return null
+    return (
+      pendingTransactions.find((tx) => tx.txHash === txResult.hash) ??
+      history.find((tx) => tx.txHash === txResult.hash) ??
+      null
+    )
+  }, [txResult?.hash, pendingTransactions, history])
+
+  // Stop polling when tx is confirmed or failed
+  useEffect(() => {
+    if (!trackedTx) return
+    if (trackedTx.status === 'confirmed' || trackedTx.status === 'failed') {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+      if (trackedTx.blockNumber) {
+        setConfirmedBlockNumber(trackedTx.blockNumber)
+      }
+      if (trackedTx.status === 'failed') {
+        setError(trackedTx.error ?? 'Transaction failed')
+      }
+    }
+  }, [trackedTx])
+
+  // Derive stepper status from send step + tracked tx
+  const stepperStatus: TransactionStepperStatus = useMemo(() => {
+    if (step === 'pending') return 'submitting'
+    if (step === 'confirming') {
+      if (trackedTx?.status === 'confirmed') return 'confirmed'
+      if (trackedTx?.status === 'failed') return 'failed'
+      return 'pending'
+    }
+    if (step === 'error') return 'failed'
+    return 'submitting'
+  }, [step, trackedTx?.status])
 
   // Guard: No account selected
   if (!selectedAddress) {
@@ -359,105 +438,20 @@ export function Send() {
         </div>
       )}
 
-      {/* Success State */}
-      {step === 'success' && (
-        <div className="text-center py-8">
-          <div
-            className="text-4xl mb-4 w-16 h-16 mx-auto rounded-full flex items-center justify-center"
-            style={{ backgroundColor: 'rgb(var(--success) / 0.1)' }}
-          >
-            <span style={{ color: 'rgb(var(--success))' }}>✓</span>
-          </div>
-          <h3 className="text-xl font-bold" style={{ color: 'rgb(var(--success))' }}>
-            {t('transactionSent')}
-          </h3>
-          <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            {t('transactionSubmitted')}
-          </p>
-
-          {/* Tx Hash Display */}
-          {txResult?.hash && (
-            <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                {t('transactionHash')}
-              </p>
-              <div className="flex items-center justify-center gap-2 mt-1">
-                <span className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
-                  {txResult.hash.slice(0, 10)}...{txResult.hash.slice(-8)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(txResult.hash)}
-                  className="p-1"
-                  style={{ color: 'rgb(var(--primary))' }}
-                  title="Copy hash"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Explorer Link */}
-              {_currentNetwork?.explorerUrl && (
-                <a
-                  href={`${_currentNetwork.explorerUrl}/tx/${txResult.hash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-2 text-xs font-medium"
-                  style={{ color: 'rgb(var(--primary))' }}
-                >
-                  {t('viewOnExplorer')}
-                </a>
-              )}
-            </div>
-          )}
-
-          <div className="flex gap-2 mt-6">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex-1 py-3 rounded-lg font-medium btn-ghost"
-            >
-              {t('sendAnother')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPage('activity')}
-              className="flex-1 py-3 rounded-lg font-medium btn-primary"
-            >
-              {t('viewActivity')}
-            </button>
-          </div>
-        </div>
+      {/* Transaction Lifecycle Stepper (pending → confirming → confirmed/failed) */}
+      {(step === 'pending' || step === 'confirming') && (
+        <TransactionStepper
+          status={stepperStatus}
+          txHash={txResult?.hash}
+          blockNumber={confirmedBlockNumber}
+          explorerUrl={_currentNetwork?.explorerUrl}
+          onSendAnother={handleReset}
+          onViewActivity={() => setPage('activity')}
+        />
       )}
 
-      {/* Pending State */}
-      {step === 'pending' && (
-        <div className="text-center py-8">
-          <div
-            className="w-12 h-12 mx-auto mb-4 border-4 border-t-transparent rounded-full animate-spin"
-            style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
-          />
-          <p style={{ color: 'rgb(var(--foreground))' }}>{t('sendingTransaction')}</p>
-          <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            {t('pleaseWait')}
-          </p>
-          <button
-            type="button"
-            onClick={handleReset}
-            className="mt-6 px-6 py-3 rounded-lg font-medium btn-ghost"
-          >
-            {tc('cancel')}
-          </button>
-          <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground) / 0.6)' }}>
-            {t('cancelWarning')}
-          </p>
-        </div>
-      )}
-
-      {/* Error State */}
-      {step === 'error' && (
+      {/* Error State (pre-submission failure) */}
+      {step === 'error' && !txResult?.hash && (
         <div className="text-center py-8">
           <div
             className="text-4xl mb-4 w-16 h-16 mx-auto rounded-full flex items-center justify-center"

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
+import { TransactionStepper } from '../components/common/TransactionStepper'
+import type { TransactionStepperStatus } from '../components/common/TransactionStepper'
 import { useSelectedNetwork } from '../hooks'
 import { useWalletStore } from '../hooks/useWalletStore'
 
@@ -126,14 +128,23 @@ export function TransactionDetail() {
 
   const isPending = tx.status === 'pending' || tx.status === 'submitted'
   const displayHash = tx.txHash ?? tx.id
-  const statusLabel =
-    tx.status === 'confirmed'
-      ? t('confirmed')
-      : tx.status === 'failed'
-        ? t('failed')
-        : tx.status === 'submitted'
-          ? t('submitted')
-          : t('pending')
+
+  // Map tx status to stepper status
+  const stepperStatus: TransactionStepperStatus = useMemo(() => {
+    switch (tx.status) {
+      case 'submitted':
+        return 'submitted'
+      case 'pending':
+        return 'pending'
+      case 'confirmed':
+        return 'confirmed'
+      case 'failed':
+      case 'cancelled':
+        return 'failed'
+      default:
+        return 'pending'
+    }
+  }, [tx.status])
 
   return (
     <div className="p-4 space-y-4">
@@ -165,36 +176,13 @@ export function TransactionDetail() {
         </h1>
       </div>
 
-      {/* Status Badge */}
-      <div className="flex justify-center">
-        <span
-          className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold"
-          style={{
-            backgroundColor:
-              tx.status === 'confirmed'
-                ? 'rgb(var(--success) / 0.1)'
-                : tx.status === 'failed'
-                  ? 'rgb(var(--destructive) / 0.1)'
-                  : 'rgb(var(--warning) / 0.1)',
-            color:
-              tx.status === 'confirmed'
-                ? 'rgb(var(--success))'
-                : tx.status === 'failed'
-                  ? 'rgb(var(--destructive))'
-                  : 'rgb(var(--warning))',
-          }}
-        >
-          {isPending && (
-            <span
-              className="w-2 h-2 rounded-full mr-2 animate-pulse"
-              style={{
-                backgroundColor: 'rgb(var(--warning))',
-              }}
-            />
-          )}
-          {statusLabel}
-        </span>
-      </div>
+      {/* Transaction Stepper */}
+      <TransactionStepper
+        status={stepperStatus}
+        txHash={tx.txHash}
+        blockNumber={tx.blockNumber}
+        explorerUrl={currentNetwork?.explorerUrl}
+      />
 
       {/* Transaction Details Card */}
       <div

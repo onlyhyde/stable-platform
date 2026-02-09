@@ -43,5 +43,6 @@
   "swapFailed": "스왑 실패",
   "copyHash": "해시 복사",
   "copyUserOpHash": "유저 오퍼레이션 해시 복사",
-  "copyDelegationAddress": "위임 주소 복사"
+  "copyDelegationAddress": "위임 주소 복사",
+  "submitting": "제출 중"
 }

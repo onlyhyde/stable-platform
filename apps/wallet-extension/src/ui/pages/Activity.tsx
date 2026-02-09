@@ -208,12 +208,18 @@ function TransactionItem({
             {valueDisplay}
           </p>
           <span
-            className="text-xs px-2 py-0.5 rounded"
+            className="inline-flex items-center text-xs px-2 py-0.5 rounded"
             style={{
               backgroundColor: statusStyle.bg,
               color: statusStyle.color,
             }}
           >
+            {(transaction.status === 'pending' || transaction.status === 'submitted') && (
+              <span
+                className="w-1.5 h-1.5 rounded-full mr-1.5 animate-pulse"
+                style={{ backgroundColor: statusStyle.color }}
+              />
+            )}
             {transaction.status}
           </span>
         </div>

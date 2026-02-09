@@ -94,5 +94,10 @@
   "transactionFailed": "트랜잭션 실패",
   "tryAgain": "다시 시도",
   "pleaseWait": "트랜잭션이 처리되는 동안 잠시 기다려 주세요",
-  "cancelWarning": "이미 전송된 트랜잭션은 취소할 수 없습니다"
+  "cancelWarning": "이미 전송된 트랜잭션은 취소할 수 없습니다",
+  "submitting": "제출 중",
+  "waitingConfirmation": "확인 대기 중",
+  "confirmedInBlock": "블록 #{{block}}에서 확인됨",
+  "transactionConfirmed": "트랜잭션 확인됨",
+  "waitingForBlock": "블록에 포함되기를 기다리는 중..."
 }

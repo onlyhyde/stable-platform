@@ -43,5 +43,6 @@
   "swapFailed": "Swap failed",
   "copyHash": "Copy hash",
   "copyUserOpHash": "Copy UserOp hash",
-  "copyDelegationAddress": "Copy delegation address"
+  "copyDelegationAddress": "Copy delegation address",
+  "submitting": "Submitting"
 }

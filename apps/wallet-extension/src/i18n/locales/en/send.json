@@ -94,5 +94,10 @@
   "transactionFailed": "Transaction Failed",
   "tryAgain": "Try Again",
   "pleaseWait": "Please wait while the transaction is being processed",
-  "cancelWarning": "Already sent transactions cannot be cancelled"
+  "cancelWarning": "Already sent transactions cannot be cancelled",
+  "submitting": "Submitting",
+  "waitingConfirmation": "Waiting for confirmation",
+  "confirmedInBlock": "Confirmed in block #{{block}}",
+  "transactionConfirmed": "Transaction Confirmed",
+  "waitingForBlock": "Waiting to be included in a block..."
 }
