@@ -58,7 +58,7 @@ export {
 } from './errors'
 
 // Format validator
-export { FormatValidator, userOperationSchema } from './formatValidator'
+export { FormatValidator, userOperationSchema, type FormatValidatorConfig } from './formatValidator'
 
 // Reputation manager
 export { ReputationManager } from './reputationManager'
@@ -84,6 +84,12 @@ export {
   type ValidatorConfig,
   type ValidatorDependencies,
 } from './validator'
+
+// Tracer
+export {
+  DebugTraceCallTracer,
+  type TracerConfig,
+} from './tracer'
 
 // Aggregator validator
 export {

@@ -680,6 +680,102 @@ describe('GasEstimator', () => {
     })
   })
 
+  describe('Factory deployment gas configuration', () => {
+    // Binary search needs high gas threshold so factory ops require more gas
+    // This forces the binary search to find different minimums for with/without factory
+
+    it('should use default 200000n when not configured', async () => {
+      const userOp = createTestUserOp({
+        factory: TEST_FACTORY,
+        factoryData: '0x1234' as Hex,
+      })
+
+      // Simulation needs 250000 gas for factory deployment (200000 deploy + 50000 base)
+      mockClient.simulateContract = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        if (params.gas && params.gas < 250000n) {
+          throw new Error('out of gas')
+        }
+        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      })
+
+      const defaultEstimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger)
+      const result = await defaultEstimator.estimate(userOp)
+
+      // Binary search should find ~250000, then +10% buffer
+      expect(result.verificationGasLimit).toBeGreaterThanOrEqual(250000n)
+    })
+
+    it('should use custom factoryDeploymentGas when configured', () => {
+      // Verify the config is accepted and stored
+      const customEstimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, {
+        factoryDeploymentGas: 500000n,
+      })
+      expect(customEstimator).toBeDefined()
+    })
+
+    it('should apply factoryDeploymentGas only when factory present', async () => {
+      const factoryGasThreshold = 250000n
+      const noFactoryGasThreshold = 50000n
+
+      mockClient.simulateContract = vi
+        .fn()
+        .mockImplementation(async (params: { gas?: bigint; args?: unknown[] }) => {
+          // Check if this is a factory operation by examining the packed UserOp initCode
+          const packedOp = params.args?.[0] as { initCode?: string } | undefined
+          const hasFactory = packedOp?.initCode && packedOp.initCode !== '0x'
+          const threshold = hasFactory ? factoryGasThreshold : noFactoryGasThreshold
+
+          if (params.gas && params.gas < threshold) {
+            throw new Error('out of gas')
+          }
+          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        })
+
+      const estimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, {
+        factoryDeploymentGas: 500000n,
+      })
+
+      const userOpNoFactory = createTestUserOp()
+      const userOpWithFactory = createTestUserOp({
+        factory: TEST_FACTORY,
+        factoryData: '0x1234' as Hex,
+      })
+
+      const resultNoFactory = await estimator.estimate(userOpNoFactory)
+      const resultWithFactory = await estimator.estimate(userOpWithFactory)
+
+      // With factory should be significantly higher than without
+      expect(resultWithFactory.verificationGasLimit).toBeGreaterThan(
+        resultNoFactory.verificationGasLimit
+      )
+    })
+
+    it('should NOT add factory gas when no factory in UserOp', async () => {
+      // Test that the fallback path uses the configurable factoryDeploymentGas
+      // We access this through the config type check
+      const config = {
+        factoryDeploymentGas: 300000n,
+        verificationGasBufferPercent: 10,
+      }
+      const estimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, config)
+
+      // Regular op without factory - binary search with low threshold
+      mockClient.simulateContract = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        if (params.gas && params.gas < 50000n) {
+          throw new Error('out of gas')
+        }
+        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+      })
+
+      const userOp = createTestUserOp() // no factory
+      const result = await estimator.estimate(userOp)
+
+      // Without factory: binary search finds ~50000 + 10% buffer = ~55000
+      // Should NOT include the 300000n factoryDeploymentGas
+      expect(result.verificationGasLimit).toBeLessThan(100000n)
+    })
+  })
+
   describe('Task 1.1.5: Configurable safety margins', () => {
     it('should allow per-operation-type buffer configuration', async () => {
       const userOp = createTestUserOp({

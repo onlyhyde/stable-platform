@@ -107,6 +107,11 @@ async function main() {
             description:
               'Maximum nonce gap in mempool when continuity validation enabled (default: 0)',
           })
+          .option('enable-opcode-validation', {
+            type: 'boolean',
+            description:
+              'Enable ERC-7562 opcode validation (requires debug_traceCall support, default: true)',
+          })
           .epilog(getEnvHelp())
       },
       async (argv) => {
@@ -138,6 +143,7 @@ async function runBundler(argv: {
   minValidUntilBuffer?: number
   validateNonceContinuity?: boolean
   mempoolMaxNonceGap?: number
+  enableOpcodeValidation?: boolean
 }) {
   // Parse configuration (handles env vars automatically)
   const config = parseConfig({
@@ -153,6 +159,7 @@ async function runBundler(argv: {
     maxBundleSize: argv.maxBundleSize,
     logLevel: argv.logLevel,
     debug: argv.debug,
+    enableOpcodeValidation: argv.enableOpcodeValidation,
   })
 
   // Create logger

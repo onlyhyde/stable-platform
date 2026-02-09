@@ -40,6 +40,8 @@ export interface BundlerConfig {
   mempoolMaxNonceGap?: number
   /** CORS allowed origins (default: localhost only in production, all in debug mode) */
   corsOrigins?: string[]
+  /** Enable ERC-7562 opcode validation (requires debug_traceCall support, default: true) */
+  enableOpcodeValidation?: boolean
 }
 
 /**

@@ -78,6 +78,7 @@ export class RpcServer {
       {
         entryPoint: primaryEntryPoint,
         skipSimulation: config.debug, // Skip simulation in debug mode for easier testing
+        skipOpcodeValidation: config.enableOpcodeValidation === false || config.debug,
         maxNonceGap: config.maxNonceGap,
         minValidUntilBuffer: config.minValidUntilBuffer,
       },

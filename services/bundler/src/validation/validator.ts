@@ -3,8 +3,10 @@ import type { UserOperation } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import { FormatValidator } from './formatValidator'
+import { OpcodeValidator } from './opcodeValidator'
 import { ReputationManager } from './reputationManager'
 import { SimulationValidator } from './simulationValidator'
+import { DebugTraceCallTracer } from './tracer'
 import type {
   IFormatValidator,
   IOpcodeValidator,
@@ -90,6 +92,12 @@ export class UserOperationValidator {
     config: ValidatorConfig,
     logger: Logger
   ): UserOperationValidator {
+    let opcodeValidator: IOpcodeValidator | undefined
+    if (!config.skipOpcodeValidation) {
+      const tracer = new DebugTraceCallTracer(publicClient, config.entryPoint, logger)
+      opcodeValidator = new OpcodeValidator(tracer, config.entryPoint, logger)
+    }
+
     const dependencies: ValidatorDependencies = {
       formatValidator: new FormatValidator(),
       simulationValidator: new SimulationValidator(publicClient, config.entryPoint, logger),
@@ -97,6 +105,7 @@ export class UserOperationValidator {
         logger,
         config.reputation ?? DEFAULT_REPUTATION_CONFIG
       ),
+      opcodeValidator,
     }
 
     return new UserOperationValidator(config, logger, dependencies)

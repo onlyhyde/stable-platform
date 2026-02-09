@@ -1,4 +1,4 @@
-import type { Address, Hex } from 'viem'
+import type { Address, Hex, PublicClient } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RPC_ERROR_CODES, RpcError } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
@@ -497,6 +497,62 @@ describe('UserOperationValidator', () => {
       // Nonce 100 should pass
       const userOp100 = createTestUserOp({ nonce: 100n })
       await expect(validator.validate(userOp100)).resolves.toBeDefined()
+    })
+  })
+
+  describe('create() factory with OpcodeValidator', () => {
+    const mockPublicClient = {
+      request: vi.fn(),
+      readContract: vi.fn(),
+      getCode: vi.fn(),
+      simulateContract: vi.fn(),
+      getBalance: vi.fn(),
+    } as unknown as PublicClient
+
+    it('should create OpcodeValidator when skipOpcodeValidation is not set', () => {
+      const validator = UserOperationValidator.create(
+        mockPublicClient,
+        { entryPoint: TEST_ENTRY_POINT },
+        mockLogger
+      )
+
+      expect(validator.getOpcodeValidator()).toBeDefined()
+    })
+
+    it('should NOT create OpcodeValidator when skipOpcodeValidation is true', () => {
+      const validator = UserOperationValidator.create(
+        mockPublicClient,
+        { entryPoint: TEST_ENTRY_POINT, skipOpcodeValidation: true },
+        mockLogger
+      )
+
+      expect(validator.getOpcodeValidator()).toBeUndefined()
+    })
+
+    it('should return OpcodeValidator via getOpcodeValidator()', () => {
+      const validator = UserOperationValidator.create(
+        mockPublicClient,
+        { entryPoint: TEST_ENTRY_POINT },
+        mockLogger
+      )
+
+      const opcodeValidator = validator.getOpcodeValidator()
+      expect(opcodeValidator).toBeDefined()
+      expect(typeof opcodeValidator!.validate).toBe('function')
+    })
+
+    it('should still create validator without OpcodeValidator when skipped', () => {
+      const validator = UserOperationValidator.create(
+        mockPublicClient,
+        { entryPoint: TEST_ENTRY_POINT, skipOpcodeValidation: true },
+        mockLogger
+      )
+
+      // Validator itself should still be functional
+      expect(validator).toBeInstanceOf(UserOperationValidator)
+      expect(validator.getFormatValidator()).toBeDefined()
+      expect(validator.getReputationManager()).toBeDefined()
+      expect(validator.getSimulationValidator()).toBeDefined()
     })
   })
 })

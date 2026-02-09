@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { UserOperation } from '../../src/types'
 import { RpcError } from '../../src/types'
-import { FormatValidator } from '../../src/validation/formatValidator'
+import { FormatValidator, type FormatValidatorConfig } from '../../src/validation/formatValidator'
 import { VALIDATION_CONSTANTS } from '../../src/validation/types'
 
 describe('FormatValidator', () => {
@@ -313,6 +313,120 @@ describe('FormatValidator', () => {
         signature: validSignature,
       }
       expect(() => validator.validate(validOp)).not.toThrow()
+    })
+  })
+
+  describe('Per-entity calldata limits (configurable)', () => {
+    it('should use default limits when no config (backwards compatible)', () => {
+      const defaultValidator = new FormatValidator()
+      // Should not throw for reasonable data
+      expect(() => defaultValidator.validate(validUserOp)).not.toThrow()
+    })
+
+    it('should accept custom maxCalldataLength', () => {
+      const config: FormatValidatorConfig = {
+        maxCalldataLength: 1000, // 1000 hex chars = ~499 bytes
+      }
+      const customValidator = new FormatValidator(config)
+
+      // Data within limit should pass
+      const smallOp: UserOperation = {
+        ...validUserOp,
+        callData: ('0x' + 'ab'.repeat(400)) as `0x${string}`, // 802 chars
+      }
+      expect(() => customValidator.validate(smallOp)).not.toThrow()
+    })
+
+    it('should accept custom maxFactoryDataLength', () => {
+      const config: FormatValidatorConfig = {
+        maxFactoryDataLength: 500,
+      }
+      const customValidator = new FormatValidator(config)
+
+      // Data within limit should pass
+      const validOp: UserOperation = {
+        ...validUserOp,
+        factory: '0x1234567890123456789012345678901234567890',
+        factoryData: ('0x' + 'ab'.repeat(200)) as `0x${string}`, // 402 chars
+      }
+      expect(() => customValidator.validate(validOp)).not.toThrow()
+    })
+
+    it('should accept custom maxPaymasterDataLength', () => {
+      const config: FormatValidatorConfig = {
+        maxPaymasterDataLength: 500,
+      }
+      const customValidator = new FormatValidator(config)
+
+      const validOp: UserOperation = {
+        ...validUserOp,
+        paymaster: '0x1234567890123456789012345678901234567890',
+        paymasterVerificationGasLimit: 50000n,
+        paymasterPostOpGasLimit: 30000n,
+        paymasterData: ('0x' + 'ab'.repeat(200)) as `0x${string}`, // 402 chars
+      }
+      expect(() => customValidator.validate(validOp)).not.toThrow()
+    })
+
+    it('should reject callData exceeding custom limit', () => {
+      const config: FormatValidatorConfig = {
+        maxCalldataLength: 100, // Very tight limit
+      }
+      const customValidator = new FormatValidator(config)
+
+      const oversizedOp: UserOperation = {
+        ...validUserOp,
+        callData: ('0x' + 'ab'.repeat(100)) as `0x${string}`, // 202 chars > 100
+      }
+      expect(() => customValidator.validate(oversizedOp)).toThrow(RpcError)
+      expect(() => customValidator.validate(oversizedOp)).toThrow(/callData too large/)
+    })
+
+    it('should reject factoryData exceeding custom limit', () => {
+      const config: FormatValidatorConfig = {
+        maxFactoryDataLength: 100,
+      }
+      const customValidator = new FormatValidator(config)
+
+      const oversizedOp: UserOperation = {
+        ...validUserOp,
+        factory: '0x1234567890123456789012345678901234567890',
+        factoryData: ('0x' + 'ab'.repeat(100)) as `0x${string}`, // 202 chars > 100
+      }
+      expect(() => customValidator.validate(oversizedOp)).toThrow(RpcError)
+      expect(() => customValidator.validate(oversizedOp)).toThrow(/factoryData too large/)
+    })
+
+    it('should reject paymasterData exceeding custom limit', () => {
+      const config: FormatValidatorConfig = {
+        maxPaymasterDataLength: 100,
+      }
+      const customValidator = new FormatValidator(config)
+
+      const oversizedOp: UserOperation = {
+        ...validUserOp,
+        paymaster: '0x1234567890123456789012345678901234567890',
+        paymasterVerificationGasLimit: 50000n,
+        paymasterPostOpGasLimit: 30000n,
+        paymasterData: ('0x' + 'ab'.repeat(100)) as `0x${string}`, // 202 chars > 100
+      }
+      expect(() => customValidator.validate(oversizedOp)).toThrow(RpcError)
+      expect(() => customValidator.validate(oversizedOp)).toThrow(/paymasterData too large/)
+    })
+
+    it('should allow data within custom limits', () => {
+      const config: FormatValidatorConfig = {
+        maxCalldataLength: 500,
+        maxFactoryDataLength: 300,
+        maxPaymasterDataLength: 200,
+      }
+      const customValidator = new FormatValidator(config)
+
+      const validOp: UserOperation = {
+        ...validUserOp,
+        callData: ('0x' + 'ab'.repeat(200)) as `0x${string}`, // 402 chars < 500
+      }
+      expect(() => customValidator.validate(validOp)).not.toThrow()
     })
   })
 })

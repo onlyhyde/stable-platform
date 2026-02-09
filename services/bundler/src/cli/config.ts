@@ -20,6 +20,7 @@ export const ENV_VARS = {
   VALIDATE_NONCE_CONTINUITY: ['BUNDLER_VALIDATE_NONCE_CONTINUITY', 'VALIDATE_NONCE_CONTINUITY'],
   MEMPOOL_MAX_NONCE_GAP: ['BUNDLER_MEMPOOL_MAX_NONCE_GAP', 'MEMPOOL_MAX_NONCE_GAP'],
   CORS_ORIGINS: ['BUNDLER_CORS_ORIGINS', 'CORS_ORIGINS'],
+  ENABLE_OPCODE_VALIDATION: ['BUNDLER_ENABLE_OPCODE_VALIDATION', 'ENABLE_OPCODE_VALIDATION'],
 } as const
 
 /**
@@ -154,6 +155,7 @@ export interface CliOptions {
   validateNonceContinuity?: boolean
   mempoolMaxNonceGap?: number
   corsOrigins?: string[]
+  enableOpcodeValidation?: boolean
 }
 
 /**
@@ -245,6 +247,10 @@ export function parseConfig(options: CliOptions): BundlerConfig {
   // CORS origins: CLI > env > default (localhost only, or all in debug mode)
   const corsOrigins = options.corsOrigins ?? parseCorsOriginsFromEnv()
 
+  // Enable opcode validation: CLI > env > default (true)
+  const enableOpcodeValidation =
+    options.enableOpcodeValidation ?? getEnvBool(ENV_VARS.ENABLE_OPCODE_VALIDATION) ?? true
+
   return {
     network,
     chainId,
@@ -264,6 +270,7 @@ export function parseConfig(options: CliOptions): BundlerConfig {
     validateNonceContinuity,
     mempoolMaxNonceGap,
     corsOrigins,
+    enableOpcodeValidation,
   }
 }
 
@@ -287,6 +294,7 @@ Environment Variables:
   ${ENV_VARS.VALIDATE_NONCE_CONTINUITY.join(' or ')} Enable mempool nonce continuity (default: false)
   ${ENV_VARS.MEMPOOL_MAX_NONCE_GAP.join(' or ')} Max nonce gap in mempool (default: 0)
   ${ENV_VARS.CORS_ORIGINS.join(' or ')}    CORS allowed origins, comma-separated (default: localhost only)
+  ${ENV_VARS.ENABLE_OPCODE_VALIDATION.join(' or ')} Enable ERC-7562 opcode validation (default: true)
 
 Priority: CLI arguments > Environment variables > Network presets > Defaults
 `.trim()

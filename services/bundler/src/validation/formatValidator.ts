@@ -92,10 +92,34 @@ export const userOperationSchema = z.object({
 })
 
 /**
+ * Configuration for per-entity calldata length limits
+ */
+export interface FormatValidatorConfig {
+  /** Max callData length in hex chars (default: VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH) */
+  maxCalldataLength?: number
+  /** Max factoryData length in hex chars (default: VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH) */
+  maxFactoryDataLength?: number
+  /** Max paymasterData length in hex chars (default: VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH) */
+  maxPaymasterDataLength?: number
+}
+
+/**
  * Format validator for UserOperations
  * Performs fast, static validation without RPC calls
  */
 export class FormatValidator implements IFormatValidator {
+  private readonly limits: Required<FormatValidatorConfig>
+
+  constructor(config: FormatValidatorConfig = {}) {
+    this.limits = {
+      maxCalldataLength: config.maxCalldataLength ?? VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH,
+      maxFactoryDataLength:
+        config.maxFactoryDataLength ?? VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH,
+      maxPaymasterDataLength:
+        config.maxPaymasterDataLength ?? VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH,
+    }
+  }
+
   /**
    * Validate a UserOperation format
    * @throws RpcError if validation fails
@@ -125,32 +149,26 @@ export class FormatValidator implements IFormatValidator {
    * This is a security measure against DoS attacks with large payloads
    */
   private validateDataLengths(userOp: UserOperation): void {
-    // Check callData length
-    if (userOp.callData && userOp.callData.length > VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH) {
+    // Check callData length (uses configurable limit)
+    if (userOp.callData && userOp.callData.length > this.limits.maxCalldataLength) {
       throw new RpcError(
-        `callData too large: ${userOp.callData.length} chars (max: ${VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH}, ${(VALIDATION_CONSTANTS.MAX_CALLDATA_LENGTH - 2) / 2} bytes)`,
+        `callData too large: ${userOp.callData.length} chars (max: ${this.limits.maxCalldataLength}, ${(this.limits.maxCalldataLength - 2) / 2} bytes)`,
         RPC_ERROR_CODES.INVALID_PARAMS
       )
     }
 
-    // Check factoryData length
-    if (
-      userOp.factoryData &&
-      userOp.factoryData.length > VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH
-    ) {
+    // Check factoryData length (uses configurable limit)
+    if (userOp.factoryData && userOp.factoryData.length > this.limits.maxFactoryDataLength) {
       throw new RpcError(
-        `factoryData too large: ${userOp.factoryData.length} chars (max: ${VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH}, ${(VALIDATION_CONSTANTS.MAX_FACTORY_DATA_LENGTH - 2) / 2} bytes)`,
+        `factoryData too large: ${userOp.factoryData.length} chars (max: ${this.limits.maxFactoryDataLength}, ${(this.limits.maxFactoryDataLength - 2) / 2} bytes)`,
         RPC_ERROR_CODES.INVALID_PARAMS
       )
     }
 
-    // Check paymasterData length
-    if (
-      userOp.paymasterData &&
-      userOp.paymasterData.length > VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH
-    ) {
+    // Check paymasterData length (uses configurable limit)
+    if (userOp.paymasterData && userOp.paymasterData.length > this.limits.maxPaymasterDataLength) {
       throw new RpcError(
-        `paymasterData too large: ${userOp.paymasterData.length} chars (max: ${VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH}, ${(VALIDATION_CONSTANTS.MAX_PAYMASTER_DATA_LENGTH - 2) / 2} bytes)`,
+        `paymasterData too large: ${userOp.paymasterData.length} chars (max: ${this.limits.maxPaymasterDataLength}, ${(this.limits.maxPaymasterDataLength - 2) / 2} bytes)`,
         RPC_ERROR_CODES.INVALID_PARAMS
       )
     }

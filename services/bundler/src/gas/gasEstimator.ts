@@ -32,6 +32,8 @@ export interface GasEstimatorConfig {
   l1GasPrice?: bigint
   /** L2 gas price for L1 data cost ratio (optional) */
   l2GasPrice?: bigint
+  /** Gas to add for factory deployment in fallback estimation (default: 200000n) */
+  factoryDeploymentGas?: bigint
 }
 
 /**
@@ -66,6 +68,7 @@ const DEFAULT_CONFIG = {
   isL2Chain: false,
   l1GasPrice: undefined as bigint | undefined,
   l2GasPrice: undefined as bigint | undefined,
+  factoryDeploymentGas: 200000n,
 }
 
 type RequiredConfig = typeof DEFAULT_CONFIG
@@ -474,8 +477,8 @@ export class GasEstimator {
     let baseGas = 100000n
 
     if (userOp.factory) {
-      // Add deployment gas
-      baseGas += 200000n
+      // Add deployment gas (configurable)
+      baseGas += this.config.factoryDeploymentGas
     }
 
     // Apply buffer

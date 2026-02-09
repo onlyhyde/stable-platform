@@ -446,6 +446,144 @@ describe('OpcodeValidator', () => {
     })
   })
 
+  describe('Storage access validation (ERC-7562 compliance)', () => {
+    it('should reject sender accessing other account storage', async () => {
+      const otherAccount = '0x7777777777777777777777777777777777777777' as Address
+      const trace = createMockTrace({
+        calls: [
+          createTraceCall(TEST_SENDER, ENTRY_POINT, ['SLOAD'], {
+            [otherAccount]: ['0x0', '0x1'],
+          }),
+        ],
+      })
+      mockTracer.trace.mockResolvedValue(trace)
+
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
+      try {
+        await validator.validate(TEST_SENDER, undefined, undefined)
+      } catch (error) {
+        expect((error as RpcError).message).toContain('storage')
+        expect((error as RpcError).message.toLowerCase()).toContain(otherAccount.toLowerCase())
+      }
+    })
+
+    it('should reject factory accessing paymaster storage', async () => {
+      const trace = createMockTrace({
+        calls: [
+          createTraceCall(TEST_FACTORY, ENTRY_POINT, ['SLOAD'], {
+            [TEST_PAYMASTER]: ['0x0'],
+          }),
+        ],
+      })
+      mockTracer.trace.mockResolvedValue(trace)
+
+      await expect(
+        validator.validate(TEST_SENDER, TEST_FACTORY, TEST_PAYMASTER)
+      ).rejects.toThrow(RpcError)
+      try {
+        await validator.validate(TEST_SENDER, TEST_FACTORY, TEST_PAYMASTER)
+      } catch (error) {
+        expect((error as RpcError).message).toContain('storage')
+      }
+    })
+
+    it('should allow factory accessing sender storage during deployment', async () => {
+      const trace = createMockTrace({
+        calls: [
+          createTraceCall(TEST_FACTORY, ENTRY_POINT, ['SLOAD', 'SSTORE'], {
+            [TEST_SENDER]: ['0x0', '0x1', '0x2'],
+          }),
+        ],
+      })
+      mockTracer.trace.mockResolvedValue(trace)
+
+      await expect(
+        validator.validate(TEST_SENDER, TEST_FACTORY, undefined)
+      ).resolves.not.toThrow()
+    })
+
+    it('should allow paymaster accessing own storage', async () => {
+      const trace = createMockTrace({
+        calls: [
+          createTraceCall(TEST_PAYMASTER, ENTRY_POINT, ['SLOAD', 'SSTORE'], {
+            [TEST_PAYMASTER]: ['0x0', '0x1'],
+          }),
+        ],
+      })
+      mockTracer.trace.mockResolvedValue(trace)
+
+      await expect(
+        validator.validate(TEST_SENDER, undefined, TEST_PAYMASTER)
+      ).resolves.not.toThrow()
+    })
+
+    it('should reject paymaster accessing factory storage', async () => {
+      const trace = createMockTrace({
+        calls: [
+          createTraceCall(TEST_PAYMASTER, ENTRY_POINT, ['SLOAD'], {
+            [TEST_FACTORY]: ['0x0'],
+          }),
+        ],
+      })
+      mockTracer.trace.mockResolvedValue(trace)
+
+      await expect(
+        validator.validate(TEST_SENDER, TEST_FACTORY, TEST_PAYMASTER)
+      ).rejects.toThrow(RpcError)
+    })
+
+    it('should handle nested call storage violations', async () => {
+      const otherAccount = '0x8888888888888888888888888888888888888888' as Address
+      const outerCall = createTraceCall(TEST_SENDER, ENTRY_POINT, ['CALL'])
+      outerCall.calls = [
+        createTraceCall(TEST_SENDER, otherAccount, ['SLOAD'], {
+          [otherAccount]: ['0x0'],
+        }),
+      ]
+
+      const trace = createMockTrace({ calls: [outerCall] })
+      mockTracer.trace.mockResolvedValue(trace)
+
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).rejects.toThrow(RpcError)
+    })
+
+    it('should allow entity accessing own storage', async () => {
+      const trace = createMockTrace({
+        calls: [
+          createTraceCall(TEST_SENDER, ENTRY_POINT, ['SLOAD', 'SSTORE'], {
+            [TEST_SENDER]: ['0x0'],
+          }),
+          createTraceCall(TEST_FACTORY, ENTRY_POINT, ['SLOAD'], {
+            [TEST_FACTORY]: ['0x0'],
+          }),
+          createTraceCall(TEST_PAYMASTER, ENTRY_POINT, ['SLOAD'], {
+            [TEST_PAYMASTER]: ['0x0'],
+          }),
+        ],
+      })
+      mockTracer.trace.mockResolvedValue(trace)
+
+      await expect(
+        validator.validate(TEST_SENDER, TEST_FACTORY, TEST_PAYMASTER)
+      ).resolves.not.toThrow()
+    })
+
+    it('should handle empty storage records', async () => {
+      const otherAccount = '0x9999999999999999999999999999999999999999' as Address
+      const trace = createMockTrace({
+        calls: [
+          createTraceCall(TEST_SENDER, ENTRY_POINT, ['SLOAD'], {
+            [otherAccount]: [], // empty slots array
+          }),
+        ],
+      })
+      mockTracer.trace.mockResolvedValue(trace)
+
+      // Empty storage records should not trigger a violation
+      await expect(validator.validate(TEST_SENDER, undefined, undefined)).resolves.not.toThrow()
+    })
+  })
+
   describe('Edge cases', () => {
     it('should handle empty trace', async () => {
       mockTracer.trace.mockResolvedValue(createMockTrace({ calls: [] }))
