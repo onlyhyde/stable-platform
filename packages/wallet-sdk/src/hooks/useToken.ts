@@ -40,6 +40,9 @@ interface UseTokenResult {
 /**
  * Decode string from hex (for name/symbol)
  */
+/** Max decoded string length (bytes) to prevent malicious RPC data from causing memory issues. */
+const MAX_DECODED_STRING_LENGTH = 1024
+
 function decodeString(hex: string): string {
   try {
     // Remove 0x prefix and skip first 64 chars (offset) and next 64 chars (length)
@@ -47,9 +50,18 @@ function decodeString(hex: string): string {
     if (data.length < 128) return ''
 
     const lengthHex = data.slice(64, 128)
-    const length = Number.parseInt(lengthHex, 16) * 2
+    const rawLength = Number.parseInt(lengthHex, 16)
 
-    const stringHex = data.slice(128, 128 + length)
+    // Bounds check: reject NaN, negative, or excessively large values
+    if (!Number.isFinite(rawLength) || rawLength <= 0 || rawLength > MAX_DECODED_STRING_LENGTH) {
+      return ''
+    }
+
+    const length = rawLength * 2
+    const available = data.length - 128
+    const safeLength = Math.min(length, available)
+
+    const stringHex = data.slice(128, 128 + safeLength)
     const bytes = []
     for (let i = 0; i < stringHex.length; i += 2) {
       const byte = Number.parseInt(stringHex.slice(i, i + 2), 16)

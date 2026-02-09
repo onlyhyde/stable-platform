@@ -30,25 +30,25 @@ export function StableNetProvider({ children }: StableNetProviderProps) {
   const chainId = useChainId()
   const { isConnected } = useAccount()
 
-  const value = useMemo<StableNetContextValue>(() => {
-    // Default to StableNet Local (8283) if no chain connected
-    const currentChainId = chainId || 8283
+  // Default to StableNet Local (8283) if no chain connected
+  const currentChainId = chainId || 8283
 
-    // Use dynamic functions that check user's custom RPC settings
-    const contracts = getContractAddresses(currentChainId)
-    const services = getServiceUrls(currentChainId)
+  // Memoize publicClient separately so it is not recreated when isConnected toggles
+  const publicClient = useMemo(() => {
     const networkConfig = getConfigByChainId(currentChainId)
-
-    // Fallback values for unsupported chains
-    const defaultContracts = getContractAddresses(8283)!
-    const defaultServices = getServiceUrls(8283)!
-
-    // Create public client with user's custom RPC URL if set
     const chain = getStablenetLocal()
-    const publicClient = createPublicClient({
+    return createPublicClient({
       chain,
       transport: http(networkConfig?.rpcUrl),
     })
+  }, [currentChainId])
+
+  const value = useMemo<StableNetContextValue>(() => {
+    const contracts = getContractAddresses(currentChainId)
+    const services = getServiceUrls(currentChainId)
+
+    const defaultContracts = getContractAddresses(8283)!
+    const defaultServices = getServiceUrls(8283)!
 
     return {
       publicClient,
@@ -63,7 +63,7 @@ export function StableNetProvider({ children }: StableNetProviderProps) {
       stealthRegistry: contracts?.stealthRegistry ?? defaultContracts.stealthRegistry,
       isReady: isConnected,
     }
-  }, [chainId, isConnected])
+  }, [currentChainId, isConnected, publicClient])
 
   return <StableNetContext.Provider value={value}>{children}</StableNetContext.Provider>
 }

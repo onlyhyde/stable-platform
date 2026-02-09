@@ -1,7 +1,14 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { type Address, formatUnits, keccak256, toBytes } from 'viem'
+import {
+  type Address,
+  encodePacked,
+  formatUnits,
+  keccak256,
+  parseEventLogs,
+  toHex,
+} from 'viem'
 import { useChainId, useWalletClient } from 'wagmi'
 import { getContractAddresses } from '../lib/config'
 import { useStableNetContext } from '../providers/StableNetProvider'
@@ -164,6 +171,19 @@ const subscriptionManager_ABI = [
     stateMutability: 'view',
     inputs: [],
     outputs: [{ type: 'uint256' }],
+  },
+] as const
+
+// ABI for PermissionGranted event (used for type-safe log parsing)
+const permissionGrantedEvent_ABI = [
+  {
+    type: 'event',
+    name: 'PermissionGranted',
+    inputs: [
+      { name: 'permissionId', type: 'bytes32', indexed: true },
+      { name: 'owner', type: 'address', indexed: true },
+      { name: 'operator', type: 'address', indexed: false },
+    ],
   },
 ] as const
 
@@ -512,6 +532,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
           errorMessage.includes('Method not found')
         ) {
           // Wallet does not support ERC-7715, fallback to direct contract call on PermissionManager
+          if (!walletClient) throw new Error('Wallet disconnected during operation')
           const permissionTxHash = await walletClient.writeContract({
             address: permissionManager,
             abi: permissionManager_ABI,
@@ -528,30 +549,36 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
           // Wait for transaction and extract permissionId from logs
           const receipt = await publicClient.waitForTransactionReceipt({ hash: permissionTxHash })
 
-          // Find PermissionGranted event log
-          // Event signature: PermissionGranted(bytes32 indexed permissionId, address indexed owner, address operator)
-          // Use keccak256 hash of event signature for proper topic matching
-          const permissionGrantedTopic = keccak256(
-            toBytes('PermissionGranted(bytes32,address,address)')
-          )
-          const permissionLog = receipt.logs.find(
-            (log) =>
-              log.address.toLowerCase() === permissionManager.toLowerCase() &&
-              log.topics[0] === permissionGrantedTopic
+          // Type-safe event log parsing via viem
+          const parsedLogs = parseEventLogs({
+            abi: permissionGrantedEvent_ABI,
+            eventName: 'PermissionGranted',
+            logs: receipt.logs,
+          })
+
+          const permissionLog = parsedLogs.find(
+            (log) => log.address.toLowerCase() === permissionManager.toLowerCase()
           )
 
-          if (permissionLog?.topics[1]) {
-            return permissionLog.topics[1] as `0x${string}`
+          if (permissionLog) {
+            return permissionLog.args.permissionId as `0x${string}`
           }
 
-          // If we can't find the log, generate a deterministic permissionId
-          // This is a fallback - in production, the contract should emit proper events
-          const permissionId = `0x${Buffer.from(
-            `${address}:${recurringPaymentExecutor}:${plan.token}:${Date.now()}`
+          // Fallback: generate a cryptographically random permissionId via
+          // keccak256(abi.encodePacked(address, operator, token, randomNonce))
+          // This prevents collision and is unpredictable.
+          const randomNonce = toHex(crypto.getRandomValues(new Uint8Array(32)))
+          const permissionId = keccak256(
+            encodePacked(
+              ['address', 'address', 'address', 'bytes32'],
+              [
+                address as Address,
+                recurringPaymentExecutor,
+                plan.token,
+                randomNonce as `0x${string}`,
+              ]
+            )
           )
-            .toString('hex')
-            .slice(0, 64)
-            .padEnd(64, '0')}` as `0x${string}`
 
           return permissionId
         }
@@ -588,6 +615,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         const permissionId = await requestPermission(plan)
 
         // Step 2: Subscribe with the permission ID
+        if (!walletClient) throw new Error('Wallet disconnected during operation')
         const txHash = await walletClient.writeContract({
           address: subscriptionManager,
           abi: subscriptionManager_ABI,

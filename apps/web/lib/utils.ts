@@ -116,6 +116,17 @@ export interface RpcSettings {
 
 const STORAGE_KEY = 'stable-net-rpc-settings'
 
+/** Only allow http(s) URLs to prevent SSRF via localStorage tampering. */
+function isValidRpcUrl(url: unknown): url is string {
+  if (typeof url !== 'string') return false
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 /**
  * Get saved RPC settings from localStorage
  */
@@ -127,7 +138,12 @@ export function getRpcSettings(): RpcSettings | null {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
-      return JSON.parse(saved) as RpcSettings
+      const parsed = JSON.parse(saved) as RpcSettings
+      return {
+        rpcUrl: isValidRpcUrl(parsed.rpcUrl) ? parsed.rpcUrl : '',
+        bundlerUrl: isValidRpcUrl(parsed.bundlerUrl) ? parsed.bundlerUrl : '',
+        paymasterUrl: isValidRpcUrl(parsed.paymasterUrl) ? parsed.paymasterUrl : '',
+      }
     }
   } catch {
     // Silently fail - will return null and use defaults

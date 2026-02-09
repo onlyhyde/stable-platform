@@ -32,12 +32,23 @@ export default function SendPage() {
   const isValidAmount = amount === '' || (!Number.isNaN(Number(amount)) && Number(amount) > 0)
   const canSend = isAddress(recipient) && Number(amount) > 0 && isConnected && address
 
+  const [sendError, setSendError] = useState<string | null>(null)
+
   async function handleSend() {
     if (!canSend || !address) return
+    setSendError(null)
 
     const result = await sendTransaction(address, recipient as `0x${string}`, amount)
-    if (result?.success) {
+    if (result?.success && result.status === 'confirmed') {
       router.push('/payment/history')
+    } else if (result?.status === 'submitted') {
+      // Bundler accepted but on-chain confirmation timed out — navigate with pending state
+      router.push('/payment/history?pending=true')
+    } else if (result && !result.success) {
+      setSendError('Transaction failed on-chain. Please check your balance and try again.')
+    } else {
+      // result is null — useUserOp already set its own error state
+      setSendError(error?.message ?? 'Transaction failed. Please try again.')
     }
   }
 
@@ -181,7 +192,7 @@ export default function SendPage() {
           </div>
 
           {/* Error */}
-          {error && (
+          {(error || sendError) && (
             <div
               className="p-3 rounded-lg border"
               style={{
@@ -190,7 +201,7 @@ export default function SendPage() {
               }}
             >
               <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
-                {error.message}
+                {sendError ?? error?.message}
               </p>
             </div>
           )}

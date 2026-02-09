@@ -22,21 +22,28 @@ const ECDSA_VALIDATOR = '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707' as const
 const KERNEL_FACTORY = '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9' as const
 const ENTRY_POINT = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0' as const
 
-// Anvil default test accounts (publicly known private keys for testing)
-export const ANVIL_ACCOUNTS = [
-  {
-    address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as Address,
-    privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as Hex,
-  },
-  {
-    address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as Address,
-    privateKey: '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' as Hex,
-  },
-  {
-    address: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC' as Address,
-    privateKey: '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a' as Hex,
-  },
-] as const
+// Anvil default test accounts — ONLY available in development builds.
+// In production, this array is empty and private keys are never bundled.
+export const ANVIL_ACCOUNTS: readonly { address: Address; privateKey: Hex }[] =
+  process.env.NODE_ENV === 'development'
+    ? [
+        {
+          address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as Address,
+          privateKey:
+            '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as Hex,
+        },
+        {
+          address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as Address,
+          privateKey:
+            '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' as Hex,
+        },
+        {
+          address: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC' as Address,
+          privateKey:
+            '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a' as Hex,
+        },
+      ]
+    : []
 
 // Smart Account status
 export interface SmartAccountStatus {
@@ -137,8 +144,9 @@ export function useSmartAccount() {
   // Check if connected wallet is StableNet (supports wallet_signAuthorization)
   const isStableNetWallet = Boolean(
     wagmiWalletClient?.transport &&
-      (wagmiWalletClient as unknown as { transport?: { isStableNet?: boolean } })?.transport
-        ?.isStableNet
+      typeof wagmiWalletClient.transport === 'object' &&
+      'isStableNet' in (wagmiWalletClient.transport as object) &&
+      (wagmiWalletClient.transport as Record<string, unknown>).isStableNet === true
   )
 
   // Get default delegate address for current chain
@@ -314,6 +322,10 @@ export function useSmartAccount() {
         return { success: false, error: 'Wallet client not available' }
       }
 
+      if (!relayerPrivateKey && ANVIL_ACCOUNTS.length === 0) {
+        setError('Relayer private key is required in production')
+        return { success: false, error: 'Relayer private key is required in production' }
+      }
       const relayerKey = relayerPrivateKey || ANVIL_ACCOUNTS[0].privateKey
       const targetDelegate = delegateAddress || getDefaultDelegateAddress()
 
@@ -329,7 +341,10 @@ export function useSmartAccount() {
         }
 
         // Request authorization signature from StableNet wallet
-        // Use raw transport request to bypass wagmi's strict typing
+        // Re-validate walletClient after async operations (may disconnect mid-flow)
+        if (!wagmiWalletClient) {
+          throw new Error('Wallet disconnected during operation')
+        }
         const transport = wagmiWalletClient.transport as {
           request?: (args: unknown) => Promise<unknown>
         }
@@ -448,6 +463,10 @@ export function useSmartAccount() {
         return { success: false, error: 'Wallet client not available' }
       }
 
+      if (!relayerPrivateKey && ANVIL_ACCOUNTS.length === 0) {
+        setError('Relayer private key is required in production')
+        return { success: false, error: 'Relayer private key is required in production' }
+      }
       const relayerKey = relayerPrivateKey || ANVIL_ACCOUNTS[0].privateKey
 
       setIsRevoking(true)
@@ -462,7 +481,10 @@ export function useSmartAccount() {
         }
 
         // Request revocation signature from StableNet wallet
-        // Use raw transport request to bypass wagmi's strict typing
+        // Re-validate walletClient after async operations (may disconnect mid-flow)
+        if (!wagmiWalletClient) {
+          throw new Error('Wallet disconnected during operation')
+        }
         const transport = wagmiWalletClient.transport as {
           request?: (args: unknown) => Promise<unknown>
         }

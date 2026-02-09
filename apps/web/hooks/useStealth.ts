@@ -5,6 +5,17 @@ import type { Announcement, StealthMetaAddress } from '@/types'
 import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
 
+/** Fetch with AbortController timeout (default 10s). */
+function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = 10_000
+): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer))
+}
+
 interface UseStealthConfig {
   getSpendingPublicKey?: () => Promise<Hex>
   getViewingPublicKey?: () => Promise<Hex>
@@ -90,7 +101,7 @@ export function useStealth(config: UseStealthConfig = {}) {
           throw new Error('Invalid stealth meta address')
         }
 
-        const response = await fetch(`${stealthServerUrl}/generate`, {
+        const response = await fetchWithTimeout(`${stealthServerUrl}/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ metaAddress: recipientMetaAddress }),
@@ -131,7 +142,7 @@ export function useStealth(config: UseStealthConfig = {}) {
         if (fromBlock) params.set('fromBlock', fromBlock.toString())
         if (toBlock) params.set('toBlock', toBlock.toString())
 
-        const response = await fetch(`${stealthServerUrl}/announcements?${params}`)
+        const response = await fetchWithTimeout(`${stealthServerUrl}/announcements?${params}`)
 
         if (!response.ok) {
           throw new Error('Failed to fetch announcements')
@@ -159,7 +170,7 @@ export function useStealth(config: UseStealthConfig = {}) {
       setError(null)
 
       try {
-        const response = await fetch(`${stealthServerUrl}/register`, {
+        const response = await fetchWithTimeout(`${stealthServerUrl}/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ metaAddress, signature }),
@@ -307,7 +318,7 @@ export function useStealth(config: UseStealthConfig = {}) {
         })
 
         // Register the announcement with the stealth server
-        await fetch(`${stealthServerUrl}/announce`, {
+        await fetchWithTimeout(`${stealthServerUrl}/announce`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

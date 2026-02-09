@@ -2,7 +2,7 @@
 
 import { type StableNetProvider, detectProvider } from '@stablenet/wallet-sdk'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi'
 
 export function useWallet() {
@@ -15,10 +15,6 @@ export function useWallet() {
 
   // StableNet provider for event listening
   const [stableNetProvider, setStableNetProvider] = useState<StableNetProvider | null>(null)
-
-  // Track previous values for change detection
-  const prevChainId = useRef(chainId)
-  const prevAddress = useRef(address)
 
   // Detect StableNet provider on mount
   useEffect(() => {
@@ -41,13 +37,11 @@ export function useWallet() {
 
     // Use wallet-sdk's 'on' prefix methods for event subscription
     const unsubNetworkChange = stableNetProvider.onNetworkChange(() => {
-      // Invalidate all queries when chain changes
-      queryClient.invalidateQueries()
+      queryClient.invalidateQueries({ type: 'active' })
     })
 
     const unsubAccountChange = stableNetProvider.onAccountChange(() => {
-      // Invalidate all queries when account changes
-      queryClient.invalidateQueries()
+      queryClient.invalidateQueries({ type: 'active' })
     })
 
     return () => {
@@ -55,21 +49,6 @@ export function useWallet() {
       unsubAccountChange()
     }
   }, [stableNetProvider, queryClient])
-
-  // Invalidate queries when chainId or address changes via wagmi state
-  useEffect(() => {
-    if (prevChainId.current !== chainId) {
-      prevChainId.current = chainId
-      queryClient.invalidateQueries()
-    }
-  }, [chainId, queryClient])
-
-  useEffect(() => {
-    if (prevAddress.current !== address) {
-      prevAddress.current = address
-      queryClient.invalidateQueries()
-    }
-  }, [address, queryClient])
 
   const connectWallet = useCallback(
     (connectorId?: string) => {

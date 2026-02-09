@@ -11,10 +11,13 @@ interface SendUserOpParams {
   data?: Hex
 }
 
+type UserOpStatus = 'submitted' | 'confirmed' | 'failed'
+
 interface UserOpResult {
   userOpHash: Hex
   transactionHash?: Hex
   success: boolean
+  status: UserOpStatus
 }
 
 interface GasEstimate {
@@ -67,6 +70,45 @@ export function useUserOp(config: UseUserOpConfig = {}) {
   const [error, setError] = useState<Error | null>(null)
 
   const { getNonce, estimateGas, getGasPrice, signUserOp } = config
+
+  /**
+   * Poll bundler for UserOp receipt until confirmed or timeout.
+   * Returns null if polling times out (tx may still be pending).
+   */
+  const waitForUserOpReceipt = useCallback(
+    async (
+      userOpHash: Hex,
+      maxAttempts = 15,
+      intervalMs = 2000
+    ): Promise<{ transactionHash: Hex; success: boolean } | null> => {
+      for (let i = 0; i < maxAttempts; i++) {
+        try {
+          const res = await fetch(bundlerUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              id: 1,
+              method: 'eth_getUserOperationReceipt',
+              params: [userOpHash],
+            }),
+          })
+          const json = await res.json()
+          if (json.result) {
+            return {
+              transactionHash: json.result.receipt?.transactionHash ?? json.result.transactionHash,
+              success: json.result.success ?? json.result.receipt?.status === '0x1',
+            }
+          }
+        } catch {
+          // Bundler may not support this method or is temporarily unreachable
+        }
+        await new Promise((r) => setTimeout(r, intervalMs))
+      }
+      return null
+    },
+    [bundlerUrl]
+  )
 
   /**
    * Build execute calldata for account
@@ -135,6 +177,8 @@ export function useUserOp(config: UseUserOpConfig = {}) {
         // 6. Sign UserOperation
         if (signUserOp) {
           userOp.signature = await signUserOp(userOp, entryPoint, chainId)
+        } else {
+          throw new Error('signUserOp callback is required to sign the UserOperation')
         }
 
         // 7. Send to bundler
@@ -155,9 +199,16 @@ export function useUserOp(config: UseUserOpConfig = {}) {
           throw new Error(result.error.message)
         }
 
+        const userOpHash: Hex = result.result
+
+        // 8. Poll for UserOp receipt to confirm on-chain inclusion
+        const receipt = await waitForUserOpReceipt(userOpHash)
+
         return {
-          userOpHash: result.result,
-          success: true,
+          userOpHash,
+          transactionHash: receipt?.transactionHash,
+          success: receipt ? receipt.success : true,
+          status: receipt ? (receipt.success ? 'confirmed' : 'failed') : 'submitted',
         }
       } catch (err) {
         const opError = err instanceof Error ? err : new Error('Failed to send UserOperation')
@@ -176,6 +227,7 @@ export function useUserOp(config: UseUserOpConfig = {}) {
       getGasPrice,
       signUserOp,
       buildExecuteCalldata,
+      waitForUserOpReceipt,
     ]
   )
 

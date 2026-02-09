@@ -21,8 +21,9 @@ import {
 import { useSmartAccount, useWallet } from '@/hooks'
 import type { SigningMethod, UpgradeResult } from '@/hooks/useSmartAccount'
 import { getDelegatePresets } from '@/lib/eip7702'
+import { secureKeyStore } from '@/lib/secureKeyStore'
 import { sanitizeErrorMessage } from '@/lib/utils'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
 
 export default function SmartAccountPage() {
@@ -59,28 +60,30 @@ export default function SmartAccountPage() {
     return presets.length > 0 ? presets[0].address : contracts.defaultKernelImplementation
   })
 
-  // SECURITY: Use ref instead of state to prevent exposure in React DevTools
-  // Private key is sensitive and should not be visible in debugging tools
-  const privateKeyRef = useRef<Hex | ''>('')
-  // Track if private key is set (for UI updates without exposing the actual key)
+  // SECURITY: Private key stored in SecureKeyStore (XOR-encrypted, auto-clear 60s)
+  // Never in React state/ref — invisible to React DevTools
   const [hasPrivateKey, setHasPrivateKey] = useState(false)
 
-  // Secure setter that updates ref and state flag
   const setPrivateKey = useCallback((value: Hex | '') => {
-    privateKeyRef.current = value
+    if (value) {
+      secureKeyStore.store(value)
+    } else {
+      secureKeyStore.clear()
+    }
     setHasPrivateKey(!!value)
   }, [])
 
-  // Clear private key from memory
   const clearPrivateKey = useCallback(() => {
-    privateKeyRef.current = ''
+    secureKeyStore.clear()
     setHasPrivateKey(false)
   }, [])
 
-  // SECURITY: Clear private key on unmount to prevent memory leaks
+  // Sync UI when SecureKeyStore auto-clears on timeout
   useEffect(() => {
+    secureKeyStore.onClear(() => setHasPrivateKey(false))
     return () => {
-      privateKeyRef.current = ''
+      secureKeyStore.onClear(null)
+      secureKeyStore.clear()
     }
   }, [])
 
@@ -111,14 +114,14 @@ export default function SmartAccountPage() {
       if (signingMethod === 'stablenet') {
         result = await upgradeWithStableNet(selectedDelegate)
       } else {
-        const key = privateKeyRef.current
+        // SECURITY: Retrieve-and-clear ensures key is wiped immediately after use
+        const key = secureKeyStore.retrieveAndClear()
+        setHasPrivateKey(false)
         if (!key) {
           removeToast(toastId)
           return
         }
         result = await upgradeToSmartAccount(key as Hex, selectedDelegate)
-        // SECURITY: Clear private key after use
-        clearPrivateKey()
       }
 
       if (result.success) {
@@ -161,14 +164,14 @@ export default function SmartAccountPage() {
       if (signingMethod === 'stablenet') {
         result = await revokeWithStableNet()
       } else {
-        const key = privateKeyRef.current
+        // SECURITY: Retrieve-and-clear ensures key is wiped immediately after use
+        const key = secureKeyStore.retrieveAndClear()
+        setHasPrivateKey(false)
         if (!key) {
           removeToast(toastId)
           return
         }
         result = await revokeSmartAccount(key as Hex)
-        // SECURITY: Clear private key after use
-        clearPrivateKey()
       }
 
       if (result.success) {

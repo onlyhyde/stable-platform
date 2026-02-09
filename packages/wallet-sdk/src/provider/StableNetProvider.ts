@@ -7,6 +7,7 @@ import type {
   ProviderRpcError,
   TransactionRequest,
 } from '../types'
+import { filterValidAddresses, parseChainIdHex } from '../validation'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EventListener = (...args: any[]) => void
@@ -88,7 +89,8 @@ export class StableNetProvider {
 
   get chainIdNumber(): number | null {
     if (!this._chainId) return null
-    return Number.parseInt(this._chainId, 16)
+    const parsed = parseChainIdHex(this._chainId)
+    return Number.isNaN(parsed) ? null : parsed
   }
 
   /**
@@ -109,7 +111,7 @@ export class StableNetProvider {
     })
 
     this.provider.on('accountsChanged', (accounts: unknown) => {
-      const accountList = Array.isArray(accounts) ? (accounts as Address[]) : []
+      const accountList = Array.isArray(accounts) ? filterValidAddresses(accounts) : []
       this._account = accountList[0] ?? null
       this._isConnected = accountList.length > 0
       this.emit('accountsChanged', accountList)
@@ -129,7 +131,7 @@ export class StableNetProvider {
     const result = await this.provider.request({
       method: 'eth_requestAccounts',
     })
-    const accounts = Array.isArray(result) ? (result as Address[]) : []
+    const accounts = Array.isArray(result) ? filterValidAddresses(result) : []
 
     if (accounts.length > 0) {
       this._account = accounts[0]
@@ -161,7 +163,7 @@ export class StableNetProvider {
     const result = await this.provider.request({
       method: 'eth_accounts',
     })
-    return Array.isArray(result) ? (result as Address[]) : []
+    return Array.isArray(result) ? filterValidAddresses(result) : []
   }
 
   /**
@@ -208,9 +210,16 @@ export class StableNetProvider {
       throw new Error('No account connected')
     }
 
+    let serialized: string
+    try {
+      serialized = JSON.stringify(typedData)
+    } catch {
+      throw new Error('Failed to serialize typed data: ensure the object is JSON-serializable')
+    }
+
     const signature = (await this.provider.request({
       method: 'eth_signTypedData_v4',
-      params: [this._account, JSON.stringify(typedData)],
+      params: [this._account, serialized],
     })) as string
 
     return signature
@@ -306,8 +315,9 @@ export class StableNetProvider {
             return confirmedEvent
           }
         }
-      } catch {
-        // Transaction not yet mined, continue polling
+      } catch (err) {
+        // Log unexpected errors (network failures, provider issues) but continue polling
+        walletSdkLogger.warn('Error polling transaction receipt:', err)
       }
 
       // Exponential backoff: 2s, 4s, 8s, 15s, 15s, ...
