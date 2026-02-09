@@ -4,6 +4,7 @@ import {
   validateSessionKeyConfig,
 } from '@stablenet/core'
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
 import { formatEther, parseEther } from 'viem'
 
@@ -32,13 +33,6 @@ interface FormState {
 // Constants
 // ============================================================================
 
-const DURATION_PRESETS = [
-  { label: '1 Hour', days: 0, hours: 1 },
-  { label: '1 Day', days: 1, hours: 0 },
-  { label: '7 Days', days: 7, hours: 0 },
-  { label: '30 Days', days: 30, hours: 0 },
-]
-
 const COMMON_SELECTORS = [
   { name: 'transfer', selector: '0xa9059cbb', description: 'ERC-20 Transfer' },
   { name: 'approve', selector: '0x095ea7b3', description: 'ERC-20 Approve' },
@@ -52,6 +46,8 @@ const COMMON_SELECTORS = [
 // ============================================================================
 
 export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, onBack }: SessionKeyConfigProps) {
+  const { t } = useTranslation('modules')
+  const { t: tc } = useTranslation('common')
   const [step, setStep] = useState<Step>('key')
   const [form, setForm] = useState<FormState>({
     sessionKey: '',
@@ -168,10 +164,10 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
         <span className="text-3xl">🔑</span>
         <div>
           <h3 className="text-lg font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-            Session Key Executor
+            {t('sessionKeyExecutor')}
           </h3>
           <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Create delegated access for dApps
+            {t('createDelegatedAccess')}
           </p>
         </div>
       </div>
@@ -196,7 +192,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
       {step === 'key' && (
         <div className="step-key">
           <h4 className="font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-            Session Key Address
+            {t('sessionKeyAddress')}
           </h4>
 
           <div
@@ -204,8 +200,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              A session key is a temporary address that can sign transactions on your behalf, within
-              the limits you set.
+              {t('sessionKeyInfo')}
             </p>
           </div>
 
@@ -216,7 +211,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
-                Session Key Address
+                {t('sessionKeyAddress')}
               </label>
               <div className="flex gap-2">
                 <input
@@ -233,7 +228,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
                   style={{ backgroundColor: 'rgb(var(--secondary))' }}
                   onClick={generateSessionKey}
                 >
-                  Generate
+                  {t('generate')}
                 </button>
               </div>
             </div>
@@ -243,10 +238,15 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
-                Validity Duration
+                {t('validityDuration')}
               </span>
               <div className="grid grid-cols-4 gap-2">
-                {DURATION_PRESETS.map((preset) => (
+                {[
+                  { label: t('1Hour'), days: 0, hours: 1 },
+                  { label: t('1Day'), days: 1, hours: 0 },
+                  { label: t('7Days'), days: 7, hours: 0 },
+                  { label: t('30Days'), days: 30, hours: 0 },
+                ].map((preset) => (
                   <button
                     type="button"
                     key={preset.label}
@@ -278,7 +278,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
       {step === 'targets' && (
         <div className="step-targets">
           <h4 className="font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-            Allowed Contracts
+            {t('allowedContracts')}
           </h4>
 
           <div
@@ -286,7 +286,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              The session key can only interact with these contract addresses.
+              {t('allowedContractsInfo')}
             </p>
           </div>
 
@@ -324,7 +324,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
             style={{ color: 'rgb(var(--primary))' }}
             onClick={handleAddTarget}
           >
-            + Add Contract
+            {t('addContract')}
           </button>
 
           <div className="mt-6">
@@ -332,7 +332,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
               className="text-sm font-medium mb-2"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
-              Allowed Functions (Optional)
+              {t('allowedFunctions')}
             </h5>
             <div className="grid grid-cols-2 gap-2">
               {COMMON_SELECTORS.map((sel) => (
@@ -361,7 +361,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
               ))}
             </div>
             <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              If none selected, all functions are allowed
+              {t('noFunctionsSelectedInfo')}
             </p>
           </div>
         </div>
@@ -371,7 +371,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
       {step === 'limits' && (
         <div className="step-limits">
           <h4 className="font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-            Spending Limits
+            {t('spendingLimits')}
           </h4>
 
           <div
@@ -379,7 +379,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Set maximum value the session key can send per transaction.
+              {t('spendingLimitsInfo')}
             </p>
           </div>
 
@@ -390,7 +390,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
-                Max Value Per Transaction (ETH)
+                {t('maxValuePerTx')}
               </label>
               <input
                 id="max-value-per-tx"
@@ -411,7 +411,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
                     style={{ backgroundColor: 'rgb(var(--secondary))' }}
                     onClick={() => setForm((prev) => ({ ...prev, maxValuePerTx: val }))}
                   >
-                    {val} ETH
+                    {val} {tc('eth')}
                   </button>
                 ))}
               </div>
@@ -423,7 +423,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
-                Start Delay (Optional)
+                {t('startDelay')}
               </label>
               <select
                 id="start-delay"
@@ -433,9 +433,9 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
                   setForm((prev) => ({ ...prev, validAfterDelay: Number.parseInt(e.target.value) }))
                 }
               >
-                <option value={0}>Immediately</option>
-                <option value={1}>In 1 hour</option>
-                <option value={24}>In 24 hours</option>
+                <option value={0}>{t('immediately')}</option>
+                <option value={1}>{t('in1Hour')}</option>
+                <option value={24}>{t('in24Hours')}</option>
               </select>
             </div>
           </div>
@@ -446,7 +446,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
       {step === 'review' && (
         <div className="step-review">
           <h4 className="font-medium mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-            Review Session Key
+            {t('reviewSessionKey')}
           </h4>
 
           {errors.length > 0 && (
@@ -470,33 +470,33 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
             style={{ backgroundColor: 'rgb(var(--secondary))' }}
           >
             <div className="flex justify-between">
-              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Session Key</span>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('sessionKey')}</span>
               <span className="font-mono text-xs" style={{ color: 'rgb(var(--foreground))' }}>
                 {form.sessionKey.slice(0, 10)}...{form.sessionKey.slice(-8)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Allowed Contracts</span>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('allowedContractsCount')}</span>
               <span style={{ color: 'rgb(var(--foreground))' }}>
                 {form.allowedTargets.filter((t) => t.length > 0).length}
               </span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Allowed Functions</span>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('allowedFunctionsCount')}</span>
               <span style={{ color: 'rgb(var(--foreground))' }}>
-                {form.allowedSelectors.length || 'All'}
+                {form.allowedSelectors.length || t('all')}
               </span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Max Value/Tx</span>
-              <span style={{ color: 'rgb(var(--foreground))' }}>{form.maxValuePerTx} ETH</span>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('maxValueTx')}</span>
+              <span style={{ color: 'rgb(var(--foreground))' }}>{form.maxValuePerTx} {tc('eth')}</span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Duration</span>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('duration')}</span>
               <span style={{ color: 'rgb(var(--foreground))' }}>
                 {form.validityDays < 1
-                  ? `${Math.round(form.validityDays * 24)} hours`
-                  : `${form.validityDays} days`}
+                  ? t('hoursUnit', { count: Math.round(form.validityDays * 24) })
+                  : t('daysUnit', { count: form.validityDays })}
               </span>
             </div>
           </div>
@@ -510,8 +510,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
             }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--warning))' }}>
-              <strong>Warning:</strong> The session key will be able to sign transactions on your
-              behalf. Only create session keys for trusted dApps.
+              <strong>{t('warning')}</strong> {t('sessionKeyWarning')}
             </p>
           </div>
         </div>
@@ -520,11 +519,11 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
       {/* Actions */}
       <div className="flex gap-3 mt-6">
         <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
-          {step === 'key' ? 'Cancel' : 'Back'}
+          {step === 'key' ? tc('cancel') : tc('back')}
         </button>
         {step === 'review' ? (
           <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
-            Install Executor
+            {t('installExecutor')}
           </button>
         ) : (
           <button
@@ -533,7 +532,7 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
             onClick={nextStep}
             disabled={!canProceed()}
           >
-            Continue
+            {tc('continue')}
           </button>
         )}
       </div>
@@ -561,12 +560,13 @@ interface SessionKeyListProps {
 }
 
 export function SessionKeyList({ sessionKeys, onRevoke }: SessionKeyListProps) {
+  const { t } = useTranslation('modules')
   const now = Math.floor(Date.now() / 1000)
 
   if (sessionKeys.length === 0) {
     return (
       <div className="text-center py-8" style={{ color: 'rgb(var(--muted-foreground))' }}>
-        No session keys configured
+        {t('noSessionKeys')}
       </div>
     )
   }
@@ -610,7 +610,7 @@ export function SessionKeyList({ sessionKeys, onRevoke }: SessionKeyListProps) {
                           : 'rgb(var(--muted-foreground))',
                     }}
                   >
-                    {isActive ? 'Active' : isPending ? 'Pending' : 'Expired'}
+                    {isActive ? t('active') : isPending ? t('pending') : t('expired')}
                   </span>
                 </div>
                 <div
@@ -618,11 +618,13 @@ export function SessionKeyList({ sessionKeys, onRevoke }: SessionKeyListProps) {
                   style={{ color: 'rgb(var(--muted-foreground))' }}
                 >
                   <p>
-                    {sk.allowedTargets.length} contracts · {sk.allowedSelectors.length || 'All'}{' '}
-                    functions
+                    {t('contractsAndFunctions', {
+                      contracts: sk.allowedTargets.length,
+                      functions: sk.allowedSelectors.length || t('all'),
+                    })}
                   </p>
-                  <p>Max: {formatEther(sk.maxValuePerTx)} ETH per tx</p>
-                  <p>Expires: {new Date(sk.validUntil * 1000).toLocaleDateString()}</p>
+                  <p>{t('maxPerTx', { amount: formatEther(sk.maxValuePerTx) })}</p>
+                  <p>{t('expiresDate', { date: new Date(sk.validUntil * 1000).toLocaleDateString() })}</p>
                 </div>
               </div>
               {onRevoke && !isExpired && (
@@ -635,7 +637,7 @@ export function SessionKeyList({ sessionKeys, onRevoke }: SessionKeyListProps) {
                   }}
                   onClick={() => onRevoke(sk.sessionKey)}
                 >
-                  Revoke
+                  {t('revoke')}
                 </button>
               )}
             </div>

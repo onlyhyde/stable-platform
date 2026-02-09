@@ -342,7 +342,7 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
           </span>
         </div>
         <h3 className="text-xl font-bold" style={{ color: 'rgb(var(--destructive))' }}>
-          Delegation Failed
+          {t('delegationFailed')}
         </h3>
         <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
           {error}
@@ -353,14 +353,14 @@ export function DelegateSetup({ account, onComplete, onCancel }: DelegateSetupPr
             onClick={() => setStep('input')}
             className="px-6 py-3 rounded-lg font-medium btn-ghost"
           >
-            Try Again
+            {t('tryAgain')}
           </button>
           <button
             type="button"
             onClick={onCancel}
             className="px-6 py-3 rounded-lg font-medium btn-ghost"
           >
-            Cancel
+            {tc('cancel')}
           </button>
         </div>
       </div>
