@@ -20,6 +20,9 @@ import {
 import { Onboarding } from './pages/Onboarding'
 import './styles/globals.css'
 
+const isSidePanel = document.body.dataset.sidepanel === 'true'
+const sizeClass = isSidePanel ? 'w-full h-screen' : 'w-[360px] h-[600px]'
+
 export function App() {
   const {
     currentPage,
@@ -56,7 +59,7 @@ export function App() {
   if (isLoading && !isInitialized) {
     return (
       <div
-        className="w-[360px] h-[600px] flex items-center justify-center"
+        className={`${sizeClass} flex items-center justify-center`}
         style={{ backgroundColor: 'rgb(var(--background))' }}
       >
         <Spinner size="lg" />
@@ -67,7 +70,7 @@ export function App() {
   // Show onboarding if wallet is not initialized
   if (!isInitialized) {
     return (
-      <div className="w-[360px] h-[600px]" style={{ backgroundColor: 'rgb(var(--background))' }}>
+      <div className={sizeClass} style={{ backgroundColor: 'rgb(var(--background))' }}>
         <Onboarding onComplete={() => syncWithBackground()} />
       </div>
     )
@@ -76,7 +79,7 @@ export function App() {
   // Show lock screen if wallet is locked
   if (!isUnlocked) {
     return (
-      <div className="w-[360px] h-[600px]" style={{ backgroundColor: 'rgb(var(--background))' }}>
+      <div className={sizeClass} style={{ backgroundColor: 'rgb(var(--background))' }}>
         <Lock
           onUnlock={async (password) => {
             const success = await unlockWallet(password)
@@ -121,7 +124,7 @@ export function App() {
 
   return (
     <div
-      className="w-[360px] h-[600px] flex flex-col ambient-glow"
+      className={`${sizeClass} flex flex-col ambient-glow`}
       style={{ backgroundColor: 'rgb(var(--background))' }}
     >
       <Header />

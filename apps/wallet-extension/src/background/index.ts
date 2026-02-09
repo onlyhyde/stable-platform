@@ -1467,7 +1467,40 @@ async function initialize(): Promise<void> {
 
   // Set idle detection threshold (in seconds)
   chrome.idle.setDetectionInterval(60)
+
+  // Keep popup as the default action click behavior
+  await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false })
+
+  // Create context menu for opening Side Panel
+  chrome.contextMenus.create({
+    id: 'open-side-panel',
+    title: 'StableNet Wallet: Side Panel',
+    contexts: ['page'],
+  })
 }
+
+// =============================================================================
+// Context Menu Handler (Side Panel)
+// =============================================================================
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === 'open-side-panel' && tab?.id) {
+    await chrome.sidePanel.open({ tabId: tab.id })
+  }
+})
+
+// =============================================================================
+// Keyboard Shortcut Handler (Side Panel)
+// =============================================================================
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'open-side-panel') {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (tab?.id) {
+      await chrome.sidePanel.open({ tabId: tab.id })
+    }
+  }
+})
 
 // Initialize with proper error handling
 initialize().catch((error) => {
