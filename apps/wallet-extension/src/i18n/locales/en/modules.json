@@ -382,5 +382,24 @@
   "enterAmountInEth": "Enter amount in ETH",
   "enterAmount": "Enter amount",
   "dailyStakeLimit": "Daily Stake Limit",
-  "recipientLabel": "Recipient"
+  "recipientLabel": "Recipient",
+
+  "dashboard.title": "Smart Account",
+  "dashboard.delegated": "Delegated",
+  "dashboard.smart": "Smart",
+  "dashboard.delegatedTo": "Delegated To",
+  "dashboard.viewExplorer": "View in Explorer",
+  "dashboard.accountId": "Account ID",
+  "dashboard.gasSponsorship": "Gas Sponsorship",
+  "dashboard.sessionKeys": "Session Keys",
+  "dashboard.spendingLimits": "Spending Limits",
+  "dashboard.modules": "Modules",
+  "dashboard.available": "Available",
+  "dashboard.notConfigured": "Not Configured",
+  "dashboard.active": "Active",
+  "dashboard.none": "None",
+  "dashboard.activeCount": "{{count}} Active",
+  "dashboard.installedCount": "{{count}} Installed",
+  "dashboard.manageModules": "Manage Modules",
+  "dashboard.revokeDelegation": "Revoke Delegation"
 }

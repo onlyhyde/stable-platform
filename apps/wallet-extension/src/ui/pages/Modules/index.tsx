@@ -2,20 +2,22 @@ import { MODULE_TYPE, type ModuleType, getModuleTypeName } from '@stablenet/core
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { useWalletStore } from '../../hooks'
+import { useSelectedNetwork, useWalletStore } from '../../hooks'
 import { DelegateSetup } from './DelegateSetup'
 import { useModuleMarketplace } from './hooks/useModuleMarketplace'
 import { useModules } from './hooks/useModules'
+import { useSmartAccountInfo } from './hooks/useSmartAccountInfo'
 
 import { InstallModuleWizard } from './InstallModule'
 import { ModuleDetails } from './ModuleDetails'
 import { ModuleList } from './ModuleList'
+import { SmartAccountDashboard } from './SmartAccountDashboard'
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type ModuleView = 'list' | 'details' | 'install' | 'delegate'
+type ModuleView = 'overview' | 'list' | 'details' | 'install' | 'delegate'
 type ModuleTab = 'installed' | 'browse'
 
 // ============================================================================
@@ -25,7 +27,7 @@ type ModuleTab = 'installed' | 'browse'
 export function ModulesPage() {
   const { t } = useTranslation('modules')
   const { accounts, selectedAccount: selectedAccountAddress } = useWalletStore()
-  const [view, setView] = useState<ModuleView>('list')
+  const [view, setView] = useState<ModuleView>('overview')
   const [activeTab, setActiveTab] = useState<ModuleTab>('installed')
   const [selectedModuleAddress, setSelectedModuleAddress] = useState<string | null>(null)
   const [selectedModuleType, setSelectedModuleType] = useState<ModuleType | null>(null)
@@ -36,8 +38,10 @@ export function ModulesPage() {
     return accounts.find((a) => a.address === selectedAccountAddress) ?? null
   }, [accounts, selectedAccountAddress])
 
+  const currentNetwork = useSelectedNetwork()
   const { installedModules, isLoading, error, refetch } = useModules(selectedAccount?.address)
   const { registryModules, isLoading: isLoadingRegistry } = useModuleMarketplace()
+  const { info: smartAccountInfo, isLoading: isLoadingSmartInfo } = useSmartAccountInfo(selectedAccount?.address)
 
   // Determine which registry modules are already installed
   const installedAddresses = useMemo(() => {
@@ -54,16 +58,24 @@ export function ModulesPage() {
       <DelegateSetup
         account={selectedAccountAddress}
         onComplete={() => {
-          setView('list')
+          setView('overview')
           refetch()
         }}
-        onCancel={() => setView('list')}
+        onCancel={() => setView('overview')}
       />
     )
   }
 
+  // Determine if account is smart/delegated (store type OR on-chain info)
+  const isSmartAccount =
+    selectedAccount?.type === 'smart' ||
+    smartAccountInfo?.isDelegated ||
+    smartAccountInfo?.accountType === 'smart' ||
+    smartAccountInfo?.accountType === 'delegated'
+
   // Guard: Account not Smart Account capable - show delegation setup option
-  if (!selectedAccount || selectedAccount.type === 'eoa') {
+  // Skip guard while smart account info is still loading to avoid flash
+  if (!selectedAccount || (!isSmartAccount && !isLoadingSmartInfo)) {
     return (
       <div className="modules-page p-4">
         <div className="text-center py-8">
@@ -82,6 +94,22 @@ export function ModulesPage() {
     )
   }
 
+  // View: Smart Account Overview (default)
+  if (view === 'overview') {
+    return (
+      <SmartAccountDashboard
+        account={selectedAccount}
+        network={currentNetwork}
+        smartAccountInfo={smartAccountInfo}
+        installedModules={installedModules}
+        isLoading={isLoading || isLoadingSmartInfo}
+        onNavigateToModules={() => setView('list')}
+        onNavigateToInstall={() => setView('install')}
+        onRevokeDelegation={() => setView('delegate')}
+      />
+    )
+  }
+
   // View: Module Details
   if (view === 'details' && selectedModuleAddress) {
     const selectedModule = installedModules?.find((m) => m.address === selectedModuleAddress)
@@ -90,13 +118,13 @@ export function ModulesPage() {
       <ModuleDetails
         module={selectedModule}
         onBack={() => {
-          setView('list')
+          setView('overview')
           setSelectedModuleAddress(null)
         }}
         onUninstall={async () => {
           // Handle uninstall
           await refetch()
-          setView('list')
+          setView('overview')
         }}
       />
     )
@@ -110,10 +138,10 @@ export function ModulesPage() {
         preselectedType={selectedModuleType}
         onComplete={async () => {
           await refetch()
-          setView('list')
+          setView('overview')
         }}
         onCancel={() => {
-          setView('list')
+          setView('overview')
           setSelectedModuleType(null)
         }}
       />
@@ -128,9 +156,19 @@ export function ModulesPage() {
         className="page-header flex items-center justify-between p-4"
         style={{ borderBottomWidth: 1, borderBottomColor: 'rgb(var(--border))' }}
       >
-        <h1 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-          {t('title')}
-        </h1>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="text-lg"
+            style={{ color: 'rgb(var(--foreground))' }}
+            onClick={() => setView('overview')}
+          >
+            ←
+          </button>
+          <h1 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+            {t('title')}
+          </h1>
+        </div>
         <button
           type="button"
           className="btn-primary px-3 py-1.5 rounded-lg text-sm font-medium"

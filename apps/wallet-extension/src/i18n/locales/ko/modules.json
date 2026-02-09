@@ -382,5 +382,24 @@
   "enterAmountInEth": "ETH 금액 입력",
   "enterAmount": "금액을 입력하세요",
   "dailyStakeLimit": "일일 스테이킹 한도",
-  "recipientLabel": "수신자"
+  "recipientLabel": "수신자",
+
+  "dashboard.title": "스마트 계정",
+  "dashboard.delegated": "위임됨",
+  "dashboard.smart": "스마트",
+  "dashboard.delegatedTo": "위임 대상",
+  "dashboard.viewExplorer": "탐색기에서 보기",
+  "dashboard.accountId": "계정 ID",
+  "dashboard.gasSponsorship": "가스 후원",
+  "dashboard.sessionKeys": "세션 키",
+  "dashboard.spendingLimits": "지출 한도",
+  "dashboard.modules": "모듈",
+  "dashboard.available": "사용 가능",
+  "dashboard.notConfigured": "미설정",
+  "dashboard.active": "활성",
+  "dashboard.none": "없음",
+  "dashboard.activeCount": "{{count}}개 활성",
+  "dashboard.installedCount": "{{count}}개 설치됨",
+  "dashboard.manageModules": "모듈 관리",
+  "dashboard.revokeDelegation": "위임 취소"
 }

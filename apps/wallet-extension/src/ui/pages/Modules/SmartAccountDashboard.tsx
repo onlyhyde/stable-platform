@@ -1,0 +1,246 @@
+import { MODULE_TYPE, type InstalledModule } from '@stablenet/core'
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+
+import type { Account } from '../../../types/account'
+import type { Network } from '../../../types/network'
+import type { SmartAccountInfo } from './hooks/useSmartAccountInfo'
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface SmartAccountDashboardProps {
+  account: Account
+  network: Network | undefined
+  smartAccountInfo: SmartAccountInfo | null
+  installedModules: InstalledModule[] | null
+  isLoading: boolean
+  onNavigateToModules: () => void
+  onNavigateToInstall: () => void
+  onRevokeDelegation: () => void
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
+export function SmartAccountDashboard({
+  account,
+  network,
+  smartAccountInfo,
+  installedModules,
+  isLoading,
+  onNavigateToModules,
+  onNavigateToInstall,
+  onRevokeDelegation,
+}: SmartAccountDashboardProps) {
+  const { t } = useTranslation('modules')
+
+  const sessionKeyCount = useMemo(() => {
+    if (!installedModules) return 0
+    return installedModules.filter(
+      (m) => m.type === MODULE_TYPE.EXECUTOR && m.metadata.name.toLowerCase().includes('session'),
+    ).length
+  }, [installedModules])
+
+  const hasSpendingLimits = useMemo(() => {
+    if (!installedModules) return false
+    return installedModules.some(
+      (m) => m.type === MODULE_TYPE.HOOK && m.metadata.name.toLowerCase().includes('spending'),
+    )
+  }, [installedModules])
+
+  const totalModuleCount = installedModules?.length ?? 0
+
+  const truncatedAddress = smartAccountInfo?.delegationTarget
+    ? `${smartAccountInfo.delegationTarget.slice(0, 8)}...${smartAccountInfo.delegationTarget.slice(-6)}`
+    : null
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-16">
+        <div
+          className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4 space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
+          {t('dashboard.title')}
+        </h1>
+        <span
+          className="text-xs px-2 py-0.5 rounded-full font-medium"
+          style={{
+            backgroundColor: 'rgb(var(--primary) / 0.1)',
+            color: 'rgb(var(--primary))',
+          }}
+        >
+          {smartAccountInfo?.isDelegated ? t('dashboard.delegated') : t('dashboard.smart')}
+        </span>
+      </div>
+
+      {/* Status Card - Delegation Target */}
+      {smartAccountInfo?.delegationTarget && (
+        <div
+          className="rounded-xl p-4"
+          style={{
+            backgroundColor: 'rgb(var(--card))',
+            borderWidth: 1,
+            borderColor: 'rgb(var(--border))',
+          }}
+        >
+          <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {t('dashboard.delegatedTo')}
+          </p>
+          <div className="flex items-center gap-2">
+            <code
+              className="text-sm font-mono flex-1"
+              style={{ color: 'rgb(var(--foreground))' }}
+            >
+              {truncatedAddress}
+            </code>
+            <button
+              type="button"
+              className="text-xs px-2 py-1 rounded"
+              style={{ color: 'rgb(var(--primary))' }}
+              onClick={() => navigator.clipboard.writeText(smartAccountInfo.delegationTarget!)}
+              title="Copy"
+            >
+              Copy
+            </button>
+            {network?.explorerUrl && (
+              <a
+                href={`${network.explorerUrl}/address/${smartAccountInfo.delegationTarget}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs px-2 py-1 rounded"
+                style={{ color: 'rgb(var(--primary))' }}
+              >
+                {t('dashboard.viewExplorer')}
+              </a>
+            )}
+          </div>
+
+          {smartAccountInfo.accountId && (
+            <div className="mt-3 pt-3" style={{ borderTopWidth: 1, borderTopColor: 'rgb(var(--border))' }}>
+              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {t('dashboard.accountId')}
+              </p>
+              <p className="text-sm font-mono mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
+                {smartAccountInfo.accountId}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Feature Grid 2x2 */}
+      <div className="grid grid-cols-2 gap-3">
+        <FeatureCard
+          icon="⛽"
+          label={t('dashboard.gasSponsorship')}
+          status={network?.paymasterUrl ? t('dashboard.available') : t('dashboard.notConfigured')}
+          isActive={!!network?.paymasterUrl}
+        />
+        <FeatureCard
+          icon="🔑"
+          label={t('dashboard.sessionKeys')}
+          status={sessionKeyCount > 0
+            ? t('dashboard.activeCount', { count: sessionKeyCount })
+            : t('dashboard.none')}
+          isActive={sessionKeyCount > 0}
+        />
+        <FeatureCard
+          icon="💰"
+          label={t('dashboard.spendingLimits')}
+          status={hasSpendingLimits ? t('dashboard.active') : t('dashboard.notConfigured')}
+          isActive={hasSpendingLimits}
+        />
+        <FeatureCard
+          icon="🧩"
+          label={t('dashboard.modules')}
+          status={t('dashboard.installedCount', { count: totalModuleCount })}
+          isActive={totalModuleCount > 0}
+        />
+      </div>
+
+      {/* Quick Actions */}
+      <div className="space-y-2">
+        <button
+          type="button"
+          className="w-full py-2.5 rounded-lg text-sm font-medium"
+          style={{
+            backgroundColor: 'rgb(var(--primary))',
+            color: 'white',
+          }}
+          onClick={onNavigateToInstall}
+        >
+          {t('addModule')}
+        </button>
+        <button
+          type="button"
+          className="w-full py-2.5 rounded-lg text-sm font-medium"
+          style={{
+            backgroundColor: 'rgb(var(--secondary))',
+            color: 'rgb(var(--foreground))',
+          }}
+          onClick={onNavigateToModules}
+        >
+          {t('dashboard.manageModules')}
+        </button>
+      </div>
+
+      {/* Revoke Delegation */}
+      {smartAccountInfo?.isDelegated && (
+        <div className="text-center pt-2">
+          <button
+            type="button"
+            className="text-xs underline"
+            style={{ color: 'rgb(var(--muted-foreground))' }}
+            onClick={onRevokeDelegation}
+          >
+            {t('dashboard.revokeDelegation')}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================================================
+// Sub-Components
+// ============================================================================
+
+interface FeatureCardProps {
+  icon: string
+  label: string
+  status: string
+  isActive: boolean
+}
+
+function FeatureCard({ icon, label, status, isActive }: FeatureCardProps) {
+  return (
+    <div
+      className="rounded-lg p-3"
+      style={{ backgroundColor: 'rgb(var(--secondary))' }}
+    >
+      <span className="text-xl">{icon}</span>
+      <p className="text-sm font-medium mt-1" style={{ color: 'rgb(var(--foreground))' }}>
+        {label}
+      </p>
+      <p
+        className="text-xs mt-0.5"
+        style={{ color: isActive ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))' }}
+      >
+        {status}
+      </p>
+    </div>
+  )
+}
