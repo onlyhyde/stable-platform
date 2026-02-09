@@ -391,6 +391,13 @@ class StableNetProvider implements EIP1193Provider {
   }
 
   /**
+   * Alias for on (Node.js EventEmitter compatibility)
+   */
+  addListener(event: string, listener: EventListener): this {
+    return this.on(event, listener)
+  }
+
+  /**
    * Subscribe once (EIP-1193)
    */
   once(event: string, listener: EventListener): this {
@@ -594,19 +601,27 @@ shimWeb3(provider, appearAsMetaMask)
  * EIP-6963: Announce provider for multi-wallet discovery
  * This allows dApps to discover all installed wallets
  */
+let eip6963ListenerRegistered = false
+
 function announceEIP6963Provider(): void {
-  const detail = Object.freeze({
-    info: Object.freeze(walletInfo),
-    provider,
-  })
+  // Create detail with current walletInfo (not cached)
+  const createDetail = () =>
+    Object.freeze({
+      info: Object.freeze(walletInfo),
+      provider,
+    })
 
-  // Dispatch announce event
-  window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail }))
+  // Dispatch announce event with current info
+  window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail: createDetail() }))
 
-  // Listen for request events and re-announce
-  window.addEventListener('eip6963:requestProvider', () => {
-    window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail }))
-  })
+  // Only register the request listener once to prevent duplicates
+  if (!eip6963ListenerRegistered) {
+    eip6963ListenerRegistered = true
+    window.addEventListener('eip6963:requestProvider', () => {
+      // Use current walletInfo when responding to requests
+      window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail: createDetail() }))
+    })
+  }
 }
 
 // Announce via EIP-6963

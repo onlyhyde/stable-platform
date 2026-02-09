@@ -1,6 +1,6 @@
 'use client'
 
-import { http, createConfig, custom, fallback } from 'wagmi'
+import { http, createConfig } from 'wagmi'
 import { injected, walletConnect } from 'wagmi/connectors'
 import { anvilLocal, stablenetLocal, stablenetTestnet, supportedChains } from './chains'
 
@@ -12,15 +12,13 @@ const isValidProjectId =
   walletConnectProjectId.length > 10
 
 /**
- * Create a transport that uses wallet provider first, then falls back to HTTP RPC
- * This allows wagmi to use the wallet's RPC endpoint dynamically
+ * Create HTTP transport for RPC calls
+ * Note: When using EIP-6963 multi-wallet discovery, the connector handles
+ * provider communication directly, so we only need HTTP transport for
+ * read-only RPC calls.
  */
-function createWalletTransport(fallbackUrl: string) {
-  // Check if window.ethereum is available (client-side only)
-  if (typeof window !== 'undefined' && window.ethereum) {
-    return fallback([custom(window.ethereum), http(fallbackUrl)])
-  }
-  return http(fallbackUrl)
+function createRpcTransport(rpcUrl: string) {
+  return http(rpcUrl)
 }
 
 /**
@@ -32,7 +30,8 @@ function createWalletTransport(fallbackUrl: string) {
  * EIP-6963 Multi Injected Provider Discovery is enabled for detecting
  * multiple wallet extensions (StableNet Wallet, MetaMask, Rabby, etc.)
  *
- * Transports use wallet provider (window.ethereum) first, with HTTP fallback
+ * Transports use HTTP RPC endpoints for read-only calls; wallet providers
+ * are used directly by connectors for signing/transactions
  */
 export const wagmiConfig = createConfig({
   chains: supportedChains,
@@ -57,11 +56,11 @@ export const wagmiConfig = createConfig({
   ],
   transports: {
     // Anvil (Local) - chainId 31337
-    [anvilLocal.id]: createWalletTransport('http://127.0.0.1:8545'),
+    [anvilLocal.id]: createRpcTransport('http://127.0.0.1:8545'),
     // StableNet Local - chainId 8283
-    [stablenetLocal.id]: createWalletTransport('http://127.0.0.1:8501'),
+    [stablenetLocal.id]: createRpcTransport('http://127.0.0.1:8501'),
     // StableNet Testnet - chainId 82830
-    [stablenetTestnet.id]: createWalletTransport('https://rpc.testnet.stablenet.dev'),
+    [stablenetTestnet.id]: createRpcTransport('https://rpc.testnet.stablenet.dev'),
   },
   ssr: true,
 })

@@ -12,23 +12,33 @@ import { MESSAGE_TYPES, RPC_ERRORS } from '../shared/constants'
 import { validatePostMessageEnvelope } from '../shared/validation/messageSchema'
 import type { ExtensionMessage } from '../types'
 
-// Get MetaMask mode setting and inject inpage script
+// CRITICAL: Inject inpage script SYNCHRONOUSLY at document_start
+// to ensure provider is available before any page scripts execute.
+// This fixes the race condition where wagmi's EIP-6963 discovery
+// could complete before our provider is injected.
+injectScript(false) // Inject immediately with default settings
+setupMessageRelay()
+listenForModeChanges()
+
+// Then asynchronously check MetaMask mode and update if needed
 getMetaMaskMode()
   .then((enabled) => {
-    // Inject the inpage script with settings via data attribute
-    injectScript(enabled)
-
-    // Set up message relay between page and background
-    setupMessageRelay()
-
-    // Listen for MetaMask mode changes from background
-    listenForModeChanges()
+    if (enabled) {
+      // Send message to inpage script to update MetaMask mode
+      window.postMessage(
+        {
+          target: 'stablenet-inpage',
+          data: {
+            type: 'METAMASK_MODE_CHANGED',
+            payload: { enabled: true },
+          },
+        },
+        window.location.origin
+      )
+    }
   })
   .catch(() => {
-    // Still inject scripts even if fetch fails, using default settings
-    injectScript(false)
-    setupMessageRelay()
-    listenForModeChanges()
+    // Ignore errors - script is already injected with default settings
   })
 
 /**
