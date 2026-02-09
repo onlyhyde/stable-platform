@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { create } from 'zustand'
 import { DEFAULT_NETWORKS, MESSAGE_TYPES } from '../../shared/constants'
+import { SYNC_TIMEOUT_MS, sendMessageWithTimeout } from '../../shared/utils/messaging'
 import type { Account, Network, PendingTransaction, WalletState } from '../../types'
 
 type Page =
@@ -94,11 +95,14 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   selectAccount: async (address) => {
     set({ selectedAccount: address })
     try {
-      await chrome.runtime.sendMessage({
-        type: MESSAGE_TYPES.STATE_UPDATE,
-        id: `select-account-${Date.now()}`,
-        payload: { action: 'selectAccount', address },
-      })
+      await sendMessageWithTimeout(
+        {
+          type: MESSAGE_TYPES.STATE_UPDATE,
+          id: `select-account-${Date.now()}`,
+          payload: { action: 'selectAccount', address },
+        },
+        SYNC_TIMEOUT_MS
+      )
     } catch {
       // Background might not be ready
     }
@@ -107,11 +111,14 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   selectNetwork: async (chainId) => {
     set({ selectedChainId: chainId })
     try {
-      await chrome.runtime.sendMessage({
-        type: MESSAGE_TYPES.STATE_UPDATE,
-        id: `select-network-${Date.now()}`,
-        payload: { action: 'selectNetwork', chainId },
-      })
+      await sendMessageWithTimeout(
+        {
+          type: MESSAGE_TYPES.STATE_UPDATE,
+          id: `select-network-${Date.now()}`,
+          payload: { action: 'selectNetwork', chainId },
+        },
+        SYNC_TIMEOUT_MS
+      )
     } catch {
       // Background might not be ready
     }
@@ -128,11 +135,16 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
       set({ isLoading: true })
 
       // Get keyring state first
-      const keyringResponse = await chrome.runtime.sendMessage({
-        type: 'GET_KEYRING_STATE',
-        id: `keyring-${Date.now()}`,
-        payload: {},
-      })
+      const keyringResponse = await sendMessageWithTimeout<{
+        payload?: { isInitialized?: boolean; isUnlocked?: boolean }
+      }>(
+        {
+          type: 'GET_KEYRING_STATE',
+          id: `keyring-${Date.now()}`,
+          payload: {},
+        },
+        SYNC_TIMEOUT_MS
+      )
 
       const keyringState = keyringResponse?.payload
       if (keyringState) {
@@ -143,11 +155,16 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
       }
 
       // Get wallet state
-      const response = await chrome.runtime.sendMessage({
-        type: MESSAGE_TYPES.STATE_UPDATE,
-        id: `sync-${Date.now()}`,
-        payload: {},
-      })
+      const response = await sendMessageWithTimeout<{
+        payload?: WalletState
+      }>(
+        {
+          type: MESSAGE_TYPES.STATE_UPDATE,
+          id: `sync-${Date.now()}`,
+          payload: {},
+        },
+        SYNC_TIMEOUT_MS
+      )
 
       const state = response?.payload as WalletState | undefined
 
@@ -181,11 +198,16 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   createWallet: async (password: string) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'CREATE_NEW_WALLET',
-        id: `create-${Date.now()}`,
-        payload: { password },
-      })
+      const response = await sendMessageWithTimeout<{
+        payload?: { mnemonic?: string; address?: string }
+      }>(
+        {
+          type: 'CREATE_NEW_WALLET',
+          id: `create-${Date.now()}`,
+          payload: { password },
+        },
+        SYNC_TIMEOUT_MS
+      )
 
       if (response?.payload?.mnemonic && response?.payload?.address) {
         set({
@@ -211,11 +233,16 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   restoreWallet: async (password: string, mnemonic: string) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'RESTORE_WALLET',
-        id: `restore-${Date.now()}`,
-        payload: { password, mnemonic },
-      })
+      const response = await sendMessageWithTimeout<{
+        payload?: { address?: string }
+      }>(
+        {
+          type: 'RESTORE_WALLET',
+          id: `restore-${Date.now()}`,
+          payload: { password, mnemonic },
+        },
+        SYNC_TIMEOUT_MS
+      )
 
       if (response?.payload?.address) {
         set({
@@ -238,11 +265,16 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   unlockWallet: async (password: string) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'UNLOCK_WALLET',
-        id: `unlock-${Date.now()}`,
-        payload: { password },
-      })
+      const response = await sendMessageWithTimeout<{
+        payload?: { success?: boolean }
+      }>(
+        {
+          type: 'UNLOCK_WALLET',
+          id: `unlock-${Date.now()}`,
+          payload: { password },
+        },
+        SYNC_TIMEOUT_MS
+      )
 
       if (response?.payload?.success) {
         set({ isUnlocked: true })
@@ -261,11 +293,14 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
 
   lockWallet: async () => {
     try {
-      await chrome.runtime.sendMessage({
-        type: 'LOCK_WALLET',
-        id: `lock-${Date.now()}`,
-        payload: {},
-      })
+      await sendMessageWithTimeout(
+        {
+          type: 'LOCK_WALLET',
+          id: `lock-${Date.now()}`,
+          payload: {},
+        },
+        SYNC_TIMEOUT_MS
+      )
       set({ isUnlocked: false })
     } catch {
       // Silent fail
@@ -275,11 +310,16 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   importPrivateKey: async (privateKey: string) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'IMPORT_PRIVATE_KEY',
-        id: `import-${Date.now()}`,
-        payload: { privateKey },
-      })
+      const response = await sendMessageWithTimeout<{
+        payload?: { address?: string }
+      }>(
+        {
+          type: 'IMPORT_PRIVATE_KEY',
+          id: `import-${Date.now()}`,
+          payload: { privateKey },
+        },
+        SYNC_TIMEOUT_MS
+      )
 
       if (response?.payload?.address) {
         await get().syncWithBackground()
@@ -298,11 +338,16 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   addAccount: async () => {
     set({ isLoading: true, error: null })
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'ADD_HD_ACCOUNT',
-        id: `add-account-${Date.now()}`,
-        payload: {},
-      })
+      const response = await sendMessageWithTimeout<{
+        payload?: { address?: string }
+      }>(
+        {
+          type: 'ADD_HD_ACCOUNT',
+          id: `add-account-${Date.now()}`,
+          payload: {},
+        },
+        SYNC_TIMEOUT_MS
+      )
 
       if (response?.payload?.address) {
         await get().syncWithBackground()
@@ -321,11 +366,16 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   addNetwork: async (network: Network) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'ADD_NETWORK',
-        id: `add-network-${Date.now()}`,
-        payload: { network },
-      })
+      const response = await sendMessageWithTimeout<{
+        payload?: { success?: boolean; error?: string }
+      }>(
+        {
+          type: 'ADD_NETWORK',
+          id: `add-network-${Date.now()}`,
+          payload: { network },
+        },
+        SYNC_TIMEOUT_MS
+      )
 
       if (response?.payload?.success) {
         await get().syncWithBackground()
@@ -344,11 +394,16 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   removeNetwork: async (chainId: number) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'REMOVE_NETWORK',
-        id: `remove-network-${Date.now()}`,
-        payload: { chainId },
-      })
+      const response = await sendMessageWithTimeout<{
+        payload?: { success?: boolean; error?: string }
+      }>(
+        {
+          type: 'REMOVE_NETWORK',
+          id: `remove-network-${Date.now()}`,
+          payload: { chainId },
+        },
+        SYNC_TIMEOUT_MS
+      )
 
       if (response?.payload?.success) {
         await get().syncWithBackground()

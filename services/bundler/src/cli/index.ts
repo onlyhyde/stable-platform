@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { http, createPublicClient, createWalletClient } from 'viem'
+import { defineChain, http, createPublicClient, createWalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
@@ -37,6 +37,11 @@ async function main() {
             type: 'string',
             description: 'Network name (devnet, sepolia, mainnet)',
             default: 'devnet',
+          })
+          .option('chain-id', {
+            alias: 'c',
+            type: 'number',
+            description: 'Chain ID (overrides RPC-reported chainId)',
           })
           .option('port', {
             alias: 'p',
@@ -118,6 +123,7 @@ async function main() {
  */
 async function runBundler(argv: {
   network?: string
+  chainId?: number
   port?: number
   entryPoint?: (string | number)[]
   beneficiary?: string
@@ -136,6 +142,7 @@ async function runBundler(argv: {
   // Parse configuration (handles env vars automatically)
   const config = parseConfig({
     network: argv.network,
+    chainId: argv.chainId,
     port: argv.port,
     entryPoint: argv.entryPoint?.map(String),
     beneficiary: argv.beneficiary,
@@ -151,17 +158,32 @@ async function runBundler(argv: {
   // Create logger
   const logger = createLogger(config.logLevel, true)
 
-  logger.info({ network: config.network, port: config.port }, 'Starting bundler')
+  logger.info(
+    { network: config.network, chainId: config.chainId, port: config.port },
+    'Starting bundler'
+  )
 
   // Create viem clients
   const account = privateKeyToAccount(config.privateKey)
 
+  // Define custom chain if chainId is explicitly set
+  const chain = config.chainId
+    ? defineChain({
+        id: config.chainId,
+        name: config.network,
+        nativeCurrency: { name: config.nativeCurrencySymbol, symbol: config.nativeCurrencySymbol, decimals: 18 },
+        rpcUrls: { default: { http: [config.rpcUrl] } },
+      })
+    : undefined
+
   const publicClient = createPublicClient({
+    chain,
     transport: http(config.rpcUrl),
   })
 
   const walletClient = createWalletClient({
     account,
+    chain,
     transport: http(config.rpcUrl),
   })
 
@@ -181,7 +203,7 @@ async function runBundler(argv: {
   logger.info(
     {
       executor: account.address,
-      balance: `${Number(balance) / 1e18} ETH`,
+      balance: `${Number(balance) / 1e18} ${config.nativeCurrencySymbol}`,
       entryPoints: config.entryPoints,
       beneficiary: config.beneficiary,
     },

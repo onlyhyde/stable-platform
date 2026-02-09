@@ -16,6 +16,7 @@ import {
 import type { Address, Hex } from 'viem'
 import { http, createPublicClient, isAddress } from 'viem'
 import { DEFAULT_VALUES, ENTRY_POINT_ADDRESSES, RPC_ERRORS } from '../../shared/constants'
+import { createLogger } from '../../shared/utils/logger'
 import { handleApprovalError } from '../../shared/errors/WalletError'
 import { RpcError } from '../../shared/errors/rpcErrors'
 import type { JsonRpcRequest, JsonRpcResponse, SupportedMethod } from '../../types'
@@ -24,6 +25,8 @@ import { keyringController } from '../keyring'
 import { checkOrigin } from '../security/phishingGuard'
 import { walletState } from '../state/store'
 import { eventBroadcaster } from '../utils/eventBroadcaster'
+
+const logger = createLogger('RpcHandler')
 
 // Create singleton instances for security utilities
 const rateLimiter = createRateLimiter()
@@ -1243,12 +1246,20 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // Broadcast transaction
+    let txHash: Hash
     try {
-      const txHash = await client.sendRawTransaction({
+      txHash = await client.sendRawTransaction({
         serializedTransaction: signedTx,
       })
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'Transaction broadcast failed',
+      })
+    }
 
-      // Track pending transaction in wallet state
+    // Track pending transaction in wallet state (non-blocking)
+    try {
       const txId = `tx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
       await walletState.addPendingTransaction({
         id: txId,
@@ -1265,14 +1276,11 @@ const handlers: Record<string, RpcHandler> = {
         maxFeePerGas,
         maxPriorityFeePerGas,
       })
-
-      return txHash
-    } catch (error) {
-      throw createRpcError({
-        code: RPC_ERRORS.INTERNAL_ERROR.code,
-        message: (error as Error).message || 'Transaction broadcast failed',
-      })
+    } catch (err) {
+      logger.warn('Failed to track pending transaction (tx was broadcast successfully)', err)
     }
+
+    return txHash
   },
 
   /**

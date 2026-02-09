@@ -6,6 +6,10 @@ import type { Address, Hex } from 'viem'
 export interface BundlerConfig {
   /** Network name */
   network: string
+  /** Chain ID (overrides RPC-reported chainId when set) */
+  chainId?: number
+  /** Native currency symbol (default: ETH) */
+  nativeCurrencySymbol: string
   /** RPC port */
   port: number
   /** EntryPoint addresses */

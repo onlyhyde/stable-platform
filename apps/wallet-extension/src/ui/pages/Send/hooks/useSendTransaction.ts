@@ -5,6 +5,7 @@ import {
 } from '@stablenet/core'
 import { useCallback, useState } from 'react'
 import type { Hash } from 'viem'
+import { TX_TIMEOUT_MS, sendMessageWithTimeout } from '../../../../shared/utils/messaging'
 import { useSelectedNetwork } from '../../../hooks'
 
 interface UseSendTransactionReturn {
@@ -38,23 +39,28 @@ export function useSendTransaction(): UseSendTransactionReturn {
         switch (request.mode) {
           case TRANSACTION_MODE.EOA: {
             // Send via eth_sendTransaction
-            const response = await chrome.runtime.sendMessage({
-              type: 'RPC_REQUEST',
-              id: `send-eoa-${Date.now()}`,
-              payload: {
-                jsonrpc: '2.0',
-                id: 1,
-                method: 'eth_sendTransaction',
-                params: [
-                  {
-                    from: request.from,
-                    to: request.to,
-                    value: `0x${request.value.toString(16)}`,
-                    data: request.data,
-                  },
-                ],
+            const response = await sendMessageWithTimeout<{
+              payload?: { error?: { message?: string }; result?: unknown }
+            }>(
+              {
+                type: 'RPC_REQUEST',
+                id: `send-eoa-${Date.now()}`,
+                payload: {
+                  jsonrpc: '2.0',
+                  id: 1,
+                  method: 'eth_sendTransaction',
+                  params: [
+                    {
+                      from: request.from,
+                      to: request.to,
+                      value: `0x${request.value.toString(16)}`,
+                      data: request.data,
+                    },
+                  ],
+                },
               },
-            })
+              TX_TIMEOUT_MS
+            )
 
             if (response?.payload?.error) {
               throw new Error(response.payload.error.message || 'Transaction failed')
@@ -72,25 +78,30 @@ export function useSendTransaction(): UseSendTransactionReturn {
 
           case TRANSACTION_MODE.EIP7702: {
             // Send EIP-7702 SetCode transaction
-            const response = await chrome.runtime.sendMessage({
-              type: 'RPC_REQUEST',
-              id: `send-7702-${Date.now()}`,
-              payload: {
-                jsonrpc: '2.0',
-                id: 1,
-                method: 'eth_sendTransaction',
-                params: [
-                  {
-                    from: request.from,
-                    to: request.to,
-                    value: `0x${request.value.toString(16)}`,
-                    data: request.data,
-                    type: '0x04', // EIP-7702 type
-                    authorizationList: request.authorizationList,
-                  },
-                ],
+            const response = await sendMessageWithTimeout<{
+              payload?: { error?: { message?: string }; result?: unknown }
+            }>(
+              {
+                type: 'RPC_REQUEST',
+                id: `send-7702-${Date.now()}`,
+                payload: {
+                  jsonrpc: '2.0',
+                  id: 1,
+                  method: 'eth_sendTransaction',
+                  params: [
+                    {
+                      from: request.from,
+                      to: request.to,
+                      value: `0x${request.value.toString(16)}`,
+                      data: request.data,
+                      type: '0x04', // EIP-7702 type
+                      authorizationList: request.authorizationList,
+                    },
+                  ],
+                },
               },
-            })
+              TX_TIMEOUT_MS
+            )
 
             if (response?.payload?.error) {
               throw new Error(response.payload.error.message || 'Transaction failed')
@@ -108,25 +119,30 @@ export function useSendTransaction(): UseSendTransactionReturn {
 
           case TRANSACTION_MODE.SMART_ACCOUNT: {
             // Send via eth_sendUserOperation
-            const response = await chrome.runtime.sendMessage({
-              type: 'RPC_REQUEST',
-              id: `send-userop-${Date.now()}`,
-              payload: {
-                jsonrpc: '2.0',
-                id: 1,
-                method: 'eth_sendUserOperation',
-                params: [
-                  {
-                    sender: request.from,
-                    target: request.to,
-                    value: `0x${request.value.toString(16)}`,
-                    data: request.data,
-                    gasPayment: request.gasPayment,
-                  },
-                  '0x0000000071727De22E5E9d8BAf0edAc6f37da032', // EntryPoint v0.7
-                ],
+            const response = await sendMessageWithTimeout<{
+              payload?: { error?: { message?: string }; result?: unknown }
+            }>(
+              {
+                type: 'RPC_REQUEST',
+                id: `send-userop-${Date.now()}`,
+                payload: {
+                  jsonrpc: '2.0',
+                  id: 1,
+                  method: 'eth_sendUserOperation',
+                  params: [
+                    {
+                      sender: request.from,
+                      target: request.to,
+                      value: `0x${request.value.toString(16)}`,
+                      data: request.data,
+                      gasPayment: request.gasPayment,
+                    },
+                    '0x0000000071727De22E5E9d8BAf0edAc6f37da032', // EntryPoint v0.7
+                  ],
+                },
               },
-            })
+              TX_TIMEOUT_MS
+            )
 
             if (response?.payload?.error) {
               throw new Error(response.payload.error.message || 'Transaction failed')

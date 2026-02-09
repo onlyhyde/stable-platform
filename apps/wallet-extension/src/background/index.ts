@@ -30,6 +30,26 @@ import { eventBroadcaster } from './utils/eventBroadcaster'
 
 const logger = createLogger('Background')
 
+/**
+ * Recursively convert non-JSON-serializable values for message passing.
+ * chrome.runtime.sendMessage uses JSON serialization which cannot handle
+ * BigInt, Date, Map, Set, etc.
+ */
+function sanitizeForMessage(obj: unknown): unknown {
+  if (typeof obj === 'bigint') return obj.toString()
+  if (obj instanceof Date) return obj.toISOString()
+  if (obj === null || obj === undefined) return obj
+  if (Array.isArray(obj)) return obj.map(sanitizeForMessage)
+  if (typeof obj === 'object') {
+    const result: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      result[key] = sanitizeForMessage(value)
+    }
+    return result
+  }
+  return obj
+}
+
 // =============================================================================
 // Indexer Client Management
 // =============================================================================
@@ -556,11 +576,11 @@ async function handleMessage(
         }
       }
 
-      // Return current state
+      // Return current state (sanitize BigInt for message serialization)
       return {
         type: MESSAGE_TYPES.STATE_UPDATE,
         id: message.id,
-        payload: walletState.getState(),
+        payload: sanitizeForMessage(walletState.getState()),
       }
     }
 

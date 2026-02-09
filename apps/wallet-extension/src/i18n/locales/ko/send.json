@@ -92,5 +92,7 @@
   "viewActivity": "활동 보기",
   "sendingTransaction": "트랜잭션 전송 중...",
   "transactionFailed": "트랜잭션 실패",
-  "tryAgain": "다시 시도"
+  "tryAgain": "다시 시도",
+  "pleaseWait": "트랜잭션이 처리되는 동안 잠시 기다려 주세요",
+  "cancelWarning": "이미 전송된 트랜잭션은 취소할 수 없습니다"
 }

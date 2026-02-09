@@ -92,5 +92,7 @@
   "viewActivity": "View Activity",
   "sendingTransaction": "Sending transaction...",
   "transactionFailed": "Transaction Failed",
-  "tryAgain": "Try Again"
+  "tryAgain": "Try Again",
+  "pleaseWait": "Please wait while the transaction is being processed",
+  "cancelWarning": "Already sent transactions cannot be cancelled"
 }

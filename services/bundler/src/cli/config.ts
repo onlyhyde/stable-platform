@@ -9,6 +9,8 @@ export const ENV_VARS = {
   PRIVATE_KEY: ['BUNDLER_PRIVATE_KEY', 'PRIVATE_KEY'],
   BENEFICIARY: ['BUNDLER_BENEFICIARY', 'BENEFICIARY'],
   RPC_URL: ['BUNDLER_RPC_URL', 'RPC_URL'],
+  CHAIN_ID: ['BUNDLER_CHAIN_ID', 'CHAIN_ID'],
+  NATIVE_CURRENCY_SYMBOL: ['BUNDLER_NATIVE_CURRENCY_SYMBOL', 'NATIVE_CURRENCY_SYMBOL'],
   NETWORK: ['BUNDLER_NETWORK', 'NETWORK'],
   PORT: ['BUNDLER_PORT', 'PORT'],
   LOG_LEVEL: ['BUNDLER_LOG_LEVEL', 'LOG_LEVEL'],
@@ -135,6 +137,8 @@ export const NETWORK_PRESETS: Record<
  */
 export interface CliOptions {
   network?: string
+  chainId?: number
+  nativeCurrencySymbol?: string
   port?: number
   entryPoint?: string[]
   beneficiary?: string
@@ -201,6 +205,13 @@ export function parseConfig(options: CliOptions): BundlerConfig {
     )
   }
 
+  // Chain ID: CLI > env (optional, overrides RPC-reported chainId)
+  const chainId = options.chainId ?? getEnvNumber(ENV_VARS.CHAIN_ID)
+
+  // Native currency symbol: CLI > env > default (ETH)
+  const nativeCurrencySymbol =
+    options.nativeCurrencySymbol || getEnv(ENV_VARS.NATIVE_CURRENCY_SYMBOL) || 'ETH'
+
   // Port: CLI > env > default
   const port = options.port ?? getEnvNumber(ENV_VARS.PORT) ?? DEFAULT_CONFIG.port!
 
@@ -236,6 +247,8 @@ export function parseConfig(options: CliOptions): BundlerConfig {
 
   return {
     network,
+    chainId,
+    nativeCurrencySymbol,
     port,
     entryPoints,
     beneficiary: beneficiary as Address,
@@ -264,6 +277,7 @@ Environment Variables:
   ${ENV_VARS.PRIVATE_KEY.join(' or ')}     Private key for signing bundles
   ${ENV_VARS.BENEFICIARY.join(' or ')}     Beneficiary address for bundle fees
   ${ENV_VARS.RPC_URL.join(' or ')}         RPC URL for the chain
+  ${ENV_VARS.CHAIN_ID.join(' or ')}         Chain ID (overrides RPC-reported chainId)
   ${ENV_VARS.NETWORK.join(' or ')}         Network name (local, devnet, sepolia, mainnet)
   ${ENV_VARS.PORT.join(' or ')}            RPC server port
   ${ENV_VARS.LOG_LEVEL.join(' or ')}       Log level (debug, info, warn, error)

@@ -440,6 +440,19 @@ export function Send() {
             style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
           />
           <p style={{ color: 'rgb(var(--foreground))' }}>{t('sendingTransaction')}</p>
+          <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {t('pleaseWait')}
+          </p>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="mt-6 px-6 py-3 rounded-lg font-medium btn-ghost"
+          >
+            {tc('cancel')}
+          </button>
+          <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground) / 0.6)' }}>
+            {t('cancelWarning')}
+          </p>
         </div>
       )}
 
