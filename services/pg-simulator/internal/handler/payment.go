@@ -57,9 +57,9 @@ func (h *PaymentHandler) RegisterRoutes(r *gin.Engine) {
 		settlements := api.Group("/settlements")
 		{
 			settlements.POST("/process", h.ProcessSettlement)
-			settlements.GET("/:batchId", h.GetSettlementBatch)
-			settlements.POST("/:settlementId/adjustments", h.CreateAdjustment)
-			settlements.GET("/:settlementId/adjustments", h.GetAdjustments)
+			settlements.GET("/:id", h.GetSettlementBatch)
+			settlements.POST("/:id/adjustments", h.CreateAdjustment)
+			settlements.GET("/:id/adjustments", h.GetAdjustments)
 		}
 
 		// Wallet endpoints
@@ -720,7 +720,7 @@ func (h *PaymentHandler) ProcessSettlement(c *gin.Context) {
 
 // GetSettlementBatch returns a settlement batch by ID
 func (h *PaymentHandler) GetSettlementBatch(c *gin.Context) {
-	batchID := c.Param("batchId")
+	batchID := c.Param("id")
 
 	batch, err := h.settlementService.GetSettlementBatch(batchID)
 	if err != nil {
@@ -748,7 +748,7 @@ func (h *PaymentHandler) GetMerchantSettlements(c *gin.Context) {
 
 // CreateAdjustment creates a settlement adjustment
 func (h *PaymentHandler) CreateAdjustment(c *gin.Context) {
-	settlementID := c.Param("settlementId")
+	settlementID := c.Param("id")
 
 	var req model.CreateAdjustmentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -776,7 +776,7 @@ func (h *PaymentHandler) CreateAdjustment(c *gin.Context) {
 
 // GetAdjustments returns adjustments for a settlement
 func (h *PaymentHandler) GetAdjustments(c *gin.Context) {
-	settlementID := c.Param("settlementId")
+	settlementID := c.Param("id")
 
 	result, err := h.settlementService.GetAdjustments(settlementID)
 	if err != nil {

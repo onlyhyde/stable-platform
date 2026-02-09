@@ -72,7 +72,7 @@ async function main() {
           .option('env', {
             alias: 'e',
             type: 'boolean',
-            description: 'Load configuration from environment variables',
+            description: 'Load configuration from environment variables (auto-detected when CLI args omitted)',
             default: false,
           })
       },
@@ -88,20 +88,8 @@ async function main() {
         try {
           let config: PaymasterProxyConfig
 
-          if (args.env) {
-            // Load from environment
-            config = loadConfig()
-            logger.debug('Configuration loaded from environment variables')
-          } else {
-            // Validate required arguments
-            if (!args.paymaster || !args.signer || !args.rpc) {
-              logger.error(
-                'Missing required arguments: --paymaster, --signer, and --rpc are required'
-              )
-              logger.info('Use --env to load from environment variables')
-              process.exit(1)
-            }
-
+          if (args.paymaster && args.signer && args.rpc) {
+            // CLI arguments provided - use them (highest priority)
             config = createConfig({
               port: args.port,
               paymasterAddress: args.paymaster,
@@ -110,6 +98,19 @@ async function main() {
               chainIds: args['chain-ids'],
               debug: args.debug,
             })
+            logger.debug('Configuration loaded from CLI arguments')
+          } else {
+            // Fallback to environment variables
+            try {
+              config = loadConfig()
+              logger.debug('Configuration loaded from environment variables')
+            } catch (envError) {
+              logger.error(
+                'Missing configuration. Provide CLI arguments (--paymaster, --signer, --rpc) or set environment variables (PAYMASTER_ADDRESS, SIGNER_PRIVATE_KEY, RPC_URL)'
+              )
+              logger.info('See .env.example for available environment variables')
+              process.exit(1)
+            }
           }
 
           // Create app
