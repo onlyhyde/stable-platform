@@ -11,5 +11,14 @@
   "userOperation": "유저 오퍼레이션",
   "transaction": "트랜잭션",
   "today": "오늘",
-  "yesterday": "어제"
+  "yesterday": "어제",
+  "loading": "트랜잭션 불러오는 중...",
+  "loadMore": "더 보기",
+  "loadingMore": "추가 로딩 중...",
+  "indexerUnavailable": "이 네트워크에서는 온체인 히스토리를 사용할 수 없습니다. 로컬에서 추적된 트랜잭션만 표시됩니다.",
+  "refreshing": "새로고침 중...",
+  "errorLoadingHistory": "트랜잭션 히스토리를 불러오지 못했습니다",
+  "retry": "다시 시도",
+  "onChainHistory": "온체인 히스토리",
+  "pendingTransactions": "대기 중인 트랜잭션"
 }

@@ -11,5 +11,14 @@
   "userOperation": "User Operation",
   "transaction": "Transaction",
   "today": "Today",
-  "yesterday": "Yesterday"
+  "yesterday": "Yesterday",
+  "loading": "Loading transactions...",
+  "loadMore": "Load More",
+  "loadingMore": "Loading more...",
+  "indexerUnavailable": "On-chain history is not available for this network. Only locally tracked transactions are shown.",
+  "refreshing": "Refreshing...",
+  "errorLoadingHistory": "Failed to load transaction history",
+  "retry": "Retry",
+  "onChainHistory": "On-Chain History",
+  "pendingTransactions": "Pending Transactions"
 }

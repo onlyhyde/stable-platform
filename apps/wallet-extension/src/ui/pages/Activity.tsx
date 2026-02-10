@@ -1,15 +1,57 @@
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
+import type { Hex } from 'viem'
 import type { PendingTransaction } from '../../types'
 import { useNetworkCurrency, useWalletStore } from '../hooks'
+import { useIndexerData, type IndexedTransaction } from '../hooks/useIndexerData'
 
 const PENDING_POLL_INTERVAL = 5000 // 5 seconds
 
+/**
+ * Convert an IndexedTransaction from the indexer into a PendingTransaction-compatible
+ * shape so the same TransactionItem component can render both local and on-chain txs.
+ */
+function toDisplayTransaction(tx: IndexedTransaction): PendingTransaction {
+  return {
+    id: tx.hash,
+    from: tx.from as PendingTransaction['from'],
+    to: tx.to as PendingTransaction['to'],
+    value: BigInt(tx.value),
+    chainId: 0, // not used for display
+    status: tx.status === 'success' ? 'confirmed' : tx.status === 'failed' ? 'failed' : 'pending',
+    type: tx.direction === 'in' ? 'receive' : 'send',
+    txHash: tx.hash as Hex,
+    timestamp: tx.timestamp,
+    gasUsed: tx.gasUsed ? BigInt(tx.gasUsed) : undefined,
+    gasPrice: tx.gasPrice ? BigInt(tx.gasPrice) : undefined,
+    blockNumber: tx.blockNumber ? BigInt(tx.blockNumber) : undefined,
+    methodName: tx.methodName,
+  }
+}
+
 export function Activity() {
   const { t } = useTranslation('activity')
-  const { pendingTransactions, history, setPage, syncWithBackground, setSelectedTxId } =
-    useWalletStore()
+  const {
+    pendingTransactions,
+    history,
+    setPage,
+    syncWithBackground,
+    setSelectedTxId,
+  } = useWalletStore()
+
+  const {
+    transactions: indexedTransactions,
+    isIndexerAvailable,
+    isLoadingTransactions,
+    isLoadingMore,
+    hasMore,
+    error: indexerError,
+    loadMoreTransactions,
+    refreshTransactions,
+  } = useIndexerData()
+
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Auto-refresh when pending transactions exist
   useEffect(() => {
@@ -25,17 +67,48 @@ export function Activity() {
     return () => clearInterval(timer)
   }, [pendingTransactions, syncWithBackground])
 
-  const allTransactions = useMemo(
-    () => [...pendingTransactions, ...history].sort((a, b) => b.timestamp - a.timestamp),
-    [pendingTransactions, history]
+  // Merge local pending txs with indexer history, deduplicating by txHash
+  const allTransactions = useMemo(() => {
+    const localTxs = [...pendingTransactions, ...history]
+    const indexedDisplayTxs = indexedTransactions.map(toDisplayTransaction)
+
+    // Build a set of txHashes from local txs so local versions take priority
+    const localHashes = new Set(
+      localTxs.filter((tx) => tx.txHash).map((tx) => tx.txHash!.toLowerCase())
+    )
+
+    const deduplicatedIndexed = indexedDisplayTxs.filter(
+      (tx) => !tx.txHash || !localHashes.has(tx.txHash.toLowerCase())
+    )
+
+    return [...localTxs, ...deduplicatedIndexed].sort(
+      (a, b) => b.timestamp - a.timestamp
+    )
+  }, [pendingTransactions, history, indexedTransactions])
+
+  // Separate pending from confirmed for sectioned display
+  const pendingTxs = useMemo(
+    () =>
+      allTransactions.filter(
+        (tx) => tx.status === 'pending' || tx.status === 'submitted'
+      ),
+    [allTransactions]
   )
 
-  // Group transactions by date
+  const confirmedTxs = useMemo(
+    () =>
+      allTransactions.filter(
+        (tx) => tx.status !== 'pending' && tx.status !== 'submitted'
+      ),
+    [allTransactions]
+  )
+
+  // Group confirmed transactions by date
   const grouped = useMemo(() => {
     const groups: { label: string; txs: PendingTransaction[] }[] = []
     let currentLabel = ''
 
-    for (const tx of allTransactions) {
+    for (const tx of confirmedTxs) {
       const label = getDateLabel(tx.timestamp, t)
       if (label !== currentLabel) {
         currentLabel = label
@@ -45,14 +118,116 @@ export function Activity() {
     }
 
     return groups
-  }, [allTransactions, t])
+  }, [confirmedTxs, t])
 
-  if (allTransactions.length === 0) {
-    return (
-      <div className="p-4">
-        <h2 className="text-xl font-bold mb-6" style={{ color: 'rgb(var(--foreground))' }}>
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true)
+    try {
+      await Promise.all([syncWithBackground(), refreshTransactions()])
+    } catch {
+      // ignore
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [syncWithBackground, refreshTransactions])
+
+  const handleTxClick = useCallback(
+    (tx: PendingTransaction) => {
+      setSelectedTxId(tx.id)
+      setPage('txDetail')
+    },
+    [setSelectedTxId, setPage]
+  )
+
+  const isEmpty =
+    allTransactions.length === 0 && !isLoadingTransactions && !isRefreshing
+
+  return (
+    <div className="p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h2
+          className="text-xl font-bold"
+          style={{ color: 'rgb(var(--foreground))' }}
+        >
           {t('title')}
         </h2>
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="p-2 rounded-lg transition-colors"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+          aria-label="Refresh"
+        >
+          <svg
+            className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {/* Indexer unavailable info */}
+      {!isIndexerAvailable && !isLoadingTransactions && (
+        <div
+          className="rounded-lg px-3 py-2 mb-4 text-xs"
+          style={{
+            backgroundColor: 'rgb(var(--info) / 0.1)',
+            color: 'rgb(var(--info))',
+          }}
+        >
+          {t('indexerUnavailable')}
+        </div>
+      )}
+
+      {/* Error state */}
+      {indexerError && (
+        <div
+          className="rounded-lg px-3 py-2 mb-4 text-xs flex items-center justify-between"
+          style={{
+            backgroundColor: 'rgb(var(--destructive) / 0.1)',
+            color: 'rgb(var(--destructive))',
+          }}
+        >
+          <span>{t('errorLoadingHistory')}</span>
+          <button
+            type="button"
+            onClick={refreshTransactions}
+            className="font-medium underline ml-2"
+          >
+            {t('retry')}
+          </button>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {isLoadingTransactions && allTransactions.length === 0 && (
+        <div className="text-center py-12">
+          <div
+            className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-3"
+            style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
+          />
+          <p
+            className="text-sm"
+            style={{ color: 'rgb(var(--muted-foreground))' }}
+          >
+            {t('loading')}
+          </p>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {isEmpty && (
         <div className="text-center py-12">
           <svg
             className="w-16 h-16 mx-auto mb-4"
@@ -69,42 +244,76 @@ export function Activity() {
               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
             />
           </svg>
-          <p style={{ color: 'rgb(var(--muted-foreground))' }}>{t('noTransactions')}</p>
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {t('noTransactions')}
+          </p>
         </div>
-      </div>
-    )
-  }
+      )}
 
-  return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4" style={{ color: 'rgb(var(--foreground))' }}>
-        {t('title')}
-      </h2>
-
-      <div className="space-y-4">
-        {grouped.map((group) => (
-          <div key={group.label}>
-            <p
-              className="text-xs font-medium mb-2 px-1"
-              style={{ color: 'rgb(var(--muted-foreground))' }}
-            >
-              {group.label}
-            </p>
-            <div className="space-y-2">
-              {group.txs.map((tx) => (
-                <TransactionItem
-                  key={tx.id}
-                  transaction={tx}
-                  onClick={() => {
-                    setSelectedTxId(tx.id)
-                    setPage('txDetail')
-                  }}
-                />
-              ))}
+      {/* Transaction list */}
+      {allTransactions.length > 0 && (
+        <div className="space-y-4">
+          {/* Pending section */}
+          {pendingTxs.length > 0 && (
+            <div>
+              <p
+                className="text-xs font-medium mb-2 px-1"
+                style={{ color: 'rgb(var(--warning))' }}
+              >
+                {t('pendingTransactions')}
+              </p>
+              <div className="space-y-2">
+                {pendingTxs.map((tx) => (
+                  <TransactionItem
+                    key={tx.id}
+                    transaction={tx}
+                    onClick={() => handleTxClick(tx)}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          )}
+
+          {/* Confirmed grouped by date */}
+          {grouped.map((group) => (
+            <div key={group.label}>
+              <p
+                className="text-xs font-medium mb-2 px-1"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
+                {group.label}
+              </p>
+              <div className="space-y-2">
+                {group.txs.map((tx) => (
+                  <TransactionItem
+                    key={tx.id}
+                    transaction={tx}
+                    onClick={() => handleTxClick(tx)}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* Load More button */}
+          {isIndexerAvailable && hasMore && (
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={loadMoreTransactions}
+                disabled={isLoadingMore}
+                className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                style={{
+                  color: 'rgb(var(--primary))',
+                  backgroundColor: 'rgb(var(--primary) / 0.1)',
+                }}
+              >
+                {isLoadingMore ? t('loadingMore') : t('loadMore')}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -227,7 +436,7 @@ function TransactionItem({
 
       {/* Method name for contract interactions */}
       {transaction.methodName && transaction.type === 'contract' && (
-        <p className="text-xs mt-1 px-13" style={{ color: 'rgb(var(--muted-foreground))' }}>
+        <p className="text-xs mt-1 pl-[52px]" style={{ color: 'rgb(var(--muted-foreground))' }}>
           {transaction.methodName}()
         </p>
       )}
