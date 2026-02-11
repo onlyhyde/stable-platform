@@ -28,7 +28,7 @@
     "@noble/curves": "^1.7.0",
     "@noble/hashes": "^1.6.1",
     "@stablenet/core": "workspace:*",
-    "viem": "^2.21.0"
+    "viem": "^2.45.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -37,6 +37,6 @@
     "vitest": "^2.1.8"
   },
   "peerDependencies": {
-    "viem": "^2.21.0"
+    "viem": "^2.45.3"
   }
 }

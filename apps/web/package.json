@@ -21,8 +21,8 @@
     "next": "^15.5.12",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "viem": "^2.21.0",
-    "wagmi": "^2.14.6"
+    "viem": "^2.45.3",
+    "wagmi": "^3.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
