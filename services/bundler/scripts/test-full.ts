@@ -407,9 +407,14 @@ async function main() {
     const raw: string = err?.cause?.raw || err?.cause?.data || ''
     const result = parseRevertResult(raw)
     if (result.type === 'FailedOp') {
+      console.info('FailedOp:', result.reason)
     } else if (result.type === 'FailedOpWithRevert') {
+      console.info('FailedOpWithRevert:', result.reason, 'inner:', result.inner)
     } else {
-      if (raw) 
+      if (raw) {
+        const selector = raw.slice(0, 10)
+        console.info('Unknown selector:', selector)
+      }
     }
   }
 
@@ -479,8 +484,7 @@ async function main() {
         const _status = await statusRes.json()
       }
     }
-  } catch (_err: any) {
-  }
+  } catch (_err: any) {}
 }
 
 main().catch(console.error)

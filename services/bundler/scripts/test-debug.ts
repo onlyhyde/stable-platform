@@ -109,7 +109,7 @@ async function main() {
       args: [initializeData, salt],
     })
   } catch (err: any) {
-    if (err?.cause?.raw) 
+    if (err?.cause?.raw) console.info('Raw:', err.cause.raw.slice(0, 200))
   }
 
   // 4. Build packed UserOp and get EntryPoint hash
@@ -255,8 +255,7 @@ async function main() {
         // Read inner bytes
         const innerLen = parseInt(decoded.slice(innerOffset, innerOffset + 64), 16)
         const _inner = decoded.slice(innerOffset + 64, innerOffset + 64 + innerLen * 2)
-      } catch (_e) {
-      }
+      } catch (_e) {}
     } else if (raw.startsWith('0x220266b6')) {
     } else {
     }

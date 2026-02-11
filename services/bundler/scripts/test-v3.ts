@@ -272,8 +272,7 @@ async function main() {
       functionName: 'isModuleType',
       args: [1n], // 1 = validator
     })
-  } catch (_e: any) {
-  }
+  } catch (_e: any) {}
 
   // Build UserOp
   const factoryData = encodeFunctionData({
@@ -445,8 +444,7 @@ async function main() {
       functionName: 'getNonce',
       args: [smartAccountAddress, 0n],
     })
-  } catch (_e: any) {
-  }
+  } catch (_e: any) {}
   {
     const _sigEip191 = await signer.signMessage({
       message: { raw: ('0x' + '00'.repeat(32)) as Hex },
@@ -497,10 +495,10 @@ async function main() {
 
       if (typeof data === 'string' && data.startsWith('0x')) {
         const selector = data.slice(0, 10)
-        if (selector === '0xe0cff05f') 
-        else if (selector === '0x220266b6') 
-        else if (selector === '0x65c8fd4d') 
-        else 
+        if (selector === '0xe0cff05f') console.info('ValidationResult (SUCCESS)')
+        else if (selector === '0x220266b6') console.info('FailedOp')
+        else if (selector === '0x65c8fd4d') console.info('FailedOpWithRevert')
+        else console.info('Unknown selector:', selector)
       }
     }
   }
