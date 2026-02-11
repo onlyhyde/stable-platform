@@ -10,7 +10,7 @@ import { MODULE_STATUS, MODULE_TYPE } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { KERNEL_ABI } from '../abis'
 import type { RpcProvider } from '../providers'
-import { type ModuleRegistry, createModuleRegistry } from './moduleRegistry'
+import { createModuleRegistry, type ModuleRegistry } from './moduleRegistry'
 
 // ============================================================================
 // Types

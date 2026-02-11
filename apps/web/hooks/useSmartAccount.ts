@@ -1,20 +1,20 @@
 'use client'
 
-import { getConfigByChainId } from '@/lib/config'
-import {
-  ZERO_ADDRESS,
-  extractDelegateAddress,
-  getDelegatePresets,
-  isDelegatedAccount,
-} from '@/lib/eip7702'
-import { wagmiConfig } from '@/lib/wagmi'
 import { useCallback, useEffect, useState } from 'react'
-import { http, type Chain, createWalletClient } from 'viem'
 import type { Address, Hex, SignedAuthorization as ViemSignedAuthorization } from 'viem'
+import { type Chain, createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { anvil, mainnet, sepolia } from 'viem/chains'
 import { useAccount, useChainId, useWalletClient } from 'wagmi'
 import { getPublicClient } from 'wagmi/actions'
+import { getConfigByChainId } from '@/lib/config'
+import {
+  extractDelegateAddress,
+  getDelegatePresets,
+  isDelegatedAccount,
+  ZERO_ADDRESS,
+} from '@/lib/eip7702'
+import { wagmiConfig } from '@/lib/wagmi'
 
 // Contract addresses (local devnet) - can be overridden by user selection
 const DEFAULT_KERNEL_IMPLEMENTATION = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9' as const
@@ -29,18 +29,15 @@ export const ANVIL_ACCOUNTS: readonly { address: Address; privateKey: Hex }[] =
     ? [
         {
           address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as Address,
-          privateKey:
-            '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as Hex,
+          privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as Hex,
         },
         {
           address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as Address,
-          privateKey:
-            '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' as Hex,
+          privateKey: '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' as Hex,
         },
         {
           address: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC' as Address,
-          privateKey:
-            '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a' as Hex,
+          privateKey: '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a' as Hex,
         },
       ]
     : []

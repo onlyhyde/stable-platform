@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import type { PendingTransaction } from '../../../../src/types'
-import { Activity } from '../../../../src/ui/pages/Activity'
 import { useNetworkCurrency, useWalletStore } from '../../../../src/ui/hooks'
+import { Activity } from '../../../../src/ui/pages/Activity'
 
 jest.mock('../../../../src/ui/hooks', () => ({
   useWalletStore: jest.fn(),

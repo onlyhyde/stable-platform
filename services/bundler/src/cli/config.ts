@@ -267,19 +267,14 @@ export function parseConfig(options: CliOptions): BundlerConfig {
     'direct') as 'direct' | 'flashbots'
 
   // Flashbots config: CLI > env
-  const flashbotsRelayUrl =
-    options.flashbotsRelayUrl || getEnv(ENV_VARS.FLASHBOTS_RELAY_URL)
-  const flashbotsAuthKey =
-    options.flashbotsAuthKey || getEnv(ENV_VARS.FLASHBOTS_AUTH_KEY)
+  const flashbotsRelayUrl = options.flashbotsRelayUrl || getEnv(ENV_VARS.FLASHBOTS_RELAY_URL)
+  const flashbotsAuthKey = options.flashbotsAuthKey || getEnv(ENV_VARS.FLASHBOTS_AUTH_KEY)
 
   // Profitability: CLI > env > default (false)
   const enableProfitabilityCheck =
-    options.enableProfitabilityCheck ??
-    getEnvBool(ENV_VARS.ENABLE_PROFITABILITY_CHECK) ??
-    false
+    options.enableProfitabilityCheck ?? getEnvBool(ENV_VARS.ENABLE_PROFITABILITY_CHECK) ?? false
 
-  const minBundleProfitStr =
-    options.minBundleProfit || getEnv(ENV_VARS.MIN_BUNDLE_PROFIT)
+  const minBundleProfitStr = options.minBundleProfit || getEnv(ENV_VARS.MIN_BUNDLE_PROFIT)
   const minBundleProfit = minBundleProfitStr ? BigInt(minBundleProfitStr) : undefined
 
   return {

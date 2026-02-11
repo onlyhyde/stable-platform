@@ -4,7 +4,6 @@ import {
   encodeAbiParameters,
   encodeFunctionData,
   encodePacked,
-  getContractAddress,
   keccak256,
   pad,
   parseAbi,
@@ -34,8 +33,7 @@ const SIMPLE_ACCOUNT_ABI = parseAbi([
  * Known SimpleAccountFactory address on mainnet (v0.7)
  * Deployed deterministically at this address
  */
-export const SIMPLE_ACCOUNT_FACTORY =
-  '0x91E60e0613810449d098b0b5Ec8b51A0FE8c8985' as Address
+export const SIMPLE_ACCOUNT_FACTORY = '0x91E60e0613810449d098b0b5Ec8b51A0FE8c8985' as Address
 
 /**
  * Create a UserOperation for testing
@@ -120,9 +118,7 @@ export function packUserOp(userOp: UserOperation): {
   signature: Hex
 } {
   const initCode =
-    userOp.factory && userOp.factoryData
-      ? concat([userOp.factory, userOp.factoryData])
-      : '0x'
+    userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
 
   const accountGasLimits = concat([
     pad(toHex(userOp.verificationGasLimit), { size: 16 }),
@@ -177,10 +173,7 @@ export async function getUserOpHash(
   } catch {
     // Fallback: compute locally
     return keccak256(
-      encodeAbiParameters(
-        [{ type: 'address' }, { type: 'uint256' }],
-        [userOp.sender, userOp.nonce]
-      )
+      encodeAbiParameters([{ type: 'address' }, { type: 'uint256' }], [userOp.sender, userOp.nonce])
     )
   }
 }
@@ -188,10 +181,7 @@ export async function getUserOpHash(
 /**
  * Sign a UserOperation hash with an account
  */
-export async function signUserOp(
-  walletClient: WalletClient,
-  hash: Hex
-): Promise<Hex> {
+export async function signUserOp(walletClient: WalletClient, hash: Hex): Promise<Hex> {
   const signature = await walletClient.signMessage({
     account: walletClient.account!,
     message: { raw: hash },
@@ -216,11 +206,7 @@ export async function fundAddress(
 /**
  * Build a simple execute calldata for SimpleAccount
  */
-export function buildExecuteCalldata(
-  dest: Address,
-  value: bigint = 0n,
-  data: Hex = '0x'
-): Hex {
+export function buildExecuteCalldata(dest: Address, value: bigint = 0n, data: Hex = '0x'): Hex {
   return encodeFunctionData({
     abi: SIMPLE_ACCOUNT_ABI,
     functionName: 'execute',

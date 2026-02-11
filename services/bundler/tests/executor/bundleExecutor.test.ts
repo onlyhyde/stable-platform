@@ -5,20 +5,7 @@ import { BundleExecutor, type BundleExecutorConfig } from '../../src/executor/bu
 import { Mempool } from '../../src/mempool/mempool'
 import type { UserOperation } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
-import type {
-  AggregatorValidator,
-  IAggregatorValidator,
-  UserOperationValidator,
-} from '../../src/validation'
-
-/**
- * Mock type for AggregatorValidator used in tests
- * Only implements the methods actually used by BundleExecutor
- */
-type MockAggregatorValidator = Pick<
-  IAggregatorValidator,
-  'aggregateSignatures' | 'validateSignatures'
->
+import type { AggregatorValidator, UserOperationValidator } from '../../src/validation'
 
 // Mock logger
 const mockLogger = createLogger('error', false)

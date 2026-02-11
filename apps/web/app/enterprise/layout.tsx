@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   description: 'Enterprise payroll, expenses, and audit management on StableNet',
 }
 
-export default function EnterpriseLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function EnterpriseLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }

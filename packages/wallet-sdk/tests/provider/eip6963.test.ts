@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  createProviderRegistry,
   EIP6963_EVENTS,
   type ProviderRegistry,
-  createProviderRegistry,
 } from '../../src/provider/eip6963'
 import { createMockProvider } from '../setup'
 

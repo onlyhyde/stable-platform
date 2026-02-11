@@ -43,7 +43,7 @@ export function analyzeAuthorizationRisk(params: AuthorizationRiskParams): Autho
   const warnings: string[] = []
   let riskLevel: AuthorizationRiskLevel = 'low'
   let isKnownContract = false
-  let contractInfo: AuthorizationRiskResult['contractInfo'] = undefined
+  let contractInfo: AuthorizationRiskResult['contractInfo']
 
   // Check if this is a revocation
   if (isRevocationAddress(contractAddress)) {

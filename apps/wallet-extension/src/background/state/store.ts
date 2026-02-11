@@ -9,7 +9,7 @@ import type {
   WalletState,
   WalletToken,
 } from '../../types'
-import { STATE_VERSION, migrateState } from './migrations'
+import { migrateState, STATE_VERSION } from './migrations'
 import { deepMerge, normalizeOrigin, originsMatch } from './utils'
 
 /**

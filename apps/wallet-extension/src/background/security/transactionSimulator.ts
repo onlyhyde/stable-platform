@@ -9,7 +9,7 @@
  */
 
 import type { Address, Hex } from 'viem'
-import { http, createPublicClient } from 'viem'
+import { createPublicClient, http } from 'viem'
 import type { Network } from '../../types'
 import { type DecodedCallData, decodeCallData } from './callDataDecoder'
 

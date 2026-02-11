@@ -18,12 +18,6 @@ import {
   ENTRY_POINT_V07,
   // Networks
   ETH_CURRENCY,
-  MAINNET_NETWORK,
-  SEPOLIA_ADDRESSES,
-  SEPOLIA_ETH_CURRENCY,
-  SEPOLIA_NETWORK,
-  SEPOLIA_SERVICES,
-  SEPOLIA_TOKENS,
   getChainAddresses,
   getChainConfig,
   getChainTokens,
@@ -33,6 +27,12 @@ import {
   isEntryPoint,
   isSupportedChainId,
   isTestnet,
+  MAINNET_NETWORK,
+  SEPOLIA_ADDRESSES,
+  SEPOLIA_ETH_CURRENCY,
+  SEPOLIA_NETWORK,
+  SEPOLIA_SERVICES,
+  SEPOLIA_TOKENS,
 } from '../src'
 
 describe('EntryPoints', () => {

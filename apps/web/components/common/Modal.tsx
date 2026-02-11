@@ -1,8 +1,8 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import { type ReactNode, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { cn } from '@/lib/utils'
 
 interface ModalProps {
   isOpen: boolean
@@ -307,7 +307,12 @@ export function ConfirmModal({
             }}
           >
             {isLoading ? (
-              <svg className="w-5 h-5 mx-auto animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+              <svg
+                className="w-5 h-5 mx-auto animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
                 <circle
                   className="opacity-25"
                   cx="12"

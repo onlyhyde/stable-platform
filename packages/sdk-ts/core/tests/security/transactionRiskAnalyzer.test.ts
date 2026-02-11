@@ -5,10 +5,10 @@
 import type { Address } from 'viem'
 import { describe, expect, it } from 'vitest'
 import {
+  createTransactionRiskAnalyzer,
   TransactionRiskAnalyzer,
   TransactionRiskLevel,
   TransactionRiskType,
-  createTransactionRiskAnalyzer,
 } from '../../src/security/transactionRiskAnalyzer'
 
 const FROM: Address = '0x1234567890abcdef1234567890abcdef12345678'

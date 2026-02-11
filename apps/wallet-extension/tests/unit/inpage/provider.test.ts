@@ -33,7 +33,7 @@ jest.mock('../../../src/shared/utils/logger', () => ({
 }))
 
 describe('StableNetProvider', () => {
-  let provider: any
+  let _provider: any
   let messageListeners: Array<(event: MessageEvent) => void>
   let originalPostMessage: typeof window.postMessage
   let postedMessages: any[]
@@ -76,7 +76,7 @@ describe('StableNetProvider', () => {
   })
 
   // Helper to simulate receiving a message from content script
-  function simulateMessage(data: any): void {
+  function _simulateMessage(data: any): void {
     const event = new MessageEvent('message', {
       source: window,
       data: {
@@ -92,7 +92,7 @@ describe('StableNetProvider', () => {
       it('should emit connect event when receiving PROVIDER_EVENT connect', async () => {
         // Dynamically create a minimal provider for testing
         const eventListeners = new Map<string, Set<Function>>()
-        const chainId: string | null = null
+        const _chainId: string | null = null
 
         const testProvider = {
           on(event: string, listener: Function) {
@@ -473,11 +473,12 @@ describe('Provider Event Integration', () => {
             isConnected = false
             selectedAddress = null
             break
-          case 'accountsChanged':
+          case 'accountsChanged': {
             const accounts = data as string[]
             selectedAddress = accounts[0] ?? null
             isConnected = accounts.length > 0
             break
+          }
           case 'chainChanged':
             chainId = data as string
             break

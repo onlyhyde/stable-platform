@@ -1,13 +1,13 @@
 import {
-  http,
   type Address,
-  type Hex,
-  type PublicClient,
-  type WalletClient,
   createPublicClient,
   createWalletClient,
+  type Hex,
+  http,
+  type PublicClient,
   parseAbi,
   parseEther,
+  type WalletClient,
 } from 'viem'
 import { type LocalAccount, privateKeyToAccount } from 'viem/accounts'
 import { foundry } from 'viem/chains'
@@ -32,7 +32,7 @@ import { foundry } from 'viem/chains'
  *   - RecurringPaymentExecutor
  */
 import { beforeAll, describe, expect, it } from 'vitest'
-import { TEST_CONFIG, isBundlerAvailable, isNetworkAvailable } from '../setup'
+import { isBundlerAvailable, isNetworkAvailable, TEST_CONFIG } from '../setup'
 
 // ============================================================================
 // Subscription Executor API Types
@@ -81,7 +81,7 @@ const PERMISSION_MANAGER_ABI = parseAbi([
   'function getPermission(bytes32 permissionId) view returns (address owner, address operator, address token, uint256 allowance, uint256 period, uint256 validUntil, uint256 usedAllowance, uint256 lastResetTime, bool isActive)',
 ])
 
-const SUBSCRIPTION_MANAGER_ABI = parseAbi([
+const _SUBSCRIPTION_MANAGER_ABI = parseAbi([
   'function planCount() view returns (uint256)',
   'function plans(uint256 planId) view returns (address merchant, string name, string description, uint256 price, uint256 interval, address token, bool isActive, uint256 subscriberCount, uint256 trialPeriod, uint256 gracePeriod, uint256 createdAt)',
   'function subscribe(uint256 planId, bytes32 permissionId) payable',
@@ -89,7 +89,7 @@ const SUBSCRIPTION_MANAGER_ABI = parseAbi([
   'function getSubscription(address subscriber, uint256 planId) view returns (uint256 startTime, uint256 lastPaymentTime, uint256 nextPaymentTime, uint8 status, bytes32 permissionId)',
 ])
 
-const ERC20_ABI = parseAbi([
+const _ERC20_ABI = parseAbi([
   'function balanceOf(address account) view returns (uint256)',
   'function approve(address spender, uint256 amount) returns (bool)',
   'function transfer(address to, uint256 amount) returns (bool)',
@@ -223,7 +223,7 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function waitForCondition(
+async function _waitForCondition(
   condition: () => Promise<boolean>,
   timeout = 30000,
   interval = 1000
@@ -313,12 +313,6 @@ describe('Subscription E2E Flow', () => {
     if (!ctx.contractsDeployed) {
       console.warn('⚠️ Required contracts not deployed, some tests will be skipped')
     }
-
-    console.log('🧪 Subscription E2E Test Context:')
-    console.log(`   Network available: ${ctx.networkAvailable}`)
-    console.log(`   Bundler available: ${ctx.bundlerAvailable}`)
-    console.log(`   Executor available: ${ctx.executorAvailable}`)
-    console.log(`   Contracts deployed: ${ctx.contractsDeployed}`)
   })
 
   // ==========================================================================
@@ -328,7 +322,6 @@ describe('Subscription E2E Flow', () => {
   describe('Service Health', () => {
     it('should verify executor service is healthy', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 
@@ -342,7 +335,6 @@ describe('Subscription E2E Flow', () => {
 
     it('should verify executor service is ready', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 
@@ -355,7 +347,6 @@ describe('Subscription E2E Flow', () => {
 
     it('should verify executor service is alive', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 
@@ -368,7 +359,6 @@ describe('Subscription E2E Flow', () => {
 
     it('should provide Prometheus metrics', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 
@@ -387,7 +377,6 @@ describe('Subscription E2E Flow', () => {
 
     it('should create a new subscription', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 
@@ -409,12 +398,10 @@ describe('Subscription E2E Flow', () => {
       expect(subscription.executionCount).toBe(0)
 
       subscriptionId = subscription.id
-      console.log(`   ✅ Created subscription: ${subscriptionId}`)
     })
 
     it('should retrieve the created subscription', async () => {
       if (!ctx.executorAvailable || !subscriptionId) {
-        console.log('   ⏭️ Skipping: Executor not available or no subscription')
         return
       }
 
@@ -426,7 +413,6 @@ describe('Subscription E2E Flow', () => {
 
     it('should list subscriptions by account', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 
@@ -442,7 +428,6 @@ describe('Subscription E2E Flow', () => {
 
     it('should reject invalid Ethereum addresses', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 
@@ -459,7 +444,6 @@ describe('Subscription E2E Flow', () => {
 
     it('should reject invalid amounts', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 
@@ -501,7 +485,6 @@ describe('Subscription E2E Flow', () => {
 
     it('should pause a subscription', async () => {
       if (!ctx.executorAvailable || !subscriptionId) {
-        console.log('   ⏭️ Skipping: Executor not available or no subscription')
         return
       }
 
@@ -514,7 +497,6 @@ describe('Subscription E2E Flow', () => {
 
     it('should resume a paused subscription', async () => {
       if (!ctx.executorAvailable || !subscriptionId) {
-        console.log('   ⏭️ Skipping: Executor not available or no subscription')
         return
       }
 
@@ -527,7 +509,6 @@ describe('Subscription E2E Flow', () => {
 
     it('should cancel a subscription', async () => {
       if (!ctx.executorAvailable || !subscriptionId) {
-        console.log('   ⏭️ Skipping: Executor not available or no subscription')
         return
       }
 
@@ -540,7 +521,6 @@ describe('Subscription E2E Flow', () => {
 
     it('should fail to resume a cancelled subscription', async () => {
       if (!ctx.executorAvailable || !subscriptionId) {
-        console.log('   ⏭️ Skipping: Executor not available or no subscription')
         return
       }
 
@@ -555,7 +535,6 @@ describe('Subscription E2E Flow', () => {
   describe('ERC-7715 Permission Integration', () => {
     it('should grant permission for subscription', async () => {
       if (!ctx.networkAvailable || !ctx.contractsDeployed) {
-        console.log('   ⏭️ Skipping: Network or contracts not available')
         return
       }
 
@@ -582,13 +561,10 @@ describe('Subscription E2E Flow', () => {
       // Wait for transaction
       const receipt = await ctx.publicClient.waitForTransactionReceipt({ hash: txHash })
       expect(receipt.status).toBe('success')
-
-      console.log(`   ✅ Permission granted: ${txHash}`)
     })
 
     it('should verify permission is valid', async () => {
       if (!ctx.networkAvailable || !ctx.contractsDeployed) {
-        console.log('   ⏭️ Skipping: Network or contracts not available')
         return
       }
 
@@ -607,10 +583,7 @@ describe('Subscription E2E Flow', () => {
 
         // Permission might be false for a non-existent ID, but the call should succeed
         expect(typeof isValid).toBe('boolean')
-      } catch (error) {
-        // If the contract doesn't exist or reverts, this is still valid for E2E setup purposes
-        console.log('   ℹ️ Permission validation call failed (contract may not be deployed)')
-      }
+      } catch (_error) {}
     })
   })
 
@@ -621,7 +594,6 @@ describe('Subscription E2E Flow', () => {
   describe('Rate Limiting', () => {
     it('should enforce rate limits on API requests', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 
@@ -635,8 +607,6 @@ describe('Subscription E2E Flow', () => {
       // All health check requests should succeed (they're lightweight)
       const successCount = responses.filter((r) => r.ok).length
       expect(successCount).toBeGreaterThan(0)
-
-      console.log(`   ✅ ${successCount}/10 requests succeeded`)
     })
   })
 
@@ -647,7 +617,6 @@ describe('Subscription E2E Flow', () => {
   describe('Idempotency', () => {
     it('should handle duplicate requests with idempotency key', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 
@@ -688,8 +657,6 @@ describe('Subscription E2E Flow', () => {
 
       // Should get the same subscription ID (idempotent)
       expect(subscription2.id).toBe(subscription1.id)
-
-      console.log(`   ✅ Idempotency verified: ${subscription1.id}`)
     })
   })
 
@@ -700,7 +667,6 @@ describe('Subscription E2E Flow', () => {
   describe('Metrics', () => {
     it('should track HTTP request metrics', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 
@@ -715,13 +681,10 @@ describe('Subscription E2E Flow', () => {
       expect(metrics).toContain('subscription_executor_http_requests_total')
       expect(metrics).toContain('subscription_executor_http_request_duration_seconds')
       expect(metrics).toContain('subscription_executor_up')
-
-      console.log('   ✅ Metrics validated')
     })
 
     it('should report service uptime', async () => {
       if (!ctx.executorAvailable) {
-        console.log('   ⏭️ Skipping: Executor not available')
         return
       }
 

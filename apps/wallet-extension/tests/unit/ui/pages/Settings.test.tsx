@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { Settings } from '../../../../src/ui/pages/Settings'
 import { useWalletStore } from '../../../../src/ui/hooks/useWalletStore'
+import { Settings } from '../../../../src/ui/pages/Settings'
 
 // Mock useWalletStore
 const mockSelectNetwork = jest.fn()
@@ -222,7 +222,9 @@ describe('Settings', () => {
 
       // Find the Import button inside the form
       const importBtns = screen.getAllByText(/Import/i)
-      const submitBtn = importBtns.find((el) => el.tagName === 'BUTTON' && el.textContent === 'Import Account')
+      const submitBtn = importBtns.find(
+        (el) => el.tagName === 'BUTTON' && el.textContent === 'Import Account'
+      )
 
       if (submitBtn) {
         await act(async () => {

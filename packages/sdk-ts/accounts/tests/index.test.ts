@@ -1,5 +1,5 @@
-import { CALL_TYPE, EXEC_MODE, MODULE_TYPE } from '@stablenet/sdk-types'
 import type { Call, Validator } from '@stablenet/sdk-types'
+import { CALL_TYPE, EXEC_MODE, MODULE_TYPE } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { describe, expect, it } from 'vitest'
 import {

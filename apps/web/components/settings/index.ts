@@ -1,6 +1,6 @@
 export {
-  NetworkSettingsCard,
   AccountSettingsCard,
-  SecuritySettingsCard,
   DeveloperSettingsCard,
+  NetworkSettingsCard,
+  SecuritySettingsCard,
 } from './cards'

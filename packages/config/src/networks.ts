@@ -175,7 +175,12 @@ export const MAINNET_NETWORK: Network = getMainnetNetwork()
 /**
  * Default networks for wallet
  */
-export const DEFAULT_NETWORKS: Network[] = [LOCAL_NETWORK, ANVIL_NETWORK, DEVNET_NETWORK, SEPOLIA_NETWORK]
+export const DEFAULT_NETWORKS: Network[] = [
+  LOCAL_NETWORK,
+  ANVIL_NETWORK,
+  DEVNET_NETWORK,
+  SEPOLIA_NETWORK,
+]
 
 /**
  * All supported networks

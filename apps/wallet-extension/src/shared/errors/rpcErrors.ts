@@ -266,16 +266,15 @@ export function limitExceeded(message?: string, data?: unknown): RpcError {
   )
 }
 
-// Re-export types for convenience
-export {
-  JSON_RPC_ERROR_CODES,
-  PROVIDER_ERROR_CODES,
-  ETH_RPC_ERROR_CODES,
-  ERROR_MESSAGES,
-} from './rpcErrors.types'
-
 export type {
   RpcErrorCode,
   RpcErrorData,
   SerializedRpcError,
+} from './rpcErrors.types'
+// Re-export types for convenience
+export {
+  ERROR_MESSAGES,
+  ETH_RPC_ERROR_CODES,
+  JSON_RPC_ERROR_CODES,
+  PROVIDER_ERROR_CODES,
 } from './rpcErrors.types'

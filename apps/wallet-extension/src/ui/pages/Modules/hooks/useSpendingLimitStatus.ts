@@ -1,4 +1,4 @@
-import { MODULE_TYPE, type InstalledModule } from '@stablenet/core'
+import { type InstalledModule, MODULE_TYPE } from '@stablenet/core'
 import { useEffect, useMemo, useState } from 'react'
 import type { Address } from 'viem'
 
@@ -33,7 +33,7 @@ interface UseSpendingLimitStatusReturn {
  */
 export function useSpendingLimitStatus(
   accountAddress?: Address,
-  installedModules?: InstalledModule[] | null,
+  installedModules?: InstalledModule[] | null
 ): UseSpendingLimitStatusReturn {
   const [limits, setLimits] = useState<SpendingLimitInfo[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -45,7 +45,7 @@ export function useSpendingLimitStatus(
   const spendingLimitHooks = useMemo(() => {
     if (!installedModules) return []
     return installedModules.filter(
-      (m) => m.type === MODULE_TYPE.HOOK && m.metadata.name.toLowerCase().includes('spending'),
+      (m) => m.type === MODULE_TYPE.HOOK && m.metadata.name.toLowerCase().includes('spending')
     )
   }, [installedModules])
 
@@ -82,8 +82,7 @@ export function useSpendingLimitStatus(
 
           const result = response?.payload?.result
           if (result) {
-            const isNativeToken =
-              result.token === '0x0000000000000000000000000000000000000000'
+            const isNativeToken = result.token === '0x0000000000000000000000000000000000000000'
 
             results.push({
               hookAddress: hook.address as Address,
@@ -104,7 +103,9 @@ export function useSpendingLimitStatus(
     }
 
     fetchLimits()
-      .catch((err) => setError(err instanceof Error ? err : new Error('Failed to fetch spending limits')))
+      .catch((err) =>
+        setError(err instanceof Error ? err : new Error('Failed to fetch spending limits'))
+      )
       .finally(() => setIsLoading(false))
   }, [accountAddress, currentNetwork, spendingLimitHooks])
 

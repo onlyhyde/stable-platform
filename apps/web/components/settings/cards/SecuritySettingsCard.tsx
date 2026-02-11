@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Button,
   Card,
@@ -10,7 +11,6 @@ import {
   Input,
   ToggleCard,
 } from '@/components/common'
-import { useState } from 'react'
 
 export function SecuritySettingsCard() {
   const [sessionKeyEnabled, setSessionKeyEnabled] = useState(false)

@@ -110,7 +110,7 @@ export class DebugTraceCallTracer implements ITracer {
     paymaster: Address | undefined
   ): Hex {
     // Build initCode: factory address + factoryData (dummy)
-    const initCode: Hex = factory ? `${factory}${'00'.repeat(4)}` as Hex : '0x'
+    const initCode: Hex = factory ? (`${factory}${'00'.repeat(4)}` as Hex) : '0x'
 
     // Build paymasterAndData: paymaster address + verification gas + postOp gas + data
     let paymasterAndData: Hex = '0x'

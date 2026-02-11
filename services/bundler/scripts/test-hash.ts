@@ -3,11 +3,11 @@
  */
 import {
   type Address,
-  type Hex,
   concat,
   createPublicClient,
   encodeAbiParameters,
   encodeFunctionData,
+  type Hex,
   http,
   keccak256,
   pad,
@@ -22,8 +22,7 @@ const CONFIG = {
   factory: '0xbebb0338503f9e28ffdc84c3548f8454f12dd1d3' as Address,
   ecdsaValidator: '0xb33dc2d82eaee723ca7687d70209ed9a861b3b46' as Address,
   paymaster: '0x4217f538f989f617b5f8afdf5b18568ffd5bb271' as Address,
-  senderPrivateKey:
-    '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as Hex,
+  senderPrivateKey: '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as Hex,
 }
 
 const KERNEL_ACCOUNT_ABI = [
@@ -106,10 +105,7 @@ async function main() {
   const publicClient = createPublicClient({ transport: http(CONFIG.rpcUrl) })
 
   // Build same init data as test-userop.ts
-  const rootValidator = concat([
-    pad(toHex(1n), { size: 1 }),
-    CONFIG.ecdsaValidator,
-  ]) as Hex
+  const rootValidator = concat([pad(toHex(1n), { size: 1 }), CONFIG.ecdsaValidator]) as Hex
   const initializeData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
     functionName: 'initialize',
@@ -139,12 +135,8 @@ async function main() {
   // Build callData
   const mode = `0x${'00'.repeat(32)}` as Hex
   const executionCalldata = encodeAbiParameters(
-    [
-      { type: 'address' },
-      { type: 'uint256' },
-      { type: 'bytes' },
-    ],
-    [smartAccountAddress, 0n, '0x' as Hex],
+    [{ type: 'address' }, { type: 'uint256' }, { type: 'bytes' }],
+    [smartAccountAddress, 0n, '0x' as Hex]
   )
   const callData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
@@ -193,8 +185,6 @@ async function main() {
     args: [packedOp],
   })) as Hex
 
-  console.log('EntryPoint hash:', entryPointHash)
-
   // Compute our hash
   const userOpEncoded = encodeAbiParameters(
     [
@@ -216,42 +206,22 @@ async function main() {
       100000n,
       gasFees as Hex,
       keccak256(paymasterAndData),
-    ],
+    ]
   )
   const innerHash = keccak256(userOpEncoded)
   const ourHash = keccak256(
     encodeAbiParameters(
       [{ type: 'bytes32' }, { type: 'address' }, { type: 'uint256' }],
-      [innerHash, CONFIG.entryPoint, CONFIG.chainId],
-    ),
+      [innerHash, CONFIG.entryPoint, CONFIG.chainId]
+    )
   )
 
-  console.log('Our hash:       ', ourHash)
-  console.log('Match:', entryPointHash === ourHash)
-
   if (entryPointHash !== ourHash) {
-    // Debug: inner hash
-    console.log('\n--- Debug inner hash ---')
-    console.log('sender:', smartAccountAddress)
-    console.log('nonce: 0')
-    console.log('keccak256(initCode):', keccak256(initCode))
-    console.log('keccak256(callData):', keccak256(callData))
-    console.log('accountGasLimits:', accountGasLimits)
-    console.log('preVerificationGas: 100000')
-    console.log('gasFees:', gasFees)
-    console.log('keccak256(paymasterAndData):', keccak256(paymasterAndData))
-    console.log('entryPoint:', CONFIG.entryPoint)
-    console.log('chainId:', CONFIG.chainId.toString())
-    console.log('innerHash:', innerHash)
   }
-
-  // Now sign with the EntryPoint's hash and try simulation
-  console.log('\n--- Signing with EntryPoint hash ---')
   const rawSignature = await signer.signMessage({
     message: { raw: entryPointHash },
   })
   const signature = concat(['0x02' as Hex, rawSignature]) as Hex
-  console.log('Signature:', signature.slice(0, 40) + '...')
 
   // Try simulation with correct hash
   const SIMULATE_ABI = [
@@ -345,21 +315,13 @@ async function main() {
       functionName: 'simulateValidation',
       args: [{ ...packedOp, signature }],
     })
-    console.log('UNEXPECTED: no revert')
   } catch (err: any) {
     const raw = err?.cause?.raw || err?.cause?.data || 'no raw data'
-    const name = err?.cause?.name || 'unknown'
-    console.log('Error name:', name)
+    const _name = err?.cause?.name || 'unknown'
     if (typeof raw === 'string' && raw.startsWith('0xe0cff05f')) {
-      console.log('SUCCESS! ValidationResult returned (simulation passed)')
     } else if (typeof raw === 'string' && raw.startsWith('0x65c8fd4d')) {
-      console.log('FAILED: FailedOpWithRevert')
-      console.log('Raw:', raw.slice(0, 200))
     } else if (typeof raw === 'string' && raw.startsWith('0x220266b6')) {
-      console.log('FAILED: FailedOp')
-      console.log('Raw:', raw.slice(0, 200))
     } else {
-      console.log('Raw:', typeof raw === 'string' ? raw.slice(0, 300) : JSON.stringify(raw))
     }
   }
 }

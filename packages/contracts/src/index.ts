@@ -9,8 +9,34 @@
  * - Auto-generation from deployment outputs
  */
 
+// Address utilities
+export {
+  CHAIN_ADDRESSES,
+  DEFAULT_TOKENS,
+  getChainAddresses,
+  getChainConfig,
+  getDefaultDelegatePreset,
+  getDefaultTokens,
+  getDelegatePresets,
+  getEcdsaValidator,
+  getEntryPoint,
+  getKernel,
+  getKernelFactory,
+  getLegacyContractAddresses,
+  getPermissionManager,
+  getRecurringPaymentExecutor,
+  getServiceUrls,
+  getStealthAnnouncer,
+  getStealthRegistry,
+  getSubscriptionManager,
+  getVerifyingPaymaster,
+  isChainSupported,
+  SERVICE_URLS,
+  SUPPORTED_CHAIN_IDS,
+} from './addresses'
 // Type exports
 export type {
+  AddressUpdateEvent,
   ChainAddresses,
   ChainConfig,
   ComplianceAddresses,
@@ -24,35 +50,8 @@ export type {
   SubscriptionAddresses,
   TokenDefinition,
   ValidatorAddresses,
-  AddressUpdateEvent,
   WatcherOptions,
 } from './types'
-
-// Address utilities
-export {
-  CHAIN_ADDRESSES,
-  DEFAULT_TOKENS,
-  SERVICE_URLS,
-  SUPPORTED_CHAIN_IDS,
-  isChainSupported,
-  getChainAddresses,
-  getChainConfig,
-  getDefaultTokens,
-  getServiceUrls,
-  getEntryPoint,
-  getKernel,
-  getKernelFactory,
-  getVerifyingPaymaster,
-  getEcdsaValidator,
-  getStealthAnnouncer,
-  getStealthRegistry,
-  getSubscriptionManager,
-  getRecurringPaymentExecutor,
-  getPermissionManager,
-  getDelegatePresets,
-  getDefaultDelegatePreset,
-  getLegacyContractAddresses,
-} from './addresses'
 
 // Watcher for hot-reload
 export { ContractAddressWatcher, createAddressWatcher } from './watcher'

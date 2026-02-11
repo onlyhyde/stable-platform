@@ -1,10 +1,10 @@
 'use client'
 
-import { Button, Input, Modal, ModalActions } from '@/components/common'
-import { getModuleEntry } from '@/lib/moduleAddresses'
 import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { isAddress } from 'viem'
+import { Button, Input, Modal, ModalActions } from '@/components/common'
+import { getModuleEntry } from '@/lib/moduleAddresses'
 import type { ModuleCardData } from './ModuleCard'
 
 // ============================================================================

@@ -5,15 +5,15 @@ import type {
 } from '@stablenet/sdk-types'
 import type { Address, Hash, Hex, TransactionSerializable } from 'viem'
 import {
-  DEFAULT_CONFIRMATIONS,
   DEFAULT_CONFIRMATION_TIMEOUT,
+  DEFAULT_CONFIRMATIONS,
   GAS_BUFFER_DIVISOR,
   GAS_BUFFER_MULTIPLIER,
   MAX_GAS_LIMIT,
   MIN_PRIORITY_FEE,
 } from '../config'
 import { createTransactionError } from '../errors'
-import { type RpcProvider, createViemProvider } from '../providers'
+import { createViemProvider, type RpcProvider } from '../providers'
 
 // ============================================================================
 // Types

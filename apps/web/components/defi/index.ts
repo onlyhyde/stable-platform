@@ -1,4 +1,6 @@
 export {
+  AddLiquidityModal,
+  AvailablePoolsCard,
   // Main page components
   DefiNavigationCards,
   DefiStatsCards,
@@ -6,6 +8,4 @@ export {
   SwapCard,
   // Pool page components
   YourPositionsCard,
-  AvailablePoolsCard,
-  AddLiquidityModal,
 } from './cards'

@@ -5,8 +5,8 @@
  * It uses a persistent context with the extension loaded.
  */
 
-import path from 'path'
 import { defineConfig, devices } from '@playwright/test'
+import path from 'path'
 
 // Path to the built extension
 const EXTENSION_PATH = path.join(__dirname, 'dist')

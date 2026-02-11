@@ -49,7 +49,7 @@ import { createSmartAccountStrategy } from '../../../src/transaction/strategies/
 
 const SENDER = '0x1234567890abcdef1234567890abcdef12345678' as Address
 const TO = '0xaabbccddee0011223344556677889900aabbccdd' as Address
-const ENTRY_POINT = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
+const _ENTRY_POINT = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
 const PAYMASTER_ADDR = '0x9876543210fedcba9876543210fedcba98765432' as Address
 
 function createStrategy(opts: { paymasterUrl?: string } = {}) {

@@ -1,7 +1,7 @@
 'use client'
 
-import { Card, CardContent } from '@/components/common'
 import type { Address } from 'viem'
+import { Card, CardContent } from '@/components/common'
 
 interface AuthorizationDetailsCardProps {
   authorization: {

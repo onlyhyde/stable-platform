@@ -1,6 +1,6 @@
 import type { EIP1193Provider, WalletSDKConfig } from '../types'
-import { StableNetProvider } from './StableNetProvider'
 import { getProviderRegistry } from './eip6963'
+import { StableNetProvider } from './StableNetProvider'
 
 // Extend window type for provider
 declare global {

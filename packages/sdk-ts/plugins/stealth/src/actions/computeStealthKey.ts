@@ -1,6 +1,6 @@
 import { checkViewTag, computeStealthPrivateKey } from '../crypto'
 import { extractViewTag } from '../crypto/viewTag'
-import type { ComputeStealthKeyParams, ComputedStealthKey } from '../types'
+import type { ComputedStealthKey, ComputeStealthKeyParams } from '../types'
 
 /**
  * Error thrown when stealth key computation fails due to invalid inputs

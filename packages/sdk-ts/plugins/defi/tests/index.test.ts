@@ -4,33 +4,33 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+  calculateFee,
+  // Helper Functions
+  calculateHealthFactor,
+  calculateMinOutput,
   DEFAULTS,
   DefiPluginError,
+  encodeHealthFactorHookInitData,
+  encodeLendingExecutorInitData,
+  encodeStakingExecutorInitData,
+  encodeSwapExecutorInitData,
   HealthFactorHookAbi,
   HealthFactorHookError,
+  isLiquidatable,
   LendingExecutorAbi,
   LendingExecutorError,
   // Types
   LendingPoolType,
-  // Constants
-  MODULE_TYPE,
   MerchantRegistryAbi,
   MerchantRegistryError,
+  // Constants
+  MODULE_TYPE,
   SCALE,
   StakingExecutorAbi,
   StakingExecutorError,
   // ABIs
   SwapExecutorAbi,
   SwapExecutorError,
-  calculateFee,
-  // Helper Functions
-  calculateHealthFactor,
-  calculateMinOutput,
-  encodeHealthFactorHookInitData,
-  encodeLendingExecutorInitData,
-  encodeStakingExecutorInitData,
-  encodeSwapExecutorInitData,
-  isLiquidatable,
 } from '../src'
 import { TEST_VALUES } from './setup'
 

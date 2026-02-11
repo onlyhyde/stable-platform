@@ -62,8 +62,7 @@ const WALLET_UUID = 'd8f3b2a1-5c4e-4f6d-9a8b-7e1c2d3f4a5b'
  * Made mutable to support dynamic MetaMask mode switching
  */
 // StableNet shield logo SVG (base64 encoded)
-const STABLENET_ICON_SVG =
-  `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+const STABLENET_ICON_SVG = `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
     <linearGradient id="g" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" style="stop-color:#6366F1"/>

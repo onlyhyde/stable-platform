@@ -1,10 +1,10 @@
 'use client'
 
+import { useMemo, useState } from 'react'
 import { Button, ConnectWalletCard, PageHeader } from '@/components/common'
 import { ExpenseListCard, ExpenseSummaryCards, SubmitExpenseModal } from '@/components/enterprise'
 import { useWallet } from '@/hooks'
 import { useExpenses } from '@/hooks/useExpenses'
-import { useMemo, useState } from 'react'
 
 export default function ExpensesPage() {
   const { isConnected } = useWallet()

@@ -3,48 +3,47 @@
  * Exports all error types, classes, and utilities
  */
 
-// Types
-export {
-  SDK_ERROR_CODES,
-  BUNDLER_ERROR_CODES,
-  type SdkErrorCode,
-  type BundlerErrorCode,
-  type ErrorContext,
-  type SdkErrorDetails,
-  type BundlerErrorDetails,
-  type UserOperationErrorDetails,
-  type TransactionErrorDetails,
-  type GasEstimationErrorDetails,
-  type PaymasterErrorDetails,
-} from './types'
-
 // Error classes
 export {
-  SdkError,
   BundlerError,
-  UserOperationError,
-  TransactionError,
-  GasEstimationError,
   ConfigurationError,
-  ValidationError,
+  GasEstimationError,
   PaymasterError,
+  SdkError,
+  TransactionError,
+  UserOperationError,
+  ValidationError,
 } from './SdkError'
+// Types
+export {
+  BUNDLER_ERROR_CODES,
+  type BundlerErrorCode,
+  type BundlerErrorDetails,
+  type ErrorContext,
+  type GasEstimationErrorDetails,
+  type PaymasterErrorDetails,
+  SDK_ERROR_CODES,
+  type SdkErrorCode,
+  type SdkErrorDetails,
+  type TransactionErrorDetails,
+  type UserOperationErrorDetails,
+} from './types'
 
 // Utilities
 export {
-  isSdkError,
-  isBundlerError,
-  isUserOperationError,
-  isTransactionError,
-  isPaymasterError,
-  normalizeError,
-  createBundlerError,
-  createUserOperationError,
-  createTransactionError,
-  createConfigurationError,
-  createValidationError,
-  createPaymasterError,
-  withErrorHandling,
   assertCondition,
   assertDefined,
+  createBundlerError,
+  createConfigurationError,
+  createPaymasterError,
+  createTransactionError,
+  createUserOperationError,
+  createValidationError,
+  isBundlerError,
+  isPaymasterError,
+  isSdkError,
+  isTransactionError,
+  isUserOperationError,
+  normalizeError,
+  withErrorHandling,
 } from './utils'

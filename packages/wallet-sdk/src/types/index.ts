@@ -6,6 +6,7 @@
 
 // Re-export viem types for convenience
 export type { Address, Hash, Hex } from 'viem'
+
 import type { Address, Hash, Hex } from 'viem'
 
 // ============================================================================

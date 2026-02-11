@@ -9,13 +9,13 @@
 import type { ModuleType } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { ConfigurationError } from '../errors'
-import { type RpcProvider, createViemProvider } from '../providers'
+import { createViemProvider, type RpcProvider } from '../providers'
 import { createModuleRegistry } from './moduleRegistry'
 import {
   type ConflictCheckResult,
+  createModuleOperationClient,
   type ModuleCalldata,
   type ValidationResult,
-  createModuleOperationClient,
 } from './operationClient'
 import { createModuleQueryClient } from './queryClient'
 import { encodeSessionKeyInit } from './utils/executorUtils'
@@ -234,6 +234,6 @@ export function createModuleClient(config: ModuleClientConfig) {
 
 export type ModuleClient = ReturnType<typeof createModuleClient>
 
+export { createModuleOperationClient, type ModuleOperationClient } from './operationClient'
 // Re-export sub-clients for direct usage
 export { createModuleQueryClient, type ModuleQueryClient } from './queryClient'
-export { createModuleOperationClient, type ModuleOperationClient } from './operationClient'

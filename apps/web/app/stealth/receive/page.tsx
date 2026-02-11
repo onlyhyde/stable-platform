@@ -1,9 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { ConnectWalletCard, PageHeader } from '@/components/common'
 import { IncomingPaymentsCard, StealthMetaAddressCard } from '@/components/stealth'
 import { useStealth, useWallet } from '@/hooks'
-import { useState } from 'react'
 
 export default function StealthReceivePage() {
   const { isConnected } = useWallet()

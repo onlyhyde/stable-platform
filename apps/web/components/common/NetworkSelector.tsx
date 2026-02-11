@@ -1,8 +1,8 @@
 'use client'
 
-import { type WalletNetwork, useWalletNetworks } from '@/hooks/useWalletNetworks'
 import { useEffect, useRef, useState } from 'react'
 import { useAccount } from 'wagmi'
+import { useWalletNetworks, type WalletNetwork } from '@/hooks/useWalletNetworks'
 
 interface NetworkSelectorProps {
   /** Custom class name */

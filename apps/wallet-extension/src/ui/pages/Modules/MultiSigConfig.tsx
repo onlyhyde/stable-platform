@@ -1,6 +1,6 @@
 import {
-  type MultiSigValidatorConfig,
   encodeMultiSigValidatorInit,
+  type MultiSigValidatorConfig,
   validateMultiSigValidatorConfig,
 } from '@stablenet/core'
 import { useCallback, useMemo, useState } from 'react'
@@ -395,7 +395,8 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
             }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--foreground))' }}>
-              <strong>{t('securityTip')}</strong> {t('securityTipDesc', { count: Math.ceil(validSigners.length / 2) })}
+              <strong>{t('securityTip')}</strong>{' '}
+              {t('securityTipDesc', { count: Math.ceil(validSigners.length / 2) })}
             </p>
           </div>
         </div>
@@ -482,7 +483,11 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
             }}
           >
             <p className="text-sm" style={{ color: 'rgb(var(--warning))' }}>
-              <strong>{t('important')}</strong> {t('multiSigWarning', { count: form.threshold, plural: form.threshold !== 1 ? 's' : '' })}
+              <strong>{t('important')}</strong>{' '}
+              {t('multiSigWarning', {
+                count: form.threshold,
+                plural: form.threshold !== 1 ? 's' : '',
+              })}
             </p>
           </div>
         </div>
@@ -490,11 +495,19 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
 
       {/* Actions */}
       <div className="flex gap-3 mt-6">
-        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
+        <button
+          type="button"
+          className="btn-ghost flex-1 py-3 rounded-lg font-medium"
+          onClick={prevStep}
+        >
           {step === 'signers' ? tc('cancel') : tc('back')}
         </button>
         {step === 'review' ? (
-          <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
+          <button
+            type="button"
+            className="btn-primary flex-1 py-3 rounded-lg font-medium"
+            onClick={handleSubmit}
+          >
             {t('installValidator')}
           </button>
         ) : (

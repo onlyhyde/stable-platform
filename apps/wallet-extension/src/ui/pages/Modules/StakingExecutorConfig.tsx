@@ -153,9 +153,7 @@ export function StakingExecutorConfigUI({
       {step === 'pool-limit' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('maxStakePerPool')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('maxStakePerPoolDesc')}
-          </p>
+          <p className="text-sm text-gray-500">{t('maxStakePerPoolDesc')}</p>
 
           <div className="grid grid-cols-3 gap-2">
             {POOL_LIMIT_PRESETS.slice(0, 3).map((preset) => (
@@ -171,7 +169,11 @@ export function StakingExecutorConfigUI({
               >
                 <div>{preset.label}</div>
                 {preset.description && (
-                  <div className="text-xs text-gray-500">{preset.description === 'Validator stake' ? t('validatorStake') : preset.description}</div>
+                  <div className="text-xs text-gray-500">
+                    {preset.description === 'Validator stake'
+                      ? t('validatorStake')
+                      : preset.description}
+                  </div>
                 )}
               </button>
             ))}
@@ -190,14 +192,21 @@ export function StakingExecutorConfigUI({
               >
                 <div>{preset.label}</div>
                 {preset.description && (
-                  <div className="text-xs text-gray-500">{preset.description === 'Validator stake' ? t('validatorStake') : preset.description}</div>
+                  <div className="text-xs text-gray-500">
+                    {preset.description === 'Validator stake'
+                      ? t('validatorStake')
+                      : preset.description}
+                  </div>
                 )}
               </button>
             ))}
           </div>
 
           <div className="mt-4">
-            <label htmlFor="custom-pool-limit" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="custom-pool-limit"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               {t('customLimitEth')}
             </label>
             <input
@@ -215,9 +224,7 @@ export function StakingExecutorConfigUI({
       {step === 'daily-limit' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('dailyStakingLimit')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('dailyStakingLimitDesc')}
-          </p>
+          <p className="text-sm text-gray-500">{t('dailyStakingLimitDesc')}</p>
 
           <div className="grid grid-cols-3 gap-2">
             {DAILY_LIMIT_PRESETS.slice(0, 3).map((preset) => (
@@ -253,7 +260,10 @@ export function StakingExecutorConfigUI({
           </div>
 
           <div className="mt-4">
-            <label htmlFor="custom-daily-stake-limit" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="custom-daily-stake-limit"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               {t('customLimitEth')}
             </label>
             <input
@@ -277,9 +287,7 @@ export function StakingExecutorConfigUI({
       {step === 'review' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('reviewConfiguration')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('reviewStakingConfig')}
-          </p>
+          <p className="text-sm text-gray-500">{t('reviewStakingConfig')}</p>
 
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center">
@@ -404,7 +412,9 @@ export function StakingExecutorDisplay({
             style={{ width: `${Math.min(usagePercent, 100)}%` }}
           />
         </div>
-        <p className="text-xs text-gray-500">{t('remainingAmount', { amount: formatEther(remainingLimit) })}</p>
+        <p className="text-xs text-gray-500">
+          {t('remainingAmount', { amount: formatEther(remainingLimit) })}
+        </p>
       </div>
     </div>
   )

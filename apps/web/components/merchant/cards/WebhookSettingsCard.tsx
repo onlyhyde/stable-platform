@@ -1,10 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/common/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/common/Card'
 import { Input } from '@/components/common/Input'
 import { Toggle } from '@/components/common/Toggle'
-import { useState } from 'react'
 
 interface WebhookEndpoint {
   id: string

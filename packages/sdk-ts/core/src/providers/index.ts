@@ -6,12 +6,12 @@
 
 // Types
 export type {
+  BlockData,
+  EstimateGasParams,
+  GasPrices,
+  ReadContractParams,
   RpcProvider,
   RpcProviderConfig,
-  BlockData,
-  GasPrices,
-  EstimateGasParams,
-  ReadContractParams,
   WaitForReceiptOptions,
 } from './types'
 

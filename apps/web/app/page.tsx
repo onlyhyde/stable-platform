@@ -1,10 +1,10 @@
 'use client'
 
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
-import { useWallet, useWalletAssets } from '@/hooks'
-import type { WalletToken } from '@/hooks'
-import { formatAddress, formatTokenAmount } from '@/lib/utils'
 import Link from 'next/link'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
+import type { WalletToken } from '@/hooks'
+import { useWallet, useWalletAssets } from '@/hooks'
+import { formatAddress, formatTokenAmount } from '@/lib/utils'
 
 export default function DashboardPage() {
   const { address, isConnected, connect } = useWallet()

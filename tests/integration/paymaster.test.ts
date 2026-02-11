@@ -86,8 +86,6 @@ describe('Paymaster Integration Tests', () => {
       ])
 
       if (response.error) {
-        // Paymaster may reject if not configured
-        console.log('Paymaster stub data error:', response.error.message)
       } else {
         expect(response.result).toBeDefined()
         // Check for v0.7 format
@@ -127,7 +125,6 @@ describe('Paymaster Integration Tests', () => {
       ])
 
       if (response.error) {
-        console.log('Paymaster data error:', response.error.message)
       } else {
         expect(response.result).toBeDefined()
       }

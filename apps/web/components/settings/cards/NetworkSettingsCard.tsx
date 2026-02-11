@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import {
   Button,
   Card,
@@ -11,7 +12,6 @@ import {
 } from '@/components/common'
 import { supportedChains } from '@/lib/chains'
 import type { RpcSettings } from '@/lib/utils'
-import { useEffect, useState } from 'react'
 
 interface NetworkSettingsCardProps {
   currentChainId: number

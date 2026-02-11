@@ -75,10 +75,18 @@ export function ModuleConfigForm({
 
       {/* Actions */}
       <div className="flex gap-3 mt-6">
-        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+        <button
+          type="button"
+          className="btn-ghost flex-1 py-3 rounded-lg font-medium"
+          onClick={onBack}
+        >
           {tc('back')}
         </button>
-        <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
+        <button
+          type="button"
+          className="btn-primary flex-1 py-3 rounded-lg font-medium"
+          onClick={handleSubmit}
+        >
           {t('continue')}
         </button>
       </div>

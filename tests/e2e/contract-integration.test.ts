@@ -1,15 +1,8 @@
-import {
-  http,
-  createPublicClient,
-  createWalletClient,
-  formatEther,
-  parseAbi,
-  parseEther,
-} from 'viem'
+import { createPublicClient, createWalletClient, http, parseAbi, parseEther } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { foundry } from 'viem/chains'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { TEST_CONFIG, isNetworkAvailable } from '../setup'
+import { isNetworkAvailable, TEST_CONFIG } from '../setup'
 
 // Contract ABIs (minimal for testing)
 const ENTRY_POINT_ABI = parseAbi([
@@ -18,12 +11,12 @@ const ENTRY_POINT_ABI = parseAbi([
   'function depositTo(address account) payable',
 ])
 
-const KERNEL_FACTORY_ABI = parseAbi([
+const _KERNEL_FACTORY_ABI = parseAbi([
   'function createAccount(address implementation, bytes calldata data, uint256 index) returns (address)',
   'function getAddress(address implementation, bytes calldata data, uint256 index) view returns (address)',
 ])
 
-const KERNEL_ABI = parseAbi([
+const _KERNEL_ABI = parseAbi([
   'function execute(address to, uint256 value, bytes data, uint8 operation) external',
 ])
 
@@ -79,9 +72,7 @@ describe('Contract Integration Tests', () => {
       // EntryPoint should be deployed
       if (code && code !== '0x') {
         expect(code.length).toBeGreaterThan(2)
-        console.log('✅ EntryPoint is deployed')
       } else {
-        console.log('⚠️ EntryPoint not deployed yet')
       }
     })
 
@@ -106,7 +97,6 @@ describe('Contract Integration Tests', () => {
       })
 
       expect(nonce).toBeGreaterThanOrEqual(0n)
-      console.log(`User1 nonce: ${nonce}`)
     })
 
     it('should deposit to EntryPoint', async () => {
@@ -131,8 +121,6 @@ describe('Contract Integration Tests', () => {
         args: [TEST_CONFIG.accounts.user1.address as `0x${string}`],
       })
 
-      console.log(`Balance before: ${formatEther(balanceBefore as bigint)} ETH`)
-
       // Deposit ETH to EntryPoint
       const hash = await walletClient.writeContract({
         address: TEST_CONFIG.contracts.entryPoint as `0x${string}`,
@@ -151,8 +139,6 @@ describe('Contract Integration Tests', () => {
         functionName: 'balanceOf',
         args: [TEST_CONFIG.accounts.user1.address as `0x${string}`],
       })
-
-      console.log(`Balance after: ${formatEther(balanceAfter as bigint)} ETH`)
       expect(balanceAfter).toBeGreaterThan(balanceBefore as bigint)
     })
   })
@@ -160,7 +146,6 @@ describe('Contract Integration Tests', () => {
   describe('Kernel Factory Contract', () => {
     it('should check Kernel Factory deployment', async () => {
       if (!networkAvailable || !TEST_CONFIG.contracts.kernelFactory) {
-        console.log('⚠️ Kernel Factory address not configured')
         return
       }
 
@@ -170,9 +155,7 @@ describe('Contract Integration Tests', () => {
 
       if (code && code !== '0x') {
         expect(code.length).toBeGreaterThan(2)
-        console.log('✅ Kernel Factory is deployed')
       } else {
-        console.log('⚠️ Kernel Factory not deployed yet')
       }
     })
 
@@ -192,12 +175,6 @@ describe('Contract Integration Tests', () => {
       if (!code || code === '0x') {
         return
       }
-
-      // For Kernel, getAddress requires valid validator data
-      // Skip this test for now as it requires complex initialization
-      console.log(
-        '✅ Kernel Factory deployed, counterfactual address computation requires validator setup'
-      )
       expect(true).toBe(true)
     })
   })
@@ -205,7 +182,6 @@ describe('Contract Integration Tests', () => {
   describe('Validator Contract', () => {
     it('should check ECDSA Validator deployment', async () => {
       if (!networkAvailable || !TEST_CONFIG.contracts.ecdsaValidator) {
-        console.log('⚠️ ECDSA Validator address not configured')
         return
       }
 
@@ -215,9 +191,7 @@ describe('Contract Integration Tests', () => {
 
       if (code && code !== '0x') {
         expect(code.length).toBeGreaterThan(2)
-        console.log('✅ ECDSA Validator is deployed')
       } else {
-        console.log('⚠️ ECDSA Validator not deployed yet')
       }
     })
   })
@@ -225,7 +199,6 @@ describe('Contract Integration Tests', () => {
   describe('Token Contracts', () => {
     it('should check USDC deployment', async () => {
       if (!networkAvailable || !TEST_CONFIG.contracts.usdc) {
-        console.log('⚠️ USDC address not configured')
         return
       }
 
@@ -240,8 +213,6 @@ describe('Contract Integration Tests', () => {
           functionName: 'balanceOf',
           args: [TEST_CONFIG.accounts.deployer.address as `0x${string}`],
         })
-
-        console.log(`Deployer USDC balance: ${balance}`)
         expect(balance).toBeGreaterThanOrEqual(0n)
       }
     })
@@ -265,16 +236,8 @@ describe('Full UserOperation Flow (E2E)', () => {
     const allDeployed = requiredContracts.every((addr) => addr && addr.length > 2)
 
     if (!allDeployed) {
-      console.log('⚠️ Not all required contracts are deployed, skipping E2E flow test')
-      console.log('Required contracts:')
-      console.log(`  - EntryPoint: ${TEST_CONFIG.contracts.entryPoint || 'NOT SET'}`)
-      console.log(`  - KernelFactory: ${TEST_CONFIG.contracts.kernelFactory || 'NOT SET'}`)
-      console.log(`  - ECDSAValidator: ${TEST_CONFIG.contracts.ecdsaValidator || 'NOT SET'}`)
       return
     }
-
-    // E2E flow would be tested here
-    console.log('✅ All contracts deployed, E2E flow can be tested')
     expect(true).toBe(true)
   })
 })

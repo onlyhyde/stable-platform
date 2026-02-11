@@ -1,33 +1,58 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
     "useIgnoreFile": true
   },
-  "organizeImports": {
-    "enabled": true
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true,
+      "a11y": {
+        "noLabelWithoutControl": "warn",
+        "useAriaPropsSupportedByRole": "warn",
+        "noStaticElementInteractions": "warn"
+      },
       "complexity": {
         "noForEach": "off",
-        "useLiteralKeys": "off"
+        "useLiteralKeys": "off",
+        "noBannedTypes": "off"
       },
       "correctness": {
         "noUnusedImports": "error",
-        "noUnusedVariables": "error"
+        "noUnusedVariables": "error",
+        "noUnusedFunctionParameters": "off",
+        "noInvalidUseBeforeDeclaration": "off",
+        "useExhaustiveDependencies": "warn",
+        "useHookAtTopLevel": "warn"
       },
       "style": {
         "noNonNullAssertion": "off",
         "useImportType": "error",
-        "useExportType": "error"
+        "useExportType": "error",
+        "useTemplate": "off",
+        "useNodejsImportProtocol": "off"
       },
       "suspicious": {
         "noExplicitAny": "warn",
-        "noConsoleLog": "warn"
+        "noConsole": {
+          "level": "warn",
+          "options": {
+            "allow": ["error", "warn", "info", "debug", "trace"]
+          }
+        },
+        "noArrayIndexKey": "warn",
+        "useIterableCallbackReturn": "warn",
+        "noImplicitAnyLet": "warn",
+        "noUnknownAtRules": "off"
       }
     }
   },
@@ -44,21 +69,33 @@
       "semicolons": "asNeeded"
     }
   },
+  "css": {
+    "parser": {
+      "cssModules": true,
+      "tailwindDirectives": true
+    },
+    "linter": {
+      "enabled": true
+    }
+  },
   "json": {
     "formatter": {
-      "indentWidth": 2
+      "indentWidth": 2,
+      "expand": "auto"
     }
   },
   "files": {
-    "ignore": [
-      "node_modules",
-      "dist",
-      "build",
-      ".next",
-      "coverage",
-      ".turbo",
-      "*.min.js",
-      "pnpm-lock.yaml"
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/.next",
+      "!**/coverage",
+      "!**/.turbo",
+      "!**/*.min.js",
+      "!**/pnpm-lock.yaml",
+      "!**/services/pg-simulator/templates"
     ]
   }
 }

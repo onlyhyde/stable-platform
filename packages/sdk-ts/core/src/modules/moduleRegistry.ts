@@ -13,8 +13,8 @@ import {
   BUILT_IN_MODULES,
   // Re-export individual modules for backwards compatibility
   ECDSA_VALIDATOR,
-  MULTISIG_VALIDATOR,
   type ModuleRegistryEntry,
+  MULTISIG_VALIDATOR,
   RECURRING_PAYMENT_EXECUTOR,
   SESSION_KEY_EXECUTOR,
   SPENDING_LIMIT_HOOK,

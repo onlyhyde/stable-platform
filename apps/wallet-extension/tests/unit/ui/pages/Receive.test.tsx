@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { Receive } from '../../../../src/ui/pages/Receive'
 import { useWalletStore } from '../../../../src/ui/hooks/useWalletStore'
+import { Receive } from '../../../../src/ui/pages/Receive'
 
 jest.mock('../../../../src/ui/hooks/useWalletStore', () => ({
   useWalletStore: jest.fn(),

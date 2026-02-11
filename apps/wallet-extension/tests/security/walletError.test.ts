@@ -5,9 +5,9 @@
  */
 
 import {
-  WalletError,
   handleApprovalError,
   isRpcLikeError,
+  WalletError,
 } from '../../src/shared/errors/WalletError'
 
 describe('WalletError', () => {

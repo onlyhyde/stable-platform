@@ -49,58 +49,54 @@
  * ```
  */
 
-// Types
-export type {
-  Plan,
-  Subscription,
-  CreatePlanParams,
-  SubscribeParams,
-  SubscriptionManagerConfig,
-  PaymentSchedule,
-  CreateScheduleParams,
-  RecurringPaymentExecutorConfig,
-  Permission,
-  Rule,
-  PermissionRecord,
-  GrantPermissionParams,
-  GrantPermissionWithSignatureParams,
-  GrantSubscriptionPermissionParams,
-  PermissionManagerConfig,
-  PermissionType,
-  RuleType,
-} from './types'
-
-export {
-  SUBSCRIPTION_MANAGER_ABI,
-  RECURRING_PAYMENT_EXECUTOR_ABI,
-  PERMISSION_MANAGER_ABI,
-  PERMISSION_TYPES,
-  RULE_TYPES,
-} from './types'
-
 // Constants
 export {
-  NATIVE_TOKEN,
-  INTERVALS,
-  PERIOD_LIMITS,
   FEE_LIMITS,
+  INTERVALS,
   MODULE_TYPE_EXECUTOR,
+  NATIVE_TOKEN,
+  PERIOD_LIMITS,
 } from './constants'
-
-// Subscription Manager
+// Permission Manager
 export {
-  createSubscriptionManager,
-  type SubscriptionManagerClient,
-} from './subscriptionClient'
-
+  createSubscriptionPermissionClient,
+  type SubscriptionPermissionClient,
+} from './permissionClient'
 // Recurring Payment Executor
 export {
   createRecurringPaymentExecutor,
   type RecurringPaymentExecutorClient,
 } from './recurringPaymentClient'
 
-// Permission Manager
+// Subscription Manager
 export {
-  createSubscriptionPermissionClient,
-  type SubscriptionPermissionClient,
-} from './permissionClient'
+  createSubscriptionManager,
+  type SubscriptionManagerClient,
+} from './subscriptionClient'
+// Types
+export type {
+  CreatePlanParams,
+  CreateScheduleParams,
+  GrantPermissionParams,
+  GrantPermissionWithSignatureParams,
+  GrantSubscriptionPermissionParams,
+  PaymentSchedule,
+  Permission,
+  PermissionManagerConfig,
+  PermissionRecord,
+  PermissionType,
+  Plan,
+  RecurringPaymentExecutorConfig,
+  Rule,
+  RuleType,
+  SubscribeParams,
+  Subscription,
+  SubscriptionManagerConfig,
+} from './types'
+export {
+  PERMISSION_MANAGER_ABI,
+  PERMISSION_TYPES,
+  RECURRING_PAYMENT_EXECUTOR_ABI,
+  RULE_TYPES,
+  SUBSCRIPTION_MANAGER_ABI,
+} from './types'

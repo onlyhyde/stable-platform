@@ -156,7 +156,13 @@ export function AccountSelector({
               className="w-8 h-8 rounded-full flex items-center justify-center"
               style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" role="img">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                role="img"
+              >
                 <title>Add account</title>
                 <path
                   strokeLinecap="round"

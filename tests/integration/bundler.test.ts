@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { TEST_CONFIG, isBundlerAvailable } from '../setup'
+import { isBundlerAvailable, TEST_CONFIG } from '../setup'
 
 interface JsonRpcResponse<T = unknown> {
   jsonrpc: string
@@ -93,10 +93,6 @@ describe('Bundler Integration Tests', () => {
       // May fail if contracts not deployed, but should return valid error
       if (response.error) {
         expect(response.error.message).toBeDefined()
-        console.log(
-          'Gas estimation error (expected if contracts not deployed):',
-          response.error.message
-        )
       } else {
         expect(response.result).toBeDefined()
       }

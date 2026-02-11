@@ -32,7 +32,7 @@ export function Bank({ onBack }: BankPageProps) {
 
   useEffect(() => {
     loadLinkedAccounts()
-  }, [])
+  }, [loadLinkedAccounts])
 
   async function loadLinkedAccounts() {
     setIsLoading(true)
@@ -260,9 +260,7 @@ export function Bank({ onBack }: BankPageProps) {
         ) : activeTab === 'transfer' ? (
           linkedAccounts.length < 2 ? (
             <Card padding="lg" className="text-center">
-              <p className="text-sm text-gray-500">
-                {t('needTwoAccounts')}
-              </p>
+              <p className="text-sm text-gray-500">{t('needTwoAccounts')}</p>
             </Card>
           ) : (
             <TransferForm

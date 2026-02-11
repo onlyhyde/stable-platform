@@ -1,5 +1,7 @@
 'use client'
 
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Address, Hex } from 'viem'
 import {
   Card,
   CardContent,
@@ -23,8 +25,6 @@ import type { SigningMethod, UpgradeResult } from '@/hooks/useSmartAccount'
 import { getDelegatePresets } from '@/lib/eip7702'
 import { secureKeyStore } from '@/lib/secureKeyStore'
 import { sanitizeErrorMessage } from '@/lib/utils'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Address, Hex } from 'viem'
 
 export default function SmartAccountPage() {
   const { connect, isConnecting, connectors } = useWallet()

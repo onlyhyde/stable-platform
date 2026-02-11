@@ -1,10 +1,7 @@
 import type { Address, Hex, WalletClient } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DirectSubmitter } from '../../src/executor/directSubmitter'
-import {
-  FlashbotsSubmitter,
-  type FlashbotsConfig,
-} from '../../src/executor/flashbotsSubmitter'
+import { type FlashbotsConfig, FlashbotsSubmitter } from '../../src/executor/flashbotsSubmitter'
 import type { BundleSubmission } from '../../src/executor/submitter'
 import { createLogger } from '../../src/utils/logger'
 
@@ -58,13 +55,9 @@ describe('DirectSubmitter', () => {
 
   it('should propagate wallet client errors', async () => {
     const error = new Error('insufficient funds')
-    ;(mockWalletClient.sendTransaction as ReturnType<typeof vi.fn>).mockRejectedValue(
-      error
-    )
+    ;(mockWalletClient.sendTransaction as ReturnType<typeof vi.fn>).mockRejectedValue(error)
 
-    await expect(submitter.submit(createSubmission())).rejects.toThrow(
-      'insufficient funds'
-    )
+    await expect(submitter.submit(createSubmission())).rejects.toThrow('insufficient funds')
   })
 })
 
@@ -126,9 +119,9 @@ describe('FlashbotsSubmitter', () => {
       })
     )
 
-    await expect(
-      submitter.submit(createSubmission({ targetBlockNumber: 12345n }))
-    ).rejects.toThrow('Flashbots relay error: 400')
+    await expect(submitter.submit(createSubmission({ targetBlockNumber: 12345n }))).rejects.toThrow(
+      'Flashbots relay error: 400'
+    )
   })
 
   it('should handle relay RPC errors', async () => {
@@ -144,9 +137,9 @@ describe('FlashbotsSubmitter', () => {
       })
     )
 
-    await expect(
-      submitter.submit(createSubmission({ targetBlockNumber: 12345n }))
-    ).rejects.toThrow('Flashbots RPC error: bundle simulation failed')
+    await expect(submitter.submit(createSubmission({ targetBlockNumber: 12345n }))).rejects.toThrow(
+      'Flashbots RPC error: bundle simulation failed'
+    )
   })
 
   it('should target correct block number', async () => {

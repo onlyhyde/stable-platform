@@ -4,7 +4,7 @@ import { afterAll, beforeAll } from 'vitest'
 export const TEST_CONFIG = {
   // Local Anvil/Hardhat network
   rpcUrl: process.env.TEST_RPC_URL || 'http://127.0.0.1:8545',
-  chainId: Number.parseInt(process.env.TEST_CHAIN_ID || '31337'),
+  chainId: Number.parseInt(process.env.TEST_CHAIN_ID || '31337', 10),
 
   // Bundler endpoint
   bundlerUrl: process.env.TEST_BUNDLER_URL || 'http://127.0.0.1:4337',
@@ -81,18 +81,10 @@ export const TEST_CONFIG = {
 }
 
 // Setup before all tests
-beforeAll(async () => {
-  console.log('🧪 Test environment initialized')
-  console.log(`   RPC URL: ${TEST_CONFIG.rpcUrl}`)
-  console.log(`   Chain ID: ${TEST_CONFIG.chainId}`)
-  console.log(`   Bundler URL: ${TEST_CONFIG.bundlerUrl}`)
-  console.log(`   Paymaster URL: ${TEST_CONFIG.paymasterUrl}`)
-})
+beforeAll(async () => {})
 
 // Cleanup after all tests
-afterAll(async () => {
-  console.log('🧹 Test cleanup completed')
-})
+afterAll(async () => {})
 
 // Helper to check if local network is available
 export async function isNetworkAvailable(): Promise<boolean> {

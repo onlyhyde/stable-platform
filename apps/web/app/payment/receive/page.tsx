@@ -1,9 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { useWallet } from '@/hooks'
 import { copyToClipboard } from '@/lib/utils'
-import { useState } from 'react'
 
 export default function ReceivePage() {
   const { address, isConnected } = useWallet()

@@ -2,22 +2,21 @@
  * API Module Exports
  */
 
-// Error handling
-export {
-  ApiError,
-  API_ERROR_CODES,
-  isApiError,
-  normalizeError,
-  createErrorFromResponse,
-  getErrorCodeFromStatus,
-  type ApiErrorCode,
-  type ApiErrorDetails,
-} from './errors'
-
 // Base API client
 export {
-  BaseApi,
-  type RequestConfig,
   type ApiResponse,
+  BaseApi,
   type BaseApiConfig,
+  type RequestConfig,
 } from './BaseApi'
+// Error handling
+export {
+  API_ERROR_CODES,
+  ApiError,
+  type ApiErrorCode,
+  type ApiErrorDetails,
+  createErrorFromResponse,
+  getErrorCodeFromStatus,
+  isApiError,
+  normalizeError,
+} from './errors'

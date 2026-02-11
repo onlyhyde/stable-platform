@@ -1,4 +1,4 @@
-import { MODULE_TYPE, type InstalledModule } from '@stablenet/core'
+import { type InstalledModule, MODULE_TYPE } from '@stablenet/core'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
@@ -44,22 +44,19 @@ export function SmartAccountDashboard({
   const { sponsorPolicy } = usePaymasterClient(account.address)
 
   // Spending limit data
-  const { limits: spendingLimits } = useSpendingLimitStatus(
-    account.address,
-    installedModules,
-  )
+  const { limits: spendingLimits } = useSpendingLimitStatus(account.address, installedModules)
 
   const sessionKeyCount = useMemo(() => {
     if (!installedModules) return 0
     return installedModules.filter(
-      (m) => m.type === MODULE_TYPE.EXECUTOR && m.metadata.name.toLowerCase().includes('session'),
+      (m) => m.type === MODULE_TYPE.EXECUTOR && m.metadata.name.toLowerCase().includes('session')
     ).length
   }, [installedModules])
 
   const hasSpendingLimits = useMemo(() => {
     if (!installedModules) return false
     return installedModules.some(
-      (m) => m.type === MODULE_TYPE.HOOK && m.metadata.name.toLowerCase().includes('spending'),
+      (m) => m.type === MODULE_TYPE.HOOK && m.metadata.name.toLowerCase().includes('spending')
     )
   }, [installedModules])
 
@@ -70,10 +67,13 @@ export function SmartAccountDashboard({
     if (!installedModules || installedModules.length === 0) return ''
     const counts: Record<string, number> = {}
     for (const m of installedModules) {
-      if (m.type === MODULE_TYPE.VALIDATOR) counts[t('validators')] = (counts[t('validators')] ?? 0) + 1
-      else if (m.type === MODULE_TYPE.EXECUTOR) counts[t('executors')] = (counts[t('executors')] ?? 0) + 1
+      if (m.type === MODULE_TYPE.VALIDATOR)
+        counts[t('validators')] = (counts[t('validators')] ?? 0) + 1
+      else if (m.type === MODULE_TYPE.EXECUTOR)
+        counts[t('executors')] = (counts[t('executors')] ?? 0) + 1
       else if (m.type === MODULE_TYPE.HOOK) counts[t('hooks')] = (counts[t('hooks')] ?? 0) + 1
-      else if (m.type === MODULE_TYPE.FALLBACK) counts[t('fallbacks')] = (counts[t('fallbacks')] ?? 0) + 1
+      else if (m.type === MODULE_TYPE.FALLBACK)
+        counts[t('fallbacks')] = (counts[t('fallbacks')] ?? 0) + 1
     }
     return Object.entries(counts)
       .map(([type, count]) => `${count} ${type}`)
@@ -150,10 +150,7 @@ export function SmartAccountDashboard({
             {t('dashboard.delegatedTo')}
           </p>
           <div className="flex items-center gap-2">
-            <code
-              className="text-sm font-mono flex-1"
-              style={{ color: 'rgb(var(--foreground))' }}
-            >
+            <code className="text-sm font-mono flex-1" style={{ color: 'rgb(var(--foreground))' }}>
               {truncatedAddress}
             </code>
             <button
@@ -179,7 +176,10 @@ export function SmartAccountDashboard({
           </div>
 
           {smartAccountInfo.accountId && (
-            <div className="mt-3 pt-3" style={{ borderTopWidth: 1, borderTopColor: 'rgb(var(--border))' }}>
+            <div
+              className="mt-3 pt-3"
+              style={{ borderTopWidth: 1, borderTopColor: 'rgb(var(--border))' }}
+            >
               <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {t('dashboard.accountId')}
               </p>
@@ -203,9 +203,11 @@ export function SmartAccountDashboard({
         <FeatureCard
           icon="🔑"
           label={t('dashboard.sessionKeys')}
-          status={sessionKeyCount > 0
-            ? t('dashboard.activeCount', { count: sessionKeyCount })
-            : t('dashboard.none')}
+          status={
+            sessionKeyCount > 0
+              ? t('dashboard.activeCount', { count: sessionKeyCount })
+              : t('dashboard.none')
+          }
           isActive={sessionKeyCount > 0}
         />
         <FeatureCard
@@ -301,10 +303,7 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, label, status, isActive, detail }: FeatureCardProps) {
   return (
-    <div
-      className="rounded-lg p-3"
-      style={{ backgroundColor: 'rgb(var(--secondary))' }}
-    >
+    <div className="rounded-lg p-3" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
       <span className="text-xl">{icon}</span>
       <p className="text-sm font-medium mt-1" style={{ color: 'rgb(var(--foreground))' }}>
         {label}
@@ -316,10 +315,7 @@ function FeatureCard({ icon, label, status, isActive, detail }: FeatureCardProps
         {status}
       </p>
       {detail && (
-        <p
-          className="text-xs mt-0.5 truncate"
-          style={{ color: 'rgb(var(--muted-foreground))' }}
-        >
+        <p className="text-xs mt-0.5 truncate" style={{ color: 'rgb(var(--muted-foreground))' }}>
           {detail}
         </p>
       )}

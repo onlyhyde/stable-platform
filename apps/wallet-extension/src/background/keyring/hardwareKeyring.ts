@@ -82,7 +82,6 @@ export class LedgerKeyring implements IHardwareKeyring {
 
   private accounts: HardwareAccountInfo[] = []
   private transport: HardwareTransport | null = null
-  private hdPath: string
 
   constructor(data?: HardwareKeyringData) {
     this.hdPath = DEFAULT_HD_PATH
@@ -180,9 +179,5 @@ export class LedgerKeyring implements IHardwareKeyring {
     if (!this.transport?.isConnected) {
       throw new Error('Ledger device is not connected. Call connectDevice() first.')
     }
-  }
-
-  private getDerivationPath(index: number): string {
-    return `${this.hdPath}/${index}`
   }
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import {
   Button,
   Card,
@@ -9,7 +10,6 @@ import {
   InfoBanner,
   Input,
 } from '@/components/common'
-import { useEffect, useState } from 'react'
 
 interface ContractSettings {
   entryPoint: string

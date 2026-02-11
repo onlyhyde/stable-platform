@@ -9,7 +9,7 @@
  */
 
 import { existsSync } from 'node:fs'
-import { readFile, readdir, writeFile } from 'node:fs/promises'
+import { readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -357,17 +357,12 @@ async function main() {
     }
   }
 
-  console.log(`Looking for deployments in: ${inputPath}`)
-
   // Find deployment files
   const files = await findDeploymentFiles(inputPath)
 
   if (files.length === 0) {
-    console.log('No deployment files found. Using default addresses.')
     return
   }
-
-  console.log(`Found ${files.length} deployment file(s)`)
 
   // Load deployments
   const deployments: ChainDeployment[] = []
@@ -377,13 +372,11 @@ async function main() {
     if (deployment) {
       if (specificChain === null || deployment.chainId === specificChain) {
         deployments.push(deployment)
-        console.log(`  Loaded chain ${deployment.chainId} from ${file}`)
       }
     }
   }
 
   if (deployments.length === 0) {
-    console.log('No valid deployments loaded.')
     return
   }
 
@@ -392,8 +385,6 @@ async function main() {
   const outputPath = resolve(__dirname, '../src/generated/addresses.ts')
 
   await writeFile(outputPath, content, 'utf-8')
-  console.log(`\nGenerated: ${outputPath}`)
-  console.log(`Chains: ${deployments.map((d) => d.chainId).join(', ')}`)
 }
 
 main().catch(console.error)

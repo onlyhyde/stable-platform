@@ -1,5 +1,5 @@
-import { defineChain } from 'viem'
 import type { Chain } from 'viem'
+import { defineChain } from 'viem'
 import { getAppConfig, getConfigByChainId, getLocalConfig, getTestnetConfig } from './config'
 
 // Re-export for convenience

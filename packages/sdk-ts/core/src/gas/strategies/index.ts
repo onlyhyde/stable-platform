@@ -5,14 +5,14 @@
  * New transaction modes can be added by implementing GasEstimationStrategy.
  */
 
-export {
-  type GasEstimationStrategy,
-  type GasStrategyConfig,
-  type GasPrices,
-  type GasStrategyRegistry,
-  createGasStrategyRegistry,
-} from './types'
+export { createEIP7702GasStrategy } from './eip7702GasStrategy'
 
 export { createEOAGasStrategy } from './eoaGasStrategy'
-export { createEIP7702GasStrategy } from './eip7702GasStrategy'
 export { createSmartAccountGasStrategy } from './smartAccountGasStrategy'
+export {
+  createGasStrategyRegistry,
+  type GasEstimationStrategy,
+  type GasPrices,
+  type GasStrategyConfig,
+  type GasStrategyRegistry,
+} from './types'

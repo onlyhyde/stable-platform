@@ -3,13 +3,12 @@
  */
 import {
   type Address,
-  type Hex,
   concat,
   createPublicClient,
   encodeAbiParameters,
   encodeFunctionData,
+  type Hex,
   http,
-  keccak256,
   pad,
   toHex,
 } from 'viem'
@@ -22,8 +21,7 @@ const CONFIG = {
   factory: '0xbebb0338503f9e28ffdc84c3548f8454f12dd1d3' as Address,
   ecdsaValidator: '0xb33dc2d82eaee723ca7687d70209ed9a861b3b46' as Address,
   paymaster: '0x4217f538f989f617b5f8afdf5b18568ffd5bb271' as Address,
-  senderPrivateKey:
-    '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as Hex,
+  senderPrivateKey: '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as Hex,
 }
 
 const KERNEL_ACCOUNT_ABI = [
@@ -79,15 +77,8 @@ async function main() {
   const signer = privateKeyToAccount(CONFIG.senderPrivateKey)
   const publicClient = createPublicClient({ transport: http(CONFIG.rpcUrl) })
 
-  console.log('=== Debug UserOp Flow ===\n')
-  console.log('Signer:', signer.address)
-
   // 1. Build init data
-  const rootValidator = concat([
-    pad(toHex(1n), { size: 1 }),
-    CONFIG.ecdsaValidator,
-  ]) as Hex
-  console.log('\nrootValidator (bytes21):', rootValidator)
+  const rootValidator = concat([pad(toHex(1n), { size: 1 }), CONFIG.ecdsaValidator]) as Hex
 
   const initializeData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
@@ -100,7 +91,6 @@ async function main() {
       [],
     ],
   })
-  console.log('initializeData:', initializeData.slice(0, 80) + '...')
 
   const salt = pad(toHex(0n), { size: 32 })
 
@@ -111,21 +101,15 @@ async function main() {
     functionName: 'getAddress',
     args: [initializeData, salt],
   })) as Address
-  console.log('Smart Account:', smartAccountAddress)
-
-  // 3. Test factory.createAccount simulation
-  console.log('\n--- Test 1: Simulate factory.createAccount ---')
   try {
-    const result = await publicClient.simulateContract({
+    const _result = await publicClient.simulateContract({
       address: CONFIG.factory,
       abi: KERNEL_FACTORY_ABI,
       functionName: 'createAccount',
       args: [initializeData, salt],
     })
-    console.log('SUCCESS! Created account at:', result.result)
   } catch (err: any) {
-    console.log('FAILED:', err?.shortMessage || err?.message)
-    if (err?.cause?.raw) console.log('Raw:', err.cause.raw.slice(0, 200))
+    if (err?.cause?.raw) 
   }
 
   // 4. Build packed UserOp and get EntryPoint hash
@@ -139,7 +123,7 @@ async function main() {
   const mode = `0x${'00'.repeat(32)}` as Hex
   const executionCalldata = encodeAbiParameters(
     [{ type: 'address' }, { type: 'uint256' }, { type: 'bytes' }],
-    [smartAccountAddress, 0n, '0x' as Hex],
+    [smartAccountAddress, 0n, '0x' as Hex]
   )
   const callData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
@@ -182,65 +166,62 @@ async function main() {
     {
       type: 'function',
       name: 'getUserOpHash',
-      inputs: [{
-        name: 'userOp',
-        type: 'tuple',
-        components: [
-          { name: 'sender', type: 'address' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'initCode', type: 'bytes' },
-          { name: 'callData', type: 'bytes' },
-          { name: 'accountGasLimits', type: 'bytes32' },
-          { name: 'preVerificationGas', type: 'uint256' },
-          { name: 'gasFees', type: 'bytes32' },
-          { name: 'paymasterAndData', type: 'bytes' },
-          { name: 'signature', type: 'bytes' },
-        ],
-      }],
+      inputs: [
+        {
+          name: 'userOp',
+          type: 'tuple',
+          components: [
+            { name: 'sender', type: 'address' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'initCode', type: 'bytes' },
+            { name: 'callData', type: 'bytes' },
+            { name: 'accountGasLimits', type: 'bytes32' },
+            { name: 'preVerificationGas', type: 'uint256' },
+            { name: 'gasFees', type: 'bytes32' },
+            { name: 'paymasterAndData', type: 'bytes' },
+            { name: 'signature', type: 'bytes' },
+          ],
+        },
+      ],
       outputs: [{ type: 'bytes32' }],
       stateMutability: 'view',
     },
     {
       type: 'function',
       name: 'simulateValidation',
-      inputs: [{
-        name: 'userOp',
-        type: 'tuple',
-        components: [
-          { name: 'sender', type: 'address' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'initCode', type: 'bytes' },
-          { name: 'callData', type: 'bytes' },
-          { name: 'accountGasLimits', type: 'bytes32' },
-          { name: 'preVerificationGas', type: 'uint256' },
-          { name: 'gasFees', type: 'bytes32' },
-          { name: 'paymasterAndData', type: 'bytes' },
-          { name: 'signature', type: 'bytes' },
-        ],
-      }],
+      inputs: [
+        {
+          name: 'userOp',
+          type: 'tuple',
+          components: [
+            { name: 'sender', type: 'address' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'initCode', type: 'bytes' },
+            { name: 'callData', type: 'bytes' },
+            { name: 'accountGasLimits', type: 'bytes32' },
+            { name: 'preVerificationGas', type: 'uint256' },
+            { name: 'gasFees', type: 'bytes32' },
+            { name: 'paymasterAndData', type: 'bytes' },
+            { name: 'signature', type: 'bytes' },
+          ],
+        },
+      ],
       outputs: [],
       stateMutability: 'nonpayable',
     },
   ] as const
-
-  console.log('\n--- Test 2: Get EntryPoint hash ---')
   const entryPointHash = (await publicClient.readContract({
     address: CONFIG.entryPoint,
     abi: EP_ABI,
     functionName: 'getUserOpHash',
     args: [packedOp],
   })) as Hex
-  console.log('EntryPoint hash:', entryPointHash)
 
   // Sign with correct hash
   const rawSignature = await signer.signMessage({
     message: { raw: entryPointHash },
   })
   const signature = concat(['0x02' as Hex, rawSignature]) as Hex
-  console.log('Signature (mode 0x02):', signature.slice(0, 40) + '...')
-
-  // 5. Simulate with correct signature
-  console.log('\n--- Test 3: Simulate with correct signature ---')
   try {
     await publicClient.simulateContract({
       address: CONFIG.entryPoint,
@@ -248,24 +229,19 @@ async function main() {
       functionName: 'simulateValidation',
       args: [{ ...packedOp, signature }],
     })
-    console.log('UNEXPECTED: no revert')
   } catch (err: any) {
     const raw: string = err?.cause?.raw || ''
     if (raw.startsWith('0xe0cff05f')) {
-      console.log('SUCCESS! ValidationResult (simulation passed)')
       // Decode validation data
       try {
-        const data = raw.slice(10) // remove selector
-        console.log('  (has validation result data)')
+        const _data = raw.slice(10) // remove selector
       } catch {}
     } else if (raw.startsWith('0x65c8fd4d')) {
-      // FailedOpWithRevert - decode reason and inner
-      console.log('FAILED: FailedOpWithRevert')
       // Decode manually: opIndex(32) + offset_reason(32) + offset_inner(32) + reason_len + reason + inner_len + inner
       try {
         const decoded = raw.slice(10) // remove selector
         // opIndex at offset 0: 32 bytes
-        const opIndex = parseInt(decoded.slice(0, 64), 16)
+        const _opIndex = parseInt(decoded.slice(0, 64), 16)
         // offset for reason: 32 bytes
         const reasonOffset = parseInt(decoded.slice(64, 128), 16) * 2
         // offset for inner: 32 bytes
@@ -274,32 +250,17 @@ async function main() {
         // Read reason string
         const reasonLen = parseInt(decoded.slice(reasonOffset, reasonOffset + 64), 16)
         const reasonHex = decoded.slice(reasonOffset + 64, reasonOffset + 64 + reasonLen * 2)
-        const reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
+        const _reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
 
         // Read inner bytes
         const innerLen = parseInt(decoded.slice(innerOffset, innerOffset + 64), 16)
-        const inner = decoded.slice(innerOffset + 64, innerOffset + 64 + innerLen * 2)
-
-        console.log(`  opIndex: ${opIndex}`)
-        console.log(`  reason: "${reason}"`)
-        console.log(`  inner: 0x${inner}`)
-        console.log(`  inner selector: 0x${inner.slice(0, 8)}`)
-      } catch (e) {
-        console.log('  (decode failed)', e)
-        console.log('  raw:', raw.slice(0, 400))
+        const _inner = decoded.slice(innerOffset + 64, innerOffset + 64 + innerLen * 2)
+      } catch (_e) {
       }
     } else if (raw.startsWith('0x220266b6')) {
-      console.log('FAILED: FailedOp')
-      console.log('Raw:', raw.slice(0, 300))
     } else {
-      console.log('Unknown error')
-      console.log('Raw:', raw ? raw.slice(0, 300) : 'no raw data')
-      console.log('Message:', err?.shortMessage || err?.message)
     }
   }
-
-  // 6. Try without paymaster
-  console.log('\n--- Test 4: Simulate WITHOUT paymaster ---')
   const packedOpNoPaymaster = {
     ...packedOp,
     paymasterAndData: '0x' as Hex,
@@ -325,75 +286,69 @@ async function main() {
   } catch (err: any) {
     const raw: string = err?.cause?.raw || ''
     if (raw.startsWith('0xe0cff05f')) {
-      console.log('SUCCESS! ValidationResult (simulation passed without paymaster)')
     } else if (raw.startsWith('0x65c8fd4d')) {
-      console.log('FAILED: FailedOpWithRevert (still fails without paymaster)')
       const decoded = raw.slice(10)
       const reasonOffset = parseInt(decoded.slice(64, 128), 16) * 2
       const reasonLen = parseInt(decoded.slice(reasonOffset, reasonOffset + 64), 16)
       const reasonHex = decoded.slice(reasonOffset + 64, reasonOffset + 64 + reasonLen * 2)
-      const reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
+      const _reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
       const innerOffset = parseInt(decoded.slice(128, 192), 16) * 2
       const innerLen = parseInt(decoded.slice(innerOffset, innerOffset + 64), 16)
-      const inner = decoded.slice(innerOffset + 64, innerOffset + 64 + innerLen * 2)
-      console.log(`  reason: "${reason}", inner: 0x${inner}`)
+      const _inner = decoded.slice(innerOffset + 64, innerOffset + 64 + innerLen * 2)
     } else if (raw.startsWith('0x220266b6')) {
-      console.log('FAILED: FailedOp')
       const decoded = raw.slice(10)
       const reasonOffset = parseInt(decoded.slice(64, 128), 16) * 2
       const reasonLen = parseInt(decoded.slice(reasonOffset, reasonOffset + 64), 16)
       const reasonHex = decoded.slice(reasonOffset + 64, reasonOffset + 64 + reasonLen * 2)
-      const reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
-      console.log(`  reason: "${reason}"`)
+      const _reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
     } else {
-      console.log('Unknown result:', raw ? raw.slice(0, 200) : 'no raw')
     }
   }
-
-  // 7. Try with mode 0x00 (enable mode)
-  console.log('\n--- Test 5: Simulate with mode 0x00 (enable mode) signature ---')
-  const sig00 = concat(['0x00' as Hex, rawSignature]) as Hex
+  const _sig00 = concat(['0x00' as Hex, rawSignature]) as Hex
   try {
     await publicClient.simulateContract({
       address: CONFIG.entryPoint,
       abi: EP_ABI,
       functionName: 'simulateValidation',
-      args: [{ ...packedOp, signature: concat(['0x00' as Hex, (await signer.signMessage({ message: { raw: entryPointHash } }))]) }],
+      args: [
+        {
+          ...packedOp,
+          signature: concat([
+            '0x00' as Hex,
+            await signer.signMessage({ message: { raw: entryPointHash } }),
+          ]),
+        },
+      ],
     })
   } catch (err: any) {
     const raw: string = err?.cause?.raw || ''
     if (raw.startsWith('0xe0cff05f')) {
-      console.log('SUCCESS with mode 0x00!')
     } else {
       const decoded = raw.slice(10)
       const reasonOffset = parseInt(decoded.slice(64, 128), 16) * 2
       const reasonLen = parseInt(decoded.slice(reasonOffset, reasonOffset + 64), 16)
       const reasonHex = decoded.slice(reasonOffset + 64, reasonOffset + 64 + reasonLen * 2)
-      const reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
-      console.log(`FAILED with mode 0x00: "${reason}"`)
+      const _reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
     }
   }
-
-  // 8. Try with raw signature (no mode prefix)
-  console.log('\n--- Test 6: Simulate with raw signature (no mode prefix) ---')
   try {
     await publicClient.simulateContract({
       address: CONFIG.entryPoint,
       abi: EP_ABI,
       functionName: 'simulateValidation',
-      args: [{ ...packedOp, signature: await signer.signMessage({ message: { raw: entryPointHash } }) }],
+      args: [
+        { ...packedOp, signature: await signer.signMessage({ message: { raw: entryPointHash } }) },
+      ],
     })
   } catch (err: any) {
     const raw: string = err?.cause?.raw || ''
     if (raw.startsWith('0xe0cff05f')) {
-      console.log('SUCCESS with raw signature (no mode prefix)!')
     } else {
       const decoded = raw.slice(10)
       const reasonOffset = parseInt(decoded.slice(64, 128), 16) * 2
       const reasonLen = parseInt(decoded.slice(reasonOffset, reasonOffset + 64), 16)
       const reasonHex = decoded.slice(reasonOffset + 64, reasonOffset + 64 + reasonLen * 2)
-      const reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
-      console.log(`FAILED with raw signature: "${reason}"`)
+      const _reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
     }
   }
 }

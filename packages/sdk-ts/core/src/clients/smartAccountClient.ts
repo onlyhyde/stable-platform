@@ -8,7 +8,7 @@ import type {
 } from '@stablenet/sdk-types'
 import type { Address, Chain, Hex, Transport } from 'viem'
 import { ConfigurationError } from '../errors'
-import { type RpcProvider, createViemProvider } from '../providers'
+import { createViemProvider, type RpcProvider } from '../providers'
 import { getUserOperationHash } from '../utils/userOperation'
 import { createBundlerClient } from './bundlerClient'
 

@@ -1,10 +1,6 @@
 import type { WalletClient } from 'viem'
 import type { Logger } from '../utils/logger'
-import type {
-  BundleSubmission,
-  BundleSubmissionResult,
-  IBundleSubmitter,
-} from './submitter'
+import type { BundleSubmission, BundleSubmissionResult, IBundleSubmitter } from './submitter'
 
 /**
  * Direct bundle submitter - sends transactions directly to the public mempool

@@ -1,20 +1,20 @@
 export {
-  generatePrivateKey,
-  derivePublicKey,
-  generateStealthKeyPair,
-  generateStealthAddress,
-  computeStealthPrivateKey,
   checkViewTag,
-  parseStealthMetaAddress,
+  computeStealthPrivateKey,
+  derivePublicKey,
   encodeStealthMetaAddress,
-  parseStealthMetaAddressUri,
   encodeStealthMetaAddressUri,
+  generatePrivateKey,
+  generateStealthAddress,
+  generateStealthKeyPair,
+  parseStealthMetaAddress,
+  parseStealthMetaAddressUri,
 } from './stealth'
 
 export {
   computeViewTag,
-  extractViewTag,
   createMetadata,
-  viewTagsMatch,
+  extractViewTag,
   validateMetadata,
+  viewTagsMatch,
 } from './viewTag'

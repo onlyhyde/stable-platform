@@ -1,7 +1,7 @@
 'use client'
 
-import { Button, Card, CardContent, CardDescription, CardTitle, Input } from '@/components/common'
 import { useState } from 'react'
+import { Button, Card, CardContent, CardDescription, CardTitle, Input } from '@/components/common'
 
 interface AccountSettingsCardProps {
   isConnected: boolean

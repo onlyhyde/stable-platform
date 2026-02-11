@@ -6,10 +6,10 @@
 jest.unmock('@stablenet/core')
 
 import {
+  createTransactionRiskAnalyzer,
   TransactionRiskAnalyzer,
   TransactionRiskLevel,
   TransactionRiskType,
-  createTransactionRiskAnalyzer,
 } from '@stablenet/core'
 
 const transactionRiskAnalyzer = createTransactionRiskAnalyzer()

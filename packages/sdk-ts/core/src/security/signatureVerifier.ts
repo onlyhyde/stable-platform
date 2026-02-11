@@ -9,14 +9,14 @@
 
 import {
   type Address,
-  type Hex,
-  type PublicClient,
-  type TypedData,
-  type TypedDataDomain,
   getAddress,
+  type Hex,
   hashMessage,
   hashTypedData,
   isAddress,
+  type PublicClient,
+  type TypedData,
+  type TypedDataDomain,
   verifyMessage,
   verifyTypedData,
 } from 'viem'

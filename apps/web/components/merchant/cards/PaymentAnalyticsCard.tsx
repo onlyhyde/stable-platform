@@ -1,7 +1,7 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/common/Card'
 import { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/common/Card'
 
 interface PaymentData {
   date: string
@@ -161,7 +161,10 @@ export function PaymentAnalyticsCard({
               activeTab === 'payments' && maxValue > 0 ? (d.successful / maxValue) * 100 : height
 
             return (
-              <div key={`${d.date}-${index}`} className="flex-1 flex flex-col items-center group relative">
+              <div
+                key={`${d.date}-${index}`}
+                className="flex-1 flex flex-col items-center group relative"
+              >
                 {/* Tooltip */}
                 <div
                   className="absolute bottom-full mb-2 hidden group-hover:block text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10"

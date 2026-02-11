@@ -2,8 +2,6 @@ import '@testing-library/jest-dom'
 import * as crypto from 'crypto'
 import type React from 'react'
 import { TextDecoder, TextEncoder } from 'util'
-import { mockChrome } from './utils/mockChrome'
-
 // Import English locale files for i18n mock
 import enActivity from '../src/i18n/locales/en/activity.json'
 import enApproval from '../src/i18n/locales/en/approval.json'
@@ -17,6 +15,7 @@ import enSend from '../src/i18n/locales/en/send.json'
 import enSettings from '../src/i18n/locales/en/settings.json'
 import enSwap from '../src/i18n/locales/en/swap.json'
 import enTx from '../src/i18n/locales/en/tx.json'
+import { mockChrome } from './utils/mockChrome'
 
 // Mock react-i18next - return English translations so existing tests work
 const enResources: Record<string, Record<string, string>> = {

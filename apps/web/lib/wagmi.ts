@@ -1,6 +1,6 @@
 'use client'
 
-import { http, createConfig } from 'wagmi'
+import { createConfig, http } from 'wagmi'
 import { injected, walletConnect } from 'wagmi/connectors'
 import { anvilLocal, stablenetLocal, stablenetTestnet, supportedChains } from './chains'
 

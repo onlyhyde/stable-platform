@@ -12,38 +12,36 @@
  * 8. Spending verification from stealth address
  */
 
-import {
-  http,
-  type Address,
-  type Hex,
-  type PublicClient,
-  type WalletClient,
-  createPublicClient,
-  createWalletClient,
-  formatEther,
-  parseEther,
-} from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
-import { foundry } from 'viem/chains'
-import { beforeAll, describe, expect, it } from 'vitest'
-import { TEST_CONFIG, isNetworkAvailable } from '../setup'
-
 // Import stealth plugin
 import {
-  ERC5564_ANNOUNCER_ABI,
-  ERC6538_REGISTRY_ABI,
-  SCHEME_ID,
   checkViewTag,
   computeStealthPrivateKey,
   createMetadata,
   derivePublicKey,
+  ERC5564_ANNOUNCER_ABI,
+  ERC6538_REGISTRY_ABI,
   encodeStealthMetaAddress,
   encodeStealthMetaAddressUri,
   generatePrivateKey,
   generateStealthAddressCrypto,
   generateStealthKeyPair,
   parseStealthMetaAddressUri,
+  SCHEME_ID,
 } from '@stablenet/plugin-stealth'
+import {
+  type Address,
+  createPublicClient,
+  createWalletClient,
+  type Hex,
+  http,
+  type PublicClient,
+  parseEther,
+  type WalletClient,
+} from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import { foundry } from 'viem/chains'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { isNetworkAvailable, TEST_CONFIG } from '../setup'
 
 describe('Stealth Transfer E2E Tests', () => {
   let publicClient: PublicClient
@@ -110,11 +108,6 @@ describe('Stealth Transfer E2E Tests', () => {
       recipientSpendingKeyPair.publicKey,
       recipientViewingKeyPair.publicKey
     )
-
-    console.log('🔐 Stealth E2E Test Setup:')
-    console.log(`   Sender: ${TEST_CONFIG.accounts.user1.address}`)
-    console.log(`   Recipient: ${TEST_CONFIG.accounts.user2.address}`)
-    console.log(`   Stealth Meta-Address URI: ${recipientStealthMetaAddressUri.slice(0, 50)}...`)
   })
 
   describe('1. Key Generation', () => {
@@ -125,8 +118,6 @@ describe('Stealth Transfer E2E Tests', () => {
       expect(recipientSpendingKeyPair.publicKey).toMatch(/^0x0[23][a-fA-F0-9]{64}$/)
       expect(recipientViewingKeyPair.privateKey).toMatch(/^0x[a-fA-F0-9]{64}$/)
       expect(recipientViewingKeyPair.publicKey).toMatch(/^0x0[23][a-fA-F0-9]{64}$/)
-
-      console.log('✅ Key pairs generated successfully')
     })
 
     it('should encode valid stealth meta-address (66 bytes)', () => {
@@ -135,8 +126,6 @@ describe('Stealth Transfer E2E Tests', () => {
       // 66 bytes = 33 (spending) + 33 (viewing)
       const metaAddressBytes = Buffer.from(recipientStealthMetaAddress.slice(2), 'hex')
       expect(metaAddressBytes.length).toBe(66)
-
-      console.log('✅ Stealth meta-address encoded (66 bytes)')
     })
 
     it('should create valid stealth meta-address URI', () => {
@@ -149,8 +138,6 @@ describe('Stealth Transfer E2E Tests', () => {
       expect(parsed.chainPrefix).toBe('eth')
       expect(parsed.stealthMetaAddress.spendingPubKey).toBe(recipientSpendingKeyPair.publicKey)
       expect(parsed.stealthMetaAddress.viewingPubKey).toBe(recipientViewingKeyPair.publicKey)
-
-      console.log('✅ Stealth meta-address URI valid and round-trips correctly')
     })
   })
 
@@ -164,9 +151,7 @@ describe('Stealth Transfer E2E Tests', () => {
 
       if (code && code !== '0x') {
         expect(code.length).toBeGreaterThan(2)
-        console.log('✅ EIP-6538 Registry is deployed')
       } else {
-        console.log('⚠️ EIP-6538 Registry not deployed - skipping registry tests')
       }
     })
 
@@ -177,7 +162,6 @@ describe('Stealth Transfer E2E Tests', () => {
       const code = await publicClient.getCode({ address: registryAddress })
 
       if (!code || code === '0x') {
-        console.log('⚠️ Registry not deployed, skipping registration')
         return
       }
 
@@ -192,12 +176,7 @@ describe('Stealth Transfer E2E Tests', () => {
 
         const receipt = await publicClient.waitForTransactionReceipt({ hash })
         expect(receipt.status).toBe('success')
-
-        console.log(`✅ Stealth meta-address registered (tx: ${hash.slice(0, 18)}...)`)
-      } catch (error) {
-        // Contract exists but may have different interface (not EIP-6538 compliant)
-        console.log('⚠️ Registry contract does not support EIP-6538 interface, skipping')
-      }
+      } catch (_error) {}
     })
 
     it('should retrieve registered stealth meta-address', async () => {
@@ -207,7 +186,6 @@ describe('Stealth Transfer E2E Tests', () => {
       const code = await publicClient.getCode({ address: registryAddress })
 
       if (!code || code === '0x') {
-        console.log('⚠️ Registry not deployed, skipping retrieval')
         return
       }
 
@@ -220,11 +198,7 @@ describe('Stealth Transfer E2E Tests', () => {
         })
 
         expect(storedMetaAddress).toBe(recipientStealthMetaAddress)
-        console.log('✅ Stealth meta-address retrieved from registry')
-      } catch (error) {
-        // Contract exists but may have different interface (not EIP-6538 compliant)
-        console.log('⚠️ Registry contract does not support EIP-6538 interface, skipping')
-      }
+      } catch (_error) {}
     })
   })
 
@@ -245,9 +219,6 @@ describe('Stealth Transfer E2E Tests', () => {
       expect(generatedStealthAddress).toMatch(/^0x[a-fA-F0-9]{40}$/)
       expect(ephemeralPubKey).toMatch(/^0x0[23][a-fA-F0-9]{64}$/)
       expect(viewTag).toMatch(/^0x[a-fA-F0-9]{2}$/)
-
-      console.log(`✅ Stealth address generated: ${generatedStealthAddress}`)
-      console.log(`   View tag: ${viewTag}`)
     })
 
     it('should generate different addresses for multiple payments', () => {
@@ -265,7 +236,6 @@ describe('Stealth Transfer E2E Tests', () => {
       }
 
       expect(addresses.size).toBe(5)
-      console.log('✅ Each payment generates unique stealth address')
     })
   })
 
@@ -292,8 +262,6 @@ describe('Stealth Transfer E2E Tests', () => {
       })
 
       expect(balanceAfter).toBe(balanceBefore + amount)
-      console.log(`✅ Sent ${formatEther(amount)} ETH to stealth address`)
-      console.log(`   Balance: ${formatEther(balanceAfter)} ETH`)
     })
   })
 
@@ -307,9 +275,7 @@ describe('Stealth Transfer E2E Tests', () => {
 
       if (code && code !== '0x') {
         expect(code.length).toBeGreaterThan(2)
-        console.log('✅ EIP-5564 Announcer is deployed')
       } else {
-        console.log('⚠️ EIP-5564 Announcer not deployed')
       }
     })
 
@@ -320,7 +286,6 @@ describe('Stealth Transfer E2E Tests', () => {
       const code = await publicClient.getCode({ address: announcerAddress })
 
       if (!code || code === '0x') {
-        console.log('⚠️ Announcer not deployed, skipping announcement')
         return
       }
 
@@ -342,8 +307,6 @@ describe('Stealth Transfer E2E Tests', () => {
         (log) => log.address.toLowerCase() === announcerAddress.toLowerCase()
       )
       expect(logs.length).toBeGreaterThan(0)
-
-      console.log(`✅ Announcement published (tx: ${hash.slice(0, 18)}...)`)
     })
   })
 
@@ -354,7 +317,6 @@ describe('Stealth Transfer E2E Tests', () => {
       const matches = checkViewTag(ephemeralPubKey, recipientViewingKeyPair.privateKey, viewTag)
 
       expect(matches).toBe(true)
-      console.log('✅ View tag matches with correct viewing key')
     })
 
     it('should not match view tag with wrong viewing key', () => {
@@ -365,7 +327,6 @@ describe('Stealth Transfer E2E Tests', () => {
 
       // Very unlikely to match by chance (1/256)
       expect(matches).toBe(false)
-      console.log('✅ View tag correctly rejects wrong viewing key')
     })
 
     it('should demonstrate view tag filtering efficiency', () => {
@@ -389,9 +350,6 @@ describe('Stealth Transfer E2E Tests', () => {
       // Expected: ~4 false positives (1000 / 256 ≈ 3.9)
       // Allow up to 20 for statistical variance
       expect(passed).toBeLessThan(20)
-      console.log(
-        `✅ View tag filtered ${totalAnnouncements} announcements → ${passed} false positives (expected ~4)`
-      )
     })
   })
 
@@ -407,9 +365,6 @@ describe('Stealth Transfer E2E Tests', () => {
 
       expect(computed.stealthAddress.toLowerCase()).toBe(generatedStealthAddress.toLowerCase())
       expect(computed.stealthPrivateKey).toMatch(/^0x[a-fA-F0-9]{64}$/)
-
-      console.log('✅ Stealth private key computed successfully')
-      console.log(`   Computed address matches: ${computed.stealthAddress}`)
     })
 
     it('should derive correct public key from stealth private key', () => {
@@ -422,13 +377,11 @@ describe('Stealth Transfer E2E Tests', () => {
       )
 
       // Derive public key from stealth private key
-      const derivedPublicKey = derivePublicKey(computed.stealthPrivateKey, false)
+      const _derivedPublicKey = derivePublicKey(computed.stealthPrivateKey, false)
 
       // The public key should hash to the stealth address
       // We can verify by checking the address derivation
       expect(computed.stealthAddress.toLowerCase()).toBe(generatedStealthAddress.toLowerCase())
-
-      console.log('✅ Stealth key pair is cryptographically valid')
     })
   })
 
@@ -460,7 +413,6 @@ describe('Stealth Transfer E2E Tests', () => {
       })
 
       if (balanceBefore === 0n) {
-        console.log('⚠️ Stealth address has no balance, skipping spend test')
         return
       }
 
@@ -481,9 +433,6 @@ describe('Stealth Transfer E2E Tests', () => {
 
       // Balance should have decreased (by sendAmount + gas)
       expect(balanceAfter).toBeLessThan(balanceBefore)
-
-      console.log(`✅ Recipient spent ${formatEther(sendAmount)} ETH from stealth address`)
-      console.log(`   Remaining balance: ${formatEther(balanceAfter)} ETH`)
     })
   })
 
@@ -491,29 +440,12 @@ describe('Stealth Transfer E2E Tests', () => {
     it('should complete full stealth payment flow', async () => {
       if (!networkAvailable) return
 
-      console.log('\n📋 Full Stealth Payment Flow:')
-
-      // Step 1: Recipient generates new key pairs (already done in beforeAll)
-      console.log('1️⃣ Recipient generates spending + viewing keypairs')
-
-      // Step 2: Recipient publishes stealth meta-address
-      console.log('2️⃣ Recipient publishes stealth meta-address URI')
-      console.log(`   URI: st:eth:0x...`)
-
       // Step 3: Sender generates unique stealth address
       const parsed = parseStealthMetaAddressUri(recipientStealthMetaAddressUri)
       const newStealth = generateStealthAddressCrypto(
         parsed.stealthMetaAddress.spendingPubKey,
         parsed.stealthMetaAddress.viewingPubKey
       )
-      console.log('3️⃣ Sender generates stealth address')
-      console.log(`   Address: ${newStealth.stealthAddress}`)
-
-      // Step 4: Sender sends funds
-      console.log('4️⃣ Sender transfers funds to stealth address')
-
-      // Step 5: Sender announces payment
-      console.log('5️⃣ Sender publishes announcement (ephemeral key + view tag)')
 
       // Step 6: Recipient scans with view tag filter
       const viewTagMatches = checkViewTag(
@@ -522,7 +454,6 @@ describe('Stealth Transfer E2E Tests', () => {
         newStealth.viewTag
       )
       expect(viewTagMatches).toBe(true)
-      console.log('6️⃣ Recipient scans announcements, view tag matches')
 
       // Step 7: Recipient computes stealth private key
       const stealthKey = computeStealthPrivateKey(
@@ -531,12 +462,6 @@ describe('Stealth Transfer E2E Tests', () => {
         recipientViewingKeyPair.privateKey
       )
       expect(stealthKey.stealthAddress.toLowerCase()).toBe(newStealth.stealthAddress.toLowerCase())
-      console.log('7️⃣ Recipient computes stealth private key')
-
-      // Step 8: Recipient can spend
-      console.log('8️⃣ Recipient can spend from stealth address ✅')
-
-      console.log('\n✅ Full stealth payment flow completed successfully!')
     })
   })
 
@@ -555,7 +480,6 @@ describe('Stealth Transfer E2E Tests', () => {
       )
 
       expect(computed.stealthAddress.toLowerCase()).toBe(result.stealthAddress.toLowerCase())
-      console.log('✅ Same spending/viewing key works (not recommended but valid)')
     })
 
     it('should handle multiple sequential payments', () => {
@@ -595,8 +519,6 @@ describe('Stealth Transfer E2E Tests', () => {
       // All private keys should be unique
       const uniqueKeys = new Set(payments.map((p) => p.stealthPrivateKey))
       expect(uniqueKeys.size).toBe(3)
-
-      console.log('✅ Multiple sequential payments handled correctly')
     })
   })
 })

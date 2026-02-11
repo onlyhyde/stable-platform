@@ -1,6 +1,9 @@
-import { type Address, type Hex, decodeFunctionData, parseEther } from 'viem'
+import { type Address, decodeFunctionData, type Hex, parseEther } from 'viem'
 import { describe, expect, it } from 'vitest'
 import {
+  createRecurringPaymentExecutor,
+  createSubscriptionManager,
+  createSubscriptionPermissionClient,
   FEE_LIMITS,
   INTERVALS,
   MODULE_TYPE_EXECUTOR,
@@ -11,9 +14,6 @@ import {
   RECURRING_PAYMENT_EXECUTOR_ABI,
   RULE_TYPES,
   SUBSCRIPTION_MANAGER_ABI,
-  createRecurringPaymentExecutor,
-  createSubscriptionManager,
-  createSubscriptionPermissionClient,
 } from '../src/index'
 
 const MOCK_MANAGER_ADDRESS: Address = '0x1234567890123456789012345678901234567890'

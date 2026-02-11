@@ -4,10 +4,10 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+  createPhishingDetector,
   PhishingDetector,
   PhishingPatternType,
   RiskLevel,
-  createPhishingDetector,
 } from '../../src/security/phishingDetector'
 
 describe('PhishingDetector', () => {

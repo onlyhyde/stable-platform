@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
-import type { StableNetProvider } from '../provider/StableNetProvider'
 import { detectProvider } from '../provider/detect'
+import type { StableNetProvider } from '../provider/StableNetProvider'
 import type { WalletSDKConfig, WalletState } from '../types'
 
 const initialState: WalletState = {
@@ -121,7 +121,7 @@ export function useWallet(config: WalletSDKConfig = {}) {
       }
       unsubscribesRef.current = []
     }
-  }, [config.autoConnect, config.timeout])
+  }, [config.autoConnect, config.timeout, config])
 
   // Connect action
   const connect = useCallback(async (): Promise<Address[]> => {

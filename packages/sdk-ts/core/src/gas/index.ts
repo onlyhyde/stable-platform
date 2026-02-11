@@ -7,20 +7,20 @@
 
 export {
   createGasEstimator,
+  type ERC20GasEstimate,
   type GasEstimator,
   type GasEstimatorConfig,
   type GasPriceInfo,
-  type ERC20GasEstimate,
 } from './gasEstimator'
 
 // Strategy Pattern exports (OCP: allows custom strategy registration)
 export {
-  type GasEstimationStrategy,
-  type GasStrategyConfig,
-  type GasPrices,
-  type GasStrategyRegistry,
-  createGasStrategyRegistry,
-  createEOAGasStrategy,
   createEIP7702GasStrategy,
+  createEOAGasStrategy,
+  createGasStrategyRegistry,
   createSmartAccountGasStrategy,
+  type GasEstimationStrategy,
+  type GasPrices,
+  type GasStrategyConfig,
+  type GasStrategyRegistry,
 } from './strategies'

@@ -4,13 +4,13 @@
  * Unified JSON-RPC client and types for SDK communication.
  */
 
-export * from './types'
+export { CircuitBreaker, type CircuitBreakerConfig, type CircuitState } from './circuitBreaker'
 export * from './errors'
 export {
-  createJsonRpcClient,
   createBundlerRpcClient,
+  createJsonRpcClient,
   createPaymasterRpcClient,
   type JsonRpcClient,
 } from './jsonRpcClient'
 export { RequestCache, type RequestCacheConfig } from './requestCache'
-export { CircuitBreaker, type CircuitBreakerConfig, type CircuitState } from './circuitBreaker'
+export * from './types'

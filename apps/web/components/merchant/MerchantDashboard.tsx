@@ -1,7 +1,7 @@
 'use client'
 
-import { PageHeader } from '@/components/common/PageHeader'
 import { useState } from 'react'
+import { PageHeader } from '@/components/common/PageHeader'
 import { ApiKeysCard } from './cards/ApiKeysCard'
 import { MerchantStatsCards } from './cards/MerchantStatsCards'
 import { PaymentAnalyticsCard } from './cards/PaymentAnalyticsCard'
@@ -92,7 +92,10 @@ interface MerchantDashboardProps {
   merchantName: string
 }
 
-export function MerchantDashboard({ merchantId: _merchantId, merchantName }: MerchantDashboardProps) {
+export function MerchantDashboard({
+  merchantId: _merchantId,
+  merchantName,
+}: MerchantDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
 
@@ -283,8 +286,8 @@ export function MerchantDashboard({ merchantId: _merchantId, merchantName }: Mer
             />
             <RecentTransactionsCard
               transactions={transactions}
-              onViewAll={() => console.log('View all transactions')}
-              onRetry={async (id) => console.log('Retry:', id)}
+              onViewAll={() => {}}
+              onRetry={async (id) => {}}
             />
           </div>
         )}

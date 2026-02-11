@@ -14,22 +14,21 @@
  * ```
  */
 
-export {
-  CONSTANTS_ENV_VARS,
-  getValidationConstants,
-  getReputationConfig,
-  getMempoolConfig,
-  getServerConfig,
-  getConstantsEnvHelp,
-} from './constants'
-
 // Re-export CLI config utilities
 export {
-  ENV_VARS,
+  type CliOptions,
   DEFAULT_CONFIG,
   DEFAULT_CORS_ORIGINS,
+  ENV_VARS,
+  getEnvHelp,
   NETWORK_PRESETS,
   parseConfig,
-  getEnvHelp,
-  type CliOptions,
 } from '../cli/config'
+export {
+  CONSTANTS_ENV_VARS,
+  getConstantsEnvHelp,
+  getMempoolConfig,
+  getReputationConfig,
+  getServerConfig,
+  getValidationConstants,
+} from './constants'

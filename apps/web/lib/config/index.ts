@@ -6,12 +6,12 @@
  */
 
 export {
-  WEB_ENV_VARS,
-  getLocalConfig,
-  getDevnetConfig, // @deprecated - use getLocalConfig
-  getTestnetConfig,
   getAppConfig,
   getConfigByChainId,
   getContractAddresses,
+  getDevnetConfig, // @deprecated - use getLocalConfig
+  getLocalConfig,
   getServiceUrls,
+  getTestnetConfig,
+  WEB_ENV_VARS,
 } from './env'

@@ -1,7 +1,7 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import type { HTMLAttributes, ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
@@ -179,7 +179,13 @@ export function StatCard({
 
   const trendIcons = {
     up: (
-      <svg aria-hidden="true" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg
+        aria-hidden="true"
+        className="w-3 h-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -189,7 +195,13 @@ export function StatCard({
       </svg>
     ),
     down: (
-      <svg aria-hidden="true" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg
+        aria-hidden="true"
+        className="w-3 h-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"

@@ -1,8 +1,8 @@
 'use client'
 
-import { docSections, getDocArticle, getDocSection } from '@/lib/docs'
 import Link from 'next/link'
 import { notFound, useParams } from 'next/navigation'
+import { docSections, getDocArticle, getDocSection } from '@/lib/docs'
 
 export default function ArticlePage() {
   const params = useParams()
@@ -161,7 +161,7 @@ function parseMarkdown(content: string): string {
       )
       // Unordered lists
       .replace(
-        /^\- (.*$)/gim,
+        /^- (.*$)/gim,
         '<li class="ml-4" style="color: rgb(var(--muted-foreground))">$1</li>'
       )
       // Ordered lists

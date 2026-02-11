@@ -5,12 +5,12 @@
 
 import { mockChrome } from '../utils/mockChrome'
 import {
-  TEST_ACCOUNTS,
-  TEST_MNEMONIC,
-  TEST_PASSWORD,
   delay,
   randomAddress,
   randomHex,
+  TEST_ACCOUNTS,
+  TEST_MNEMONIC,
+  TEST_PASSWORD,
 } from '../utils/testUtils'
 
 describe('Test Infrastructure', () => {

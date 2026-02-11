@@ -7,9 +7,9 @@ import {
   MIN_PRIORITY_FEE,
   SETCODE_BASE_GAS,
 } from '../config'
-import { ZERO_ADDRESS, createAuthorizationHash } from '../eip7702'
+import { createAuthorizationHash, ZERO_ADDRESS } from '../eip7702'
 import { createTransactionError } from '../errors'
-import { type RpcProvider, createViemProvider } from '../providers'
+import { createViemProvider, type RpcProvider } from '../providers'
 
 // ============================================================================
 // Types

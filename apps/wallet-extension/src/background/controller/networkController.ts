@@ -1,4 +1,4 @@
-import { http, createPublicClient } from 'viem'
+import { createPublicClient, http } from 'viem'
 import { PROVIDER_EVENTS } from '../../shared/constants'
 import type { Network } from '../../types'
 import { walletState } from '../state/store'

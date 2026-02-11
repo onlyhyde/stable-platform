@@ -4,20 +4,20 @@
  * Strategy pattern implementations for multi-mode transactions.
  */
 
-// Types
-export {
-  type TransactionStrategy,
-  type CombinedSigner,
-  type StrategyPreparedTransaction,
-  type StrategyExecuteOptions,
-  type BaseStrategyConfig,
-  type SmartAccountStrategyConfig,
-  type StrategyFactory,
-  type StrategyRegistry,
-  createStrategyRegistry,
-} from './types'
+export { createEIP7702Strategy } from './eip7702Strategy'
 
 // Strategies
 export { createEOAStrategy } from './eoaStrategy'
-export { createEIP7702Strategy } from './eip7702Strategy'
 export { createSmartAccountStrategy } from './smartAccountStrategy'
+// Types
+export {
+  type BaseStrategyConfig,
+  type CombinedSigner,
+  createStrategyRegistry,
+  type SmartAccountStrategyConfig,
+  type StrategyExecuteOptions,
+  type StrategyFactory,
+  type StrategyPreparedTransaction,
+  type StrategyRegistry,
+  type TransactionStrategy,
+} from './types'

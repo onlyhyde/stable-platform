@@ -9,7 +9,7 @@
  * - Settings access
  */
 
-import { type Locator, type Page, expect } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 
 export class WalletHomePage {
   readonly page: Page

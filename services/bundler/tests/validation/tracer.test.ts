@@ -15,10 +15,12 @@ const TEST_FACTORY = '0x1111111111111111111111111111111111111111' as Address
 const TEST_PAYMASTER = '0x2222222222222222222222222222222222222222' as Address
 
 // Helper: create a mock RPC trace response matching debug_traceCall format
-function createMockRpcTraceResponse(overrides: Partial<{
-  calls: unknown[]
-  logs: unknown[]
-}> = {}) {
+function createMockRpcTraceResponse(
+  overrides: Partial<{
+    calls: unknown[]
+    logs: unknown[]
+  }> = {}
+) {
   return {
     calls: overrides.calls ?? [
       {

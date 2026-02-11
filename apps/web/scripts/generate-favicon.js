@@ -7,7 +7,7 @@ const fs = require('fs')
 const path = require('path')
 const zlib = require('zlib')
 
-const SIZES = [16, 32, 48, 180, 192, 512]
+const _SIZES = [16, 32, 48, 180, 192, 512]
 
 // Brand color - Indigo
 const COLORS = {
@@ -242,7 +242,6 @@ if (!fs.existsSync(publicDir)) {
 // Generate favicon.ico (16x16, 32x32)
 const icoData = generateICO([16, 32])
 fs.writeFileSync(path.join(publicDir, 'favicon.ico'), icoData)
-console.log('Generated: favicon.ico')
 
 // Generate PNG files
 const pngSizes = {
@@ -253,13 +252,9 @@ const pngSizes = {
   512: 'icon-512.png',
 }
 for (const [size, filename] of Object.entries(pngSizes)) {
-  const png = generatePNG(Number.parseInt(size))
+  const png = generatePNG(Number.parseInt(size, 10))
   fs.writeFileSync(path.join(publicDir, filename), png)
-  console.log(`Generated: ${filename}`)
 }
 
 // Generate SVG
 fs.writeFileSync(path.join(publicDir, 'icon.svg'), generateSVG())
-console.log('Generated: icon.svg')
-
-console.log('\nAll favicon files generated successfully!')

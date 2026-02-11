@@ -239,7 +239,7 @@ export class PermissionManager {
 
       // Clear cache
       this.cachedPermissions = this.cachedPermissions.filter((p) => p.parentCapability !== target)
-    } catch (error) {
+    } catch (_error) {
       // wallet_revokePermissions is not standardized, might not be supported
       throw new Error('Permission revocation not supported by this wallet')
     }

@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   description: 'Swap tokens and provide liquidity on StableNet',
 }
 
-export default function DeFiLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function DeFiLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }

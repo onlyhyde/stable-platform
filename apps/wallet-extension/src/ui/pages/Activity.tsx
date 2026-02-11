@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { formatEther } from 'viem'
 import type { Hex } from 'viem'
+import { formatEther } from 'viem'
 import type { PendingTransaction } from '../../types'
 import { useNetworkCurrency, useWalletStore } from '../hooks'
-import { useIndexerData, type IndexedTransaction } from '../hooks/useIndexerData'
+import { type IndexedTransaction, useIndexerData } from '../hooks/useIndexerData'
 
 const PENDING_POLL_INTERVAL = 5000 // 5 seconds
 
@@ -32,13 +32,8 @@ function toDisplayTransaction(tx: IndexedTransaction): PendingTransaction {
 
 export function Activity() {
   const { t } = useTranslation('activity')
-  const {
-    pendingTransactions,
-    history,
-    setPage,
-    syncWithBackground,
-    setSelectedTxId,
-  } = useWalletStore()
+  const { pendingTransactions, history, setPage, syncWithBackground, setSelectedTxId } =
+    useWalletStore()
 
   const {
     transactions: indexedTransactions,
@@ -81,25 +76,17 @@ export function Activity() {
       (tx) => !tx.txHash || !localHashes.has(tx.txHash.toLowerCase())
     )
 
-    return [...localTxs, ...deduplicatedIndexed].sort(
-      (a, b) => b.timestamp - a.timestamp
-    )
+    return [...localTxs, ...deduplicatedIndexed].sort((a, b) => b.timestamp - a.timestamp)
   }, [pendingTransactions, history, indexedTransactions])
 
   // Separate pending from confirmed for sectioned display
   const pendingTxs = useMemo(
-    () =>
-      allTransactions.filter(
-        (tx) => tx.status === 'pending' || tx.status === 'submitted'
-      ),
+    () => allTransactions.filter((tx) => tx.status === 'pending' || tx.status === 'submitted'),
     [allTransactions]
   )
 
   const confirmedTxs = useMemo(
-    () =>
-      allTransactions.filter(
-        (tx) => tx.status !== 'pending' && tx.status !== 'submitted'
-      ),
+    () => allTransactions.filter((tx) => tx.status !== 'pending' && tx.status !== 'submitted'),
     [allTransactions]
   )
 
@@ -139,17 +126,13 @@ export function Activity() {
     [setSelectedTxId, setPage]
   )
 
-  const isEmpty =
-    allTransactions.length === 0 && !isLoadingTransactions && !isRefreshing
+  const isEmpty = allTransactions.length === 0 && !isLoadingTransactions && !isRefreshing
 
   return (
     <div className="p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2
-          className="text-xl font-bold"
-          style={{ color: 'rgb(var(--foreground))' }}
-        >
+        <h2 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
           {t('title')}
         </h2>
         <button
@@ -217,10 +200,7 @@ export function Activity() {
             className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-3"
             style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
           />
-          <p
-            className="text-sm"
-            style={{ color: 'rgb(var(--muted-foreground))' }}
-          >
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {t('loading')}
           </p>
         </div>
@@ -244,9 +224,7 @@ export function Activity() {
               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
             />
           </svg>
-          <p style={{ color: 'rgb(var(--muted-foreground))' }}>
-            {t('noTransactions')}
-          </p>
+          <p style={{ color: 'rgb(var(--muted-foreground))' }}>{t('noTransactions')}</p>
         </div>
       )}
 
@@ -256,19 +234,12 @@ export function Activity() {
           {/* Pending section */}
           {pendingTxs.length > 0 && (
             <div>
-              <p
-                className="text-xs font-medium mb-2 px-1"
-                style={{ color: 'rgb(var(--warning))' }}
-              >
+              <p className="text-xs font-medium mb-2 px-1" style={{ color: 'rgb(var(--warning))' }}>
                 {t('pendingTransactions')}
               </p>
               <div className="space-y-2">
                 {pendingTxs.map((tx) => (
-                  <TransactionItem
-                    key={tx.id}
-                    transaction={tx}
-                    onClick={() => handleTxClick(tx)}
-                  />
+                  <TransactionItem key={tx.id} transaction={tx} onClick={() => handleTxClick(tx)} />
                 ))}
               </div>
             </div>
@@ -285,11 +256,7 @@ export function Activity() {
               </p>
               <div className="space-y-2">
                 {group.txs.map((tx) => (
-                  <TransactionItem
-                    key={tx.id}
-                    transaction={tx}
-                    onClick={() => handleTxClick(tx)}
-                  />
+                  <TransactionItem key={tx.id} transaction={tx} onClick={() => handleTxClick(tx)} />
                 ))}
               </div>
             </div>
@@ -325,7 +292,10 @@ export function Activity() {
 function TransactionItem({
   transaction,
   onClick,
-}: { transaction: PendingTransaction; onClick: () => void }) {
+}: {
+  transaction: PendingTransaction
+  onClick: () => void
+}) {
   const { t } = useTranslation('activity')
   const { symbol: currencySymbol } = useNetworkCurrency()
 

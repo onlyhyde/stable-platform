@@ -1,10 +1,10 @@
 'use client'
 
+import { createContext, type ReactNode, useContext, useMemo } from 'react'
+import { createPublicClient, http, type PublicClient } from 'viem'
+import { useAccount, useChainId } from 'wagmi'
 import { getConfigByChainId, getStablenetLocal } from '@/lib/chains'
 import { getContractAddresses, getServiceUrls } from '@/lib/constants'
-import { type ReactNode, createContext, useContext, useMemo } from 'react'
-import { http, type PublicClient, createPublicClient } from 'viem'
-import { useAccount, useChainId } from 'wagmi'
 
 interface StableNetContextValue {
   publicClient: PublicClient

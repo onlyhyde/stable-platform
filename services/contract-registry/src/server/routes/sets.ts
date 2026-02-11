@@ -4,9 +4,9 @@ import { createAuthHook } from '../middleware/auth'
 import { validateBody, validateParams, validateQuery } from '../middleware/validation'
 import {
   type CreateSetBody,
+  createSetSchema,
   type SetParams,
   type SetQuery,
-  createSetSchema,
   setParamsSchema,
   setQuerySchema,
 } from '../schemas/set.schema'

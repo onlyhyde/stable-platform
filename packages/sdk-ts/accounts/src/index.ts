@@ -1,34 +1,33 @@
 // Kernel Smart Account
-export {
-  toKernelSmartAccount,
-  type KernelSmartAccountConfig,
-  // ABIs
-  KernelAccountAbi,
-  KernelFactoryAbi,
-  EntryPointAbi,
-  // Utils
-  encodeExecutionMode,
-  encodeSingleCall,
-  encodeBatchCalls,
-  encodeKernelExecuteCallData,
-  encodeKernelInitializeData,
-  encodeRootValidator,
-  calculateSalt,
-} from './kernel'
 
 // Re-export types for convenience
 export type {
-  SmartAccount,
   Call,
-  Validator,
   KernelAccountConfig,
+  SmartAccount,
+  Validator,
 } from '@stablenet/sdk-types'
-
 export {
-  ENTRY_POINT_V07_ADDRESS,
-  KERNEL_V3_1_FACTORY_ADDRESS,
-  KERNEL_ADDRESSES,
-  MODULE_TYPE,
-  EXEC_MODE,
   CALL_TYPE,
+  ENTRY_POINT_V07_ADDRESS,
+  EXEC_MODE,
+  KERNEL_ADDRESSES,
+  KERNEL_V3_1_FACTORY_ADDRESS,
+  MODULE_TYPE,
 } from '@stablenet/sdk-types'
+export {
+  calculateSalt,
+  EntryPointAbi,
+  encodeBatchCalls,
+  // Utils
+  encodeExecutionMode,
+  encodeKernelExecuteCallData,
+  encodeKernelInitializeData,
+  encodeRootValidator,
+  encodeSingleCall,
+  // ABIs
+  KernelAccountAbi,
+  KernelFactoryAbi,
+  type KernelSmartAccountConfig,
+  toKernelSmartAccount,
+} from './kernel'

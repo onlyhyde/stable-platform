@@ -59,7 +59,7 @@ import { keyringController } from '../../src/background/keyring'
 import { handleRpcRequest } from '../../src/background/rpc/handler'
 import { walletState } from '../../src/background/state/store'
 import { RPC_ERRORS } from '../../src/shared/constants'
-import { TEST_ACCOUNTS, TEST_ORIGINS, createMockRpcRequest } from '../utils/testUtils'
+import { createMockRpcRequest, TEST_ACCOUNTS, TEST_ORIGINS } from '../utils/testUtils'
 
 // ============================================================================
 // Mocks

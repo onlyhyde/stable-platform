@@ -2,15 +2,15 @@ import type { Address } from 'viem'
 
 // Re-export from individual type files
 export * from './account'
-export * from './network'
-export * from './transaction'
-export * from './keyring'
 export * from './approval'
+export * from './asset'
 export * from './bank'
+export * from './eip7702'
+export * from './keyring'
+export * from './network'
 export * from './onramp'
 export * from './rpc'
-export * from './eip7702'
-export * from './asset'
+export * from './transaction'
 
 /**
  * Message types for extension communication

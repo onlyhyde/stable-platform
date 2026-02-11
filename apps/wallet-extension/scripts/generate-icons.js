@@ -54,7 +54,7 @@ function createChunk(type, data) {
 /**
  * Check if point is inside a rounded rectangle
  */
-function isInRoundedRect(x, y, rx, ry, rw, rh, radius, size) {
+function _isInRoundedRect(x, y, rx, ry, rw, rh, radius, size) {
   const scale = size / 128
   rx *= scale
   ry *= scale
@@ -111,7 +111,7 @@ function isInShield(x, y, size) {
     // Round top corners
     if (y < topY + cornerRadius) {
       const cornerCenterY = topY + cornerRadius
-      const cornerCenterX = centerX - halfWidth + cornerRadius
+      const _cornerCenterX = centerX - halfWidth + cornerRadius
       const dx = Math.abs(x - centerX)
       if (dx > halfWidth - cornerRadius) {
         const cornerDx = dx - (halfWidth - cornerRadius)
@@ -280,8 +280,5 @@ for (const [state, colors] of Object.entries(ICON_COLORS)) {
     const filepath = path.join(iconsDir, filename)
     const iconData = generateIcon(size, colors)
     fs.writeFileSync(filepath, iconData)
-    console.log(`Generated: ${filename}`)
   }
 }
-
-console.log('\nAll StableNet icons generated successfully!')

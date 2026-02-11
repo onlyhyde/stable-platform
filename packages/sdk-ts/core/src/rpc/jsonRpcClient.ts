@@ -25,7 +25,7 @@ import {
   DEFAULT_RPC_TIMEOUT,
   RETRY_BACKOFF_MULTIPLIER,
 } from '../config'
-import { RpcError, isRpcError } from './errors'
+import { isRpcError, RpcError } from './errors'
 import type {
   JsonRpcClientConfig,
   JsonRpcRequest,

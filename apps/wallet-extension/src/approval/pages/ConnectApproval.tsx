@@ -36,7 +36,7 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
 
   useEffect(() => {
     loadAccounts()
-  }, [])
+  }, [loadAccounts])
 
   const loadAccounts = async () => {
     try {

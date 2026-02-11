@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
-import { TransactionStepper } from '../components/common/TransactionStepper'
 import type { TransactionStepperStatus } from '../components/common/TransactionStepper'
+import { TransactionStepper } from '../components/common/TransactionStepper'
 import { useSelectedNetwork } from '../hooks'
 import { useWalletStore } from '../hooks/useWalletStore'
 

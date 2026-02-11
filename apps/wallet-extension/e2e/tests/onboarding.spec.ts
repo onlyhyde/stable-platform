@@ -102,7 +102,7 @@ test.describe('Onboarding Flow', () => {
       await onboarding.startCreateWallet()
       await onboarding.createPassword(TEST_PASSWORD)
 
-      const seedPhrase = await onboarding.getSeedPhrase()
+      const _seedPhrase = await onboarding.getSeedPhrase()
       await onboarding.acknowledgeSeedSaved()
 
       // Should show confirmation inputs

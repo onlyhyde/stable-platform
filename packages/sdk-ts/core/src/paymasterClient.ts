@@ -14,7 +14,7 @@ import type {
 } from '@stablenet/sdk-types'
 import { GAS_PAYMENT_TYPE } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import { type JsonRpcClient, RpcError, createPaymasterRpcClient } from './rpc'
+import { createPaymasterRpcClient, type JsonRpcClient, RpcError } from './rpc'
 
 // ============================================================================
 // Types

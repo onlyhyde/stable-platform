@@ -209,17 +209,17 @@ export class RpcError extends Error {
 
 // Re-export validation types for convenience
 export type {
-  ValidationResult,
-  StakeInfo,
-  ReturnInfo,
-  ReputationEntry,
-  ReputationConfig,
-  ReputationStatus,
   // Aggregator types
   AggregatorInfo,
-  ValidationResultWithAggregation,
-  UserOpsPerAggregator,
-  PackedUserOperation as ValidationPackedUserOperation,
   AggregatorValidationResult,
   IAggregatorValidator,
+  PackedUserOperation as ValidationPackedUserOperation,
+  ReputationConfig,
+  ReputationEntry,
+  ReputationStatus,
+  ReturnInfo,
+  StakeInfo,
+  UserOpsPerAggregator,
+  ValidationResult,
+  ValidationResultWithAggregation,
 } from '../validation/types'

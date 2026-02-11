@@ -1,9 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { copyToClipboard } from '@/lib/utils'
 import type { StealthMetaAddress } from '@/types'
-import { useState } from 'react'
 
 interface StealthMetaAddressCardProps {
   stealthMetaAddress: StealthMetaAddress | null

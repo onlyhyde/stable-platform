@@ -12,130 +12,122 @@
  * - Legacy API warnings
  */
 
-// Transaction Risk Analyzer
-export {
-  TransactionRiskAnalyzer,
-  createTransactionRiskAnalyzer,
-  TransactionRiskLevel,
-  TransactionRiskType,
-  type TransactionRiskLevelType,
-  type TransactionRiskTypeValue,
-  type TransactionRiskResult,
-  type TransactionRiskParams,
-  type DecodedMethod,
-} from './transactionRiskAnalyzer'
-
 // Authorization Risk Analyzer (EIP-7702)
 export {
-  analyzeAuthorizationRisk,
-  getAuthorizationSummary,
-  formatRiskWarningsForUI,
   type AuthorizationRiskLevel,
-  type AuthorizationRiskResult,
   type AuthorizationRiskParams,
+  type AuthorizationRiskResult,
+  analyzeAuthorizationRisk,
+  formatRiskWarningsForUI,
+  getAuthorizationSummary,
 } from './authorizationRiskAnalyzer'
-
-// Typed Data Validator (EIP-712)
+// Input Validator
 export {
-  TypedDataValidator,
-  createTypedDataValidator,
-  type TypedDataDomain,
-  type TypedData,
-  type DomainValidationResult,
-  type DomainWarning,
-  type DomainWarningType,
-} from './typedDataValidator'
-
-// Signature Risk Analyzer
+  createInputValidator,
+  type HexValidationOptions,
+  InputValidator,
+  isValidAddress as isValidInputAddress,
+  isValidChainId,
+  isValidHex,
+  isValidRpcRequest,
+  isValidTransactionObject,
+  type RpcRequestObject,
+  type SanitizeOptions,
+  sanitizeString,
+  type TransactionObject,
+  type ValidationResult as InputValidationResult,
+} from './inputValidator'
+// Legacy API Warning
 export {
-  SignatureRiskAnalyzer,
-  createSignatureRiskAnalyzer,
-  SignatureMethod,
-  SignatureRiskLevel,
-  SignatureRiskType,
-  type SignatureMethodType,
-  type SignatureRiskLevelType,
-  type SignatureRiskTypeValue,
-  type SignatureRiskResult,
-  type EIP712TypedData,
-  type ContractInteraction,
-} from './signatureRiskAnalyzer'
-
+  type ApiWarning,
+  createConsoleDeprecationNotice,
+  DeprecationStatus,
+  type DeprecationStatusType,
+  type EthSignSettings,
+  formatWarningForUI as formatApiWarningForUI,
+  getAllApiWarnings,
+  getApiWarning,
+  getEthSignSettings,
+  getWarningsByStatus,
+  hasApiWarning,
+  isEthSignAllowed,
+  resetEthSignSettings,
+  shouldBlockMethod,
+  shouldShowEthSignWarning,
+  updateEthSignSettings,
+} from './legacyApiWarning'
 // Phishing Detector
 export {
-  PhishingDetector,
   createPhishingDetector,
-  RiskLevel,
+  type DomainResult,
+  PhishingDetector,
+  type PhishingDetectorConfig,
   PhishingPatternType,
-  type RiskLevelType,
   type PhishingPatternTypeValue,
   type PhishingResult,
-  type DomainResult,
-  type PhishingDetectorConfig,
+  RiskLevel,
+  type RiskLevelType,
 } from './phishingDetector'
-
 // Rate Limiter
 export {
-  RateLimiter,
   createRateLimiter,
   DEFAULT_LIMITS,
   METHOD_CATEGORIES,
   type RateLimitConfig,
+  RateLimiter,
   type RateLimitResult,
 } from './rateLimiter'
-
-// Input Validator
+// Signature Risk Analyzer
 export {
-  InputValidator,
-  createInputValidator,
-  isValidAddress as isValidInputAddress,
-  isValidHex,
-  isValidChainId,
-  isValidTransactionObject,
-  isValidRpcRequest,
-  sanitizeString,
-  type ValidationResult as InputValidationResult,
-  type HexValidationOptions,
-  type SanitizeOptions,
-  type TransactionObject,
-  type RpcRequestObject,
-} from './inputValidator'
-
-// Legacy API Warning
-export {
-  DeprecationStatus,
-  hasApiWarning,
-  getApiWarning,
-  shouldBlockMethod,
-  getAllApiWarnings,
-  getWarningsByStatus,
-  formatWarningForUI as formatApiWarningForUI,
-  createConsoleDeprecationNotice,
-  updateEthSignSettings,
-  getEthSignSettings,
-  isEthSignAllowed,
-  shouldShowEthSignWarning,
-  resetEthSignSettings,
-  type DeprecationStatusType,
-  type ApiWarning,
-  type EthSignSettings,
-} from './legacyApiWarning'
-
+  type ContractInteraction,
+  createSignatureRiskAnalyzer,
+  type EIP712TypedData,
+  SignatureMethod,
+  type SignatureMethodType,
+  SignatureRiskAnalyzer,
+  SignatureRiskLevel,
+  type SignatureRiskLevelType,
+  type SignatureRiskResult,
+  SignatureRiskType,
+  type SignatureRiskTypeValue,
+} from './signatureRiskAnalyzer'
 // Signature Verifier (EIP-1271)
 export {
-  SignatureVerifier,
   createSignatureVerifier,
-  EIP1271_MAGIC_VALUE,
-  EIP1271_INVALID_VALUE,
-  IS_VALID_SIGNATURE_SELECTOR,
-  EIP1271_ABI,
-  isEIP1271MagicValue,
-  encodeIsValidSignatureCall,
   decodeIsValidSignatureResult,
+  EIP1271_ABI,
+  EIP1271_INVALID_VALUE,
+  EIP1271_MAGIC_VALUE,
+  encodeIsValidSignatureCall,
+  IS_VALID_SIGNATURE_SELECTOR,
+  isEIP1271MagicValue,
   type SignatureType,
   type SignatureVerificationResult,
-  type VerifySignatureOptions,
-  type VerifyPersonalMessageParams,
-  type VerifyTypedDataParams,
+  SignatureVerifier,
   type VerifyHashParams,
+  type VerifyPersonalMessageParams,
+  type VerifySignatureOptions,
+  type VerifyTypedDataParams,
 } from './signatureVerifier'
+// Transaction Risk Analyzer
+export {
+  createTransactionRiskAnalyzer,
+  type DecodedMethod,
+  TransactionRiskAnalyzer,
+  TransactionRiskLevel,
+  type TransactionRiskLevelType,
+  type TransactionRiskParams,
+  type TransactionRiskResult,
+  TransactionRiskType,
+  type TransactionRiskTypeValue,
+} from './transactionRiskAnalyzer'
+// Typed Data Validator (EIP-712)
+export {
+  createTypedDataValidator,
+  type DomainValidationResult,
+  type DomainWarning,
+  type DomainWarningType,
+  type TypedData,
+  type TypedDataDomain,
+  TypedDataValidator,
+} from './typedDataValidator'

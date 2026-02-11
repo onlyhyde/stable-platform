@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { defineChain, http, createPublicClient, createWalletClient } from 'viem'
+import { createPublicClient, createWalletClient, defineChain, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
@@ -178,7 +178,11 @@ async function runBundler(argv: {
     ? defineChain({
         id: config.chainId,
         name: config.network,
-        nativeCurrency: { name: config.nativeCurrencySymbol, symbol: config.nativeCurrencySymbol, decimals: 18 },
+        nativeCurrency: {
+          name: config.nativeCurrencySymbol,
+          symbol: config.nativeCurrencySymbol,
+          decimals: 18,
+        },
         rpcUrls: { default: { http: [config.rpcUrl] } },
       })
     : undefined

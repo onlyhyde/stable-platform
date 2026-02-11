@@ -1,7 +1,7 @@
 'use client'
 
-import type { Expense } from '@/types'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Expense } from '@/types'
 
 interface ExpenseFilter {
   status?: 'pending' | 'approved' | 'rejected' | 'paid'

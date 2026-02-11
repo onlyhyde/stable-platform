@@ -1,6 +1,15 @@
 'use client'
 
-import { Card, CardContent, ConnectWalletCard, InfoBanner, Input, PageHeader } from '@/components/common'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Hex } from 'viem'
+import {
+  Card,
+  CardContent,
+  ConnectWalletCard,
+  InfoBanner,
+  Input,
+  PageHeader,
+} from '@/components/common'
 import { useToast } from '@/components/common/Toast'
 import {
   CategoryFilter,
@@ -10,8 +19,6 @@ import {
   ModuleDetailModal,
 } from '@/components/marketplace'
 import { useModuleInstall, useSmartAccount, useWallet } from '@/hooks'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Hex } from 'viem'
 
 /**
  * Default module catalog (PoC - served inline; production would fetch from module-registry API)
@@ -160,12 +167,8 @@ export default function MarketplacePage() {
   const { isConnected, isConnecting, address, connect, connectors } = useWallet()
   const { status } = useSmartAccount()
   const { addToast, updateToast } = useToast()
-  const {
-    installModule,
-    installedModules,
-    installingModuleId,
-    loadInstalledModules,
-  } = useModuleInstall()
+  const { installModule, installedModules, installingModuleId, loadInstalledModules } =
+    useModuleInstall()
 
   // Load on-chain installed status when smart account is ready
   useEffect(() => {

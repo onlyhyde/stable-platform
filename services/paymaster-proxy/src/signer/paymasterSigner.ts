@@ -1,4 +1,4 @@
-import { type Address, type Hex, concat, encodeAbiParameters, keccak256, toHex } from 'viem'
+import { type Address, concat, encodeAbiParameters, type Hex, keccak256, toHex } from 'viem'
 import { privateKeyToAccount, signMessage } from 'viem/accounts'
 import { getSignerConfig } from '../config/constants'
 import type { PackedUserOperationRpc, UserOperationRpc } from '../types'

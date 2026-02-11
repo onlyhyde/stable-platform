@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback, useMemo, useState } from 'react'
 import { Button, ConnectWalletCard, PageHeader } from '@/components/common'
 import {
   AuditFilterCard,
@@ -10,7 +11,6 @@ import {
 import { useWallet } from '@/hooks'
 import { useAuditLogs } from '@/hooks/useAuditLogs'
 import type { AuditLog } from '@/types'
-import { useCallback, useMemo, useState } from 'react'
 
 export default function AuditPage() {
   const { isConnected } = useWallet()

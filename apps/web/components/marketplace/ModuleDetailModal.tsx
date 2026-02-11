@@ -157,10 +157,7 @@ export function ModuleDetailModal({
         {/* Tags */}
         {module.tags.length > 0 && (
           <div>
-            <h4
-              className="text-sm font-semibold mb-2"
-              style={{ color: 'rgb(var(--foreground))' }}
-            >
+            <h4 className="text-sm font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
               Tags
             </h4>
             <div className="flex flex-wrap gap-1.5">

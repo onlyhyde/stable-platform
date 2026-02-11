@@ -48,10 +48,7 @@ const DAILY_LIMIT_PRESETS = [
 // Helper Functions
 // ============================================================================
 
-function encodeSwapExecutorInit(config: {
-  maxSlippageBps: number
-  dailyLimit: bigint
-}): Hex {
+function encodeSwapExecutorInit(config: { maxSlippageBps: number; dailyLimit: bigint }): Hex {
   const maxSlippageHex = config.maxSlippageBps.toString(16).padStart(64, '0')
   const dailyLimitHex = config.dailyLimit.toString(16).padStart(64, '0')
   return `0x${maxSlippageHex}${dailyLimitHex}` as Hex
@@ -148,9 +145,7 @@ export function SwapExecutorConfigUI({
       {step === 'slippage' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('maxSlippageTolerance')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('slippageDescription')}
-          </p>
+          <p className="text-sm text-gray-500">{t('slippageDescription')}</p>
 
           <div className="grid grid-cols-4 gap-2">
             {SLIPPAGE_PRESETS.map((preset) => (
@@ -170,7 +165,10 @@ export function SwapExecutorConfigUI({
           </div>
 
           <div className="mt-4">
-            <label htmlFor="custom-slippage-bps" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="custom-slippage-bps"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               {t('customSlippage')}
             </label>
             <div className="flex items-center gap-2">
@@ -183,7 +181,7 @@ export function SwapExecutorConfigUI({
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    maxSlippageBps: Number.parseInt(e.target.value) || 0,
+                    maxSlippageBps: Number.parseInt(e.target.value, 10) || 0,
                   }))
                 }
                 className="flex-1 p-2 border rounded-lg"
@@ -198,9 +196,7 @@ export function SwapExecutorConfigUI({
       {step === 'limits' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('dailySwapLimit')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('dailySwapLimitDesc')}
-          </p>
+          <p className="text-sm text-gray-500">{t('dailySwapLimitDesc')}</p>
 
           <div className="grid grid-cols-3 gap-2">
             {DAILY_LIMIT_PRESETS.slice(0, 3).map((preset) => (
@@ -236,7 +232,10 @@ export function SwapExecutorConfigUI({
           </div>
 
           <div className="mt-4">
-            <label htmlFor="custom-swap-daily-limit" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="custom-swap-daily-limit"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               {t('customLimit')}
             </label>
             <input
@@ -254,9 +253,7 @@ export function SwapExecutorConfigUI({
       {step === 'review' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('reviewConfiguration')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('reviewConfigDesc')}
-          </p>
+          <p className="text-sm text-gray-500">{t('reviewConfigDesc')}</p>
 
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center">
@@ -360,7 +357,9 @@ export function SwapExecutorDisplay({
             style={{ width: `${Math.min(usagePercent, 100)}%` }}
           />
         </div>
-        <p className="text-xs text-gray-500">{t('remainingAmount', { amount: formatEther(remainingLimit) })}</p>
+        <p className="text-xs text-gray-500">
+          {t('remainingAmount', { amount: formatEther(remainingLimit) })}
+        </p>
       </div>
     </div>
   )

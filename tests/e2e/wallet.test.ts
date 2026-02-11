@@ -10,12 +10,12 @@
  */
 
 import {
-  http,
   type Address,
-  type Hex,
   createPublicClient,
   createWalletClient,
   encodeAbiParameters,
+  type Hex,
+  http,
   parseAbiParameters,
   parseEther,
   recoverMessageAddress,
@@ -635,9 +635,7 @@ describe('Live Network Integration', () => {
     // Check if network is available
     try {
       await publicClient.getChainId()
-    } catch {
-      console.log('⚠️ Skipping live network tests - Anvil not running')
-    }
+    } catch {}
   })
 
   it('should verify wallet can query balances', async () => {
@@ -650,7 +648,6 @@ describe('Live Network Integration', () => {
     }
 
     if (!networkAvailable) {
-      console.log('⚠️ Skipping test - Anvil not running')
       return
     }
 
@@ -671,7 +668,6 @@ describe('Live Network Integration', () => {
     }
 
     if (!networkAvailable) {
-      console.log('⚠️ Skipping test - Anvil not running')
       return
     }
 
@@ -689,7 +685,6 @@ describe('Live Network Integration', () => {
     }
 
     if (!networkAvailable) {
-      console.log('⚠️ Skipping test - Anvil not running')
       return
     }
 
@@ -707,7 +702,6 @@ describe('Live Network Integration', () => {
     }
 
     if (!networkAvailable) {
-      console.log('⚠️ Skipping test - Anvil not running')
       return
     }
 

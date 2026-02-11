@@ -9,24 +9,20 @@ import type { Address, Hex } from 'viem'
 // Re-export core types from SDK
 export type {
   Authorization,
-  SignedAuthorization,
   DelegatePreset,
   DelegationStatus,
+  SignedAuthorization,
 } from '@stablenet/core'
-
 // Re-export constants from SDK
-export {
-  EIP7702_MAGIC,
-  SETCODE_TX_TYPE,
-  DELEGATION_PREFIX,
-  ZERO_ADDRESS,
-} from '@stablenet/core'
-
 // Re-export functions from SDK
 export {
-  isRevocationAuthorization,
-  isDelegatedAccount,
+  DELEGATION_PREFIX,
+  EIP7702_MAGIC,
   extractDelegateAddress,
+  isDelegatedAccount,
+  isRevocationAuthorization,
+  SETCODE_TX_TYPE,
+  ZERO_ADDRESS,
 } from '@stablenet/core'
 
 /**

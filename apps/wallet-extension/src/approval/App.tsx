@@ -28,7 +28,11 @@ export function ApprovalApp() {
 
     // Fetch approval details from background
     loadApproval(approvalId)
-  }, [])
+  }, [
+    // Fetch approval details from background
+    loadApproval,
+    t,
+  ])
 
   const loadApproval = async (id: string) => {
     try {

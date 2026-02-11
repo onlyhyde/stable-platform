@@ -15,138 +15,129 @@
  * ```
  */
 
-// Provider
-export {
-  StableNetProvider,
-  detectProvider,
-  getProvider,
-  isWalletInstalled,
-} from './provider'
-
-// Provider event types
-export type {
-  TransactionSentEvent,
-  TransactionConfirmedEvent,
-  BalanceChangeEvent,
-  StableNetProviderEvent,
-} from './provider'
-
-// EIP-6963 Multi-Provider Discovery
-export {
-  ProviderRegistry,
-  createProviderRegistry,
-  getProviderRegistry,
-  discoverProviders,
-  getKnownProviders,
-  EIP6963_EVENTS,
-  type RegisteredProvider,
-  type ProviderRegistryEvent,
-  type ProviderRegistryListener,
-} from './provider'
-
-// EIP-2255 Permissions
-export {
-  PermissionManager,
-  createPermissionManager,
-  PermissionRequestBuilder,
-  permissionRequest,
-  PERMISSION_TARGETS,
-  type PermissionTarget,
-  type Permission,
-  type PermissionRequest,
-  type PermissionCaveat,
-  type AccountsCaveat,
-  type ChainCaveat,
-  type ExpiryCaveat,
-  type PermissionCheckResult,
-} from './permissions'
-
-// StableNet Custom RPC Methods
-export {
-  STABLENET_RPC_METHODS,
-  MODULE_TYPE,
-  type StableNetRpcMethod,
-  type StableNetRpcSchema,
-  type RpcParams,
-  type RpcResult,
-  // EIP-4337 Types
-  type UserOperationRequest,
-  type UserOperationReceipt,
-  type UserOperationGasEstimate,
-  // EIP-7702 Types
-  type Authorization,
-  type SignedAuthorization,
-  type DelegationStatus,
-  // ERC-7579 Types
-  type ModuleType,
-  type InstalledModule,
-  type ModuleInstallRequest,
-  type ModuleUninstallRequest,
-  // Session Key Types
-  type SessionKeyPermission,
-  type SessionKeyConfig,
-  type SessionKeyResult,
-  // EIP-5564 Stealth Types
-  type StealthMetaAddress,
-  type StealthAddressResult,
-  type StealthPayment,
-  // Paymaster Types
-  type PaymasterData,
-  type SponsorshipRequest,
-} from './rpc'
-
-// Types
-export type {
-  // Network types
-  NativeCurrency,
-  BlockExplorer,
-  NetworkConfig,
-  NetworkInfo,
-  // Account types
-  AccountInfo,
-  BalanceInfo,
-  TokenInfo,
-  // Wallet types
-  ConnectionStatus,
-  WalletState,
-  ExtendedWalletState,
-  // Transaction types
-  TransactionRequest,
-  TransactionStatus,
-  TransactionRecord,
-  // Provider types
-  ProviderEvent,
-  ConnectInfo,
-  ProviderRpcError,
-  ProviderMessage,
-  EIP1193Provider,
-  EIP6963ProviderInfo,
-  EIP6963ProviderDetail,
-  // SDK types
-  WalletSDKConfig,
-  // Utility types
-  Result,
-  AsyncState,
-  RpcErrorCode,
-  // Re-exported viem types
-  Address,
-  Hash,
-  Hex,
-} from './types'
-
-// Constants
-export { RPC_ERROR_CODES } from './types'
-
 // Config
 export {
   DEFAULT_NETWORKS,
-  NATIVE_CURRENCY_SYMBOLS,
   getNativeCurrencySymbol,
-  toNetworkInfo,
-  toNetworkConfig,
-  NetworkRegistry,
-  networkRegistry,
   LocalStorage,
-  type NetworkStorage,
+  NATIVE_CURRENCY_SYMBOLS,
+  NetworkRegistry,
   type NetworkRegistryConfig,
+  type NetworkStorage,
+  networkRegistry,
+  toNetworkConfig,
+  toNetworkInfo,
 } from './config'
+// EIP-2255 Permissions
+export {
+  type AccountsCaveat,
+  type ChainCaveat,
+  createPermissionManager,
+  type ExpiryCaveat,
+  PERMISSION_TARGETS,
+  type Permission,
+  type PermissionCaveat,
+  type PermissionCheckResult,
+  PermissionManager,
+  type PermissionRequest,
+  PermissionRequestBuilder,
+  type PermissionTarget,
+  permissionRequest,
+} from './permissions'
+// Provider event types
+export type {
+  BalanceChangeEvent,
+  StableNetProviderEvent,
+  TransactionConfirmedEvent,
+  TransactionSentEvent,
+} from './provider'
+// Provider
+// EIP-6963 Multi-Provider Discovery
+export {
+  createProviderRegistry,
+  detectProvider,
+  discoverProviders,
+  EIP6963_EVENTS,
+  getKnownProviders,
+  getProvider,
+  getProviderRegistry,
+  isWalletInstalled,
+  ProviderRegistry,
+  type ProviderRegistryEvent,
+  type ProviderRegistryListener,
+  type RegisteredProvider,
+  StableNetProvider,
+} from './provider'
+// StableNet Custom RPC Methods
+export {
+  // EIP-7702 Types
+  type Authorization,
+  type DelegationStatus,
+  type InstalledModule,
+  MODULE_TYPE,
+  type ModuleInstallRequest,
+  // ERC-7579 Types
+  type ModuleType,
+  type ModuleUninstallRequest,
+  // Paymaster Types
+  type PaymasterData,
+  type RpcParams,
+  type RpcResult,
+  type SessionKeyConfig,
+  // Session Key Types
+  type SessionKeyPermission,
+  type SessionKeyResult,
+  type SignedAuthorization,
+  type SponsorshipRequest,
+  STABLENET_RPC_METHODS,
+  type StableNetRpcMethod,
+  type StableNetRpcSchema,
+  type StealthAddressResult,
+  // EIP-5564 Stealth Types
+  type StealthMetaAddress,
+  type StealthPayment,
+  type UserOperationGasEstimate,
+  type UserOperationReceipt,
+  // EIP-4337 Types
+  type UserOperationRequest,
+} from './rpc'
+// Types
+export type {
+  // Account types
+  AccountInfo,
+  // Re-exported viem types
+  Address,
+  AsyncState,
+  BalanceInfo,
+  BlockExplorer,
+  ConnectInfo,
+  // Wallet types
+  ConnectionStatus,
+  EIP1193Provider,
+  EIP6963ProviderDetail,
+  EIP6963ProviderInfo,
+  ExtendedWalletState,
+  Hash,
+  Hex,
+  // Network types
+  NativeCurrency,
+  NetworkConfig,
+  NetworkInfo,
+  // Provider types
+  ProviderEvent,
+  ProviderMessage,
+  ProviderRpcError,
+  // Utility types
+  Result,
+  RpcErrorCode,
+  TokenInfo,
+  TransactionRecord,
+  // Transaction types
+  TransactionRequest,
+  TransactionStatus,
+  // SDK types
+  WalletSDKConfig,
+  WalletState,
+} from './types'
+// Constants
+export { RPC_ERROR_CODES } from './types'

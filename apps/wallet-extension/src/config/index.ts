@@ -6,22 +6,22 @@
  */
 
 export {
-  // Environment variable names
-  WALLET_ENV_VARS,
+  CRYPTO_CONFIG,
+  GWEI,
   // API configuration
   getApiConfig,
-  // Network configuration
-  getDevnetNetworkConfig,
-  getTestnetNetworkConfig,
-  getNetworkConfigByChainId,
-  // Gas fee configuration
-  getGasFeeConfig,
-  GWEI,
   // Approval configuration
   getApprovalConfig,
+  // Network configuration
+  getDevnetNetworkConfig,
+  // Gas fee configuration
+  getGasFeeConfig,
+  getNetworkConfigByChainId,
   // Security configuration
   getSecurityConfig,
-  CRYPTO_CONFIG,
+  getTestnetNetworkConfig,
   // Storage keys
   STORAGE_KEYS,
+  // Environment variable names
+  WALLET_ENV_VARS,
 } from './constants'

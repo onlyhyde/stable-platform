@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { StableNetProvider } from '../../src/provider/StableNetProvider'
 import { detectProvider, getProvider, isWalletInstalled } from '../../src/provider/detect'
+import { StableNetProvider } from '../../src/provider/StableNetProvider'
 import { createMockProvider } from '../setup'
 
 describe('detectProvider', () => {
-  const originalWindow = { ...window }
+  const _originalWindow = { ...window }
 
   beforeEach(() => {
     // Reset window.stablenet and window.ethereum

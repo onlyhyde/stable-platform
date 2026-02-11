@@ -241,10 +241,7 @@ export function encodeWebAuthnSignature(data: WebAuthnSignatureData): Hex {
 /**
  * Parse WebAuthn credential from registration response
  */
-export function parseWebAuthnCredential(response: {
-  id: string
-  publicKey: ArrayBuffer
-}): {
+export function parseWebAuthnCredential(response: { id: string; publicKey: ArrayBuffer }): {
   credentialId: Hex
   pubKeyX: bigint
   pubKeyY: bigint

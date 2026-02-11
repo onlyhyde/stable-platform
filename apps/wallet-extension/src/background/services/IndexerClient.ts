@@ -13,16 +13,16 @@
 
 // Re-export everything from SDK
 export {
-  IndexerClient,
   createIndexerClient,
   formatTokenBalance,
-  parseTokenAmount,
-  type IndexerClientConfig,
   type GasStats,
+  type IndexedTransaction,
+  IndexerClient,
+  type IndexerClientConfig,
+  type PaginatedResult,
+  parseTokenAmount,
   type TokenBalance,
   type TokenTransfer,
-  type IndexedTransaction,
-  type PaginatedResult,
 } from '@stablenet/core'
 
 // Legacy type aliases for backward compatibility

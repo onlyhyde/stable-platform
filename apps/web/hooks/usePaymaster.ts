@@ -1,8 +1,8 @@
 'use client'
 
-import { useStableNetContext } from '@/providers'
 import { useCallback, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
+import { useStableNetContext } from '@/providers'
 
 // ============================================================================
 // Types

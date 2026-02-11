@@ -137,8 +137,7 @@ export class DependencyTracker {
             if (record.sender === otherRecord.sender) continue
 
             // Create a canonical pair key to avoid duplicates
-            const pairKey =
-              hash < otherHash ? `${hash}:${otherHash}` : `${otherHash}:${hash}`
+            const pairKey = hash < otherHash ? `${hash}:${otherHash}` : `${otherHash}:${hash}`
             const depKey = `${pairKey}:${key}`
 
             if (seen.has(depKey)) continue

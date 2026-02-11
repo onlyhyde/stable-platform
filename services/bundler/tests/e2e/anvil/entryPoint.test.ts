@@ -1,17 +1,14 @@
 import type { Address, Hex } from 'viem'
-import { encodeFunctionData, pad, parseAbi, parseEther, toHex, concat } from 'viem'
+import { encodeFunctionData, parseAbi, parseEther } from 'viem'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ENTRY_POINT_V07_ABI } from '../../../src/abi'
-import type { UserOperation } from '../../../src/types'
 import {
-  buildExecuteCalldata,
   createTestUserOp,
   fundAddress,
   getOnChainNonce,
   getUserOpHash,
   isEntryPointDeployed,
   packUserOp,
-  signUserOp,
 } from './helpers'
 import { type AnvilFixture, shouldSkipAnvilTests, startAnvil } from './setup'
 
@@ -34,10 +31,7 @@ describe.skipIf(shouldSkipAnvilTests())('Anvil EntryPoint E2E', () => {
     owner = fixture.accounts[0]!
     beneficiary = fixture.accounts[1]!
 
-    entryPointDeployed = await isEntryPointDeployed(
-      fixture.publicClient,
-      fixture.entryPoint
-    )
+    entryPointDeployed = await isEntryPointDeployed(fixture.publicClient, fixture.entryPoint)
   }, 30000)
 
   afterAll(async () => {
@@ -69,11 +63,7 @@ describe.skipIf(shouldSkipAnvilTests())('Anvil EntryPoint E2E', () => {
         callData: '0x' as Hex,
       })
 
-      const hash = await getUserOpHash(
-        fixture.publicClient,
-        fixture.entryPoint,
-        userOp
-      )
+      const hash = await getUserOpHash(fixture.publicClient, fixture.entryPoint, userOp)
 
       expect(hash).toMatch(/^0x[0-9a-f]{64}$/i)
     })
@@ -288,18 +278,8 @@ describe.skipIf(shouldSkipAnvilTests())('Anvil EntryPoint E2E', () => {
     it('should support nonce key separation', async () => {
       const sender = fixture.accounts[9]!
 
-      const nonce0 = await getOnChainNonce(
-        fixture.publicClient,
-        fixture.entryPoint,
-        sender,
-        0n
-      )
-      const nonce1 = await getOnChainNonce(
-        fixture.publicClient,
-        fixture.entryPoint,
-        sender,
-        1n
-      )
+      const nonce0 = await getOnChainNonce(fixture.publicClient, fixture.entryPoint, sender, 0n)
+      const nonce1 = await getOnChainNonce(fixture.publicClient, fixture.entryPoint, sender, 1n)
 
       // Both keys should start at 0 for a fresh account
       expect(nonce0).toBe(0n)

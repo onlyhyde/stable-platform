@@ -93,7 +93,13 @@ export default function MerchantDashboardPage() {
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" onClick={() => router.push('/subscription')}>
-            <svg aria-hidden="true" className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -106,7 +112,13 @@ export default function MerchantDashboardPage() {
           <Button variant="primary" onClick={() => setShowCreateForm(!showCreateForm)}>
             {showCreateForm ? (
               <>
-                <svg aria-hidden="true" className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  aria-hidden="true"
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -118,7 +130,13 @@ export default function MerchantDashboardPage() {
               </>
             ) : (
               <>
-                <svg aria-hidden="true" className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  aria-hidden="true"
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -287,8 +305,12 @@ function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
     <div
       className="flex items-center justify-between px-6 py-4 transition-colors"
       style={{ backgroundColor: 'transparent' }}
-      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgb(var(--secondary))' }}
-      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = 'rgb(var(--secondary))'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent'
+      }}
     >
       <div className="flex items-center gap-4">
         <div

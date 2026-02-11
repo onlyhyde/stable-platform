@@ -1,9 +1,9 @@
 'use client'
 
-import { useStableNetContext } from '@/providers'
 import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData } from 'viem'
+import { useStableNetContext } from '@/providers'
 
 // ============================================================================
 // Types
@@ -198,10 +198,7 @@ export function useModule() {
    * Encode MultiSig validator init data
    */
   const encodeMultiSigValidatorInit = useCallback(
-    (config: {
-      signers: Address[]
-      threshold: number
-    }): Hex => {
+    (config: { signers: Address[]; threshold: number }): Hex => {
       const thresholdHex = config.threshold.toString(16).padStart(64, '0')
       const signerCountHex = config.signers.length.toString(16).padStart(64, '0')
       const signersHex = config.signers
@@ -227,10 +224,7 @@ export function useModule() {
    * Encode swap executor init data
    */
   const encodeSwapExecutorInit = useCallback(
-    (config: {
-      maxSlippageBps: number
-      dailyLimit: bigint
-    }): Hex => {
+    (config: { maxSlippageBps: number; dailyLimit: bigint }): Hex => {
       const slippageHex = config.maxSlippageBps.toString(16).padStart(64, '0')
       const limitHex = config.dailyLimit.toString(16).padStart(64, '0')
       return `0x${slippageHex}${limitHex}` as Hex
@@ -242,11 +236,7 @@ export function useModule() {
    * Encode lending executor init data
    */
   const encodeLendingExecutorInit = useCallback(
-    (config: {
-      maxLtv: number
-      minHealthFactor: bigint
-      dailyBorrowLimit: bigint
-    }): Hex => {
+    (config: { maxLtv: number; minHealthFactor: bigint; dailyBorrowLimit: bigint }): Hex => {
       const ltvHex = config.maxLtv.toString(16).padStart(64, '0')
       const hfHex = config.minHealthFactor.toString(16).padStart(64, '0')
       const limitHex = config.dailyBorrowLimit.toString(16).padStart(64, '0')
@@ -259,10 +249,7 @@ export function useModule() {
    * Encode staking executor init data
    */
   const encodeStakingExecutorInit = useCallback(
-    (config: {
-      maxStakePerPool: bigint
-      dailyStakeLimit: bigint
-    }): Hex => {
+    (config: { maxStakePerPool: bigint; dailyStakeLimit: bigint }): Hex => {
       const maxStakeHex = config.maxStakePerPool.toString(16).padStart(64, '0')
       const limitHex = config.dailyStakeLimit.toString(16).padStart(64, '0')
       return `0x${maxStakeHex}${limitHex}` as Hex
@@ -278,11 +265,7 @@ export function useModule() {
    * Encode spending limit hook init data
    */
   const encodeSpendingLimitHookInit = useCallback(
-    (config: {
-      token: Address
-      limit: bigint
-      period: bigint
-    }): Hex => {
+    (config: { token: Address; limit: bigint; period: bigint }): Hex => {
       const tokenHex = config.token.slice(2).toLowerCase().padStart(64, '0')
       const limitHex = config.limit.toString(16).padStart(64, '0')
       const periodHex = config.period.toString(16).padStart(64, '0')
@@ -294,24 +277,16 @@ export function useModule() {
   /**
    * Encode health factor hook init data
    */
-  const encodeHealthFactorHookInit = useCallback(
-    (config: {
-      minHealthFactor: bigint
-    }): Hex => {
-      const hfHex = config.minHealthFactor.toString(16).padStart(64, '0')
-      return `0x${hfHex}` as Hex
-    },
-    []
-  )
+  const encodeHealthFactorHookInit = useCallback((config: { minHealthFactor: bigint }): Hex => {
+    const hfHex = config.minHealthFactor.toString(16).padStart(64, '0')
+    return `0x${hfHex}` as Hex
+  }, [])
 
   /**
    * Encode policy hook init data
    */
   const encodePolicyHookInit = useCallback(
-    (config: {
-      maxValue: bigint
-      dailyLimit: bigint
-    }): Hex => {
+    (config: { maxValue: bigint; dailyLimit: bigint }): Hex => {
       const maxValueHex = config.maxValue.toString(16).padStart(64, '0')
       const limitHex = config.dailyLimit.toString(16).padStart(64, '0')
       return `0x${maxValueHex}${limitHex}` as Hex

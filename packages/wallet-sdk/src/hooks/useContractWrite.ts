@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useState } from 'react'
-import { type Abi, type Address, type Hash, encodeFunctionData } from 'viem'
+import { type Abi, type Address, encodeFunctionData, type Hash } from 'viem'
 import type { StableNetProvider } from '../provider/StableNetProvider'
 
 interface UseContractWriteOptions<TAbi extends Abi = Abi, TFunctionName extends string = string> {

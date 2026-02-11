@@ -1,8 +1,8 @@
 'use client'
 
-import type { Transaction } from '@/types'
 import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
+import type { Transaction } from '@/types'
 
 interface UseTransactionHistoryConfig {
   address?: Address

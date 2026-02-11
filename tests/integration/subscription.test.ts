@@ -16,32 +16,31 @@
  */
 
 import {
-  http,
   type Address,
   type Chain,
-  type Hex,
-  type PublicClient,
-  type WalletClient,
   createPublicClient,
   createWalletClient,
-  formatEther,
+  type Hex,
+  http,
+  type PublicClient,
   parseEther,
+  type WalletClient,
 } from 'viem'
 import { type PrivateKeyAccount, privateKeyToAccount } from 'viem/accounts'
 import { foundry } from 'viem/chains'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
+  createRecurringPaymentExecutor,
+  createSubscriptionManager,
+  createSubscriptionPermissionClient,
   INTERVALS,
   NATIVE_TOKEN,
   PERMISSION_TYPES,
   type RecurringPaymentExecutorClient,
   type SubscriptionManagerClient,
   type SubscriptionPermissionClient,
-  createRecurringPaymentExecutor,
-  createSubscriptionManager,
-  createSubscriptionPermissionClient,
 } from '../../packages/sdk/plugins/subscription/src'
-import { TEST_CONFIG, isNetworkAvailable } from '../setup'
+import { isNetworkAvailable, TEST_CONFIG } from '../setup'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -65,7 +64,7 @@ describe('Subscription Plugin Integration', () => {
   let chain: Chain
   let publicClient: PublicClient
   let merchantWallet: WalletClient
-  let subscriberWallet: WalletClient
+  let _subscriberWallet: WalletClient
   let merchantAccount: PrivateKeyAccount
   let subscriberAccount: PrivateKeyAccount
 
@@ -98,7 +97,7 @@ describe('Subscription Plugin Integration', () => {
       transport: http(TEST_CONFIG.rpcUrl),
       account: merchantAccount,
     })
-    subscriberWallet = createWalletClient({
+    _subscriberWallet = createWalletClient({
       chain,
       transport: http(TEST_CONFIG.rpcUrl),
       account: subscriberAccount,
@@ -117,15 +116,6 @@ describe('Subscription Plugin Integration', () => {
     subscriptionManagerDeployed = await isContractDeployed(publicClient, smAddr)
     permissionManagerDeployed = await isContractDeployed(publicClient, pmAddr)
     recurringPaymentExecutorDeployed = await isContractDeployed(publicClient, rpAddr)
-
-    console.log('--- Subscription Contract Deployment Status ---')
-    console.log(
-      `  SubscriptionManager:       ${subscriptionManagerDeployed ? '✅' : '❌'} ${smAddr}`
-    )
-    console.log(`  PermissionManager:         ${permissionManagerDeployed ? '✅' : '❌'} ${pmAddr}`)
-    console.log(
-      `  RecurringPaymentExecutor:  ${recurringPaymentExecutorDeployed ? '✅' : '❌'} ${rpAddr}`
-    )
   })
 
   // ---- 1. Contract deployment verification ----
@@ -143,11 +133,6 @@ describe('Subscription Plugin Integration', () => {
 
     it('should report RecurringPaymentExecutor status', async () => {
       if (!networkAvailable) return
-      console.log(
-        recurringPaymentExecutorDeployed
-          ? '✅ RecurringPaymentExecutor deployed'
-          : '⚠️ RecurringPaymentExecutor not yet deployed (zero address)'
-      )
       // Non-blocking — executor is optional at this stage
       expect(true).toBe(true)
     })
@@ -161,7 +146,6 @@ describe('Subscription Plugin Integration', () => {
 
       const count = await subscriptionMgr.getPlanCount(publicClient)
       expect(count).toBeGreaterThanOrEqual(0n)
-      console.log(`  Plan count: ${count}`)
     })
 
     it('should read protocol fee', async () => {
@@ -170,7 +154,6 @@ describe('Subscription Plugin Integration', () => {
       const feeBps = await subscriptionMgr.getProtocolFeeBps(publicClient)
       expect(feeBps).toBeGreaterThanOrEqual(0n)
       expect(feeBps).toBeLessThanOrEqual(1000n) // max 10%
-      console.log(`  Protocol fee: ${feeBps} bps (${Number(feeBps) / 100}%)`)
     })
 
     it('should check processor authorization', async () => {
@@ -182,7 +165,6 @@ describe('Subscription Plugin Integration', () => {
       )
       // deployer might or might not be an authorized processor
       expect(typeof isProcessor).toBe('boolean')
-      console.log(`  Deployer is authorized processor: ${isProcessor}`)
     })
   })
 
@@ -208,7 +190,6 @@ describe('Subscription Plugin Integration', () => {
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       expect(receipt.status).toBe('success')
-      console.log(`  createPlan tx: ${hash}`)
     })
 
     it('should read back created plan', async () => {
@@ -216,7 +197,6 @@ describe('Subscription Plugin Integration', () => {
 
       const planCount = await subscriptionMgr.getPlanCount(publicClient)
       if (planCount === 0n) {
-        console.log('  ⚠️ No plans found, skipping read-back')
         return
       }
 
@@ -233,7 +213,6 @@ describe('Subscription Plugin Integration', () => {
       expect(plan.period).toBe(INTERVALS.MONTHLY)
       expect(plan.active).toBe(true)
       expect(plan.merchant.toLowerCase()).toBe(merchantAccount.address.toLowerCase())
-      console.log(`  Plan: "${plan.name}" — ${formatEther(plan.amount)} ETH / ${plan.period}s`)
     })
 
     it('should create a plan with trial and grace periods', async () => {
@@ -255,7 +234,6 @@ describe('Subscription Plugin Integration', () => {
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       expect(receipt.status).toBe('success')
-      console.log(`  createPlan (with trial/grace) tx: ${hash}`)
     })
   })
 
@@ -267,7 +245,6 @@ describe('Subscription Plugin Integration', () => {
 
       const planCount = await subscriptionMgr.getPlanCount(publicClient)
       if (planCount === 0n) {
-        console.log('  ⚠️ No plans, skipping update')
         return
       }
 
@@ -286,7 +263,6 @@ describe('Subscription Plugin Integration', () => {
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       expect(receipt.status).toBe('success')
-      console.log(`  updatePlan tx: ${hash}`)
     })
   })
 
@@ -301,7 +277,6 @@ describe('Subscription Plugin Integration', () => {
         PERMISSION_TYPES.SUBSCRIPTION
       )
       expect(typeof supported).toBe('boolean')
-      console.log(`  Subscription permission type supported: ${supported}`)
     })
 
     it('should get nonce for subscriber', async () => {
@@ -309,7 +284,6 @@ describe('Subscription Plugin Integration', () => {
 
       const nonce = await permissionClient.getNonce(publicClient, subscriberAccount.address)
       expect(nonce).toBeGreaterThanOrEqual(0n)
-      console.log(`  Subscriber nonce: ${nonce}`)
     })
   })
 
@@ -328,7 +302,6 @@ describe('Subscription Plugin Integration', () => {
 
       expect(calldata).toMatch(/^0x/)
       expect(calldata.length).toBeGreaterThan(10)
-      console.log(`  Encoded grantSubscriptionPermission calldata: ${calldata.slice(0, 66)}...`)
     })
 
     it('should encode revokePermission', () => {
@@ -337,7 +310,6 @@ describe('Subscription Plugin Integration', () => {
       const fakePermissionId = ('0x' + 'ab'.repeat(32)) as Hex
       const calldata = permissionClient.encodeRevokePermission(fakePermissionId)
       expect(calldata).toMatch(/^0x/)
-      console.log(`  Encoded revokePermission calldata: ${calldata.slice(0, 66)}...`)
     })
   })
 
@@ -354,7 +326,6 @@ describe('Subscription Plugin Integration', () => {
       })
 
       expect(calldata).toMatch(/^0x/)
-      console.log(`  Encoded createSchedule calldata: ${calldata.slice(0, 66)}...`)
     })
 
     it('should encode install data for ERC-7579 module', () => {
@@ -368,12 +339,10 @@ describe('Subscription Plugin Integration', () => {
 
       expect(installData).toMatch(/^0x/)
       expect(installData.length).toBeGreaterThan(10)
-      console.log(`  Encoded installData: ${installData.slice(0, 66)}...`)
     })
 
     it('should query active schedules (if deployed)', async () => {
       if (!networkAvailable || !recurringPaymentExecutorDeployed) {
-        console.log('  ⚠️ RecurringPaymentExecutor not deployed, skipping query')
         return
       }
 
@@ -382,7 +351,6 @@ describe('Subscription Plugin Integration', () => {
         subscriberAccount.address
       )
       expect(Array.isArray(schedules)).toBe(true)
-      console.log(`  Active schedules for subscriber: ${schedules.length}`)
     })
 
     it('should check initialization status (if deployed)', async () => {
@@ -390,7 +358,6 @@ describe('Subscription Plugin Integration', () => {
 
       const initialized = await recurringPay.isInitialized(publicClient, subscriberAccount.address)
       expect(typeof initialized).toBe('boolean')
-      console.log(`  Subscriber module initialized: ${initialized}`)
     })
   })
 
@@ -417,7 +384,6 @@ describe('Subscription Plugin Integration', () => {
       })
 
       expect(calldata).toMatch(/^0x/)
-      console.log(`  Encoded subscribe(planId=${planId}) calldata: ${calldata.slice(0, 66)}...`)
     })
 
     it('should get subscriber subscriptions (empty initially)', async () => {
@@ -428,7 +394,6 @@ describe('Subscription Plugin Integration', () => {
         subscriberAccount.address
       )
       expect(Array.isArray(subs)).toBe(true)
-      console.log(`  Subscriber subscription count: ${subs.length}`)
     })
 
     it('should get merchant plans', async () => {
@@ -436,7 +401,6 @@ describe('Subscription Plugin Integration', () => {
 
       const plans = await subscriptionMgr.getMerchantPlans(publicClient, merchantAccount.address)
       expect(Array.isArray(plans)).toBe(true)
-      console.log(`  Merchant plan count: ${plans.length}`)
     })
 
     it('should encode batch process payments', () => {
@@ -445,7 +409,6 @@ describe('Subscription Plugin Integration', () => {
       const fakeSubIds: Hex[] = [('0x' + 'aa'.repeat(32)) as Hex, ('0x' + 'bb'.repeat(32)) as Hex]
       const calldata = subscriptionMgr.encodeBatchProcessPayments(fakeSubIds)
       expect(calldata).toMatch(/^0x/)
-      console.log(`  Encoded batchProcessPayments: ${calldata.slice(0, 66)}...`)
     })
 
     it('should encode processor management', async () => {
@@ -457,7 +420,6 @@ describe('Subscription Plugin Integration', () => {
 
       expect(addCalldata).toMatch(/^0x/)
       expect(removeCalldata).toMatch(/^0x/)
-      console.log(`  Encoded addProcessor: ${addCalldata.slice(0, 66)}...`)
     })
   })
 

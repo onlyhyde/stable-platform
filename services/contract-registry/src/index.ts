@@ -1,17 +1,16 @@
+export { parseConfig, type RegistryConfig } from './cli/config'
+export { RegistryServer } from './server/index'
+export { FilePersistence } from './store/file-persistence'
+export { InMemoryStore } from './store/memory-store'
 export type {
-  ContractEntry,
   AddressSet,
-  ResolvedAddressSet,
+  ContractEntry,
   ContractFilter,
   CreateContractInput,
   CreateSetInput,
-  StoreEvent,
   ImportResult,
+  ResolvedAddressSet,
+  StoreEvent,
 } from './store/types'
-
-export { InMemoryStore } from './store/memory-store'
-export { FilePersistence } from './store/file-persistence'
-export { RegistryServer } from './server/index'
-export { FileWatcher } from './watcher/index'
 export { createLogger, type Logger, type LogLevel } from './utils/logger'
-export { parseConfig, type RegistryConfig } from './cli/config'
+export { FileWatcher } from './watcher/index'

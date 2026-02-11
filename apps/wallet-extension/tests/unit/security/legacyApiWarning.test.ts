@@ -6,8 +6,8 @@
 jest.unmock('@stablenet/core')
 
 import {
-  DeprecationStatus,
   createConsoleDeprecationNotice,
+  DeprecationStatus,
   formatApiWarningForUI as formatWarningForUI,
   getAllApiWarnings,
   getApiWarning,

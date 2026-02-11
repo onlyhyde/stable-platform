@@ -8,7 +8,7 @@
  * - Module uninstallation
  */
 
-import { type Locator, type Page, expect } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 
 export type ModuleType = 'validator' | 'executor' | 'hook' | 'fallback'
 

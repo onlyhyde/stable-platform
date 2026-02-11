@@ -609,10 +609,7 @@ export class StableNetProvider {
   /**
    * Scan for stealth payments received
    */
-  async scanStealthPayments(options?: {
-    fromBlock?: number
-    toBlock?: number
-  }): Promise<
+  async scanStealthPayments(options?: { fromBlock?: number; toBlock?: number }): Promise<
     {
       stealthAddress: Address
       ephemeralPubKey: Hash

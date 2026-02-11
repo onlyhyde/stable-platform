@@ -63,7 +63,13 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={onRefresh} isLoading={isLoading}>
-            <svg aria-hidden="true" className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              className="w-4 h-4 mr-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -74,7 +80,13 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
             Refresh
           </Button>
           <Button variant="primary" size="sm" onClick={() => setIsModalOpen(true)}>
-            <svg aria-hidden="true" className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              className="w-4 h-4 mr-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

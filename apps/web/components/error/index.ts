@@ -2,13 +2,11 @@
  * Error Handling Components and Utilities
  */
 
+export type { ErrorBoundaryProps } from './ErrorBoundary'
 // Components
 export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary'
-export type { ErrorBoundaryProps } from './ErrorBoundary'
-
-export { ErrorFallback } from './ErrorFallback'
 export type { ErrorFallbackProps, ErrorSeverity } from './ErrorFallback'
-
-// Hooks
-export { useErrorHandler, createTypedError, ErrorCodes } from './useErrorHandler'
+export { ErrorFallback } from './ErrorFallback'
 export type { ErrorCode } from './useErrorHandler'
+// Hooks
+export { createTypedError, ErrorCodes, useErrorHandler } from './useErrorHandler'

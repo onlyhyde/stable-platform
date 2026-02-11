@@ -111,9 +111,7 @@ describe('ProfitabilityCalculator', () => {
 
       // Effective priority fee = min(5gwei, 12gwei - 10gwei) = min(5, 2) = 2 gwei
       const expectedEffPriorityFee = 2000000000n
-      expect(result.opEstimates[0]!.effectivePriorityFee).toBe(
-        expectedEffPriorityFee
-      )
+      expect(result.opEstimates[0]!.effectivePriorityFee).toBe(expectedEffPriorityFee)
     })
 
     it('should handle zero baseFee correctly', () => {
@@ -165,11 +163,7 @@ describe('ProfitabilityCalculator', () => {
       const baseFee = 10000000000n
       const bundleGas = 100000n
 
-      const result = calculator.filterProfitable(
-        [profitable, unprofitable],
-        bundleGas,
-        baseFee
-      )
+      const result = calculator.filterProfitable([profitable, unprofitable], bundleGas, baseFee)
 
       // Should keep the profitable op and exclude the unprofitable one
       expect(result.length).toBeLessThanOrEqual(2)
@@ -253,11 +247,7 @@ describe('ProfitabilityCalculator', () => {
       const bundleGas = 100000n
 
       // Pass them in reverse order to verify sorting
-      const result = calculator.filterProfitable(
-        [medProfit, highProfit],
-        bundleGas,
-        baseFee
-      )
+      const result = calculator.filterProfitable([medProfit, highProfit], bundleGas, baseFee)
 
       expect(result.length).toBe(2)
       // Both should be included since both are profitable

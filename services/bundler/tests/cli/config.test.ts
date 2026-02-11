@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { parseConfig, type CliOptions } from '../../src/cli/config'
+import { type CliOptions, parseConfig } from '../../src/cli/config'
 
 // Minimal valid options for parseConfig
 const VALID_BASE_OPTIONS: CliOptions = {

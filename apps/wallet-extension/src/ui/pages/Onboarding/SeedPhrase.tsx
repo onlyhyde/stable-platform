@@ -94,9 +94,7 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
             <p className="font-medium" style={{ color: 'rgb(var(--destructive))' }}>
               {t('neverShareSeed')}
             </p>
-            <p style={{ color: 'rgb(var(--destructive) / 0.8)' }}>
-              {t('neverShareSeedDesc')}
-            </p>
+            <p style={{ color: 'rgb(var(--destructive) / 0.8)' }}>{t('neverShareSeedDesc')}</p>
           </div>
         </div>
       </Card>

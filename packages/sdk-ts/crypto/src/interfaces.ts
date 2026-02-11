@@ -260,12 +260,7 @@ export interface RpcClient {
   /**
    * Estimate gas for a transaction
    */
-  estimateGas(params: {
-    to: Address
-    data?: Hex
-    value?: bigint
-    from?: Address
-  }): Promise<bigint>
+  estimateGas(params: { to: Address; data?: Hex; value?: bigint; from?: Address }): Promise<bigint>
 
   /**
    * Get current gas price

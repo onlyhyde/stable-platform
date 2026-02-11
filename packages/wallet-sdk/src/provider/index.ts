@@ -1,21 +1,20 @@
-export { StableNetProvider } from './StableNetProvider'
-export type {
-  TransactionSentEvent,
-  TransactionConfirmedEvent,
-  BalanceChangeEvent,
-  StableNetProviderEvent,
-} from './StableNetProvider'
 export { detectProvider, getProvider, isWalletInstalled } from './detect'
-
 // EIP-6963 Multi-Provider Discovery
 export {
-  ProviderRegistry,
   createProviderRegistry,
-  getProviderRegistry,
   discoverProviders,
-  getKnownProviders,
   EIP6963_EVENTS,
-  type RegisteredProvider,
+  getKnownProviders,
+  getProviderRegistry,
+  ProviderRegistry,
   type ProviderRegistryEvent,
   type ProviderRegistryListener,
+  type RegisteredProvider,
 } from './eip6963'
+export type {
+  BalanceChangeEvent,
+  StableNetProviderEvent,
+  TransactionConfirmedEvent,
+  TransactionSentEvent,
+} from './StableNetProvider'
+export { StableNetProvider } from './StableNetProvider'

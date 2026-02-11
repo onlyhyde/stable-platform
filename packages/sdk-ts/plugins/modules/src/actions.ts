@@ -374,9 +374,7 @@ export function encodeSpendingLimitHookInitData(config: {
 /**
  * Create health factor hook init data
  */
-export function encodeHealthFactorHookInitData(config: {
-  minHealthFactor: bigint
-}): Hex {
+export function encodeHealthFactorHookInitData(config: { minHealthFactor: bigint }): Hex {
   const hfHex = config.minHealthFactor.toString(16).padStart(64, '0')
   return `0x${hfHex}` as Hex
 }
@@ -384,10 +382,7 @@ export function encodeHealthFactorHookInitData(config: {
 /**
  * Create policy hook init data
  */
-export function encodePolicyHookInitData(config: {
-  maxValue: bigint
-  dailyLimit: bigint
-}): Hex {
+export function encodePolicyHookInitData(config: { maxValue: bigint; dailyLimit: bigint }): Hex {
   const maxValueHex = config.maxValue.toString(16).padStart(64, '0')
   const limitHex = config.dailyLimit.toString(16).padStart(64, '0')
   return `0x${maxValueHex}${limitHex}` as Hex

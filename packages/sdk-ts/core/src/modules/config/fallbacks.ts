@@ -8,10 +8,10 @@
 import { MODULE_TYPE } from '@stablenet/sdk-types'
 import type { Address } from 'viem'
 import {
+  createModuleEntry,
   DEFAULT_SUPPORTED_CHAINS,
   type ModuleRegistryEntry,
   SUPPORTED_CHAIN_IDS,
-  createModuleEntry,
 } from './types'
 
 // ============================================================================

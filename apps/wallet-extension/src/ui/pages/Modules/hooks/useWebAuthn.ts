@@ -1,4 +1,4 @@
-import { type WebAuthnSignatureData, encodeWebAuthnSignature } from '@stablenet/core'
+import { encodeWebAuthnSignature, type WebAuthnSignatureData } from '@stablenet/core'
 import { useCallback, useState } from 'react'
 import type { Hex } from 'viem'
 import { createLogger } from '../../../../shared/utils/logger'

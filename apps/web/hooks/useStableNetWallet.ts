@@ -1,11 +1,11 @@
 'use client'
 
 import {
+  detectProvider,
+  isWalletInstalled,
   type StableNetProvider,
   type TransactionConfirmedEvent,
   type TransactionSentEvent,
-  detectProvider,
-  isWalletInstalled,
 } from '@stablenet/wallet-sdk'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address, Hash } from 'viem'

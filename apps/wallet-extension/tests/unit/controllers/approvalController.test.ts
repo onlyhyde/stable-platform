@@ -5,7 +5,7 @@
  * network switch, authorization, approve/reject, expiry
  */
 
-import type { Address, Hex } from 'viem'
+import type { Address } from 'viem'
 import { ApprovalController } from '../../../src/background/controllers/approvalController'
 import { TEST_ACCOUNTS, TEST_ORIGINS } from '../../utils/testUtils'
 
@@ -33,8 +33,8 @@ jest.mock('../../../src/shared/utils/logger', () => ({
 
 // Mock eip7702 utils
 jest.mock('../../../src/shared/utils/eip7702', () => ({
-  isRevocationAddress: jest.fn((addr: string) =>
-    addr === '0x0000000000000000000000000000000000000000'
+  isRevocationAddress: jest.fn(
+    (addr: string) => addr === '0x0000000000000000000000000000000000000000'
   ),
 }))
 
@@ -213,7 +213,7 @@ describe('ApprovalController', () => {
         TEST_ORIGINS.trusted,
         TEST_ACCOUNTS.account1.address,
         TEST_ACCOUNTS.account2.address,
-        11n * 10n ** 18n, // 11 ETH
+        11n * 10n ** 18n // 11 ETH
       )
 
       await waitForPending()
@@ -232,7 +232,7 @@ describe('ApprovalController', () => {
         TEST_ORIGINS.trusted,
         TEST_ACCOUNTS.account1.address,
         TEST_ACCOUNTS.account2.address,
-        100n * 10n ** 18n, // 100 ETH
+        100n * 10n ** 18n // 100 ETH
       )
 
       await waitForPending()
@@ -252,7 +252,7 @@ describe('ApprovalController', () => {
         TEST_ORIGINS.trusted,
         TEST_ACCOUNTS.account1.address,
         ZERO,
-        0n,
+        0n
       )
 
       await waitForPending()
@@ -272,7 +272,7 @@ describe('ApprovalController', () => {
         TEST_ORIGINS.trusted,
         'personal_sign',
         TEST_ACCOUNTS.account1.address,
-        '0x48656c6c6f', // "Hello" hex
+        '0x48656c6c6f' // "Hello" hex
       )
 
       const state = controller.getState()
@@ -294,7 +294,7 @@ describe('ApprovalController', () => {
         'eth_signTypedData_v4',
         TEST_ACCOUNTS.account1.address,
         '',
-        typedData,
+        typedData
       )
 
       const state = controller.getState()
@@ -311,7 +311,7 @@ describe('ApprovalController', () => {
         TEST_ORIGINS.trusted,
         'personal_sign',
         TEST_ACCOUNTS.account1.address,
-        hexMessage,
+        hexMessage
       )
 
       const state = controller.getState()
@@ -325,11 +325,7 @@ describe('ApprovalController', () => {
 
   describe('requestSwitchNetwork()', () => {
     it('should create a pending network switch approval', () => {
-      const promise = controller.requestSwitchNetwork(
-        TEST_ORIGINS.trusted,
-        137,
-        'Polygon',
-      )
+      const promise = controller.requestSwitchNetwork(TEST_ORIGINS.trusted, 137, 'Polygon')
 
       const state = controller.getState()
       expect(state.pendingApprovals).toHaveLength(1)
@@ -352,7 +348,7 @@ describe('ApprovalController', () => {
         'Arbitrum One',
         'https://arb1.arbitrum.io/rpc',
         { name: 'Ether', symbol: 'ETH', decimals: 18 },
-        'https://arbiscan.io',
+        'https://arbiscan.io'
       )
 
       const state = controller.getState()
@@ -376,7 +372,7 @@ describe('ApprovalController', () => {
         TEST_ACCOUNTS.account1.address,
         contractAddr,
         1,
-        0n,
+        0n
       )
 
       const state = controller.getState()
@@ -399,7 +395,7 @@ describe('ApprovalController', () => {
         TEST_ACCOUNTS.account1.address,
         ZERO,
         1,
-        0n,
+        0n
       )
 
       const state = controller.getState()
@@ -539,10 +535,13 @@ describe('ApprovalController', () => {
 
       const promise = controller.requestConnect(TEST_ORIGINS.trusted)
 
-      expect(listener).toHaveBeenCalledWith('approvalAdded', expect.objectContaining({
-        type: 'connect',
-        origin: TEST_ORIGINS.trusted,
-      }))
+      expect(listener).toHaveBeenCalledWith(
+        'approvalAdded',
+        expect.objectContaining({
+          type: 'connect',
+          origin: TEST_ORIGINS.trusted,
+        })
+      )
 
       const state = controller.getState()
       controller.reject(state.pendingApprovals[0].id).catch(() => {})
@@ -738,7 +737,7 @@ describe('ApprovalController', () => {
         TEST_ACCOUNTS.account1.address,
         TEST_ACCOUNTS.account2.address,
         0n,
-        '0x095ea7b3000000000000000000000000000000000000000000000000ffffffffffffffff',
+        '0x095ea7b3000000000000000000000000000000000000000000000000ffffffffffffffff'
       )
 
       // Wait for async simulation to complete

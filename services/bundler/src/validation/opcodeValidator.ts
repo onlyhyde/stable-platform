@@ -109,7 +109,6 @@ type EntityType = 'sender' | 'factory' | 'paymaster' | 'unknown'
  */
 export class OpcodeValidator {
   private readonly tracer: ITracer
-  private readonly entryPoint: Address
   private readonly logger: Logger
   private readonly config: Required<OpcodeValidatorConfig>
   private readonly bannedOpcodes: Set<string>

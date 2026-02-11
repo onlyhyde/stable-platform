@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import type { Address } from 'viem'
-import { Button, Card } from '../../components/common'
-import { AddressDisplay } from '../../components/common'
+import { AddressDisplay, Button, Card } from '../../components/common'
 
 interface CompleteProps {
   address: Address

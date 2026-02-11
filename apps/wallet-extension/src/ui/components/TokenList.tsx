@@ -232,91 +232,128 @@ export function TokenList({
         </button>
 
         {/* ERC-20 Tokens */}
-        {visibleTokens.length > 0 && (
+        {visibleTokens.length > 0 &&
           visibleTokens.map((token) => {
-              const isHidden = 'isVisible' in token && token.isVisible === false
+            const isHidden = 'isVisible' in token && token.isVisible === false
 
-              return (
-                <div key={token.address} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => onTokenClick?.(token)}
-                    className={`w-full flex items-center justify-between p-4 transition-colors hover:bg-primary/5 border-t ${
-                      isHidden ? 'opacity-50' : ''
-                    }`}
-                    style={{ borderColor: 'rgb(var(--border))' }}
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* Token Icon */}
-                      {'logoURI' in token && token.logoURI ? (
-                        <img
-                          src={token.logoURI}
-                          alt={token.symbol}
-                          className="w-8 h-8 rounded-full"
-                          onError={(e) => {
-                            // Fallback to letter icon on error
-                            ;(e.target as HTMLImageElement).style.display = 'none'
-                          }}
-                        />
-                      ) : (
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                          style={{
-                            backgroundColor: 'rgb(var(--muted))',
-                            color: 'rgb(var(--foreground))',
-                          }}
-                        >
-                          {token.symbol?.charAt(0) || '?'}
-                        </div>
-                      )}
-                      <div className="text-left">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                            {token.symbol || 'Unknown'}
-                          </p>
-                          {isHidden && (
-                            <span
-                              className="text-xs px-1.5 py-0.5 rounded"
-                              style={{
-                                backgroundColor: 'rgb(var(--muted))',
-                                color: 'rgb(var(--muted-foreground))',
-                              }}
-                            >
-                              Hidden
-                            </span>
-                          )}
-                        </div>
-                        <p
-                          className="text-xs truncate max-w-[120px]"
-                          style={{ color: 'rgb(var(--muted-foreground))' }}
-                        >
-                          {token.name || `${token.address.slice(0, 10)}...`}
-                        </p>
+            return (
+              <div key={token.address} className="relative">
+                <button
+                  type="button"
+                  onClick={() => onTokenClick?.(token)}
+                  className={`w-full flex items-center justify-between p-4 transition-colors hover:bg-primary/5 border-t ${
+                    isHidden ? 'opacity-50' : ''
+                  }`}
+                  style={{ borderColor: 'rgb(var(--border))' }}
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Token Icon */}
+                    {'logoURI' in token && token.logoURI ? (
+                      <img
+                        src={token.logoURI}
+                        alt={token.symbol}
+                        className="w-8 h-8 rounded-full"
+                        onError={(e) => {
+                          // Fallback to letter icon on error
+                          ;(e.target as HTMLImageElement).style.display = 'none'
+                        }}
+                      />
+                    ) : (
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+                        style={{
+                          backgroundColor: 'rgb(var(--muted))',
+                          color: 'rgb(var(--foreground))',
+                        }}
+                      >
+                        {token.symbol?.charAt(0) || '?'}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
+                    )}
+                    <div className="text-left">
+                      <div className="flex items-center gap-2">
                         <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                          {token.formattedBalance || formatBalance(token.balance, token.decimals)}
+                          {token.symbol || 'Unknown'}
                         </p>
-                        {token.symbol && tokenPrices[token.symbol] != null && (
-                          <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                            $
-                            {(
-                              Number(formatBalance(token.balance, token.decimals)) *
-                              tokenPrices[token.symbol]!
-                            ).toFixed(2)}
-                          </p>
+                        {isHidden && (
+                          <span
+                            className="text-xs px-1.5 py-0.5 rounded"
+                            style={{
+                              backgroundColor: 'rgb(var(--muted))',
+                              color: 'rgb(var(--muted-foreground))',
+                            }}
+                          >
+                            Hidden
+                          </span>
                         )}
                       </div>
-                      {/* Token Menu Button */}
-                      {onToggleVisibility && (
-                        <button
-                          type="button"
-                          onClick={(e) => handleTokenMenu(token.address, e)}
-                          className="p-1 rounded transition-colors hover:bg-muted"
-                          style={{ color: 'rgb(var(--muted-foreground))' }}
+                      <p
+                        className="text-xs truncate max-w-[120px]"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
+                        {token.name || `${token.address.slice(0, 10)}...`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                        {token.formattedBalance || formatBalance(token.balance, token.decimals)}
+                      </p>
+                      {token.symbol && tokenPrices[token.symbol] != null && (
+                        <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                          $
+                          {(
+                            Number(formatBalance(token.balance, token.decimals)) *
+                            tokenPrices[token.symbol]!
+                          ).toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                    {/* Token Menu Button */}
+                    {onToggleVisibility && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleTokenMenu(token.address, e)}
+                        className="p-1 rounded transition-colors hover:bg-muted"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          role="img"
                         >
+                          <title>More options</title>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </button>
+
+                {/* Token Context Menu */}
+                {showMenu === token.address && (
+                  <div
+                    className="absolute right-4 top-12 z-10 min-w-[120px] rounded-lg shadow-lg overflow-hidden"
+                    style={{
+                      backgroundColor: 'rgb(var(--card-hover))',
+                      border: '1px solid rgb(var(--border))',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleToggleVisibility(token.address)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-muted"
+                      style={{ color: 'rgb(var(--foreground))' }}
+                    >
+                      {isHidden ? (
+                        <>
                           <svg
                             className="w-4 h-4"
                             fill="none"
@@ -324,86 +361,48 @@ export function TokenList({
                             stroke="currentColor"
                             role="img"
                           >
-                            <title>More options</title>
+                            <title>Show token</title>
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               strokeWidth={2}
-                              d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                             />
                           </svg>
-                        </button>
+                          Show
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            role="img"
+                          >
+                            <title>Hide token</title>
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                            />
+                          </svg>
+                          Hide
+                        </>
                       )}
-                    </div>
-                  </button>
-
-                  {/* Token Context Menu */}
-                  {showMenu === token.address && (
-                    <div
-                      className="absolute right-4 top-12 z-10 min-w-[120px] rounded-lg shadow-lg overflow-hidden"
-                      style={{
-                        backgroundColor: 'rgb(var(--card-hover))',
-                        border: '1px solid rgb(var(--border))',
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleToggleVisibility(token.address)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-muted"
-                        style={{ color: 'rgb(var(--foreground))' }}
-                      >
-                        {isHidden ? (
-                          <>
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              role="img"
-                            >
-                              <title>Show token</title>
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              />
-                            </svg>
-                            Show
-                          </>
-                        ) : (
-                          <>
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              role="img"
-                            >
-                              <title>Hide token</title>
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                              />
-                            </svg>
-                            Hide
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )
-            })
-        )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
 
         {/* Loading State */}
         {isLoading && visibleTokens.length === 0 && (

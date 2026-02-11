@@ -1,5 +1,10 @@
-import { MODULE_TYPE, type InstalledModule, type ModuleConfigField, type ModuleType } from '@stablenet/core'
-import { getModuleTypeName } from '@stablenet/core'
+import {
+  getModuleTypeName,
+  type InstalledModule,
+  MODULE_TYPE,
+  type ModuleConfigField,
+  type ModuleType,
+} from '@stablenet/core'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Address } from 'viem'
@@ -54,28 +59,31 @@ export function ModuleDetails({
   const [isRevoking, setIsRevoking] = useState(false)
   const { uninstallModule } = useModuleInstall()
 
-  const isSessionKeyExecutor = module?.type === MODULE_TYPE.EXECUTOR &&
-    module?.metadata.name.toLowerCase().includes('session')
+  const isSessionKeyExecutor =
+    module?.type === MODULE_TYPE.EXECUTOR && module?.metadata.name.toLowerCase().includes('session')
 
-  const handleRevokeSessionKey = useCallback(async (sessionKeyAddress: Address) => {
-    if (!module) return
-    setIsRevoking(true)
-    setError(null)
-    try {
-      // Get account from module's installed context (sender)
-      // The module address IS the session key executor module
-      await uninstallModule({
-        account: sessionKeyAddress, // The account that has the module installed
-        moduleAddress: module.address as Address,
-        moduleType: module.type,
-      })
-      setShowRevokeConfirm(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('uninstallationFailed'))
-    } finally {
-      setIsRevoking(false)
-    }
-  }, [module, uninstallModule, t])
+  const handleRevokeSessionKey = useCallback(
+    async (sessionKeyAddress: Address) => {
+      if (!module) return
+      setIsRevoking(true)
+      setError(null)
+      try {
+        // Get account from module's installed context (sender)
+        // The module address IS the session key executor module
+        await uninstallModule({
+          account: sessionKeyAddress, // The account that has the module installed
+          moduleAddress: module.address as Address,
+          moduleType: module.type,
+        })
+        setShowRevokeConfirm(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('uninstallationFailed'))
+      } finally {
+        setIsRevoking(false)
+      }
+    },
+    [module, uninstallModule, t]
+  )
 
   // Show registry module details when no installed module is present
   if (!module && registryModule) {

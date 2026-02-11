@@ -1,16 +1,15 @@
 'use client'
 
+import { useCallback, useMemo, useState } from 'react'
+import type { Address } from 'viem'
 import { Button, Input } from '@/components/common'
 import {
   type DelegatePreset,
-  ZERO_ADDRESS,
   getDelegatePresets,
   isValidAddress,
+  ZERO_ADDRESS,
 } from '@/lib/eip7702'
-import { cn } from '@/lib/utils'
-import { formatAddress } from '@/lib/utils'
-import { useCallback, useMemo, useState } from 'react'
-import type { Address } from 'viem'
+import { cn, formatAddress } from '@/lib/utils'
 
 interface DelegateAddressInputProps {
   chainId: number

@@ -5,9 +5,9 @@
  */
 
 import {
-  type EncryptedSessionData,
   decryptSessionData,
   deriveSessionKey,
+  type EncryptedSessionData,
   encryptSessionData,
   isEncryptedSessionData,
   secureClear,
@@ -33,8 +33,8 @@ describe('sessionCrypto', () => {
     })
 
     it('should derive the same key from the same salt', async () => {
-      const key1 = await deriveSessionKey(testSalt)
-      const key2 = await deriveSessionKey(testSalt)
+      const _key1 = await deriveSessionKey(testSalt)
+      const _key2 = await deriveSessionKey(testSalt)
 
       // Keys can't be directly compared, but we can verify they produce the same ciphertext
       const testData = { message: 'test' }

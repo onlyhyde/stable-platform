@@ -45,94 +45,90 @@
  * @packageDocumentation
  */
 
-// Types
-export type {
-  SchemeId,
-  StealthMetaAddress,
-  ParsedStealthMetaAddressUri,
-  GeneratedStealthAddress,
-  StealthAnnouncement,
-  AnnouncementFilterOptions,
-  StealthKeyPair,
-  StealthKeys,
-  ComputedStealthKey,
-  RegistryEntry,
-  StealthClientConfig,
-  StealthClient,
-  WatchAnnouncementsOptions,
-  GenerateStealthAddressParams,
-  ComputeStealthKeyParams,
-  RegisterStealthMetaAddressParams,
-  AnnounceParams,
-  CheckAnnouncementParams,
-} from './types'
-
-// Constants
-export {
-  SCHEME_ID,
-  DEFAULT_SCHEME_ID,
-  VIEW_TAG_SIZE,
-  COMPRESSED_PUBKEY_SIZE,
-  UNCOMPRESSED_PUBKEY_SIZE,
-  STEALTH_META_ADDRESS_PREFIX,
-  CHAIN_PREFIX,
-  type ChainPrefix,
-  ANNOUNCER_ADDRESSES,
-  REGISTRY_ADDRESSES,
-  getAnnouncerAddress,
-  getRegistryAddress,
-  ERC5564_ANNOUNCER_ABI,
-  ERC6538_REGISTRY_ABI,
-} from './constants'
-
-// Config
-export {
-  type NetworkConfig,
-  NETWORKS,
-  getNetworkConfig,
-  getNetworkByPrefix,
-  isChainSupported,
-} from './config'
-
-// Crypto utilities
-export {
-  generatePrivateKey,
-  derivePublicKey,
-  generateStealthKeyPair,
-  generateStealthAddress as generateStealthAddressCrypto,
-  computeStealthPrivateKey,
-  checkViewTag,
-  parseStealthMetaAddress,
-  encodeStealthMetaAddress,
-  parseStealthMetaAddressUri,
-  encodeStealthMetaAddressUri,
-  computeViewTag,
-  extractViewTag,
-  createMetadata,
-  viewTagsMatch,
-  validateMetadata,
-} from './crypto'
-
-// Client
-export { createStealthClient, extendWithStealth } from './client'
-
 // Actions
 export {
-  generateStealthAddress,
+  announce,
+  type ComputeStealthKeyResult,
+  checkAnnouncement,
   computeStealthKey,
   computeStealthKeyWithResult,
-  StealthKeyComputationError,
-  type ComputeStealthKeyResult,
-  registerStealthMetaAddress,
-  getStealthMetaAddress,
-  announce,
-  checkAnnouncement,
-  verifyAnnouncement,
-  filterByViewTag,
+  type FetchAnnouncementsBatchedOptions,
   fetchAnnouncements,
   fetchAnnouncementsBatched,
-  type FetchAnnouncementsBatchedOptions,
+  filterByViewTag,
+  generateStealthAddress,
   getCurrentBlock,
+  getStealthMetaAddress,
+  registerStealthMetaAddress,
+  StealthKeyComputationError,
+  verifyAnnouncement,
   watchAnnouncements,
   watchAnnouncementsWithKey,
 } from './actions'
+// Client
+export { createStealthClient, extendWithStealth } from './client'
+
+// Config
+export {
+  getNetworkByPrefix,
+  getNetworkConfig,
+  isChainSupported,
+  NETWORKS,
+  type NetworkConfig,
+} from './config'
+// Constants
+export {
+  ANNOUNCER_ADDRESSES,
+  CHAIN_PREFIX,
+  type ChainPrefix,
+  COMPRESSED_PUBKEY_SIZE,
+  DEFAULT_SCHEME_ID,
+  ERC5564_ANNOUNCER_ABI,
+  ERC6538_REGISTRY_ABI,
+  getAnnouncerAddress,
+  getRegistryAddress,
+  REGISTRY_ADDRESSES,
+  SCHEME_ID,
+  STEALTH_META_ADDRESS_PREFIX,
+  UNCOMPRESSED_PUBKEY_SIZE,
+  VIEW_TAG_SIZE,
+} from './constants'
+// Crypto utilities
+export {
+  checkViewTag,
+  computeStealthPrivateKey,
+  computeViewTag,
+  createMetadata,
+  derivePublicKey,
+  encodeStealthMetaAddress,
+  encodeStealthMetaAddressUri,
+  extractViewTag,
+  generatePrivateKey,
+  generateStealthAddress as generateStealthAddressCrypto,
+  generateStealthKeyPair,
+  parseStealthMetaAddress,
+  parseStealthMetaAddressUri,
+  validateMetadata,
+  viewTagsMatch,
+} from './crypto'
+// Types
+export type {
+  AnnouncementFilterOptions,
+  AnnounceParams,
+  CheckAnnouncementParams,
+  ComputedStealthKey,
+  ComputeStealthKeyParams,
+  GeneratedStealthAddress,
+  GenerateStealthAddressParams,
+  ParsedStealthMetaAddressUri,
+  RegisterStealthMetaAddressParams,
+  RegistryEntry,
+  SchemeId,
+  StealthAnnouncement,
+  StealthClient,
+  StealthClientConfig,
+  StealthKeyPair,
+  StealthKeys,
+  StealthMetaAddress,
+  WatchAnnouncementsOptions,
+} from './types'

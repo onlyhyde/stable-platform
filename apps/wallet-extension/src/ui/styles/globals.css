@@ -498,9 +498,18 @@ input[type="number"] {
 
 /* Shake animation (for error states) */
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-4px); }
-  40%, 80% { transform: translateX(4px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
 }
 
 .animate-shake {
@@ -553,7 +562,9 @@ input[type="number"] {
 
 /* Interactive hover effects */
 .hover-lift {
-  transition: transform 150ms ease, box-shadow 150ms ease;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .hover-lift:hover {
@@ -572,12 +583,16 @@ input[type="number"] {
 /* Focus ring enhancements */
 .focus-ring-primary:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgb(var(--background)), 0 0 0 4px rgb(var(--primary));
+  box-shadow:
+    0 0 0 2px rgb(var(--background)),
+    0 0 0 4px rgb(var(--primary));
 }
 
 .focus-ring-accent:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgb(var(--background)), 0 0 0 4px rgb(var(--accent));
+  box-shadow:
+    0 0 0 2px rgb(var(--background)),
+    0 0 0 4px rgb(var(--accent));
 }
 
 /* Light mode enhancements */

@@ -1,5 +1,5 @@
 import type { InstalledModule } from '@stablenet/core'
-import { MODULE_STATUS, getModuleTypeName } from '@stablenet/core'
+import { getModuleTypeName, MODULE_STATUS } from '@stablenet/core'
 import { useTranslation } from 'react-i18next'
 
 // ============================================================================
@@ -25,9 +25,7 @@ export function ModuleList({ modules, onModuleClick }: ModuleListProps) {
         <h3 className="text-lg font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
           {t('noModulesInstalled')}
         </h3>
-        <p style={{ color: 'rgb(var(--muted-foreground))' }}>
-          {t('noModulesInstalledDesc')}
-        </p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>{t('noModulesInstalledDesc')}</p>
       </div>
     )
   }

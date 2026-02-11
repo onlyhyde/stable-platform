@@ -149,8 +149,5 @@ for (const [state, color] of Object.entries(ICON_COLORS)) {
     const filepath = path.join(iconsDir, filename)
     const iconData = generateIcon(size, color)
     fs.writeFileSync(filepath, iconData)
-    console.log(`Generated: ${filename}`)
   }
 }
-
-console.log('\nAll state icons generated successfully!')

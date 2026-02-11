@@ -74,7 +74,7 @@ describe('EventBroadcaster', () => {
 
     it('should send message only to tabs matching the origin', async () => {
       const matchingTab = { id: 1, url: 'https://example.com/app' }
-      const nonMatchingTab = { id: 2, url: 'https://other.com/page' }
+      const _nonMatchingTab = { id: 2, url: 'https://other.com/page' }
 
       mockChrome.tabs.query.mockResolvedValue([matchingTab])
 
@@ -260,7 +260,7 @@ describe('EventBroadcaster', () => {
       })
 
       const accountsA = [TEST_ACCOUNTS.account1.address]
-      const accountsB = [TEST_ACCOUNTS.account2.address]
+      const _accountsB = [TEST_ACCOUNTS.account2.address]
 
       // Broadcast to origin A
       await broadcaster.broadcastAccountsChanged('https://app-a.com', accountsA)

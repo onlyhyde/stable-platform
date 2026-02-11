@@ -1,5 +1,5 @@
-import { encodeFunctionData } from 'viem'
 import type { Address, Hex, LocalAccount } from 'viem'
+import { encodeFunctionData } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {

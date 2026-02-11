@@ -159,10 +159,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   )
 }
 
+export { Complete } from './Complete'
+export { ConfirmSeed } from './ConfirmSeed'
+export { CreatePassword } from './CreatePassword'
+export { ImportWallet } from './ImportWallet'
+export { SeedPhrase } from './SeedPhrase'
 // Re-export individual components
 export { Welcome } from './Welcome'
-export { CreatePassword } from './CreatePassword'
-export { SeedPhrase } from './SeedPhrase'
-export { ConfirmSeed } from './ConfirmSeed'
-export { ImportWallet } from './ImportWallet'
-export { Complete } from './Complete'

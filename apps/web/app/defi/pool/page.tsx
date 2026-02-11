@@ -1,11 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { Button, ConnectWalletCard, PageHeader } from '@/components/common'
 import { AddLiquidityModal, AvailablePoolsCard, YourPositionsCard } from '@/components/defi'
 import { useWallet } from '@/hooks'
 import { usePools } from '@/hooks/usePools'
 import type { Pool } from '@/types'
-import { useState } from 'react'
 
 export default function PoolPage() {
   const { isConnected } = useWallet()

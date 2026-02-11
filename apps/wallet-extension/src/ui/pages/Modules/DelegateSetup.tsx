@@ -1,10 +1,9 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { isAddress } from 'viem'
 import type { Address, Hash } from 'viem'
-
-import { sendMessageWithTimeout, TX_TIMEOUT_MS } from '../../../shared/utils/messaging'
+import { isAddress } from 'viem'
 import { ZERO_ADDRESS } from '../../../shared/utils/eip7702'
+import { sendMessageWithTimeout, TX_TIMEOUT_MS } from '../../../shared/utils/messaging'
 import { useSelectedNetwork, useWalletStore } from '../../hooks'
 
 // ============================================================================
@@ -24,7 +23,12 @@ type SetupStep = 'input' | 'confirm' | 'pending' | 'success' | 'error'
 // Component
 // ============================================================================
 
-export function DelegateSetup({ account, mode = 'setup', onComplete, onCancel }: DelegateSetupProps) {
+export function DelegateSetup({
+  account,
+  mode = 'setup',
+  onComplete,
+  onCancel,
+}: DelegateSetupProps) {
   const { t } = useTranslation('modules')
   const { t: tc } = useTranslation('common')
   const isRevokeMode = mode === 'revoke'
@@ -47,24 +51,28 @@ export function DelegateSetup({ account, mode = 'setup', onComplete, onCancel }:
 
       // Single RPC call: wallet_delegateAccount handles authorization signing + transaction
       // sending internally with correct nonce handling (executor:'self' pattern)
-      const response = await sendMessageWithTimeout<Record<string, unknown>>({
-        type: 'RPC_REQUEST',
-        id: `delegate-7702-${Date.now()}`,
-        payload: {
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'wallet_delegateAccount',
-          params: [
-            {
-              account,
-              contractAddress: delegateAddress as Address,
-              chainId: currentNetwork.chainId,
-            },
-          ],
+      const response = await sendMessageWithTimeout<Record<string, unknown>>(
+        {
+          type: 'RPC_REQUEST',
+          id: `delegate-7702-${Date.now()}`,
+          payload: {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'wallet_delegateAccount',
+            params: [
+              {
+                account,
+                contractAddress: delegateAddress as Address,
+                chainId: currentNetwork.chainId,
+              },
+            ],
+          },
         },
-      }, TX_TIMEOUT_MS)
+        TX_TIMEOUT_MS
+      )
 
-      const payload = (response as { payload?: { error?: { message?: string }; result?: unknown } })?.payload
+      const payload = (response as { payload?: { error?: { message?: string }; result?: unknown } })
+        ?.payload
       if (payload?.error) {
         throw new Error(payload.error.message || 'Delegation failed')
       }
@@ -79,7 +87,7 @@ export function DelegateSetup({ account, mode = 'setup', onComplete, onCancel }:
       setError(err instanceof Error ? err.message : t('delegationSetupFailed'))
       setStep('error')
     }
-  }, [account, delegateAddress, isValidDelegate, currentNetwork, syncWithBackground])
+  }, [account, delegateAddress, isValidDelegate, currentNetwork, syncWithBackground, t])
 
   // Input Step: Enter delegate contract address (setup mode)
   // Confirm Step: Confirm revocation (revoke mode skips input)
@@ -116,9 +124,16 @@ export function DelegateSetup({ account, mode = 'setup', onComplete, onCancel }:
         {/* Info Banner */}
         <div
           className="p-3 rounded-lg mb-4"
-          style={{ backgroundColor: isRevokeMode ? 'rgb(var(--destructive) / 0.1)' : 'rgb(var(--primary) / 0.1)' }}
+          style={{
+            backgroundColor: isRevokeMode
+              ? 'rgb(var(--destructive) / 0.1)'
+              : 'rgb(var(--primary) / 0.1)',
+          }}
         >
-          <p className="text-sm" style={{ color: isRevokeMode ? 'rgb(var(--destructive))' : 'rgb(var(--primary))' }}>
+          <p
+            className="text-sm"
+            style={{ color: isRevokeMode ? 'rgb(var(--destructive))' : 'rgb(var(--primary))' }}
+          >
             {isRevokeMode ? t('revokeDelegationDesc') : t('eip7702Info')}
           </p>
         </div>

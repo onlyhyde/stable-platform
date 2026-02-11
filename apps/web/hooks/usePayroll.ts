@@ -1,7 +1,7 @@
 'use client'
 
-import type { PayrollEntry } from '@/types'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { PayrollEntry } from '@/types'
 
 interface UsePayrollConfig {
   fetchPayroll?: () => Promise<PayrollEntry[]>

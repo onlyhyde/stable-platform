@@ -1,5 +1,5 @@
-import { keccak256, toHex } from 'viem'
 import type { Hex, LocalAccount } from 'viem'
+import { keccak256, toHex } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {

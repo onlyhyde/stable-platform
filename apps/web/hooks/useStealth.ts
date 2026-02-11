@@ -1,9 +1,9 @@
 'use client'
 
-import { useStableNetContext } from '@/providers'
-import type { Announcement, StealthMetaAddress } from '@/types'
 import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
+import { useStableNetContext } from '@/providers'
+import type { Announcement, StealthMetaAddress } from '@/types'
 
 /** Fetch with AbortController timeout (default 10s). */
 function fetchWithTimeout(

@@ -1,10 +1,10 @@
 export { RegistryClient } from './client'
 export type {
+  ClientMessage,
   ContractEntry,
-  ResolvedAddressSet,
   ContractFilter,
   ImportResult,
   RegistryClientOptions,
+  ResolvedAddressSet,
   ServerMessage,
-  ClientMessage,
 } from './types'

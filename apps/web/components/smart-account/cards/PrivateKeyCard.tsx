@@ -1,8 +1,8 @@
 'use client'
 
+import type { Address, Hex } from 'viem'
 import { Button, Card, CardContent } from '@/components/common'
 import { formatAddress } from '@/lib/utils'
-import type { Address, Hex } from 'viem'
 
 interface PrivateKeyCardProps {
   /** Whether a private key has been entered (actual key is stored in ref for security) */

@@ -300,6 +300,4 @@ const server = http.createServer((req, res) => {
   res.end(HTML_PAGE)
 })
 
-server.listen(PORT, () => {
-  console.log(`E2E Test Server running at http://localhost:${PORT}`)
-})
+server.listen(PORT, () => {})

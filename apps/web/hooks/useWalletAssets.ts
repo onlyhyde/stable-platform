@@ -332,7 +332,12 @@ export function useWalletAssets(): UseWalletAssetsResult {
     const provider = getProvider()
     if (!provider) return
 
-    const ethereum = window as { ethereum?: { on?: (...args: unknown[]) => void; removeListener?: (...args: unknown[]) => void } }
+    const ethereum = window as {
+      ethereum?: {
+        on?: (...args: unknown[]) => void
+        removeListener?: (...args: unknown[]) => void
+      }
+    }
     if (!ethereum.ethereum?.on) return
 
     const handleAssetsChanged = () => {
@@ -350,7 +355,12 @@ export function useWalletAssets(): UseWalletAssetsResult {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const ethereum = window as { ethereum?: { on?: (...args: unknown[]) => void; removeListener?: (...args: unknown[]) => void } }
+    const ethereum = window as {
+      ethereum?: {
+        on?: (...args: unknown[]) => void
+        removeListener?: (...args: unknown[]) => void
+      }
+    }
     if (!ethereum.ethereum?.on) return
 
     const handleChainChanged = () => {

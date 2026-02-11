@@ -1,9 +1,9 @@
 'use client'
 
-import { docSections } from '@/lib/docs'
-import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { docSections } from '@/lib/docs'
+import { cn } from '@/lib/utils'
 
 const iconMap: Record<string, React.ReactNode> = {
   rocket: (

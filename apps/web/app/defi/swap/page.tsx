@@ -1,11 +1,11 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { ConnectWalletCard, PageHeader } from '@/components/common'
 import { SwapCard } from '@/components/defi'
 import { useSwap, useWallet } from '@/hooks'
 import { useTokens } from '@/hooks/useTokens'
 import type { Token } from '@/types'
-import { useEffect, useState } from 'react'
 
 export default function SwapPage() {
   const { address, isConnected } = useWallet()

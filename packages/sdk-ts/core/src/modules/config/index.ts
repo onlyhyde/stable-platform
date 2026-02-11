@@ -5,40 +5,36 @@
  * Follows SRP: configuration is separated from registry logic.
  */
 
+// Executors
+export {
+  EXECUTOR_MODULES,
+  RECURRING_PAYMENT_EXECUTOR,
+  SESSION_KEY_EXECUTOR,
+} from './executors'
+// Fallbacks
+export {
+  FALLBACK_MODULES,
+  TOKEN_RECEIVER_FALLBACK,
+} from './fallbacks'
+// Hooks
+export {
+  HOOK_MODULES,
+  SPENDING_LIMIT_HOOK,
+} from './hooks'
 // Types
 export {
+  createModuleEntry,
+  DEFAULT_SUPPORTED_CHAINS,
   type ModuleRegistryEntry,
   SUPPORTED_CHAIN_IDS,
-  DEFAULT_SUPPORTED_CHAINS,
-  createModuleEntry,
 } from './types'
-
 // Validators
 export {
   ECDSA_VALIDATOR,
-  WEBAUTHN_VALIDATOR,
   MULTISIG_VALIDATOR,
   VALIDATOR_MODULES,
+  WEBAUTHN_VALIDATOR,
 } from './validators'
-
-// Executors
-export {
-  SESSION_KEY_EXECUTOR,
-  RECURRING_PAYMENT_EXECUTOR,
-  EXECUTOR_MODULES,
-} from './executors'
-
-// Hooks
-export {
-  SPENDING_LIMIT_HOOK,
-  HOOK_MODULES,
-} from './hooks'
-
-// Fallbacks
-export {
-  TOKEN_RECEIVER_FALLBACK,
-  FALLBACK_MODULES,
-} from './fallbacks'
 
 // ============================================================================
 // All Built-in Modules

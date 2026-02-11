@@ -59,23 +59,21 @@
  * ```
  */
 
-// Types
-export type {
-  SessionKeyConfig,
-  Permission,
-  SessionKeyExecutorConfig,
-  CreateSessionKeyParams,
-  PermissionInput,
-  ExecutionRequest,
-  SessionKeyState,
-} from './types'
-
-export { SESSION_KEY_EXECUTOR_ABI } from './types'
-
 // Session Key Executor
 export {
   createSessionKeyExecutor,
   generateSessionKey,
-  sessionKeyFromPrivateKey,
   type SessionKeyExecutorClient,
+  sessionKeyFromPrivateKey,
 } from './sessionKeyExecutor'
+// Types
+export type {
+  CreateSessionKeyParams,
+  ExecutionRequest,
+  Permission,
+  PermissionInput,
+  SessionKeyConfig,
+  SessionKeyExecutorConfig,
+  SessionKeyState,
+} from './types'
+export { SESSION_KEY_EXECUTOR_ABI } from './types'

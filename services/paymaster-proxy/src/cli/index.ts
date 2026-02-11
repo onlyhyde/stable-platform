@@ -6,7 +6,7 @@ import { hideBin } from 'yargs/helpers'
 import { createApp } from '../app'
 import { createConfig, loadConfig } from '../config'
 import type { PaymasterProxyConfig } from '../types'
-import { type LogLevel, createLogger, getGlobalLogger } from '../utils/logger'
+import { createLogger, getGlobalLogger, type LogLevel } from '../utils/logger'
 
 // Get early logger for error handling before full initialization
 const earlyLogger = getGlobalLogger()
@@ -72,7 +72,8 @@ async function main() {
           .option('env', {
             alias: 'e',
             type: 'boolean',
-            description: 'Load configuration from environment variables (auto-detected when CLI args omitted)',
+            description:
+              'Load configuration from environment variables (auto-detected when CLI args omitted)',
             default: false,
           })
       },
@@ -104,7 +105,7 @@ async function main() {
             try {
               config = loadConfig()
               logger.debug('Configuration loaded from environment variables')
-            } catch (envError) {
+            } catch (_envError) {
               logger.error(
                 'Missing configuration. Provide CLI arguments (--paymaster, --signer, --rpc) or set environment variables (PAYMASTER_ADDRESS, SIGNER_PRIVATE_KEY, RPC_URL)'
               )

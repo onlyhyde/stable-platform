@@ -1,7 +1,7 @@
 'use client'
 
-import { Button, Input, Modal } from '@/components/common'
 import { useEffect, useState } from 'react'
+import { Button, Input, Modal } from '@/components/common'
 
 interface AddEmployeeModalProps {
   isOpen: boolean

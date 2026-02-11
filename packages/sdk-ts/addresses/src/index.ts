@@ -5,6 +5,34 @@
  * Provides type-safe access to contract addresses across supported chains.
  */
 
+// Address utilities
+export {
+  assertNotZeroAddress,
+  CHAIN_ADDRESSES,
+  DEFAULT_TOKENS,
+  getChainAddresses,
+  getChainConfig,
+  getDefaultDelegatePreset,
+  getDefaultTokens,
+  getDelegatePresets,
+  getEcdsaValidator,
+  getEntryPoint,
+  getKernel,
+  getKernelFactory,
+  getLegacyContractAddresses,
+  getPermissionManager,
+  getRecurringPaymentExecutor,
+  getServiceUrls,
+  getStealthAnnouncer,
+  getStealthRegistry,
+  getSubscriptionManager,
+  getVerifyingPaymaster,
+  isChainSupported,
+  isZeroAddress,
+  SERVICE_URLS,
+  SUPPORTED_CHAIN_IDS,
+  ZERO_ADDRESS,
+} from './addresses'
 // Type exports
 export type {
   ChainAddresses,
@@ -21,32 +49,3 @@ export type {
   TokenDefinition,
   ValidatorAddresses,
 } from './types'
-
-// Address utilities
-export {
-  CHAIN_ADDRESSES,
-  DEFAULT_TOKENS,
-  SERVICE_URLS,
-  SUPPORTED_CHAIN_IDS,
-  ZERO_ADDRESS,
-  isChainSupported,
-  isZeroAddress,
-  assertNotZeroAddress,
-  getChainAddresses,
-  getChainConfig,
-  getDefaultTokens,
-  getServiceUrls,
-  getEntryPoint,
-  getKernel,
-  getKernelFactory,
-  getVerifyingPaymaster,
-  getEcdsaValidator,
-  getStealthAnnouncer,
-  getStealthRegistry,
-  getSubscriptionManager,
-  getRecurringPaymentExecutor,
-  getPermissionManager,
-  getDelegatePresets,
-  getDefaultDelegatePreset,
-  getLegacyContractAddresses,
-} from './addresses'

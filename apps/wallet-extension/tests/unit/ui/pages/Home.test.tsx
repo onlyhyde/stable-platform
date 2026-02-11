@@ -1,7 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { Home } from '../../../../src/ui/pages/Home'
-import { useAssets, useIndexerData, useNetworkCurrency, useWalletStore } from '../../../../src/ui/hooks'
+import {
+  useAssets,
+  useIndexerData,
+  useNetworkCurrency,
+  useWalletStore,
+} from '../../../../src/ui/hooks'
 import { useTokenPrices } from '../../../../src/ui/hooks/useTokenPrices'
+import { Home } from '../../../../src/ui/pages/Home'
 
 // Mock all hooks
 const mockSetPage = jest.fn()

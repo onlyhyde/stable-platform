@@ -5,12 +5,12 @@
  */
 
 import {
+  createGasEstimator,
   type GasEstimate,
   type GasEstimator,
   type GasPriceInfo,
   type MultiModeTransactionRequest,
   type TransactionMode,
-  createGasEstimator,
 } from '@stablenet/core'
 import { GWEI, getGasFeeConfig } from '../../config'
 import { createLogger } from '../../shared/utils/logger'

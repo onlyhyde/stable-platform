@@ -3,7 +3,16 @@
   "name": "StableNet Wallet",
   "version": "0.1.0",
   "description": "StableNet Smart Account Wallet - ERC-4337 compatible",
-  "permissions": ["storage", "activeTab", "notifications", "idle", "alarms", "tabs", "sidePanel", "contextMenus"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "notifications",
+    "idle",
+    "alarms",
+    "tabs",
+    "sidePanel",
+    "contextMenus"
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:*; frame-ancestors 'none';"
   },

@@ -1,8 +1,8 @@
 import {
-  type WebAuthnValidatorConfig,
   encodeWebAuthnValidatorInit,
   parseWebAuthnCredential,
   validateWebAuthnValidatorConfig,
+  type WebAuthnValidatorConfig,
 } from '@stablenet/core'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -131,7 +131,7 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
       setError(err instanceof Error ? err.message : t('registrationFailed'))
       setStep('error')
     }
-  }, [accountAddress])
+  }, [accountAddress, t])
 
   // Confirm and submit
   const handleConfirm = useCallback(() => {
@@ -206,7 +206,11 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
           </div>
 
           <div className="flex gap-3">
-            <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+            <button
+              type="button"
+              className="btn-ghost flex-1 py-3 rounded-lg font-medium"
+              onClick={onBack}
+            >
               {tc('cancel')}
             </button>
             <button
@@ -345,7 +349,11 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
           </div>
 
           <div className="flex gap-3">
-            <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+            <button
+              type="button"
+              className="btn-ghost flex-1 py-3 rounded-lg font-medium"
+              onClick={onBack}
+            >
               {tc('cancel')}
             </button>
             <button

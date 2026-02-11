@@ -2,7 +2,7 @@ import {
   generateStealthAddress as generateStealthAddressCrypto,
   parseStealthMetaAddressUri,
 } from '../crypto'
-import type { GenerateStealthAddressParams, GeneratedStealthAddress } from '../types'
+import type { GeneratedStealthAddress, GenerateStealthAddressParams } from '../types'
 
 /**
  * Generate a stealth address for a recipient

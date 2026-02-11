@@ -6,10 +6,9 @@
  */
 
 import {
-  ModuleController,
   MODULE_TYPE,
+  ModuleController,
   type ModuleInstallRequest,
-  type ModuleTypeValue,
 } from '../../../src/background/controllers/ModuleController'
 
 // ============================================================================
@@ -132,10 +131,7 @@ describe('ModuleController', () => {
     })
 
     it('should support custom initData', async () => {
-      await controller.installModule(
-        ACCOUNT,
-        createInstallRequest({ initData: '0xdeadbeef' })
-      )
+      await controller.installModule(ACCOUNT, createInstallRequest({ initData: '0xdeadbeef' }))
 
       const callParams = mockProvider.request.mock.calls[0][0].params[0]
       expect(callParams.data).toContain('deadbeef')
@@ -168,9 +164,9 @@ describe('ModuleController', () => {
     it('should throw on provider failure', async () => {
       mockProvider.request.mockRejectedValue(new Error('RPC error'))
 
-      await expect(
-        controller.installModule(ACCOUNT, createInstallRequest())
-      ).rejects.toThrow('RPC error')
+      await expect(controller.installModule(ACCOUNT, createInstallRequest())).rejects.toThrow(
+        'RPC error'
+      )
 
       // Should not add to state on failure
       expect(controller.getInstalledModules(ACCOUNT)).toHaveLength(0)
@@ -179,9 +175,9 @@ describe('ModuleController', () => {
     it('should throw when provider returns non-string', async () => {
       mockProvider.request.mockResolvedValue(null)
 
-      await expect(
-        controller.installModule(ACCOUNT, createInstallRequest())
-      ).rejects.toThrow('Failed to send module transaction')
+      await expect(controller.installModule(ACCOUNT, createInstallRequest())).rejects.toThrow(
+        'Failed to send module transaction'
+      )
     })
   })
 
@@ -192,11 +188,7 @@ describe('ModuleController', () => {
     })
 
     it('should uninstall a module and return txHash', async () => {
-      const result = await controller.uninstallModule(
-        ACCOUNT,
-        MODULE_ADDR,
-        MODULE_TYPE.VALIDATOR
-      )
+      const result = await controller.uninstallModule(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
 
       expect(result.txHash).toBe(TX_HASH)
     })
@@ -234,11 +226,7 @@ describe('ModuleController', () => {
         '0x0000000000000000000000000000000000000000000000000000000000000001'
       )
 
-      const result = await controller.isModuleInstalled(
-        ACCOUNT,
-        MODULE_ADDR,
-        MODULE_TYPE.VALIDATOR
-      )
+      const result = await controller.isModuleInstalled(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
 
       expect(result).toBe(true)
       expect(mockProvider.request).toHaveBeenCalledWith(
@@ -257,11 +245,7 @@ describe('ModuleController', () => {
     it('should return false for empty result', async () => {
       mockProvider.request.mockResolvedValue('0x')
 
-      const result = await controller.isModuleInstalled(
-        ACCOUNT,
-        MODULE_ADDR,
-        MODULE_TYPE.VALIDATOR
-      )
+      const result = await controller.isModuleInstalled(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
 
       expect(result).toBe(false)
     })
@@ -269,11 +253,7 @@ describe('ModuleController', () => {
     it('should return false for 0x0', async () => {
       mockProvider.request.mockResolvedValue('0x0')
 
-      const result = await controller.isModuleInstalled(
-        ACCOUNT,
-        MODULE_ADDR,
-        MODULE_TYPE.VALIDATOR
-      )
+      const result = await controller.isModuleInstalled(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
 
       expect(result).toBe(false)
     })
@@ -281,11 +261,7 @@ describe('ModuleController', () => {
     it('should return false on provider error', async () => {
       mockProvider.request.mockRejectedValue(new Error('RPC error'))
 
-      const result = await controller.isModuleInstalled(
-        ACCOUNT,
-        MODULE_ADDR,
-        MODULE_TYPE.VALIDATOR
-      )
+      const result = await controller.isModuleInstalled(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
 
       expect(result).toBe(false)
     })
@@ -316,10 +292,7 @@ describe('ModuleController', () => {
     })
 
     it('should be case-insensitive on account address', async () => {
-      await controller.installModule(
-        ACCOUNT.toLowerCase(),
-        createInstallRequest()
-      )
+      await controller.installModule(ACCOUNT.toLowerCase(), createInstallRequest())
 
       // Query with different case
       const installed = controller.getInstalledModules(ACCOUNT.toLowerCase())

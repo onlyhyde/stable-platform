@@ -1,12 +1,7 @@
-import { spawn, type ChildProcess } from 'node:child_process'
+import { type ChildProcess, spawn } from 'node:child_process'
 import { createServer } from 'node:net'
 import type { Address, PublicClient, TestClient, WalletClient } from 'viem'
-import {
-  createPublicClient,
-  createTestClient,
-  createWalletClient,
-  http,
-} from 'viem'
+import { createPublicClient, createTestClient, createWalletClient, http } from 'viem'
 import { foundry } from 'viem/chains'
 
 /**
@@ -25,8 +20,7 @@ export interface AnvilFixture {
 /**
  * ERC-4337 v0.7 EntryPoint deployed address (deterministic CREATE2)
  */
-export const ENTRY_POINT_V07_ADDRESS =
-  '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
+export const ENTRY_POINT_V07_ADDRESS = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
 
 /**
  * Check if Anvil tests should be skipped
@@ -94,7 +88,7 @@ export async function startAnvil(): Promise<AnvilFixture> {
 
   try {
     proc = spawn(anvilBin, args, { stdio: 'pipe' })
-  } catch (err) {
+  } catch (_err) {
     throw new Error(
       `Failed to start Anvil. Ensure Foundry is installed: curl -L https://foundry.paradigm.xyz | bash && foundryup`
     )

@@ -17,32 +17,28 @@
  */
 
 import {
-  http,
   type Address,
-  type Hex,
-  type PublicClient,
-  type WalletClient,
   createPublicClient,
   createWalletClient,
-  formatEther,
+  type Hex,
+  http,
+  type PublicClient,
   parseAbi,
+  type WalletClient,
 } from 'viem'
-import { type LocalAccount, generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
+import { generatePrivateKey, type LocalAccount, privateKeyToAccount } from 'viem/accounts'
 import { foundry } from 'viem/chains'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { TEST_CONFIG, isBundlerAvailable, isNetworkAvailable } from '../setup'
-
+import { getUserOperationHash, packUserOperation } from '../../packages/sdk/packages/core/src'
+import type { PaymasterClient, UserOperation } from '../../packages/sdk/packages/types/src'
 // SDK Imports
 import {
-  DEFAULT_VALIDITY_SECONDS,
   createSponsorPaymaster,
   createVerifyingPaymaster,
   createVerifyingPaymasterFromPrivateKey,
+  DEFAULT_VALIDITY_SECONDS,
 } from '../../packages/sdk/plugins/paymaster/src'
-
-import { getUserOperationHash, packUserOperation } from '../../packages/sdk/packages/core/src'
-
-import type { PaymasterClient, UserOperation } from '../../packages/sdk/packages/types/src'
+import { isBundlerAvailable, isNetworkAvailable, TEST_CONFIG } from '../setup'
 
 // ============================================================================
 // ABIs
@@ -161,13 +157,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       address: TEST_CONFIG.contracts.verifyingPaymaster as Address,
     })
     ctx.paymasterDeployed = !!(paymasterCode && paymasterCode !== '0x')
-
-    console.log('🎫 Paymaster E2E Test Setup:')
-    console.log(`   Network available: ${ctx.networkAvailable}`)
-    console.log(`   Bundler available: ${ctx.bundlerAvailable}`)
-    console.log(`   Paymaster service available: ${ctx.paymasterServiceAvailable}`)
-    console.log(`   Paymaster contract deployed: ${ctx.paymasterDeployed}`)
-    console.log(`   Paymaster address: ${TEST_CONFIG.contracts.verifyingPaymaster}`)
   })
 
   // ==========================================================================
@@ -190,7 +179,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       expect(typeof paymaster.getPaymasterData).toBe('function')
 
       ctx.paymasterClient = paymaster
-      console.log('✅ Verifying paymaster created with signer')
     })
 
     it('should create verifying paymaster from private key', async () => {
@@ -205,8 +193,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
 
       expect(paymaster.getPaymasterStubData).toBeDefined()
       expect(paymaster.getPaymasterData).toBeDefined()
-
-      console.log('✅ Verifying paymaster created from private key')
     })
 
     it('should create paymaster with custom validity period', () => {
@@ -221,15 +207,12 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       })
 
       expect(paymaster).toBeDefined()
-      console.log(`✅ Paymaster created with custom validity: ${customValidity}s`)
     })
 
     it('should export DEFAULT_VALIDITY_SECONDS constant', () => {
       expect(DEFAULT_VALIDITY_SECONDS).toBeDefined()
       expect(typeof DEFAULT_VALIDITY_SECONDS).toBe('number')
       expect(DEFAULT_VALIDITY_SECONDS).toBe(3600) // 1 hour
-
-      console.log(`✅ DEFAULT_VALIDITY_SECONDS: ${DEFAULT_VALIDITY_SECONDS}s`)
     })
   })
 
@@ -249,7 +232,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       )
 
       expect(stubData.paymaster).toBe(TEST_CONFIG.contracts.verifyingPaymaster)
-      console.log(`✅ Stub data paymaster: ${stubData.paymaster}`)
     })
 
     it('should return gas limits in stub data', async () => {
@@ -266,10 +248,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       expect(stubData.paymasterPostOpGasLimit).toBeDefined()
       expect(stubData.paymasterVerificationGasLimit).toBeGreaterThan(0n)
       expect(stubData.paymasterPostOpGasLimit).toBeGreaterThan(0n)
-
-      console.log('✅ Stub data gas limits:')
-      console.log(`   Verification gas: ${stubData.paymasterVerificationGasLimit}`)
-      console.log(`   PostOp gas: ${stubData.paymasterPostOpGasLimit}`)
     })
 
     it('should return paymaster data with placeholder signature', async () => {
@@ -288,9 +266,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       // Format: [validUntil (6 bytes)][validAfter (6 bytes)][signature (65 bytes)]
       // Total: 77 bytes = 154 hex chars + 0x prefix
       expect(stubData.paymasterData.length).toBe(156)
-
-      console.log('✅ Stub data format valid (77 bytes)')
-      console.log(`   paymasterData: ${stubData.paymasterData.slice(0, 30)}...`)
     })
 
     it('should use placeholder signature (65 bytes of zeros) in stub', async () => {
@@ -309,8 +284,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
 
       // Stub signature should be all zeros (65 bytes = 130 hex chars)
       expect(signatureHex).toBe('00'.repeat(65))
-
-      console.log('✅ Stub signature is placeholder (65 zeros)')
     })
 
     it('should include validity timestamps in stub data', async () => {
@@ -335,10 +308,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       expect(validAfter).toBe(0) // Default is 0
       expect(validUntil).toBeGreaterThan(now)
       expect(validUntil).toBeLessThanOrEqual(now + DEFAULT_VALIDITY_SECONDS + 10) // Allow 10s margin
-
-      console.log('✅ Validity timestamps in stub data:')
-      console.log(`   validUntil: ${validUntil} (${new Date(validUntil * 1000).toISOString()})`)
-      console.log(`   validAfter: ${validAfter}`)
     })
   })
 
@@ -360,9 +329,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       expect(data.paymaster).toBe(TEST_CONFIG.contracts.verifyingPaymaster)
       expect(data.paymasterData).toBeDefined()
       expect(data.paymasterData).toMatch(/^0x/)
-
-      console.log('✅ Signed paymaster data generated')
-      console.log(`   paymaster: ${data.paymaster}`)
     })
 
     it('should have actual signature (not zeros)', async () => {
@@ -381,9 +347,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       // Actual signature should NOT be all zeros
       expect(signatureHex).not.toBe('00'.repeat(65))
       expect(signatureHex.length).toBe(130) // 65 bytes
-
-      console.log('✅ Actual signature present (not zeros)')
-      console.log(`   Signature: ${signatureHex.slice(0, 32)}...`)
     })
 
     it('should produce different signatures for different UserOps', async () => {
@@ -405,8 +368,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
 
       // Signatures should be different for different nonces
       expect(data1.paymasterData.slice(26)).not.toBe(data2.paymasterData.slice(26))
-
-      console.log('✅ Different UserOps produce different signatures')
     })
 
     it('should produce consistent signatures for same UserOp', async () => {
@@ -435,8 +396,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
 
       // With same timestamp, same UserOp should produce same signature
       expect(data1.paymasterData).toBe(data2.paymasterData)
-
-      console.log('✅ Same UserOp produces consistent signature')
     })
   })
 
@@ -474,10 +433,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
 
       // Different chain IDs should produce different signatures
       expect(data1.paymasterData.slice(26)).not.toBe(data2.paymasterData.slice(26))
-
-      console.log('✅ Chain ID isolation verified')
-      console.log('   Chain 1 sig: ' + data1.paymasterData.slice(26, 58) + '...')
-      console.log('   Chain 137 sig: ' + data2.paymasterData.slice(26, 58) + '...')
     })
   })
 
@@ -508,8 +463,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       expect(sponsoredUserOp.paymaster).toBe(TEST_CONFIG.contracts.verifyingPaymaster)
       expect(sponsoredUserOp.paymasterVerificationGasLimit).toBeGreaterThan(0n)
       expect(sponsoredUserOp.paymasterPostOpGasLimit).toBeGreaterThan(0n)
-
-      console.log('✅ UserOp filled with paymaster stub data')
     })
 
     it('should pack UserOperation with paymaster data', async () => {
@@ -538,9 +491,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       expect(packed.paymasterAndData.toLowerCase()).toContain(
         (TEST_CONFIG.contracts.verifyingPaymaster as string).toLowerCase().slice(2)
       )
-
-      console.log('✅ UserOp with paymaster packed correctly')
-      console.log(`   paymasterAndData length: ${packed.paymasterAndData.length}`)
     })
 
     it('should compute UserOp hash with paymaster data', async () => {
@@ -568,9 +518,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       )
 
       expect(hash).toMatch(/^0x[a-fA-F0-9]{64}$/)
-
-      console.log('✅ UserOp hash computed with paymaster data')
-      console.log(`   Hash: ${hash}`)
     })
   })
 
@@ -588,32 +535,23 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
 
       if (code && code !== '0x') {
         expect(code.length).toBeGreaterThan(2)
-        console.log('✅ VerifyingPaymaster is deployed')
-        console.log(`   Address: ${TEST_CONFIG.contracts.verifyingPaymaster}`)
-        console.log(`   Code size: ${(code.length - 2) / 2} bytes`)
       } else {
-        console.log('⚠️ VerifyingPaymaster NOT deployed')
       }
     })
 
     it('should check paymaster deposit in EntryPoint', async () => {
       if (!ctx.networkAvailable || !ctx.paymasterDeployed) {
-        console.log('⏭️ Skipping - paymaster not deployed')
         return
       }
 
       try {
-        const balance = await ctx.publicClient.readContract({
+        const _balance = await ctx.publicClient.readContract({
           address: TEST_CONFIG.contracts.entryPoint as Address,
           abi: ENTRY_POINT_ABI,
           functionName: 'balanceOf',
           args: [TEST_CONFIG.contracts.verifyingPaymaster as Address],
         })
-
-        console.log(`✅ Paymaster deposit in EntryPoint: ${formatEther(balance as bigint)} ETH`)
-      } catch (error) {
-        console.log('⚠️ Could not check paymaster deposit')
-      }
+      } catch (_error) {}
     })
   })
 
@@ -624,7 +562,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
   describe('7. Paymaster Service API', () => {
     it('should call pm_getPaymasterStubData via service', async () => {
       if (!ctx.networkAvailable || !ctx.paymasterServiceAvailable) {
-        console.log('⏭️ Skipping - paymaster service not available')
         return
       }
 
@@ -660,19 +597,13 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
         if (result.result) {
           expect(result.result.paymaster).toBeDefined()
           expect(result.result.paymasterData).toBeDefined()
-          console.log('✅ pm_getPaymasterStubData response received')
-          console.log(`   paymaster: ${result.result.paymaster}`)
         } else if (result.error) {
-          console.log(`⚠️ Service returned error: ${result.error.message}`)
         }
-      } catch (error) {
-        console.log(`⚠️ Service call failed: ${(error as Error).message}`)
-      }
+      } catch (_error) {}
     })
 
     it('should call pm_getPaymasterData via service', async () => {
       if (!ctx.networkAvailable || !ctx.paymasterServiceAvailable) {
-        console.log('⏭️ Skipping - paymaster service not available')
         return
       }
 
@@ -708,13 +639,9 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
         if (result.result) {
           expect(result.result.paymaster).toBeDefined()
           expect(result.result.paymasterData).toBeDefined()
-          console.log('✅ pm_getPaymasterData response received')
         } else if (result.error) {
-          console.log(`⚠️ Service returned error: ${result.error.message}`)
         }
-      } catch (error) {
-        console.log(`⚠️ Service call failed: ${(error as Error).message}`)
-      }
+      } catch (_error) {}
     })
   })
 
@@ -733,9 +660,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
 
       expect(sponsorPaymaster.getPaymasterStubData).toBeDefined()
       expect(sponsorPaymaster.getPaymasterData).toBeDefined()
-
-      console.log('✅ Sponsor paymaster client created')
-      console.log(`   URL: ${TEST_CONFIG.paymasterUrl}`)
     })
 
     it('should create sponsor paymaster with API key', () => {
@@ -748,7 +672,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       })
 
       expect(sponsorPaymaster).toBeDefined()
-      console.log('✅ Sponsor paymaster with API key created')
     })
   })
 
@@ -760,11 +683,8 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
     it('should complete full gas sponsorship flow', async () => {
       if (!ctx.networkAvailable || !ctx.paymasterClient) return
 
-      console.log('\n📋 Full Gas Sponsorship Flow:')
-
       // Step 1: Create base UserOp
       const userOp = createMockUserOp(ctx.account.address)
-      console.log('1️⃣ Created base UserOperation')
 
       // Step 2: Get paymaster stub data for gas estimation
       const stubData = await ctx.paymasterClient.getPaymasterStubData(
@@ -772,9 +692,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
         TEST_CONFIG.contracts.entryPoint as Address,
         BigInt(TEST_CONFIG.chainId)
       )
-      console.log('2️⃣ Got paymaster stub data for gas estimation')
-      console.log(`   Verification gas: ${stubData.paymasterVerificationGasLimit}`)
-      console.log(`   PostOp gas: ${stubData.paymasterPostOpGasLimit}`)
 
       // Step 3: Fill UserOp with stub data
       const userOpWithStub: UserOperation = {
@@ -784,11 +701,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
         paymasterVerificationGasLimit: stubData.paymasterVerificationGasLimit,
         paymasterPostOpGasLimit: stubData.paymasterPostOpGasLimit,
       }
-      console.log('3️⃣ Filled UserOp with stub data')
-
-      // Step 4: (Simulated) Get gas estimation from bundler
-      // In real flow, bundler would estimate gas here
-      console.log('4️⃣ (Simulated) Gas estimation from bundler')
 
       // Step 5: Get actual paymaster signature
       const signedData = await ctx.paymasterClient.getPaymasterData(
@@ -796,30 +708,23 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
         TEST_CONFIG.contracts.entryPoint as Address,
         BigInt(TEST_CONFIG.chainId)
       )
-      console.log('5️⃣ Got actual paymaster signature')
 
       // Step 6: Update UserOp with signed data
       const finalUserOp: UserOperation = {
         ...userOpWithStub,
         paymasterData: signedData.paymasterData,
       }
-      console.log('6️⃣ Updated UserOp with signed paymaster data')
 
       // Step 7: Compute UserOp hash
-      const userOpHash = getUserOperationHash(
+      const _userOpHash = getUserOperationHash(
         finalUserOp,
         TEST_CONFIG.contracts.entryPoint as Address,
         BigInt(TEST_CONFIG.chainId)
       )
-      console.log('7️⃣ Computed UserOp hash')
-      console.log(`   Hash: ${userOpHash}`)
 
       // Step 8: Pack for submission
       const packed = packUserOperation(finalUserOp)
       expect(packed.paymasterAndData.length).toBeGreaterThan(42)
-      console.log('8️⃣ Packed UserOp for submission')
-
-      console.log('\n✅ Full gas sponsorship flow completed!')
     })
   })
 
@@ -845,8 +750,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
 
       expect(data.paymaster).toBeDefined()
       expect(data.paymasterData).toBeDefined()
-
-      console.log('✅ UserOp with factory data handled correctly')
     })
 
     it('should handle large gas values', async () => {
@@ -865,7 +768,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       )
 
       expect(data.paymasterData).toBeDefined()
-      console.log('✅ Large gas values handled correctly')
     })
 
     it('should handle zero nonce', async () => {
@@ -880,7 +782,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       )
 
       expect(data.paymasterData).toBeDefined()
-      console.log('✅ Zero nonce handled correctly')
     })
 
     it('should handle different sender addresses', async () => {
@@ -897,8 +798,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
 
       expect(data.paymaster).toBe(TEST_CONFIG.contracts.verifyingPaymaster)
       expect(data.paymasterData).toBeDefined()
-
-      console.log('✅ Different sender addresses handled correctly')
     })
 
     it('should handle non-empty callData', async () => {
@@ -916,7 +815,6 @@ describe('Paymaster Gas Sponsorship E2E Tests', () => {
       )
 
       expect(data.paymasterData).toBeDefined()
-      console.log('✅ Non-empty callData handled correctly')
     })
   })
 })

@@ -4,37 +4,36 @@
  * EOA Code Delegation - allows EOAs to temporarily act as Smart Accounts
  */
 
+// Authorization functions
+export {
+  createAuthorization,
+  createAuthorizationHash,
+  createRevocationAuthorization,
+  createSignedAuthorization,
+  extractDelegateAddress,
+  formatAuthorization,
+  getDelegatePresets,
+  getDelegationStatus,
+  isDelegatedAccount,
+  isRevocationAuthorization,
+  isValidAddress,
+  parseSignature,
+} from './authorization'
+
+// Constants
+export {
+  DELEGATE_PRESETS,
+  DELEGATION_PREFIX,
+  EIP7702_MAGIC,
+  SETCODE_TX_TYPE,
+  ZERO_ADDRESS,
+} from './constants'
 // Types
 export type {
   Authorization,
-  SignedAuthorization,
   DelegatePreset,
   DelegationStatus,
   EIP7702Result,
   SetCodeTransactionParams,
+  SignedAuthorization,
 } from './types'
-
-// Constants
-export {
-  EIP7702_MAGIC,
-  SETCODE_TX_TYPE,
-  DELEGATION_PREFIX,
-  ZERO_ADDRESS,
-  DELEGATE_PRESETS,
-} from './constants'
-
-// Authorization functions
-export {
-  createAuthorizationHash,
-  createAuthorization,
-  createRevocationAuthorization,
-  parseSignature,
-  createSignedAuthorization,
-  isDelegatedAccount,
-  extractDelegateAddress,
-  getDelegationStatus,
-  isValidAddress,
-  getDelegatePresets,
-  isRevocationAuthorization,
-  formatAuthorization,
-} from './authorization'

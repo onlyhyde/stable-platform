@@ -1,7 +1,7 @@
 'use client'
 
-import { Button, Card, CardContent } from '@/components/common'
 import type { Address } from 'viem'
+import { Button, Card, CardContent } from '@/components/common'
 import { DelegateAddressInput } from '../DelegateAddressInput'
 
 interface UpgradeCardProps {

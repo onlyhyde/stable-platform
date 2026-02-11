@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   description: 'Manage your account, network, and security settings',
 }
 
-export default function SettingsLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   return children
 }

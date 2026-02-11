@@ -11,11 +11,11 @@
 
 import {
   type Address,
-  type Hex,
   concat,
   createPublicClient,
   encodeAbiParameters,
   encodeFunctionData,
+  type Hex,
   http,
   keccak256,
   pad,
@@ -39,8 +39,7 @@ const CONFIG = {
   paymaster: '0x4217f538f989f617b5f8afdf5b18568ffd5bb271' as Address,
 
   // Sender (owner) private key
-  senderPrivateKey:
-    '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as Hex,
+  senderPrivateKey: '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as Hex,
 }
 
 // =============================================================================
@@ -127,10 +126,7 @@ function encodeRootValidator(validatorAddress: Address): Hex {
 }
 
 /** Encode Kernel initialize function data */
-function encodeInitializeData(
-  validatorAddress: Address,
-  signerAddress: Address,
-): Hex {
+function encodeInitializeData(validatorAddress: Address, signerAddress: Address): Hex {
   const rootValidator = encodeRootValidator(validatorAddress)
   const hookAddress = '0x0000000000000000000000000000000000000000' as Address
   const hookData = '0x' as Hex
@@ -153,11 +149,7 @@ function encodeFactoryData(initializeData: Hex, salt: Hex): Hex {
 }
 
 /** Encode single call execution for Kernel execute */
-function encodeKernelExecuteCallData(
-  to: Address,
-  value: bigint,
-  data: Hex,
-): Hex {
+function encodeKernelExecuteCallData(to: Address, value: bigint, data: Hex): Hex {
   // Single call mode: callType=0x00, execMode=0x00
   const mode = `0x${'00'.repeat(32)}` as Hex
 
@@ -168,7 +160,7 @@ function encodeKernelExecuteCallData(
       { type: 'uint256', name: 'value' },
       { type: 'bytes', name: 'callData' },
     ],
-    [to, value, data],
+    [to, value, data]
   )
 
   return encodeFunctionData({
@@ -198,9 +190,7 @@ function packForRpc(userOp: {
 }) {
   // initCode = factory + factoryData (or 0x if no factory)
   const initCode =
-    userOp.factory && userOp.factoryData
-      ? concat([userOp.factory, userOp.factoryData])
-      : '0x'
+    userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
 
   // accountGasLimits = verificationGasLimit(16 bytes) + callGasLimit(16 bytes)
   const accountGasLimits = concat([
@@ -242,7 +232,7 @@ function packForRpc(userOp: {
 function computeUserOpHash(
   packed: ReturnType<typeof packForRpc>,
   entryPoint: Address,
-  chainId: bigint,
+  chainId: bigint
 ): Hex {
   const userOpEncoded = encodeAbiParameters(
     [
@@ -264,7 +254,7 @@ function computeUserOpHash(
       BigInt(packed.preVerificationGas),
       packed.gasFees as Hex,
       keccak256(packed.paymasterAndData as Hex),
-    ],
+    ]
   )
 
   const innerHash = keccak256(userOpEncoded)
@@ -272,8 +262,8 @@ function computeUserOpHash(
   return keccak256(
     encodeAbiParameters(
       [{ type: 'bytes32' }, { type: 'address' }, { type: 'uint256' }],
-      [innerHash, entryPoint, chainId],
-    ),
+      [innerHash, entryPoint, chainId]
+    )
   )
 }
 
@@ -292,23 +282,16 @@ async function rpcCall(url: string, method: string, params: unknown[]) {
 // =============================================================================
 
 async function main() {
-  console.log('=== Bundler UserOp E2E Test ===\n')
-
   // 1. Setup
   const signer = privateKeyToAccount(CONFIG.senderPrivateKey)
-  console.log(`[1] Signer (owner): ${signer.address}`)
 
   const publicClient = createPublicClient({
     transport: http(CONFIG.rpcUrl),
   })
 
   // 2. Encode initialization data for Kernel account
-  const initializeData = encodeInitializeData(
-    CONFIG.ecdsaValidator,
-    signer.address,
-  )
+  const initializeData = encodeInitializeData(CONFIG.ecdsaValidator, signer.address)
   const salt = pad(toHex(0n), { size: 32 })
-  console.log(`[2] Initialize data encoded (${initializeData.length} chars)`)
 
   // 3. Get counterfactual address from Factory
   let smartAccountAddress: Address
@@ -319,7 +302,6 @@ async function main() {
       functionName: 'getAddress',
       args: [initializeData, salt],
     })
-    console.log(`[3] Smart Account address: ${smartAccountAddress}`)
   } catch (e) {
     console.error(`[3] Failed to get address from factory:`, e)
     process.exit(1)
@@ -328,7 +310,6 @@ async function main() {
   // 4. Check if account is already deployed
   const code = await publicClient.getCode({ address: smartAccountAddress })
   const isDeployed = code !== undefined && code !== '0x'
-  console.log(`[4] Account deployed: ${isDeployed}`)
 
   // 5. Get nonce from EntryPoint
   const nonce = await publicClient.readContract({
@@ -337,32 +318,25 @@ async function main() {
     functionName: 'getNonce',
     args: [smartAccountAddress, 0n],
   })
-  console.log(`[5] Nonce: ${nonce}`)
 
   // 6. Prepare factory data (only if not deployed)
   const factory = isDeployed ? undefined : CONFIG.factory
-  const factoryData = isDeployed
-    ? undefined
-    : encodeFactoryData(initializeData, salt)
+  const factoryData = isDeployed ? undefined : encodeFactoryData(initializeData, salt)
   if (factory) {
-    console.log(`[6] Factory data prepared (account creation included)`)
   } else {
-    console.log(`[6] No factory needed (already deployed)`)
   }
 
   // 7. Encode callData (simple 0 value call to self as a no-op)
   const callData = encodeKernelExecuteCallData(
     smartAccountAddress, // call to self
     0n,
-    '0x' as Hex,
+    '0x' as Hex
   )
-  console.log(`[7] CallData encoded (${callData.length} chars)`)
 
   // 8. Get gas prices
   const gasPrice = await publicClient.getGasPrice()
   const maxFeePerGas = gasPrice * 2n
   const maxPriorityFeePerGas = gasPrice
-  console.log(`[8] Gas price: ${gasPrice} (maxFee: ${maxFeePerGas})`)
 
   // 9. Build UserOp
   const userOp = {
@@ -386,28 +360,20 @@ async function main() {
   // 10. Pack and compute hash
   const packed = packForRpc(userOp)
   const userOpHash = computeUserOpHash(packed, CONFIG.entryPoint, CONFIG.chainId)
-  console.log(`[9] UserOp hash: ${userOpHash}`)
 
   // 11. Sign with ECDSA validator (Kernel v3 format: 0x02 + signature)
   const rawSignature = await signer.signMessage({
     message: { raw: userOpHash },
   })
   const signature = concat(['0x02' as Hex, rawSignature]) as Hex
-  console.log(`[10] Signature: ${signature.slice(0, 40)}...`)
 
   // 12. Update packed UserOp with real signature
   packed.signature = signature
 
-  // 13. Send to bundler
-  console.log(`\n--- Sending UserOp to Bundler ---`)
-  console.log(`    Bundler URL: ${CONFIG.bundlerUrl}`)
-  console.log(`    EntryPoint: ${CONFIG.entryPoint}`)
-
-  const result = await rpcCall(
-    CONFIG.bundlerUrl,
-    'eth_sendUserOperation',
-    [packed, CONFIG.entryPoint],
-  )
+  const result = await rpcCall(CONFIG.bundlerUrl, 'eth_sendUserOperation', [
+    packed,
+    CONFIG.entryPoint,
+  ])
 
   if (result.error) {
     console.error(`\n[ERROR] Bundler rejected UserOp:`)
@@ -417,48 +383,26 @@ async function main() {
       console.error(`   Data:`, result.error.data)
     }
   } else {
-    console.log(`\n[SUCCESS] UserOp accepted!`)
-    console.log(`   UserOp Hash: ${result.result}`)
-
-    // 14. Wait and check receipt
-    console.log(`\n--- Checking receipt (waiting 5s) ---`)
     await new Promise((r) => setTimeout(r, 5000))
 
-    const receipt = await rpcCall(
-      CONFIG.bundlerUrl,
-      'eth_getUserOperationReceipt',
-      [result.result],
-    )
+    const receipt = await rpcCall(CONFIG.bundlerUrl, 'eth_getUserOperationReceipt', [result.result])
 
     if (receipt.result) {
-      console.log(`   Status: ${receipt.result.success ? 'SUCCESS' : 'FAILED'}`)
-      console.log(`   Tx Hash: ${receipt.result.receipt?.transactionHash}`)
-      console.log(`   Gas Used: ${receipt.result.actualGasUsed}`)
     } else {
-      console.log(`   Receipt not yet available (may still be processing)`)
-
       // Check mempool
-      const mempool = await rpcCall(
-        CONFIG.bundlerUrl,
-        'debug_bundler_dumpMempool',
-        [CONFIG.entryPoint],
-      )
-      console.log(`   Mempool entries: ${mempool.result?.length ?? 0}`)
+      const _mempool = await rpcCall(CONFIG.bundlerUrl, 'debug_bundler_dumpMempool', [
+        CONFIG.entryPoint,
+      ])
     }
   }
+  const _finalCode = await publicClient.getCode({ address: smartAccountAddress })
 
-  // 15. Final status check
-  console.log(`\n--- Final Status ---`)
-  const finalCode = await publicClient.getCode({ address: smartAccountAddress })
-  console.log(`   Account deployed: ${finalCode !== undefined && finalCode !== '0x'}`)
-
-  const finalNonce = await publicClient.readContract({
+  const _finalNonce = await publicClient.readContract({
     address: CONFIG.entryPoint,
     abi: ENTRY_POINT_ABI,
     functionName: 'getNonce',
     args: [smartAccountAddress, 0n],
   })
-  console.log(`   Final nonce: ${finalNonce}`)
 }
 
 main().catch(console.error)

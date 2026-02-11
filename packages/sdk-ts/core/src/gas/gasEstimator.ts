@@ -7,7 +7,7 @@ import type { Address } from 'viem'
 import { formatGwei } from 'viem'
 import { MAX_PRIORITY_FEE, MIN_PRIORITY_FEE } from '../config'
 import { GasEstimationError } from '../errors'
-import { type RpcProvider, createViemProvider } from '../providers'
+import { createViemProvider, type RpcProvider } from '../providers'
 import {
   createEIP7702GasStrategy,
   createEOAGasStrategy,

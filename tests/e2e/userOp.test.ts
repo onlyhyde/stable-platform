@@ -1,14 +1,13 @@
 import {
-  http,
   type Address,
-  type Hex,
-  type PublicClient,
-  type WalletClient,
   createPublicClient,
   createWalletClient,
-  formatEther,
+  type Hex,
+  http,
+  type PublicClient,
   parseAbi,
   parseEther,
+  type WalletClient,
 } from 'viem'
 import { type LocalAccount, privateKeyToAccount } from 'viem/accounts'
 import { foundry } from 'viem/chains'
@@ -27,32 +26,29 @@ import { foundry } from 'viem/chains'
  * - ERC-4337 contracts deployed (EntryPoint, Kernel Factory, ECDSA Validator)
  */
 import { beforeAll, describe, expect, it } from 'vitest'
-import { TEST_CONFIG, isBundlerAvailable, isNetworkAvailable } from '../setup'
+import { isBundlerAvailable, isNetworkAvailable, TEST_CONFIG } from '../setup'
 
 // ============================================================================
 // SDK Imports (using relative paths for vitest compatibility)
 // ============================================================================
 
 import {
-  ENTRY_POINT_V07_ADDRESS,
-  createBundlerClient,
-  createSmartAccountClient,
-  getUserOperationHash,
-  packUserOperation,
-} from '../../packages/sdk/packages/core/src'
-
-import {
   encodeKernelExecuteCallData,
   toKernelSmartAccount,
 } from '../../packages/sdk/packages/accounts/src'
-
-import { ECDSA_VALIDATOR_ADDRESS, createEcdsaValidator } from '../../packages/sdk/plugins/ecdsa/src'
-
+import {
+  createBundlerClient,
+  createSmartAccountClient,
+  ENTRY_POINT_V07_ADDRESS,
+  getUserOperationHash,
+  packUserOperation,
+} from '../../packages/sdk/packages/core/src'
 import type {
   BundlerClient,
   SmartAccount,
   UserOperation,
 } from '../../packages/sdk/packages/types/src'
+import { createEcdsaValidator, ECDSA_VALIDATOR_ADDRESS } from '../../packages/sdk/plugins/ecdsa/src'
 
 // ============================================================================
 // ABIs (for direct contract interactions in tests)
@@ -150,9 +146,6 @@ describe('UserOperation E2E Flow', () => {
 
     if (!ctx.contractsDeployed) {
       console.warn('⚠️ Required contracts not deployed, some tests will be skipped')
-      console.log(`   EntryPoint: ${entryPointCode ? 'deployed' : 'NOT DEPLOYED'}`)
-      console.log(`   KernelFactory: ${factoryCode ? 'deployed' : 'NOT DEPLOYED'}`)
-      console.log(`   ECDSAValidator: ${validatorCode ? 'deployed' : 'NOT DEPLOYED'}`)
     }
 
     // Setup bundler client if available
@@ -172,25 +165,21 @@ describe('UserOperation E2E Flow', () => {
   describe('Prerequisites Check', () => {
     it('should have network available', async () => {
       if (!ctx.networkAvailable) {
-        console.log('⏭️ Skipping - network not available')
         return
       }
 
       const chainId = await ctx.publicClient.getChainId()
       expect(chainId).toBe(TEST_CONFIG.chainId)
-      console.log(`✅ Network available, Chain ID: ${chainId}`)
     })
 
     it('should have bundler available with supported entry points', async () => {
       if (!ctx.networkAvailable || !ctx.bundlerAvailable || !ctx.bundlerClient) {
-        console.log('⏭️ Skipping - bundler not available')
         return
       }
 
       const entryPoints = await ctx.bundlerClient.getSupportedEntryPoints()
       expect(entryPoints).toBeDefined()
       expect(Array.isArray(entryPoints)).toBe(true)
-      console.log(`✅ Bundler available, Entry Points: ${entryPoints.join(', ')}`)
     })
 
     it('should have EntryPoint contract deployed', async () => {
@@ -202,9 +191,7 @@ describe('UserOperation E2E Flow', () => {
 
       if (code && code !== '0x') {
         expect(code.length).toBeGreaterThan(2)
-        console.log('✅ EntryPoint deployed')
       } else {
-        console.log('⚠️ EntryPoint NOT deployed')
       }
     })
 
@@ -217,9 +204,7 @@ describe('UserOperation E2E Flow', () => {
 
       if (code && code !== '0x') {
         expect(code.length).toBeGreaterThan(2)
-        console.log('✅ Kernel Factory deployed')
       } else {
-        console.log('⚠️ Kernel Factory NOT deployed')
       }
     })
 
@@ -232,9 +217,7 @@ describe('UserOperation E2E Flow', () => {
 
       if (code && code !== '0x') {
         expect(code.length).toBeGreaterThan(2)
-        console.log('✅ ECDSA Validator deployed')
       } else {
-        console.log('⚠️ ECDSA Validator NOT deployed')
       }
     })
   })
@@ -255,10 +238,6 @@ describe('UserOperation E2E Flow', () => {
       expect(validator.address).toBe(TEST_CONFIG.contracts.ecdsaValidator)
       expect(validator.type).toBe('validator')
       expect(validator.getSignerAddress()).toBe(ctx.account.address)
-
-      console.log(`✅ ECDSA validator created`)
-      console.log(`   Validator address: ${validator.address}`)
-      console.log(`   Signer address: ${validator.getSignerAddress()}`)
     })
 
     it('should get init data from validator', async () => {
@@ -274,8 +253,6 @@ describe('UserOperation E2E Flow', () => {
       // Init data should be the signer address (20 bytes = 40 hex chars + 0x)
       expect(initData).toMatch(/^0x[a-fA-F0-9]{40}$/)
       expect(initData.toLowerCase()).toBe(ctx.account.address.toLowerCase())
-
-      console.log(`✅ Validator init data: ${initData}`)
     })
 
     it('should sign hash with validator', async () => {
@@ -290,8 +267,6 @@ describe('UserOperation E2E Flow', () => {
 
       expect(signature).toMatch(/^0x[a-fA-F0-9]+$/)
       expect(signature.length).toBeGreaterThan(130) // ECDSA signature
-
-      console.log(`✅ Signature created (${signature.length} chars)`)
     })
   })
 
@@ -302,7 +277,6 @@ describe('UserOperation E2E Flow', () => {
   describe('SDK: Kernel Smart Account (accounts)', () => {
     it('should create Kernel smart account', async () => {
       if (!ctx.networkAvailable || !ctx.contractsDeployed) {
-        console.log('⏭️ Skipping - prerequisites not met')
         return
       }
 
@@ -321,10 +295,6 @@ describe('UserOperation E2E Flow', () => {
 
       expect(ctx.smartAccount.address).toMatch(/^0x[a-fA-F0-9]{40}$/)
       expect(ctx.smartAccount.entryPoint).toBe(TEST_CONFIG.contracts.entryPoint)
-
-      console.log(`✅ Kernel smart account created`)
-      console.log(`   Account address: ${ctx.smartAccount.address}`)
-      console.log(`   Entry point: ${ctx.smartAccount.entryPoint}`)
     })
 
     it('should generate different addresses for different indexes', async () => {
@@ -350,10 +320,6 @@ describe('UserOperation E2E Flow', () => {
       })
 
       expect(account0.address).not.toBe(account1.address)
-
-      console.log(`✅ Different indexes produce different addresses`)
-      console.log(`   Index 0: ${account0.address}`)
-      console.log(`   Index 1: ${account1.address}`)
     })
 
     it('should get nonce from smart account', async () => {
@@ -362,7 +328,6 @@ describe('UserOperation E2E Flow', () => {
       const nonce = await ctx.smartAccount.getNonce()
 
       expect(nonce).toBeGreaterThanOrEqual(0n)
-      console.log(`✅ Nonce: ${nonce}`)
     })
 
     it('should check if smart account is deployed', async () => {
@@ -371,7 +336,6 @@ describe('UserOperation E2E Flow', () => {
       const deployed = await ctx.smartAccount.isDeployed()
 
       expect(typeof deployed).toBe('boolean')
-      console.log(`✅ Account deployed: ${deployed}`)
     })
 
     it('should get factory and factory data for new account', async () => {
@@ -385,13 +349,9 @@ describe('UserOperation E2E Flow', () => {
 
         expect(factory).toBe(TEST_CONFIG.contracts.kernelFactory)
         expect(factoryData).toMatch(/^0x[a-fA-F0-9]+$/)
-
-        console.log(`✅ Factory: ${factory}`)
-        console.log(`   Factory data: ${factoryData?.slice(0, 50)}...`)
       } else {
         const factory = await ctx.smartAccount.getFactory()
         expect(factory).toBeUndefined()
-        console.log('✅ Account already deployed, no factory needed')
       }
     })
 
@@ -408,8 +368,6 @@ describe('UserOperation E2E Flow', () => {
 
       expect(callData).toMatch(/^0x[a-fA-F0-9]+$/)
       expect(callData.length).toBeGreaterThan(10)
-
-      console.log(`✅ Call data encoded using SDK (${callData.length} chars)`)
     })
 
     it('should encode batch calls using SDK utility', async () => {
@@ -432,8 +390,6 @@ describe('UserOperation E2E Flow', () => {
 
       expect(callData).toMatch(/^0x[a-fA-F0-9]+$/)
       expect(callData.length).toBeGreaterThan(100)
-
-      console.log(`✅ Batch call data encoded using SDK (${callData.length} chars)`)
     })
   })
 
@@ -463,10 +419,6 @@ describe('UserOperation E2E Flow', () => {
       expect(packed.nonce).toMatch(/^0x/)
       expect(packed.accountGasLimits).toMatch(/^0x[a-fA-F0-9]{64}$/)
       expect(packed.gasFees).toMatch(/^0x[a-fA-F0-9]{64}$/)
-
-      console.log('✅ UserOperation packed using SDK')
-      console.log(`   accountGasLimits: ${packed.accountGasLimits}`)
-      console.log(`   gasFees: ${packed.gasFees}`)
     })
 
     it('should compute UserOperation hash using SDK', async () => {
@@ -491,7 +443,6 @@ describe('UserOperation E2E Flow', () => {
       )
 
       expect(hash).toMatch(/^0x[a-fA-F0-9]{64}$/)
-      console.log(`✅ UserOp hash computed using SDK: ${hash}`)
     })
 
     it('should produce consistent hash for same UserOp', async () => {
@@ -522,7 +473,6 @@ describe('UserOperation E2E Flow', () => {
       )
 
       expect(hash1).toBe(hash2)
-      console.log('✅ Hash is deterministic')
     })
   })
 
@@ -533,7 +483,6 @@ describe('UserOperation E2E Flow', () => {
   describe('SDK: Bundler Client (core)', () => {
     it('should get supported entry points', async () => {
       if (!ctx.networkAvailable || !ctx.bundlerAvailable || !ctx.bundlerClient) {
-        console.log('⏭️ Skipping - bundler not available')
         return
       }
 
@@ -542,8 +491,6 @@ describe('UserOperation E2E Flow', () => {
       expect(entryPoints).toBeDefined()
       expect(Array.isArray(entryPoints)).toBe(true)
       expect(entryPoints.length).toBeGreaterThan(0)
-
-      console.log(`✅ Supported entry points: ${entryPoints.join(', ')}`)
     })
 
     it('should get chain ID from bundler', async () => {
@@ -552,7 +499,6 @@ describe('UserOperation E2E Flow', () => {
       const chainId = await ctx.bundlerClient.getChainId()
 
       expect(chainId).toBe(BigInt(TEST_CONFIG.chainId))
-      console.log(`✅ Bundler chain ID: ${chainId}`)
     })
 
     it('should estimate gas for UserOperation', async () => {
@@ -562,7 +508,6 @@ describe('UserOperation E2E Flow', () => {
         !ctx.bundlerClient ||
         !ctx.smartAccount
       ) {
-        console.log('⏭️ Skipping - prerequisites not met')
         return
       }
 
@@ -578,17 +523,7 @@ describe('UserOperation E2E Flow', () => {
         expect(estimation.preVerificationGas).toBeGreaterThan(0n)
         expect(estimation.verificationGasLimit).toBeGreaterThan(0n)
         expect(estimation.callGasLimit).toBeGreaterThan(0n)
-
-        console.log('✅ Gas estimation successful using SDK')
-        console.log(`   preVerificationGas: ${estimation.preVerificationGas}`)
-        console.log(`   verificationGasLimit: ${estimation.verificationGasLimit}`)
-        console.log(`   callGasLimit: ${estimation.callGasLimit}`)
-      } catch (error) {
-        // Expected if account needs funding or contracts not ready
-        console.log(
-          `⚠️ Gas estimation failed (may need funding): ${(error as Error).message?.slice(0, 100)}`
-        )
-      }
+      } catch (_error) {}
     })
 
     it('should return null for non-existent UserOp receipt', async () => {
@@ -598,7 +533,6 @@ describe('UserOperation E2E Flow', () => {
       const receipt = await ctx.bundlerClient.getUserOperationReceipt(fakeHash)
 
       expect(receipt).toBeNull()
-      console.log('✅ Non-existent receipt returns null')
     })
 
     it('should return null for non-existent UserOp by hash', async () => {
@@ -608,7 +542,6 @@ describe('UserOperation E2E Flow', () => {
       const result = await ctx.bundlerClient.getUserOperationByHash(fakeHash)
 
       expect(result).toBeNull()
-      console.log('✅ Non-existent UserOp returns null')
     })
 
     it('should reject invalid UserOperation submission', async () => {
@@ -627,8 +560,6 @@ describe('UserOperation E2E Flow', () => {
       }
 
       await expect(ctx.bundlerClient.sendUserOperation(invalidUserOp)).rejects.toThrow()
-
-      console.log('✅ Invalid UserOp correctly rejected')
     })
   })
 
@@ -639,7 +570,6 @@ describe('UserOperation E2E Flow', () => {
   describe('SDK: Smart Account Client (core)', () => {
     it('should create smart account client', async () => {
       if (!ctx.networkAvailable || !ctx.contractsDeployed || !ctx.bundlerAvailable) {
-        console.log('⏭️ Skipping - prerequisites not met')
         return
       }
 
@@ -668,9 +598,6 @@ describe('UserOperation E2E Flow', () => {
       expect(client.getAddress()).toBe(smartAccount.address)
       expect(client.account).toBe(smartAccount)
       expect(client.chain.id).toBe(TEST_CONFIG.chainId)
-
-      console.log('✅ Smart account client created using SDK')
-      console.log(`   Address: ${client.getAddress()}`)
     })
 
     it('should get nonce via smart account client', async () => {
@@ -700,7 +627,6 @@ describe('UserOperation E2E Flow', () => {
       const nonce = await client.getNonce()
 
       expect(nonce).toBeGreaterThanOrEqual(0n)
-      console.log(`✅ Nonce via client: ${nonce}`)
     })
 
     it('should check deployment status via smart account client', async () => {
@@ -730,7 +656,6 @@ describe('UserOperation E2E Flow', () => {
       const deployed = await client.isDeployed()
 
       expect(typeof deployed).toBe('boolean')
-      console.log(`✅ Deployed status via client: ${deployed}`)
     })
   })
 
@@ -759,8 +684,6 @@ describe('UserOperation E2E Flow', () => {
         args: [depositor],
       })
 
-      console.log(`   Balance before: ${formatEther(balanceBefore as bigint)} ETH`)
-
       const depositAmount = parseEther('0.01')
       const hash = await deployerWallet.writeContract({
         address: entryPoint,
@@ -779,10 +702,7 @@ describe('UserOperation E2E Flow', () => {
         functionName: 'balanceOf',
         args: [depositor],
       })
-
-      console.log(`   Balance after: ${formatEther(balanceAfter as bigint)} ETH`)
       expect(balanceAfter).toBeGreaterThan(balanceBefore as bigint)
-      console.log('✅ EntryPoint deposit successful')
     })
 
     it('should get nonce from EntryPoint', async () => {
@@ -799,7 +719,6 @@ describe('UserOperation E2E Flow', () => {
       })
 
       expect(nonce).toBeGreaterThanOrEqual(0n)
-      console.log(`✅ Nonce for ${sender.slice(0, 10)}...: ${nonce}`)
     })
   })
 
@@ -839,10 +758,6 @@ describe('UserOperation E2E Flow', () => {
 
       expect(signature).toMatch(/^0x[a-fA-F0-9]+$/)
       expect(signature.length).toBeGreaterThan(130)
-
-      console.log('✅ UserOperation signed via smart account')
-      console.log(`   Hash: ${userOpHash}`)
-      console.log(`   Signature: ${signature.slice(0, 50)}...`)
     })
   })
 })
@@ -854,12 +769,10 @@ describe('UserOperation E2E Flow', () => {
 describe('SDK Utility Unit Tests', () => {
   it('should use correct entry point constant', () => {
     expect(ENTRY_POINT_V07_ADDRESS).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    console.log(`✅ ENTRY_POINT_V07_ADDRESS: ${ENTRY_POINT_V07_ADDRESS}`)
   })
 
   it('should use correct ECDSA validator constant', () => {
     expect(ECDSA_VALIDATOR_ADDRESS).toMatch(/^0x[a-fA-F0-9]{40}$/)
-    console.log(`✅ ECDSA_VALIDATOR_ADDRESS: ${ECDSA_VALIDATOR_ADDRESS}`)
   })
 
   it('should pack UserOperation with factory data', () => {
@@ -882,8 +795,6 @@ describe('SDK Utility Unit Tests', () => {
     // initCode should be factory + factoryData
     expect(packed.initCode).toContain('factory')
     expect(packed.initCode.length).toBeGreaterThan(42)
-
-    console.log('✅ UserOperation with factory data packed correctly')
   })
 
   it('should pack UserOperation with paymaster data', () => {
@@ -908,8 +819,6 @@ describe('SDK Utility Unit Tests', () => {
     // paymasterAndData should contain paymaster address
     expect(packed.paymasterAndData).toContain('paymaster')
     expect(packed.paymasterAndData.length).toBeGreaterThan(42)
-
-    console.log('✅ UserOperation with paymaster data packed correctly')
   })
 
   it('should handle empty optional fields in UserOperation', () => {
@@ -929,7 +838,5 @@ describe('SDK Utility Unit Tests', () => {
 
     expect(packed.initCode).toBe('0x')
     expect(packed.paymasterAndData).toBe('0x')
-
-    console.log('✅ Empty optional fields handled correctly')
   })
 })

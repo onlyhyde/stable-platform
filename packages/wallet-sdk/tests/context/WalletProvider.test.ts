@@ -1,9 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
-import { createElement } from 'react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { WalletProvider, useWalletContext } from '../../src/context/WalletProvider'
-import type { WalletContextValue } from '../../src/context/WalletProvider'
+import { createElement } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useWalletContext, WalletProvider } from '../../src/context/WalletProvider'
 
 // ============================================================================
 // Mocks
@@ -149,9 +148,7 @@ describe('WalletProvider', () => {
 
   describe('existing connection detection', () => {
     it('should detect existing accounts on mount', async () => {
-      mockProvider.getAccounts.mockResolvedValue([
-        '0x1234567890abcdef1234567890abcdef12345678',
-      ])
+      mockProvider.getAccounts.mockResolvedValue(['0x1234567890abcdef1234567890abcdef12345678'])
       mockProvider.getChainId.mockResolvedValue('0x89')
 
       const { result } = renderHook(() => useWalletContext(), {
@@ -162,9 +159,7 @@ describe('WalletProvider', () => {
         expect(result.current.isConnected).toBe(true)
       })
 
-      expect(result.current.account).toBe(
-        '0x1234567890abcdef1234567890abcdef12345678'
-      )
+      expect(result.current.account).toBe('0x1234567890abcdef1234567890abcdef12345678')
       expect(result.current.chainId).toBe(137) // 0x89 = 137
     })
   })
@@ -172,9 +167,7 @@ describe('WalletProvider', () => {
   describe('autoConnect', () => {
     it('should auto-connect when autoConnect is true and no existing accounts', async () => {
       mockProvider.getAccounts.mockResolvedValue([])
-      mockProvider.connect.mockResolvedValue([
-        '0xabc123def456abc123def456abc123def456abc1',
-      ])
+      mockProvider.connect.mockResolvedValue(['0xabc123def456abc123def456abc123def456abc1'])
 
       renderHook(() => useWalletContext(), {
         wrapper: wrapper({ autoConnect: true }),
@@ -218,9 +211,7 @@ describe('WalletProvider', () => {
   describe('connect()', () => {
     it('should connect and update state', async () => {
       mockProvider.getAccounts.mockResolvedValue([])
-      mockProvider.connect.mockResolvedValue([
-        '0xabc123def456abc123def456abc123def456abc1',
-      ])
+      mockProvider.connect.mockResolvedValue(['0xabc123def456abc123def456abc123def456abc1'])
       mockProvider.getChainId.mockResolvedValue('0xa')
 
       const { result } = renderHook(() => useWalletContext(), {
@@ -285,9 +276,7 @@ describe('WalletProvider', () => {
 
   describe('disconnect()', () => {
     it('should disconnect and reset state', async () => {
-      mockProvider.getAccounts.mockResolvedValue([
-        '0x1234567890abcdef1234567890abcdef12345678',
-      ])
+      mockProvider.getAccounts.mockResolvedValue(['0x1234567890abcdef1234567890abcdef12345678'])
 
       const { result } = renderHook(() => useWalletContext(), {
         wrapper: wrapper(),
@@ -309,9 +298,7 @@ describe('WalletProvider', () => {
 
   describe('switchNetwork()', () => {
     it('should call provider.switchChain', async () => {
-      mockProvider.getAccounts.mockResolvedValue([
-        '0x1234567890abcdef1234567890abcdef12345678',
-      ])
+      mockProvider.getAccounts.mockResolvedValue(['0x1234567890abcdef1234567890abcdef12345678'])
 
       const { result } = renderHook(() => useWalletContext(), {
         wrapper: wrapper(),
@@ -358,21 +345,15 @@ describe('WalletProvider', () => {
       })
 
       act(() => {
-        mockProvider._emit('accountsChanged', [
-          '0xnewaccount1234567890abcdef1234567890abcd',
-        ])
+        mockProvider._emit('accountsChanged', ['0xnewaccount1234567890abcdef1234567890abcd'])
       })
 
       expect(result.current.isConnected).toBe(true)
-      expect(result.current.account).toBe(
-        '0xnewaccount1234567890abcdef1234567890abcd'
-      )
+      expect(result.current.account).toBe('0xnewaccount1234567890abcdef1234567890abcd')
     })
 
     it('should handle accountsChanged with empty array (disconnect)', async () => {
-      mockProvider.getAccounts.mockResolvedValue([
-        '0x1234567890abcdef1234567890abcdef12345678',
-      ])
+      mockProvider.getAccounts.mockResolvedValue(['0x1234567890abcdef1234567890abcdef12345678'])
 
       const { result } = renderHook(() => useWalletContext(), {
         wrapper: wrapper(),
@@ -428,9 +409,7 @@ describe('WalletProvider', () => {
     })
 
     it('should reset state on disconnect event', async () => {
-      mockProvider.getAccounts.mockResolvedValue([
-        '0x1234567890abcdef1234567890abcdef12345678',
-      ])
+      mockProvider.getAccounts.mockResolvedValue(['0x1234567890abcdef1234567890abcdef12345678'])
 
       const { result } = renderHook(() => useWalletContext(), {
         wrapper: wrapper(),

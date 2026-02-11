@@ -8,7 +8,7 @@
  * - Environment variable overrides
  */
 
-export * from './entryPoints'
-export * from './networks'
 export * from './chains'
+export * from './entryPoints'
 export * from './env'
+export * from './networks'

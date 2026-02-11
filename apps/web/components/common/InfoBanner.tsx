@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
 import type { JSX } from 'react'
+import { cn } from '@/lib/utils'
 import { Card, CardContent } from './Card'
 
 type BannerVariant = 'info' | 'warning' | 'success' | 'error'

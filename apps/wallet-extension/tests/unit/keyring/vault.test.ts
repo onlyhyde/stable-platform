@@ -4,8 +4,8 @@
  */
 
 import {
-  type EncryptedSessionData,
   decryptSessionData,
+  type EncryptedSessionData,
   isEncryptedSessionData,
 } from '../../../src/background/keyring/sessionCrypto'
 import { Vault } from '../../../src/background/keyring/vault'

@@ -4,21 +4,10 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  ECDSAValidatorAbi,
-  IModuleAbi,
-  InvalidModuleTypeError,
-  // ABIs
-  KernelModuleAbi,
-  // Types and constants
-  MODULE_TYPES,
-  ModuleError,
-  ModuleInstallationError,
-  ModuleNotInstalledError,
-  SessionKeyExecutorAbi,
-  SpendingLimitHookAbi,
   buildBatchInstallModuleCalls,
   buildInstallModuleCall,
   buildUninstallModuleCall,
+  ECDSAValidatorAbi,
   // Init data encoders
   encodeECDSAValidatorInitData,
   encodeHealthFactorHookInitData,
@@ -34,6 +23,17 @@ import {
   encodeUninstallModule,
   encodeWebAuthnValidatorInitData,
   getModuleTypeName,
+  IModuleAbi,
+  InvalidModuleTypeError,
+  // ABIs
+  KernelModuleAbi,
+  // Types and constants
+  MODULE_TYPES,
+  ModuleError,
+  ModuleInstallationError,
+  ModuleNotInstalledError,
+  SessionKeyExecutorAbi,
+  SpendingLimitHookAbi,
   validateModuleType,
 } from '../src'
 import { TEST_ADDRESSES, TEST_VALUES } from './setup'

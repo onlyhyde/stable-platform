@@ -5,13 +5,13 @@
  */
 
 import {
-  http,
   type Address,
+  createPublicClient,
   type Hash,
   type Hex,
+  http,
   type PublicClient,
   type TransactionReceipt,
-  createPublicClient,
 } from 'viem'
 import { DEFAULT_PROVIDER_TIMEOUT, MIN_PRIORITY_FEE } from '../config'
 import type {

@@ -1,10 +1,5 @@
 // Use SDK for bundler client, UserOperation utilities, and security modules
 import {
-  // Security utilities
-  InputValidator,
-  type ModuleType,
-  type TransactionObject,
-  type UserOperation,
   createBundlerClient,
   // Module operations
   createModuleOperationClient,
@@ -12,13 +7,18 @@ import {
   createTypedDataValidator,
   getModuleTypeName,
   getUserOperationHash,
+  // Security utilities
+  InputValidator,
+  type ModuleType,
+  type TransactionObject,
+  type UserOperation,
 } from '@stablenet/core'
 import type { Address, Hash, Hex } from 'viem'
-import { http, createPublicClient, isAddress } from 'viem'
+import { createPublicClient, http, isAddress } from 'viem'
 import { DEFAULT_VALUES, ENTRY_POINT_ADDRESSES, RPC_ERRORS } from '../../shared/constants'
-import { createLogger } from '../../shared/utils/logger'
-import { handleApprovalError } from '../../shared/errors/WalletError'
 import { RpcError } from '../../shared/errors/rpcErrors'
+import { handleApprovalError } from '../../shared/errors/WalletError'
+import { createLogger } from '../../shared/utils/logger'
 import type { JsonRpcRequest, JsonRpcResponse, SupportedMethod } from '../../types'
 import { approvalController } from '../controllers/approvalController'
 import { keyringController } from '../keyring'
@@ -31,6 +31,7 @@ const logger = createLogger('RpcHandler')
 // Create singleton instances for security utilities
 const rateLimiter = createRateLimiter()
 const typedDataValidator = createTypedDataValidator()
+
 import {
   createAuthorization,
   createAuthorizationHash,
@@ -887,9 +888,7 @@ const handlers: Record<string, RpcHandler> = {
     const isInternalRequest = origin === 'extension' || origin === 'internal'
     if (!isInternalRequest) {
       const connectedAccounts = walletState.getConnectedAccounts(origin)
-      const isAuthorized = connectedAccounts.some(
-        (a) => a.toLowerCase() === account.toLowerCase()
-      )
+      const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === account.toLowerCase())
       if (!isAuthorized) {
         throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
       }
@@ -910,18 +909,17 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     const client = getPublicClient(network.rpcUrl)
-    const chainId = request.chainId !== undefined
-      ? (typeof request.chainId === 'string'
+    const chainId =
+      request.chainId !== undefined
+        ? typeof request.chainId === 'string'
           ? Number.parseInt(request.chainId, request.chainId.startsWith('0x') ? 16 : 10)
-          : request.chainId)
-      : network.chainId
+          : request.chainId
+        : network.chainId
 
     // Request user approval for external requests
     if (!isInternalRequest) {
       try {
-        await approvalController.requestAuthorization(
-          origin, account, contractAddress, chainId, 0n
-        )
+        await approvalController.requestAuthorization(origin, account, contractAddress, chainId, 0n)
       } catch (error) {
         handleApprovalError(error, { method: 'wallet_delegateAccount', origin })
       }
@@ -942,7 +940,8 @@ const handlers: Record<string, RpcHandler> = {
       const authorization = createAuthorization(chainId, contractAddress, authNonce)
       const authorizationHash = createAuthorizationHash(authorization)
       const signatureResult = await keyringController.signAuthorizationHash(
-        account, authorizationHash
+        account,
+        authorizationHash
       )
 
       // Step 4: Get gas prices
@@ -996,7 +995,7 @@ const handlers: Record<string, RpcHandler> = {
           txHash,
           timestamp: Date.now(),
         })
-      } catch (err) {
+      } catch (_err) {
         logger.warn('Failed to track delegation transaction (tx was broadcast successfully)')
       }
 
@@ -1102,7 +1101,10 @@ const handlers: Record<string, RpcHandler> = {
     // Request paymaster sponsorship if userOp doesn't already have paymaster data
     if (!userOp.paymaster && network.paymasterUrl) {
       const sponsorship = await requestPaymasterSponsorship(
-        network.paymasterUrl, userOp, entryPoint, network.chainId,
+        network.paymasterUrl,
+        userOp,
+        entryPoint,
+        network.chainId
       )
       if (sponsorship) {
         userOp.paymaster = sponsorship.paymaster
@@ -1408,7 +1410,9 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // Check if this is an EIP-7702 SetCode transaction
-    const isEip7702 = txParams.type === '0x04' || (txParams.authorizationList && txParams.authorizationList.length > 0)
+    const isEip7702 =
+      txParams.type === '0x04' ||
+      (txParams.authorizationList && txParams.authorizationList.length > 0)
 
     // Build transaction object for signing
     const transaction = isEip7702
@@ -1419,7 +1423,7 @@ const handlers: Record<string, RpcHandler> = {
           gas,
           nonce,
           chainId: network.chainId,
-          maxFeePerGas: maxFeePerGas ?? gasPrice ?? await client.getGasPrice(),
+          maxFeePerGas: maxFeePerGas ?? gasPrice ?? (await client.getGasPrice()),
           maxPriorityFeePerGas: maxPriorityFeePerGas ?? maxFeePerGas ?? gasPrice ?? BigInt(0),
           type: 'eip7702' as const,
           authorizationList: (txParams.authorizationList ?? []).map((auth) => ({
@@ -1492,7 +1496,7 @@ const handlers: Record<string, RpcHandler> = {
         maxFeePerGas,
         maxPriorityFeePerGas,
       })
-    } catch (err) {
+    } catch (_err) {
       logger.warn('Failed to track pending transaction (tx was broadcast successfully)')
     }
 
@@ -1851,7 +1855,10 @@ const handlers: Record<string, RpcHandler> = {
     // Request paymaster sponsorship if available
     if (network.paymasterUrl) {
       const sponsorship = await requestPaymasterSponsorship(
-        network.paymasterUrl, userOp, ENTRY_POINT_ADDRESSES.V07, chainId,
+        network.paymasterUrl,
+        userOp,
+        ENTRY_POINT_ADDRESSES.V07,
+        chainId
       )
       if (sponsorship) {
         userOp.paymaster = sponsorship.paymaster
@@ -2042,7 +2049,10 @@ const handlers: Record<string, RpcHandler> = {
     // Request paymaster sponsorship if available
     if (network.paymasterUrl) {
       const sponsorship = await requestPaymasterSponsorship(
-        network.paymasterUrl, userOp, ENTRY_POINT_ADDRESSES.V07, chainId,
+        network.paymasterUrl,
+        userOp,
+        ENTRY_POINT_ADDRESSES.V07,
+        chainId
       )
       if (sponsorship) {
         userOp.paymaster = sponsorship.paymaster
@@ -2432,7 +2442,10 @@ const handlers: Record<string, RpcHandler> = {
     // Request paymaster sponsorship if available
     if (network.paymasterUrl) {
       const sponsorship = await requestPaymasterSponsorship(
-        network.paymasterUrl, userOp, ENTRY_POINT_ADDRESSES.V07, chainId,
+        network.paymasterUrl,
+        userOp,
+        ENTRY_POINT_ADDRESSES.V07,
+        chainId
       )
       if (sponsorship) {
         userOp.paymaster = sponsorship.paymaster
@@ -2654,12 +2667,14 @@ const handlers: Record<string, RpcHandler> = {
       }
 
       // Estimate gas limit
-      const gasLimit = await client.estimateGas({
-        account: estimateParams.from as Address,
-        to: estimateParams.to as Address,
-        value: parsedValue,
-        data: (estimateParams.data as `0x${string}`) || undefined,
-      }).catch(() => 21000n) // Default to simple transfer gas
+      const gasLimit = await client
+        .estimateGas({
+          account: estimateParams.from as Address,
+          to: estimateParams.to as Address,
+          value: parsedValue,
+          data: (estimateParams.data as `0x${string}`) || undefined,
+        })
+        .catch(() => 21000n) // Default to simple transfer gas
 
       // Get current gas price (try EIP-1559 first)
       let maxFeePerGas = 0n
@@ -3157,7 +3172,7 @@ function createRpcError(error: { code: number; message: string; data?: unknown }
 async function fetchFromPaymaster(
   paymasterUrl: string,
   method: string,
-  params: unknown[],
+  params: unknown[]
 ): Promise<unknown> {
   const response = await fetch(paymasterUrl, {
     method: 'POST',
@@ -3174,7 +3189,7 @@ async function fetchFromPaymaster(
     throw new Error(`Paymaster request failed: ${response.status}`)
   }
 
-  const data = await response.json() as { result?: unknown; error?: { message?: string } }
+  const data = (await response.json()) as { result?: unknown; error?: { message?: string } }
   if (data.error) {
     throw new Error(data.error.message ?? 'Paymaster error')
   }
@@ -3190,7 +3205,7 @@ async function requestPaymasterSponsorship(
   paymasterUrl: string,
   userOp: UserOperation,
   entryPoint: Address,
-  chainId: number,
+  chainId: number
 ): Promise<{
   paymaster: Address
   paymasterData: Hex
@@ -3216,23 +3231,25 @@ async function requestPaymasterSponsorship(
     }
 
     // Step 1: Get stub data for gas estimation
-    const stubResult = await fetchFromPaymaster(paymasterUrl, 'pm_getPaymasterStubData', [
+    const stubResult = (await fetchFromPaymaster(paymasterUrl, 'pm_getPaymasterStubData', [
       userOpHex,
       entryPoint,
       chainIdHex,
-    ]) as {
-      paymaster?: string
-      paymasterData?: string
-      paymasterVerificationGasLimit?: string
-      paymasterPostOpGasLimit?: string
-    } | undefined
+    ])) as
+      | {
+          paymaster?: string
+          paymasterData?: string
+          paymasterVerificationGasLimit?: string
+          paymasterPostOpGasLimit?: string
+        }
+      | undefined
 
     if (!stubResult?.paymaster) {
       return null
     }
 
     // Step 2: Get final signed paymaster data
-    const finalResult = await fetchFromPaymaster(paymasterUrl, 'pm_getPaymasterData', [
+    const finalResult = (await fetchFromPaymaster(paymasterUrl, 'pm_getPaymasterData', [
       {
         ...userOpHex,
         paymaster: stubResult.paymaster,
@@ -3242,12 +3259,14 @@ async function requestPaymasterSponsorship(
       },
       entryPoint,
       chainIdHex,
-    ]) as {
-      paymaster?: string
-      paymasterData?: string
-      paymasterVerificationGasLimit?: string
-      paymasterPostOpGasLimit?: string
-    } | undefined
+    ])) as
+      | {
+          paymaster?: string
+          paymasterData?: string
+          paymasterVerificationGasLimit?: string
+          paymasterPostOpGasLimit?: string
+        }
+      | undefined
 
     if (!finalResult?.paymaster) {
       return null
@@ -3260,7 +3279,9 @@ async function requestPaymasterSponsorship(
       paymasterPostOpGasLimit: BigInt(finalResult.paymasterPostOpGasLimit ?? '0'),
     }
   } catch (err) {
-    logger.warn(`Paymaster sponsorship unavailable, falling back to self-pay: ${err instanceof Error ? err.message : String(err)}`)
+    logger.warn(
+      `Paymaster sponsorship unavailable, falling back to self-pay: ${err instanceof Error ? err.message : String(err)}`
+    )
     return null
   }
 }

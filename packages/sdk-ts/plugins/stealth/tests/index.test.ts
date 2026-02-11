@@ -3,8 +3,6 @@ import { hexToBytes } from 'viem'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   COMPRESSED_PUBKEY_SIZE,
-  SCHEME_ID,
-  VIEW_TAG_SIZE,
   checkViewTag,
   computeStealthPrivateKey,
   computeViewTag,
@@ -18,6 +16,8 @@ import {
   generateStealthKeyPair,
   parseStealthMetaAddress,
   parseStealthMetaAddressUri,
+  SCHEME_ID,
+  VIEW_TAG_SIZE,
   validateMetadata,
   viewTagsMatch,
 } from '../src'

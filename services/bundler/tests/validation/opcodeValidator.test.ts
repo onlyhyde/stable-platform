@@ -477,9 +477,9 @@ describe('OpcodeValidator', () => {
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, TEST_FACTORY, TEST_PAYMASTER)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, TEST_FACTORY, TEST_PAYMASTER)).rejects.toThrow(
+        RpcError
+      )
       try {
         await validator.validate(TEST_SENDER, TEST_FACTORY, TEST_PAYMASTER)
       } catch (error) {
@@ -497,9 +497,7 @@ describe('OpcodeValidator', () => {
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, TEST_FACTORY, undefined)
-      ).resolves.not.toThrow()
+      await expect(validator.validate(TEST_SENDER, TEST_FACTORY, undefined)).resolves.not.toThrow()
     })
 
     it('should allow paymaster accessing own storage', async () => {
@@ -527,9 +525,9 @@ describe('OpcodeValidator', () => {
       })
       mockTracer.trace.mockResolvedValue(trace)
 
-      await expect(
-        validator.validate(TEST_SENDER, TEST_FACTORY, TEST_PAYMASTER)
-      ).rejects.toThrow(RpcError)
+      await expect(validator.validate(TEST_SENDER, TEST_FACTORY, TEST_PAYMASTER)).rejects.toThrow(
+        RpcError
+      )
     })
 
     it('should handle nested call storage violations', async () => {

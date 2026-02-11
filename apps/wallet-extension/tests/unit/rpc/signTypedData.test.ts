@@ -10,7 +10,7 @@ import { handleRpcRequest } from '../../../src/background/rpc/handler'
 import { walletState } from '../../../src/background/state/store'
 import { RPC_ERRORS } from '../../../src/shared/constants'
 import type { JsonRpcRequest } from '../../../src/types'
-import { TEST_ACCOUNTS, TEST_ORIGINS, createMockTypedData } from '../../utils/testUtils'
+import { createMockTypedData, TEST_ACCOUNTS, TEST_ORIGINS } from '../../utils/testUtils'
 
 // Mock dependencies
 jest.mock('../../../src/background/state/store', () => ({

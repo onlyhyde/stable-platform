@@ -1,8 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/common'
 import { useWallet } from '@/hooks'
-import Link from 'next/link'
 
 export default function EnterprisePage() {
   const { isConnected } = useWallet()

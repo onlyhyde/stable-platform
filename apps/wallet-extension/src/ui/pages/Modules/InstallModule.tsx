@@ -1,5 +1,6 @@
 import {
   type Account,
+  getModuleTypeName,
   MODULE_TYPE,
   type ModuleRegistryEntry,
   type ModuleType,
@@ -7,13 +8,14 @@ import {
   type SessionKeyConfig,
   type SpendingLimitHookConfig,
   type WebAuthnValidatorConfig,
-  getModuleTypeName,
 } from '@stablenet/core'
 import { Fragment, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
 import { formatEther, isAddress } from 'viem'
-
+import { useModuleInstall } from './hooks/useModuleInstall'
+import { useModuleRegistry } from './hooks/useModuleRegistry'
+import { saveWebAuthnCredential } from './hooks/useWebAuthn'
 import { LendingExecutorConfigUI } from './LendingExecutorConfig'
 import { ModuleConfigForm } from './ModuleConfig'
 import { MultiSigConfigUI } from './MultiSigConfig'
@@ -23,15 +25,18 @@ import { SpendingLimitConfigUI } from './SpendingLimitConfig'
 import { StakingExecutorConfigUI } from './StakingExecutorConfig'
 import { SwapExecutorConfigUI } from './SwapExecutorConfig'
 import { WebAuthnConfig } from './WebAuthnConfig'
-import { useModuleInstall } from './hooks/useModuleInstall'
-import { useModuleRegistry } from './hooks/useModuleRegistry'
-import { saveWebAuthnCredential } from './hooks/useWebAuthn'
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type WizardStep = 'select-type' | 'select-module' | 'configure' | 'custom-address' | 'confirm' | 'pending'
+type WizardStep =
+  | 'select-type'
+  | 'select-module'
+  | 'configure'
+  | 'custom-address'
+  | 'confirm'
+  | 'pending'
 
 interface InstallModuleWizardProps {
   account: Account
@@ -776,10 +781,18 @@ function InstallConfirmation({
 
       {/* Actions */}
       <div className="flex gap-3">
-        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+        <button
+          type="button"
+          className="btn-ghost flex-1 py-3 rounded-lg font-medium"
+          onClick={onBack}
+        >
           {tc('back')}
         </button>
-        <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={onConfirm}>
+        <button
+          type="button"
+          className="btn-primary flex-1 py-3 rounded-lg font-medium"
+          onClick={onConfirm}
+        >
           {t('installModule')}
         </button>
       </div>
@@ -827,7 +840,7 @@ function CustomModuleInput({ initialType, onSubmit, onBack }: CustomModuleInputP
 
     if (hasError) return
 
-    const hexInitData: Hex = initData && initData.startsWith('0x') ? (initData as Hex) : '0x'
+    const hexInitData: Hex = initData?.startsWith('0x') ? (initData as Hex) : '0x'
     onSubmit(address, moduleType as ModuleType, hexInitData, name)
   }
 
@@ -906,8 +919,7 @@ function CustomModuleInput({ initialType, onSubmit, onBack }: CustomModuleInputP
                 backgroundColor:
                   moduleType === mt.type ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--card))',
                 borderWidth: 2,
-                borderColor:
-                  moduleType === mt.type ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                borderColor: moduleType === mt.type ? 'rgb(var(--primary))' : 'rgb(var(--border))',
               }}
               onClick={() => {
                 setModuleType(mt.type)
@@ -982,10 +994,18 @@ function CustomModuleInput({ initialType, onSubmit, onBack }: CustomModuleInputP
 
       {/* Actions */}
       <div className="flex gap-3">
-        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+        <button
+          type="button"
+          className="btn-ghost flex-1 py-3 rounded-lg font-medium"
+          onClick={onBack}
+        >
           {tc('back')}
         </button>
-        <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleContinue}>
+        <button
+          type="button"
+          className="btn-primary flex-1 py-3 rounded-lg font-medium"
+          onClick={handleContinue}
+        >
           {t('continue')}
         </button>
       </div>
@@ -1085,10 +1105,18 @@ function CustomInstallConfirmation({
 
       {/* Actions */}
       <div className="flex gap-3">
-        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={onBack}>
+        <button
+          type="button"
+          className="btn-ghost flex-1 py-3 rounded-lg font-medium"
+          onClick={onBack}
+        >
           {tc('back')}
         </button>
-        <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={onConfirm}>
+        <button
+          type="button"
+          className="btn-primary flex-1 py-3 rounded-lg font-medium"
+          onClick={onConfirm}
+        >
           {t('installModule')}
         </button>
       </div>

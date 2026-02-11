@@ -184,7 +184,7 @@ test.describe('Network Management', () => {
       extensionPopup,
     }) => {
       const home = new WalletHomePage(extensionPopup)
-      const initialNetwork = await home.getCurrentNetwork()
+      const _initialNetwork = await home.getCurrentNetwork()
 
       const dappPage = await extensionContext.newPage()
       await dappPage.goto(TEST_DAPP_URL)

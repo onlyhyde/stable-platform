@@ -1,4 +1,4 @@
-export { RegistryProvider, useRegistryClient, type RegistryProviderProps } from './provider'
-export { useContract, type UseContractResult } from './hooks/useContract'
-export { useAddressSet, type UseAddressSetResult } from './hooks/useAddressSet'
-export { useRegistryStatus, type UseRegistryStatusResult } from './hooks/useRegistryStatus'
+export { type UseAddressSetResult, useAddressSet } from './hooks/useAddressSet'
+export { type UseContractResult, useContract } from './hooks/useContract'
+export { type UseRegistryStatusResult, useRegistryStatus } from './hooks/useRegistryStatus'
+export { RegistryProvider, type RegistryProviderProps, useRegistryClient } from './provider'

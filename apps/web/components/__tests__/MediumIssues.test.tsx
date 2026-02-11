@@ -247,7 +247,7 @@ describe('StealthSendPage', () => {
       sendToStealthAddress: mockSendToStealthAddress,
       isLoading: false,
       error: null,
-    // biome-ignore lint/suspicious/noExplicitAny: test mock requires any
+      // biome-ignore lint/suspicious/noExplicitAny: test mock requires any
     } as any)
 
     const StealthSendPage = (await import('@/app/stealth/send/page')).default
@@ -289,7 +289,7 @@ describe('StealthSendPage', () => {
       sendToStealthAddress: mockSendToStealthAddress,
       isLoading: false,
       error: null,
-    // biome-ignore lint/suspicious/noExplicitAny: test mock requires any
+      // biome-ignore lint/suspicious/noExplicitAny: test mock requires any
     } as any)
 
     const StealthSendPage = (await import('@/app/stealth/send/page')).default

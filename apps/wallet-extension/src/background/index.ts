@@ -12,8 +12,8 @@
  */
 
 import type { Address, Hex } from 'viem'
-import { STORAGE_KEYS, getSecurityConfig } from '../config'
-import { DEFAULT_NETWORKS, MESSAGE_TYPES, loadDefaultNetworks } from '../shared/constants'
+import { getSecurityConfig, STORAGE_KEYS } from '../config'
+import { loadDefaultNetworks, MESSAGE_TYPES } from '../shared/constants'
 import { originFromUrl, resolveOrigin } from '../shared/security/originVerifier'
 import { createLogger } from '../shared/utils/logger'
 import { validateExtensionMessage } from '../shared/validation/messageSchema'
@@ -23,7 +23,7 @@ import { networkController } from './controller/networkController'
 import { approvalController } from './controllers/approvalController'
 import { keyringController } from './keyring'
 import { handleRpcRequest } from './rpc/handler'
-import { type IndexerClient, createIndexerClient } from './services/IndexerClient'
+import { createIndexerClient, type IndexerClient } from './services/IndexerClient'
 import { transactionWatcher } from './services/transactionWatcher'
 import { walletState } from './state/store'
 import { eventBroadcaster } from './utils/eventBroadcaster'
@@ -910,9 +910,7 @@ async function handleMessage(
       }
 
       // Validate that network exists
-      const existing = walletState.getState().networks.networks.find(
-        (n) => n.chainId === chainId
-      )
+      const existing = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
       if (!existing) {
         return {
           type: 'NETWORK_ERROR',

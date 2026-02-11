@@ -49,34 +49,6 @@
  * ```
  */
 
-// Types
-export type {
-  VerifyingPaymasterConfig,
-  ERC20PaymasterConfig,
-  SponsorPaymasterConfig,
-  Permit2PaymasterConfig,
-  PaymasterType,
-  PaymasterGasEstimation,
-  VerifyingPaymasterData,
-  ERC20PaymasterData,
-} from './types'
-
-// Constants
-export { DEFAULT_VALIDITY_SECONDS } from './types'
-
-// Verifying Paymaster
-export {
-  createVerifyingPaymaster,
-  createVerifyingPaymasterFromPrivateKey,
-} from './verifyingPaymaster'
-
-// Sponsor Paymaster (API-based)
-export {
-  createSponsorPaymaster,
-  createSponsorPaymasterWithPolicy,
-  type SponsorshipPolicy,
-} from './sponsorPaymaster'
-
 // Permit2 Paymaster (Token-based gas payment)
 export {
   createPermit2Paymaster,
@@ -84,3 +56,27 @@ export {
   decodePermit2PaymasterData,
   getPermit2Nonce,
 } from './permit2Paymaster'
+// Sponsor Paymaster (API-based)
+export {
+  createSponsorPaymaster,
+  createSponsorPaymasterWithPolicy,
+  type SponsorshipPolicy,
+} from './sponsorPaymaster'
+// Types
+export type {
+  ERC20PaymasterConfig,
+  ERC20PaymasterData,
+  PaymasterGasEstimation,
+  PaymasterType,
+  Permit2PaymasterConfig,
+  SponsorPaymasterConfig,
+  VerifyingPaymasterConfig,
+  VerifyingPaymasterData,
+} from './types'
+// Constants
+export { DEFAULT_VALIDITY_SECONDS } from './types'
+// Verifying Paymaster
+export {
+  createVerifyingPaymaster,
+  createVerifyingPaymasterFromPrivateKey,
+} from './verifyingPaymaster'

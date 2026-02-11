@@ -10,21 +10,21 @@
 import {
   type Account,
   type BundlerClient,
+  createBundlerClient,
+  createTransactionRouter,
   DEFAULT_CALL_GAS_LIMIT,
   DEFAULT_PRE_VERIFICATION_GAS,
   DEFAULT_VERIFICATION_GAS_LIMIT,
   ENTRY_POINT_V07_ADDRESS,
   type GasEstimate,
+  getAvailableTransactionModes,
+  getDefaultTransactionMode,
+  getUserOperationHash,
   type MultiModeTransactionRequest,
   TRANSACTION_MODE,
   type TransactionMode,
   type TransactionRouter,
   type UserOperation,
-  createBundlerClient,
-  createTransactionRouter,
-  getAvailableTransactionModes,
-  getDefaultTransactionMode,
-  getUserOperationHash,
 } from '@stablenet/core'
 import type { Address, Hex } from 'viem'
 import { createLogger } from '../../shared/utils/logger'
@@ -720,11 +720,19 @@ export class MultiModeTransactionController {
       sender: partialUserOp.sender ?? txMeta.txParams.from,
       nonce: partialUserOp.nonce ?? 0n,
       callData: partialUserOp.callData ?? (txMeta.txParams.data as Hex) ?? '0x',
-      callGasLimit: partialUserOp.callGasLimit ?? prepared.gasEstimate.callGasLimit ?? DEFAULT_CALL_GAS_LIMIT,
-      verificationGasLimit: partialUserOp.verificationGasLimit ?? prepared.gasEstimate.verificationGasLimit ?? DEFAULT_VERIFICATION_GAS_LIMIT,
-      preVerificationGas: partialUserOp.preVerificationGas ?? prepared.gasEstimate.preVerificationGas ?? DEFAULT_PRE_VERIFICATION_GAS,
+      callGasLimit:
+        partialUserOp.callGasLimit ?? prepared.gasEstimate.callGasLimit ?? DEFAULT_CALL_GAS_LIMIT,
+      verificationGasLimit:
+        partialUserOp.verificationGasLimit ??
+        prepared.gasEstimate.verificationGasLimit ??
+        DEFAULT_VERIFICATION_GAS_LIMIT,
+      preVerificationGas:
+        partialUserOp.preVerificationGas ??
+        prepared.gasEstimate.preVerificationGas ??
+        DEFAULT_PRE_VERIFICATION_GAS,
       maxFeePerGas: partialUserOp.maxFeePerGas ?? prepared.gasEstimate.maxFeePerGas,
-      maxPriorityFeePerGas: partialUserOp.maxPriorityFeePerGas ?? prepared.gasEstimate.maxPriorityFeePerGas,
+      maxPriorityFeePerGas:
+        partialUserOp.maxPriorityFeePerGas ?? prepared.gasEstimate.maxPriorityFeePerGas,
       signature: '0x' as Hex,
     }
 
@@ -733,8 +741,10 @@ export class MultiModeTransactionController {
     if (partialUserOp.factoryData) userOp.factoryData = partialUserOp.factoryData
     if (partialUserOp.paymaster) userOp.paymaster = partialUserOp.paymaster
     if (partialUserOp.paymasterData) userOp.paymasterData = partialUserOp.paymasterData
-    if (partialUserOp.paymasterVerificationGasLimit) userOp.paymasterVerificationGasLimit = partialUserOp.paymasterVerificationGasLimit
-    if (partialUserOp.paymasterPostOpGasLimit) userOp.paymasterPostOpGasLimit = partialUserOp.paymasterPostOpGasLimit
+    if (partialUserOp.paymasterVerificationGasLimit)
+      userOp.paymasterVerificationGasLimit = partialUserOp.paymasterVerificationGasLimit
+    if (partialUserOp.paymasterPostOpGasLimit)
+      userOp.paymasterPostOpGasLimit = partialUserOp.paymasterPostOpGasLimit
 
     const entryPoint = this.options.entryPointAddress ?? ENTRY_POINT_V07_ADDRESS
     return getUserOperationHash(userOp, entryPoint, BigInt(this.options.chainId))
@@ -768,19 +778,29 @@ export class MultiModeTransactionController {
         sender: partialUserOp.sender ?? txMeta.txParams.from,
         nonce: partialUserOp.nonce ?? 0n,
         callData: partialUserOp.callData ?? (txMeta.txParams.data as Hex) ?? '0x',
-        callGasLimit: partialUserOp.callGasLimit ?? prepared.gasEstimate.callGasLimit ?? DEFAULT_CALL_GAS_LIMIT,
-        verificationGasLimit: partialUserOp.verificationGasLimit ?? prepared.gasEstimate.verificationGasLimit ?? DEFAULT_VERIFICATION_GAS_LIMIT,
-        preVerificationGas: partialUserOp.preVerificationGas ?? prepared.gasEstimate.preVerificationGas ?? DEFAULT_PRE_VERIFICATION_GAS,
+        callGasLimit:
+          partialUserOp.callGasLimit ?? prepared.gasEstimate.callGasLimit ?? DEFAULT_CALL_GAS_LIMIT,
+        verificationGasLimit:
+          partialUserOp.verificationGasLimit ??
+          prepared.gasEstimate.verificationGasLimit ??
+          DEFAULT_VERIFICATION_GAS_LIMIT,
+        preVerificationGas:
+          partialUserOp.preVerificationGas ??
+          prepared.gasEstimate.preVerificationGas ??
+          DEFAULT_PRE_VERIFICATION_GAS,
         maxFeePerGas: partialUserOp.maxFeePerGas ?? prepared.gasEstimate.maxFeePerGas,
-        maxPriorityFeePerGas: partialUserOp.maxPriorityFeePerGas ?? prepared.gasEstimate.maxPriorityFeePerGas,
+        maxPriorityFeePerGas:
+          partialUserOp.maxPriorityFeePerGas ?? prepared.gasEstimate.maxPriorityFeePerGas,
         signature: txMeta.rawTx, // The signed signature from signTransaction step
       }
 
       // Add optional paymaster fields
       if (partialUserOp.paymaster) userOp.paymaster = partialUserOp.paymaster
       if (partialUserOp.paymasterData) userOp.paymasterData = partialUserOp.paymasterData
-      if (partialUserOp.paymasterVerificationGasLimit) userOp.paymasterVerificationGasLimit = partialUserOp.paymasterVerificationGasLimit
-      if (partialUserOp.paymasterPostOpGasLimit) userOp.paymasterPostOpGasLimit = partialUserOp.paymasterPostOpGasLimit
+      if (partialUserOp.paymasterVerificationGasLimit)
+        userOp.paymasterVerificationGasLimit = partialUserOp.paymasterVerificationGasLimit
+      if (partialUserOp.paymasterPostOpGasLimit)
+        userOp.paymasterPostOpGasLimit = partialUserOp.paymasterPostOpGasLimit
 
       return this.bundlerClient.sendUserOperation(userOp)
     }

@@ -1,8 +1,8 @@
 'use client'
 
+import type { Address } from 'viem'
 import { Button, Card, CardContent } from '@/components/common'
 import { formatAddress } from '@/lib/utils'
-import type { Address } from 'viem'
 
 interface AccountStatusCardProps {
   address: Address | undefined

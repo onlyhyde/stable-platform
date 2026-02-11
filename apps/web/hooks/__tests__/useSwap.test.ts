@@ -1,6 +1,6 @@
-import type { Token } from '@/types'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Token } from '@/types'
 import { useSwap } from '../useSwap'
 
 // Mock tokens for testing

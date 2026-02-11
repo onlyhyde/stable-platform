@@ -1,7 +1,7 @@
 'use client'
 
-import { cn } from '@/lib/utils'
 import type { Connector } from 'wagmi'
+import { cn } from '@/lib/utils'
 import { Modal } from './Modal'
 
 interface WalletSelectorModalProps {
@@ -215,7 +215,13 @@ export function WalletSelectorModal({
             style={{ backgroundColor: 'rgb(var(--primary))' }}
           >
             <span>Install MetaMask</span>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -232,7 +238,13 @@ export function WalletSelectorModal({
           className="flex items-center justify-center gap-2 text-xs"
           style={{ color: 'rgb(var(--muted-foreground))' }}
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

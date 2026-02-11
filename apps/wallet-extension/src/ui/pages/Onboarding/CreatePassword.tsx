@@ -68,7 +68,13 @@ export function CreatePassword({ onSubmit, onBack, isLoading }: CreatePasswordPr
   })()
 
   // Strength colors are now handled inline with CSS variables
-  const strengthLabels = [t('strengthVeryWeak'), t('strengthWeak'), t('strengthFair'), t('strengthStrong'), t('strengthVeryStrong')]
+  const strengthLabels = [
+    t('strengthVeryWeak'),
+    t('strengthWeak'),
+    t('strengthFair'),
+    t('strengthStrong'),
+    t('strengthVeryStrong'),
+  ]
 
   return (
     <div

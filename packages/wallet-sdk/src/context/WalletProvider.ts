@@ -23,6 +23,7 @@
  * ```
  */
 
+import type { ReactNode } from 'react'
 import {
   createContext,
   createElement,
@@ -32,10 +33,9 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { ReactNode } from 'react'
 import type { Address } from 'viem'
-import type { StableNetProvider } from '../provider/StableNetProvider'
 import { detectProvider } from '../provider/detect'
+import type { StableNetProvider } from '../provider/StableNetProvider'
 import type { WalletSDKConfig, WalletState } from '../types'
 
 // ---------------------------------------------------------------------------

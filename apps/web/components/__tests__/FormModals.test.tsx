@@ -1,7 +1,7 @@
-import type { Pool, Token } from '@/types'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Pool, Token } from '@/types'
 import { AddLiquidityModal } from '../defi/cards/AddLiquidityModal'
 import { AddEmployeeModal } from '../enterprise/cards/AddEmployeeModal'
 import { SubmitExpenseModal } from '../enterprise/cards/SubmitExpenseModal'

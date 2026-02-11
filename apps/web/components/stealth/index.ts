@@ -1,12 +1,12 @@
 export {
+  HowItWorksCard,
+  IncomingPaymentsCard,
   // Main page components
   StealthInfoBanner,
+  // Receive page components
+  StealthMetaAddressCard,
   StealthNavigationCards,
-  HowItWorksCard,
   StealthStatsCards,
   // Send page components
   StealthTransferCard,
-  // Receive page components
-  StealthMetaAddressCard,
-  IncomingPaymentsCard,
 } from './cards'

@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   description: 'Private transactions using stealth addresses on StableNet',
 }
 
-export default function StealthLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function StealthLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }

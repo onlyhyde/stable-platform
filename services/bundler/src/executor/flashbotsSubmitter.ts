@@ -1,10 +1,6 @@
 import { type Hex, keccak256, toHex } from 'viem'
 import type { Logger } from '../utils/logger'
-import type {
-  BundleSubmission,
-  BundleSubmissionResult,
-  IBundleSubmitter,
-} from './submitter'
+import type { BundleSubmission, BundleSubmissionResult, IBundleSubmitter } from './submitter'
 
 /**
  * Flashbots submitter configuration
@@ -101,10 +97,7 @@ export class FlashbotsSubmitter implements IBundleSubmitter {
 
     if (!response.ok) {
       const text = await response.text()
-      this.logger.error(
-        { status: response.status, body: text },
-        'Flashbots relay returned error'
-      )
+      this.logger.error({ status: response.status, body: text }, 'Flashbots relay returned error')
       throw new Error(`Flashbots relay error: ${response.status} ${text}`)
     }
 
@@ -118,9 +111,7 @@ export class FlashbotsSubmitter implements IBundleSubmitter {
       throw new Error(`Flashbots RPC error: ${result.error.message}`)
     }
 
-    const bundleHash =
-      result.result?.bundleHash ??
-      (keccak256(toHex(body)) as Hex)
+    const bundleHash = result.result?.bundleHash ?? (keccak256(toHex(body)) as Hex)
 
     this.logger.info(
       { bundleHash, targetBlock: targetBlock.toString() },
@@ -142,9 +133,7 @@ export class FlashbotsSubmitter implements IBundleSubmitter {
     // Hash the payload
     const bodyHash = keccak256(toHex(body))
     // Simple signature using auth key hash (in production, use secp256k1 signing)
-    const sigHash = keccak256(
-      `0x${this.config.authKey.slice(2)}${bodyHash.slice(2)}` as Hex
-    )
+    const sigHash = keccak256(`0x${this.config.authKey.slice(2)}${bodyHash.slice(2)}` as Hex)
     // Return simplified signature format
     return `${this.config.authKey.slice(0, 42)}:${sigHash}`
   }

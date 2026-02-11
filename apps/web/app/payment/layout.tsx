@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   description: 'Send and receive payments on StableNet',
 }
 
-export default function PaymentLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function PaymentLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }

@@ -59,11 +59,7 @@ function getModeInfo(t: (key: string) => string): Record<TransactionMode, ModeIn
       shortDescription: t('upgradeToSmartAccount'),
       longDescription: t('setupSmartAccountDesc'),
       icon: '⚙️',
-      features: [
-        t('keepExistingAddress'),
-        t('enableSmartAccountFeatures'),
-        t('reversible'),
-      ],
+      features: [t('keepExistingAddress'), t('enableSmartAccountFeatures'), t('reversible')],
       requirements: [t('ethForGas'), t('oneTimeSetup')],
       gasInfo: t('oneTimeGasCost'),
     },

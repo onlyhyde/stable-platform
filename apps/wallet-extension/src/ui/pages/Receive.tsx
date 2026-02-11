@@ -122,7 +122,10 @@ export function Receive() {
 
       {/* Info */}
       <p className="text-xs text-center mt-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
-        {tc('receiveWarning', 'Only send assets on the same network. Sending to a different network may result in loss of funds.')}
+        {tc(
+          'receiveWarning',
+          'Only send assets on the same network. Sending to a different network may result in loss of funds.'
+        )}
       </p>
     </div>
   )

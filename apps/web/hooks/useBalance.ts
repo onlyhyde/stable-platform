@@ -48,10 +48,14 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
 
     try {
       // Get provider from connected wallet
-      const provider = (await connector?.getProvider()) as { request?: (...args: unknown[]) => unknown } | undefined
+      const provider = (await connector?.getProvider()) as
+        | { request?: (...args: unknown[]) => unknown }
+        | undefined
       if (!provider?.request) {
         // Fallback to window.ethereum
-        const windowProvider = (window as { ethereum?: { request: (...args: unknown[]) => unknown } }).ethereum
+        const windowProvider = (
+          window as { ethereum?: { request: (...args: unknown[]) => unknown } }
+        ).ethereum
         if (!windowProvider?.request) {
           throw new Error('No provider available')
         }
@@ -163,8 +167,14 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const provider = (window as { ethereum?: { on?: (...args: unknown[]) => void; removeListener?: (...args: unknown[]) => void } })
-      .ethereum
+    const provider = (
+      window as {
+        ethereum?: {
+          on?: (...args: unknown[]) => void
+          removeListener?: (...args: unknown[]) => void
+        }
+      }
+    ).ethereum
     if (!provider?.on) return
 
     const handleChainChanged = () => {

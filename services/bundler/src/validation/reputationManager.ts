@@ -20,7 +20,6 @@ export class ReputationManager implements IReputationManager {
   private config: ReputationConfig
   private logger: Logger
   private autoDecayTimer: ReturnType<typeof setInterval> | null = null
-  private lastDecayTime: number = Date.now()
 
   constructor(logger: Logger, config?: Partial<ReputationConfig>) {
     this.logger = logger.child({ module: 'reputation' })

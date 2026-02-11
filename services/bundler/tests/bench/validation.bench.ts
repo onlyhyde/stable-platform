@@ -1,8 +1,8 @@
 import type { Address, Hex, PublicClient } from 'viem'
 import { bench, describe, vi } from 'vitest'
-import { FormatValidator } from '../../src/validation/formatValidator'
 import type { UserOperation } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
+import { FormatValidator } from '../../src/validation/formatValidator'
 
 const logger = createLogger('error', false)
 
@@ -29,7 +29,7 @@ function createValidUserOp(nonce = 0n): UserOperation {
 const ENTRY_POINT = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
 
 // Mock public client for validation
-const mockPublicClient = {
+const _mockPublicClient = {
   getCode: vi.fn().mockResolvedValue('0x6001'),
   readContract: vi.fn().mockResolvedValue(0n),
   getChainId: vi.fn().mockResolvedValue(1),
@@ -75,13 +75,14 @@ describe('Validation Benchmarks', () => {
   bench('format validation (batch 1000 mixed ops)', () => {
     for (let i = 0; i < 1000; i++) {
       const userOp = createValidUserOp(BigInt(i))
-      const op = i % 3 === 0
-        ? {
-            ...userOp,
-            factory: '0x1234567890123456789012345678901234567890' as Address,
-            factoryData: ('0x' + 'ee'.repeat(32)) as Hex,
-          }
-        : userOp
+      const op =
+        i % 3 === 0
+          ? {
+              ...userOp,
+              factory: '0x1234567890123456789012345678901234567890' as Address,
+              factoryData: ('0x' + 'ee'.repeat(32)) as Hex,
+            }
+          : userOp
       formatValidator.validate(op)
     }
   })

@@ -4,15 +4,15 @@
  */
 
 import {
-  ProviderRpcError,
-  RpcError,
   chainDisconnected,
   disconnected,
   internalError,
   invalidParams,
   invalidRequest,
   methodNotFound,
+  ProviderRpcError,
   parseError,
+  RpcError,
   resourceNotFound,
   transactionRejected,
   unauthorized,

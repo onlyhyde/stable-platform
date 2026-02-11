@@ -100,7 +100,7 @@ function takeSnapshot(mempool: Mempool): HeapSnapshot {
   }
 }
 
-function formatSnapshot(snap: HeapSnapshot): string {
+function _formatSnapshot(snap: HeapSnapshot): string {
   return [
     `heap=${snap.heapUsedMb.toFixed(1)}MB`,
     `total=${snap.heapTotalMb.toFixed(1)}MB`,
@@ -112,16 +112,8 @@ function formatSnapshot(snap: HeapSnapshot): string {
 
 async function run(): Promise<void> {
   const config = parseArgs()
-
-  console.log('=== Bundler Mempool Memory Profile ===')
-  console.log(`Duration: ${config.durationSeconds}s`)
-  console.log(`Batch size: ${config.batchSize}`)
-  console.log(`Leak threshold: ${config.heapGrowthThresholdMbPerMin} MB/min`)
-  console.log(`GC available: ${!!global.gc}`)
   if (!global.gc) {
-    console.log('WARNING: Run with --expose-gc for accurate results')
   }
-  console.log('')
 
   const logger = createLogger('error', false)
   const entryPoint = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
@@ -134,8 +126,8 @@ async function run(): Promise<void> {
 
   const snapshots: HeapSnapshot[] = []
   let hashCounter = 0
-  let totalAdded = 0
-  let totalRemoved = 0
+  let _totalAdded = 0
+  let _totalRemoved = 0
   let cycleCount = 0
 
   const startTime = Date.now()
@@ -143,7 +135,6 @@ async function run(): Promise<void> {
 
   // Initial snapshot
   snapshots.push(takeSnapshot(mempool))
-  console.log(`[start] ${formatSnapshot(snapshots[0]!)}`)
 
   while (Date.now() < endTime) {
     cycleCount++
@@ -159,7 +150,7 @@ async function run(): Promise<void> {
       try {
         mempool.add(createUserOp(sender, nonce), hash, entryPoint)
         addedHashes.push(hash)
-        totalAdded++
+        _totalAdded++
       } catch {
         // Expected: sender limit or mempool full
       }
@@ -175,20 +166,19 @@ async function run(): Promise<void> {
     for (const hash of toSubmit) {
       mempool.updateStatus(hash, 'included')
       mempool.remove(hash)
-      totalRemoved++
+      _totalRemoved++
     }
 
     // Phase 4: Evict expired entries
     const evicted = mempool.evictExpired()
-    totalRemoved += evicted
+    _totalRemoved += evicted
 
     // Take periodic snapshots
     if (cycleCount % 10 === 0) {
       const snap = takeSnapshot(mempool)
       snapshots.push(snap)
 
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(0)
-      console.log(`[${elapsed}s] ${formatSnapshot(snap)} | cycle=${cycleCount} added=${totalAdded} removed=${totalRemoved}`)
+      const _elapsed = ((Date.now() - startTime) / 1000).toFixed(0)
     }
 
     // Small delay to prevent tight loop
@@ -198,16 +188,6 @@ async function run(): Promise<void> {
   // Final snapshot
   const finalSnap = takeSnapshot(mempool)
   snapshots.push(finalSnap)
-  console.log(`[final] ${formatSnapshot(finalSnap)}`)
-
-  // Analyze results
-  console.log('\n=== Analysis ===')
-  console.log(`Total cycles: ${cycleCount}`)
-  console.log(`Total added: ${totalAdded}`)
-  console.log(`Total removed: ${totalRemoved}`)
-  console.log(`Final pool size: ${mempool.size}`)
-  console.log(`Final sender count: ${mempool.senderCount}`)
-  console.log(`Final nonce entry count: ${mempool.nonceEntryCount}`)
 
   // Calculate heap growth rate
   if (snapshots.length >= 2) {
@@ -216,18 +196,11 @@ async function run(): Promise<void> {
     const durationMinutes = (last.timestamp - first.timestamp) / 60000
 
     if (durationMinutes > 0) {
-      const heapGrowthMbPerMin =
-        (last.heapUsedMb - first.heapUsedMb) / durationMinutes
-
-      console.log(`\nHeap growth rate: ${heapGrowthMbPerMin.toFixed(2)} MB/min`)
-      console.log(`Threshold: ${config.heapGrowthThresholdMbPerMin} MB/min`)
+      const heapGrowthMbPerMin = (last.heapUsedMb - first.heapUsedMb) / durationMinutes
 
       // Check for index leaks: senderCount and nonceEntryCount should be
       // proportional to pool size, not to totalAdded
-      const indexRatio = mempool.size > 0
-        ? mempool.senderCount / mempool.size
-        : 0
-      console.log(`Sender/pool ratio: ${indexRatio.toFixed(4)}`)
+      const _indexRatio = mempool.size > 0 ? mempool.senderCount / mempool.size : 0
 
       if (heapGrowthMbPerMin > config.heapGrowthThresholdMbPerMin) {
         console.error('\nMEMORY LEAK DETECTED')
@@ -237,8 +210,6 @@ async function run(): Promise<void> {
         )
         process.exit(1)
       }
-
-      console.log('\nNo memory leak detected')
     }
   }
 

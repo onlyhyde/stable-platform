@@ -19,7 +19,7 @@ import { ENTRY_POINT_V07_ADDRESS } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { DEFAULT_CONFIRMATION_TIMEOUT, USER_OP_POLLING_INTERVAL } from '../config'
 import { SDK_ERROR_CODES, SdkError } from '../errors'
-import { type JsonRpcClient, createBundlerRpcClient } from '../rpc'
+import { createBundlerRpcClient, type JsonRpcClient } from '../rpc'
 import { packUserOperation, unpackUserOperation } from '../utils/userOperation'
 
 // ============================================================================

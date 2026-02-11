@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 export type ToastType = 'success' | 'error' | 'info' | 'loading'
@@ -197,7 +197,13 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
           className="flex-shrink-0 transition-colors"
           style={{ color: 'rgb(var(--muted-foreground))' }}
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

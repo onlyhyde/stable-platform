@@ -5,7 +5,7 @@ import {
 } from '@stablenet/core'
 import { useCallback, useState } from 'react'
 import type { Hash } from 'viem'
-import { TX_TIMEOUT_MS, sendMessageWithTimeout } from '../../../../shared/utils/messaging'
+import { sendMessageWithTimeout, TX_TIMEOUT_MS } from '../../../../shared/utils/messaging'
 import { useSelectedNetwork } from '../../../hooks'
 
 interface UseSendTransactionReturn {

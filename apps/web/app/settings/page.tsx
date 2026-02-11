@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { useAccount, useDisconnect, useSwitchChain } from 'wagmi'
 import { PageHeader } from '@/components/common'
 import {
   AccountSettingsCard,
@@ -9,8 +11,6 @@ import {
 } from '@/components/settings'
 import { useWallet } from '@/hooks'
 import { defaultChain } from '@/lib/chains'
-import { useState } from 'react'
-import { useAccount, useDisconnect, useSwitchChain } from 'wagmi'
 
 type SettingsTab = 'network' | 'account' | 'security' | 'developer'
 

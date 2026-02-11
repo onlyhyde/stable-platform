@@ -1,9 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { formatAddress } from '@/lib/utils'
 import type { Announcement } from '@/types'
-import { useState } from 'react'
 
 interface IncomingPaymentsCardProps {
   announcements: Announcement[]

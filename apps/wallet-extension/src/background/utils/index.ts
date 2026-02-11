@@ -3,10 +3,10 @@
  */
 
 export {
-  eventBroadcaster,
-  EventBroadcaster,
-  type ProviderEventType,
-  type ProviderEventMessage,
   type ConnectInfo,
+  EventBroadcaster,
+  eventBroadcaster,
+  type ProviderEventMessage,
+  type ProviderEventType,
   type ProviderRpcError,
 } from './eventBroadcaster'

@@ -26,7 +26,7 @@ import {
 } from '../../config'
 import { createTransactionError } from '../../errors'
 import { createPaymasterClient } from '../../paymasterClient'
-import { type RpcProvider, createViemProvider } from '../../providers'
+import { createViemProvider, type RpcProvider } from '../../providers'
 import { getUserOperationHash } from '../../utils/userOperation'
 import type {
   CombinedSigner,

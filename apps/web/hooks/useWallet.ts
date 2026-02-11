@@ -1,6 +1,6 @@
 'use client'
 
-import { type StableNetProvider, detectProvider } from '@stablenet/wallet-sdk'
+import { detectProvider, type StableNetProvider } from '@stablenet/wallet-sdk'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi'

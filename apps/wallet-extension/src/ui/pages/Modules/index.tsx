@@ -1,4 +1,4 @@
-import { MODULE_TYPE, type ModuleType, getModuleTypeName } from '@stablenet/core'
+import { getModuleTypeName, MODULE_TYPE, type ModuleType } from '@stablenet/core'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -42,7 +42,9 @@ export function ModulesPage() {
   const currentNetwork = useSelectedNetwork()
   const { installedModules, isLoading, error, refetch } = useModules(selectedAccount?.address)
   const { registryModules, isLoading: isLoadingRegistry } = useModuleMarketplace()
-  const { info: smartAccountInfo, isLoading: isLoadingSmartInfo } = useSmartAccountInfo(selectedAccount?.address)
+  const { info: smartAccountInfo, isLoading: isLoadingSmartInfo } = useSmartAccountInfo(
+    selectedAccount?.address
+  )
 
   // Determine which registry modules are already installed
   const installedAddresses = useMemo(() => {
@@ -92,7 +94,11 @@ export function ModulesPage() {
           <p className="mb-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {t('smartAccountRequiredDesc')}
           </p>
-          <button type="button" className="btn-primary px-4 py-2 rounded-lg" onClick={() => setView('delegate')}>
+          <button
+            type="button"
+            className="btn-primary px-4 py-2 rounded-lg"
+            onClick={() => setView('delegate')}
+          >
             {t('enableSmartAccount')}
           </button>
         </div>
@@ -203,7 +209,9 @@ export function ModulesPage() {
             }}
             onClick={() => setActiveTab(tab)}
           >
-            {tab === 'installed' ? t('installed', { count: installedModules?.length ?? 0 }) : t('browseAll')}
+            {tab === 'installed'
+              ? t('installed', { count: installedModules?.length ?? 0 })
+              : t('browseAll')}
           </button>
         ))}
       </div>
@@ -379,10 +387,25 @@ function ModuleCategoryTabs({ modules, onInstallClick }: ModuleCategoryTabsProps
   const { t } = useTranslation('modules')
 
   const categories = [
-    { type: MODULE_TYPE.VALIDATOR, icon: '🔐', label: t('validators'), singular: t('validators').slice(0, -1) },
-    { type: MODULE_TYPE.EXECUTOR, icon: '⚡', label: t('executors'), singular: t('executors').slice(0, -1) },
+    {
+      type: MODULE_TYPE.VALIDATOR,
+      icon: '🔐',
+      label: t('validators'),
+      singular: t('validators').slice(0, -1),
+    },
+    {
+      type: MODULE_TYPE.EXECUTOR,
+      icon: '⚡',
+      label: t('executors'),
+      singular: t('executors').slice(0, -1),
+    },
     { type: MODULE_TYPE.HOOK, icon: '🪝', label: t('hooks'), singular: t('hooks').slice(0, -1) },
-    { type: MODULE_TYPE.FALLBACK, icon: '🔄', label: t('fallbacks'), singular: t('fallbacks').slice(0, -1) },
+    {
+      type: MODULE_TYPE.FALLBACK,
+      icon: '🔄',
+      label: t('fallbacks'),
+      singular: t('fallbacks').slice(0, -1),
+    },
   ]
 
   return (

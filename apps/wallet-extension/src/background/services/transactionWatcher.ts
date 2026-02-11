@@ -1,6 +1,5 @@
-import { http, createPublicClient } from 'viem'
+import { createPublicClient, http } from 'viem'
 import { createLogger } from '../../shared/utils/logger'
-import type { Network } from '../../types'
 import { walletState } from '../state/store'
 
 const logger = createLogger('TransactionWatcher')

@@ -30,7 +30,6 @@ interface RequestMetadata {
 
 export class PermissionController {
   private state: PermissionControllerState
-  private options: PermissionControllerOptions
   private eventHandlers: Map<PermissionEventType, Set<EventHandler>>
 
   constructor(options: PermissionControllerOptions) {

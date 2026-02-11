@@ -8,6 +8,7 @@ import type { ExecutionResult, ISimulationValidator, StakeInfo, ValidationResult
 import { VALIDATION_CONSTANTS } from './types'
 
 const { ZERO_ADDRESS } = VALIDATION_CONSTANTS
+
 import {
   decodeExecutionResult,
   decodeFailedOp,

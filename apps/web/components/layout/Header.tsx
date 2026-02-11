@@ -1,11 +1,11 @@
 'use client'
 
+import Link from 'next/link'
+import { useState } from 'react'
 import { Button, NetworkSelector, WalletSelectorModal } from '@/components/common'
 import { useBalance, useWallet } from '@/hooks'
 import { formatAddress, formatTokenAmount } from '@/lib/utils'
 import { ThemeToggle } from '@/providers'
-import Link from 'next/link'
-import { useState } from 'react'
 
 export function Header() {
   const { address, isConnected, isConnecting, connect, disconnect, connectors } = useWallet()
@@ -134,7 +134,13 @@ export function Header() {
               isLoading={isConnecting}
               size="md"
               leftIcon={
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

@@ -58,7 +58,7 @@ describe('HDKeyring', () => {
     })
 
     it('should be a valid BIP39 mnemonic', () => {
-      const mnemonic = hdKeyring.initializeNewMnemonic()
+      const _mnemonic = hdKeyring.initializeNewMnemonic()
       // Adding an account should not throw with valid mnemonic
       expect(() => hdKeyring.addAccount()).not.toThrow()
     })

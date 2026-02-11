@@ -31,89 +31,85 @@
  */
 
 // ============================================================================
-// Types
-// ============================================================================
-export type {
-  // Core types
-  ModuleType,
-  ModuleConfig,
-  ModuleInfo,
-  // Validator types
-  ValidatorConfig,
-  ECDSAValidatorConfig,
-  WebAuthnValidatorConfig,
-  MultiSigValidatorConfig,
-  // Executor types
-  ExecutorConfig,
-  SessionKeyExecutorConfig,
-  SessionKeyConfig,
-  // Hook types
-  HookConfig,
-  HookTypeFlags,
-  SpendingLimitHookConfig,
-  HealthFactorHookConfig,
-  // Fallback types
-  FallbackConfig,
-  // Installation types
-  InstallModuleParams,
-  UninstallModuleParams,
-  BatchModuleInstallation,
-  IsModuleInstalledParams,
-  ModuleInstallationResult,
-  ModuleOperationCallData,
-} from './types'
-
-// Export module types constant
-export { MODULE_TYPES } from './types'
-
-// Export error classes
-export {
-  ModuleError,
-  ModuleInstallationError,
-  ModuleNotInstalledError,
-  InvalidModuleTypeError,
-} from './types'
-
-// ============================================================================
 // ABIs
 // ============================================================================
 export {
-  KernelModuleAbi,
-  IModuleAbi,
   ECDSAValidatorAbi,
+  IModuleAbi,
+  KernelModuleAbi,
   SessionKeyExecutorAbi,
   SpendingLimitHookAbi,
 } from './abis'
-
 // ============================================================================
 // Actions
 // ============================================================================
 export {
-  // Module installation
-  encodeInstallModule,
-  encodeUninstallModule,
+  buildBatchInstallModuleCalls,
   buildInstallModuleCall,
   buildUninstallModuleCall,
-  buildBatchInstallModuleCalls,
+  // Validator init data encoders
+  encodeECDSAValidatorInitData,
+  encodeHealthFactorHookInitData,
+  // Module installation
+  encodeInstallModule,
+  encodeLendingExecutorInitData,
+  encodeMultiSigValidatorInitData,
+  encodePolicyHookInitData,
+  // Executor init data encoders
+  encodeSessionKeyExecutorInitData,
+  // Hook init data encoders
+  encodeSpendingLimitHookInitData,
+  encodeStakingExecutorInitData,
+  encodeSwapExecutorInitData,
+  encodeUninstallModule,
+  encodeWebAuthnValidatorInitData,
+  getModuleTypeName,
+  getRootValidator,
+  isModuleInitialized,
   // Module queries
   isModuleInstalled,
   isModuleType,
-  isModuleInitialized,
-  getRootValidator,
   // Helpers
   validateModuleType,
-  getModuleTypeName,
-  // Validator init data encoders
-  encodeECDSAValidatorInitData,
-  encodeWebAuthnValidatorInitData,
-  encodeMultiSigValidatorInitData,
-  // Executor init data encoders
-  encodeSessionKeyExecutorInitData,
-  encodeSwapExecutorInitData,
-  encodeLendingExecutorInitData,
-  encodeStakingExecutorInitData,
-  // Hook init data encoders
-  encodeSpendingLimitHookInitData,
-  encodeHealthFactorHookInitData,
-  encodePolicyHookInitData,
 } from './actions'
+// ============================================================================
+// Types
+// ============================================================================
+export type {
+  BatchModuleInstallation,
+  ECDSAValidatorConfig,
+  // Executor types
+  ExecutorConfig,
+  // Fallback types
+  FallbackConfig,
+  HealthFactorHookConfig,
+  // Hook types
+  HookConfig,
+  HookTypeFlags,
+  // Installation types
+  InstallModuleParams,
+  IsModuleInstalledParams,
+  ModuleConfig,
+  ModuleInfo,
+  ModuleInstallationResult,
+  ModuleOperationCallData,
+  // Core types
+  ModuleType,
+  MultiSigValidatorConfig,
+  SessionKeyConfig,
+  SessionKeyExecutorConfig,
+  SpendingLimitHookConfig,
+  UninstallModuleParams,
+  // Validator types
+  ValidatorConfig,
+  WebAuthnValidatorConfig,
+} from './types'
+// Export module types constant
+// Export error classes
+export {
+  InvalidModuleTypeError,
+  MODULE_TYPES,
+  ModuleError,
+  ModuleInstallationError,
+  ModuleNotInstalledError,
+} from './types'

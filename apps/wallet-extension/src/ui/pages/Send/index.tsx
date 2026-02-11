@@ -1,22 +1,21 @@
+import type { TransactionResult } from '@stablenet/core'
 import {
   type GasPaymentConfig,
-  TRANSACTION_MODE,
-  type TransactionMode,
   getAvailableTransactionModes,
   getDefaultTransactionMode,
+  TRANSACTION_MODE,
+  type TransactionMode,
 } from '@stablenet/core'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { formatEther, isAddress, parseEther } from 'viem'
 import type { Address } from 'viem'
-
-import type { TransactionResult } from '@stablenet/core'
-import { TransactionStepper } from '../../components/common/TransactionStepper'
+import { formatEther, isAddress, parseEther } from 'viem'
 import type { TransactionStepperStatus } from '../../components/common/TransactionStepper'
+import { TransactionStepper } from '../../components/common/TransactionStepper'
 import { useNetworkCurrency, useSelectedNetwork, useWalletStore } from '../../hooks'
-import { SendForm } from './SendForm'
 import { useGasEstimate } from './hooks/useGasEstimate'
 import { useSendTransaction } from './hooks/useSendTransaction'
+import { SendForm } from './SendForm'
 
 // ============================================================================
 // Types
@@ -300,7 +299,9 @@ export function Send() {
                     onChange={() => setGasPayment({ type: 'native' })}
                     className="text-primary"
                   />
-                  <span style={{ color: 'rgb(var(--foreground))' }}>{t('payWithNative', { symbol: currencySymbol })}</span>
+                  <span style={{ color: 'rgb(var(--foreground))' }}>
+                    {t('payWithNative', { symbol: currencySymbol })}
+                  </span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input

@@ -78,7 +78,13 @@ interface ModuleCardProps {
   isInstalling?: boolean
 }
 
-export function ModuleCard({ module, onInstall, onViewDetails, installed, isInstalling }: ModuleCardProps) {
+export function ModuleCard({
+  module,
+  onInstall,
+  onViewDetails,
+  installed,
+  isInstalling,
+}: ModuleCardProps) {
   const typeStyle = moduleTypeStyles[module.moduleType] ?? {
     bg: 'rgb(var(--secondary))',
     color: 'rgb(var(--muted-foreground))',

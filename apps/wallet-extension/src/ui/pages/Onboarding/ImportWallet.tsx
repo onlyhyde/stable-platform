@@ -105,9 +105,7 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
                 <p className="font-medium" style={{ color: 'rgb(234 179 8)' }}>
                   {t('importOnTrustedDevices')}
                 </p>
-                <p style={{ color: 'rgb(var(--warning) / 0.8)' }}>
-                  {t('neverEnterOnWebsites')}
-                </p>
+                <p style={{ color: 'rgb(var(--warning) / 0.8)' }}>{t('neverEnterOnWebsites')}</p>
               </div>
             </div>
           </Card>

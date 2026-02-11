@@ -77,7 +77,7 @@ function getIntervalSeconds(form: FormState): number {
   return INTERVAL_PRESETS[form.intervalType].seconds
 }
 
-function formatInterval(seconds: number): string {
+function _formatInterval(seconds: number): string {
   const days = Math.floor(seconds / 86400)
   if (days === 1) return 'Daily'
   if (days === 7) return 'Weekly'
@@ -221,12 +221,13 @@ export function RecurringPaymentConfigUI({
       {step === 'recipient' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('paymentRecipient')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('paymentRecipientDesc')}
-          </p>
+          <p className="text-sm text-gray-500">{t('paymentRecipientDesc')}</p>
 
           <div>
-            <label htmlFor="recipient-address" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="recipient-address"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               {t('recipientAddress')}
             </label>
             <input
@@ -243,7 +244,9 @@ export function RecurringPaymentConfigUI({
           </div>
 
           <div className="mt-4">
-            <span className="block text-sm font-medium text-gray-700 mb-2">{t('paymentToken')}</span>
+            <span className="block text-sm font-medium text-gray-700 mb-2">
+              {t('paymentToken')}
+            </span>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -274,7 +277,10 @@ export function RecurringPaymentConfigUI({
 
           {form.tokenType === 'custom' && (
             <div className="mt-3">
-              <label htmlFor="token-contract-address" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="token-contract-address"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 {t('tokenContractAddress')}
               </label>
               <input
@@ -296,7 +302,10 @@ export function RecurringPaymentConfigUI({
           <p className="text-sm text-gray-500">{t('paymentAmountDesc')}</p>
 
           <div>
-            <label htmlFor="amount-per-payment" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="amount-per-payment"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               {t('amountPerPayment', { unit: form.tokenType === 'native' ? 'ETH' : tc('tokens') })}
             </label>
             <input
@@ -331,9 +340,7 @@ export function RecurringPaymentConfigUI({
       {step === 'schedule' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('paymentSchedule')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('paymentScheduleDesc')}
-          </p>
+          <p className="text-sm text-gray-500">{t('paymentScheduleDesc')}</p>
 
           <div>
             <span className="block text-sm font-medium text-gray-700 mb-2">
@@ -364,7 +371,9 @@ export function RecurringPaymentConfigUI({
           </div>
 
           <div className="mt-4">
-            <span className="block text-sm font-medium text-gray-700 mb-2">{t('durationLabel')}</span>
+            <span className="block text-sm font-medium text-gray-700 mb-2">
+              {t('durationLabel')}
+            </span>
             <div className="flex items-center gap-2 mb-3">
               <input
                 type="checkbox"
@@ -409,7 +418,7 @@ export function RecurringPaymentConfigUI({
                     onChange={(e) =>
                       setForm((f) => ({
                         ...f,
-                        maxPayments: Number.parseInt(e.target.value) || 1,
+                        maxPayments: Number.parseInt(e.target.value, 10) || 1,
                       }))
                     }
                     className="w-full p-2 border rounded-lg"
@@ -424,9 +433,7 @@ export function RecurringPaymentConfigUI({
       {step === 'review' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('reviewRecurringPayment')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('reviewRecurringPaymentDesc')}
-          </p>
+          <p className="text-sm text-gray-500">{t('reviewRecurringPaymentDesc')}</p>
 
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center">

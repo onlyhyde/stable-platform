@@ -1,9 +1,9 @@
 'use client'
 
-import type { SwapQuote, Token } from '@/types'
 import { useCallback, useState } from 'react'
-import { encodeFunctionData } from 'viem'
 import type { Address, Hex } from 'viem'
+import { encodeFunctionData } from 'viem'
+import type { SwapQuote, Token } from '@/types'
 
 interface SwapParams {
   tokenIn: Token

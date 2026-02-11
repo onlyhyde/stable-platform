@@ -1,6 +1,6 @@
 import {
-  type SessionKeyConfig,
   encodeSessionKeyInit,
+  type SessionKeyConfig,
   validateSessionKeyConfig,
 } from '@stablenet/core'
 import { useCallback, useState } from 'react'
@@ -45,7 +45,11 @@ const COMMON_SELECTORS = [
 // Component
 // ============================================================================
 
-export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, onBack }: SessionKeyConfigProps) {
+export function SessionKeyConfigUI({
+  accountAddress: _accountAddress,
+  onSubmit,
+  onBack,
+}: SessionKeyConfigProps) {
   const { t } = useTranslation('modules')
   const { t: tc } = useTranslation('common')
   const [step, setStep] = useState<Step>('key')
@@ -430,7 +434,10 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
                 className="w-full px-3 py-2 rounded-lg input-base"
                 value={form.validAfterDelay}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, validAfterDelay: Number.parseInt(e.target.value) }))
+                  setForm((prev) => ({
+                    ...prev,
+                    validAfterDelay: Number.parseInt(e.target.value, 10),
+                  }))
                 }
               >
                 <option value={0}>{t('immediately')}</option>
@@ -476,20 +483,26 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
               </span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('allowedContractsCount')}</span>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {t('allowedContractsCount')}
+              </span>
               <span style={{ color: 'rgb(var(--foreground))' }}>
                 {form.allowedTargets.filter((t) => t.length > 0).length}
               </span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('allowedFunctionsCount')}</span>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {t('allowedFunctionsCount')}
+              </span>
               <span style={{ color: 'rgb(var(--foreground))' }}>
                 {form.allowedSelectors.length || t('all')}
               </span>
             </div>
             <div className="flex justify-between">
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('maxValueTx')}</span>
-              <span style={{ color: 'rgb(var(--foreground))' }}>{form.maxValuePerTx} {tc('eth')}</span>
+              <span style={{ color: 'rgb(var(--foreground))' }}>
+                {form.maxValuePerTx} {tc('eth')}
+              </span>
             </div>
             <div className="flex justify-between">
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('duration')}</span>
@@ -518,11 +531,19 @@ export function SessionKeyConfigUI({ accountAddress: _accountAddress, onSubmit, 
 
       {/* Actions */}
       <div className="flex gap-3 mt-6">
-        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
+        <button
+          type="button"
+          className="btn-ghost flex-1 py-3 rounded-lg font-medium"
+          onClick={prevStep}
+        >
           {step === 'key' ? tc('cancel') : tc('back')}
         </button>
         {step === 'review' ? (
-          <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
+          <button
+            type="button"
+            className="btn-primary flex-1 py-3 rounded-lg font-medium"
+            onClick={handleSubmit}
+          >
             {t('installExecutor')}
           </button>
         ) : (
@@ -624,7 +645,11 @@ export function SessionKeyList({ sessionKeys, onRevoke }: SessionKeyListProps) {
                     })}
                   </p>
                   <p>{t('maxPerTx', { amount: formatEther(sk.maxValuePerTx) })}</p>
-                  <p>{t('expiresDate', { date: new Date(sk.validUntil * 1000).toLocaleDateString() })}</p>
+                  <p>
+                    {t('expiresDate', {
+                      date: new Date(sk.validUntil * 1000).toLocaleDateString(),
+                    })}
+                  </p>
                 </div>
               </div>
               {onRevoke && !isExpired && (

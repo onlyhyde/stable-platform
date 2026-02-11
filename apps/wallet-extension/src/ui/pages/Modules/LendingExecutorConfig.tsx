@@ -187,9 +187,7 @@ export function LendingExecutorConfigUI({
       {step === 'ltv' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('maximumLTV')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('ltvDescription')}
-          </p>
+          <p className="text-sm text-gray-500">{t('ltvDescription')}</p>
 
           <div className="grid grid-cols-3 gap-3">
             {LTV_PRESETS.map((preset) => (
@@ -204,13 +202,18 @@ export function LendingExecutorConfigUI({
                 }`}
               >
                 <div className="font-semibold">{preset.label}</div>
-                <div className="text-xs text-gray-500">{t(DESCRIPTION_KEYS[preset.description] || preset.description)}</div>
+                <div className="text-xs text-gray-500">
+                  {t(DESCRIPTION_KEYS[preset.description] || preset.description)}
+                </div>
               </button>
             ))}
           </div>
 
           <div className="mt-4">
-            <label htmlFor="custom-ltv-bps" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="custom-ltv-bps"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               {t('customLtvBps')}
             </label>
             <div className="flex items-center gap-2">
@@ -224,7 +227,7 @@ export function LendingExecutorConfigUI({
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    maxLtvBps: Number.parseInt(e.target.value) || 0,
+                    maxLtvBps: Number.parseInt(e.target.value, 10) || 0,
                   }))
                 }
                 className="flex-1 p-2 border rounded-lg"
@@ -238,9 +241,7 @@ export function LendingExecutorConfigUI({
       {step === 'health' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('minHealthFactor')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('minHealthFactorDesc')}
-          </p>
+          <p className="text-sm text-gray-500">{t('minHealthFactorDesc')}</p>
 
           <div className="grid grid-cols-3 gap-3">
             {HEALTH_FACTOR_PRESETS.map((preset) => (
@@ -255,13 +256,18 @@ export function LendingExecutorConfigUI({
                 }`}
               >
                 <div className="font-semibold">{preset.label}</div>
-                <div className="text-xs text-gray-500">{t(DESCRIPTION_KEYS[preset.description] || preset.description)}</div>
+                <div className="text-xs text-gray-500">
+                  {t(DESCRIPTION_KEYS[preset.description] || preset.description)}
+                </div>
               </button>
             ))}
           </div>
 
           <div className="mt-4">
-            <label htmlFor="custom-health-factor" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="custom-health-factor"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               {t('customHealthFactor')}
             </label>
             <input
@@ -272,9 +278,7 @@ export function LendingExecutorConfigUI({
               placeholder="e.g., 1.25"
               className="w-full p-2 border rounded-lg"
             />
-            <p className="text-xs text-gray-400 mt-1">
-              {t('healthFactorMinWarning')}
-            </p>
+            <p className="text-xs text-gray-400 mt-1">{t('healthFactorMinWarning')}</p>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
@@ -295,9 +299,7 @@ export function LendingExecutorConfigUI({
       {step === 'limits' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('dailyBorrowLimit')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('dailyBorrowLimitDesc')}
-          </p>
+          <p className="text-sm text-gray-500">{t('dailyBorrowLimitDesc')}</p>
 
           <div className="grid grid-cols-3 gap-2">
             {BORROW_LIMIT_PRESETS.slice(0, 3).map((preset) => (
@@ -333,7 +335,10 @@ export function LendingExecutorConfigUI({
           </div>
 
           <div className="mt-4">
-            <label htmlFor="custom-borrow-limit" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="custom-borrow-limit"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               {t('customBorrowLimit')}
             </label>
             <input
@@ -351,9 +356,7 @@ export function LendingExecutorConfigUI({
       {step === 'review' && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t('reviewConfiguration')}</h3>
-          <p className="text-sm text-gray-500">
-            {t('reviewLendingConfig')}
-          </p>
+          <p className="text-sm text-gray-500">{t('reviewLendingConfig')}</p>
 
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center">
@@ -486,7 +489,9 @@ export function LendingExecutorDisplay({
             style={{ width: `${Math.min(usagePercent, 100)}%` }}
           />
         </div>
-        <p className="text-xs text-gray-500">{t('remainingAmount', { amount: formatEther(remainingLimit) })}</p>
+        <p className="text-xs text-gray-500">
+          {t('remainingAmount', { amount: formatEther(remainingLimit) })}
+        </p>
       </div>
     </div>
   )

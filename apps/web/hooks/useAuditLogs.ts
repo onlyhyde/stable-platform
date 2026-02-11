@@ -1,7 +1,7 @@
 'use client'
 
-import type { AuditLog } from '@/types'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { AuditLog } from '@/types'
 
 interface AuditLogFilter {
   action?: string

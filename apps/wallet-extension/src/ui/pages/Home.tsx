@@ -55,7 +55,7 @@ export function Home() {
     if (selectedAccount && balance === undefined) {
       loadBalance()
     }
-  }, [selectedAccount, balance])
+  }, [selectedAccount, balance, loadBalance])
 
   async function loadBalance() {
     if (!selectedAccount) return

@@ -109,14 +109,10 @@ export function AuthorizationApproval({
             className="text-sm font-medium mb-2"
             style={{ color: data.isRevocation ? 'rgb(var(--success))' : 'rgb(var(--primary))' }}
           >
-            {data.isRevocation
-              ? t('revokeSmartAccountTitle')
-              : t('eip7702AuthTitle')}
+            {data.isRevocation ? t('revokeSmartAccountTitle') : t('eip7702AuthTitle')}
           </p>
           <p className="text-sm" style={{ color: 'rgb(var(--foreground-secondary))' }}>
-            {data.isRevocation
-              ? t('revokeSmartAccountDesc')
-              : t('eip7702AuthDesc')}
+            {data.isRevocation ? t('revokeSmartAccountDesc') : t('eip7702AuthDesc')}
           </p>
         </Card>
 

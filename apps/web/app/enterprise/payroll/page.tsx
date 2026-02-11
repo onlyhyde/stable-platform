@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Button, ConnectWalletCard, PageHeader } from '@/components/common'
 import {
   AddEmployeeModal,
@@ -9,7 +10,6 @@ import {
 } from '@/components/enterprise'
 import { useWallet } from '@/hooks'
 import { usePayroll } from '@/hooks/usePayroll'
-import { useState } from 'react'
 
 export default function PayrollPage() {
   const { isConnected } = useWallet()

@@ -6,11 +6,11 @@
  */
 
 import type { ModuleInstallRequest, ModuleUninstallRequest } from '@stablenet/sdk-types'
-import { MODULE_TYPE, getModuleTypeName } from '@stablenet/sdk-types'
+import { getModuleTypeName, MODULE_TYPE } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData } from 'viem'
 import { KERNEL_ABI } from '../abis'
-import { type ModuleRegistry, createModuleRegistry } from './moduleRegistry'
+import { createModuleRegistry, type ModuleRegistry } from './moduleRegistry'
 import type { ModuleQueryClient } from './queryClient'
 
 // ============================================================================

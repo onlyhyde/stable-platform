@@ -1,4 +1,4 @@
-import { type ReactNode, createContext, useContext, useEffect, useRef } from 'react'
+import { createContext, type ReactNode, useContext, useEffect, useRef } from 'react'
 import { RegistryClient } from '../client'
 import type { RegistryClientOptions } from '../types'
 

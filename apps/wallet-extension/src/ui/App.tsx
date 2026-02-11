@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
+import { Spinner } from './components/common'
 import { Header } from './components/Header'
 import { Navigation } from './components/Navigation'
-import { Spinner } from './components/common'
 import { useWalletStore } from './hooks/useWalletStore'
 import {
   Activity,

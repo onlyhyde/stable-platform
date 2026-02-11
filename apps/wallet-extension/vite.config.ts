@@ -1,8 +1,7 @@
+import react from '@vitejs/plugin-react'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
-import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
-import { build } from 'vite'
+import { build, defineConfig } from 'vite'
 
 // Plugin to copy manifest and assets
 function copyManifestPlugin() {

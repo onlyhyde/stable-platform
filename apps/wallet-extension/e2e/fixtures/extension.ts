@@ -7,8 +7,8 @@
  * - Managing extension state
  */
 
+import { type BrowserContext, test as base, chromium, type Page } from '@playwright/test'
 import path from 'path'
-import { type BrowserContext, type Page, test as base, chromium } from '@playwright/test'
 
 // Extension paths
 const EXTENSION_PATH = path.join(__dirname, '../../dist')
@@ -34,7 +34,7 @@ export interface ExtensionFixtures {
  */
 export const test = base.extend<ExtensionFixtures>({
   // Create a browser context with the extension loaded
-  extensionContext: async ({}, use) => {
+  extensionContext: async (_options, use) => {
     const context = await chromium.launchPersistentContext('', {
       headless: false, // Extensions require headed mode
       args: [
@@ -200,7 +200,7 @@ export async function setupWalletWithFunds(
   context: BrowserContext,
   options: SetupWalletOptions = {}
 ): Promise<void> {
-  const { enableSmartAccount = false, fundAmount = '1', mnemonic } = options
+  const { enableSmartAccount = false, fundAmount: _fundAmount = '1', mnemonic: _mnemonic } = options
 
   const extensionId = await getExtensionId(context)
   const page = await context.newPage()

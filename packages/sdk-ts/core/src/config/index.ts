@@ -5,48 +5,47 @@
  * Import from this module to access all configuration values.
  */
 
-// Gas configuration
-export {
-  // Priority fee bounds
-  MIN_PRIORITY_FEE,
-  MAX_PRIORITY_FEE,
-  DEFAULT_MAX_FEE_PER_GAS,
-  // Base gas limits
-  BASE_TRANSFER_GAS,
-  MAX_GAS_LIMIT,
-  // Gas buffer
-  GAS_BUFFER_MULTIPLIER,
-  GAS_BUFFER_DIVISOR,
-  // EIP-7702
-  EIP7702_AUTH_GAS,
-  GAS_PER_AUTHORIZATION,
-  SETCODE_BASE_GAS,
-  // Smart Account
-  DEFAULT_VERIFICATION_GAS_LIMIT,
-  DEFAULT_PRE_VERIFICATION_GAS,
-  DEFAULT_CALL_GAS_LIMIT,
-  PAYMASTER_VERIFICATION_GAS,
-  PAYMASTER_POST_OP_GAS,
-  // Structured config
-  GAS_CONFIG,
-} from './gas'
-
 // Client configuration
 export {
-  // Timeouts
-  DEFAULT_RPC_TIMEOUT,
-  DEFAULT_PROVIDER_TIMEOUT,
+  // Structured config
+  CLIENT_CONFIG,
   DEFAULT_CONFIRMATION_TIMEOUT,
+  // Confirmations
+  DEFAULT_CONFIRMATIONS,
   DEFAULT_INDEXER_TIMEOUT,
   // Retry settings
   DEFAULT_MAX_RETRIES,
-  DEFAULT_RETRY_DELAY,
-  RETRY_BACKOFF_MULTIPLIER,
   // Polling
   DEFAULT_POLLING_INTERVAL,
+  DEFAULT_PROVIDER_TIMEOUT,
+  DEFAULT_RETRY_DELAY,
+  // Timeouts
+  DEFAULT_RPC_TIMEOUT,
+  RETRY_BACKOFF_MULTIPLIER,
   USER_OP_POLLING_INTERVAL,
-  // Confirmations
-  DEFAULT_CONFIRMATIONS,
-  // Structured config
-  CLIENT_CONFIG,
 } from './client'
+// Gas configuration
+export {
+  // Base gas limits
+  BASE_TRANSFER_GAS,
+  DEFAULT_CALL_GAS_LIMIT,
+  DEFAULT_MAX_FEE_PER_GAS,
+  DEFAULT_PRE_VERIFICATION_GAS,
+  // Smart Account
+  DEFAULT_VERIFICATION_GAS_LIMIT,
+  // EIP-7702
+  EIP7702_AUTH_GAS,
+  GAS_BUFFER_DIVISOR,
+  // Gas buffer
+  GAS_BUFFER_MULTIPLIER,
+  // Structured config
+  GAS_CONFIG,
+  GAS_PER_AUTHORIZATION,
+  MAX_GAS_LIMIT,
+  MAX_PRIORITY_FEE,
+  // Priority fee bounds
+  MIN_PRIORITY_FEE,
+  PAYMASTER_POST_OP_GAS,
+  PAYMASTER_VERIFICATION_GAS,
+  SETCODE_BASE_GAS,
+} from './gas'

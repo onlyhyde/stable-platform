@@ -198,7 +198,9 @@ export function Settings() {
       }
 
       const address = await importPrivateKey(key)
-      setImportSuccess(t('accountImported', { address: `${address.slice(0, 10)}...${address.slice(-8)}` }))
+      setImportSuccess(
+        t('accountImported', { address: `${address.slice(0, 10)}...${address.slice(-8)}` })
+      )
       setPrivateKeyInput('')
       setShowImportKey(false)
     } catch (err) {
@@ -351,71 +353,74 @@ export function Settings() {
   }, [editingNetwork, editForm, updateNetwork, t])
 
   // Import Networks handler
-  const handleImportNetworks = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  const handleImportNetworks = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (!file) return
 
-    setIsImportingNetworks(true)
-    setImportNetworkResult(null)
+      setIsImportingNetworks(true)
+      setImportNetworkResult(null)
 
-    try {
-      const text = await file.text()
-      const data = JSON.parse(text)
+      try {
+        const text = await file.text()
+        const data = JSON.parse(text)
 
-      const importedNetworks: Network[] = Array.isArray(data)
-        ? data
-        : Array.isArray(data.networks)
-          ? data.networks
-          : []
+        const importedNetworks: Network[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data.networks)
+            ? data.networks
+            : []
 
-      if (importedNetworks.length === 0) {
-        setImportNetworkResult(t('invalidNetworkFile'))
-        return
-      }
-
-      let added = 0
-      let updated = 0
-      let failed = 0
-
-      for (const net of importedNetworks) {
-        if (!net.name || !net.chainId || !net.rpcUrl) {
-          failed++
-          continue
+        if (importedNetworks.length === 0) {
+          setImportNetworkResult(t('invalidNetworkFile'))
+          return
         }
 
-        const existing = networks.find((n) => n.chainId === net.chainId)
-        try {
-          if (existing) {
-            await updateNetwork(net.chainId, {
-              name: net.name,
-              rpcUrl: net.rpcUrl,
-              bundlerUrl: net.bundlerUrl,
-              paymasterUrl: net.paymasterUrl,
-              explorerUrl: net.explorerUrl,
-              indexerUrl: net.indexerUrl,
-              currency: net.currency,
-              isTestnet: net.isTestnet,
-            })
-            updated++
-          } else {
-            await addNetwork({ ...net, isCustom: true })
-            added++
+        let added = 0
+        let updated = 0
+        let failed = 0
+
+        for (const net of importedNetworks) {
+          if (!net.name || !net.chainId || !net.rpcUrl) {
+            failed++
+            continue
           }
-        } catch {
-          failed++
-        }
-      }
 
-      setImportNetworkResult(t('importResult', { added, updated, failed }))
-      await syncWithBackground()
-    } catch {
-      setImportNetworkResult(t('invalidNetworkFile'))
-    } finally {
-      setIsImportingNetworks(false)
-      // Reset file input
-      event.target.value = ''
-    }
-  }, [networks, addNetwork, updateNetwork, syncWithBackground, t])
+          const existing = networks.find((n) => n.chainId === net.chainId)
+          try {
+            if (existing) {
+              await updateNetwork(net.chainId, {
+                name: net.name,
+                rpcUrl: net.rpcUrl,
+                bundlerUrl: net.bundlerUrl,
+                paymasterUrl: net.paymasterUrl,
+                explorerUrl: net.explorerUrl,
+                indexerUrl: net.indexerUrl,
+                currency: net.currency,
+                isTestnet: net.isTestnet,
+              })
+              updated++
+            } else {
+              await addNetwork({ ...net, isCustom: true })
+              added++
+            }
+          } catch {
+            failed++
+          }
+        }
+
+        setImportNetworkResult(t('importResult', { added, updated, failed }))
+        await syncWithBackground()
+      } catch {
+        setImportNetworkResult(t('invalidNetworkFile'))
+      } finally {
+        setIsImportingNetworks(false)
+        // Reset file input
+        event.target.value = ''
+      }
+    },
+    [networks, addNetwork, updateNetwork, syncWithBackground, t]
+  )
 
   // Export Networks handler
   const handleExportNetworks = useCallback(() => {
@@ -618,10 +623,7 @@ export function Settings() {
               {t('network')}
             </h3>
             <div className="flex items-center gap-2">
-              <label
-                className="text-xs cursor-pointer"
-                style={{ color: 'rgb(var(--primary))' }}
-              >
+              <label className="text-xs cursor-pointer" style={{ color: 'rgb(var(--primary))' }}>
                 {isImportingNetworks ? t('importingNetworks') : t('importNetworks')}
                 <input
                   type="file"
@@ -1318,7 +1320,9 @@ export function Settings() {
                 style={{ border: '1px solid rgb(var(--border))' }}
               >
                 <div className="flex items-center gap-2">
-                  <span style={{ color: 'rgb(var(--foreground))' }}>{t('accountInfoValidator')}</span>
+                  <span style={{ color: 'rgb(var(--foreground))' }}>
+                    {t('accountInfoValidator')}
+                  </span>
                 </div>
                 <svg
                   className="w-5 h-5"
@@ -1398,7 +1402,9 @@ export function Settings() {
                         >
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                              <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('type')}</span>
+                              <span style={{ color: 'rgb(var(--muted-foreground))' }}>
+                                {t('type')}
+                              </span>
                               <span
                                 className="font-medium"
                                 style={{ color: 'rgb(var(--foreground))' }}
@@ -1596,7 +1602,8 @@ export function Settings() {
                   onClick={() => handleLanguageChange('en')}
                   className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors"
                   style={{
-                    backgroundColor: i18n.language === 'en' ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                    backgroundColor:
+                      i18n.language === 'en' ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
                     color: i18n.language === 'en' ? 'white' : 'rgb(var(--foreground))',
                     border: `1px solid ${i18n.language === 'en' ? 'rgb(var(--primary))' : 'rgb(var(--border))'}`,
                   }}
@@ -1608,7 +1615,8 @@ export function Settings() {
                   onClick={() => handleLanguageChange('ko')}
                   className="flex-1 py-2 rounded-lg text-sm font-medium transition-colors"
                   style={{
-                    backgroundColor: i18n.language === 'ko' ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                    backgroundColor:
+                      i18n.language === 'ko' ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
                     color: i18n.language === 'ko' ? 'white' : 'rgb(var(--foreground))',
                     border: `1px solid ${i18n.language === 'ko' ? 'rgb(var(--primary))' : 'rgb(var(--border))'}`,
                   }}

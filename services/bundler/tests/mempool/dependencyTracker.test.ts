@@ -1,9 +1,6 @@
 import type { Address, Hex } from 'viem'
 import { describe, expect, it } from 'vitest'
-import {
-  DependencyTracker,
-  type StorageAccessRecord,
-} from '../../src/mempool/dependencyTracker'
+import { DependencyTracker, type StorageAccessRecord } from '../../src/mempool/dependencyTracker'
 import type { MempoolEntry, UserOperation } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
 
@@ -68,9 +65,7 @@ describe('DependencyTracker', () => {
       const sender = createAddress(1)
       const contract = createAddress(100)
 
-      tracker.recordAccess(
-        createAccessRecord(hash, sender, [[contract, ['0x01']]])
-      )
+      tracker.recordAccess(createAccessRecord(hash, sender, [[contract, ['0x01']]]))
 
       expect(tracker.size).toBe(1)
     })
@@ -81,9 +76,7 @@ describe('DependencyTracker', () => {
       const sender = createAddress(1)
       const contract = createAddress(100)
 
-      tracker.recordAccess(
-        createAccessRecord(hash, sender, [[contract, ['0x01']]])
-      )
+      tracker.recordAccess(createAccessRecord(hash, sender, [[contract, ['0x01']]]))
 
       expect(tracker.size).toBe(1)
 
@@ -108,12 +101,8 @@ describe('DependencyTracker', () => {
       const sender2 = createAddress(2)
       const contract = createAddress(100)
 
-      tracker.recordAccess(
-        createAccessRecord(hash1, sender1, [[contract, ['0x01']]])
-      )
-      tracker.recordAccess(
-        createAccessRecord(hash2, sender2, [[contract, ['0x02']]])
-      )
+      tracker.recordAccess(createAccessRecord(hash1, sender1, [[contract, ['0x01']]]))
+      tracker.recordAccess(createAccessRecord(hash2, sender2, [[contract, ['0x02']]]))
 
       const deps = tracker.findDependencies([hash1, hash2])
       expect(deps.length).toBe(0)
@@ -128,12 +117,8 @@ describe('DependencyTracker', () => {
       const contract = createAddress(100)
       const sharedSlot = '0xabcd'
 
-      tracker.recordAccess(
-        createAccessRecord(hash1, sender1, [[contract, [sharedSlot]]])
-      )
-      tracker.recordAccess(
-        createAccessRecord(hash2, sender2, [[contract, [sharedSlot]]])
-      )
+      tracker.recordAccess(createAccessRecord(hash1, sender1, [[contract, [sharedSlot]]]))
+      tracker.recordAccess(createAccessRecord(hash2, sender2, [[contract, [sharedSlot]]]))
 
       const deps = tracker.findDependencies([hash1, hash2])
       expect(deps.length).toBe(1)
@@ -148,12 +133,8 @@ describe('DependencyTracker', () => {
       const sameSender = createAddress(1)
       const contract = createAddress(100)
 
-      tracker.recordAccess(
-        createAccessRecord(hash1, sameSender, [[contract, ['0x01']]])
-      )
-      tracker.recordAccess(
-        createAccessRecord(hash2, sameSender, [[contract, ['0x01']]])
-      )
+      tracker.recordAccess(createAccessRecord(hash1, sameSender, [[contract, ['0x01']]]))
+      tracker.recordAccess(createAccessRecord(hash2, sameSender, [[contract, ['0x01']]]))
 
       const deps = tracker.findDependencies([hash1, hash2])
       expect(deps.length).toBe(0)
@@ -169,15 +150,9 @@ describe('DependencyTracker', () => {
       const sender3 = createAddress(3)
       const contract = createAddress(100)
 
-      tracker.recordAccess(
-        createAccessRecord(hash1, sender1, [[contract, ['0x01']]])
-      )
-      tracker.recordAccess(
-        createAccessRecord(hash2, sender2, [[contract, ['0x01']]])
-      )
-      tracker.recordAccess(
-        createAccessRecord(hash3, sender3, [[contract, ['0x01']]])
-      )
+      tracker.recordAccess(createAccessRecord(hash1, sender1, [[contract, ['0x01']]]))
+      tracker.recordAccess(createAccessRecord(hash2, sender2, [[contract, ['0x01']]]))
+      tracker.recordAccess(createAccessRecord(hash3, sender3, [[contract, ['0x01']]]))
 
       // Only check hash1 and hash3 - should find dependency
       const deps = tracker.findDependencies([hash1, hash3])
@@ -194,12 +169,8 @@ describe('DependencyTracker', () => {
       const sender2 = createAddress(2)
       const contract = createAddress(100)
 
-      tracker.recordAccess(
-        createAccessRecord(hash1, sender1, [[contract, ['0x01']]])
-      )
-      tracker.recordAccess(
-        createAccessRecord(hash2, sender2, [[contract, ['0x01']]])
-      )
+      tracker.recordAccess(createAccessRecord(hash1, sender1, [[contract, ['0x01']]]))
+      tracker.recordAccess(createAccessRecord(hash2, sender2, [[contract, ['0x01']]]))
 
       const entry1 = createEntry(sender1, hash1)
       const entry2 = createEntry(sender2, hash2)
@@ -223,12 +194,8 @@ describe('DependencyTracker', () => {
       const contract2 = createAddress(200)
 
       // Different contracts, different slots - no dependency
-      tracker.recordAccess(
-        createAccessRecord(hash1, sender1, [[contract1, ['0x01']]])
-      )
-      tracker.recordAccess(
-        createAccessRecord(hash2, sender2, [[contract2, ['0x02']]])
-      )
+      tracker.recordAccess(createAccessRecord(hash1, sender1, [[contract1, ['0x01']]]))
+      tracker.recordAccess(createAccessRecord(hash2, sender2, [[contract2, ['0x02']]]))
 
       const entry1 = createEntry(sender1, hash1)
       const entry2 = createEntry(sender2, hash2)
@@ -267,9 +234,7 @@ describe('DependencyTracker', () => {
       )
 
       // C is independent
-      tracker.recordAccess(
-        createAccessRecord(hashC, senderC, [[createAddress(300), ['0x03']]])
-      )
+      tracker.recordAccess(createAccessRecord(hashC, senderC, [[createAddress(300), ['0x03']]]))
 
       const entries = [
         createEntry(senderA, hashA),
@@ -303,9 +268,7 @@ describe('DependencyTracker', () => {
       const contract2 = createAddress(200)
 
       // A and B share contract1:slot1
-      tracker.recordAccess(
-        createAccessRecord(hashA, senderA, [[contract1, ['0x01']]])
-      )
+      tracker.recordAccess(createAccessRecord(hashA, senderA, [[contract1, ['0x01']]]))
       tracker.recordAccess(
         createAccessRecord(hashB, senderB, [
           [contract1, ['0x01']],
@@ -313,9 +276,7 @@ describe('DependencyTracker', () => {
         ])
       )
       // B and C share contract2:slot2
-      tracker.recordAccess(
-        createAccessRecord(hashC, senderC, [[contract2, ['0x02']]])
-      )
+      tracker.recordAccess(createAccessRecord(hashC, senderC, [[contract2, ['0x02']]]))
 
       const entries = [
         createEntry(senderC, hashC),
@@ -362,14 +323,10 @@ describe('DependencyTracker', () => {
       const contract = createAddress(100)
 
       tracker.recordAccess(
-        createAccessRecord(createHash(1), createAddress(1), [
-          [contract, ['0x01']],
-        ])
+        createAccessRecord(createHash(1), createAddress(1), [[contract, ['0x01']]])
       )
       tracker.recordAccess(
-        createAccessRecord(createHash(2), createAddress(2), [
-          [contract, ['0x02']],
-        ])
+        createAccessRecord(createHash(2), createAddress(2), [[contract, ['0x02']]])
       )
 
       expect(tracker.size).toBe(2)

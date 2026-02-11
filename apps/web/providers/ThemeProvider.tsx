@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react'
 
 type Theme = 'light' | 'dark' | 'system'
 type ResolvedTheme = 'light' | 'dark'
@@ -179,7 +179,13 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
       value: 'light',
       label: 'Light',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -193,7 +199,13 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
       value: 'dark',
       label: 'Dark',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -207,7 +219,13 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
       value: 'system',
       label: 'System',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -247,7 +265,12 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} onKeyDown={undefined} aria-hidden="true" />
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsOpen(false)}
+            onKeyDown={undefined}
+            aria-hidden="true"
+          />
           <div
             className="
             absolute right-0 mt-2 w-40 py-2 z-20

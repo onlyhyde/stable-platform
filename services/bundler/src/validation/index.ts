@@ -1,98 +1,92 @@
 // Types
-export type {
-  ValidationPhase,
-  ReturnInfo,
-  StakeInfo,
-  ValidationResult,
-  AggregatorInfo,
-  ValidationResultWithAggregation,
-  DepositInfo,
-  ReputationStatus,
-  ReputationEntry,
-  ReputationConfig,
-  ParsedValidationData,
-  ValidationErrorDetails,
-  ExecutionResult,
-  UserOperationEventData,
-  AccountDeployedEventData,
-  UserOperationRevertReasonData,
-  // Interfaces for DI
-  IFormatValidator,
-  ISimulationValidator,
-  IReputationManager,
-  IOpcodeValidator,
-  EntityType,
-  ReputationCheckResult,
-  // Aggregator types
-  UserOpsPerAggregator,
-  PackedUserOperation,
-  AggregatorValidationResult,
-  IAggregatorValidator,
-} from './types'
-
-export {
-  VALIDATION_CONSTANTS,
-  DEFAULT_REPUTATION_CONFIG,
-} from './types'
-
-// Error utilities
-export {
-  matchesErrorSelector,
-  isValidationResultError,
-  isValidationResultWithAggregationError,
-  isFailedOpError,
-  isFailedOpWithRevertError,
-  isExecutionResultError,
-  extractErrorData,
-  decodeValidationResult,
-  decodeValidationResultWithAggregation,
-  decodeFailedOp,
-  decodeFailedOpWithRevert,
-  decodeExecutionResult,
-  parseValidationData,
-  isSignatureFailure,
-  validateTimestamps,
-  formatRevertReason,
-  parseSimulationError,
-  type ValidateTimestampsOptions,
-} from './errors'
-
-// Format validator
-export { FormatValidator, userOperationSchema, type FormatValidatorConfig } from './formatValidator'
-
-// Reputation manager
-export { ReputationManager } from './reputationManager'
-
-// Simulation validator
-export { SimulationValidator } from './simulationValidator'
-
-// Opcode validator
-export {
-  OpcodeValidator,
-  BANNED_OPCODES,
-  CONDITIONAL_OPCODES,
-  type TraceCall,
-  type TraceResult,
-  type ITracer,
-  type OpcodeValidatorConfig,
-} from './opcodeValidator'
-
-// Main validator
-export {
-  UserOperationValidator,
-  DEFAULT_VALIDATOR_CONFIG,
-  type ValidatorConfig,
-  type ValidatorDependencies,
-} from './validator'
-
-// Tracer
-export {
-  DebugTraceCallTracer,
-  type TracerConfig,
-} from './tracer'
 
 // Aggregator validator
 export {
   AggregatorValidator,
   type UserOpWithAggregator,
 } from './aggregatorValidator'
+// Error utilities
+export {
+  decodeExecutionResult,
+  decodeFailedOp,
+  decodeFailedOpWithRevert,
+  decodeValidationResult,
+  decodeValidationResultWithAggregation,
+  extractErrorData,
+  formatRevertReason,
+  isExecutionResultError,
+  isFailedOpError,
+  isFailedOpWithRevertError,
+  isSignatureFailure,
+  isValidationResultError,
+  isValidationResultWithAggregationError,
+  matchesErrorSelector,
+  parseSimulationError,
+  parseValidationData,
+  type ValidateTimestampsOptions,
+  validateTimestamps,
+} from './errors'
+// Format validator
+export { FormatValidator, type FormatValidatorConfig, userOperationSchema } from './formatValidator'
+// Opcode validator
+export {
+  BANNED_OPCODES,
+  CONDITIONAL_OPCODES,
+  type ITracer,
+  OpcodeValidator,
+  type OpcodeValidatorConfig,
+  type TraceCall,
+  type TraceResult,
+} from './opcodeValidator'
+
+// Reputation manager
+export { ReputationManager } from './reputationManager'
+
+// Simulation validator
+export { SimulationValidator } from './simulationValidator'
+// Tracer
+export {
+  DebugTraceCallTracer,
+  type TracerConfig,
+} from './tracer'
+export type {
+  AccountDeployedEventData,
+  AggregatorInfo,
+  AggregatorValidationResult,
+  DepositInfo,
+  EntityType,
+  ExecutionResult,
+  IAggregatorValidator,
+  // Interfaces for DI
+  IFormatValidator,
+  IOpcodeValidator,
+  IReputationManager,
+  ISimulationValidator,
+  PackedUserOperation,
+  ParsedValidationData,
+  ReputationCheckResult,
+  ReputationConfig,
+  ReputationEntry,
+  ReputationStatus,
+  ReturnInfo,
+  StakeInfo,
+  UserOperationEventData,
+  UserOperationRevertReasonData,
+  // Aggregator types
+  UserOpsPerAggregator,
+  ValidationErrorDetails,
+  ValidationPhase,
+  ValidationResult,
+  ValidationResultWithAggregation,
+} from './types'
+export {
+  DEFAULT_REPUTATION_CONFIG,
+  VALIDATION_CONSTANTS,
+} from './types'
+// Main validator
+export {
+  DEFAULT_VALIDATOR_CONFIG,
+  UserOperationValidator,
+  type ValidatorConfig,
+  type ValidatorDependencies,
+} from './validator'

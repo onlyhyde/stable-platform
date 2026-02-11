@@ -1,8 +1,8 @@
-import { http, createPublicClient, createWalletClient, formatEther, parseEther } from 'viem'
+import { createPublicClient, createWalletClient, http, parseEther } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { foundry } from 'viem/chains'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { TEST_CONFIG, isNetworkAvailable } from '../setup'
+import { isNetworkAvailable, TEST_CONFIG } from '../setup'
 
 describe('SDK Integration Tests', () => {
   let publicClient: ReturnType<typeof createPublicClient>
@@ -68,8 +68,6 @@ describe('SDK Integration Tests', () => {
       const balance = await publicClient.getBalance({
         address: TEST_CONFIG.accounts.user1.address as `0x${string}`,
       })
-
-      console.log(`User1 balance: ${formatEther(balance)} ETH`)
       expect(balance).toBeGreaterThan(0n)
     })
 

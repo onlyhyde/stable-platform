@@ -1,20 +1,19 @@
 export {
-  toKernelSmartAccount,
+  EntryPointAbi,
+  KernelAccountAbi,
+  KernelFactoryAbi,
+} from './abi'
+export {
   type KernelSmartAccountConfig,
+  toKernelSmartAccount,
 } from './kernelAccount'
 
 export {
-  KernelAccountAbi,
-  KernelFactoryAbi,
-  EntryPointAbi,
-} from './abi'
-
-export {
-  encodeExecutionMode,
-  encodeSingleCall,
+  calculateSalt,
   encodeBatchCalls,
+  encodeExecutionMode,
   encodeKernelExecuteCallData,
   encodeKernelInitializeData,
   encodeRootValidator,
-  calculateSalt,
+  encodeSingleCall,
 } from './utils'

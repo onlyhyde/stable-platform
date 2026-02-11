@@ -1,7 +1,7 @@
 // Unmock to test real implementation
 jest.unmock('@stablenet/core')
 
-import { type TypedData, TypedDataValidator, createTypedDataValidator } from '@stablenet/core'
+import { createTypedDataValidator, type TypedData, TypedDataValidator } from '@stablenet/core'
 
 const typedDataValidator = createTypedDataValidator()
 

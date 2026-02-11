@@ -7,117 +7,116 @@
 // ABIs
 // ============================================================================
 export {
-  SwapExecutorAbi,
-  LendingExecutorAbi,
-  StakingExecutorAbi,
   HealthFactorHookAbi,
+  LendingExecutorAbi,
   MerchantRegistryAbi,
+  StakingExecutorAbi,
+  SwapExecutorAbi,
 } from './abis'
 
 // ============================================================================
 // Permit2 (Token Approvals)
 // ============================================================================
 export {
+  type Allowance,
+  createPermitBatch,
+  createPermitDetails,
+  createPermitSingle,
+  createPermitTransferFrom,
+  DEFAULT_PERMIT_EXPIRATION,
+  encodePermitBatch,
+  encodePermitSingle,
+  encodeSignatureTransferFrom,
+  encodeTransferFrom,
+  // Functions
+  getPermit2Domain,
+  getPermitBatchTypedData,
+  getPermitSingleTypedData,
+  getPermitTransferFromTypedData,
+  MAX_UINT48,
+  MAX_UINT160,
+  PERMIT_BATCH_TRANSFER_FROM_TYPES,
+  PERMIT_BATCH_TYPES,
+  // Types
+  PERMIT_SINGLE_TYPES,
+  PERMIT_TRANSFER_FROM_TYPES,
+  PERMIT2_ABI,
   // Constants
   PERMIT2_ADDRESSES,
   PERMIT2_TYPE_HASHES,
-  MAX_UINT160,
-  MAX_UINT48,
-  DEFAULT_PERMIT_EXPIRATION,
-  PERMIT2_ABI,
-  // Types
-  PERMIT_SINGLE_TYPES,
-  PERMIT_BATCH_TYPES,
-  PERMIT_TRANSFER_FROM_TYPES,
-  PERMIT_BATCH_TRANSFER_FROM_TYPES,
-  // Functions
-  getPermit2Domain,
-  createPermitDetails,
-  createPermitSingle,
-  createPermitBatch,
-  createPermitTransferFrom,
-  getPermitSingleTypedData,
-  getPermitBatchTypedData,
-  getPermitTransferFromTypedData,
-  encodePermitSingle,
-  encodePermitBatch,
-  encodeTransferFrom,
-  encodeSignatureTransferFrom,
+  type PermitBatch,
+  type PermitBatchTransferFrom,
   // Type exports
   type PermitDetails,
   type PermitSingle,
-  type PermitBatch,
-  type TokenPermissions,
   type PermitTransferFrom,
-  type PermitBatchTransferFrom,
   type SignatureTransferDetails,
-  type Allowance,
+  type TokenPermissions,
 } from './permit2'
 
 // ============================================================================
 // Types
 // ============================================================================
 export type {
-  // Common
-  ModuleType,
-  ModuleConfig,
+  BorrowedEvent,
+  BorrowParams,
+  ClaimRewardsParams,
+  CompoundRewardsParams,
   DefiPluginConfig,
-  TransactionRequest,
-  ModuleInstallation,
-  // SwapExecutor
-  SwapAccountConfig,
-  SwapTokenConfig,
-  SwapParams,
-  SwapExecutorInitData,
+  // HealthFactorHook
+  HealthFactorAccountConfig,
+  HealthFactorCheckResult,
+  HealthFactorHookInitData,
   // LendingExecutor
   LendingAccountConfig,
   LendingAssetConfig,
-  LendingPoolConfig,
   LendingExecutorInitData,
-  SupplyParams,
-  WithdrawParams,
-  BorrowParams,
-  RepayParams,
-  // StakingExecutor
-  StakingAccountConfig,
-  StakingPoolInfo,
-  StakingExecutorInitData,
-  StakeParams,
-  UnstakeParams,
-  ClaimRewardsParams,
-  CompoundRewardsParams,
-  // HealthFactorHook
-  HealthFactorAccountConfig,
-  HealthFactorHookInitData,
-  HealthFactorCheckResult,
+  LendingPoolConfig,
   // MerchantRegistry
   Merchant,
+  MerchantRegisteredEvent,
   MerchantRegistration,
   MerchantStats,
-  // Events
-  SwapExecutedEvent,
-  SuppliedEvent,
-  WithdrawnEvent,
-  BorrowedEvent,
+  MerchantSuspendedEvent,
+  MerchantVerifiedEvent,
+  ModuleConfig,
+  ModuleInstallation,
+  // Common
+  ModuleType,
   RepaidEvent,
-  StakedEvent,
-  UnstakedEvent,
+  RepayParams,
   RewardsClaimedEvent,
   RewardsCompoundedEvent,
-  MerchantRegisteredEvent,
-  MerchantVerifiedEvent,
-  MerchantSuspendedEvent,
+  StakedEvent,
+  StakeParams,
+  // StakingExecutor
+  StakingAccountConfig,
+  StakingExecutorInitData,
+  StakingPoolInfo,
+  SuppliedEvent,
+  SupplyParams,
+  // SwapExecutor
+  SwapAccountConfig,
+  // Events
+  SwapExecutedEvent,
+  SwapExecutorInitData,
+  SwapParams,
+  SwapTokenConfig,
+  TransactionRequest,
+  UnstakedEvent,
+  UnstakeParams,
+  WithdrawnEvent,
+  WithdrawParams,
 } from './types'
-
 // Enums and Classes need value export
-export { LendingPoolType } from './types'
 export {
   DefiPluginError,
-  SwapExecutorError,
-  LendingExecutorError,
-  StakingExecutorError,
   HealthFactorHookError,
+  LendingExecutorError,
+  LendingPoolType,
   MerchantRegistryError,
+  StakingExecutorError,
+  SwapExecutorError,
 } from './types'
 
 // ============================================================================
@@ -257,9 +256,7 @@ export function encodeStakingExecutorInitData(config: {
 /**
  * Encode module init data for HealthFactorHook
  */
-export function encodeHealthFactorHookInitData(config: {
-  minHealthFactor: bigint
-}): `0x${string}` {
+export function encodeHealthFactorHookInitData(config: { minHealthFactor: bigint }): `0x${string}` {
   // ABI encode: (uint256 minHealthFactor)
   const minHfHex = config.minHealthFactor.toString(16).padStart(64, '0')
   return `0x${minHfHex}`

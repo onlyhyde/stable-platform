@@ -1,5 +1,5 @@
-import Fastify from 'fastify'
 import type { FastifyInstance } from 'fastify'
+import Fastify from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { registerBulkRoutes } from '../../src/server/routes/bulk'
 import { registerChainRoutes } from '../../src/server/routes/chains'

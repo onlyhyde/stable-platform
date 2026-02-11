@@ -1,7 +1,7 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardTitle } from '@/components/common'
 import Link from 'next/link'
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/common'
 
 export function DefiNavigationCards() {
   return (

@@ -77,8 +77,7 @@ export class ProfitabilityCalculator {
   ): BundleProfitEstimate {
     const opEstimates: OpProfitEstimate[] = entries.map((entry) => {
       const op = entry.userOp
-      const estimatedGas =
-        op.callGasLimit + op.verificationGasLimit + op.preVerificationGas
+      const estimatedGas = op.callGasLimit + op.verificationGasLimit + op.preVerificationGas
 
       // effectivePriorityFee = min(maxPriorityFeePerGas, maxFeePerGas - baseFeePerGas)
       const maxPossiblePriorityFee =
@@ -127,8 +126,7 @@ export class ProfitabilityCalculator {
     // Calculate per-op contribution
     const contributions = entries.map((entry) => {
       const op = entry.userOp
-      const estimatedGas =
-        op.callGasLimit + op.verificationGasLimit + op.preVerificationGas
+      const estimatedGas = op.callGasLimit + op.verificationGasLimit + op.preVerificationGas
 
       const maxPossiblePriorityFee =
         op.maxFeePerGas > baseFeePerGas ? op.maxFeePerGas - baseFeePerGas : 0n
@@ -158,10 +156,7 @@ export class ProfitabilityCalculator {
 
     for (const { entry, netContribution, revenue } of contributions) {
       if (netContribution <= 0n) {
-        this.logger.debug(
-          { userOpHash: entry.userOpHash },
-          'Excluding unprofitable op from bundle'
-        )
+        this.logger.debug({ userOpHash: entry.userOpHash }, 'Excluding unprofitable op from bundle')
         continue
       }
 

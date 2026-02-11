@@ -5,17 +5,17 @@
 // Network configurations
 export {
   DEFAULT_NETWORKS,
-  NATIVE_CURRENCY_SYMBOLS,
   getNativeCurrencySymbol,
-  toNetworkInfo,
+  NATIVE_CURRENCY_SYMBOLS,
   toNetworkConfig,
+  toNetworkInfo,
 } from './networks'
 
 // Network registry
 export {
-  NetworkRegistry,
-  networkRegistry,
   LocalStorage,
-  type NetworkStorage,
+  NetworkRegistry,
   type NetworkRegistryConfig,
+  type NetworkStorage,
+  networkRegistry,
 } from './registry'

@@ -1,8 +1,8 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { Button } from '@/components/common/Button'
 import { cn } from '@/lib/utils'
-import type { ReactNode } from 'react'
 
 /**
  * Error severity levels

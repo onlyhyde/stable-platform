@@ -64,7 +64,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
     loadOrders()
     loadKycStatus()
     loadSupportedCurrencies()
-  }, [])
+  }, [loadBankAccounts, loadKycStatus, loadOrders, loadSupportedCurrencies])
 
   // Poll pending orders for status updates
   useEffect(() => {
@@ -78,7 +78,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
     }, 15_000)
 
     return () => clearInterval(pollInterval)
-  }, [orders])
+  }, [orders, loadOrders])
 
   // Quote expiration timer
   useEffect(() => {
@@ -559,9 +559,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
         {pendingOrder && (
           <div className="space-y-4">
             <Card padding="md" variant="filled" className="bg-amber-50">
-              <p className="text-sm text-amber-800">
-                {t('completePaymentWithin')}
-              </p>
+              <p className="text-sm text-amber-800">{t('completePaymentWithin')}</p>
             </Card>
 
             <div className="space-y-2">

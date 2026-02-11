@@ -1,11 +1,11 @@
 'use client'
 
-import { getModuleEntry } from '@/lib/moduleAddresses'
 import { useCallback, useEffect, useState } from 'react'
-import type { Address, Hex } from 'viem'
+import type { Hex } from 'viem'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
+import { getModuleEntry } from '@/lib/moduleAddresses'
 
-import { useModule, type ModuleType } from './useModule'
+import { useModule } from './useModule'
 import { useSmartAccount } from './useSmartAccount'
 
 // ============================================================================
@@ -195,7 +195,7 @@ export function useModuleInstall(): UseModuleInstallReturn {
   useEffect(() => {
     setInstalledModules(new Set())
     setInstallingModuleId(null)
-  }, [address])
+  }, [])
 
   return {
     installModule,

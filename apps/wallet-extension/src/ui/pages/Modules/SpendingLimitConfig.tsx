@@ -1,7 +1,7 @@
 import {
+  encodeSpendingLimitInit,
   PERIOD_PRESETS,
   type SpendingLimitHookConfig,
-  encodeSpendingLimitInit,
   validateSpendingLimitConfig,
 } from '@stablenet/core'
 import { useCallback, useMemo, useState } from 'react'
@@ -280,7 +280,9 @@ export function SpendingLimitConfigUI({
                 className="block text-sm font-medium mb-1"
                 style={{ color: 'rgb(var(--foreground-secondary))' }}
               >
-                {t('limitAmountLabel', { unit: form.tokenType === 'native' ? tc('eth') : tc('tokens') })}
+                {t('limitAmountLabel', {
+                  unit: form.tokenType === 'native' ? tc('eth') : tc('tokens'),
+                })}
               </label>
               <input
                 id="spending-limit-amount"
@@ -458,11 +460,19 @@ export function SpendingLimitConfigUI({
 
       {/* Actions */}
       <div className="flex gap-3 mt-6">
-        <button type="button" className="btn-ghost flex-1 py-3 rounded-lg font-medium" onClick={prevStep}>
+        <button
+          type="button"
+          className="btn-ghost flex-1 py-3 rounded-lg font-medium"
+          onClick={prevStep}
+        >
           {step === 'token' ? tc('cancel') : tc('back')}
         </button>
         {step === 'review' ? (
-          <button type="button" className="btn-primary flex-1 py-3 rounded-lg font-medium" onClick={handleSubmit}>
+          <button
+            type="button"
+            className="btn-primary flex-1 py-3 rounded-lg font-medium"
+            onClick={handleSubmit}
+          >
             {t('installHook')}
           </button>
         ) : (
