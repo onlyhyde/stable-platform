@@ -11,7 +11,8 @@ import { useTokenPrices } from '../hooks/useTokenPrices'
 export function Home() {
   const { t } = useTranslation('home')
   const { t: tc } = useTranslation('common')
-  const { selectedAccount, accounts, balances, updateBalance, setPage } = useWalletStore()
+  const { selectedAccount, accounts, balances, updateBalance, setPage, setSelectedSendToken } =
+    useWalletStore()
   const { symbol: currencySymbol } = useNetworkCurrency()
   const [isLoadingBalance, setIsLoadingBalance] = useState(false)
   const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false)
@@ -95,9 +96,8 @@ export function Home() {
       // Navigate to send page for native token
       setPage('send')
     } else {
-      // Navigate to send page with selected token
-      // Store selected token in session storage for Send page to pick up
-      sessionStorage.setItem('selectedToken', JSON.stringify(token))
+      // Navigate to send page with selected token via Zustand store
+      setSelectedSendToken(token)
       setPage('send')
     }
   }

@@ -19,17 +19,73 @@ export interface PhishingCheckResult {
 }
 
 /**
- * Known blocklisted domains (phishing sites)
- * In production, this would be fetched/updated from a remote list.
+ * Cached blocklisted domains - loaded from chrome.storage.local
+ * Initialized empty and populated via updateBlocklist().
  */
-const BLOCKLISTED_DOMAINS: ReadonlySet<string> = new Set([
-  // Placeholder entries - would be populated from a remote blocklist
-  'metamask-login.com',
-  'metamask-verify.com',
-  'uniswap-claim.com',
-  'opensea-login.net',
-  'eth-airdrop.com',
-])
+let blocklistedDomains: Set<string> = new Set()
+
+/** How often to refresh the blocklist from remote (4 hours) */
+const BLOCKLIST_REFRESH_INTERVAL_MS = 4 * 60 * 60 * 1000
+
+/** chrome.storage.local keys */
+const STORAGE_KEY_BLOCKLIST = 'phishing_blocklist'
+const STORAGE_KEY_BLOCKLIST_UPDATED = 'phishing_blocklist_updated_at'
+
+/**
+ * Load blocklist from chrome.storage.local into memory.
+ * Called on extension startup to restore persisted blocklist.
+ */
+export async function loadBlocklist(): Promise<void> {
+  try {
+    const result = await chrome.storage.local.get(STORAGE_KEY_BLOCKLIST)
+    const domains: string[] = result[STORAGE_KEY_BLOCKLIST] ?? []
+    if (Array.isArray(domains) && domains.length > 0) {
+      blocklistedDomains = new Set(domains)
+      logger.info('Loaded blocklist from storage', { count: domains.length })
+    }
+  } catch (err) {
+    logger.error('Failed to load blocklist from storage', { error: err })
+  }
+}
+
+/**
+ * Update blocklist from a remote source and persist to chrome.storage.local.
+ * @param remoteUrl - URL that returns a JSON array of domain strings
+ */
+export async function updateBlocklist(remoteUrl: string): Promise<void> {
+  try {
+    // Check if we need to refresh
+    const stored = await chrome.storage.local.get(STORAGE_KEY_BLOCKLIST_UPDATED)
+    const lastUpdated = stored[STORAGE_KEY_BLOCKLIST_UPDATED] as number | undefined
+    if (lastUpdated && Date.now() - lastUpdated < BLOCKLIST_REFRESH_INTERVAL_MS) {
+      return // Still fresh
+    }
+
+    const response = await fetch(remoteUrl, {
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const data: unknown = await response.json()
+    if (!Array.isArray(data) || !data.every((d) => typeof d === 'string')) {
+      throw new Error('Invalid blocklist format: expected string array')
+    }
+
+    const domains = data as string[]
+    blocklistedDomains = new Set(domains)
+
+    await chrome.storage.local.set({
+      [STORAGE_KEY_BLOCKLIST]: domains,
+      [STORAGE_KEY_BLOCKLIST_UPDATED]: Date.now(),
+    })
+
+    logger.info('Updated blocklist from remote', { count: domains.length })
+  } catch (err) {
+    logger.warn('Failed to update blocklist from remote', { error: err })
+  }
+}
 
 /**
  * Known trusted domains (legitimate Web3 sites)
@@ -232,7 +288,7 @@ export function checkOrigin(origin: string): PhishingCheckResult {
   const hostname = url.hostname.toLowerCase()
 
   // 1. Blocklist check
-  if (BLOCKLISTED_DOMAINS.has(hostname) || BLOCKLISTED_DOMAINS.has(getBaseDomain(hostname))) {
+  if (blocklistedDomains.has(hostname) || blocklistedDomains.has(getBaseDomain(hostname))) {
     logger.warn('Blocked phishing domain', { origin, hostname })
     return {
       isSafe: false,

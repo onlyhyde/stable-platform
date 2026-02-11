@@ -7,6 +7,7 @@
  * - Rust: ethers-rs/alloy adapter
  */
 
+import { sha256 as nobleSha256 } from '@noble/hashes/sha256'
 import {
   http,
   type Chain,
@@ -14,12 +15,14 @@ import {
   type Abi as ViemAbi,
   type Address as ViemAddress,
   type Hex as ViemHex,
+  bytesToHex,
   createPublicClient,
   decodeAbiParameters,
   decodeFunctionResult,
   encodeAbiParameters,
   encodeFunctionData,
   encodePacked,
+  hexToBytes,
   parseAbiParameters,
   keccak256 as viemKeccak256,
 } from 'viem'
@@ -83,9 +86,10 @@ export class ViemHashAlgorithm implements HashAlgorithm {
     return viemKeccak256(data as ViemHex) as Hash
   }
 
-  sha256(_data: Uint8Array | Hex): Hash {
-    // viem doesn't have built-in sha256, use Web Crypto API
-    throw new Error('sha256 not implemented in viem adapter - use native crypto')
+  sha256(data: Uint8Array | Hex): Hash {
+    const input = data instanceof Uint8Array ? data : hexToBytes(data as ViemHex)
+    const hash = nobleSha256(input)
+    return bytesToHex(hash) as Hash
   }
 }
 

@@ -42,12 +42,16 @@ interface UIWalletState {
   // Transaction detail
   selectedTxId: string | null
 
+  // Token selected for send (from Home token click)
+  selectedSendToken: unknown | null
+
   // Balances (cached)
   balances: Record<Address, bigint>
 
   // Actions
   setPage: (page: Page) => void
   setSelectedTxId: (id: string | null) => void
+  setSelectedSendToken: (token: unknown | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   selectAccount: (address: Address) => void
@@ -80,6 +84,7 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   pendingTransactions: [],
   history: [],
   selectedTxId: null,
+  selectedSendToken: null,
   currentPage: 'home',
   isLoading: true,
   error: null,
@@ -88,6 +93,7 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
   // Actions
   setPage: (page) => set({ currentPage: page }),
   setSelectedTxId: (id) => set({ selectedTxId: id }),
+  setSelectedSendToken: (token) => set({ selectedSendToken: token }),
 
   setLoading: (isLoading) => set({ isLoading }),
 

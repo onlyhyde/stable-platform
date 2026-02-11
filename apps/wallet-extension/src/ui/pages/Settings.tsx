@@ -148,9 +148,9 @@ export function Settings() {
         payload: { enabled: newValue },
       })
 
-      // Also update localStorage for the inpage script
-      // This requires page reload to take effect
-      localStorage.setItem('__stablenetAppearAsMM__', JSON.stringify(newValue))
+      // Persist to chrome.storage.local for the inpage script
+      // Background already handles SET_METAMASK_MODE above
+      chrome.storage.local.set({ __stablenetAppearAsMM__: newValue })
     } catch {
       // Revert on error
       setMetaMaskMode(!newValue)

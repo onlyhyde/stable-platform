@@ -343,6 +343,9 @@ importers:
 
   packages/sdk-ts/crypto:
     dependencies:
+      '@noble/hashes':
+        specifier: ^1.6.1
+        version: 1.8.0
       viem:
         specifier: ^2.21.0
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -9390,14 +9393,6 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.0.3
 
-  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@22.19.7))':
-    dependencies:
-      '@vitest/spy': 2.1.9
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      vite: 5.4.21(@types/node@22.19.7)
-
   '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@25.0.10))':
     dependencies:
       '@vitest/spy': 2.1.9
@@ -13813,7 +13808,7 @@ snapshots:
   vitest@2.1.9(@types/node@22.19.7)(jsdom@27.4.0(@noble/hashes@2.0.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10)):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.19.7))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@25.0.10))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9
