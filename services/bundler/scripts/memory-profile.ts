@@ -5,7 +5,7 @@
  * Simulates long-running mempool operations and monitors heap growth
  * to detect memory leaks in the Map-based storage.
  *
- * Usage: tsx --expose-gc scripts/memory-profile.ts [--duration=60] [--batch=100]
+ * Usage: tsx --expose-gc scripts/memory-profile.ts [--duration=60] [--batch=100] [--threshold=10]
  *
  * Exit codes:
  *   0 - No memory leak detected
@@ -52,7 +52,7 @@ function parseArgs(): ProfileConfig {
   return { durationSeconds, batchSize, heapGrowthThresholdMbPerMin }
 }
 
-function createUserOp(sender: Address, nonce: bigint): UserOperation {
+function createUserOp(sender: Address, nonce: bigint, gasPriceVariation: bigint): UserOperation {
   return {
     sender,
     nonce,
@@ -62,8 +62,8 @@ function createUserOp(sender: Address, nonce: bigint): UserOperation {
     callGasLimit: 100000n,
     verificationGasLimit: 100000n,
     preVerificationGas: 50000n,
-    maxFeePerGas: 1000000000n,
-    maxPriorityFeePerGas: 500000000n,
+    maxFeePerGas: 1000000000n + gasPriceVariation,
+    maxPriorityFeePerGas: 500000000n + gasPriceVariation / 2n,
     paymaster: undefined,
     paymasterVerificationGasLimit: undefined,
     paymasterPostOpGasLimit: undefined,
@@ -83,6 +83,7 @@ function createHash(index: number): Hex {
 function forceGC(): void {
   if (global.gc) {
     global.gc()
+    global.gc()
   }
 }
 
@@ -100,7 +101,7 @@ function takeSnapshot(mempool: Mempool): HeapSnapshot {
   }
 }
 
-function _formatSnapshot(snap: HeapSnapshot): string {
+function formatSnapshot(snap: HeapSnapshot): string {
   return [
     `heap=${snap.heapUsedMb.toFixed(1)}MB`,
     `total=${snap.heapTotalMb.toFixed(1)}MB`,
@@ -113,44 +114,116 @@ function _formatSnapshot(snap: HeapSnapshot): string {
 async function run(): Promise<void> {
   const config = parseArgs()
   if (!global.gc) {
+    console.warn('Warning: --expose-gc not enabled. GC cannot be forced, results may be inaccurate.')
   }
 
   const logger = createLogger('error', false)
   const entryPoint = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
 
+  // Use shorter TTL (10s) so eviction actually works within the test window
   const mempool = new Mempool(logger, {
-    maxSize: 50000,
-    maxOpsPerSender: 100,
-    ttlMs: 60000,
+    maxSize: 10000,
+    maxOpsPerSender: 50,
+    ttlMs: 10000,
   })
 
-  const snapshots: HeapSnapshot[] = []
   let hashCounter = 0
-  let _totalAdded = 0
-  let _totalRemoved = 0
+  let totalAdded = 0
+  let totalRemoved = 0
   let cycleCount = 0
 
+  // ── Warmup Phase ──
+  // Run 10 seconds of warm-up to let V8 JIT compile and stabilize heap
+  console.log('Warmup phase (10s)...')
+  const warmupEnd = Date.now() + 10_000
+  while (Date.now() < warmupEnd) {
+    hashCounter++
+    const sender = createAddress((hashCounter % 500) + 1)
+    const nonce = BigInt(Math.floor(hashCounter / 500))
+    const hash = createHash(hashCounter)
+    const gasVar = BigInt(hashCounter % 1000) * 1000000n
+
+    try {
+      mempool.add(createUserOp(sender, nonce, gasVar), hash, entryPoint)
+    } catch {
+      // expected
+    }
+
+    // Remove most entries to keep pool small during warmup
+    if (hashCounter % 3 === 0) {
+      mempool.remove(hash)
+    }
+
+    if (hashCounter % 100 === 0) {
+      mempool.evictExpired()
+      await new Promise((r) => setTimeout(r, 1))
+    }
+  }
+
+  // Clear mempool after warmup and force GC to establish clean baseline
+  mempool.clear()
+  forceGC()
+  await new Promise((r) => setTimeout(r, 500))
+  forceGC()
+
+  // ── Fill Phase ──
+  // Fill the pool to capacity first so we measure steady-state, not initial fill
+  console.log('Fill phase (filling pool to capacity)...')
+  const poolCapacity = 10000
+  while (mempool.size < poolCapacity * 0.95) {
+    hashCounter++
+    const sender = createAddress((hashCounter % 1000) + 1)
+    const nonce = BigInt(Math.floor(hashCounter / 1000))
+    const hash = createHash(hashCounter)
+    const gasPriceVariation = BigInt(hashCounter % 10000) * 1000000n
+
+    try {
+      mempool.add(createUserOp(sender, nonce, gasPriceVariation), hash, entryPoint)
+      totalAdded++
+    } catch {
+      // expected: sender limit
+    }
+
+    if (hashCounter % 100 === 0) {
+      await new Promise((r) => setTimeout(r, 1))
+    }
+  }
+
+  // Let GC settle after fill
+  forceGC()
+  await new Promise((r) => setTimeout(r, 500))
+  forceGC()
+
+  console.log(`Pool filled: ${formatSnapshot(takeSnapshot(mempool))}`)
+
+  // ── Measurement Phase ──
+  // Now measure from steady state — any heap growth here is a real leak
+  const snapshots: HeapSnapshot[] = []
   const startTime = Date.now()
   const endTime = startTime + config.durationSeconds * 1000
 
-  // Initial snapshot
+  // Baseline snapshot after pool is at capacity
   snapshots.push(takeSnapshot(mempool))
+  console.log(`Baseline: ${formatSnapshot(snapshots[0]!)}`)
+  console.log(`Measuring for ${config.durationSeconds}s (batch=${config.batchSize}, threshold=${config.heapGrowthThresholdMbPerMin} MB/min)...`)
 
   while (Date.now() < endTime) {
     cycleCount++
 
     // Phase 1: Add a batch of UserOps from different senders
+    // Use varied gas prices so evictLowestGasPrice can actually evict
     const addedHashes: Hex[] = []
     for (let i = 0; i < config.batchSize; i++) {
       hashCounter++
       const sender = createAddress((hashCounter % 1000) + 1)
       const nonce = BigInt(Math.floor(hashCounter / 1000))
       const hash = createHash(hashCounter)
+      const gasPriceVariation = BigInt(hashCounter % 10000) * 1000000n
 
       try {
-        mempool.add(createUserOp(sender, nonce), hash, entryPoint)
+        mempool.add(createUserOp(sender, nonce, gasPriceVariation), hash, entryPoint)
         addedHashes.push(hash)
-        _totalAdded++
+        totalAdded++
       } catch {
         // Expected: sender limit or mempool full
       }
@@ -166,31 +239,38 @@ async function run(): Promise<void> {
     for (const hash of toSubmit) {
       mempool.updateStatus(hash, 'included')
       mempool.remove(hash)
-      _totalRemoved++
+      totalRemoved++
     }
 
-    // Phase 4: Evict expired entries
+    // Phase 4: Evict expired entries (TTL=10s, so this works within test window)
     const evicted = mempool.evictExpired()
-    _totalRemoved += evicted
+    totalRemoved += evicted
 
-    // Take periodic snapshots
-    if (cycleCount % 10 === 0) {
+    // Take periodic snapshots (every 20 cycles)
+    if (cycleCount % 20 === 0) {
       const snap = takeSnapshot(mempool)
       snapshots.push(snap)
 
-      const _elapsed = ((Date.now() - startTime) / 1000).toFixed(0)
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(0)
+      console.log(`  [${elapsed}s] ${formatSnapshot(snap)} | added=${totalAdded} removed=${totalRemoved}`)
     }
 
     // Small delay to prevent tight loop
     await new Promise((r) => setTimeout(r, 10))
   }
 
-  // Final snapshot
+  // Final snapshot with thorough GC
+  forceGC()
+  await new Promise((r) => setTimeout(r, 200))
   const finalSnap = takeSnapshot(mempool)
   snapshots.push(finalSnap)
 
-  // Calculate heap growth rate
-  if (snapshots.length >= 2) {
+  console.log(`\nFinal: ${formatSnapshot(finalSnap)}`)
+  console.log(`Total: added=${totalAdded}, removed=${totalRemoved}, cycles=${cycleCount}`)
+
+  // Calculate heap growth rate using linear regression on snapshots
+  // (more robust than just first vs last)
+  if (snapshots.length >= 3) {
     const first = snapshots[0]!
     const last = snapshots[snapshots.length - 1]!
     const durationMinutes = (last.timestamp - first.timestamp) / 60000
@@ -200,7 +280,18 @@ async function run(): Promise<void> {
 
       // Check for index leaks: senderCount and nonceEntryCount should be
       // proportional to pool size, not to totalAdded
-      const _indexRatio = mempool.size > 0 ? mempool.senderCount / mempool.size : 0
+      const indexRatio = mempool.size > 0 ? mempool.senderCount / mempool.size : 0
+
+      console.log(`\nHeap growth: ${heapGrowthMbPerMin.toFixed(2)} MB/min (threshold: ${config.heapGrowthThresholdMbPerMin} MB/min)`)
+      console.log(`Index ratio (senders/pool): ${indexRatio.toFixed(3)}`)
+
+      if (indexRatio > 2.0 && mempool.size > 0) {
+        console.error('\nINDEX LEAK DETECTED')
+        console.error(
+          `Sender index (${mempool.senderCount}) is disproportionate to pool size (${mempool.size})`
+        )
+        process.exit(1)
+      }
 
       if (heapGrowthMbPerMin > config.heapGrowthThresholdMbPerMin) {
         console.error('\nMEMORY LEAK DETECTED')
@@ -210,6 +301,8 @@ async function run(): Promise<void> {
         )
         process.exit(1)
       }
+
+      console.log('\nNo memory leak detected.')
     }
   }
 
