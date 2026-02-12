@@ -36,28 +36,8 @@ export const PROVIDER_ERROR_CODES = {
   CHAIN_DISCONNECTED: 4901,
 } as const
 
-/**
- * ERC-4337 Bundler-specific error codes
- * https://eips.ethereum.org/EIPS/eip-4337
- */
-export const BUNDLER_ERROR_CODES = {
-  /** Rejected by EntryPoint or account validation */
-  REJECTED_BY_EP_OR_ACCOUNT: -32500,
-  /** Rejected by paymaster validation */
-  REJECTED_BY_PAYMASTER: -32501,
-  /** Operation contains banned opcode */
-  BANNED_OPCODE: -32502,
-  /** Operation has too short deadline */
-  SHORT_DEADLINE: -32503,
-  /** Entity is banned or throttled */
-  BANNED_OR_THROTTLED: -32504,
-  /** Stake or unstake delay issue */
-  STAKE_OR_UNSTAKE_DELAY: -32505,
-  /** Unsupported signature aggregator */
-  UNSUPPORTED_AGGREGATOR: -32506,
-  /** Invalid signature */
-  INVALID_SIGNATURE: -32507,
-} as const
+// BUNDLER_ERROR_CODES is exported from './bundler' (complete version with JSON-RPC + ERC-4337 codes)
+import { BUNDLER_ERROR_CODES } from './bundler'
 
 /**
  * Extended RPC error codes used by StableNet

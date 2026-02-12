@@ -109,8 +109,8 @@ export {
 // ============================================================================
 // RPC Error types
 // ============================================================================
+export { BUNDLER_ERROR_CODES as RPC_BUNDLER_ERROR_CODES } from './bundler'
 export {
-  BUNDLER_ERROR_CODES as RPC_BUNDLER_ERROR_CODES,
   JSON_RPC_ERROR_CODES,
   PROVIDER_ERROR_CODES,
   PROVIDER_EVENTS,
