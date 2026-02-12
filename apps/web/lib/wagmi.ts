@@ -3,6 +3,7 @@
 import { createConfig, http } from 'wagmi'
 import { injected, walletConnect } from 'wagmi/connectors'
 import { anvilLocal, stablenetLocal, stablenetTestnet, supportedChains } from './chains'
+import { getLocalConfig, getTestnetConfig } from './config'
 
 // WalletConnect Project ID - Get yours at https://cloud.walletconnect.com
 const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ''
@@ -57,10 +58,10 @@ export const wagmiConfig = createConfig({
   transports: {
     // Anvil (Local) - chainId 31337
     [anvilLocal.id]: createRpcTransport('http://127.0.0.1:8545'),
-    // StableNet Local - chainId 8283
-    [stablenetLocal.id]: createRpcTransport('http://127.0.0.1:8501'),
-    // StableNet Testnet - chainId 82830
-    [stablenetTestnet.id]: createRpcTransport('https://rpc.testnet.stablenet.dev'),
+    // StableNet Local - chainId 8283 (from config system)
+    [stablenetLocal.id]: createRpcTransport(getLocalConfig().rpcUrl),
+    // StableNet Testnet - chainId 82830 (from config system)
+    [stablenetTestnet.id]: createRpcTransport(getTestnetConfig().rpcUrl),
   },
   ssr: true,
 })
