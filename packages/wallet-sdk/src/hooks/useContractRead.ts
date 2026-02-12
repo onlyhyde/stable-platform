@@ -100,8 +100,13 @@ export function useContractRead<TAbi extends Abi = Abi, TFunctionName extends st
 
     try {
       // Encode the function call
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const calldata = encodeFunctionData({ abi, functionName, args } as any)
+      // Cast required: viem's generics need concrete ABI types at compile time,
+      // but this hook accepts any ABI via generic parameter
+      const calldata = encodeFunctionData({
+        abi,
+        functionName,
+        args,
+      } as Parameters<typeof encodeFunctionData>[0])
 
       // Execute via eth_call
       const result = await provider.request<string>({
@@ -112,13 +117,12 @@ export function useContractRead<TAbi extends Abi = Abi, TFunctionName extends st
       // Guard against stale responses
       if (lastCacheKeyRef.current !== cacheKey) return
 
-      // Decode the result
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // Decode the result (same cast rationale as encodeFunctionData above)
       const decoded = decodeFunctionResult({
         abi,
         functionName,
         data: result as `0x${string}`,
-      } as any)
+      } as Parameters<typeof decodeFunctionResult>[0])
 
       setData(decoded)
     } catch (err) {

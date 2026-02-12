@@ -212,8 +212,8 @@ export class RegistryClient extends EventEmitter<ClientEvent> {
           this.emit('error', new Error(msg.message))
           break
       }
-    } catch {
-      // ignore parse errors
+    } catch (err) {
+      this.emit('error', new Error(`Failed to parse WebSocket message: ${err instanceof Error ? err.message : String(err)}`))
     }
   }
 

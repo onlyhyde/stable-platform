@@ -146,15 +146,16 @@ export {
   type TransactionMode,
   type TransactionResult,
 } from './transaction'
-// Export original type modules
-export * from './userOp'
-// User Operation types (from SDK)
+// User Operation types (canonical source - bigint-based)
 export type {
+  ExecutionCall,
   PackedUserOperation,
   PartialUserOperation,
   TransactionReceipt,
+  UserOpBuilderOptions,
   UserOperation,
   UserOperationGasEstimation,
   UserOperationLog,
   UserOperationReceipt,
+  UserOperationStatus,
 } from './userOperation'

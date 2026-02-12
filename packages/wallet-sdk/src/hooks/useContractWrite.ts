@@ -113,8 +113,13 @@ export function useContractWrite<TAbi extends Abi = Abi, TFunctionName extends s
 
       try {
         // Encode the function call
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const calldata = encodeFunctionData({ abi, functionName, args } as any)
+        // Cast required: viem's generics need concrete ABI types at compile time,
+        // but this hook accepts any ABI via generic parameter
+        const calldata = encodeFunctionData({
+          abi,
+          functionName,
+          args,
+        } as Parameters<typeof encodeFunctionData>[0])
 
         // Build the transaction object
         const tx: Record<string, string | undefined> = {

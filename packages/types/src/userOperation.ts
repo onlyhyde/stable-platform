@@ -119,3 +119,47 @@ export interface UserOperationGasEstimation {
   paymasterVerificationGasLimit?: bigint
   paymasterPostOpGasLimit?: bigint
 }
+
+/**
+ * UserOperation status in mempool
+ */
+export type UserOperationStatus = 'pending' | 'submitted' | 'included' | 'failed' | 'dropped'
+
+/**
+ * Builder options for creating UserOperations
+ */
+export interface UserOpBuilderOptions {
+  /** Smart account address */
+  sender: Address
+  /** Nonce (auto-fetched if not provided) */
+  nonce?: bigint
+  /** Factory address for new accounts */
+  factory?: Address
+  /** Factory data for new accounts */
+  factoryData?: Hex
+  /** Call data to execute */
+  callData: Hex
+  /** Gas limits (estimated if not provided) */
+  callGasLimit?: bigint
+  verificationGasLimit?: bigint
+  preVerificationGas?: bigint
+  maxFeePerGas?: bigint
+  maxPriorityFeePerGas?: bigint
+  /** Paymaster configuration */
+  paymaster?: Address
+  paymasterData?: Hex
+  paymasterVerificationGasLimit?: bigint
+  paymasterPostOpGasLimit?: bigint
+}
+
+/**
+ * Execution call for batching multiple calls
+ */
+export interface ExecutionCall {
+  /** Target contract address */
+  to: Address
+  /** ETH value to send */
+  value: bigint
+  /** Call data */
+  data: Hex
+}
