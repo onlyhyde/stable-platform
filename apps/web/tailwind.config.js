@@ -5,33 +5,33 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Emerald-Teal (Primary)
+        // Purple (Primary)
         primary: {
-          50: '#ecfdf5',
-          100: '#d1fae5',
-          200: '#a7f3d0',
-          300: '#6ee7b7',
-          400: '#34d399',
-          500: '#10b981',
-          600: '#059669',
-          700: '#047857',
-          800: '#065f46',
-          900: '#064e3b',
-          950: '#022c22',
+          50: '#F5F3FF',
+          100: '#EDE9FE',
+          200: '#DDD6FE',
+          300: '#C4B5FD',
+          400: '#A78BFA',
+          500: '#7C5CFC',
+          600: '#6B4FE0',
+          700: '#5A3EC8',
+          800: '#4C1D95',
+          900: '#3B0764',
+          950: '#1E0538',
         },
-        // Violet (Accent)
+        // Blue (Accent)
         accent: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
-          950: '#2e1065',
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          200: '#BFDBFE',
+          300: '#93C5FD',
+          400: '#60A5FA',
+          500: '#4A7CFF',
+          600: '#3B6AE8',
+          700: '#2C5AD0',
+          800: '#1E40AF',
+          900: '#1E3A8A',
+          950: '#172554',
         },
         // Info Blue
         info: {
@@ -61,7 +61,7 @@ module.exports = {
           900: '#14532d',
           950: '#052e16',
         },
-        // Zinc-based dark scale
+        // Dark scale
         dark: {
           50: '#fafafa',
           100: '#f4f4f5',
@@ -73,22 +73,22 @@ module.exports = {
           700: '#3f3f46',
           800: '#27272a',
           900: '#18181b',
-          950: '#09090b',
+          950: '#0E0E12',
         },
         // Surface colors for dark theme
         surface: {
-          base: '#09090b',
-          raised: '#0c0c0f',
-          DEFAULT: '#131316',
-          elevated: '#1a1a1f',
+          base: '#0E0E12',
+          raised: '#121216',
+          DEFAULT: '#18181C',
+          elevated: '#202126',
           overlay: '#27272f',
         },
       },
       fontFamily: {
         sans: [
-          'var(--font-geist-sans)',
-          'Inter',
-          'SF Pro Display',
+          'var(--font-space-grotesk)',
+          'Pretendard Variable',
+          'Pretendard',
           '-apple-system',
           'BlinkMacSystemFont',
           'Segoe UI',
@@ -110,12 +110,12 @@ module.exports = {
         '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
       },
       boxShadow: {
-        soft: '0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(30, 30, 36, 0.5)',
-        medium: '0 4px 12px -2px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(30, 30, 36, 0.5)',
+        soft: '0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(32, 33, 38, 0.5)',
+        medium: '0 4px 12px -2px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(32, 33, 38, 0.5)',
         strong: '0 8px 24px -4px rgba(0, 0, 0, 0.25), 0 16px 48px -8px rgba(0, 0, 0, 0.2)',
-        'glow-primary': '0 0 24px -4px rgba(16, 185, 129, 0.4)',
-        'glow-accent': '0 0 24px -4px rgba(139, 92, 246, 0.4)',
-        'glow-primary-lg': '0 0 40px -8px rgba(16, 185, 129, 0.5)',
+        'glow-primary': '0 0 24px -4px rgba(124, 92, 252, 0.4)',
+        'glow-accent': '0 0 24px -4px rgba(74, 124, 255, 0.4)',
+        'glow-primary-lg': '0 0 40px -8px rgba(124, 92, 252, 0.5)',
         'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.1)',
       },
       borderRadius: {
@@ -126,12 +126,13 @@ module.exports = {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
         'mesh-gradient':
-          'linear-gradient(135deg, #10b981 0%, #059669 25%, #8b5cf6 50%, #7c3aed 75%, #3b82f6 100%)',
+          'linear-gradient(135deg, #4A7CFF 0%, #7C5CFC 25%, #A855F7 50%, #D946EF 75%, #3B82F6 100%)',
         'hero-gradient':
-          'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+          'linear-gradient(135deg, #3B82F6 0%, #7C5CFC 50%, #A855F7 100%)',
         'ambient-glow':
-          'radial-gradient(ellipse at top, rgba(16, 185, 129, 0.08), transparent 50%)',
-        'brand-gradient': 'linear-gradient(135deg, #10b981, #059669, #8b5cf6)',
+          'radial-gradient(ellipse at top, rgba(124, 92, 252, 0.15) 0%, transparent 60%)',
+        'brand-gradient': 'linear-gradient(135deg, #4A7CFF 0%, #7C5CFC 50%, #D946EF 100%)',
+        'cta-gradient': 'linear-gradient(135deg, #7C5CFC, #A855F7)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',

@@ -51,7 +51,7 @@ export function CategoryFilter({
                   selectedCategory === cat.key ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
                 color: selectedCategory === cat.key ? 'white' : 'rgb(var(--foreground))',
                 boxShadow:
-                  selectedCategory === cat.key ? '0 0 16px -4px rgba(16, 185, 129, 0.3)' : 'none',
+                  selectedCategory === cat.key ? '0 0 16px -4px rgba(124, 92, 252, 0.3)' : 'none',
               }}
             >
               <span>{cat.icon}</span>

@@ -1,3 +1,7 @@
+/* Import fonts via CDN */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,33 +11,33 @@
    ============================================ */
 :root {
   /* Background Colors */
-  --background: 9 9 11; /* #09090b - base */
-  --background-raised: 12 12 15; /* #0c0c0f - raised */
-  --card: 19 19 22; /* #131316 - surface */
-  --card-hover: 26 26 31; /* #1a1a1f - elevated */
+  --background: 14 14 18; /* #0E0E12 - base */
+  --background-raised: 18 18 22; /* #121216 - raised */
+  --card: 24 24 28; /* #18181C - surface */
+  --card-hover: 32 33 38; /* #202126 - elevated */
 
   /* Foreground Colors */
-  --foreground: 250 250 250; /* #fafafa - primary text */
-  --foreground-secondary: 161 161 170; /* #a1a1aa - secondary text */
+  --foreground: 255 255 255; /* #FFFFFF - primary text */
+  --foreground-secondary: 255 255 255 / 0.6; /* 60% white - secondary text */
   --muted-foreground: 113 113 122; /* #71717a - tertiary text */
 
-  /* Primary - Emerald */
-  --primary: 16 185 129; /* #10b981 */
-  --primary-hover: 5 150 105; /* #059669 */
+  /* Primary - Purple */
+  --primary: 124 92 252; /* #7C5CFC */
+  --primary-hover: 107 79 224; /* #6B4FE0 */
   --primary-foreground: 255 255 255;
 
-  /* Accent - Violet */
-  --accent: 139 92 246; /* #8b5cf6 */
-  --accent-hover: 124 58 237; /* #7c3aed */
+  /* Accent - Blue */
+  --accent: 74 124 255; /* #4A7CFF */
+  --accent-hover: 59 106 232; /* #3B6AE8 */
   --accent-foreground: 255 255 255;
 
   /* Secondary */
-  --secondary: 39 39 42; /* #27272a */
-  --secondary-foreground: 250 250 250;
+  --secondary: 32 33 38; /* #202126 */
+  --secondary-foreground: 255 255 255;
 
   /* Border */
-  --border: 39 39 47; /* #27272f */
-  --border-subtle: 30 30 36; /* #1e1e24 */
+  --border: 32 33 38; /* #202126 */
+  --border-subtle: 24 24 28; /* #18181C */
   --border-hover: 63 63 70; /* #3f3f46 */
 
   /* Semantic Colors */
@@ -57,11 +61,11 @@
   --foreground-secondary: 100 116 139;
   --muted-foreground: 148 163 184;
 
-  --primary: 5 150 105;
-  --primary-hover: 4 120 87;
+  --primary: 107 79 224;
+  --primary-hover: 90 62 200;
 
-  --accent: 124 58 237;
-  --accent-hover: 109 40 217;
+  --accent: 59 106 232;
+  --accent-hover: 44 90 208;
 
   --secondary: 241 245 249;
   --secondary-foreground: 15 23 42;
@@ -81,6 +85,7 @@ html {
 body {
   background-color: rgb(var(--background));
   color: rgb(var(--foreground));
+  font-family: 'Space Grotesk', 'Pretendard Variable', Pretendard, system-ui, -apple-system, sans-serif;
 }
 
 /* Custom scrollbar */
@@ -130,12 +135,12 @@ input[type="number"] {
 .btn-primary {
   background: linear-gradient(135deg, rgb(var(--primary)), rgb(var(--primary-hover)));
   color: white;
-  box-shadow: 0 0 16px -4px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 16px -4px rgba(124, 92, 252, 0.3);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, rgb(var(--primary-hover)), rgb(5, 120, 87));
-  box-shadow: 0 0 20px -4px rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, rgb(var(--primary-hover)), rgb(90, 62, 200));
+  box-shadow: 0 0 20px -4px rgba(124, 92, 252, 0.4);
 }
 
 .btn-secondary {
@@ -224,7 +229,7 @@ input[type="number"] {
 
 .input-base:focus {
   border-color: rgb(var(--primary));
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 0 0 3px rgba(124, 92, 252, 0.1);
 }
 
 .input-base::placeholder {
@@ -358,11 +363,11 @@ input[type="number"] {
 
 /* Glow effect for primary elements */
 .glow-primary {
-  box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 20px -5px rgba(124, 92, 252, 0.35);
 }
 
 .glow-accent {
-  box-shadow: 0 0 20px -5px rgba(139, 92, 246, 0.35);
+  box-shadow: 0 0 20px -5px rgba(74, 124, 255, 0.35);
 }
 
 /* ============================================
@@ -401,7 +406,7 @@ input[type="number"] {
   height: 200px;
   background: radial-gradient(
     ellipse 80% 50% at 50% 0%,
-    rgba(16, 185, 129, 0.08) 0%,
+    rgba(124, 92, 252, 0.08) 0%,
     transparent 70%
   );
   pointer-events: none;
@@ -439,7 +444,7 @@ input[type="number"] {
   height: 3px;
   background: linear-gradient(90deg, rgb(var(--primary)), rgb(var(--accent)));
   border-radius: 3px 3px 0 0;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 8px rgba(124, 92, 252, 0.5);
 }
 
 /* Skeleton/shimmer loading */
@@ -573,11 +578,11 @@ input[type="number"] {
 }
 
 .hover-glow-primary:hover {
-  box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 20px -5px rgba(124, 92, 252, 0.4);
 }
 
 .hover-glow-accent:hover {
-  box-shadow: 0 0 20px -5px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 20px -5px rgba(74, 124, 255, 0.4);
 }
 
 /* Focus ring enhancements */
@@ -599,7 +604,7 @@ input[type="number"] {
 .light .ambient-glow::before {
   background: radial-gradient(
     ellipse 80% 50% at 50% 0%,
-    rgba(5, 150, 105, 0.06) 0%,
+    rgba(107, 79, 224, 0.06) 0%,
     transparent 70%
   );
 }

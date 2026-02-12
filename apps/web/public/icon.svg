@@ -1,10 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#6366F1"/>
-      <stop offset="100%" style="stop-color:#4F46E5"/>
-    </linearGradient>
-  </defs>
-  <path d="M16 12 C16 12 16 12 16 12 L112 12 C118 12 112 12 112 18 L112 76 C112 76 112 82 108 88 L64 116 L20 88 C16 82 16 76 16 76 L16 18 C16 12 16 12 16 12 Z" fill="url(#shieldGradient)"/>
-  <path d="M48 28 L80 28 A18 18 0 0 1 80 64 L48 64 A18 18 0 0 0 48 100 L80 100" stroke="white" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <rect width="128" height="128" rx="28" fill="#0E0E12"/>
+  <g transform="translate(27, 22) scale(3)">
+    <path d="M14.019 6.93164V9.49219L24.3228 15.4434V20.7949L12.3169 27.7256L0.311035 20.7949V14.3018L3.71436 16.2676V18.8281L12.3169 23.7969L20.9194 18.8281V17.4062L10.6147 11.458V6.93164H14.019ZM24.3228 6.93164V13.4248L20.9194 11.458V8.89746L12.3169 3.92969L3.71436 8.89746V10.3193L14.019 16.2676V20.7949H10.6147V18.2344L0.311035 12.2822V6.93164L12.3169 0L24.3228 6.93164Z" fill="white"/>
+  </g>
 </svg>

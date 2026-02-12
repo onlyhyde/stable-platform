@@ -1,13 +1,14 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Space_Grotesk } from 'next/font/google'
 import { Footer, Header, Sidebar } from '@/components/layout'
 import { Providers } from '@/providers'
 import './globals.css'
 
-const inter = Inter({
+const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-space-grotesk',
 })
 
 export const viewport: Viewport = {
@@ -15,7 +16,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#fafafa' },
-    { media: '(prefers-color-scheme: dark)', color: '#09090b' },
+    { media: '(prefers-color-scheme: dark)', color: '#0E0E12' },
   ],
 }
 
@@ -25,16 +26,18 @@ export const metadata: Metadata = {
     template: '%s | StableNet',
   },
   description:
-    'StableNet Smart Account Platform - Send, receive, swap, and manage your crypto with smart accounts.',
+    'StableNet - Institutional-grade KRW stablecoin infrastructure powered by account abstraction.',
   keywords: [
-    'crypto',
+    'StableNet',
+    'stablenet',
+    'KRW Stablecoin',
     'smart account',
     'ERC-4337',
     'account abstraction',
     'defi',
-    'stealth',
-    'web3',
     'blockchain',
+    'web3',
+    'institutional crypto',
   ],
   authors: [{ name: 'StableNet Team' }],
   creator: 'StableNet',
@@ -52,13 +55,13 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     siteName: 'StableNet',
-    title: 'StableNet - Smart Account Platform',
-    description: 'Send, receive, swap, and manage your crypto with smart accounts.',
+    title: 'StableNet - Institutional-grade KRW Stablecoin Infrastructure',
+    description: 'Institutional-grade KRW stablecoin infrastructure powered by account abstraction.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'StableNet - Smart Account Platform',
-    description: 'Send, receive, swap, and manage your crypto with smart accounts.',
+    title: 'StableNet - Institutional-grade KRW Stablecoin Infrastructure',
+    description: 'Institutional-grade KRW stablecoin infrastructure powered by account abstraction.',
   },
   robots: {
     index: true,
@@ -68,7 +71,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} dark`} suppressHydrationWarning>
+    <html lang="en" className={`${spaceGrotesk.variable} dark`} suppressHydrationWarning>
       <body className="min-h-screen bg-surface-base antialiased">
         <Providers>
           <div className="flex min-h-screen flex-col">

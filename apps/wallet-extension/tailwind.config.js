@@ -5,35 +5,35 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary - Emerald-Teal (brand color)
+        // Primary - Purple (brand color)
         primary: {
-          50: '#ecfdf5',
-          100: '#d1fae5',
-          200: '#a7f3d0',
-          300: '#6ee7b7',
-          400: '#34d399',
-          500: '#10b981',
-          600: '#059669',
-          700: '#047857',
-          800: '#065f46',
-          900: '#064e3b',
-          950: '#022c22',
+          50: '#F5F3FF',
+          100: '#EDE9FE',
+          200: '#DDD6FE',
+          300: '#C4B5FD',
+          400: '#A78BFA',
+          500: '#7C5CFC',
+          600: '#6B4FE0',
+          700: '#5A3EC8',
+          800: '#4C1D95',
+          900: '#3B0764',
+          950: '#1E0538',
         },
-        // Accent - Violet
+        // Accent - Blue
         accent: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
-          950: '#2e1065',
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          200: '#BFDBFE',
+          300: '#93C5FD',
+          400: '#60A5FA',
+          500: '#4A7CFF',
+          600: '#3B6AE8',
+          700: '#2C5AD0',
+          800: '#1E40AF',
+          900: '#1E3A8A',
+          950: '#172554',
         },
-        // Dark scale - Zinc
+        // Dark scale
         dark: {
           50: '#fafafa',
           100: '#f4f4f5',
@@ -45,25 +45,25 @@ export default {
           700: '#3f3f46',
           800: '#27272a',
           900: '#18181b',
-          950: '#09090b',
+          950: '#0E0E12',
         },
         // Surface colors for extension
         surface: {
-          base: '#09090b',
-          raised: '#0c0c0f',
-          DEFAULT: '#131316',
-          elevated: '#1a1a1f',
+          base: '#0E0E12',
+          raised: '#121216',
+          DEFAULT: '#18181C',
+          elevated: '#202126',
           overlay: '#000000',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Space Grotesk', 'Pretendard Variable', 'Pretendard', 'system-ui', '-apple-system', 'sans-serif'],
       },
       boxShadow: {
         soft: '0 2px 8px -2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.03)',
-        'glow-sm': '0 0 12px -3px rgba(16, 185, 129, 0.25)',
-        glow: '0 0 20px -5px rgba(16, 185, 129, 0.35)',
-        'glow-lg': '0 0 30px -5px rgba(16, 185, 129, 0.45)',
+        'glow-sm': '0 0 12px -3px rgba(124, 92, 252, 0.25)',
+        glow: '0 0 20px -5px rgba(124, 92, 252, 0.35)',
+        'glow-lg': '0 0 30px -5px rgba(124, 92, 252, 0.45)',
       },
       borderRadius: {
         lg: '0.5rem',
