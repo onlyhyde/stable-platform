@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Address, Hash, Hex } from 'viem'
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { useAccount, useChainId, usePublicClient, useWalletClient } from 'wagmi'
 import { getContractAddresses } from '../lib/config'
+import { secureKeyStore } from '@/lib/secureKeyStore'
 
 // Default fallback address for development
 const DEFAULT_sessionKeyManager = '0x4a679253410272dd5232B3Ff7cF5dbB88f295319' as const
@@ -376,13 +378,13 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
       setError(null)
 
       try {
-        // Generate a cryptographically secure random session key address
-        // In production, this would be a full keypair with the private key stored securely
-        const randomBytes = new Uint8Array(20)
-        crypto.getRandomValues(randomBytes)
-        const sessionKey = `0x${Array.from(randomBytes)
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join('')}` as Address
+        // Generate a real secp256k1 keypair for the session key
+        const privateKey = generatePrivateKey()
+        const account = privateKeyToAccount(privateKey)
+        const sessionKey = account.address
+
+        // Store private key securely for later signing
+        secureKeyStore.store(privateKey)
 
         const expiry = params.expiry ?? BigInt(0)
         const spendingLimit = params.spendingLimit ?? BigInt(0)
