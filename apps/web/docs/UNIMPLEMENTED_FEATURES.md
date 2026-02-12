@@ -8,15 +8,17 @@
 > 9차 검토: 2026-02-12 (EIP/ERC 표준 준수 검토 — ERC-721/1155 Token Receiver 누락 1건 추가, packages 심각도 분류 오류 정정)
 > 10차 검토: 2026-02-12 (과잉 추가 항목 정리 — §73 EIP-7484 삭제: 프로젝트 미참조 표준)
 > 11차 검토: 2026-02-13 (코드 대조 검증 — 6건 구현 완료 확인, RESOLVED 처리 + 부분 정정 2건)
-> 총 미구현 항목: ~~128건~~ → **122건** (apps/web ~~89건~~ 83건 + packages ~~15건~~ 14건 + services 15건 + wallet-extension 9건 + RESOLVED 6건)
+> 12차 검토: 2026-02-13 (§1-2, §1-3 구현 완료 — Order Router URL/Address 환경변수 전환)
+> 총 미구현 항목: ~~128건~~ → **120건** (apps/web ~~89건~~ 81건 + packages ~~15건~~ 14건 + services 15건 + wallet-extension 9건 + RESOLVED 8건)
 > ⚠️ 11차 검토에서 §1-1, §5-1, §6, §33, §34 (5개 섹션, 6건)가 이미 구현 완료로 확인되어 RESOLVED 처리됨
+> ⚠️ 12차 검토에서 §1-2, §1-3 (2건)가 구현 완료로 RESOLVED 처리됨 — §1 전체 RESOLVED
 
 ---
 
 ## 목차
 
 1. [요약](#요약)
-2. [CRITICAL - Swap 실행 불가](#1-swap-실행-불가)
+2. [~~CRITICAL - Swap 실행 불가~~ ✅ RESOLVED](#1-swap-실행-불가)
 3. [HIGH - Merchant Dashboard](#2-merchant-dashboard)
 4. [HIGH - Data Hooks 데이터 소스 미연결](#3-data-hooks-데이터-소스-미연결)
 5. [HIGH - Overview 페이지 하드코딩 통계](#4-overview-페이지-하드코딩-통계)
@@ -57,7 +59,7 @@
 
 | 우선순위 | 영역 | 문제 수 | 핵심 문제 |
 |----------|------|---------|-----------|
-| **CRITICAL** | **Swap 실행 불가** | ~~3~~ **2** | ~~sendUserOp 미전달~~, Order Router localhost 하드코딩 *(§1-1 RESOLVED)* |
+| ~~CRITICAL~~ | ~~Swap 실행 불가~~ | ~~3~~ **0** | ~~sendUserOp 미전달, Order Router localhost 하드코딩, Router Address 하드코딩~~ *(§1 전체 RESOLVED)* |
 | HIGH | Merchant Dashboard | 12 | 전체 mock 데이터, 모든 핸들러 빈 함수 |
 | HIGH | Data Hooks | 6 | usePools, usePayroll, useExpenses, useAuditLogs, useTokens, useTransactionHistory 데이터 소스 미연결 |
 | HIGH | Overview 페이지 통계 | 5 | stealth, enterprise, defi, subscription, dashboard 통계 하드코딩 |
@@ -91,7 +93,7 @@
 | LOW | Footer 링크 | 4 | 8개 미존재 페이지 링크 + 3개 소셜 placeholder URL |
 | ~~HIGH~~ | ~~Stealth Announcement~~ | ~~1~~ **0** | ~~sendToStealthAddress에서 ERC-5564 on-chain announcement 미호출~~ *(§33 RESOLVED — stealthAnnouncer 컨트랙트 호출 구현 완료)* |
 | ~~MEDIUM~~ | ~~Indexer URL~~ | ~~2~~ **0** | ~~ServiceUrls 타입 + StableNetContext에 indexerUrl 미포함~~ *(§34 RESOLVED — 양쪽 모두 indexerUrl 포함 확인)* |
-| **합계** | | ~~89~~ **83** | *(6건 RESOLVED)* |
+| **합계** | | ~~89~~ **81** | *(8건 RESOLVED)* |
 
 ---
 
@@ -99,38 +101,25 @@
 
 **심각도: CRITICAL** *(4차 검토 추가)*
 
-~~Swap 페이지의 토큰 교환 기능이 전혀 동작하지 않음. 3가지 연쇄 문제로 인해 전체 Swap 플로우가 불가능.~~ → 2건 잔존 (Order Router URL/Address 하드코딩).
+~~Swap 페이지의 토큰 교환 기능이 전혀 동작하지 않음. 3가지 연쇄 문제로 인해 전체 Swap 플로우가 불가능.~~ → ✅ 전체 RESOLVED (12차 검토).
 
 ### ~~1-1. sendUserOp 미전달~~ ✅ RESOLVED (11차 검토 확인)
 
 > **11차 검토 (2026-02-13):** 코드 검증 결과, `app/defi/swap/page.tsx:14-17`에서 `useSwap({ sendUserOp, orderRouterUrl: process.env.NEXT_PUBLIC_ORDER_ROUTER_URL || '...' })` 형태로 config를 정상 전달하고 있음. `sendUserOp`이 `useUserOp` hook에서 가져와 전달됨. 이 항목은 문서 작성 이후 수정 완료됨.
 
-### 1-2. Order Router URL 하드코딩
+### ~~1-2. Order Router URL 하드코딩~~ ✅ RESOLVED (12차 검토 확인)
 
-**파일:** `hooks/useSwap.ts:61`
+> **12차 검토 (2026-02-13):** `lib/config/env.ts`에 `LOCAL_ORDER_ROUTER_URL`, `TESTNET_ORDER_ROUTER_URL` 환경변수 추가. `lib/constants.ts`의 `ServiceUrls` 타입과 `SERVICE_URLS`에 `orderRouter` 필드 추가. `useSwap` hook이 `useStableNetContext()`에서 chainId를 가져와 `getServiceUrls(chainId).orderRouter`로 URL을 동적 해석. `app/defi/swap/page.tsx`의 인라인 `process.env` 참조 제거.
 
-```typescript
-const DEFAULT_ORDER_ROUTER_URL = 'http://localhost:4340'
-```
+### ~~1-3. Router Address 하드코딩~~ ✅ RESOLVED (12차 검토 확인)
 
-Quote 요청 URL이 `localhost:4340`으로 하드코딩. 로컬 개발 환경이 아니면 quote 조회 자체가 실패.
-환경변수(`NEXT_PUBLIC_ORDER_ROUTER_URL` 등)로 분리 필요.
-
-### 1-3. Router Address 하드코딩
-
-**파일:** `hooks/useSwap.ts:62`
-
-```typescript
-const DEFAULT_ROUTER_ADDRESS = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D' as Address
-```
-
-Uniswap V2 Router 주소가 Ethereum mainnet 주소로 하드코딩. StableNet 체인에서는 해당 주소에 컨트랙트가 없음.
+> **12차 검토 (2026-02-13):** `DEFAULT_ROUTER_ADDRESS` (Ethereum mainnet Uniswap V2) 상수 삭제. `routerAddress`는 config로 외부 전달하며, 미전달 시 `executeSwap`에서 필수 검증 에러 반환. StableNet 체인 Router 배포 후 config에서 주소를 전달하는 구조.
 
 ### 해결 방안
 
 - ~~`useUserOp` hook의 **`sendUserOp`** (raw function)을 `useSwap` config로 전달~~ ✅ 구현 완료
-- Order Router URL을 환경변수(`NEXT_PUBLIC_ORDER_ROUTER_URL`)로 분리 (기본값 fallback은 존재하나 localhost 하드코딩)
-- Router address를 네트워크별로 분기 또는 환경변수로 관리
+- ~~Order Router URL을 환경변수(`NEXT_PUBLIC_ORDER_ROUTER_URL`)로 분리~~ ✅ 구현 완료
+- ~~Router address를 네트워크별로 분기 또는 환경변수로 관리~~ ✅ 구현 완료 (config 전달 방식)
 
 ---
 
