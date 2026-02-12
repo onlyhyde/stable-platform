@@ -8,6 +8,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/stablenet/sdk-go/accounts"
+	"github.com/stablenet/sdk-go/accounts/kernel"
+	"github.com/stablenet/sdk-go/clients"
 	"github.com/stablenet/sdk-go/core/bundler"
 	sdkconfig "github.com/stablenet/sdk-go/config"
 	"github.com/stablenet/sdk-go/transaction"
@@ -297,25 +300,29 @@ type PaymasterData struct {
 // Helper Functions
 // ============================================================================
 
-// encodeSmartAccountCall encodes a call for Smart Account execute function.
-// This is a placeholder - actual implementation would use ABI encoding.
+// encodeSmartAccountCall encodes a call for Smart Account execute function
+// using the Kernel account's execute(bytes32 mode, bytes executionCalldata) format.
 func encodeSmartAccountCall(to sdktypes.Address, value *big.Int, data sdktypes.Hex) sdktypes.Hex {
-	// Kernel's execute function encoding
-	// execute(address to, uint256 value, bytes calldata data, uint8 operation)
-	// operation: 0 = call, 1 = delegatecall
+	if value == nil {
+		value = big.NewInt(0)
+	}
 
-	// This is a placeholder - real implementation would use proper ABI encoding
-	// For now, just return the data as-is
-	return data
+	call := accounts.Call{
+		To:    to,
+		Value: sdktypes.BigInt{Int: value},
+		Data:  data,
+	}
+
+	encoded, err := kernel.EncodeKernelExecuteCallData([]accounts.Call{call})
+	if err != nil {
+		// Fallback to raw data on encoding failure
+		return data
+	}
+	return encoded
 }
 
-// calculateUserOpHash calculates the hash of a UserOperation.
-// This is a placeholder - actual implementation would hash the UserOp properly.
+// calculateUserOpHash calculates the hash of a UserOperation using the
+// fully implemented GetUserOperationHash from the clients package.
 func calculateUserOpHash(userOp *sdktypes.UserOperation, entryPoint sdktypes.Address, chainId uint64) sdktypes.Hash {
-	// This is a placeholder - real implementation would:
-	// 1. Pack the UserOperation
-	// 2. Hash with keccak256
-	// 3. Combine with entryPoint and chainId
-	// 4. Hash again
-	return sdktypes.Hash{}
+	return clients.GetUserOperationHash(userOp, entryPoint, chainId)
 }

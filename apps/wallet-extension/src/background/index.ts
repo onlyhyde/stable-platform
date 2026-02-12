@@ -518,18 +518,32 @@ async function handleMessage(
         }
       }
 
-      // Auto-approve connection (in production, show popup for user approval)
-      await walletState.addConnectedSite({
-        origin,
-        accounts,
-        permissions: ['eth_accounts'],
-        connectedAt: Date.now(),
-      })
+      // Request user approval via popup (matching handler.ts pattern)
+      try {
+        const result = await approvalController.requestConnect(origin)
 
-      return {
-        type: MESSAGE_TYPES.CONNECT_RESPONSE,
-        id: message.id,
-        payload: { accounts },
+        await walletState.addConnectedSite({
+          origin,
+          accounts: result.accounts,
+          permissions: result.permissions,
+          connectedAt: Date.now(),
+        })
+
+        return {
+          type: MESSAGE_TYPES.CONNECT_RESPONSE,
+          id: message.id,
+          payload: { accounts: result.accounts },
+        }
+      } catch {
+        // User rejected the connection request
+        return {
+          type: MESSAGE_TYPES.CONNECT_RESPONSE,
+          id: message.id,
+          payload: {
+            accounts: [],
+            error: 'User rejected the connection request',
+          },
+        }
       }
     }
 

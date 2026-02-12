@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/stablenet/sdk-go/core/bundler"
 	"github.com/stablenet/sdk-go/core/paymaster"
@@ -77,6 +78,9 @@ type SmartAccountClient struct {
 
 	// RpcUrl is the RPC URL for gas price queries.
 	RpcUrl string
+
+	// rpcClient is the ethclient for RPC queries (nil if connection failed).
+	rpcClient *ethclient.Client
 }
 
 // SmartAccountClientConfig configures a SmartAccountClient.
@@ -130,12 +134,22 @@ func NewSmartAccountClient(config SmartAccountClientConfig) (*SmartAccountClient
 		})
 	}
 
+	// Try to connect to RPC for live gas prices (fallback to defaults if unavailable)
+	var rpcClient *ethclient.Client
+	if config.RpcUrl != "" {
+		client, err := ethclient.Dial(config.RpcUrl)
+		if err == nil {
+			rpcClient = client
+		}
+	}
+
 	return &SmartAccountClient{
 		Account:         config.Account,
 		ChainId:         config.ChainId,
 		BundlerClient:   bundlerClient,
 		PaymasterClient: paymasterClient,
 		RpcUrl:          config.RpcUrl,
+		rpcClient:       rpcClient,
 	}, nil
 }
 
@@ -375,12 +389,57 @@ type GasPrices struct {
 }
 
 // getGasPrices gets current gas prices from RPC.
+// Falls back to sensible defaults if RPC is unavailable.
 func (c *SmartAccountClient) getGasPrices(ctx context.Context) (*GasPrices, error) {
-	// Default gas prices if RPC is not available
-	// In production, this should query the RPC endpoint
+	if c.rpcClient != nil {
+		prices, err := c.fetchGasPricesFromRPC(ctx)
+		if err == nil {
+			return prices, nil
+		}
+		// RPC call failed, fall through to defaults
+	}
+
+	// Default gas prices when RPC is unavailable
 	return &GasPrices{
-		MaxFeePerGas:         big.NewInt(50_000_000_000),  // 50 gwei
-		MaxPriorityFeePerGas: big.NewInt(1_500_000_000),   // 1.5 gwei
+		MaxFeePerGas:         big.NewInt(50_000_000_000), // 50 gwei
+		MaxPriorityFeePerGas: big.NewInt(1_500_000_000),  // 1.5 gwei
+	}, nil
+}
+
+// fetchGasPricesFromRPC queries the Ethereum node for current gas prices.
+func (c *SmartAccountClient) fetchGasPricesFromRPC(ctx context.Context) (*GasPrices, error) {
+	header, err := c.rpcClient.HeaderByNumber(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest block header: %w", err)
+	}
+
+	baseFee := header.BaseFee
+	if baseFee == nil {
+		// Pre-EIP-1559 chain
+		gasPrice, err := c.rpcClient.SuggestGasPrice(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to suggest gas price: %w", err)
+		}
+		return &GasPrices{
+			MaxFeePerGas:         gasPrice,
+			MaxPriorityFeePerGas: big.NewInt(0),
+		}, nil
+	}
+
+	maxPriorityFee, err := c.rpcClient.SuggestGasTipCap(ctx)
+	if err != nil {
+		maxPriorityFee = new(big.Int).Mul(big.NewInt(2), big.NewInt(1e9))
+	}
+
+	// maxFeePerGas = 2 * baseFee + maxPriorityFeePerGas
+	maxFee := new(big.Int).Add(
+		new(big.Int).Mul(baseFee, big.NewInt(2)),
+		maxPriorityFee,
+	)
+
+	return &GasPrices{
+		MaxFeePerGas:         maxFee,
+		MaxPriorityFeePerGas: maxPriorityFee,
 	}, nil
 }
 

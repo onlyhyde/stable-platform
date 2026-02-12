@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/stablenet/sdk-go/config"
 	"github.com/stablenet/sdk-go/types"
 )
@@ -138,8 +140,9 @@ type EstimatorConfig struct {
 
 // Estimator provides multi-mode gas estimation.
 type Estimator struct {
-	config   EstimatorConfig
-	registry *StrategyRegistry
+	config    EstimatorConfig
+	registry  *StrategyRegistry
+	rpcClient *ethclient.Client // nil if RPC connection failed (fallback mode)
 }
 
 // NewEstimator creates a new gas estimator.
@@ -151,25 +154,87 @@ func NewEstimator(cfg EstimatorConfig) *Estimator {
 	registry.Register(NewEIP7702Strategy(cfg))
 	registry.Register(NewSmartAccountStrategy(cfg))
 
+	// Try to connect to RPC for live gas prices (fallback to defaults if unavailable)
+	var rpcClient *ethclient.Client
+	if cfg.RpcUrl != "" {
+		client, err := ethclient.Dial(cfg.RpcUrl)
+		if err == nil {
+			rpcClient = client
+		}
+	}
+
 	return &Estimator{
-		config:   cfg,
-		registry: registry,
+		config:    cfg,
+		registry:  registry,
+		rpcClient: rpcClient,
 	}
 }
 
-// GetGasPrices gets current gas prices from the network.
+// GetGasPrices gets current gas prices from the network via RPC.
+// Falls back to sensible defaults if RPC is unavailable.
 func (e *Estimator) GetGasPrices(ctx context.Context) (*GasPriceInfo, error) {
-	// In production, this should query the RPC endpoint
-	// For now, return default values
+	if e.rpcClient != nil {
+		gasPrices, err := e.fetchGasPricesFromRPC(ctx)
+		if err == nil {
+			return gasPrices, nil
+		}
+		// RPC call failed, fall through to defaults
+	}
+
+	// Default values when RPC is unavailable
 	baseFee := new(big.Int).Mul(big.NewInt(30), big.NewInt(1e9)) // 30 gwei
 	maxPriorityFee := new(big.Int).Mul(big.NewInt(2), big.NewInt(1e9)) // 2 gwei
 	maxFee := new(big.Int).Add(
 		new(big.Int).Mul(baseFee, big.NewInt(2)),
 		maxPriorityFee,
-	) // 2 * baseFee + priorityFee
+	)
 
 	return &GasPriceInfo{
 		BaseFee:              baseFee,
+		MaxPriorityFeePerGas: maxPriorityFee,
+		MaxFeePerGas:         maxFee,
+		GasPrice:             new(big.Int).Add(baseFee, maxPriorityFee),
+	}, nil
+}
+
+// fetchGasPricesFromRPC queries the Ethereum node for current gas prices.
+func (e *Estimator) fetchGasPricesFromRPC(ctx context.Context) (*GasPriceInfo, error) {
+	// Get latest block header for baseFee
+	header, err := e.rpcClient.HeaderByNumber(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest block header: %w", err)
+	}
+
+	baseFee := header.BaseFee
+	if baseFee == nil {
+		// Pre-EIP-1559 chain, fall back to gas price
+		gasPrice, err := e.rpcClient.SuggestGasPrice(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to suggest gas price: %w", err)
+		}
+		return &GasPriceInfo{
+			BaseFee:              gasPrice,
+			MaxPriorityFeePerGas: big.NewInt(0),
+			MaxFeePerGas:         gasPrice,
+			GasPrice:             gasPrice,
+		}, nil
+	}
+
+	// Get suggested priority fee (tip)
+	maxPriorityFee, err := e.rpcClient.SuggestGasTipCap(ctx)
+	if err != nil {
+		// Fallback to 2 gwei tip if SuggestGasTipCap fails
+		maxPriorityFee = new(big.Int).Mul(big.NewInt(2), big.NewInt(1e9))
+	}
+
+	// maxFeePerGas = 2 * baseFee + maxPriorityFeePerGas
+	maxFee := new(big.Int).Add(
+		new(big.Int).Mul(baseFee, big.NewInt(2)),
+		maxPriorityFee,
+	)
+
+	return &GasPriceInfo{
+		BaseFee:              new(big.Int).Set(baseFee),
 		MaxPriorityFeePerGas: maxPriorityFee,
 		MaxFeePerGas:         maxFee,
 		GasPrice:             new(big.Int).Add(baseFee, maxPriorityFee),
