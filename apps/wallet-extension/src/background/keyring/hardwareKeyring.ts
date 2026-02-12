@@ -80,6 +80,7 @@ const DEFAULT_HD_PATH = "m/44'/60'/0'/0"
 export class LedgerKeyring implements IHardwareKeyring {
   readonly deviceType: HardwareDeviceType = 'ledger'
 
+  private hdPath: string
   private accounts: HardwareAccountInfo[] = []
   private transport: HardwareTransport | null = null
 

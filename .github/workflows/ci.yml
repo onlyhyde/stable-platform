@@ -70,13 +70,12 @@ jobs:
     strategy:
       matrix:
         service:
-          - services/stealth-server
           - services/order-router
           - services/subscription-executor
           - services/bridge-relayer
-          - simulators/bank
-          - simulators/pg
-          - simulators/onramp
+          - services/bank-simulator
+          - services/pg-simulator
+          - services/onramp-simulator
 
     steps:
       - name: Checkout

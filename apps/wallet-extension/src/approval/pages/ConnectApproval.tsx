@@ -34,10 +34,6 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
     }
   }
 
-  useEffect(() => {
-    loadAccounts()
-  }, [loadAccounts])
-
   const loadAccounts = async () => {
     try {
       const response = await chrome.runtime.sendMessage({
@@ -65,6 +61,10 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadAccounts()
+  }, [loadAccounts])
 
   const toggleAccount = (address: Address) => {
     setSelectedAccounts((prev) => {

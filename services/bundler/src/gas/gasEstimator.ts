@@ -344,7 +344,7 @@ export class GasEstimator {
         functionName: 'simulateValidation',
         args: [packedOp],
         gas: gasLimit,
-      })
+      } as any)
 
       // simulateValidation always reverts, so if we get here something is wrong
       return false

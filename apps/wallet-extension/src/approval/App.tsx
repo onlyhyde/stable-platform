@@ -15,25 +15,6 @@ export function ApprovalApp() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    // Get approval ID from URL params
-    const params = new URLSearchParams(window.location.search)
-    const approvalId = params.get('id')
-
-    if (!approvalId) {
-      setError(t('noApprovalId'))
-      setLoading(false)
-      return
-    }
-
-    // Fetch approval details from background
-    loadApproval(approvalId)
-  }, [
-    // Fetch approval details from background
-    loadApproval,
-    t,
-  ])
-
   const loadApproval = async (id: string) => {
     try {
       const response = await chrome.runtime.sendMessage({
@@ -53,6 +34,25 @@ export function ApprovalApp() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    // Get approval ID from URL params
+    const params = new URLSearchParams(window.location.search)
+    const approvalId = params.get('id')
+
+    if (!approvalId) {
+      setError(t('noApprovalId'))
+      setLoading(false)
+      return
+    }
+
+    // Fetch approval details from background
+    loadApproval(approvalId)
+  }, [
+    // Fetch approval details from background
+    loadApproval,
+    t,
+  ])
 
   const handleApprove = async (data?: unknown) => {
     if (!approval) return

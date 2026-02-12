@@ -116,12 +116,14 @@ export class SimulationValidator implements ISimulationValidator {
 
     try {
       // v0.9 EntryPointSimulations: simulateValidation returns normally on success
+      // v0.9 EntryPointSimulations: simulateValidation returns normally (not reverts)
+      // Cast needed because ABI declares nonpayable but readContract expects view
       const result = await this.publicClient.readContract({
         address: this.entryPoint,
         abi: ENTRY_POINT_V07_ABI,
         functionName: 'simulateValidation',
         args: [packedOp],
-      })
+      } as any)
 
       // v0.9 success: parse the returned ValidationResult struct
       const parsed = this.parseV09ValidationResult(result)
