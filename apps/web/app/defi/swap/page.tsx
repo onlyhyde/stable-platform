@@ -13,7 +13,6 @@ export default function SwapPage() {
   const { tokens, isLoading: tokensLoading } = useTokens()
   const { quote, isLoading, error, getQuote, executeSwap } = useSwap({
     sendUserOp,
-    orderRouterUrl: process.env.NEXT_PUBLIC_ORDER_ROUTER_URL || 'http://localhost:4340',
   })
 
   const [tokenIn, setTokenIn] = useState<Token | null>(null)

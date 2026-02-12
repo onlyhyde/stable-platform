@@ -1,8 +1,10 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData } from 'viem'
+import { useStableNetContext } from '@/providers'
+import { getServiceUrls } from '@/lib/constants'
 import type { SwapQuote, Token } from '@/types'
 
 interface SwapParams {
@@ -88,17 +90,18 @@ const ERC20_ABI = [
   },
 ] as const
 
-const DEFAULT_ORDER_ROUTER_URL = 'http://localhost:4340'
-const DEFAULT_ROUTER_ADDRESS = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D' as Address
 const DEFAULT_SLIPPAGE = 0.5 // 0.5%
 const ETH_ADDRESS = '0x0000000000000000000000000000000000000000' as Address
 
 export function useSwap(config: UseSwapConfig = {}) {
+  const { chainId } = useStableNetContext()
+  const serviceUrls = useMemo(() => getServiceUrls(chainId), [chainId])
+
   const {
-    orderRouterUrl = DEFAULT_ORDER_ROUTER_URL,
+    orderRouterUrl = serviceUrls?.orderRouter,
     sendUserOp,
     readContract,
-    routerAddress = DEFAULT_ROUTER_ADDRESS,
+    routerAddress,
     defaultSlippage = DEFAULT_SLIPPAGE,
   } = config
 
@@ -201,6 +204,11 @@ export function useSwap(config: UseSwapConfig = {}) {
     ): Promise<{ transactionHash: string } | null> => {
       if (!sendUserOp) {
         setError(new Error('sendUserOp function not provided'))
+        return null
+      }
+
+      if (!routerAddress) {
+        setError(new Error('routerAddress not configured'))
         return null
       }
 

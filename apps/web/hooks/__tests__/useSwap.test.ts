@@ -3,6 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Token } from '@/types'
 import { useSwap } from '../useSwap'
 
+// Mock context
+vi.mock('@/providers', () => ({
+  useStableNetContext: () => ({
+    chainId: 8283,
+  }),
+}))
+
 // Mock tokens for testing
 const mockTokenIn: Token = {
   address: '0x0000000000000000000000000000000000000000',
@@ -162,6 +169,7 @@ describe('useSwap', () => {
         useSwap({
           orderRouterUrl: 'http://localhost:4340',
           sendUserOp: mockSendUserOp,
+          routerAddress: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
         })
       )
 
@@ -238,6 +246,7 @@ describe('useSwap', () => {
         useSwap({
           orderRouterUrl: 'http://localhost:4340',
           sendUserOp: mockSendUserOp,
+          routerAddress: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
         })
       )
 
@@ -286,6 +295,7 @@ describe('useSwap', () => {
           orderRouterUrl: 'http://localhost:4340',
           sendUserOp: mockSendUserOp,
           readContract: mockReadContract,
+          routerAddress: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
         })
       )
 
@@ -376,6 +386,7 @@ describe('useSwap', () => {
           orderRouterUrl: 'http://localhost:4340',
           sendUserOp: mockSendUserOp,
           readContract: mockReadContract,
+          routerAddress: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
         })
       )
 
@@ -415,6 +426,7 @@ describe('useSwap', () => {
         useSwap({
           orderRouterUrl: 'http://localhost:4340',
           sendUserOp: mockSendUserOp,
+          routerAddress: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
           defaultSlippage: 0.5, // 0.5%
         })
       )

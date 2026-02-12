@@ -27,6 +27,7 @@ export type ServiceUrls = {
   paymaster: string
   stealthServer: string
   indexer: string
+  orderRouter: string
 }
 
 /**
@@ -77,6 +78,7 @@ export const SERVICE_URLS: Record<number, ServiceUrls> = {
     paymaster: getDevnetConfig().paymasterUrl,
     stealthServer: getDevnetConfig().stealthServerUrl,
     indexer: getDevnetConfig().indexerUrl,
+    orderRouter: getDevnetConfig().orderRouterUrl,
   },
   // StableNet Local - uses user's custom RPC settings if set
   8283: {
@@ -84,6 +86,7 @@ export const SERVICE_URLS: Record<number, ServiceUrls> = {
     paymaster: getLocalConfig().paymasterUrl,
     stealthServer: getLocalConfig().stealthServerUrl,
     indexer: getLocalConfig().indexerUrl,
+    orderRouter: getLocalConfig().orderRouterUrl,
   },
   // StableNet Testnet - uses user's custom RPC settings if set
   82830: {
@@ -91,6 +94,7 @@ export const SERVICE_URLS: Record<number, ServiceUrls> = {
     paymaster: getTestnetConfig().paymasterUrl,
     stealthServer: getTestnetConfig().stealthServerUrl,
     indexer: getTestnetConfig().indexerUrl,
+    orderRouter: getTestnetConfig().orderRouterUrl,
   },
   // Sepolia (legacy)
   11155111: {
@@ -98,6 +102,7 @@ export const SERVICE_URLS: Record<number, ServiceUrls> = {
     paymaster: getTestnetConfig().paymasterUrl,
     stealthServer: getTestnetConfig().stealthServerUrl,
     indexer: getTestnetConfig().indexerUrl,
+    orderRouter: getTestnetConfig().orderRouterUrl,
   },
 }
 

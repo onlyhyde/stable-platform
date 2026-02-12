@@ -28,6 +28,7 @@ export const WEB_ENV_VARS = {
   LOCAL_STEALTH_SERVER_URL: 'NEXT_PUBLIC_LOCAL_STEALTH_SERVER_URL',
   LOCAL_EXPLORER_URL: 'NEXT_PUBLIC_LOCAL_EXPLORER_URL',
   LOCAL_INDEXER_URL: 'NEXT_PUBLIC_LOCAL_INDEXER_URL',
+  LOCAL_ORDER_ROUTER_URL: 'NEXT_PUBLIC_LOCAL_ORDER_ROUTER_URL',
 
   // Testnet Service URLs
   TESTNET_RPC_URL: 'NEXT_PUBLIC_TESTNET_RPC_URL',
@@ -36,6 +37,7 @@ export const WEB_ENV_VARS = {
   TESTNET_STEALTH_SERVER_URL: 'NEXT_PUBLIC_TESTNET_STEALTH_SERVER_URL',
   TESTNET_EXPLORER_URL: 'NEXT_PUBLIC_TESTNET_EXPLORER_URL',
   TESTNET_INDEXER_URL: 'NEXT_PUBLIC_TESTNET_INDEXER_URL',
+  TESTNET_ORDER_ROUTER_URL: 'NEXT_PUBLIC_TESTNET_ORDER_ROUTER_URL',
 
   // Contract Addresses (Local)
   LOCAL_ENTRY_POINT: 'NEXT_PUBLIC_LOCAL_ENTRY_POINT',
@@ -77,6 +79,7 @@ const DEFAULTS = {
   LOCAL_STEALTH_SERVER_URL: 'http://127.0.0.1:4339',
   LOCAL_EXPLORER_URL: 'http://127.0.0.1:3001',
   LOCAL_INDEXER_URL: 'http://127.0.0.1:8080/api',
+  LOCAL_ORDER_ROUTER_URL: 'http://localhost:8087',
 
   // Testnet Service URLs (StableNet Testnet - chainId 82830)
   TESTNET_RPC_URL: 'https://rpc.testnet.stablenet.dev',
@@ -85,6 +88,7 @@ const DEFAULTS = {
   TESTNET_STEALTH_SERVER_URL: 'https://stealth.testnet.stablenet.dev',
   TESTNET_EXPLORER_URL: 'https://explorer.testnet.stablenet.dev',
   TESTNET_INDEXER_URL: 'https://indexer.testnet.stablenet.dev/api',
+  TESTNET_ORDER_ROUTER_URL: 'http://localhost:8087',
 
   // Contract Addresses (Local)
   LOCAL_ENTRY_POINT: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
@@ -168,6 +172,7 @@ export function getLocalConfig() {
     ),
     explorerUrl: getEnvString(WEB_ENV_VARS.LOCAL_EXPLORER_URL, DEFAULTS.LOCAL_EXPLORER_URL),
     indexerUrl: getEnvString(WEB_ENV_VARS.LOCAL_INDEXER_URL, DEFAULTS.LOCAL_INDEXER_URL),
+    orderRouterUrl: getEnvString(WEB_ENV_VARS.LOCAL_ORDER_ROUTER_URL, DEFAULTS.LOCAL_ORDER_ROUTER_URL),
     contracts: {
       entryPoint: getEnvString(
         WEB_ENV_VARS.LOCAL_ENTRY_POINT,
@@ -237,6 +242,7 @@ export function getTestnetConfig() {
     ),
     explorerUrl: getEnvString(WEB_ENV_VARS.TESTNET_EXPLORER_URL, DEFAULTS.TESTNET_EXPLORER_URL),
     indexerUrl: getEnvString(WEB_ENV_VARS.TESTNET_INDEXER_URL, DEFAULTS.TESTNET_INDEXER_URL),
+    orderRouterUrl: getEnvString(WEB_ENV_VARS.TESTNET_ORDER_ROUTER_URL, DEFAULTS.TESTNET_ORDER_ROUTER_URL),
     contracts: {
       entryPoint: getEnvString(
         WEB_ENV_VARS.TESTNET_ENTRY_POINT,
@@ -325,5 +331,6 @@ export function getServiceUrls(chainId: number) {
     paymaster: config.paymasterUrl,
     stealthServer: config.stealthServerUrl,
     indexer: config.indexerUrl,
+    orderRouter: config.orderRouterUrl,
   }
 }
