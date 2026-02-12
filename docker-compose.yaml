@@ -8,26 +8,33 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: stablenet-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: stablenet
-      POSTGRES_PASSWORD: stablenet-dev-password
-      POSTGRES_DB: stablenet
+      POSTGRES_USER: ${POSTGRES_USER:-stablenet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required - set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-stablenet}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U stablenet -d stablenet"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stablenet} -d ${POSTGRES_DB:-stablenet}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
     networks:
       - stablenet
 
   anvil:
     image: ghcr.io/foundry-rs/foundry:latest
     container_name: stablenet-anvil
+    restart: unless-stopped
     entrypoint: ["anvil", "--host", "0.0.0.0", "--port", "8545", "--chain-id", "31337"]
     ports:
       - "8545:8545"
@@ -36,6 +43,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
     networks:
       - stablenet
 
@@ -48,6 +60,7 @@ services:
       context: ./services/bank-simulator
       dockerfile: Dockerfile
     container_name: stablenet-bank-simulator
+    restart: unless-stopped
     environment:
       PORT: "4350"
       WEBHOOK_URL: ""
@@ -63,6 +76,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
     networks:
       - stablenet
 
@@ -71,6 +89,7 @@ services:
       context: ./services/pg-simulator
       dockerfile: Dockerfile
     container_name: stablenet-pg-simulator
+    restart: unless-stopped
     environment:
       PORT: "4351"
       BASE_URL: http://pg-simulator:4351
@@ -91,6 +110,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
     networks:
       - stablenet
 
@@ -99,6 +123,7 @@ services:
       context: ./services/onramp-simulator
       dockerfile: Dockerfile
     container_name: stablenet-onramp-simulator
+    restart: unless-stopped
     environment:
       PORT: "4352"
       BASE_URL: http://onramp-simulator:4352
@@ -129,6 +154,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
     networks:
       - stablenet
 
@@ -141,6 +171,7 @@ services:
       context: ./services/subscription-executor
       dockerfile: Dockerfile
     container_name: stablenet-subscription-executor
+    restart: unless-stopped
     environment:
       PORT: "8083"
       RPC_URL: http://anvil:8545
@@ -171,6 +202,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
     networks:
       - stablenet
 
@@ -179,6 +215,7 @@ services:
       context: ./services/order-router
       dockerfile: Dockerfile
     container_name: stablenet-order-router
+    restart: unless-stopped
     environment:
       PORT: "8087"
       RPC_URL: http://anvil:8545
@@ -207,6 +244,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
     networks:
       - stablenet
 
@@ -215,6 +257,7 @@ services:
       context: ./services/bridge-relayer
       dockerfile: Dockerfile
     container_name: stablenet-bridge-relayer
+    restart: unless-stopped
     environment:
       PORT: "8081"
       SOURCE_RPC_URL: http://anvil:8545
@@ -257,6 +300,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
     networks:
       - stablenet
 
@@ -286,9 +334,10 @@ services:
   grafana:
     image: grafana/grafana:10.2.2
     container_name: stablenet-grafana
+    restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?required - set in .env}
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana_data:/var/lib/grafana

@@ -46,6 +46,6 @@ scrape_configs:
 
   - job_name: 'bridge-relayer'
     static_configs:
-      - targets: ['bridge-relayer:8080']
+      - targets: ['bridge-relayer:8081']
     metrics_path: /metrics
     scrape_interval: 30s
