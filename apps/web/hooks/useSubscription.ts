@@ -1,7 +1,15 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { type Address, encodePacked, formatUnits, keccak256, parseEventLogs, toHex } from 'viem'
+import {
+  type Address,
+  encodePacked,
+  formatUnits,
+  keccak256,
+  maxUint256,
+  parseEventLogs,
+  toHex,
+} from 'viem'
 import { useChainId, useWalletClient } from 'wagmi'
 import { getContractAddresses } from '../lib/config'
 import { useStableNetContext } from '../providers/StableNetProvider'
@@ -177,6 +185,30 @@ const permissionGrantedEvent_ABI = [
       { name: 'owner', type: 'address', indexed: true },
       { name: 'operator', type: 'address', indexed: false },
     ],
+  },
+] as const
+
+// ERC-20 ABI fragments for allowance check and approve
+const ERC20_ABI = [
+  {
+    name: 'allowance',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'approve',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
   },
 ] as const
 
@@ -606,6 +638,27 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
 
         // Step 1: Request ERC-7715 permission for recurring payments
         const permissionId = await requestPermission(plan)
+
+        // Step 1.5: ERC-20 approve if needed (native ETH doesn't need approval)
+        const isNativeToken = plan.token === '0x0000000000000000000000000000000000000000'
+        if (!isNativeToken) {
+          const currentAllowance = (await publicClient.readContract({
+            address: plan.token,
+            abi: ERC20_ABI,
+            functionName: 'allowance',
+            args: [address, subscriptionManager],
+          })) as bigint
+
+          if (currentAllowance < plan.price) {
+            const approveTxHash = await walletClient.writeContract({
+              address: plan.token,
+              abi: ERC20_ABI,
+              functionName: 'approve',
+              args: [subscriptionManager, maxUint256],
+            })
+            await publicClient.waitForTransactionReceipt({ hash: approveTxHash })
+          }
+        }
 
         // Step 2: Subscribe with the permission ID
         if (!walletClient) throw new Error('Wallet disconnected during operation')
