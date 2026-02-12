@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
+import { encodeFunctionData } from 'viem'
 import { useStableNetContext } from '@/providers'
 import type { Announcement, StealthMetaAddress } from '@/types'
 
@@ -27,7 +28,7 @@ interface UseStealthConfig {
 }
 
 export function useStealth(config: UseStealthConfig = {}) {
-  const { stealthServerUrl } = useStableNetContext()
+  const { stealthServerUrl, stealthAnnouncer } = useStableNetContext()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [stealthMetaAddress, setStealthMetaAddress] = useState<StealthMetaAddress | null>(null)
@@ -290,7 +291,7 @@ export function useStealth(config: UseStealthConfig = {}) {
   }, [getSpendingPublicKey, getViewingPublicKey])
 
   /**
-   * Send tokens to a stealth address
+   * Send tokens to a stealth address via ERC-5564 on-chain announcement
    */
   const sendToStealthAddress = useCallback(
     async (params: {
@@ -309,25 +310,56 @@ export function useStealth(config: UseStealthConfig = {}) {
       try {
         const { stealthAddress, ephemeralPubKey, value } = params
 
-        // First, announce the payment on-chain (would call the announcement contract)
-        // For now, we just send the transaction directly
-        const result = await sendTransaction({
-          to: stealthAddress,
-          value,
-          // In production, this would include data for the announcement contract
-        })
+        // ERC-5564 Announcer ABI fragment
+        const announcerAbi = [
+          {
+            name: 'announce',
+            type: 'function',
+            stateMutability: 'payable',
+            inputs: [
+              { name: 'schemeId', type: 'uint256' },
+              { name: 'stealthAddress', type: 'address' },
+              { name: 'ephemeralPubKey', type: 'bytes' },
+              { name: 'metadata', type: 'bytes' },
+            ],
+            outputs: [],
+          },
+        ] as const
 
-        // Register the announcement with the stealth server
-        await fetchWithTimeout(`${stealthServerUrl}/announce`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        // Encode ERC-5564 announce() calldata
+        const announceData = encodeFunctionData({
+          abi: announcerAbi,
+          functionName: 'announce',
+          args: [
+            BigInt(1), // schemeId: 1 = secp256k1
             stealthAddress,
             ephemeralPubKey,
-            transactionHash: result.hash,
-            value: value.toString(),
-          }),
+            '0x', // metadata: empty for ETH transfers
+          ],
         })
+
+        // Send transaction to the stealthAnnouncer contract
+        const result = await sendTransaction({
+          to: stealthAnnouncer as Address,
+          value,
+          data: announceData,
+        })
+
+        // Register the announcement with the stealth server as fallback
+        try {
+          await fetchWithTimeout(`${stealthServerUrl}/announce`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              stealthAddress,
+              ephemeralPubKey,
+              transactionHash: result.hash,
+              value: value.toString(),
+            }),
+          })
+        } catch {
+          // Server announcement is best-effort; on-chain announcement is authoritative
+        }
 
         return result
       } catch (err) {
@@ -339,7 +371,7 @@ export function useStealth(config: UseStealthConfig = {}) {
         setIsLoading(false)
       }
     },
-    [sendTransaction, stealthServerUrl]
+    [sendTransaction, stealthServerUrl, stealthAnnouncer]
   )
 
   return {

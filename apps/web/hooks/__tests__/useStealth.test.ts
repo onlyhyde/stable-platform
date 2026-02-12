@@ -6,6 +6,7 @@ import { useStealth } from '../useStealth'
 // Mock the context provider
 const mockContext = {
   stealthServerUrl: 'http://localhost:4339',
+  stealthAnnouncer: '0x8fc8cfb7f7362e44e472c690a6e025b80e406458',
   chainId: 31337,
   bundlerUrl: 'http://localhost:4337',
   entryPoint: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
@@ -235,6 +236,135 @@ describe('useStealth', () => {
       expect(result.current.parseStealthMetaAddress('invalid')).toBeNull()
       expect(result.current.parseStealthMetaAddress('st:btc:0x123')).toBeNull()
       expect(result.current.parseStealthMetaAddress('st:eth:0x123')).toBeNull() // Too short
+    })
+  })
+
+  describe('sendToStealthAddress - ERC-5564 announcement', () => {
+    it('should send transaction to stealthAnnouncer contract', async () => {
+      const mockSendTransaction = vi.fn().mockResolvedValue({
+        hash: `0x${'dd'.repeat(32)}` as Hex,
+      })
+
+      // Mock the stealth server /announce call
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      } as Response)
+
+      const { result } = renderHook(() =>
+        useStealth({
+          sendTransaction: mockSendTransaction,
+        })
+      )
+
+      await act(async () => {
+        await result.current.sendToStealthAddress({
+          stealthAddress: '0x1111111111111111111111111111111111111111' as `0x${string}`,
+          ephemeralPubKey: `0x${'ee'.repeat(33)}` as Hex,
+          value: BigInt('1000000000000000000'),
+        })
+      })
+
+      // Should call sendTransaction with stealthAnnouncer as `to` (not the stealth address)
+      expect(mockSendTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: mockContext.stealthAnnouncer,
+        })
+      )
+    })
+
+    it('should encode ERC-5564 announce calldata', async () => {
+      const mockSendTransaction = vi.fn().mockResolvedValue({
+        hash: `0x${'dd'.repeat(32)}` as Hex,
+      })
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      } as Response)
+
+      const { result } = renderHook(() =>
+        useStealth({
+          sendTransaction: mockSendTransaction,
+        })
+      )
+
+      await act(async () => {
+        await result.current.sendToStealthAddress({
+          stealthAddress: '0x1111111111111111111111111111111111111111' as `0x${string}`,
+          ephemeralPubKey: `0x${'ee'.repeat(33)}` as Hex,
+          value: BigInt('1000000000000000000'),
+        })
+      })
+
+      // calldata should contain announce function selector and encoded params
+      const callArgs = mockSendTransaction.mock.calls[0][0]
+      expect(callArgs.data).toBeDefined()
+      expect(callArgs.data.startsWith('0x')).toBe(true)
+    })
+
+    it('should pass value to announcer contract for ETH stealth sends', async () => {
+      const mockSendTransaction = vi.fn().mockResolvedValue({
+        hash: `0x${'dd'.repeat(32)}` as Hex,
+      })
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      } as Response)
+
+      const { result } = renderHook(() =>
+        useStealth({
+          sendTransaction: mockSendTransaction,
+        })
+      )
+
+      const sendValue = BigInt('1000000000000000000')
+
+      await act(async () => {
+        await result.current.sendToStealthAddress({
+          stealthAddress: '0x1111111111111111111111111111111111111111' as `0x${string}`,
+          ephemeralPubKey: `0x${'ee'.repeat(33)}` as Hex,
+          value: sendValue,
+        })
+      })
+
+      // Value should be forwarded to the announcer contract
+      const callArgs = mockSendTransaction.mock.calls[0][0]
+      expect(callArgs.value).toBe(sendValue)
+    })
+
+    it('should still register with stealth server as fallback', async () => {
+      const mockSendTransaction = vi.fn().mockResolvedValue({
+        hash: `0x${'dd'.repeat(32)}` as Hex,
+      })
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      } as Response)
+
+      const { result } = renderHook(() =>
+        useStealth({
+          sendTransaction: mockSendTransaction,
+        })
+      )
+
+      await act(async () => {
+        await result.current.sendToStealthAddress({
+          stealthAddress: '0x1111111111111111111111111111111111111111' as `0x${string}`,
+          ephemeralPubKey: `0x${'ee'.repeat(33)}` as Hex,
+          value: BigInt('1000000000000000000'),
+        })
+      })
+
+      // Should still call the stealth server /announce
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost:4339/announce',
+        expect.objectContaining({
+          method: 'POST',
+        })
+      )
     })
   })
 
