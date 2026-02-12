@@ -346,8 +346,9 @@ pub async fn generate(body: web::Json<GenerateRequest>) -> impl Responder {
 }
 
 /// Scan request - filter announcements by viewing key
+/// Uses POST to prevent private key exposure in URL/logs
 #[derive(Debug, Deserialize)]
-pub struct ScanQuery {
+pub struct ScanRequest {
     pub viewing_private_key: String,
     pub from_block: Option<u64>,
     pub to_block: Option<u64>,
@@ -366,12 +367,13 @@ pub struct ScanResponse {
 }
 
 /// Scan for announcements matching a viewing key
+/// POST endpoint to prevent viewing_private_key exposure in URL/server logs
 pub async fn scan(
     storage: web::Data<Storage>,
-    query: web::Query<ScanQuery>,
+    body: web::Json<ScanRequest>,
 ) -> impl Responder {
-    // Build cursor from query params
-    let cursor = match (query.cursor_block, query.cursor_log_index) {
+    // Build cursor from request body
+    let cursor = match (body.cursor_block, body.cursor_log_index) {
         (Some(block), Some(log_index)) => Some((block, log_index)),
         (Some(block), None) => Some((block, 0)),
         _ => None,
@@ -379,7 +381,7 @@ pub async fn scan(
 
     // First get announcements with cursor-based pagination
     let announcements = match storage
-        .get_announcements_cursor(query.from_block, query.to_block, None, query.limit, cursor)
+        .get_announcements_cursor(body.from_block, body.to_block, None, body.limit, cursor)
         .await
     {
         Ok(a) => a,
@@ -402,7 +404,7 @@ pub async fn scan(
         if let Some(view_tag) = announcement.view_tag {
             match crate::domain::check_view_tag(
                 &announcement.ephemeral_pub_key,
-                &query.viewing_private_key,
+                &body.viewing_private_key,
                 view_tag,
             ) {
                 Ok(true) => matches.push(announcement),

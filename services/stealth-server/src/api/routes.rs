@@ -27,8 +27,8 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
             )
             // Generate stealth address
             .route("/generate", web::post().to(handlers::generate))
-            // Scan announcements
-            .route("/scan", web::get().to(handlers::scan))
+            // Scan announcements (POST to protect viewing_private_key from URL/log exposure)
+            .route("/scan", web::post().to(handlers::scan))
             // WebSocket
             .route("/ws", web::get().to(websocket::ws_handler)),
     );

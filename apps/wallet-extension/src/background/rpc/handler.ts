@@ -53,7 +53,11 @@ function getPublicClient(rpcUrl: string) {
   return client
 }
 
-type RpcHandler = (params: unknown[] | undefined, origin: string) => Promise<unknown>
+type RpcHandler = (
+  params: unknown[] | undefined,
+  origin: string,
+  isExtension: boolean
+) => Promise<unknown>
 
 /**
  * RPC method handlers
@@ -710,7 +714,7 @@ const handlers: Record<string, RpcHandler> = {
    * Sign EIP-7702 Authorization (wallet_signAuthorization)
    * Allows EOAs to delegate to smart contract implementations
    */
-  wallet_signAuthorization: async (params, origin) => {
+  wallet_signAuthorization: async (params, origin, isExtension) => {
     const [authRequest] = params as [
       {
         account: Address
@@ -789,7 +793,7 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // Request user approval (skip for internal wallet UI - user already confirmed in DelegateSetup)
-    const isInternalRequest = origin === 'extension' || origin === 'internal'
+    const isInternalRequest = isExtension
     if (!isInternalRequest) {
       try {
         await approvalController.requestAuthorization(
@@ -852,7 +856,7 @@ const handlers: Record<string, RpcHandler> = {
    * by performing both operations internally, avoiding serialization round-trips and
    * ensuring correct nonce handling (authorization.nonce = tx.nonce + 1).
    */
-  wallet_delegateAccount: async (params, origin) => {
+  wallet_delegateAccount: async (params, origin, isExtension) => {
     const [request] = params as [
       {
         account: Address
@@ -885,7 +889,7 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // Verify account is connected (internal requests always pass)
-    const isInternalRequest = origin === 'extension' || origin === 'internal'
+    const isInternalRequest = isExtension
     if (!isInternalRequest) {
       const connectedAccounts = walletState.getConnectedAccounts(origin)
       const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === account.toLowerCase())
@@ -1011,7 +1015,7 @@ const handlers: Record<string, RpcHandler> = {
   /**
    * Send a UserOperation (ERC-4337)
    */
-  eth_sendUserOperation: async (params, origin) => {
+  eth_sendUserOperation: async (params, origin, isExtension) => {
     const [userOpParam, entryPointParam] = params as [unknown, Address]
 
     // Verify connection
@@ -1080,7 +1084,7 @@ const handlers: Record<string, RpcHandler> = {
       userOp.maxFeePerGas
 
     // Request user approval (skip for internal wallet UI - user already confirmed)
-    const isInternalRequest = origin === 'extension' || origin === 'internal'
+    const isInternalRequest = isExtension
     if (!isInternalRequest) {
       try {
         await approvalController.requestTransaction(
@@ -1277,7 +1281,7 @@ const handlers: Record<string, RpcHandler> = {
    * Send a transaction
    * Signs and broadcasts a transaction to the network
    */
-  eth_sendTransaction: async (params, origin) => {
+  eth_sendTransaction: async (params, origin, isExtension) => {
     const [txParams] = params as [
       {
         from?: Address
@@ -1391,7 +1395,7 @@ const handlers: Record<string, RpcHandler> = {
     const estimatedGasCost = gas * (maxFeePerGas ?? gasPrice ?? BigInt(0))
 
     // Request user approval (skip for internal wallet UI - user already confirmed)
-    const isInternalRequest = origin === 'extension' || origin === 'internal'
+    const isInternalRequest = isExtension
     if (!isInternalRequest) {
       try {
         await approvalController.requestTransaction(
@@ -2270,7 +2274,7 @@ const handlers: Record<string, RpcHandler> = {
         value: '0x0',
       }
 
-      return await handlers.eth_sendTransaction!([tx], origin ?? 'internal')
+      return await handlers.eth_sendTransaction!([tx], origin ?? 'extension', true)
     } catch (error) {
       throw createRpcError({
         code: RPC_ERRORS.INTERNAL_ERROR.code,
@@ -2560,7 +2564,7 @@ const handlers: Record<string, RpcHandler> = {
       }
 
       // Send the replacement transaction via the existing eth_sendTransaction handler
-      return await handlers.eth_sendTransaction!([replacementTx], 'internal')
+      return await handlers.eth_sendTransaction!([replacementTx], 'extension', true)
     } catch (error) {
       throw createRpcError({
         code: RPC_ERRORS.INTERNAL_ERROR.code,
@@ -2615,7 +2619,7 @@ const handlers: Record<string, RpcHandler> = {
       // Minimal gas for a simple transfer
       cancelTx.gas = '0x5208' // 21000
 
-      return await handlers.eth_sendTransaction!([cancelTx], 'internal')
+      return await handlers.eth_sendTransaction!([cancelTx], 'extension', true)
     } catch (error) {
       throw createRpcError({
         code: RPC_ERRORS.INTERNAL_ERROR.code,
@@ -2863,7 +2867,7 @@ const handlers: Record<string, RpcHandler> = {
   /**
    * Request permissions from user
    */
-  wallet_requestPermissions: async (params, origin) => {
+  wallet_requestPermissions: async (params, origin, isExtension) => {
     const [requested] = (params ?? [{}]) as [Record<string, unknown>]
     const requestedMethods = Object.keys(requested)
 
@@ -2875,7 +2879,7 @@ const handlers: Record<string, RpcHandler> = {
         // Delegate to eth_requestAccounts handler
         const handler = handlers['eth_requestAccounts']
         if (handler) {
-          await handler(params, origin)
+          await handler(params, origin, isExtension)
         }
       }
     }
@@ -3795,7 +3799,8 @@ function formatBlock(
  */
 export async function handleRpcRequest(
   request: JsonRpcRequest,
-  origin: string
+  origin: string,
+  isExtension = false
 ): Promise<JsonRpcResponse> {
   const { id, method, params } = request
 
@@ -3836,7 +3841,7 @@ export async function handleRpcRequest(
       throw createRpcError(RPC_ERRORS.METHOD_NOT_FOUND)
     }
 
-    const result = await handler(params, origin)
+    const result = await handler(params, origin, isExtension)
 
     return {
       jsonrpc: '2.0',

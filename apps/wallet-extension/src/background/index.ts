@@ -478,7 +478,7 @@ async function handleMessage(
         })
       }
 
-      const response = await handleRpcRequest(request, origin)
+      const response = await handleRpcRequest(request, origin, resolved.isExtension)
 
       // Handle subscription results
       if (request.method === 'eth_subscribe' && response.result && tabId) {
