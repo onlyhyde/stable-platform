@@ -1,8 +1,9 @@
 # StableNet Platform - 프로젝트 전체 리뷰
 
 > **작성일**: 2025-02-11
+> **최종 수정일**: 2025-02-13
 > **대상**: stable-platform 모노레포 전체
-> **버전**: 0.1.0
+> **버전**: 0.1.7
 
 ---
 
@@ -22,6 +23,8 @@
 12. [기술 스택 요약](#12-기술-스택-요약)
 13. [아키텍처 토폴로지](#13-아키텍처-토폴로지)
 14. [주요 기술적 특징](#14-주요-기술적-특징)
+15. [보안 아키텍처](#15-보안-아키텍처)
+16. [변경 이력](#16-변경-이력)
 
 ---
 
@@ -188,12 +191,12 @@ packages:
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | 0.1.6 |
+| 버전 | 0.1.7 |
 | 프레임워크 | React 19 + Vite + @crxjs/vite-plugin |
 | 상태관리 | Zustand 5.0.2 |
 | 스타일 | Tailwind CSS 3.4.17 |
-| 테스트 | Jest 29 (55 unit) + Playwright 1.58 (5 E2E) |
-| 소스 파일 | 167개 TS/TSX |
+| 테스트 | Jest 29 (46 suites, 1072 tests) + Playwright 1.58 (5 E2E specs) |
+| 소스 파일 | 170개 TS/TSX |
 
 #### 아키텍처
 
@@ -203,7 +206,7 @@ wallet-extension/src/
 │   ├── index.ts             # 메인 진입점
 │   ├── controllers/         # 트랜잭션, 승인, 권한, 토큰, 모듈 컨트롤러
 │   ├── keyring/             # 키 관리 (vault, HD, hardware, session)
-│   ├── rpc/                 # JSON-RPC 핸들러
+│   ├── rpc/                 # JSON-RPC 핸들러 (handler, utils, paymaster, validation)
 │   ├── services/            # IndexerClient, transactionWatcher
 │   ├── security/            # 시뮬레이션, 피싱가드, callData 디코더
 │   └── state/               # 스토어, 마이그레이션
@@ -224,7 +227,7 @@ wallet-extension/src/
 #### 주요 기능
 
 - **3개 UI 진입점**: Popup (빠른 액션), Sidepanel (확장 인터페이스), Approval (트랜잭션 승인)
-- **키 관리**: HD Keyring, Simple Keyring, Hardware Keyring, Session Crypto
+- **키 관리**: HD Keyring, Simple Keyring, Hardware Keyring, Session Crypto (패스워드 검증 필수)
 - **트랜잭션**: MultiModeTransactionController (EOA, EIP-7702, Smart Account)
 - **ERC-7579 모듈**: 6종 모듈 설정 UI (SwapExecutor, SpendingLimit, MultiSig, Staking, WebAuthn, Delegate)
 - **보안**: 트랜잭션 시뮬레이션, 피싱 탐지, 오리진 검증
@@ -267,7 +270,7 @@ host_permissions: <all_urls>
 | Web3 | wagmi 2.14 + viem 2.21 |
 | 스타일 | Tailwind CSS 3.4.17 |
 | 테스트 | Vitest 4.0 (7 unit) |
-| 소스 파일 | 206개 TS/TSX |
+| 소스 파일 | 216개 TS/TSX |
 
 #### 라우트 구조
 
@@ -445,7 +448,7 @@ sdk-go/
 └── gas/           가스 추정
 ```
 
-- **Go 버전**: 1.24.0+
+- **Go 버전**: 1.24.0 (go.mod), Dockerfile은 1.23-alpine 사용 — 동기화 필요
 - **의존성**: go-ethereum v1.14.13, secp256k1 v4.3.0, x/crypto v0.47.0
 
 ---
@@ -493,13 +496,13 @@ plugin-* (전체)
 | bundler | 4337 | TypeScript | Fastify 5.7 | ERC-4337 UserOp 번들러 |
 | paymaster-proxy | 4338 | TypeScript | Hono 4.11 | ERC-7677 가스 스폰서십 |
 | stealth-server | 4339 | Rust | Actix-web 4 | EIP-5564 스텔스 주소 인덱서 |
-| contract-registry | 4340 | TypeScript | Fastify 5.7 | 컨트랙트 주소 레지스트리 |
+| contract-registry | 4400 | TypeScript | Fastify 5.7 | 컨트랙트 주소 레지스트리 |
 | module-registry | 4340 | TypeScript | Fastify 5.7 | ERC-7579 모듈 마켓플레이스 |
 | order-router | 8087 | Go | Gin 1.10 | DEX/AMM 라우팅 |
 | subscription-executor | 8083 | Go | Gin 1.10 | 구독 결제 자동실행 |
 | bridge-relayer | 8080 | Go | Gin 1.10 | 크로스체인 릴레이 + MPC |
 | bank-simulator | 4350 | Go | Gin 1.10 | 뱅킹 시뮬레이터 |
-| pg-simulator | 4351 | Go | Gin 1.10 | PG 시뮬레이터 |
+| pg-simulator | 4351 | Go | Gin 1.10 | PG 시뮬레이터 (결제+정산, 워커풀 웹훅) |
 | onramp-simulator | 4352 | Go | Gin 1.10 | 온램프 시뮬레이터 |
 
 ---
@@ -576,7 +579,7 @@ src/
 ```
 
 - **의존성**: fastify 5.7, pino 9.5, zod 3.23, nanoid 5.0
-- **기능**: 시드 데이터 자동 로딩, CORS, 레이트 리미팅
+- **기능**: 시드 데이터 자동 로딩, CORS (프로덕션 오리진 제한), 레이트 리미팅, Zod 스키마 검증, API Key 인증
 
 ---
 
@@ -646,7 +649,7 @@ internal/
 | 서비스 | 포트 | 특징 |
 |--------|------|------|
 | bank-simulator | 4350 | 뱅킹 오퍼레이션, 레이트 리미팅 |
-| pg-simulator | 4351 | HTML 템플릿, 결제+정산 이중 서비스 |
+| pg-simulator | 4351 | 결제+정산 이중 서비스, 워커풀 웹훅, 입력 이스케이프 |
 | onramp-simulator | 4352 | 법정화폐→암호화폐 플로우 |
 
 ---
@@ -754,7 +757,7 @@ GET /live      → 단순 활성 확인 (200)
 | 파일 | 베이스 | 용도 |
 |------|--------|------|
 | `Dockerfile.node` | node:20-alpine | TypeScript 서비스 (pnpm + turbo) |
-| `Dockerfile.go` | golang:1.23-alpine → alpine:3.19 | Go 서비스 (CGO_ENABLED=0 정적 바이너리) |
+| `Dockerfile.go` | golang:1.23-alpine → alpine:3.19 | Go 서비스 (CGO_ENABLED=0 정적 바이너리, go.mod은 1.24.0) |
 
 ---
 
@@ -852,12 +855,12 @@ GET /live      → 단순 활성 확인 (200)
 
 | 계층 | 위치 | 프레임워크 | 수량 |
 |------|------|-----------|------|
-| **Unit (wallet-extension)** | `apps/wallet-extension/tests/` | Jest 29 | 55 파일, 922 테스트 |
+| **Unit (wallet-extension)** | `apps/wallet-extension/tests/` | Jest 29 | 46 suites, 1072 테스트 |
 | **Unit (web)** | `apps/web/**/__tests__/` | Vitest 4.0 | 7 파일 |
 | **Unit (wallet-sdk)** | `packages/wallet-sdk/tests/` | Vitest | 144 테스트 |
 | **Unit (sdk packages)** | 각 패키지 `tests/` | Vitest | 패키지별 |
 | **Integration** | `tests/` (루트) | Vitest | 5 파일 |
-| **E2E (wallet)** | `apps/wallet-extension/e2e/` | Playwright 1.58 | 5 스펙 |
+| **E2E (wallet)** | `apps/wallet-extension/e2e/tests/` | Playwright 1.58 | 5 spec 파일 |
 | **E2E (root)** | `tests/` (루트) | Vitest | 6 파일 |
 | **Go** | 각 서비스 `*_test.go` | Go testing | 서비스별 |
 
@@ -971,7 +974,7 @@ GET /live      → 단순 활성 확인 (200)
 │  ┌──────────────┐  ┌─────────────────┐  │
 │  │  Contract    │  │   Module        │  │
 │  │  Registry    │  │   Registry      │  │
-│  │ (Port 4340)  │  │  (Port 4340)    │  │
+│  │ (Port 4400)  │  │  (Port 4340)    │  │
 │  │ TS/Fastify   │  │  TS/Fastify     │  │
 │  └──────────────┘  └─────────────────┘  │
 │                                          │
@@ -1094,4 +1097,65 @@ Web 앱에서 B2B 기능 제공:
 
 ---
 
-> **참고**: 이 문서는 2025-02-11 시점의 프로젝트 상태를 기반으로 작성되었습니다. 개별 서비스나 패키지의 세부 사항은 해당 디렉토리의 README 또는 소스 코드를 참조하세요.
+## 15. 보안 아키텍처
+
+코드 리뷰(`CODE_REVIEW_REPORT_2025-02-09.md`) 기반으로 7단계 보안 강화를 수행했다.
+
+### 15.1 인증 및 권한
+
+| 서비스 | 인증 방식 | 변경 사항 |
+|--------|----------|----------|
+| module-registry | API Key (`X-API-Key` 헤더) | 쓰기 엔드포인트에 인증 추가 |
+| contract-registry | API Key | undefined 바이패스 취약점 수정 |
+| paymaster-proxy | Admin Auth | 관리 엔드포인트 인증 추가 |
+| wallet-extension | 패스워드 검증 | deprecated `getMnemonic()` 제거, `getMnemonicWithPassword()` 강제 |
+
+### 15.2 입력 검증
+
+- **RPC 핸들러**: `InputValidator` + `validateRpcParams()` (Zod 기반 메서드별 검증)
+- **module-registry**: 모든 라우트 파라미터를 Zod `safeParse`로 검증 (unsafe `as` 캐스팅 제거)
+- **pg-simulator**: 결제 금액 양수 검증 추가, XSS 입력 이스케이프 (`html.EscapeString`)
+
+### 15.3 동시성 및 리소스 관리
+
+| 이슈 | 해결 |
+|------|------|
+| 결제 TOCTOU 경쟁 조건 | 원자적 멱등성 키 예약 패턴 |
+| 무제한 고루틴 스폰 | 채널 기반 워커풀 (5 워커, 100 큐) |
+| 중첩 뮤텍스 (데드락 위험) | `GetEligiblePayments()` 공개 메서드로 캡슐화 |
+| 컨텍스트 미전파 | `context.Context` 기반 Graceful Shutdown |
+| publicClientCache 무제한 | TTL (30분) + LRU eviction (최대 20) |
+| WebSocket 핸들러 누수 | 재연결 시 이벤트 핸들러 null 초기화 |
+
+### 15.4 인프라 보안
+
+- **Docker**: 리소스 제한 (CPU/메모리), 환경변수 기반 비밀번호, SSL 모드, 재시작 정책
+- **CORS**: 프로덕션 환경에서 `ALLOWED_ORIGINS` 환경변수 기반 오리진 제한
+- **네트워크**: `data-internal` (내부 전용) / `stablenet` (서비스 간) 분리
+
+### 15.5 감사 로깅
+
+- `AuditLogger` 서비스 추가 (민감 작업 추적)
+- 니모닉 조회, 키 내보내기, 설정 변경 등 기록
+
+---
+
+## 16. 변경 이력
+
+### 2025-02-09 ~ 2025-02-13: 보안 및 코드 품질 개선 (Phase 0-6)
+
+| Phase | 커밋 | 내용 |
+|-------|------|------|
+| 0 | `5081922` | CRITICAL 보안 취약점 3건 패치 (내부 요청 바이패스, 관리자 인증, 비밀키 노출) |
+| 1 | `2b911db` | HIGH 보안 강화 (module-registry 인증, contract-registry 인증 수정, 감사 로깅) |
+| 2 | `d2264a2` | 인프라 보안 (Docker 리소스 제한, 환경변수 비밀번호, Prometheus 설정) |
+| 3 | `21d294a` | 타입 시스템 통합 (UserOperation 타입 통합, unsafe cast 제거) |
+| 4 | `6c05761` | Go 서비스 (TOCTOU 경쟁 조건, 워커풀, 컨텍스트 전파, CORS 제한) |
+| 5 | `fd8d74d` | 코드 구조 (handler.ts 3,875→3,172줄 분리, Zod 검증, WebSocket 누수 수정) |
+| 6 | `8195d2e` | 잔여 개선 (deprecated API 제거, 캐시 TTL, 금액 검증, 매직 넘버 정리) |
+
+**해결 이슈**: CRITICAL 9건, HIGH 20건 전부 해결. MEDIUM 32건 중 actionable 항목 처리 완료.
+
+---
+
+> **참고**: 이 문서는 2025-02-11에 최초 작성되었으며, 2025-02-13에 Phase 0-6 보안 수정 결과를 반영하여 업데이트되었습니다. 개별 서비스나 패키지의 세부 사항은 해당 디렉토리의 README 또는 소스 코드를 참조하세요.
