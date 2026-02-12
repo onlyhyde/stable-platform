@@ -10,6 +10,7 @@ export interface RegistryServerConfig {
   port: number
   host: string
   seedData: boolean
+  apiKey?: string
 }
 
 export class ModuleRegistryServer {
@@ -38,7 +39,7 @@ export class ModuleRegistryServer {
 
     // Register routes
     registerHealthRoutes(this.app, this.store)
-    registerModuleRoutes(this.app, this.store)
+    registerModuleRoutes(this.app, this.store, this.config.apiKey)
 
     // Seed default data
     if (this.config.seedData) {

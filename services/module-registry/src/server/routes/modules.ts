@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { nanoid } from 'nanoid'
 import type { ModuleStore } from '../../store/memory-store'
+import { createAuthHook } from '../middleware/auth'
 import {
   CreateInstallationSchema,
   CreateModuleSchema,
@@ -10,7 +11,8 @@ import {
   UpdateModuleSchema,
 } from '../schemas/module'
 
-export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
+export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore, apiKey?: string) {
+  const authHook = createAuthHook(apiKey)
   // ─── List Modules ───
   app.get('/api/v1/modules', async (request, reply) => {
     const query = ModuleQuerySchema.safeParse(request.query)
@@ -65,7 +67,7 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
   })
 
   // ─── Create Module ───
-  app.post('/api/v1/modules', async (request, reply) => {
+  app.post('/api/v1/modules', { preHandler: authHook }, async (request, reply) => {
     const body = CreateModuleSchema.safeParse(request.body)
     if (!body.success) {
       return reply.status(400).send({ error: 'Invalid module data', details: body.error.issues })
@@ -89,7 +91,7 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
   })
 
   // ─── Update Module ───
-  app.put('/api/v1/modules/:id', async (request, reply) => {
+  app.put('/api/v1/modules/:id', { preHandler: authHook }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = UpdateModuleSchema.safeParse(request.body)
     if (!body.success) {
@@ -105,7 +107,7 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
   })
 
   // ─── Delete Module ───
-  app.delete('/api/v1/modules/:id', async (request, reply) => {
+  app.delete('/api/v1/modules/:id', { preHandler: authHook }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const deleted = store.deleteModule(id)
     if (!deleted) {
@@ -116,7 +118,7 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
 
   // ─── Installations ───
 
-  app.post('/api/v1/installations', async (request, reply) => {
+  app.post('/api/v1/installations', { preHandler: authHook }, async (request, reply) => {
     const body = CreateInstallationSchema.safeParse(request.body)
     if (!body.success) {
       return reply
@@ -149,7 +151,7 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
     return { data: installations, meta: { total: installations.length } }
   })
 
-  app.delete('/api/v1/installations/:id', async (request, reply) => {
+  app.delete('/api/v1/installations/:id', { preHandler: authHook }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const deactivated = store.deactivateInstallation(id)
     if (!deactivated) {
@@ -160,7 +162,7 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore) {
 
   // ─── Reviews ───
 
-  app.post('/api/v1/reviews', async (request, reply) => {
+  app.post('/api/v1/reviews', { preHandler: authHook }, async (request, reply) => {
     const body = CreateReviewSchema.safeParse(request.body)
     if (!body.success) {
       return reply.status(400).send({ error: 'Invalid review data', details: body.error.issues })

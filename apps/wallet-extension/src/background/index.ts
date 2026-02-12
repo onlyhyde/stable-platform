@@ -14,6 +14,7 @@
 import type { Address, Hex } from 'viem'
 import { getSecurityConfig, STORAGE_KEYS } from '../config'
 import { loadDefaultNetworks, MESSAGE_TYPES } from '../shared/constants'
+import { AuditEventType, auditLogger } from '../shared/security/auditLogger'
 import { originFromUrl, resolveOrigin } from '../shared/security/originVerifier'
 import { createLogger } from '../shared/utils/logger'
 import { validateExtensionMessage } from '../shared/validation/messageSchema'
@@ -729,6 +730,10 @@ async function handleMessage(
 
       try {
         const mnemonic = await keyringController.getMnemonicWithPassword(password)
+        const selectedAddress = walletState.getState().accounts.selectedAccount ?? 'unknown'
+        auditLogger
+          .logAccount(AuditEventType.MNEMONIC_VIEWED, selectedAddress)
+          .catch(() => {})
         return {
           type: 'MNEMONIC',
           id: message.id,
