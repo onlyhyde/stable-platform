@@ -14,9 +14,25 @@ vi.mock('@/providers', () => ({
   useStableNetContext: () => mockContext,
 }))
 
+const mockSignUserOp = vi.fn().mockResolvedValue(`0x${'ab'.repeat(65)}` as Hex)
+
+// Receipt response for waitForUserOpReceipt polling
+const mockReceiptResponse = {
+  ok: true,
+  json: async () => ({
+    jsonrpc: '2.0',
+    id: 1,
+    result: {
+      transactionHash: `0x${'ee'.repeat(32)}`,
+      success: true,
+    },
+  }),
+} as Response
+
 describe('useUserOp', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockSignUserOp.mockResolvedValue(`0x${'ab'.repeat(65)}` as Hex)
   })
 
   describe('nonce fetching', () => {
@@ -24,18 +40,21 @@ describe('useUserOp', () => {
       const _mockNonce = '0x5'
       const mockGetNonce = vi.fn().mockResolvedValue(BigInt(5))
 
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          jsonrpc: '2.0',
-          id: 1,
-          result: '0xabcd1234',
-        }),
-      } as Response)
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0xabcd1234',
+          }),
+        } as Response)
+        .mockResolvedValueOnce(mockReceiptResponse)
 
       const { result } = renderHook(() =>
         useUserOp({
           getNonce: mockGetNonce,
+          signUserOp: mockSignUserOp,
         })
       )
 
@@ -71,19 +90,22 @@ describe('useUserOp', () => {
       const mockEstimateGas = vi.fn().mockResolvedValue(mockGasEstimate)
       const mockGetNonce = vi.fn().mockResolvedValue(BigInt(0))
 
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          jsonrpc: '2.0',
-          id: 1,
-          result: '0xabcd1234',
-        }),
-      } as Response)
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0xabcd1234',
+          }),
+        } as Response)
+        .mockResolvedValueOnce(mockReceiptResponse)
 
       const { result } = renderHook(() =>
         useUserOp({
           getNonce: mockGetNonce,
           estimateGas: mockEstimateGas,
+          signUserOp: mockSignUserOp,
         })
       )
 
@@ -117,20 +139,23 @@ describe('useUserOp', () => {
         maxPriorityFeePerGas: BigInt(2000000000), // 2 gwei
       })
 
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          jsonrpc: '2.0',
-          id: 1,
-          result: '0xabcd1234',
-        }),
-      } as Response)
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0xabcd1234',
+          }),
+        } as Response)
+        .mockResolvedValueOnce(mockReceiptResponse)
 
       const { result } = renderHook(() =>
         useUserOp({
           getNonce: mockGetNonce,
           estimateGas: mockEstimateGas,
           getGasPrice: mockGetGasPrice,
+          signUserOp: mockSignUserOp,
         })
       )
 
@@ -177,6 +202,7 @@ describe('useUserOp', () => {
         useUserOp({
           getNonce: mockGetNonce,
           estimateGas: mockEstimateGas,
+          signUserOp: mockSignUserOp,
         })
       )
 
@@ -210,6 +236,7 @@ describe('useUserOp', () => {
         useUserOp({
           getNonce: mockGetNonce,
           estimateGas: mockEstimateGas,
+          signUserOp: mockSignUserOp,
         })
       )
 
@@ -262,19 +289,22 @@ describe('useUserOp', () => {
         preVerificationGas: BigInt(50000),
       })
 
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          jsonrpc: '2.0',
-          id: 1,
-          result: '0xabcd1234',
-        }),
-      } as Response)
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0xabcd1234',
+          }),
+        } as Response)
+        .mockResolvedValueOnce(mockReceiptResponse)
 
       const { result } = renderHook(() =>
         useUserOp({
           getNonce: mockGetNonce,
           estimateGas: mockEstimateGas,
+          signUserOp: mockSignUserOp,
         })
       )
 
@@ -304,14 +334,16 @@ describe('useUserOp', () => {
       })
       const mockSignUserOp = vi.fn().mockResolvedValue(`0x${'ab'.repeat(65)}` as Hex)
 
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          jsonrpc: '2.0',
-          id: 1,
-          result: '0xabcd1234',
-        }),
-      } as Response)
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0xabcd1234',
+          }),
+        } as Response)
+        .mockResolvedValueOnce(mockReceiptResponse)
 
       const { result } = renderHook(() =>
         useUserOp({

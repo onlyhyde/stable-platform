@@ -72,8 +72,10 @@ describe('TransactionDetail', () => {
     setupWalletStore({ selectedTxId: MOCK_TX.id, history: [MOCK_TX] })
 
     render(<TransactionDetail />)
-    expect(screen.getByText('Transaction Hash')).toBeTruthy()
-    expect(screen.getByText('Confirmed')).toBeTruthy()
+    // Transaction Hash appears in both stepper and details card
+    expect(screen.getAllByText('Transaction Hash').length).toBeGreaterThanOrEqual(1)
+    // Status shown via TransactionStepper
+    expect(screen.getByText('Transaction Confirmed')).toBeTruthy()
     expect(screen.getByText('From')).toBeTruthy()
     expect(screen.getByText('To')).toBeTruthy()
     expect(screen.getByText('Value')).toBeTruthy()
@@ -83,7 +85,7 @@ describe('TransactionDetail', () => {
     setupWalletStore({ selectedTxId: MOCK_TX.id, history: [MOCK_TX] })
 
     render(<TransactionDetail />)
-    expect(screen.getByText('Confirmed')).toBeTruthy()
+    expect(screen.getByText('Transaction Confirmed')).toBeTruthy()
   })
 
   it('should show pending status badge', () => {
@@ -91,7 +93,8 @@ describe('TransactionDetail', () => {
     setupWalletStore({ selectedTxId: MOCK_TX.id, pendingTransactions: [pendingTx] })
 
     render(<TransactionDetail />)
-    expect(screen.getByText('Pending')).toBeTruthy()
+    // Stepper shows "Waiting to be included in a block..." for pending status
+    expect(screen.getByText('Waiting to be included in a block...')).toBeTruthy()
   })
 
   it('should show submitted status badge', () => {
@@ -99,7 +102,8 @@ describe('TransactionDetail', () => {
     setupWalletStore({ selectedTxId: MOCK_TX.id, pendingTransactions: [submittedTx] })
 
     render(<TransactionDetail />)
-    expect(screen.getByText('Submitted')).toBeTruthy()
+    // Stepper shows "Waiting to be included in a block..." for submitted status
+    expect(screen.getByText('Waiting to be included in a block...')).toBeTruthy()
   })
 
   it('should show failed status badge', () => {
@@ -107,7 +111,8 @@ describe('TransactionDetail', () => {
     setupWalletStore({ selectedTxId: MOCK_TX.id, history: [failedTx] })
 
     render(<TransactionDetail />)
-    expect(screen.getByText('Failed')).toBeTruthy()
+    // Stepper shows "Transaction Failed" for failed status
+    expect(screen.getAllByText('Transaction Failed').length).toBeGreaterThanOrEqual(1)
   })
 
   it('should show Speed Up and Cancel buttons for pending transactions', () => {
@@ -168,9 +173,10 @@ describe('TransactionDetail', () => {
     setupWalletStore({ selectedTxId: MOCK_TX.id, history: [MOCK_TX] })
 
     render(<TransactionDetail />)
-    const link = screen.getByText('View on Explorer')
-    expect(link).toBeTruthy()
-    expect(link.closest('a')).toHaveAttribute('href', `https://etherscan.io/tx/${MOCK_TX.txHash}`)
+    // View on Explorer appears in both stepper and details card
+    const links = screen.getAllByText('View on Explorer')
+    expect(links.length).toBeGreaterThanOrEqual(1)
+    expect(links[0].closest('a')).toHaveAttribute('href', `https://etherscan.io/tx/${MOCK_TX.txHash}`)
   })
 
   it('should not show explorer link when no explorerUrl', () => {
@@ -254,7 +260,7 @@ describe('TransactionDetail', () => {
     })
 
     render(<TransactionDetail />)
-    // Should find the pending version first
-    expect(screen.getByText('Submitted')).toBeTruthy()
+    // Should find the pending (submitted) version first - stepper shows waiting message
+    expect(screen.getByText('Waiting to be included in a block...')).toBeTruthy()
   })
 })

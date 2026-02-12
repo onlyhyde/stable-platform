@@ -8,6 +8,19 @@ jest.mock('../../../../src/ui/hooks', () => ({
   useNetworkCurrency: jest.fn(),
 }))
 
+jest.mock('../../../../src/ui/hooks/useIndexerData', () => ({
+  useIndexerData: jest.fn(() => ({
+    transactions: [],
+    isIndexerAvailable: false,
+    isLoadingTransactions: false,
+    isLoadingMore: false,
+    hasMore: false,
+    error: null,
+    loadMoreTransactions: jest.fn(),
+    refreshTransactions: jest.fn(),
+  })),
+}))
+
 // Mock viem - formatEther
 jest.mock('viem', () => ({
   formatEther: (value: bigint) => (Number(value) / 1e18).toString(),
@@ -128,7 +141,8 @@ describe('Activity', () => {
     setupStore({ history: [oldTx, newTx] })
 
     render(<Activity />)
-    const items = screen.getAllByRole('button')
+    // Filter out the refresh button (has aria-label="Refresh")
+    const items = screen.getAllByRole('button').filter(btn => btn.getAttribute('aria-label') !== 'Refresh')
     // First item should be the newer transaction
     expect(items[0].textContent).toContain('Send')
   })
@@ -161,8 +175,8 @@ describe('Activity', () => {
 
     render(<Activity />)
 
-    const txButton = screen.getAllByRole('button')[0]
-    fireEvent.click(txButton)
+    const txButtons = screen.getAllByRole('button').filter(btn => btn.getAttribute('aria-label') !== 'Refresh')
+    fireEvent.click(txButtons[0])
 
     expect(mockSetSelectedTxId).toHaveBeenCalledWith(tx.id)
     expect(mockSetPage).toHaveBeenCalledWith('txDetail')
@@ -181,7 +195,8 @@ describe('Activity', () => {
 
     render(<Activity />)
 
-    fireEvent.click(screen.getAllByRole('button')[0])
+    const txButtons = screen.getAllByRole('button').filter(btn => btn.getAttribute('aria-label') !== 'Refresh')
+    fireEvent.click(txButtons[0])
 
     expect(mockSetSelectedTxId).toHaveBeenCalledWith(tx.id)
     expect(mockSetPage).toHaveBeenCalledWith('txDetail')

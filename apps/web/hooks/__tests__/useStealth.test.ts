@@ -394,7 +394,10 @@ describe('useStealth', () => {
         await result.current.scanAnnouncements()
       })
 
-      expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/announcements'))
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/announcements'),
+        expect.anything()
+      )
       expect(result.current.announcements).toHaveLength(1)
     })
   })

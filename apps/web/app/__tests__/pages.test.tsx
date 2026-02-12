@@ -77,6 +77,12 @@ vi.mock('@/hooks', () => ({
     getQuote: vi.fn(),
     executeSwap: vi.fn(),
   })),
+  useUserOp: vi.fn(() => ({
+    sendUserOp: vi.fn(),
+    sendTransaction: vi.fn(),
+    isLoading: false,
+    error: null,
+  })),
 }))
 
 import { useAuditLogs } from '@/hooks/useAuditLogs'
