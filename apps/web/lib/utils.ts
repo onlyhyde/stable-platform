@@ -1,5 +1,6 @@
 import type { Address } from 'viem'
 import { formatUnits, parseUnits } from 'viem'
+import { getConfigByChainId } from './config'
 
 /**
  * Format address for display (0x1234...5678)
@@ -183,6 +184,34 @@ export function getPaymasterUrl(defaultUrl?: string): string | undefined {
     return settings.paymasterUrl
   }
   return defaultUrl
+}
+
+/**
+ * Block explorer URL options
+ */
+interface BlockExplorerOptions {
+  txHash?: string
+  address?: string
+}
+
+const FALLBACK_EXPLORER_URL = 'https://explorer.stablenet.dev'
+
+/**
+ * Get block explorer URL for a chain, optionally with tx or address path
+ */
+export function getBlockExplorerUrl(chainId: number, options?: BlockExplorerOptions): string {
+  const config = getConfigByChainId(chainId)
+  const baseUrl = config?.explorerUrl ?? FALLBACK_EXPLORER_URL
+
+  if (options?.txHash) {
+    return `${baseUrl}/tx/${options.txHash}`
+  }
+
+  if (options?.address) {
+    return `${baseUrl}/address/${options.address}`
+  }
+
+  return baseUrl
 }
 
 /**
