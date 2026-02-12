@@ -102,11 +102,11 @@ describe('useWallet', () => {
     })
 
     act(() => {
-      mockProv._emit('accountsChanged', ['0xnewaccount1234567890abcdef12345678'])
+      mockProv._emit('accountsChanged', ['0xabcdef1234567890abcdef1234567890abcdef12'])
     })
 
     await waitFor(() => {
-      expect(result.current.account).toBe('0xnewaccount1234567890abcdef12345678')
+      expect(result.current.account).toBe('0xabcdef1234567890abcdef1234567890abcdef12')
     })
   })
 

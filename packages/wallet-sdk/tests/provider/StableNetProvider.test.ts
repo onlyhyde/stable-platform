@@ -182,9 +182,9 @@ describe('StableNetProvider', () => {
       const handler = vi.fn()
       provider.on('accountsChanged', handler)
 
-      mockProvider._emit('accountsChanged', ['0xnewaccount'])
-      expect(handler).toHaveBeenCalledWith(['0xnewaccount'])
-      expect(provider.account).toBe('0xnewaccount')
+      mockProvider._emit('accountsChanged', ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'])
+      expect(handler).toHaveBeenCalledWith(['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'])
+      expect(provider.account).toBe('0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')
       expect(provider.isConnected).toBe(true)
     })
 
@@ -250,8 +250,8 @@ describe('StableNetProvider', () => {
     it('onAccountChange should work', () => {
       const handler = vi.fn()
       const unsub = provider.onAccountChange(handler)
-      mockProvider._emit('accountsChanged', ['0xnew'])
-      expect(handler).toHaveBeenCalledWith(['0xnew'])
+      mockProvider._emit('accountsChanged', ['0xaa00aa00aa00aa00aa00aa00aa00aa00aa00aa00'])
+      expect(handler).toHaveBeenCalledWith(['0xaa00aa00aa00aa00aa00aa00aa00aa00aa00aa00'])
       unsub()
     })
 

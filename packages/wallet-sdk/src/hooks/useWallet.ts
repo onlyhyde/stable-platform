@@ -121,7 +121,7 @@ export function useWallet(config: WalletSDKConfig = {}) {
       }
       unsubscribesRef.current = []
     }
-  }, [config.autoConnect, config.timeout, config])
+  }, [config.autoConnect, config.timeout])
 
   // Connect action
   const connect = useCallback(async (): Promise<Address[]> => {
