@@ -5,16 +5,26 @@
     "clientKind": "git",
     "useIgnoreFile": true
   },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true,
       "a11y": {
-        "noLabelWithoutControl": "warn"
+        "noLabelWithoutControl": "warn",
+        "useAriaPropsSupportedByRole": "warn",
+        "noStaticElementInteractions": "warn"
       },
       "complexity": {
         "noForEach": "off",
-        "useLiteralKeys": "off"
+        "useLiteralKeys": "off",
+        "noBannedTypes": "off"
       },
       "correctness": {
         "noUnusedImports": "error",
@@ -39,7 +49,10 @@
             "allow": ["error", "warn", "info", "debug", "trace"]
           }
         },
-        "noArrayIndexKey": "warn"
+        "noArrayIndexKey": "warn",
+        "useIterableCallbackReturn": "warn",
+        "noImplicitAnyLet": "warn",
+        "noUnknownAtRules": "off"
       }
     }
   },
@@ -58,7 +71,8 @@
   },
   "css": {
     "parser": {
-      "cssModules": true
+      "cssModules": true,
+      "tailwindDirectives": true
     },
     "linter": {
       "enabled": true
@@ -66,20 +80,22 @@
   },
   "json": {
     "formatter": {
-      "indentWidth": 2
+      "indentWidth": 2,
+      "expand": "auto"
     }
   },
   "files": {
-    "ignore": [
-      "node_modules",
-      "dist",
-      "build",
-      ".next",
-      "coverage",
-      ".turbo",
-      "*.min.js",
-      "pnpm-lock.yaml",
-      "services/pg-simulator/templates"
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/.next",
+      "!**/coverage",
+      "!**/.turbo",
+      "!**/*.min.js",
+      "!**/pnpm-lock.yaml",
+      "!**/services/pg-simulator/templates"
     ]
   }
 }

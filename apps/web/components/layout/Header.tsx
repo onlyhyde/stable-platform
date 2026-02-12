@@ -31,13 +31,11 @@ export function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[rgb(var(--primary))] to-[rgb(var(--primary-hover))] flex items-center justify-center shadow-lg group-hover:shadow-[0_0_20px_-5px_rgb(var(--primary)/0.5)] transition-shadow duration-300">
-            <svg
-              className="w-6 h-6"
-              viewBox="0 0 25 28"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path d="M14.019 6.93164V9.49219L24.3228 15.4434V20.7949L12.3169 27.7256L0.311035 20.7949V14.3018L3.71436 16.2676V18.8281L12.3169 23.7969L20.9194 18.8281V17.4062L10.6147 11.458V6.93164H14.019ZM24.3228 6.93164V13.4248L20.9194 11.458V8.89746L12.3169 3.92969L3.71436 8.89746V10.3193L14.019 16.2676V20.7949H10.6147V18.2344L0.311035 12.2822V6.93164L12.3169 0L24.3228 6.93164Z" fill="white"/>
+            <svg className="w-6 h-6" viewBox="0 0 25 28" fill="none" aria-hidden="true">
+              <path
+                d="M14.019 6.93164V9.49219L24.3228 15.4434V20.7949L12.3169 27.7256L0.311035 20.7949V14.3018L3.71436 16.2676V18.8281L12.3169 23.7969L20.9194 18.8281V17.4062L10.6147 11.458V6.93164H14.019ZM24.3228 6.93164V13.4248L20.9194 11.458V8.89746L12.3169 3.92969L3.71436 8.89746V10.3193L14.019 16.2676V20.7949H10.6147V18.2344L0.311035 12.2822V6.93164L12.3169 0L24.3228 6.93164Z"
+                fill="white"
+              />
             </svg>
             {/* Animated ring */}
             <div className="absolute inset-0 rounded-xl border-2 border-[rgb(var(--primary))] opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />

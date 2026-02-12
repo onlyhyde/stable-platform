@@ -114,7 +114,9 @@ function formatSnapshot(snap: HeapSnapshot): string {
 async function run(): Promise<void> {
   const config = parseArgs()
   if (!global.gc) {
-    console.warn('Warning: --expose-gc not enabled. GC cannot be forced, results may be inaccurate.')
+    console.warn(
+      'Warning: --expose-gc not enabled. GC cannot be forced, results may be inaccurate.'
+    )
   }
 
   const logger = createLogger('error', false)
@@ -205,7 +207,9 @@ async function run(): Promise<void> {
   // Baseline snapshot after pool is at capacity
   snapshots.push(takeSnapshot(mempool))
   console.log(`Baseline: ${formatSnapshot(snapshots[0]!)}`)
-  console.log(`Measuring for ${config.durationSeconds}s (batch=${config.batchSize}, threshold=${config.heapGrowthThresholdMbPerMin} MB/min)...`)
+  console.log(
+    `Measuring for ${config.durationSeconds}s (batch=${config.batchSize}, threshold=${config.heapGrowthThresholdMbPerMin} MB/min)...`
+  )
 
   while (Date.now() < endTime) {
     cycleCount++
@@ -252,7 +256,9 @@ async function run(): Promise<void> {
       snapshots.push(snap)
 
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(0)
-      console.log(`  [${elapsed}s] ${formatSnapshot(snap)} | added=${totalAdded} removed=${totalRemoved}`)
+      console.log(
+        `  [${elapsed}s] ${formatSnapshot(snap)} | added=${totalAdded} removed=${totalRemoved}`
+      )
     }
 
     // Small delay to prevent tight loop
@@ -282,7 +288,9 @@ async function run(): Promise<void> {
       // proportional to pool size, not to totalAdded
       const indexRatio = mempool.size > 0 ? mempool.senderCount / mempool.size : 0
 
-      console.log(`\nHeap growth: ${heapGrowthMbPerMin.toFixed(2)} MB/min (threshold: ${config.heapGrowthThresholdMbPerMin} MB/min)`)
+      console.log(
+        `\nHeap growth: ${heapGrowthMbPerMin.toFixed(2)} MB/min (threshold: ${config.heapGrowthThresholdMbPerMin} MB/min)`
+      )
       console.log(`Index ratio (senders/pool): ${indexRatio.toFixed(3)}`)
 
       if (indexRatio > 2.0 && mempool.size > 0) {

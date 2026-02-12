@@ -1,8 +1,9 @@
 import type { Hex } from 'viem'
+import { encodeAbiParameters } from 'viem'
 import { describe, expect, it } from 'vitest'
 import { ERROR_SELECTORS } from '../../src/abi'
 import {
-  decodeValidationResultWithAggregation,
+  type decodeValidationResultWithAggregation,
   extractErrorData,
   formatRevertReason,
   isSignatureFailure,
@@ -12,7 +13,6 @@ import {
   validateTimestamps,
 } from '../../src/validation/errors'
 import { VALIDATION_CONSTANTS } from '../../src/validation/types'
-import { encodeAbiParameters } from 'viem'
 
 function buildV09ValidationResultData(): Hex {
   const encoded = encodeAbiParameters(

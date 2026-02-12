@@ -14,8 +14,18 @@
  *   - Deployer has native balance (paymaster signer)
  */
 import {
-  type Address, type Hex, concat, createPublicClient, createWalletClient,
-  encodeAbiParameters, encodeFunctionData, http, keccak256, pad, parseAbi, toHex,
+  type Address,
+  concat,
+  createPublicClient,
+  createWalletClient,
+  encodeAbiParameters,
+  encodeFunctionData,
+  type Hex,
+  http,
+  keccak256,
+  pad,
+  parseAbi,
+  toHex,
 } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 
@@ -68,24 +78,32 @@ const ECDSA_VALIDATOR_ABI = parseAbi([
 
 const SESSION_KEY_EXECUTOR_ABI = [
   {
-    type: 'function', name: 'getSessionKey',
-    inputs: [{ name: 'account', type: 'address' }, { name: 'sessionKey', type: 'address' }],
-    outputs: [{
-      name: '', type: 'tuple',
-      components: [
-        { name: 'sessionKey', type: 'address' },
-        { name: 'validAfter', type: 'uint48' },
-        { name: 'validUntil', type: 'uint48' },
-        { name: 'spendingLimit', type: 'uint256' },
-        { name: 'spentAmount', type: 'uint256' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'isActive', type: 'bool' },
-      ],
-    }],
+    type: 'function',
+    name: 'getSessionKey',
+    inputs: [
+      { name: 'account', type: 'address' },
+      { name: 'sessionKey', type: 'address' },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          { name: 'sessionKey', type: 'address' },
+          { name: 'validAfter', type: 'uint48' },
+          { name: 'validUntil', type: 'uint48' },
+          { name: 'spendingLimit', type: 'uint256' },
+          { name: 'spentAmount', type: 'uint256' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'isActive', type: 'bool' },
+        ],
+      },
+    ],
     stateMutability: 'view',
   },
   {
-    type: 'function', name: 'hasPermission',
+    type: 'function',
+    name: 'hasPermission',
     inputs: [
       { name: 'account', type: 'address' },
       { name: 'sessionKey', type: 'address' },
@@ -98,23 +116,34 @@ const SESSION_KEY_EXECUTOR_ABI = [
 ] as const
 
 const PACKED_USER_OP_COMPONENTS = [
-  { name: 'sender', type: 'address' }, { name: 'nonce', type: 'uint256' },
-  { name: 'initCode', type: 'bytes' }, { name: 'callData', type: 'bytes' },
-  { name: 'accountGasLimits', type: 'bytes32' }, { name: 'preVerificationGas', type: 'uint256' },
-  { name: 'gasFees', type: 'bytes32' }, { name: 'paymasterAndData', type: 'bytes' },
+  { name: 'sender', type: 'address' },
+  { name: 'nonce', type: 'uint256' },
+  { name: 'initCode', type: 'bytes' },
+  { name: 'callData', type: 'bytes' },
+  { name: 'accountGasLimits', type: 'bytes32' },
+  { name: 'preVerificationGas', type: 'uint256' },
+  { name: 'gasFees', type: 'bytes32' },
+  { name: 'paymasterAndData', type: 'bytes' },
   { name: 'signature', type: 'bytes' },
 ] as const
 
 const EP_ABI = [
   {
-    type: 'function', name: 'getUserOpHash',
+    type: 'function',
+    name: 'getUserOpHash',
     inputs: [{ name: 'userOp', type: 'tuple', components: PACKED_USER_OP_COMPONENTS }],
-    outputs: [{ type: 'bytes32' }], stateMutability: 'view',
+    outputs: [{ type: 'bytes32' }],
+    stateMutability: 'view',
   },
   {
-    type: 'function', name: 'getNonce',
-    inputs: [{ name: 'sender', type: 'address' }, { name: 'key', type: 'uint192' }],
-    outputs: [{ type: 'uint256' }], stateMutability: 'view',
+    type: 'function',
+    name: 'getNonce',
+    inputs: [
+      { name: 'sender', type: 'address' },
+      { name: 'key', type: 'uint192' },
+    ],
+    outputs: [{ type: 'uint256' }],
+    stateMutability: 'view',
   },
 ] as const
 
@@ -138,24 +167,51 @@ function packGasLimits(a: bigint, b: bigint): Hex {
 }
 
 function computePaymasterHash(params: {
-  sender: Address; nonce: bigint; initCode: Hex; callData: Hex;
-  accountGasLimits: Hex; preVerificationGas: bigint; gasFees: Hex;
-  chainId: bigint; paymasterAddress: Address;
-  validUntil: bigint; validAfter: bigint; senderNonce: bigint;
+  sender: Address
+  nonce: bigint
+  initCode: Hex
+  callData: Hex
+  accountGasLimits: Hex
+  preVerificationGas: bigint
+  gasFees: Hex
+  chainId: bigint
+  paymasterAddress: Address
+  validUntil: bigint
+  validAfter: bigint
+  senderNonce: bigint
 }): Hex {
-  return keccak256(encodeAbiParameters(
-    [
-      { type: 'address' }, { type: 'uint256' }, { type: 'bytes32' }, { type: 'bytes32' },
-      { type: 'bytes32' }, { type: 'uint256' }, { type: 'bytes32' }, { type: 'uint256' },
-      { type: 'address' }, { type: 'uint48' }, { type: 'uint48' }, { type: 'uint256' },
-    ],
-    [
-      params.sender, params.nonce, keccak256(params.initCode), keccak256(params.callData),
-      params.accountGasLimits as `0x${string}`, params.preVerificationGas,
-      params.gasFees as `0x${string}`, params.chainId, params.paymasterAddress,
-      Number(params.validUntil), Number(params.validAfter), params.senderNonce,
-    ]
-  ))
+  return keccak256(
+    encodeAbiParameters(
+      [
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'address' },
+        { type: 'uint48' },
+        { type: 'uint48' },
+        { type: 'uint256' },
+      ],
+      [
+        params.sender,
+        params.nonce,
+        keccak256(params.initCode),
+        keccak256(params.callData),
+        params.accountGasLimits as `0x${string}`,
+        params.preVerificationGas,
+        params.gasFees as `0x${string}`,
+        params.chainId,
+        params.paymasterAddress,
+        Number(params.validUntil),
+        Number(params.validAfter),
+        params.senderNonce,
+      ]
+    )
+  )
 }
 
 async function sendUserOp(bundlerUrl: string, op: Record<string, any>, entryPoint: Address) {
@@ -163,8 +219,10 @@ async function sendUserOp(bundlerUrl: string, op: Record<string, any>, entryPoin
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      jsonrpc: '2.0', method: 'eth_sendUserOperation',
-      params: [op, entryPoint], id: 1,
+      jsonrpc: '2.0',
+      method: 'eth_sendUserOperation',
+      params: [op, entryPoint],
+      id: 1,
     }),
   })
   return response.json()
@@ -173,13 +231,15 @@ async function sendUserOp(bundlerUrl: string, op: Record<string, any>, entryPoin
 async function waitForReceipt(bundlerUrl: string, hash: string, maxWait = 30000): Promise<any> {
   const start = Date.now()
   while (Date.now() - start < maxWait) {
-    await new Promise(r => setTimeout(r, 2000))
+    await new Promise((r) => setTimeout(r, 2000))
     const res = await fetch(bundlerUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        jsonrpc: '2.0', method: 'eth_getUserOperationReceipt',
-        params: [hash], id: 2,
+        jsonrpc: '2.0',
+        method: 'eth_getUserOperationReceipt',
+        params: [hash],
+        id: 2,
       }),
     })
     const data = await res.json()
@@ -198,8 +258,8 @@ async function waitForReceipt(bundlerUrl: string, hash: string, maxWait = 30000)
  *   res := or(res, shr(64, mode))
  */
 function encodeValidatorNonceKey(validatorAddr: Address, nonceKey = 0): bigint {
-  const mode = 0x00n    // DEFAULT mode
-  const vType = 0x01n   // VALIDATION_TYPE_VALIDATOR
+  const mode = 0x00n // DEFAULT mode
+  const vType = 0x01n // VALIDATION_TYPE_VALIDATOR
   const addr = BigInt(validatorAddr)
 
   // uint192 layout: [mode(8)][vType(8)][validatorAddr(160)][nonceKey(16)]
@@ -224,15 +284,21 @@ async function buildAndSendSponsoredUserOp(params: {
 
   // Get nonce
   const epNonce = (await publicClient.readContract({
-    address: CONFIG.entryPoint, abi: EP_ABI,
-    functionName: 'getNonce', args: [sender, nonceKey],
+    address: CONFIG.entryPoint,
+    abi: EP_ABI,
+    functionName: 'getNonce',
+    args: [sender, nonceKey],
   })) as bigint
   console.log(`  EntryPoint nonce (key=${nonceKey}): ${epNonce}`)
 
   // Gas params
-  const vgl = 500000n, cgl = 300000n, pvg = 100000n
-  const mpfpg = 1000000000n, mfpg = 2000000000n
-  const pmvgl = 200000n, pmpog = 100000n
+  const vgl = 500000n,
+    cgl = 300000n,
+    pvg = 100000n
+  const mpfpg = 1000000000n,
+    mfpg = 2000000000n
+  const pmvgl = 200000n,
+    pmpog = 100000n
   const agl = packGasLimits(vgl, cgl)
   const gf = packGasLimits(mpfpg, mfpg)
 
@@ -242,15 +308,23 @@ async function buildAndSendSponsoredUserOp(params: {
   const senderNonce = (await publicClient.readContract({
     address: CONFIG.verifyingPaymaster,
     abi: parseAbi(['function senderNonce(address) view returns (uint256)']),
-    functionName: 'senderNonce', args: [sender],
+    functionName: 'senderNonce',
+    args: [sender],
   })) as bigint
 
   const pmHash = computePaymasterHash({
-    sender, nonce: epNonce,
-    initCode: '0x' as Hex, callData,
-    accountGasLimits: agl, preVerificationGas: pvg, gasFees: gf,
-    chainId: CONFIG.chainIdBigInt, paymasterAddress: CONFIG.verifyingPaymaster,
-    validUntil, validAfter, senderNonce,
+    sender,
+    nonce: epNonce,
+    initCode: '0x' as Hex,
+    callData,
+    accountGasLimits: agl,
+    preVerificationGas: pvg,
+    gasFees: gf,
+    chainId: CONFIG.chainIdBigInt,
+    paymasterAddress: CONFIG.verifyingPaymaster,
+    validUntil,
+    validAfter,
+    senderNonce,
   })
   const pmSig = await deployerSigner.signMessage({ message: { raw: pmHash } })
   const pmData = concat([
@@ -267,31 +341,44 @@ async function buildAndSendSponsoredUserOp(params: {
 
   // Build packed op and get hash
   const packedOp = {
-    sender, nonce: epNonce,
-    initCode: '0x' as Hex, callData,
-    accountGasLimits: agl, preVerificationGas: pvg, gasFees: gf,
-    paymasterAndData: pmAndData, signature: '0x' as Hex,
+    sender,
+    nonce: epNonce,
+    initCode: '0x' as Hex,
+    callData,
+    accountGasLimits: agl,
+    preVerificationGas: pvg,
+    gasFees: gf,
+    paymasterAndData: pmAndData,
+    signature: '0x' as Hex,
   }
   const userOpHash = (await publicClient.readContract({
-    address: CONFIG.entryPoint, abi: EP_ABI,
-    functionName: 'getUserOpHash', args: [packedOp],
+    address: CONFIG.entryPoint,
+    abi: EP_ABI,
+    functionName: 'getUserOpHash',
+    args: [packedOp],
   })) as Hex
   const userOpSig = await signer.signMessage({ message: { raw: userOpHash } })
 
   console.log(`  Sending ${label} UserOp...`)
-  const result = await sendUserOp(CONFIG.bundlerUrl, {
-    sender, nonce: toHex(epNonce),
-    callData, callGasLimit: toHex(cgl),
-    verificationGasLimit: toHex(vgl),
-    preVerificationGas: toHex(pvg),
-    maxFeePerGas: toHex(mfpg),
-    maxPriorityFeePerGas: toHex(mpfpg),
-    paymaster: CONFIG.verifyingPaymaster,
-    paymasterData: pmData,
-    paymasterVerificationGasLimit: toHex(pmvgl),
-    paymasterPostOpGasLimit: toHex(pmpog),
-    signature: userOpSig,
-  }, CONFIG.entryPoint)
+  const result = await sendUserOp(
+    CONFIG.bundlerUrl,
+    {
+      sender,
+      nonce: toHex(epNonce),
+      callData,
+      callGasLimit: toHex(cgl),
+      verificationGasLimit: toHex(vgl),
+      preVerificationGas: toHex(pvg),
+      maxFeePerGas: toHex(mfpg),
+      maxPriorityFeePerGas: toHex(mpfpg),
+      paymaster: CONFIG.verifyingPaymaster,
+      paymasterData: pmData,
+      paymasterVerificationGasLimit: toHex(pmvgl),
+      paymasterPostOpGasLimit: toHex(pmpog),
+      signature: userOpSig,
+    },
+    CONFIG.entryPoint
+  )
 
   if (result.error) {
     console.log(`  Bundler error:`, JSON.stringify(result.error, null, 2))
@@ -326,15 +413,21 @@ async function buildAndSendErc20PaymasterUserOp(params: {
 
   // Get nonce
   const epNonce = (await publicClient.readContract({
-    address: CONFIG.entryPoint, abi: EP_ABI,
-    functionName: 'getNonce', args: [sender, nonceKey],
+    address: CONFIG.entryPoint,
+    abi: EP_ABI,
+    functionName: 'getNonce',
+    args: [sender, nonceKey],
   })) as bigint
   console.log(`  EntryPoint nonce (key=${nonceKey}): ${epNonce}`)
 
   // Gas params
-  const vgl = 500000n, cgl = 300000n, pvg = 100000n
-  const mpfpg = 1000000000n, mfpg = 2000000000n
-  const pmvgl = 200000n, pmpog = 200000n
+  const vgl = 500000n,
+    cgl = 300000n,
+    pvg = 100000n
+  const mpfpg = 1000000000n,
+    mfpg = 2000000000n
+  const pmvgl = 200000n,
+    pmpog = 200000n
   const agl = packGasLimits(vgl, cgl)
   const gf = packGasLimits(mpfpg, mfpg)
 
@@ -349,31 +442,44 @@ async function buildAndSendErc20PaymasterUserOp(params: {
 
   // Build packed op and get hash
   const packedOp = {
-    sender, nonce: epNonce,
-    initCode: '0x' as Hex, callData,
-    accountGasLimits: agl, preVerificationGas: pvg, gasFees: gf,
-    paymasterAndData: pmAndData, signature: '0x' as Hex,
+    sender,
+    nonce: epNonce,
+    initCode: '0x' as Hex,
+    callData,
+    accountGasLimits: agl,
+    preVerificationGas: pvg,
+    gasFees: gf,
+    paymasterAndData: pmAndData,
+    signature: '0x' as Hex,
   }
   const userOpHash = (await publicClient.readContract({
-    address: CONFIG.entryPoint, abi: EP_ABI,
-    functionName: 'getUserOpHash', args: [packedOp],
+    address: CONFIG.entryPoint,
+    abi: EP_ABI,
+    functionName: 'getUserOpHash',
+    args: [packedOp],
   })) as Hex
   const userOpSig = await signer.signMessage({ message: { raw: userOpHash } })
 
   console.log(`  Sending ${label} UserOp...`)
-  const result = await sendUserOp(CONFIG.bundlerUrl, {
-    sender, nonce: toHex(epNonce),
-    callData, callGasLimit: toHex(cgl),
-    verificationGasLimit: toHex(vgl),
-    preVerificationGas: toHex(pvg),
-    maxFeePerGas: toHex(mfpg),
-    maxPriorityFeePerGas: toHex(mpfpg),
-    paymaster: CONFIG.erc20Paymaster,
-    paymasterData: erc20PmData,
-    paymasterVerificationGasLimit: toHex(pmvgl),
-    paymasterPostOpGasLimit: toHex(pmpog),
-    signature: userOpSig,
-  }, CONFIG.entryPoint)
+  const result = await sendUserOp(
+    CONFIG.bundlerUrl,
+    {
+      sender,
+      nonce: toHex(epNonce),
+      callData,
+      callGasLimit: toHex(cgl),
+      verificationGasLimit: toHex(vgl),
+      preVerificationGas: toHex(pvg),
+      maxFeePerGas: toHex(mfpg),
+      maxPriorityFeePerGas: toHex(mpfpg),
+      paymaster: CONFIG.erc20Paymaster,
+      paymasterData: erc20PmData,
+      paymasterVerificationGasLimit: toHex(pmvgl),
+      paymasterPostOpGasLimit: toHex(pmpog),
+      signature: userOpSig,
+    },
+    CONFIG.entryPoint
+  )
 
   if (result.error) {
     console.log(`  Bundler error:`, JSON.stringify(result.error, null, 2))
@@ -485,9 +591,9 @@ async function main() {
   // Hook = address(1) = HOOK_MODULE_INSTALLED (no actual hook, just flag)
   const validatorInitData = buildValidatorInstallData({
     hook: HOOK_MODULE_INSTALLED,
-    validatorData: agentAddress as Hex,  // ECDSAValidator.onInstall reads first 20 bytes as owner
+    validatorData: agentAddress as Hex, // ECDSAValidator.onInstall reads first 20 bytes as owner
     hookData: '0x' as Hex,
-    selectorData: EXECUTE_SELECTOR,      // Grant access to execute(bytes32,bytes) selector
+    selectorData: EXECUTE_SELECTOR, // Grant access to execute(bytes32,bytes) selector
   })
 
   const installValidatorCallData = encodeFunctionData({
@@ -500,7 +606,7 @@ async function main() {
     publicClient,
     sender: eoaAddress,
     callData: installValidatorCallData,
-    signer: eoaSigner,          // EOA signs (root validation)
+    signer: eoaSigner, // EOA signs (root validation)
     deployerSigner,
     label: 'installModule(VALIDATOR)',
   })
@@ -508,7 +614,8 @@ async function main() {
   if (step2Result.success) {
     // Verify: isModuleInstalled
     const isInstalled = (await publicClient.readContract({
-      address: eoaAddress, abi: KERNEL_ACCOUNT_ABI,
+      address: eoaAddress,
+      abi: KERNEL_ACCOUNT_ABI,
       functionName: 'isModuleInstalled',
       args: [MODULE_TYPE_VALIDATOR, CONFIG.ecdsaValidator, '0x' as Hex],
     })) as boolean
@@ -516,11 +623,15 @@ async function main() {
 
     // Verify: ECDSAValidator.ecdsaValidatorStorage(eoaAddress).owner == agent
     const storedOwner = (await publicClient.readContract({
-      address: CONFIG.ecdsaValidator, abi: ECDSA_VALIDATOR_ABI,
-      functionName: 'ecdsaValidatorStorage', args: [eoaAddress],
+      address: CONFIG.ecdsaValidator,
+      abi: ECDSA_VALIDATOR_ABI,
+      functionName: 'ecdsaValidatorStorage',
+      args: [eoaAddress],
     })) as Address
     console.log(`  ECDSAValidator owner for EOA: ${storedOwner}`)
-    console.log(`  Agent address match: ${storedOwner.toLowerCase() === agentAddress.toLowerCase()}`)
+    console.log(
+      `  Agent address match: ${storedOwner.toLowerCase() === agentAddress.toLowerCase()}`
+    )
 
     const step2Ok = isInstalled && storedOwner.toLowerCase() === agentAddress.toLowerCase()
     results.push({ step: 'Step 2: ECDSAValidator Install', success: step2Ok })
@@ -553,12 +664,16 @@ async function main() {
   console.log(`  Transfer: 1 USDC -> ${transferRecipient}`)
 
   const usdcBefore = (await publicClient.readContract({
-    address: CONFIG.usdc, abi: ERC20_ABI,
-    functionName: 'balanceOf', args: [eoaAddress],
+    address: CONFIG.usdc,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [eoaAddress],
   })) as bigint
   const recipientUsdcBefore = (await publicClient.readContract({
-    address: CONFIG.usdc, abi: ERC20_ABI,
-    functionName: 'balanceOf', args: [transferRecipient],
+    address: CONFIG.usdc,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [transferRecipient],
   })) as bigint
   console.log(`  EOA USDC before:       ${(Number(usdcBefore) / 1e6).toFixed(6)}`)
   console.log(`  Recipient USDC before: ${(Number(recipientUsdcBefore) / 1e6).toFixed(6)}`)
@@ -580,7 +695,8 @@ async function main() {
     transferCalldata,
   ]) as Hex
   const transferExecCallData = encodeFunctionData({
-    abi: KERNEL_ACCOUNT_ABI, functionName: 'execute',
+    abi: KERNEL_ACCOUNT_ABI,
+    functionName: 'execute',
     args: [execMode, executionCalldata],
   })
 
@@ -589,19 +705,23 @@ async function main() {
     publicClient,
     sender: eoaAddress,
     callData: transferExecCallData,
-    signer: agentSigner,          // Agent signs!
-    nonceKey: validatorNonceKey,   // Encodes validator info in nonce
+    signer: agentSigner, // Agent signs!
+    nonceKey: validatorNonceKey, // Encodes validator info in nonce
     label: 'Agent USDC transfer',
   })
 
   if (step3Result.success) {
     const usdcAfter = (await publicClient.readContract({
-      address: CONFIG.usdc, abi: ERC20_ABI,
-      functionName: 'balanceOf', args: [eoaAddress],
+      address: CONFIG.usdc,
+      abi: ERC20_ABI,
+      functionName: 'balanceOf',
+      args: [eoaAddress],
     })) as bigint
     const recipientUsdcAfter = (await publicClient.readContract({
-      address: CONFIG.usdc, abi: ERC20_ABI,
-      functionName: 'balanceOf', args: [transferRecipient],
+      address: CONFIG.usdc,
+      abi: ERC20_ABI,
+      functionName: 'balanceOf',
+      args: [transferRecipient],
     })) as bigint
     const usdcTransferred = recipientUsdcAfter - recipientUsdcBefore
     console.log(`  EOA USDC after:        ${(Number(usdcAfter) / 1e6).toFixed(6)}`)
@@ -639,33 +759,37 @@ async function main() {
   const spendingLimit = 1000000000000000000n // 1 ETH
 
   // Permissions: allow USDC.transfer
-  const permissions = [{
-    target: CONFIG.usdc,
-    selector: TRANSFER_SELECTOR as `0x${string}`,
-    maxValue: 0n,    // 0 = no ETH value check (ERC20 transfer has value=0)
-    allowed: true,
-  }]
+  const permissions = [
+    {
+      target: CONFIG.usdc,
+      selector: TRANSFER_SELECTOR as `0x${string}`,
+      maxValue: 0n, // 0 = no ETH value check (ERC20 transfer has value=0)
+      allowed: true,
+    },
+  ]
 
   const permissionsEncoded = encodeAbiParameters(
-    [{
-      type: 'tuple[]',
-      components: [
-        { type: 'address', name: 'target' },
-        { type: 'bytes4', name: 'selector' },
-        { type: 'uint256', name: 'maxValue' },
-        { type: 'bool', name: 'allowed' },
-      ],
-    }],
+    [
+      {
+        type: 'tuple[]',
+        components: [
+          { type: 'address', name: 'target' },
+          { type: 'bytes4', name: 'selector' },
+          { type: 'uint256', name: 'maxValue' },
+          { type: 'bool', name: 'allowed' },
+        ],
+      },
+    ],
     [permissions]
   )
 
   const executorData = encodeAbiParameters(
     [
-      { type: 'address' },   // sessionKey
-      { type: 'uint48' },    // validAfter
-      { type: 'uint48' },    // validUntil
-      { type: 'uint256' },   // spendingLimit
-      { type: 'bytes' },     // permissionsData
+      { type: 'address' }, // sessionKey
+      { type: 'uint48' }, // validAfter
+      { type: 'uint48' }, // validUntil
+      { type: 'uint256' }, // spendingLimit
+      { type: 'bytes' }, // permissionsData
     ],
     [agentAddress, 0, Number(validUntilSession), spendingLimit, permissionsEncoded]
   )
@@ -686,7 +810,7 @@ async function main() {
     publicClient,
     sender: eoaAddress,
     callData: installExecutorCallData,
-    signer: eoaSigner,          // EOA signs (root validation)
+    signer: eoaSigner, // EOA signs (root validation)
     deployerSigner,
     label: 'installModule(EXECUTOR)',
   })
@@ -694,7 +818,8 @@ async function main() {
   if (step4Result.success) {
     // Verify: isModuleInstalled
     const isInstalled = (await publicClient.readContract({
-      address: eoaAddress, abi: KERNEL_ACCOUNT_ABI,
+      address: eoaAddress,
+      abi: KERNEL_ACCOUNT_ABI,
       functionName: 'isModuleInstalled',
       args: [MODULE_TYPE_EXECUTOR, CONFIG.sessionKeyExecutor, '0x' as Hex],
     })) as boolean
@@ -705,8 +830,10 @@ async function main() {
     let hasTransferPermission = false
     try {
       const sessionKeyConfig = (await publicClient.readContract({
-        address: CONFIG.sessionKeyExecutor, abi: SESSION_KEY_EXECUTOR_ABI,
-        functionName: 'getSessionKey', args: [eoaAddress, agentAddress],
+        address: CONFIG.sessionKeyExecutor,
+        abi: SESSION_KEY_EXECUTOR_ABI,
+        functionName: 'getSessionKey',
+        args: [eoaAddress, agentAddress],
       })) as any
       sessionKeyActive = sessionKeyConfig.isActive
       console.log(`  Session key active: ${sessionKeyActive}`)
@@ -715,7 +842,8 @@ async function main() {
 
       // Verify: hasPermission
       hasTransferPermission = (await publicClient.readContract({
-        address: CONFIG.sessionKeyExecutor, abi: SESSION_KEY_EXECUTOR_ABI,
+        address: CONFIG.sessionKeyExecutor,
+        abi: SESSION_KEY_EXECUTOR_ABI,
         functionName: 'hasPermission',
         args: [eoaAddress, agentAddress, CONFIG.usdc, TRANSFER_SELECTOR as `0x${string}`],
       })) as boolean
@@ -763,7 +891,8 @@ async function main() {
 
   if (step5aResult.success) {
     const isStillInstalled = (await publicClient.readContract({
-      address: eoaAddress, abi: KERNEL_ACCOUNT_ABI,
+      address: eoaAddress,
+      abi: KERNEL_ACCOUNT_ABI,
       functionName: 'isModuleInstalled',
       args: [MODULE_TYPE_VALIDATOR, CONFIG.ecdsaValidator, '0x' as Hex],
     })) as boolean
@@ -799,7 +928,8 @@ async function main() {
 
   if (step5bResult.success) {
     const isStillInstalled = (await publicClient.readContract({
-      address: eoaAddress, abi: KERNEL_ACCOUNT_ABI,
+      address: eoaAddress,
+      abi: KERNEL_ACCOUNT_ABI,
       functionName: 'isModuleInstalled',
       args: [MODULE_TYPE_EXECUTOR, CONFIG.sessionKeyExecutor, '0x' as Hex],
     })) as boolean
@@ -884,7 +1014,7 @@ function printSummary(results: { step: string; success: boolean }[]) {
   for (const r of results) {
     console.log(`  ${r.success ? 'PASS' : 'FAIL'}  ${r.step}`)
   }
-  const passed = results.filter(r => r.success).length
+  const passed = results.filter((r) => r.success).length
   const total = results.length
   console.log(`\n  ${passed}/${total} steps passed`)
   console.log('========================================')

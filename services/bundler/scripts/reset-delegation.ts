@@ -10,8 +10,10 @@ import { privateKeyToAccount } from 'viem/accounts'
 const CONFIG = {
   rpcUrl: 'http://localhost:8501',
   chainId: 8283,
-  eoaPrivateKey: '0x80183f2d3db76f59e257602ed657302c71c808ddc44e0ba9110a689145c138dd' as `0x${string}`,
-  deployerPrivateKey: '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as `0x${string}`,
+  eoaPrivateKey:
+    '0x80183f2d3db76f59e257602ed657302c71c808ddc44e0ba9110a689145c138dd' as `0x${string}`,
+  deployerPrivateKey:
+    '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as `0x${string}`,
 }
 
 const CHAIN = {
@@ -36,7 +38,8 @@ async function main() {
 
   // 1. 현재 상태 확인
   const codeBefore = await publicClient.getCode({ address: eoaAddress })
-  const isDelegated = codeBefore && codeBefore !== '0x' && codeBefore.toLowerCase().startsWith('0xef0100')
+  const isDelegated =
+    codeBefore && codeBefore !== '0x' && codeBefore.toLowerCase().startsWith('0xef0100')
   console.log('Current code:', codeBefore || '0x')
   console.log('Is delegated:', isDelegated)
 

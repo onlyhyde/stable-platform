@@ -85,7 +85,8 @@ html {
 body {
   background-color: rgb(var(--background));
   color: rgb(var(--foreground));
-  font-family: 'Space Grotesk', 'Pretendard Variable', Pretendard, system-ui, -apple-system, sans-serif;
+  font-family:
+    "Space Grotesk", "Pretendard Variable", Pretendard, system-ui, -apple-system, sans-serif;
 }
 
 /* Custom scrollbar */

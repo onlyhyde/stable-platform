@@ -262,7 +262,14 @@ export function useSwap(config: UseSwapConfig = {}) {
         setIsLoading(false)
       }
     },
-    [sendUserOp, readContract, routerAddress, defaultSlippage, calculateMinAmountOut, buildSwapCalldata]
+    [
+      sendUserOp,
+      readContract,
+      routerAddress,
+      defaultSlippage,
+      calculateMinAmountOut,
+      buildSwapCalldata,
+    ]
   )
 
   return {

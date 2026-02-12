@@ -190,9 +190,12 @@
   body {
     background-color: rgb(var(--background));
     color: rgb(var(--foreground));
-    font-family: var(--font-space-grotesk), "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-      sans-serif;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family:
+      var(--font-space-grotesk), "Pretendard Variable", Pretendard, -apple-system,
+      BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition:
@@ -284,12 +287,12 @@
   /* Gradient text */
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #4A7CFF, #7C5CFC, #A855F7);
+    background-image: linear-gradient(135deg, #4a7cff, #7c5cfc, #a855f7);
   }
 
   .text-gradient-brand {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #3B82F6, #7C5CFC, #D946EF);
+    background-image: linear-gradient(135deg, #3b82f6, #7c5cfc, #d946ef);
   }
 
   /* Ambient glow - page top */
@@ -448,13 +451,13 @@
 
   .btn-cta {
     @apply btn;
-    background: linear-gradient(135deg, #7C5CFC, #A855F7);
+    background: linear-gradient(135deg, #7c5cfc, #a855f7);
     color: white;
     --tw-ring-color: rgb(var(--primary));
   }
 
   .btn-cta:hover:not(:disabled) {
-    background: linear-gradient(135deg, #6B4FE0, #9333EA);
+    background: linear-gradient(135deg, #6b4fe0, #9333ea);
     box-shadow: 0 0 30px -4px rgba(124, 92, 252, 0.5);
   }
 
@@ -520,7 +523,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(to right, #4A7CFF, #7C5CFC, #A855F7);
+    background: linear-gradient(to right, #4a7cff, #7c5cfc, #a855f7);
     opacity: 0.6;
   }
 
@@ -725,7 +728,7 @@
   }
 
   .gradient-brand {
-    background: linear-gradient(135deg, #4A7CFF, #7C5CFC, #D946EF);
+    background: linear-gradient(135deg, #4a7cff, #7c5cfc, #d946ef);
   }
 
   .gradient-mesh {

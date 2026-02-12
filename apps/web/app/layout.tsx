@@ -57,12 +57,14 @@ export const metadata: Metadata = {
     locale: 'en_US',
     siteName: 'StableNet',
     title: 'StableNet - Institutional-grade KRW Stablecoin Infrastructure',
-    description: 'Institutional-grade KRW stablecoin infrastructure powered by account abstraction.',
+    description:
+      'Institutional-grade KRW stablecoin infrastructure powered by account abstraction.',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'StableNet - Institutional-grade KRW Stablecoin Infrastructure',
-    description: 'Institutional-grade KRW stablecoin infrastructure powered by account abstraction.',
+    description:
+      'Institutional-grade KRW stablecoin infrastructure powered by account abstraction.',
   },
   robots: {
     index: true,

@@ -108,7 +108,6 @@ export class ViemRpcClient implements RpcClient {
   }
 
   async request<T>(method: string, params?: readonly unknown[]): Promise<T> {
-    // biome-ignore lint/suspicious/noExplicitAny: viem request API requires specific method types
     return this.client.request({
       method: method as Parameters<typeof this.client.request>[0]['method'],
       params: params as Parameters<typeof this.client.request>[0]['params'],

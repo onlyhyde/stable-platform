@@ -36,9 +36,9 @@ export function encodeExecutionMode(
  */
 export function encodeSingleCall(call: Call): Hex {
   return concat([
-    call.to,                                      // 20 bytes: target address
-    pad(toHex(call.value ?? 0n), { size: 32 }),   // 32 bytes: value
-    (call.data ?? '0x') as Hex,                   // variable: callData
+    call.to, // 20 bytes: target address
+    pad(toHex(call.value ?? 0n), { size: 32 }), // 32 bytes: value
+    (call.data ?? '0x') as Hex, // variable: callData
   ]) as Hex
 }
 

@@ -127,8 +127,7 @@ module.exports = {
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
         'mesh-gradient':
           'linear-gradient(135deg, #4A7CFF 0%, #7C5CFC 25%, #A855F7 50%, #D946EF 75%, #3B82F6 100%)',
-        'hero-gradient':
-          'linear-gradient(135deg, #3B82F6 0%, #7C5CFC 50%, #A855F7 100%)',
+        'hero-gradient': 'linear-gradient(135deg, #3B82F6 0%, #7C5CFC 50%, #A855F7 100%)',
         'ambient-glow':
           'radial-gradient(ellipse at top, rgba(124, 92, 252, 0.15) 0%, transparent 60%)',
         'brand-gradient': 'linear-gradient(135deg, #4A7CFF 0%, #7C5CFC 50%, #D946EF 100%)',

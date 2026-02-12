@@ -33,7 +33,10 @@ export type {
   UserOperationWithTransactionHash,
   WaitForUserOperationReceiptOptions,
 } from './bundler'
-export { BUNDLER_ERROR_CODES } from './bundler'
+// ============================================================================
+// RPC Error types
+// ============================================================================
+export { BUNDLER_ERROR_CODES, BUNDLER_ERROR_CODES as RPC_BUNDLER_ERROR_CODES } from './bundler'
 // ============================================================================
 // Constants
 // ============================================================================
@@ -106,10 +109,6 @@ export {
   type SponsorPolicy,
   type SupportedToken,
 } from './paymaster'
-// ============================================================================
-// RPC Error types
-// ============================================================================
-export { BUNDLER_ERROR_CODES as RPC_BUNDLER_ERROR_CODES } from './bundler'
 export {
   JSON_RPC_ERROR_CODES,
   PROVIDER_ERROR_CODES,

@@ -214,18 +214,18 @@ function computePaymasterHash(params: {
   return keccak256(
     encodeAbiParameters(
       [
-        { type: 'address' },   // sender
-        { type: 'uint256' },   // nonce
-        { type: 'bytes32' },   // keccak256(initCode)
-        { type: 'bytes32' },   // keccak256(callData)
-        { type: 'bytes32' },   // accountGasLimits
-        { type: 'uint256' },   // preVerificationGas
-        { type: 'bytes32' },   // gasFees
-        { type: 'uint256' },   // chainId
-        { type: 'address' },   // paymaster address
-        { type: 'uint48' },    // validUntil
-        { type: 'uint48' },    // validAfter
-        { type: 'uint256' },   // senderNonce (replay prevention)
+        { type: 'address' }, // sender
+        { type: 'uint256' }, // nonce
+        { type: 'bytes32' }, // keccak256(initCode)
+        { type: 'bytes32' }, // keccak256(callData)
+        { type: 'bytes32' }, // accountGasLimits
+        { type: 'uint256' }, // preVerificationGas
+        { type: 'bytes32' }, // gasFees
+        { type: 'uint256' }, // chainId
+        { type: 'address' }, // paymaster address
+        { type: 'uint48' }, // validUntil
+        { type: 'uint48' }, // validAfter
+        { type: 'uint256' }, // senderNonce (replay prevention)
       ],
       [
         params.sender,
@@ -253,7 +253,8 @@ function parseRevertResult(raw: string): {
 } {
   if (!raw || raw === '0x') return { type: 'empty', raw: '' }
   // v0.7 selector: 0xe0cff05f, v0.9 selector: 0x5eb2984f
-  if (raw.startsWith('0xe0cff05f') || raw.startsWith('0x5eb2984f')) return { type: 'ValidationResult', raw }
+  if (raw.startsWith('0xe0cff05f') || raw.startsWith('0x5eb2984f'))
+    return { type: 'ValidationResult', raw }
   if (raw.startsWith('0x220266b6') || raw.startsWith('0x65c8fd4d')) {
     const isWithRevert = raw.startsWith('0x65c8fd4d')
     const decoded = raw.slice(10)
@@ -311,7 +312,18 @@ async function main() {
   // Get nonce from EntryPoint (key=0 for default validator)
   const currentNonce = (await publicClient.readContract({
     address: CONFIG.entryPoint,
-    abi: [{ type: 'function', name: 'getNonce', inputs: [{ name: 'sender', type: 'address' }, { name: 'key', type: 'uint192' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }],
+    abi: [
+      {
+        type: 'function',
+        name: 'getNonce',
+        inputs: [
+          { name: 'sender', type: 'address' },
+          { name: 'key', type: 'uint192' },
+        ],
+        outputs: [{ type: 'uint256' }],
+        stateMutability: 'view',
+      },
+    ],
     functionName: 'getNonce',
     args: [smartAccountAddress, 0n],
   })) as bigint
@@ -334,9 +346,9 @@ async function main() {
   const execMode = `0x${'00'.repeat(32)}` as Hex
   // Kernel v3 expects abi.encodePacked(target[20], value[32], callData[variable])
   const executionCalldata = concat([
-    smartAccountAddress,                // 20 bytes: target address
-    pad(toHex(0n), { size: 32 }),       // 32 bytes: value
-  ]) as Hex  // no callData for no-op
+    smartAccountAddress, // 20 bytes: target address
+    pad(toHex(0n), { size: 32 }), // 32 bytes: value
+  ]) as Hex // no callData for no-op
   const callData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
     functionName: 'execute',
@@ -362,7 +374,15 @@ async function main() {
   // Fetch senderNonce from VerifyingPaymaster (replay prevention)
   const senderNonce = (await publicClient.readContract({
     address: CONFIG.paymaster,
-    abi: [{ type: 'function', name: 'senderNonce', inputs: [{ name: '', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }],
+    abi: [
+      {
+        type: 'function',
+        name: 'senderNonce',
+        inputs: [{ name: '', type: 'address' }],
+        outputs: [{ type: 'uint256' }],
+        stateMutability: 'view',
+      },
+    ],
     functionName: 'senderNonce',
     args: [smartAccountAddress],
   })) as bigint
@@ -443,8 +463,14 @@ async function main() {
     console.log('SUCCESS! ValidationResult returned (v0.9)')
     console.log('  preOpGas:', validationResult.returnInfo.preOpGas.toString())
     console.log('  prefund:', validationResult.returnInfo.prefund.toString())
-    console.log('  accountValidationData:', validationResult.returnInfo.accountValidationData.toString())
-    console.log('  paymasterValidationData:', validationResult.returnInfo.paymasterValidationData.toString())
+    console.log(
+      '  accountValidationData:',
+      validationResult.returnInfo.accountValidationData.toString()
+    )
+    console.log(
+      '  paymasterValidationData:',
+      validationResult.returnInfo.paymasterValidationData.toString()
+    )
     // Check SIG_FAILED: aggregator = address(1) in lowest 160 bits
     const pmvd = BigInt(validationResult.returnInfo.paymasterValidationData)
     const pmSigFailed = (pmvd & ((1n << 160n) - 1n)) === 1n
@@ -461,31 +487,64 @@ async function main() {
       // v0.9 reverts with ValidationResult on success (different from v0.7's 0xe0cff05f)
       try {
         const decoded = decodeAbiParameters(
-          [{
-            type: 'tuple', components: [
-              { name: 'returnInfo', type: 'tuple', components: [
-                { name: 'preOpGas', type: 'uint256' }, { name: 'prefund', type: 'uint256' },
-                { name: 'accountValidationData', type: 'uint256' }, { name: 'paymasterValidationData', type: 'uint256' },
-                { name: 'paymasterContext', type: 'bytes' },
-              ]},
-              { name: 'senderInfo', type: 'tuple', components: [
-                { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
-              ]},
-              { name: 'factoryInfo', type: 'tuple', components: [
-                { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
-              ]},
-              { name: 'paymasterInfo', type: 'tuple', components: [
-                { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
-              ]},
-              { name: 'aggregatorInfo', type: 'tuple', components: [
-                { name: 'aggregator', type: 'address' },
-                { name: 'stakeInfo', type: 'tuple', components: [
-                  { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
-                ]},
-              ]},
-            ],
-          }],
-          ('0x' + result.raw.slice(10)) as Hex,
+          [
+            {
+              type: 'tuple',
+              components: [
+                {
+                  name: 'returnInfo',
+                  type: 'tuple',
+                  components: [
+                    { name: 'preOpGas', type: 'uint256' },
+                    { name: 'prefund', type: 'uint256' },
+                    { name: 'accountValidationData', type: 'uint256' },
+                    { name: 'paymasterValidationData', type: 'uint256' },
+                    { name: 'paymasterContext', type: 'bytes' },
+                  ],
+                },
+                {
+                  name: 'senderInfo',
+                  type: 'tuple',
+                  components: [
+                    { name: 'stake', type: 'uint256' },
+                    { name: 'unstakeDelaySec', type: 'uint256' },
+                  ],
+                },
+                {
+                  name: 'factoryInfo',
+                  type: 'tuple',
+                  components: [
+                    { name: 'stake', type: 'uint256' },
+                    { name: 'unstakeDelaySec', type: 'uint256' },
+                  ],
+                },
+                {
+                  name: 'paymasterInfo',
+                  type: 'tuple',
+                  components: [
+                    { name: 'stake', type: 'uint256' },
+                    { name: 'unstakeDelaySec', type: 'uint256' },
+                  ],
+                },
+                {
+                  name: 'aggregatorInfo',
+                  type: 'tuple',
+                  components: [
+                    { name: 'aggregator', type: 'address' },
+                    {
+                      name: 'stakeInfo',
+                      type: 'tuple',
+                      components: [
+                        { name: 'stake', type: 'uint256' },
+                        { name: 'unstakeDelaySec', type: 'uint256' },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+          ('0x' + result.raw.slice(10)) as Hex
         )
         const vr = decoded[0] as any
         console.log('SUCCESS! ValidationResult decoded from revert (v0.9)')
@@ -506,7 +565,6 @@ async function main() {
       }
     } else if (result.type === 'FailedOp') {
       console.log(`FAILED: FailedOp "${result.reason}"`)
-
     } else if (result.type === 'FailedOpWithRevert') {
       console.info('FailedOpWithRevert:', result.reason, 'inner:', result.inner)
     } else {

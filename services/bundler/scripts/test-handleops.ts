@@ -3,8 +3,16 @@
  * to check what revert reason occurs
  */
 import {
-  type Address, type Hex, concat, createPublicClient,
-  encodeAbiParameters, encodeFunctionData, http, keccak256, pad, toHex,
+  type Address,
+  concat,
+  createPublicClient,
+  encodeAbiParameters,
+  encodeFunctionData,
+  type Hex,
+  http,
+  keccak256,
+  pad,
+  toHex,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
@@ -19,15 +27,28 @@ const CONFIG = {
 }
 
 const PACKED_USER_OP_COMPONENTS = [
-  { name: 'sender', type: 'address' }, { name: 'nonce', type: 'uint256' },
-  { name: 'initCode', type: 'bytes' }, { name: 'callData', type: 'bytes' },
-  { name: 'accountGasLimits', type: 'bytes32' }, { name: 'preVerificationGas', type: 'uint256' },
-  { name: 'gasFees', type: 'bytes32' }, { name: 'paymasterAndData', type: 'bytes' },
+  { name: 'sender', type: 'address' },
+  { name: 'nonce', type: 'uint256' },
+  { name: 'initCode', type: 'bytes' },
+  { name: 'callData', type: 'bytes' },
+  { name: 'accountGasLimits', type: 'bytes32' },
+  { name: 'preVerificationGas', type: 'uint256' },
+  { name: 'gasFees', type: 'bytes32' },
+  { name: 'paymasterAndData', type: 'bytes' },
   { name: 'signature', type: 'bytes' },
 ] as const
 
 const KERNEL_ACCOUNT_ABI = [
-  { type: 'function', name: 'execute', inputs: [{ name: 'mode', type: 'bytes32' }, { name: 'executionCalldata', type: 'bytes' }], outputs: [], stateMutability: 'payable' },
+  {
+    type: 'function',
+    name: 'execute',
+    inputs: [
+      { name: 'mode', type: 'bytes32' },
+      { name: 'executionCalldata', type: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
 ] as const
 
 function packGasLimits(a: bigint, b: bigint): Hex {
@@ -43,7 +64,18 @@ async function main() {
 
   const currentNonce = (await publicClient.readContract({
     address: CONFIG.entryPoint,
-    abi: [{ type: 'function', name: 'getNonce', inputs: [{ name: 'sender', type: 'address' }, { name: 'key', type: 'uint192' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }],
+    abi: [
+      {
+        type: 'function',
+        name: 'getNonce',
+        inputs: [
+          { name: 'sender', type: 'address' },
+          { name: 'key', type: 'uint192' },
+        ],
+        outputs: [{ type: 'uint256' }],
+        stateMutability: 'view',
+      },
+    ],
     functionName: 'getNonce',
     args: [smartAccountAddress, 0n],
   })) as bigint
@@ -52,14 +84,22 @@ async function main() {
   const execMode = `0x${'00'.repeat(32)}` as Hex
   // Kernel v3 expects abi.encodePacked(target[20], value[32], callData[variable])
   const executionCalldata = concat([
-    smartAccountAddress,                // 20 bytes: target address
-    pad(toHex(0n), { size: 32 }),       // 32 bytes: value
+    smartAccountAddress, // 20 bytes: target address
+    pad(toHex(0n), { size: 32 }), // 32 bytes: value
   ]) as Hex
-  const callData = encodeFunctionData({ abi: KERNEL_ACCOUNT_ABI, functionName: 'execute', args: [execMode, executionCalldata] })
+  const callData = encodeFunctionData({
+    abi: KERNEL_ACCOUNT_ABI,
+    functionName: 'execute',
+    args: [execMode, executionCalldata],
+  })
 
-  const verificationGasLimit = 500000n, callGasLimit = 200000n, preVerificationGas = 100000n
-  const maxPriorityFeePerGas = 1000000000n, maxFeePerGas = 2000000000n
-  const paymasterVerificationGasLimit = 200000n, paymasterPostOpGasLimit = 100000n
+  const verificationGasLimit = 500000n,
+    callGasLimit = 200000n,
+    preVerificationGas = 100000n
+  const maxPriorityFeePerGas = 1000000000n,
+    maxFeePerGas = 2000000000n
+  const paymasterVerificationGasLimit = 200000n,
+    paymasterPostOpGasLimit = 100000n
   const accountGasLimits = packGasLimits(verificationGasLimit, callGasLimit)
   const gasFees = packGasLimits(maxPriorityFeePerGas, maxFeePerGas)
 
@@ -67,25 +107,88 @@ async function main() {
   const validAfter = 0n
   const senderNonce = (await publicClient.readContract({
     address: CONFIG.paymaster,
-    abi: [{ type: 'function', name: 'senderNonce', inputs: [{ name: '', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }],
+    abi: [
+      {
+        type: 'function',
+        name: 'senderNonce',
+        inputs: [{ name: '', type: 'address' }],
+        outputs: [{ type: 'uint256' }],
+        stateMutability: 'view',
+      },
+    ],
     functionName: 'senderNonce',
     args: [smartAccountAddress],
   })) as bigint
   console.log('Paymaster senderNonce:', senderNonce.toString())
 
-  const paymasterHash = keccak256(encodeAbiParameters(
-    [{ type: 'address' }, { type: 'uint256' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'uint256' }, { type: 'bytes32' }, { type: 'uint256' }, { type: 'address' }, { type: 'uint48' }, { type: 'uint48' }, { type: 'uint256' }],
-    [smartAccountAddress, currentNonce, keccak256('0x' as Hex), keccak256(callData), accountGasLimits as `0x${string}`, preVerificationGas, gasFees as `0x${string}`, CONFIG.chainId, CONFIG.paymaster, Number(validUntil), Number(validAfter), senderNonce]
-  ))
+  const paymasterHash = keccak256(
+    encodeAbiParameters(
+      [
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'address' },
+        { type: 'uint48' },
+        { type: 'uint48' },
+        { type: 'uint256' },
+      ],
+      [
+        smartAccountAddress,
+        currentNonce,
+        keccak256('0x' as Hex),
+        keccak256(callData),
+        accountGasLimits as `0x${string}`,
+        preVerificationGas,
+        gasFees as `0x${string}`,
+        CONFIG.chainId,
+        CONFIG.paymaster,
+        Number(validUntil),
+        Number(validAfter),
+        senderNonce,
+      ]
+    )
+  )
   const paymasterSignature = await paymasterSigner.signMessage({ message: { raw: paymasterHash } })
-  const paymasterData = concat([pad(toHex(validUntil), { size: 6 }), pad(toHex(validAfter), { size: 6 }), paymasterSignature]) as Hex
-  const paymasterAndData = concat([CONFIG.paymaster, pad(toHex(paymasterVerificationGasLimit), { size: 16 }), pad(toHex(paymasterPostOpGasLimit), { size: 16 }), paymasterData]) as Hex
+  const paymasterData = concat([
+    pad(toHex(validUntil), { size: 6 }),
+    pad(toHex(validAfter), { size: 6 }),
+    paymasterSignature,
+  ]) as Hex
+  const paymasterAndData = concat([
+    CONFIG.paymaster,
+    pad(toHex(paymasterVerificationGasLimit), { size: 16 }),
+    pad(toHex(paymasterPostOpGasLimit), { size: 16 }),
+    paymasterData,
+  ]) as Hex
 
-  const packedOp = { sender: smartAccountAddress, nonce: currentNonce, initCode: '0x' as Hex, callData, accountGasLimits, preVerificationGas, gasFees, paymasterAndData, signature: '0x' as Hex }
+  const packedOp = {
+    sender: smartAccountAddress,
+    nonce: currentNonce,
+    initCode: '0x' as Hex,
+    callData,
+    accountGasLimits,
+    preVerificationGas,
+    gasFees,
+    paymasterAndData,
+    signature: '0x' as Hex,
+  }
 
   const userOpHash = (await publicClient.readContract({
     address: CONFIG.entryPoint,
-    abi: [{ type: 'function', name: 'getUserOpHash', inputs: [{ name: 'userOp', type: 'tuple', components: PACKED_USER_OP_COMPONENTS }], outputs: [{ type: 'bytes32' }], stateMutability: 'view' }],
+    abi: [
+      {
+        type: 'function',
+        name: 'getUserOpHash',
+        inputs: [{ name: 'userOp', type: 'tuple', components: PACKED_USER_OP_COMPONENTS }],
+        outputs: [{ type: 'bytes32' }],
+        stateMutability: 'view',
+      },
+    ],
     functionName: 'getUserOpHash',
     args: [packedOp],
   })) as Hex
@@ -94,11 +197,18 @@ async function main() {
   console.log('\nTesting handleOps via eth_call from bundler:', CONFIG.bundlerAddress)
   try {
     const handleOpsData = encodeFunctionData({
-      abi: [{
-        type: 'function', name: 'handleOps',
-        inputs: [{ name: 'ops', type: 'tuple[]', components: PACKED_USER_OP_COMPONENTS }, { name: 'beneficiary', type: 'address' }],
-        outputs: [], stateMutability: 'nonpayable',
-      }],
+      abi: [
+        {
+          type: 'function',
+          name: 'handleOps',
+          inputs: [
+            { name: 'ops', type: 'tuple[]', components: PACKED_USER_OP_COMPONENTS },
+            { name: 'beneficiary', type: 'address' },
+          ],
+          outputs: [],
+          stateMutability: 'nonpayable',
+        },
+      ],
       args: [[{ ...packedOp, signature: userOpSignature }], CONFIG.bundlerAddress],
     })
 
@@ -116,7 +226,10 @@ async function main() {
     if (data) {
       const dataStr = typeof data === 'string' ? data : JSON.stringify(data)
       console.log('Revert data:', dataStr.slice(0, 200))
-      if (typeof data === 'string' && (data.startsWith('0x220266b6') || data.startsWith('0x65c8fd4d'))) {
+      if (
+        typeof data === 'string' &&
+        (data.startsWith('0x220266b6') || data.startsWith('0x65c8fd4d'))
+      ) {
         try {
           const decoded = data.slice(10)
           const reasonOffset = parseInt(decoded.slice(64, 128), 16) * 2

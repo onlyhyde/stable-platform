@@ -5,7 +5,9 @@ import { createPublicClient, encodeFunctionData, http, parseAbi } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
 async function main() {
-  const eoaSigner = privateKeyToAccount('0x80183f2d3db76f59e257602ed657302c71c808ddc44e0ba9110a689145c138dd')
+  const eoaSigner = privateKeyToAccount(
+    '0x80183f2d3db76f59e257602ed657302c71c808ddc44e0ba9110a689145c138dd'
+  )
   const eoaAddress = eoaSigner.address
   const deployerAddr = '0x056DB290F8Ba3250ca64a45D16284D04Bc6f5FBf'
   const publicClient = createPublicClient({ transport: http('http://localhost:8501') })

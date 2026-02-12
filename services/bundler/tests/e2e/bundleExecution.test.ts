@@ -1,10 +1,10 @@
 import type { Account, Address, Hex, Log, PublicClient, WalletClient } from 'viem'
+import { encodeAbiParameters } from 'viem'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { EVENT_SIGNATURES, ERROR_SELECTORS } from '../../src/abi'
+import { ERROR_SELECTORS, EVENT_SIGNATURES } from '../../src/abi'
 import { RpcServer } from '../../src/rpc/server'
 import type { BundlerConfig } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
-import { encodeAbiParameters } from 'viem'
 
 // Mock logger
 const mockLogger = createLogger('error', false)

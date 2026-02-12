@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Address, Hash, Hex } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { useAccount, useChainId, usePublicClient, useWalletClient } from 'wagmi'
-import { getContractAddresses } from '../lib/config'
 import { secureKeyStore } from '@/lib/secureKeyStore'
+import { getContractAddresses } from '../lib/config'
 
 // Default fallback address for development
 const DEFAULT_sessionKeyManager = '0x4a679253410272dd5232B3Ff7cF5dbB88f295319' as const
