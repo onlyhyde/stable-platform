@@ -2,14 +2,92 @@ import type { Hex } from 'viem'
 import { describe, expect, it } from 'vitest'
 import { ERROR_SELECTORS } from '../../src/abi'
 import {
+  decodeValidationResultWithAggregation,
   extractErrorData,
   formatRevertReason,
   isSignatureFailure,
   matchesErrorSelector,
+  parseSimulationError,
   parseValidationData,
   validateTimestamps,
 } from '../../src/validation/errors'
 import { VALIDATION_CONSTANTS } from '../../src/validation/types'
+import { encodeAbiParameters } from 'viem'
+
+function buildV09ValidationResultData(): Hex {
+  const encoded = encodeAbiParameters(
+    [
+      {
+        name: 'returnInfo',
+        type: 'tuple',
+        components: [
+          { name: 'preOpGas', type: 'uint256' },
+          { name: 'prefund', type: 'uint256' },
+          { name: 'accountValidationData', type: 'uint256' },
+          { name: 'paymasterValidationData', type: 'uint256' },
+          { name: 'paymasterContext', type: 'bytes' },
+        ],
+      },
+      {
+        name: 'senderInfo',
+        type: 'tuple',
+        components: [
+          { name: 'stake', type: 'uint256' },
+          { name: 'unstakeDelaySec', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'factoryInfo',
+        type: 'tuple',
+        components: [
+          { name: 'stake', type: 'uint256' },
+          { name: 'unstakeDelaySec', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'paymasterInfo',
+        type: 'tuple',
+        components: [
+          { name: 'stake', type: 'uint256' },
+          { name: 'unstakeDelaySec', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'aggregatorInfo',
+        type: 'tuple',
+        components: [
+          { name: 'aggregator', type: 'address' },
+          {
+            name: 'stakeInfo',
+            type: 'tuple',
+            components: [
+              { name: 'stake', type: 'uint256' },
+              { name: 'unstakeDelaySec', type: 'uint256' },
+            ],
+          },
+        ],
+      },
+    ],
+    [
+      {
+        preOpGas: 100n,
+        prefund: 200n,
+        accountValidationData: 0n,
+        paymasterValidationData: 0n,
+        paymasterContext: '0x',
+      },
+      { stake: 1n, unstakeDelaySec: 2n },
+      { stake: 3n, unstakeDelaySec: 4n },
+      { stake: 5n, unstakeDelaySec: 6n },
+      {
+        aggregator: '0x1111111111111111111111111111111111111111',
+        stakeInfo: { stake: 7n, unstakeDelaySec: 8n },
+      },
+    ]
+  )
+
+  return (ERROR_SELECTORS.ValidationResultV09 + encoded.slice(2)) as Hex
+}
 
 describe('Error utilities', () => {
   describe('extractErrorData', () => {
@@ -65,6 +143,11 @@ describe('Error utilities', () => {
       expect(matchesErrorSelector(data, 'ValidationResult')).toBe(true)
     })
 
+    it('should match ValidationResultV09 selector', () => {
+      const data = (ERROR_SELECTORS.ValidationResultV09 + '0'.repeat(128)) as Hex
+      expect(matchesErrorSelector(data, 'ValidationResultV09')).toBe(true)
+    })
+
     it('should match FailedOp selector', () => {
       const data = (ERROR_SELECTORS.FailedOp + '0'.repeat(128)) as Hex
       expect(matchesErrorSelector(data, 'FailedOp')).toBe(true)
@@ -85,6 +168,22 @@ describe('Error utilities', () => {
       const data = (ERROR_SELECTORS.ValidationResult + '0'.repeat(128)) as Hex
       // Both selectors are compared in lowercase
       expect(matchesErrorSelector(data, 'ValidationResult')).toBe(true)
+    })
+  })
+
+  describe('parseSimulationError', () => {
+    it('should parse v0.9 ValidationResult and include aggregator info', () => {
+      const data = buildV09ValidationResultData()
+      const parsed = parseSimulationError({ data })
+
+      expect(parsed.isValidationResult).toBe(true)
+      expect(parsed.result).toBeDefined()
+
+      const decoded = parsed.result as ReturnType<typeof decodeValidationResultWithAggregation>
+      expect(decoded.returnInfo.preOpGas).toBe(100n)
+      expect(decoded.aggregatorInfo.aggregator.toLowerCase()).toBe(
+        '0x1111111111111111111111111111111111111111'
+      )
     })
   })
 

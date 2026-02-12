@@ -3,6 +3,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { RpcServer } from '../../src/rpc/server'
 import type { BundlerConfig } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
+import { ERROR_SELECTORS } from '../../src/abi'
+import { encodeAbiParameters } from 'viem'
 
 // Mock logger
 const mockLogger = createLogger('error', false)
@@ -13,6 +15,81 @@ const BENEFICIARY = '0x1234567890123456789012345678901234567890' as Address
 const TEST_SENDER = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address
 const TEST_ACCOUNT = '0x9999999999999999999999999999999999999999' as Address
 const TEST_PORT = 4337
+
+function buildV09ValidationResultData(): Hex {
+  const encoded = encodeAbiParameters(
+    [
+      {
+        name: 'returnInfo',
+        type: 'tuple',
+        components: [
+          { name: 'preOpGas', type: 'uint256' },
+          { name: 'prefund', type: 'uint256' },
+          { name: 'accountValidationData', type: 'uint256' },
+          { name: 'paymasterValidationData', type: 'uint256' },
+          { name: 'paymasterContext', type: 'bytes' },
+        ],
+      },
+      {
+        name: 'senderInfo',
+        type: 'tuple',
+        components: [
+          { name: 'stake', type: 'uint256' },
+          { name: 'unstakeDelaySec', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'factoryInfo',
+        type: 'tuple',
+        components: [
+          { name: 'stake', type: 'uint256' },
+          { name: 'unstakeDelaySec', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'paymasterInfo',
+        type: 'tuple',
+        components: [
+          { name: 'stake', type: 'uint256' },
+          { name: 'unstakeDelaySec', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'aggregatorInfo',
+        type: 'tuple',
+        components: [
+          { name: 'aggregator', type: 'address' },
+          {
+            name: 'stakeInfo',
+            type: 'tuple',
+            components: [
+              { name: 'stake', type: 'uint256' },
+              { name: 'unstakeDelaySec', type: 'uint256' },
+            ],
+          },
+        ],
+      },
+    ],
+    [
+      {
+        preOpGas: 100n,
+        prefund: 200n,
+        accountValidationData: 0n,
+        paymasterValidationData: 0n,
+        paymasterContext: '0x',
+      },
+      { stake: 1n, unstakeDelaySec: 2n },
+      { stake: 3n, unstakeDelaySec: 4n },
+      { stake: 5n, unstakeDelaySec: 6n },
+      {
+        aggregator: TEST_ACCOUNT,
+        stakeInfo: { stake: 7n, unstakeDelaySec: 8n },
+      },
+    ]
+  )
+
+  return (ERROR_SELECTORS.ValidationResultV09 + encoded.slice(2)) as Hex
+}
 
 // Helper to create a packed UserOperation for RPC
 function createPackedUserOp(overrides: Partial<Record<string, Hex>> = {}): Record<string, Hex> {
@@ -69,10 +146,10 @@ describe('RPC Server E2E', () => {
       readContract: vi.fn().mockResolvedValue(0n), // nonce = 0
       estimateGas: vi.fn().mockResolvedValue(100000n),
       simulateContract: vi.fn().mockImplementation(async () => {
-        // simulateValidation always reverts with ValidationResult
+        // simulateValidation always reverts with ValidationResult (v0.9)
         throw {
           name: 'ContractFunctionExecutionError',
-          data: '0xe0cff05f', // ValidationResult selector
+          data: buildV09ValidationResultData(),
         }
       }),
       getTransactionReceipt: vi.fn().mockResolvedValue({

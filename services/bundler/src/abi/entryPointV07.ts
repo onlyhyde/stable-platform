@@ -32,9 +32,8 @@ export const ENTRY_POINT_V07_ABI = [
   },
 
   // ============ Simulation Functions ============
-  // v0.9 EntryPointSimulations: simulateValidation RETURNS ValidationResult on success
-  // v0.7 EntryPoint: simulateValidation always REVERTS (with ValidationResult error on success)
-  // The outputs below support v0.9's normal return behavior
+  // Both v0.7 and v0.9 revert on success with ValidationResult error data.
+  // v0.7 uses selector 0xe0cff05f, v0.9 uses 0x5eb2984f (includes aggregatorInfo).
   {
     type: 'function',
     name: 'simulateValidation',
@@ -593,6 +592,8 @@ export const AGGREGATOR_ABI = [
  */
 export const ERROR_SELECTORS = {
   ValidationResult: '0xe0cff05f',
+  // v0.9 EntryPointSimulations: ValidationResult includes aggregatorInfo field
+  ValidationResultV09: '0x5eb2984f',
   ValidationResultWithAggregation: '0x8a1a02cd',
   FailedOp: '0x220266b6',
   FailedOpWithRevert: '0x65c8fd4d',

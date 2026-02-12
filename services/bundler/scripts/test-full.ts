@@ -10,6 +10,7 @@ import {
   type Address,
   concat,
   createPublicClient,
+  decodeAbiParameters,
   encodeAbiParameters,
   encodeFunctionData,
   type Hex,
@@ -26,7 +27,7 @@ const CONFIG = {
   entryPoint: '0xef6817fe73741a8f10088f9511c64b666a338a14' as Address,
   factory: '0xbebb0338503f9e28ffdc84c3548f8454f12dd1d3' as Address,
   ecdsaValidator: '0xb33dc2d82eaee723ca7687d70209ed9a861b3b46' as Address,
-  paymaster: '0xca65a420afc302a167021a503e80b97d4a22e43b' as Address,
+  paymaster: '0xfed3fc34af59a30c5a19ff8caf260604ddf39fc0' as Address,
   // Account owner
   senderPrivateKey: '0xe8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35' as Hex,
   // Paymaster signer = verifyingSigner (same as account owner for this deployment)
@@ -194,6 +195,7 @@ function packGasLimits(a: bigint, b: bigint): Hex {
 /**
  * Compute VerifyingPaymaster hash (matches VerifyingPaymaster.sol getHash())
  * Note: The contract uses abi.encode (NOT abi.encodePacked)
+ * Includes senderNonce for replay prevention
  */
 function computePaymasterHash(params: {
   sender: Address
@@ -207,21 +209,23 @@ function computePaymasterHash(params: {
   paymasterAddress: Address
   validUntil: bigint
   validAfter: bigint
+  senderNonce: bigint
 }): Hex {
   return keccak256(
     encodeAbiParameters(
       [
-        { type: 'address' }, // sender
-        { type: 'uint256' }, // nonce
-        { type: 'bytes32' }, // keccak256(initCode)
-        { type: 'bytes32' }, // keccak256(callData)
-        { type: 'bytes32' }, // accountGasLimits
-        { type: 'uint256' }, // preVerificationGas
-        { type: 'bytes32' }, // gasFees
-        { type: 'uint256' }, // chainId
-        { type: 'address' }, // paymaster address
-        { type: 'uint48' }, // validUntil
-        { type: 'uint48' }, // validAfter
+        { type: 'address' },   // sender
+        { type: 'uint256' },   // nonce
+        { type: 'bytes32' },   // keccak256(initCode)
+        { type: 'bytes32' },   // keccak256(callData)
+        { type: 'bytes32' },   // accountGasLimits
+        { type: 'uint256' },   // preVerificationGas
+        { type: 'bytes32' },   // gasFees
+        { type: 'uint256' },   // chainId
+        { type: 'address' },   // paymaster address
+        { type: 'uint48' },    // validUntil
+        { type: 'uint48' },    // validAfter
+        { type: 'uint256' },   // senderNonce (replay prevention)
       ],
       [
         params.sender,
@@ -235,6 +239,7 @@ function computePaymasterHash(params: {
         params.paymasterAddress,
         Number(params.validUntil),
         Number(params.validAfter),
+        params.senderNonce,
       ]
     )
   )
@@ -247,7 +252,8 @@ function parseRevertResult(raw: string): {
   raw?: string
 } {
   if (!raw || raw === '0x') return { type: 'empty', raw: '' }
-  if (raw.startsWith('0xe0cff05f')) return { type: 'ValidationResult' }
+  // v0.7 selector: 0xe0cff05f, v0.9 selector: 0x5eb2984f
+  if (raw.startsWith('0xe0cff05f') || raw.startsWith('0x5eb2984f')) return { type: 'ValidationResult', raw }
   if (raw.startsWith('0x220266b6') || raw.startsWith('0x65c8fd4d')) {
     const isWithRevert = raw.startsWith('0x65c8fd4d')
     const decoded = raw.slice(10)
@@ -297,19 +303,40 @@ async function main() {
     args: [initializeData, salt],
   })) as Address
 
-  // 2. Build callData (simple self-call / no-op)
-  const factoryData = encodeFunctionData({
-    abi: KERNEL_FACTORY_ABI,
-    functionName: 'createAccount',
-    args: [initializeData, salt],
-  })
-  const initCode = concat([CONFIG.factory, factoryData]) as Hex
+  // 2. Check if account already deployed & get nonce
+  const accountCode = await publicClient.getCode({ address: smartAccountAddress })
+  const isDeployed = !!accountCode && accountCode !== '0x'
+  console.log('Account deployed:', isDeployed)
+
+  // Get nonce from EntryPoint (key=0 for default validator)
+  const currentNonce = (await publicClient.readContract({
+    address: CONFIG.entryPoint,
+    abi: [{ type: 'function', name: 'getNonce', inputs: [{ name: 'sender', type: 'address' }, { name: 'key', type: 'uint192' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }],
+    functionName: 'getNonce',
+    args: [smartAccountAddress, 0n],
+  })) as bigint
+  console.log('Current nonce:', currentNonce.toString())
+
+  // Factory data only needed if account not yet deployed
+  let factoryData: Hex | undefined
+  let initCode: Hex
+  if (!isDeployed) {
+    factoryData = encodeFunctionData({
+      abi: KERNEL_FACTORY_ABI,
+      functionName: 'createAccount',
+      args: [initializeData, salt],
+    })
+    initCode = concat([CONFIG.factory, factoryData]) as Hex
+  } else {
+    initCode = '0x' as Hex
+  }
 
   const execMode = `0x${'00'.repeat(32)}` as Hex
-  const executionCalldata = encodeAbiParameters(
-    [{ type: 'address' }, { type: 'uint256' }, { type: 'bytes' }],
-    [smartAccountAddress, 0n, '0x' as Hex]
-  )
+  // Kernel v3 expects abi.encodePacked(target[20], value[32], callData[variable])
+  const executionCalldata = concat([
+    smartAccountAddress,                // 20 bytes: target address
+    pad(toHex(0n), { size: 32 }),       // 32 bytes: value
+  ]) as Hex  // no callData for no-op
   const callData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
     functionName: 'execute',
@@ -332,10 +359,19 @@ async function main() {
   const validUntil = BigInt(Math.floor(Date.now() / 1000) + 3600) // 1 hour
   const validAfter = 0n
 
-  // Compute paymaster hash
+  // Fetch senderNonce from VerifyingPaymaster (replay prevention)
+  const senderNonce = (await publicClient.readContract({
+    address: CONFIG.paymaster,
+    abi: [{ type: 'function', name: 'senderNonce', inputs: [{ name: '', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }],
+    functionName: 'senderNonce',
+    args: [smartAccountAddress],
+  })) as bigint
+  console.log('\nPaymaster senderNonce:', senderNonce.toString())
+
+  // Compute paymaster hash (includes senderNonce for replay prevention)
   const paymasterHash = computePaymasterHash({
     sender: smartAccountAddress,
-    nonce: 0n, // Kernel v3: nonce=0 → root validator, default mode
+    nonce: currentNonce,
     initCode,
     callData,
     accountGasLimits,
@@ -345,7 +381,9 @@ async function main() {
     paymasterAddress: CONFIG.paymaster,
     validUntil,
     validAfter,
+    senderNonce,
   })
+  console.log('Paymaster hash:', paymasterHash)
 
   // Sign paymaster hash
   const paymasterSignature = await paymasterSigner.signMessage({
@@ -370,7 +408,7 @@ async function main() {
   // 5. Build packed UserOp (with placeholder signature for hash)
   const packedOp = {
     sender: smartAccountAddress,
-    nonce: 0n, // Kernel v3: root validator, default mode
+    nonce: currentNonce,
     initCode,
     callData,
     accountGasLimits,
@@ -401,13 +439,74 @@ async function main() {
       functionName: 'simulateValidation',
       args: [{ ...packedOp, signature: userOpSignature }],
     })
-    const _validationResult = simResult as any
-    simulationPassed = true
+    const validationResult = simResult as any
+    console.log('SUCCESS! ValidationResult returned (v0.9)')
+    console.log('  preOpGas:', validationResult.returnInfo.preOpGas.toString())
+    console.log('  prefund:', validationResult.returnInfo.prefund.toString())
+    console.log('  accountValidationData:', validationResult.returnInfo.accountValidationData.toString())
+    console.log('  paymasterValidationData:', validationResult.returnInfo.paymasterValidationData.toString())
+    // Check SIG_FAILED: aggregator = address(1) in lowest 160 bits
+    const pmvd = BigInt(validationResult.returnInfo.paymasterValidationData)
+    const pmSigFailed = (pmvd & ((1n << 160n) - 1n)) === 1n
+    const acctVd = BigInt(validationResult.returnInfo.accountValidationData)
+    const acctSigFailed = (acctVd & ((1n << 160n) - 1n)) === 1n
+    if (pmSigFailed) console.log('  ⚠️  PAYMASTER SIG_FAILED! Hash mismatch.')
+    if (acctSigFailed) console.log('  ⚠️  ACCOUNT SIG_FAILED!')
+    if (!pmSigFailed && !acctSigFailed) console.log('  → Account + Paymaster signatures valid')
+    simulationPassed = !pmSigFailed && !acctSigFailed
   } catch (err: any) {
-    const raw: string = err?.cause?.raw || err?.cause?.data || ''
+    const raw: string = err?.cause?.raw || err?.cause?.data || err?.data || ''
     const result = parseRevertResult(raw)
-    if (result.type === 'FailedOp') {
-      console.info('FailedOp:', result.reason)
+    if (result.type === 'ValidationResult' && result.raw) {
+      // v0.9 reverts with ValidationResult on success (different from v0.7's 0xe0cff05f)
+      try {
+        const decoded = decodeAbiParameters(
+          [{
+            type: 'tuple', components: [
+              { name: 'returnInfo', type: 'tuple', components: [
+                { name: 'preOpGas', type: 'uint256' }, { name: 'prefund', type: 'uint256' },
+                { name: 'accountValidationData', type: 'uint256' }, { name: 'paymasterValidationData', type: 'uint256' },
+                { name: 'paymasterContext', type: 'bytes' },
+              ]},
+              { name: 'senderInfo', type: 'tuple', components: [
+                { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
+              ]},
+              { name: 'factoryInfo', type: 'tuple', components: [
+                { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
+              ]},
+              { name: 'paymasterInfo', type: 'tuple', components: [
+                { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
+              ]},
+              { name: 'aggregatorInfo', type: 'tuple', components: [
+                { name: 'aggregator', type: 'address' },
+                { name: 'stakeInfo', type: 'tuple', components: [
+                  { name: 'stake', type: 'uint256' }, { name: 'unstakeDelaySec', type: 'uint256' },
+                ]},
+              ]},
+            ],
+          }],
+          ('0x' + result.raw.slice(10)) as Hex,
+        )
+        const vr = decoded[0] as any
+        console.log('SUCCESS! ValidationResult decoded from revert (v0.9)')
+        console.log('  preOpGas:', vr.returnInfo.preOpGas.toString())
+        console.log('  prefund:', vr.returnInfo.prefund.toString())
+        console.log('  accountValidationData:', vr.returnInfo.accountValidationData.toString())
+        console.log('  paymasterValidationData:', vr.returnInfo.paymasterValidationData.toString())
+        const pmvd = BigInt(vr.returnInfo.paymasterValidationData)
+        const pmSigFailed = (pmvd & ((1n << 160n) - 1n)) === 1n
+        const acctVd = BigInt(vr.returnInfo.accountValidationData)
+        const acctSigFailed = (acctVd & ((1n << 160n) - 1n)) === 1n
+        if (pmSigFailed) console.log('  ⚠️  PAYMASTER SIG_FAILED! Hash mismatch.')
+        if (acctSigFailed) console.log('  ⚠️  ACCOUNT SIG_FAILED!')
+        if (!pmSigFailed && !acctSigFailed) console.log('  → Account + Paymaster signatures valid')
+        simulationPassed = !pmSigFailed && !acctSigFailed
+      } catch (decodeErr: any) {
+        console.log('ValidationResult revert detected but decode failed:', decodeErr.message)
+      }
+    } else if (result.type === 'FailedOp') {
+      console.log(`FAILED: FailedOp "${result.reason}"`)
+
     } else if (result.type === 'FailedOpWithRevert') {
       console.info('FailedOpWithRevert:', result.reason, 'inner:', result.inner)
     } else {
@@ -433,9 +532,8 @@ async function main() {
         params: [
           {
             sender: smartAccountAddress,
-            nonce: toHex(0n),
-            factory: CONFIG.factory,
-            factoryData: factoryData,
+            nonce: toHex(currentNonce),
+            ...(isDeployed ? {} : { factory: CONFIG.factory, factoryData }),
             callData,
             callGasLimit: toHex(callGasLimit),
             verificationGasLimit: toHex(verificationGasLimit),

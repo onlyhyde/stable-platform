@@ -427,50 +427,52 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
       hash: entry.transactionHash,
     })
 
+    const toHexStr = (v: bigint | number): Hex => `0x${BigInt(v).toString(16)}` as Hex
+
     return {
       userOpHash: hash,
       entryPoint: entry.entryPoint,
       sender: entry.userOp.sender,
-      nonce: entry.userOp.nonce,
+      nonce: toHexStr(entry.userOp.nonce),
       paymaster: entry.userOp.paymaster,
-      actualGasCost: txReceipt.gasUsed * txReceipt.effectiveGasPrice,
-      actualGasUsed: txReceipt.gasUsed,
+      actualGasCost: toHexStr(txReceipt.gasUsed * txReceipt.effectiveGasPrice),
+      actualGasUsed: toHexStr(txReceipt.gasUsed),
       success: txReceipt.status === 'success',
       reason: entry.error,
       logs: txReceipt.logs.map((log) => ({
-        logIndex: log.logIndex ?? 0,
-        transactionIndex: log.transactionIndex ?? 0,
+        logIndex: toHexStr(log.logIndex ?? 0),
+        transactionIndex: toHexStr(log.transactionIndex ?? 0),
         transactionHash: log.transactionHash,
-        blockHash: log.blockHash ?? '0x',
-        blockNumber: log.blockNumber ?? 0n,
+        blockHash: log.blockHash ?? ('0x' as Hex),
+        blockNumber: toHexStr(log.blockNumber ?? 0n),
         address: log.address,
         data: log.data,
         topics: log.topics as Hex[],
       })),
       receipt: {
         transactionHash: txReceipt.transactionHash,
-        transactionIndex: txReceipt.transactionIndex,
+        transactionIndex: toHexStr(txReceipt.transactionIndex),
         blockHash: txReceipt.blockHash,
-        blockNumber: txReceipt.blockNumber,
+        blockNumber: toHexStr(txReceipt.blockNumber),
         from: txReceipt.from,
         to: txReceipt.to ?? undefined,
-        cumulativeGasUsed: txReceipt.cumulativeGasUsed,
-        gasUsed: txReceipt.gasUsed,
+        cumulativeGasUsed: toHexStr(txReceipt.cumulativeGasUsed),
+        gasUsed: toHexStr(txReceipt.gasUsed),
         contractAddress: txReceipt.contractAddress ?? undefined,
         logs: txReceipt.logs.map((log) => ({
-          logIndex: log.logIndex ?? 0,
-          transactionIndex: log.transactionIndex ?? 0,
+          logIndex: toHexStr(log.logIndex ?? 0),
+          transactionIndex: toHexStr(log.transactionIndex ?? 0),
           transactionHash: log.transactionHash,
-          blockHash: log.blockHash ?? '0x',
-          blockNumber: log.blockNumber ?? 0n,
+          blockHash: log.blockHash ?? ('0x' as Hex),
+          blockNumber: toHexStr(log.blockNumber ?? 0n),
           address: log.address,
           data: log.data,
           topics: log.topics as Hex[],
         })),
-        status: txReceipt.status,
-        effectiveGasPrice: txReceipt.effectiveGasPrice,
+        status: txReceipt.status === 'success' ? '0x1' : '0x0',
+        effectiveGasPrice: toHexStr(txReceipt.effectiveGasPrice),
       },
-    }
+    } as unknown as UserOperationReceipt
   }
 
   /**

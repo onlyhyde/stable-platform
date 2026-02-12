@@ -122,10 +122,10 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < 80000n) {
           throw new Error('out of gas')
         }
-        // Return ValidationResult error (expected behavior)
+        // Return ValidationResult error (v0.9 expected behavior)
         throw {
           name: 'ContractFunctionExecutionError',
-          data: '0xe0cff05f', // ValidationResult selector
+          data: '0x5eb2984f', // ValidationResult v0.9 selector
         }
       })
       mockClient.simulateContract = simulateMock
@@ -153,7 +153,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < 250000n) {
           throw new Error('out of gas')
         }
-        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -169,7 +169,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < 100000n) {
           throw new Error('out of gas')
         }
-        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
       })
 
       // Create estimator with custom config
@@ -209,7 +209,7 @@ describe('GasEstimator', () => {
             throw { name: 'ContractFunctionExecutionError', data: '0x8b7ac980' }
           }
           // For simulateValidation
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+          throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
         })
 
       const result = await gasEstimator.estimate(userOp)
@@ -263,7 +263,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < 60000n) {
           throw new Error('out of gas')
         }
-        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -282,7 +282,7 @@ describe('GasEstimator', () => {
       })
 
       mockClient.simulateContract = vi.fn().mockImplementation(async () => {
-        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -305,7 +305,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < actualVerificationGas) {
           throw new Error('out of gas')
         }
-        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
       })
       mockClient.estimateGas = vi.fn().mockResolvedValue(actualCallGas)
 
@@ -337,7 +337,7 @@ describe('GasEstimator', () => {
           if (params.gas && params.gas < actualVerificationGas) {
             throw new Error('out of gas')
           }
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+          throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
         })
 
       const result = await gasEstimator.estimate(userOp)
@@ -412,7 +412,7 @@ describe('GasEstimator', () => {
             }
           }
           // For simulateValidation
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+          throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
         })
 
       await gasEstimator.estimate(userOp)
@@ -441,7 +441,7 @@ describe('GasEstimator', () => {
               data: '0x8b7ac980', // ExecutionResult
             }
           }
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+          throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
         })
 
       const result = await gasEstimator.estimate(userOp)
@@ -474,7 +474,7 @@ describe('GasEstimator', () => {
                 '00000000000000000000000000000000000000000000000000000000000000c0',
             }
           }
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+          throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
         })
 
       // Should still provide gas estimate even if target execution fails
@@ -522,7 +522,7 @@ describe('GasEstimator', () => {
           if (params.functionName === 'simulateHandleOp') {
             throw { name: 'ContractFunctionExecutionError', data: '0x8b7ac980' }
           }
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+          throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
         })
 
       const result = await gasEstimator.estimate(userOp)
@@ -567,7 +567,7 @@ describe('GasEstimator', () => {
             }
             throw { name: 'ContractFunctionExecutionError', data: '0x8b7ac980' }
           }
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+          throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
         })
 
       const result = await gasEstimator.estimate(userOp)
@@ -586,7 +586,7 @@ describe('GasEstimator', () => {
       })
 
       mockClient.simulateContract = vi.fn().mockImplementation(async () => {
-        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -613,7 +613,7 @@ describe('GasEstimator', () => {
       })
 
       mockClient.simulateContract = vi.fn().mockImplementation(async () => {
-        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
       })
 
       const l2Result = await l2Estimator.estimate(userOp)
@@ -643,7 +643,7 @@ describe('GasEstimator', () => {
       })
 
       mockClient.simulateContract = vi.fn().mockImplementation(async () => {
-        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
       })
 
       const smallResult = await l2Estimator.estimate(smallCalldata)
@@ -669,7 +669,7 @@ describe('GasEstimator', () => {
       )
 
       mockClient.simulateContract = vi.fn().mockImplementation(async () => {
-        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
       })
 
       await l2Estimator.estimate(userOp)
@@ -695,7 +695,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < 250000n) {
           throw new Error('out of gas')
         }
-        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
       })
 
       const defaultEstimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger)
@@ -728,7 +728,7 @@ describe('GasEstimator', () => {
           if (params.gas && params.gas < threshold) {
             throw new Error('out of gas')
           }
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+          throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
         })
 
       const estimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, {
@@ -764,7 +764,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < 50000n) {
           throw new Error('out of gas')
         }
-        throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
       })
 
       const userOp = createTestUserOp() // no factory
@@ -800,7 +800,7 @@ describe('GasEstimator', () => {
           if (params.functionName === 'simulateHandleOp') {
             throw { name: 'ContractFunctionExecutionError', data: '0x8b7ac980' }
           }
-          throw { name: 'ContractFunctionExecutionError', data: '0xe0cff05f' }
+          throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
         })
 
       const result = await customEstimator.estimate(userOp)

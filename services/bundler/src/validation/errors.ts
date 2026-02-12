@@ -444,7 +444,7 @@ export function parseSimulationError(error: unknown): {
     }
   }
 
-  // Success case - ValidationResult
+  // Success case - ValidationResult (v0.7)
   if (matchesErrorSelector(data, 'ValidationResult')) {
     return {
       isValidationResult: true,
@@ -452,7 +452,15 @@ export function parseSimulationError(error: unknown): {
     }
   }
 
-  // Success case with aggregation
+  // Success case - ValidationResult (v0.9, includes aggregatorInfo)
+  if (matchesErrorSelector(data, 'ValidationResultV09')) {
+    return {
+      isValidationResult: true,
+      result: decodeValidationResultWithAggregation(data),
+    }
+  }
+
+  // Success case with aggregation (v0.7)
   if (matchesErrorSelector(data, 'ValidationResultWithAggregation')) {
     return {
       isValidationResult: true,

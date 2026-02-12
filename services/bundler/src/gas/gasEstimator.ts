@@ -380,9 +380,9 @@ export class GasEstimator {
   private isValidationResultError(error: unknown): boolean {
     if (typeof error === 'object' && error !== null) {
       const errObj = error as Record<string, unknown>
-      // Check for ValidationResult selector: 0xe0cff05f
+      // Check for ValidationResult selector: v0.7=0xe0cff05f, v0.9=0x5eb2984f
       if (typeof errObj.data === 'string') {
-        return errObj.data.startsWith('0xe0cff05f')
+        return errObj.data.startsWith('0xe0cff05f') || errObj.data.startsWith('0x5eb2984f')
       }
       if (errObj.name === 'ContractFunctionExecutionError') {
         return true

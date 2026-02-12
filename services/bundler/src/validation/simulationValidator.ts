@@ -1,5 +1,5 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { concat, pad, toHex } from 'viem'
+import { concat, encodeFunctionData, pad, toHex } from 'viem'
 import { ENTRY_POINT_V07_ABI } from '../abi'
 import type { UserOperation } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
@@ -96,12 +96,13 @@ export class SimulationValidator implements ISimulationValidator {
   /**
    * Simulate validation of a UserOperation
    *
-   * Supports both EntryPoint versions:
-   * - v0.9 (EntryPointSimulations): simulateValidation RETURNS normally on success
-   * - v0.7: simulateValidation always REVERTS (with ValidationResult error on success)
+   * Both v0.7 and v0.9 EntryPoint revert on success with ValidationResult error data:
+   * - v0.7: selector 0xe0cff05f (4 fields, no aggregatorInfo)
+   * - v0.9: selector 0x5eb2984f (5 fields, includes aggregatorInfo)
+   * On failure, both revert with FailedOp (0x220266b6) or FailedOpWithRevert (0x65c8fd4d).
    *
-   * Strategy: Use readContract first (handles v0.9 success case).
-   * If it reverts, parse the revert data for v0.7 ValidationResult or failure errors.
+   * Uses publicClient.call() to get raw revert data, avoiding viem's ABI decoding
+   * which fails on unknown error selectors like 0x5eb2984f.
    *
    * @returns ValidationResult if successful
    * @throws RpcError if validation fails
@@ -114,91 +115,28 @@ export class SimulationValidator implements ISimulationValidator {
       'Starting simulation'
     )
 
+    // Encode calldata manually to use raw call() instead of simulateContract()
+    const calldata = encodeFunctionData({
+      abi: ENTRY_POINT_V07_ABI,
+      functionName: 'simulateValidation',
+      args: [packedOp],
+    })
+
     try {
-      // v0.9 EntryPointSimulations: simulateValidation returns normally on success
-      // v0.9 EntryPointSimulations: simulateValidation returns normally (not reverts)
-      // Cast needed because ABI declares nonpayable but readContract expects view
-      const result = await this.publicClient.readContract({
-        address: this.entryPoint,
-        abi: ENTRY_POINT_V07_ABI,
-        functionName: 'simulateValidation',
-        args: [packedOp],
-      } as any)
+      await this.publicClient.call({
+        to: this.entryPoint,
+        data: calldata,
+      })
 
-      // v0.9 success: parse the returned ValidationResult struct
-      const parsed = this.parseV09ValidationResult(result)
-
-      this.logger.debug(
-        {
-          preOpGas: parsed.returnInfo.preOpGas.toString(),
-          prefund: parsed.returnInfo.prefund.toString(),
-        },
-        'Simulation successful (v0.9 return)'
+      // simulateValidation always reverts (both v0.7 and v0.9)
+      throw new RpcError(
+        'Unexpected: simulateValidation did not revert',
+        RPC_ERROR_CODES.INTERNAL_ERROR
       )
-
-      return parsed
     } catch (error) {
-      // Revert case: either v0.7 success (ValidationResult error) or failure (FailedOp)
+      if (error instanceof RpcError) throw error
+      // Parse revert data: ValidationResult (success) or FailedOp (failure)
       return this.parseSimulationError(error)
-    }
-  }
-
-  /**
-   * Parse v0.9 ValidationResult from a normal return value.
-   * The return is a tuple struct with returnInfo, senderInfo, factoryInfo,
-   * paymasterInfo, and aggregatorInfo fields.
-   */
-  private parseV09ValidationResult(result: unknown): ValidationResult {
-    // readContract with our ABI returns the decoded tuple as an object
-    const raw = result as {
-      returnInfo: {
-        preOpGas: bigint
-        prefund: bigint
-        accountValidationData: bigint
-        paymasterValidationData: bigint
-        paymasterContext: Hex
-      }
-      senderInfo: {
-        stake: bigint
-        unstakeDelaySec: bigint
-      }
-      factoryInfo: {
-        stake: bigint
-        unstakeDelaySec: bigint
-      }
-      paymasterInfo: {
-        stake: bigint
-        unstakeDelaySec: bigint
-      }
-      aggregatorInfo: {
-        aggregator: Address
-        stakeInfo: {
-          stake: bigint
-          unstakeDelaySec: bigint
-        }
-      }
-    }
-
-    return {
-      returnInfo: {
-        preOpGas: raw.returnInfo.preOpGas,
-        prefund: raw.returnInfo.prefund,
-        accountValidationData: raw.returnInfo.accountValidationData,
-        paymasterValidationData: raw.returnInfo.paymasterValidationData,
-        paymasterContext: raw.returnInfo.paymasterContext,
-      },
-      senderInfo: {
-        stake: raw.senderInfo.stake,
-        unstakeDelaySec: raw.senderInfo.unstakeDelaySec,
-      },
-      factoryInfo: {
-        stake: raw.factoryInfo.stake,
-        unstakeDelaySec: raw.factoryInfo.unstakeDelaySec,
-      },
-      paymasterInfo: {
-        stake: raw.paymasterInfo.stake,
-        unstakeDelaySec: raw.paymasterInfo.unstakeDelaySec,
-      },
     }
   }
 
@@ -420,7 +358,7 @@ export class SimulationValidator implements ISimulationValidator {
       )
     }
 
-    // Success case - ValidationResult error
+    // Success case - ValidationResult error (v0.7)
     if (matchesErrorSelector(data, 'ValidationResult')) {
       const result = decodeValidationResult(data)
 
@@ -429,13 +367,28 @@ export class SimulationValidator implements ISimulationValidator {
           preOpGas: result.returnInfo.preOpGas.toString(),
           prefund: result.returnInfo.prefund.toString(),
         },
-        'Simulation successful'
+        'Simulation successful (v0.7 ValidationResult)'
       )
 
       return result
     }
 
-    // Success case with aggregation
+    // Success case - ValidationResult error (v0.9, includes aggregatorInfo)
+    if (matchesErrorSelector(data, 'ValidationResultV09')) {
+      const result = decodeValidationResultWithAggregation(data)
+
+      this.logger.debug(
+        {
+          preOpGas: result.returnInfo.preOpGas.toString(),
+          prefund: result.returnInfo.prefund.toString(),
+        },
+        'Simulation successful (v0.9 ValidationResult)'
+      )
+
+      return result
+    }
+
+    // Success case with aggregation (v0.7)
     if (matchesErrorSelector(data, 'ValidationResultWithAggregation')) {
       const result = decodeValidationResultWithAggregation(data)
 
