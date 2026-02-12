@@ -264,6 +264,145 @@ describe('useSwap', () => {
     })
   })
 
+  describe('ERC-20 allowance and approve', () => {
+    const mockERC20TokenIn: Token = {
+      address: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+      name: 'USD Coin',
+      symbol: 'USDC',
+      decimals: 6,
+    }
+
+    it('should skip allowance check for ETH swaps', async () => {
+      const mockSendUserOp = vi.fn().mockResolvedValueOnce({
+        userOpHash: '0x1234',
+        transactionHash: '0xabcd',
+        success: true,
+      })
+
+      const mockReadContract = vi.fn()
+
+      const { result } = renderHook(() =>
+        useSwap({
+          orderRouterUrl: 'http://localhost:4340',
+          sendUserOp: mockSendUserOp,
+          readContract: mockReadContract,
+        })
+      )
+
+      const mockQuote = {
+        tokenIn: mockTokenIn, // ETH
+        tokenOut: mockTokenOut,
+        amountIn: BigInt('1000000000000000000'),
+        amountOut: BigInt('2500000000'),
+        priceImpact: 0.05,
+        route: [mockTokenIn.address, mockTokenOut.address],
+        gasEstimate: BigInt(150000),
+      }
+
+      await act(async () => {
+        await result.current.executeSwap(
+          mockQuote,
+          '0x1234567890123456789012345678901234567890' as `0x${string}`
+        )
+      })
+
+      // readContract should NOT have been called for ETH
+      expect(mockReadContract).not.toHaveBeenCalled()
+      // Only one sendUserOp call (swap only, no approve)
+      expect(mockSendUserOp).toHaveBeenCalledTimes(1)
+    })
+
+    it('should call approve when ERC-20 allowance is insufficient', async () => {
+      const mockSendUserOp = vi
+        .fn()
+        .mockResolvedValueOnce({
+          userOpHash: '0xapprove',
+          transactionHash: '0xapproveTx',
+          success: true,
+        })
+        .mockResolvedValueOnce({
+          userOpHash: '0xswap',
+          transactionHash: '0xswapTx',
+          success: true,
+        })
+
+      // Return insufficient allowance
+      const mockReadContract = vi.fn().mockResolvedValueOnce(BigInt(0))
+
+      const { result } = renderHook(() =>
+        useSwap({
+          orderRouterUrl: 'http://localhost:4340',
+          sendUserOp: mockSendUserOp,
+          readContract: mockReadContract,
+          routerAddress: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
+        })
+      )
+
+      const mockQuote = {
+        tokenIn: mockERC20TokenIn,
+        tokenOut: mockTokenOut,
+        amountIn: BigInt('1000000'),
+        amountOut: BigInt('2500000000'),
+        priceImpact: 0.05,
+        route: [mockERC20TokenIn.address, mockTokenOut.address],
+        gasEstimate: BigInt(150000),
+      }
+
+      await act(async () => {
+        await result.current.executeSwap(
+          mockQuote,
+          '0x1234567890123456789012345678901234567890' as `0x${string}`
+        )
+      })
+
+      // Should have called readContract to check allowance
+      expect(mockReadContract).toHaveBeenCalled()
+      // Should have called sendUserOp twice: approve + swap
+      expect(mockSendUserOp).toHaveBeenCalledTimes(2)
+    })
+
+    it('should skip approve when ERC-20 allowance is sufficient', async () => {
+      const mockSendUserOp = vi.fn().mockResolvedValueOnce({
+        userOpHash: '0xswap',
+        transactionHash: '0xswapTx',
+        success: true,
+      })
+
+      // Return sufficient allowance
+      const mockReadContract = vi.fn().mockResolvedValueOnce(BigInt('999999999999'))
+
+      const { result } = renderHook(() =>
+        useSwap({
+          orderRouterUrl: 'http://localhost:4340',
+          sendUserOp: mockSendUserOp,
+          readContract: mockReadContract,
+        })
+      )
+
+      const mockQuote = {
+        tokenIn: mockERC20TokenIn,
+        tokenOut: mockTokenOut,
+        amountIn: BigInt('1000000'),
+        amountOut: BigInt('2500000000'),
+        priceImpact: 0.05,
+        route: [mockERC20TokenIn.address, mockTokenOut.address],
+        gasEstimate: BigInt(150000),
+      }
+
+      await act(async () => {
+        await result.current.executeSwap(
+          mockQuote,
+          '0x1234567890123456789012345678901234567890' as `0x${string}`
+        )
+      })
+
+      // Should have checked allowance
+      expect(mockReadContract).toHaveBeenCalled()
+      // Only swap, no approve needed
+      expect(mockSendUserOp).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('slippage handling', () => {
     it('should apply slippage to minimum amount out', async () => {
       const mockSendUserOp = vi.fn().mockResolvedValueOnce({

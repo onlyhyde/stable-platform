@@ -27,6 +27,12 @@ interface UseSwapConfig {
       minAmountOut?: bigint
     }
   ) => Promise<{ userOpHash: Hex; transactionHash?: Hex; success: boolean } | null>
+  readContract?: (params: {
+    address: Address
+    abi: readonly unknown[]
+    functionName: string
+    args: readonly unknown[]
+  }) => Promise<bigint>
   routerAddress?: Address
   defaultSlippage?: number
 }
@@ -58,6 +64,30 @@ const SWAP_ABI = [
   },
 ] as const
 
+// ERC-20 ABI fragments for allowance check and approve
+const ERC20_ABI = [
+  {
+    name: 'allowance',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'approve',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+] as const
+
 const DEFAULT_ORDER_ROUTER_URL = 'http://localhost:4340'
 const DEFAULT_ROUTER_ADDRESS = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D' as Address
 const DEFAULT_SLIPPAGE = 0.5 // 0.5%
@@ -67,6 +97,7 @@ export function useSwap(config: UseSwapConfig = {}) {
   const {
     orderRouterUrl = DEFAULT_ORDER_ROUTER_URL,
     sendUserOp,
+    readContract,
     routerAddress = DEFAULT_ROUTER_ADDRESS,
     defaultSlippage = DEFAULT_SLIPPAGE,
   } = config
@@ -182,6 +213,33 @@ export function useSwap(config: UseSwapConfig = {}) {
         const calldata = buildSwapCalldata(swapQuote, recipient, minAmountOut)
         const isETHIn = swapQuote.tokenIn.address.toLowerCase() === ETH_ADDRESS.toLowerCase()
 
+        // ERC-20: Check allowance and approve if needed
+        if (!isETHIn && readContract) {
+          const currentAllowance = await readContract({
+            address: swapQuote.tokenIn.address as Address,
+            abi: ERC20_ABI,
+            functionName: 'allowance',
+            args: [recipient, routerAddress],
+          })
+
+          if (currentAllowance < swapQuote.amountIn) {
+            const approveData = encodeFunctionData({
+              abi: ERC20_ABI,
+              functionName: 'approve',
+              args: [routerAddress, swapQuote.amountIn],
+            })
+
+            const approveResult = await sendUserOp(recipient, {
+              to: swapQuote.tokenIn.address as Address,
+              data: approveData,
+            })
+
+            if (!approveResult || !approveResult.success) {
+              throw new Error('ERC-20 approve failed')
+            }
+          }
+        }
+
         const result = await sendUserOp(recipient, {
           to: routerAddress,
           value: isETHIn ? swapQuote.amountIn : undefined,
@@ -204,7 +262,7 @@ export function useSwap(config: UseSwapConfig = {}) {
         setIsLoading(false)
       }
     },
-    [sendUserOp, routerAddress, defaultSlippage, calculateMinAmountOut, buildSwapCalldata]
+    [sendUserOp, readContract, routerAddress, defaultSlippage, calculateMinAmountOut, buildSwapCalldata]
   )
 
   return {
