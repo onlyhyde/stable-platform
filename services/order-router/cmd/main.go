@@ -47,17 +47,8 @@ func main() {
 	r.Use(middleware.DefaultRateLimiter().Middleware()) // 100 requests per minute per IP
 	r.Use(middleware.DefaultBodyLimit())                // 1MB max body size
 
-	// Health check endpoints (Kubernetes probes compatible)
+	// Kubernetes probes
 	startTime := time.Now()
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":    "ok",
-			"service":   "order-router",
-			"version":   "1.0.0",
-			"timestamp": time.Now().UTC().Format(time.RFC3339),
-			"uptime":    time.Since(startTime).String(),
-		})
-	})
 	r.GET("/ready", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"ready":   true,

@@ -24,6 +24,14 @@ func NewRouterHandler(svc *service.RouterService) *RouterHandler {
 
 // RegisterRoutes registers all routes
 func (h *RouterHandler) RegisterRoutes(r *gin.Engine) {
+	// Health check
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "healthy",
+			"service": "order-router",
+		})
+	})
+
 	api := r.Group("/api/v1")
 	{
 		api.GET("/quote", h.GetQuote)
@@ -31,7 +39,6 @@ func (h *RouterHandler) RegisterRoutes(r *gin.Engine) {
 		api.POST("/swap", h.BuildSwap)
 		api.GET("/protocols", h.GetProtocols)
 	}
-	// Health check endpoints are now registered in main.go
 }
 
 // GetQuote returns the best quote for a swap
