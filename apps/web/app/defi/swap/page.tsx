@@ -3,14 +3,18 @@
 import { useEffect, useState } from 'react'
 import { ConnectWalletCard, PageHeader } from '@/components/common'
 import { SwapCard } from '@/components/defi'
-import { useSwap, useWallet } from '@/hooks'
+import { useSwap, useUserOp, useWallet } from '@/hooks'
 import { useTokens } from '@/hooks/useTokens'
 import type { Token } from '@/types'
 
 export default function SwapPage() {
   const { address, isConnected } = useWallet()
+  const { sendUserOp } = useUserOp()
   const { tokens, isLoading: tokensLoading } = useTokens()
-  const { quote, isLoading, error, getQuote, executeSwap } = useSwap()
+  const { quote, isLoading, error, getQuote, executeSwap } = useSwap({
+    sendUserOp,
+    orderRouterUrl: process.env.NEXT_PUBLIC_ORDER_ROUTER_URL || 'http://localhost:4340',
+  })
 
   const [tokenIn, setTokenIn] = useState<Token | null>(null)
   const [tokenOut, setTokenOut] = useState<Token | null>(null)
