@@ -6,7 +6,11 @@ import {
   CreateInstallationSchema,
   CreateModuleSchema,
   CreateReviewSchema,
+  IdParamSchema,
+  InstallationQuerySchema,
+  ModuleIdParamSchema,
   ModuleQuerySchema,
+  PopularQuerySchema,
   SearchQuerySchema,
   UpdateModuleSchema,
 } from '../schemas/module'
@@ -39,8 +43,8 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore, a
 
   // ─── Get Popular Modules ───
   app.get('/api/v1/modules/popular', async (request) => {
-    const { limit } = request.query as Record<string, string>
-    return { data: store.getPopularModules(limit ? Number.parseInt(limit, 10) : 10) }
+    const query = PopularQuerySchema.safeParse(request.query)
+    return { data: store.getPopularModules(query.success ? query.data.limit : 10) }
   })
 
   // ─── Search Modules ───
@@ -56,8 +60,11 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore, a
 
   // ─── Get Module by ID ───
   app.get('/api/v1/modules/:id', async (request, reply) => {
-    const { id } = request.params as { id: string }
-    const module = store.getModule(id)
+    const params = IdParamSchema.safeParse(request.params)
+    if (!params.success) {
+      return reply.status(400).send({ error: 'Invalid parameters', details: params.error.issues })
+    }
+    const module = store.getModule(params.data.id)
 
     if (!module) {
       return reply.status(404).send({ error: 'Module not found' })
@@ -92,13 +99,16 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore, a
 
   // ─── Update Module ───
   app.put('/api/v1/modules/:id', { preHandler: authHook }, async (request, reply) => {
-    const { id } = request.params as { id: string }
+    const params = IdParamSchema.safeParse(request.params)
+    if (!params.success) {
+      return reply.status(400).send({ error: 'Invalid parameters', details: params.error.issues })
+    }
     const body = UpdateModuleSchema.safeParse(request.body)
     if (!body.success) {
       return reply.status(400).send({ error: 'Invalid update data', details: body.error.issues })
     }
 
-    const updated = store.updateModule(id, body.data)
+    const updated = store.updateModule(params.data.id, body.data)
     if (!updated) {
       return reply.status(404).send({ error: 'Module not found' })
     }
@@ -108,8 +118,11 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore, a
 
   // ─── Delete Module ───
   app.delete('/api/v1/modules/:id', { preHandler: authHook }, async (request, reply) => {
-    const { id } = request.params as { id: string }
-    const deleted = store.deleteModule(id)
+    const params = IdParamSchema.safeParse(request.params)
+    if (!params.success) {
+      return reply.status(400).send({ error: 'Invalid parameters', details: params.error.issues })
+    }
+    const deleted = store.deleteModule(params.data.id)
     if (!deleted) {
       return reply.status(404).send({ error: 'Module not found' })
     }
@@ -143,7 +156,8 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore, a
   })
 
   app.get('/api/v1/installations', async (request) => {
-    const { accountAddress } = request.query as { accountAddress?: string }
+    const query = InstallationQuerySchema.safeParse(request.query)
+    const accountAddress = query.success ? query.data.accountAddress : undefined
     if (!accountAddress) {
       return { data: [], meta: { total: 0 } }
     }
@@ -152,8 +166,11 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore, a
   })
 
   app.delete('/api/v1/installations/:id', { preHandler: authHook }, async (request, reply) => {
-    const { id } = request.params as { id: string }
-    const deactivated = store.deactivateInstallation(id)
+    const params = IdParamSchema.safeParse(request.params)
+    if (!params.success) {
+      return reply.status(400).send({ error: 'Invalid parameters', details: params.error.issues })
+    }
+    const deactivated = store.deactivateInstallation(params.data.id)
     if (!deactivated) {
       return reply.status(404).send({ error: 'Installation not found' })
     }
@@ -183,9 +200,12 @@ export function registerModuleRoutes(app: FastifyInstance, store: ModuleStore, a
     return reply.status(201).send({ data: review })
   })
 
-  app.get('/api/v1/reviews/:moduleId', async (request) => {
-    const { moduleId } = request.params as { moduleId: string }
-    const reviews = store.getReviewsForModule(moduleId)
+  app.get('/api/v1/reviews/:moduleId', async (request, reply) => {
+    const params = ModuleIdParamSchema.safeParse(request.params)
+    if (!params.success) {
+      return reply.status(400).send({ error: 'Invalid parameters', details: params.error.issues })
+    }
+    const reviews = store.getReviewsForModule(params.data.moduleId)
     return { data: reviews, meta: { total: reviews.length } }
   })
 

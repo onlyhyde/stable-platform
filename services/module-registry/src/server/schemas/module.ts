@@ -62,3 +62,20 @@ export const CreateReviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().min(1).max(1000),
 })
+
+// Param schemas for type-safe route parameters
+export const IdParamSchema = z.object({
+  id: z.string().min(1),
+})
+
+export const ModuleIdParamSchema = z.object({
+  moduleId: z.string().min(1),
+})
+
+export const PopularQuerySchema = z.object({
+  limit: z.coerce.number().min(1).max(100).default(10),
+})
+
+export const InstallationQuerySchema = z.object({
+  accountAddress: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional(),
+})

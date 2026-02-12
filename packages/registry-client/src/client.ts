@@ -164,6 +164,11 @@ export class RegistryClient extends EventEmitter<ClientEvent> {
     this.reconnectAttempts = this.maxReconnectAttempts
 
     if (this.ws) {
+      // Clear event handlers to prevent leaks on reconnect
+      this.ws.onopen = null
+      this.ws.onmessage = null
+      this.ws.onclose = null
+      this.ws.onerror = null
       this.ws.close()
       this.ws = null
     }
