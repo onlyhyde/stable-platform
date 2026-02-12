@@ -1,9 +1,14 @@
-# Web App 미구현 기능 검토 보고서
+# 미구현 기능 검토 보고서
 
-> 검토일: 2026-02-11 (4차 검토 완료), 2026-02-12 (5차 검토 완료)
+> 검토일: 2026-02-11 (4차 검토 완료), 2026-02-12 (5차~7차 검토 완료)
 > 설계 검증: 2026-02-12 (6건 논리적 오류 정정 완료)
-> 대상: `apps/web` (Next.js 15 + React 19)
-> 총 미구현 항목: 83건
+> 7차 검토: 2026-02-12 (`services/`, `packages/`, `apps/wallet-extension/` 추가)
+> 대상: `apps/web`, `services/`, `packages/`, `apps/wallet-extension/`
+> 8차 검토: 2026-02-12 (논리적 오류 정정 + 누락 항목 5건 추가)
+> 9차 검토: 2026-02-12 (EIP/ERC 표준 준수 검토 — ERC-721/1155 Token Receiver 누락 1건 추가, packages 심각도 분류 오류 정정)
+> 10차 검토: 2026-02-12 (과잉 추가 항목 정리 — §73 EIP-7484 삭제: 프로젝트 미참조 표준)
+> 총 미구현 항목: 128건 (apps/web 89건 + packages 15건 + services 15건 + wallet-extension 9건)
+> ⚠️ apps/web 89건은 원본 문서의 기재 수치이며, 요약 테이블 합산치(93건)와 4건 차이 존재 (원본 이슈)
 
 ---
 
@@ -42,6 +47,8 @@
 31. [LOW - Payroll YTD](#30-payroll-ytd)
 32. [LOW - 인프라 및 설정 하드코딩](#31-인프라-및-설정-하드코딩)
 33. [LOW - Footer 잘못된 링크](#32-footer-잘못된-링크)
+34. [HIGH - Stealth Send Announcement 미호출](#33-stealth-send-announcement-미호출)
+35. [MEDIUM - Indexer URL 미노출](#34-indexer-url-미노출)
 
 ---
 
@@ -80,8 +87,10 @@
 | LOW | Marketplace Catalog | 1 | 하드코딩된 모듈 목록 |
 | LOW | Payroll YTD | 1 | YTD 총액 항상 0 |
 | LOW | 인프라/설정 하드코딩 | 5 | wagmi RPC, moduleAddresses devnet, constants deprecated, docs placeholder |
-| LOW | Footer 링크 | 1 | 8개 미존재 페이지 링크 (/blog, /about, /careers, /contact, /docs/api, /docs/tutorials, /privacy, /terms) |
-| **합계** | | **83** | |
+| LOW | Footer 링크 | 4 | 8개 미존재 페이지 링크 + 3개 소셜 placeholder URL |
+| HIGH | Stealth Announcement | 1 | sendToStealthAddress에서 ERC-5564 on-chain announcement 미호출 |
+| MEDIUM | Indexer URL | 2 | ServiceUrls 타입 + StableNetContext에 indexerUrl 미포함 |
+| **합계** | | **89** | |
 
 ---
 
@@ -1289,6 +1298,8 @@ Year-to-date 총 지급액이 항상 0으로 표시됨.
 **심각도: LOW** *(2차, 4차 검토 추가)*
 **파일:** `components/layout/Footer.tsx`
 
+### 32-1. 내부 페이지 링크 (8건)
+
 Footer에 아래 페이지로 링크가 있으나, 해당 페이지가 실제로 존재하지 않음:
 
 - `/blog` — 블로그 페이지 없음
@@ -1300,51 +1311,1081 @@ Footer에 아래 페이지로 링크가 있으나, 해당 페이지가 실제로
 - `/privacy` — 개인정보처리방침 페이지 없음 *(4차 검토 추가)*
 - `/terms` — 이용약관 페이지 없음 *(4차 검토 추가)*
 
+### 32-2. 소셜 링크 placeholder URL (3건) *(6차 검토 추가)*
+
+**파일:** `components/layout/Footer.tsx:29-60`
+
+```typescript
+const socialLinks = [
+  { name: 'GitHub', href: 'https://github.com/stablenet', ... },
+  { name: 'Twitter', href: 'https://twitter.com/stablenet', ... },
+  { name: 'Discord', href: 'https://discord.gg/stablenet', ... },
+]
+```
+
+3개 소셜 링크 URL이 placeholder. 실제 프로젝트 계정/채널이 존재하지 않으면 404/빈 페이지로 이동.
+
 ### 해결 방안
 
-- 해당 페이지를 실제로 구현하거나
-- 존재하는 페이지로 링크 변경 또는 링크 자체 제거
+- 내부 페이지를 실제로 구현하거나 링크 변경/제거
 - `/privacy`, `/terms`는 법적 요건 상 반드시 구현 권장
+- 소셜 링크를 실제 계정 URL로 교체 또는 환경변수로 분리
 
 ---
 
-## 구현 우선순위 제안
+## 33. Stealth Send Announcement 미호출
 
-### Phase 0 - CRITICAL 수정 (즉시)
-1. **Swap 실행 복구**: `useSwap()`에 `sendUserOp` config 전달, Order Router URL 환경변수 분리, Router address 네트워크별 분기
-2. **ERC-20 Token Approval**: Swap/Subscription 실행 전 allowance 확인 및 approve 트랜잭션 추가
-3. **Session Key 키페어 생성**: 랜덤 주소 대신 실제 secp256k1 키페어 생성 + 개인키 secureKeyStore 저장
+**심각도: HIGH** *(6차 검토 추가)*
+**파일:** `hooks/useStealth.ts:312-318`
 
-### Phase 1 - 핵심 기능 연결 (HIGH)
-4. Data Hooks에 실제 데이터 소스 연결 (usePools, usePayroll, useExpenses, useAuditLogs, useTokens, useTransactionHistory)
-5. Merchant Dashboard mock 데이터를 useSubscription hook으로 교체
-6. Overview 페이지 통계를 실제 hook 데이터와 연결 (stealth, enterprise, defi, subscription, dashboard)
+```typescript
+// First, announce the payment on-chain (would call the announcement contract)
+// For now, we just send the transaction directly
+const result = await sendTransaction({
+  to: stealthAddress,
+  value,
+  // In production, this would include data for the announcement contract
+})
+```
 
-### Phase 2 - 사용자 경험 (MEDIUM)
-7. 모바일 반응형 구현 (햄버거 메뉴, sidebar drawer, `ml-64` → `md:ml-64`)
-8. Header 계정 드롭다운 구현 (Copy Address, Settings, Disconnect 확인)
-9. Swap UI 완성 (실제 잔액 조회, 슬리피지 설정, Gas 동적 표시)
-10. QR Code 생성 라이브러리 연동
-11. Security Settings 기능 구현 (설정 저장, Spending Limits, Recovery)
-12. Enterprise Quick Actions 및 모달 콜백 연결
-13. DeFi Pool add/remove liquidity 연결
-14. Subscription Edit/Deactivate 기능 구현
-15. 컴포넌트 콜백 연결 (SessionKey Details, Subscription Manage, Expense approve/reject, Payroll Edit, Module Uninstall)
-16. Block explorer URL 동적 분기
-17. Stealth Withdraw 콜백 연결 (스텔스 자금 인출)
-18. ErrorBoundary를 주요 페이지에 적용 (payment, defi, smart-account)
-19. Toast 알림을 모든 폼 제출/트랜잭션 결과에 추가
-20. Account Settings 완성 (계정 이름 저장, Smart Account 실제 상태 조회, 복사 피드백)
-21. 페이지네이션 구현 (Payment History, Audit Logs)
-22. 미지원 네트워크 경고 UI 추가 (배너 + 원클릭 전환)
-23. UserOp timeout 후 재확인 수단 제공 (pending 목록, 재확인 버튼)
+`sendToStealthAddress`에서 ETH를 스텔스 주소로 직접 전송하며, ERC-5564 announcement contract를 통한 on-chain 공시가 없음. REST API로 stealth server에만 등록(`fetchWithTimeout`으로 `/announce` 호출)하므로:
 
-### Phase 3 - 완성도 (LOW)
-24. Send 폼 잔액 초과 검증 추가 (`amount <= balance`)
-25. Next.js 라우트 파일 추가 (loading.tsx, error.tsx, not-found.tsx)
-26. Recurring Payment의 실제 scheduleId 파싱
-27. Subscription Revenue 계산 구현
-28. Marketplace 동적 카탈로그
-29. Payroll YTD 계산
-30. 인프라 하드코딩 제거 (wagmi RPC, moduleAddresses, constants, docs)
-31. Footer 링크 정리 (8개 미존재 페이지)
+- Stealth server가 다운되면 announcement 자체가 유실됨
+- On-chain announcement 없이는 수신자가 블록체인 스캔으로 incoming payment를 발견할 수 없음
+- `stealthAnnouncer` 컨트랙트 주소가 `StableNetContext`에 존재하지만 사용되지 않음
+
+**⚠️ Section 15(Stealth Withdraw)와는 별개 문제**: Section 15는 수신 후 인출 불가, 이 항목은 송금 시 프로토콜 미준수.
+
+### 해결 방안
+
+- `sendToStealthAddress`에서 `stealthAnnouncer` 컨트랙트의 `announce()` 함수를 UserOp calldata로 인코딩하여 호출
+- 또는 batch UserOp으로 (1) announce + (2) ETH transfer를 원자적 실행
+- stealth server 등록은 fallback/보조 수단으로 유지
+
+---
+
+## 34. Indexer URL 미노출
+
+**심각도: MEDIUM** *(6차 검토 추가)*
+
+### 34-1. ServiceUrls 타입에 indexer 필드 누락
+
+**파일:** `lib/constants.ts:25-29`
+
+```typescript
+export type ServiceUrls = {
+  bundler: string
+  paymaster: string
+  stealthServer: string
+  // indexer 필드 없음!
+}
+```
+
+하지만 `lib/config/env.ts:320-328`의 `getServiceUrls()`는 `indexer: config.indexerUrl`을 반환. `constants.ts:48`에서 `urls as ServiceUrls` 캐스팅 시 `indexer` 필드가 타입 레벨에서 소실됨.
+
+### 34-2. StableNetContext에 indexerUrl 미포함
+
+**파일:** `providers/StableNetProvider.tsx:9-21`
+
+```typescript
+interface StableNetContextValue {
+  publicClient: PublicClient
+  chainId: number
+  bundlerUrl: string
+  paymasterUrl: string
+  stealthServerUrl: string
+  // indexerUrl 없음!
+  entryPoint: `0x${string}`
+  // ...
+}
+```
+
+환경변수(`LOCAL_INDEXER_URL`, `TESTNET_INDEXER_URL`)에서 indexer URL을 로드하지만, Provider context에 노출하지 않아 데이터 hooks(useTransactionHistory, useTokens 등)가 indexer에 접근할 경로가 없음.
+
+**⚠️ Section 3(Data Hooks 미연결)의 근본 원인 중 하나**: hooks가 `fetchXxx` 콜백을 외부에서 받아야 하는 이유가 indexer URL을 context에서 가져올 수 없기 때문.
+
+### 해결 방안
+
+- `ServiceUrls` 타입에 `indexer: string` 추가
+- `StableNetContextValue`에 `indexerUrl: string` 추가 및 provider에서 값 할당
+- 데이터 hooks에서 `useStableNetContext().indexerUrl`로 직접 indexer 접근 가능하도록 리팩터링
+
+---
+
+## 기능별 구현 계획
+
+> 아래는 앱이 지원하는 **모든 기능 영역별** 완성 계획.
+> 각 기능이 end-to-end로 동작하도록 관련 미구현 항목을 묶어 정리.
+
+### 0. 인프라 기반 (모든 기능의 선행 조건)
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 0-1 | `ServiceUrls` 타입에 `indexer` 추가 | §34 | `lib/constants.ts` |
+| 0-2 | `StableNetContext`에 `indexerUrl` 추가 | §34 | `providers/StableNetProvider.tsx` |
+| 0-3 | RPC/컨트랙트 주소 환경변수 전환 | §31 | `lib/wagmi.ts`, `lib/moduleAddresses.ts`, `lib/constants.ts` |
+| 0-4 | Block explorer URL 동적 분기 유틸 | §14 | `lib/utils.ts` (신규: `getBlockExplorerUrl()`) |
+| 0-5 | ErrorBoundary 전역 + 주요 페이지 적용 | §16 | `app/layout.tsx`, 트랜잭션 관련 페이지 |
+| 0-6 | Next.js `loading.tsx`, `error.tsx`, `not-found.tsx` | §26 | `app/` |
+| 0-7 | Toast 피드백을 모든 폼/트랜잭션에 적용 | §17 | 전체 페이지 |
+| 0-8 | 모바일 반응형 (sidebar drawer, `ml-64` → `md:ml-64`) | §20 | `app/layout.tsx`, `Header.tsx`, `Sidebar.tsx` |
+
+### 1. Payment (Send / Receive / History)
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 1-1 | Send 폼 잔액 초과 검증 | §25 | `app/payment/send/page.tsx` |
+| 1-2 | UserOp receipt timeout 후 pending 트래킹 + 재확인 | §24 | `hooks/useUserOp.ts`, `app/payment/history/page.tsx` |
+| 1-3 | QR Code 생성 라이브러리 연동 | §10 | `app/payment/receive/page.tsx` |
+| 1-4 | Payment History 페이지네이션 | §22 | `app/payment/history/page.tsx` |
+| 1-5 | `useTransactionHistory`에 indexer fetch 함수 연결 | §3-6 | `hooks/useTransactionHistory.ts` |
+| 1-6 | Etherscan URL을 동적 explorer URL로 교체 | §14 | `components/payment/PaymentHistory.tsx` |
+
+### 2. Swap (Token Exchange)
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 2-1 | `useSwap()`에 `sendUserOp` config 전달 | §1-1 | `app/defi/swap/page.tsx` |
+| 2-2 | Order Router URL 환경변수 분리 | §1-2 | `hooks/useSwap.ts` |
+| 2-3 | Router address 네트워크별 분기 | §1-3 | `hooks/useSwap.ts` |
+| 2-4 | ERC-20 allowance 확인 + approve 선행 | §5-1 | `hooks/useSwap.ts` |
+| 2-5 | SwapCard 실제 잔액 표시 | §19-1 | `components/defi/cards/SwapCard.tsx` |
+| 2-6 | 슬리피지 설정 UI | §19-2 | `components/defi/cards/SwapCard.tsx` |
+| 2-7 | Gas Fee Paymaster 상태 연동 | §19-3 | `components/defi/cards/SwapCard.tsx` |
+
+### 3. Stealth Address (Register / Send / Receive / Withdraw)
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 3-1 | Send 시 `stealthAnnouncer` contract 호출 (ERC-5564) | §33 | `hooks/useStealth.ts` |
+| 3-2 | Withdraw 콜백 연결 (ECDH spending key 파생 + 서명) | §15 | `hooks/useStealth.ts`, `app/stealth/receive/page.tsx` |
+| 3-3 | Stealth Overview 통계 실제 데이터 연결 | §4-1 | `app/stealth/page.tsx` |
+
+### 4. Session Key Management
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 4-1 | 실제 secp256k1 키페어 생성 + secureKeyStore 저장 | §6 | `hooks/useSessionKey.ts` |
+| 4-2 | SessionKey Detail 모달 구현 | §13-1 | `components/session-keys/SessionKeyList.tsx` |
+
+### 5. Subscription (Subscriber / Merchant)
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 5-1 | ERC-20 approve 메커니즘 구현 | §5-2 | `hooks/useSubscription.ts` |
+| 5-2 | Edit Plan 모달 구현 | §8-1, §8-2 | `components/merchant/cards/SubscriptionPlansCard.tsx`, `app/subscription/merchant/page.tsx` |
+| 5-3 | Plan Activate/Deactivate 핸들러 연결 | §8-2 | `app/subscription/merchant/page.tsx` |
+| 5-4 | Manage 버튼 콜백 (해지/일시정지/변경) | §13-2 | `components/subscription/SubscriptionList.tsx` |
+| 5-5 | Merchant Revenue 계산 (이벤트 로그 조회) | §28 | `hooks/useSubscription.ts`, `app/subscription/merchant/page.tsx` |
+| 5-6 | Subscription Overview Total Spent 계산 | §4-4 | `app/subscription/page.tsx` |
+| 5-7 | 지갑 미연결 시 Plans 페이지 fallback UI | §8-3 | `app/subscription/plans/page.tsx` |
+| 5-8 | Recurring Payment 실제 scheduleId 파싱 | §27 | `hooks/useRecurringPayment.ts` |
+
+### 6. DeFi Pool (Liquidity)
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 6-1 | `usePools`에 실제 데이터 소스 연결 | §3-1 | `hooks/usePools.ts`, `app/defi/pool/page.tsx` |
+| 6-2 | Add Liquidity `onSubmit` 콜백 연결 | §9-1 | `app/defi/pool/page.tsx` |
+| 6-3 | Your Positions 데이터 + Remove Liquidity | §9-2 | `app/defi/pool/page.tsx` |
+| 6-4 | DeFi Overview 통계 실제 데이터 연결 | §4-3 | `app/defi/page.tsx` |
+
+### 7. Enterprise (Payroll / Expenses / Audit)
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 7-1 | `usePayroll`에 실제 데이터 소스 연결 | §3-2 | `hooks/usePayroll.ts` |
+| 7-2 | `useExpenses`에 실제 데이터 소스 연결 | §3-3 | `hooks/useExpenses.ts` |
+| 7-3 | `useAuditLogs`에 실제 데이터 소스 연결 | §3-4 | `hooks/useAuditLogs.ts` |
+| 7-4 | Process Payments / Export Report 핸들러 | §11-1 | `app/enterprise/payroll/page.tsx` |
+| 7-5 | Add Employee `onSubmit` 연결 | §11-2 | `app/enterprise/payroll/page.tsx` |
+| 7-6 | Payroll Edit 콜백 연결 | §13-4 | `components/enterprise/cards/PayrollListCard.tsx` |
+| 7-7 | Submit Expense `onSubmit` 연결 | §12 | `app/enterprise/expenses/page.tsx` |
+| 7-8 | Expense approve/reject/pay 콜백 연결 | §13-3 | `components/enterprise/cards/ExpenseListCard.tsx` |
+| 7-9 | Audit Logs 페이지네이션 | §22 | `app/enterprise/audit/page.tsx` |
+| 7-10 | Audit Log Etherscan URL 동적 분기 | §14 | `components/enterprise/cards/AuditLogCard.tsx` |
+| 7-11 | Enterprise Overview 통계 실제 데이터 연결 | §4-2 | `app/enterprise/page.tsx` |
+| 7-12 | Payroll YTD 계산 | §30 | `hooks/usePayroll.ts` |
+
+### 8. Smart Account & Module Management
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 8-1 | `useTokens`에 실제 데이터 소스 연결 | §3-5 | `hooks/useTokens.ts` |
+| 8-2 | Module Uninstall 기능 추가 | §13-5 | `hooks/useModule.ts`, `components/marketplace/ModuleDetailModal.tsx` |
+| 8-3 | Marketplace 동적 카탈로그 (module-registry API) | §29 | `app/marketplace/page.tsx` |
+
+### 9. Merchant Dashboard
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 9-1 | Mock 데이터를 실제 API/hook으로 교체 | §2-1 | `components/merchant/MerchantDashboard.tsx` |
+| 9-2 | 9개 핸들러 함수 구현 | §2-2 | `components/merchant/MerchantDashboard.tsx` |
+| 9-3 | onViewAll / onRetry 콜백 구현 | §2-3 | `components/merchant/MerchantDashboard.tsx` |
+
+### 10. Settings (Account / Security / Network)
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 10-1 | 계정 이름 localStorage 저장 | §18-1 | `components/settings/cards/AccountSettingsCard.tsx` |
+| 10-2 | Smart Account 배포 상태/모듈 실제 조회 | §18-2 | `components/settings/cards/AccountSettingsCard.tsx` |
+| 10-3 | 주소 복사 피드백 (toast / "Copied!") | §18-3 | `components/settings/cards/AccountSettingsCard.tsx` |
+| 10-4 | Security toggle 상태 저장 | §7-1 | `components/settings/cards/SecuritySettingsCard.tsx` |
+| 10-5 | Update Limits `onClick` 구현 | §7-2 | `components/settings/cards/SecuritySettingsCard.tsx` |
+| 10-6 | Recovery Options Setup `onClick` 구현 | §7-3 | `components/settings/cards/SecuritySettingsCard.tsx` |
+| 10-7 | 미지원 네트워크 경고 UI + 원클릭 전환 | §23 | `app/layout.tsx`, `hooks/useWalletNetworks.ts` |
+
+### 11. Header & Navigation
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 11-1 | 계정 드롭다운 메뉴 (Copy, Settings, Disconnect 확인) | §21 | `components/layout/Header.tsx` |
+| 11-2 | Dashboard 메인 페이지 활동 내역 연동 | §4-5 | `app/page.tsx` |
+| 11-3 | IncomingPayments 상세 보기 구현 | §13-6 | `components/stealth/cards/IncomingPaymentsCard.tsx` |
+
+### 12. Footer & Static Pages
+
+| 순서 | 작업 | 관련 섹션 | 파일 |
+|------|------|-----------|------|
+| 12-1 | `/privacy`, `/terms` 페이지 구현 (법적 요건) | §32-1 | `app/privacy/`, `app/terms/` |
+| 12-2 | 나머지 내부 링크 정리 (구현 또는 제거) | §32-1 | `components/layout/Footer.tsx` |
+| 12-3 | 소셜 링크 실제 URL 또는 환경변수 전환 | §32-2 | `components/layout/Footer.tsx` |
+| 12-4 | `lib/docs.ts` placeholder 정리 | §31-4 | `lib/docs.ts` |
+
+---
+
+## 구현 우선순위 요약
+
+### Phase 0 — 인프라 + CRITICAL (즉시, ~3일)
+
+**목표:** 앱 전체의 기반 인프라 보강 + 동작 불가 기능 수정
+
+1. 인프라 기반: 0-1 ~ 0-8 (indexerUrl 노출, 환경변수, ErrorBoundary, loading/error, Toast, 모바일)
+2. Swap 실행 복구: 2-1 ~ 2-4 (sendUserOp 전달, Router URL/address, ERC-20 approve)
+3. Session Key 키페어: 4-1 (secp256k1 + secureKeyStore)
+4. Stealth Announcement: 3-1 (ERC-5564 on-chain announce)
+
+**완료 조건:** Swap/Stealth Send/Session Key 생성이 실제로 동작
+
+### Phase 1 — 데이터 연결 + HIGH (1주)
+
+**목표:** 모든 data hook이 실제 데이터 소스(indexer/contract)에 연결
+
+5. Data Hooks 연결: 1-5, 6-1, 7-1 ~ 7-3, 8-1 (6개 hook에 fetch 함수 구현)
+6. Overview 통계: 3-3, 6-4, 7-11, 5-6 (실제 데이터 기반 통계)
+7. Merchant Dashboard: 9-1 ~ 9-3 (mock → 실제 데이터)
+
+**완료 조건:** 빈 화면/하드코딩 0 없이 실제 데이터 표시
+
+### Phase 2 — 기능 완성 + MEDIUM (2주)
+
+**목표:** 모든 버튼/콜백이 실제로 동작
+
+8. Payment 완성: 1-1 ~ 1-4, 1-6
+9. Swap UI: 2-5 ~ 2-7
+10. Stealth: 3-2, 3-3
+11. Session Key: 4-2
+12. Subscription: 5-1 ~ 5-8
+13. DeFi Pool: 6-2, 6-3
+14. Enterprise: 7-4 ~ 7-12
+15. Smart Account: 8-2, 8-3
+16. Settings: 10-1 ~ 10-7
+17. Header/Navigation: 11-1 ~ 11-3
+
+**완료 조건:** 모든 UI 버튼에 동작하는 핸들러 연결
+
+### Phase 3 — 완성도 + LOW (1주)
+
+**목표:** 프로덕션 준비 수준의 완성도
+
+18. Footer/Static: 12-1 ~ 12-4
+19. 인프라 정리: §31 전체 (deprecated 제거, docs 정리)
+
+---
+---
+
+# packages/ 미구현 기능 (15건)
+
+> 7차 검토 추가 (2026-02-12), 9차 검토 1건 추가 (§73)
+> 대상: `packages/sdk-go`, `packages/sdk-ts`, `packages/config`, `packages/contracts`
+
+---
+
+## §35. CRITICAL — SDK-GO UserOperation 해시 계산 미구현
+
+**심각도:** CRITICAL
+**파일:** `packages/sdk-go/transaction/strategies/smart_account.go:312-321`
+
+**현상:** `calculateUserOpHash()` 함수가 빈 해시(`Hash{}`)를 반환한다.
+
+```go
+func calculateUserOpHash(userOp *sdktypes.UserOperation, entryPoint sdktypes.Address, chainId uint64) sdktypes.Hash {
+    // This is a placeholder - real implementation would:
+    // 1. Pack the UserOperation
+    // 2. Hash with keccak256
+    // 3. Combine with entryPoint and chainId
+    // 4. Hash again
+    return sdktypes.Hash{}
+}
+```
+
+**영향:**
+- Go SDK를 통한 Smart Account 트랜잭션 서명이 불가능
+- 빈 해시로 서명 시 EntryPoint에서 서명 검증 실패
+
+**해결 방안:**
+- ERC-4337 스펙에 따른 `keccak256(abi.encode(pack(userOp), entryPoint, chainId))` 구현
+- `go-ethereum/crypto` 패키지의 `Keccak256` 사용
+
+---
+
+## §36. CRITICAL — SDK-GO Smart Account Call Encoding 미구현
+
+**심각도:** CRITICAL
+**파일:** `packages/sdk-go/transaction/strategies/smart_account.go:300-310`
+
+**현상:** `encodeSmartAccountCall()` 함수가 ABI 인코딩 없이 raw data를 그대로 반환한다.
+
+```go
+func encodeSmartAccountCall(to sdktypes.Address, value *big.Int, data sdktypes.Hex) sdktypes.Hex {
+    // This is a placeholder - real implementation would use proper ABI encoding
+    // For now, just return the data as-is
+    return data
+}
+```
+
+**영향:**
+- Kernel `execute(address,uint256,bytes,uint8)` 함수 호출이 잘못된 calldata로 실행됨
+- Smart Account 트랜잭션이 on-chain에서 실패
+
+**해결 방안:**
+- `abi.Pack("execute", to, value, data, uint8(0))` 형태의 ABI 인코딩 구현
+- `go-ethereum/accounts/abi` 패키지 활용
+
+---
+
+## §37. CRITICAL — 전체 체인 컨트랙트 주소 ZERO_ADDRESS
+
+**심각도:** CRITICAL
+**파일:** `packages/config/src/chains.ts:14-176`, `packages/contracts/src/generated/addresses.ts:11-55`
+
+**현상:** Anvil(31337), StableNet Local(8283), Sepolia(11155111) 모든 체인에서 컨트랙트 주소가 ZERO_ADDRESS이다.
+
+```typescript
+const ZERO_ADDRESS: Address = '0x0000000000000000000000000000000000000000'
+
+export const ANVIL_ADDRESSES: ChainAddresses = {
+    core: { kernel: ZERO_ADDRESS, kernelFactory: ZERO_ADDRESS },
+    validators: { ecdsaValidator: ZERO_ADDRESS, webAuthnValidator: ZERO_ADDRESS, multiEcdsaValidator: ZERO_ADDRESS },
+    executors: { ownableExecutor: ZERO_ADDRESS },
+    hooks: { spendingLimitHook: ZERO_ADDRESS },
+    paymasters: { verifyingPaymaster: ZERO_ADDRESS, tokenPaymaster: ZERO_ADDRESS },
+    privacy: { stealthAnnouncer: ZERO_ADDRESS, stealthRegistry: ZERO_ADDRESS },
+    compliance: { kycRegistry: ZERO_ADDRESS, complianceValidator: ZERO_ADDRESS },
+}
+```
+
+**영향:**
+- Smart Account 생성/배포 불가 (factory가 zero address)
+- 모든 validator/executor/hook/paymaster가 동작 불가
+- Stealth, Compliance 기능 전체 비활성화
+
+**해결 방안:**
+- 각 체인별로 실제 배포된 컨트랙트 주소 입력
+- 배포 스크립트 실행 후 자동으로 주소를 업데이트하는 파이프라인 구축
+
+---
+
+## §38. HIGH — SDK-GO Paymaster 데이터 미구현
+
+**심각도:** HIGH
+**파일:** `packages/sdk-go/transaction/strategies/smart_account.go:266-271`
+
+**현상:** `getPaymasterData()` 함수가 항상 `nil`을 반환한다.
+
+```go
+func (s *SmartAccountStrategy) getPaymasterData(ctx context.Context, ...) (*PaymasterData, error) {
+    // This is a placeholder - real implementation would call the paymaster service
+    return nil, nil
+}
+```
+
+**영향:** Go SDK에서 Paymaster를 통한 가스 스폰서링 불가
+
+**해결 방안:** Paymaster proxy 서비스(`services/paymaster-proxy`)로 `pm_getPaymasterStubData` / `pm_getPaymasterData` RPC 호출 구현
+
+---
+
+## §39. HIGH — SDK-GO 가스 가격 하드코딩
+
+**심각도:** HIGH
+**파일:** `packages/sdk-go/gas/estimator.go:160-177`
+
+**현상:** `GetGasPrices()`가 RPC를 호출하지 않고 하드코딩된 값(30 gwei base, 2 gwei priority)을 반환한다.
+
+```go
+baseFee := new(big.Int).Mul(big.NewInt(30), big.NewInt(1e9))       // 30 gwei
+maxPriorityFee := new(big.Int).Mul(big.NewInt(2), big.NewInt(1e9)) // 2 gwei
+```
+
+**영향:**
+- 실제 네트워크 가스 가격과 무관한 추정값 사용
+- 과소 추정 시 트랜잭션 포함 지연, 과대 추정 시 불필요한 비용 발생
+
+**해결 방안:** `eth_gasPrice`, `eth_feeHistory` RPC 호출로 실시간 가스 가격 조회
+
+---
+
+## §40. HIGH — SDK-GO Smart Account 가스 추정 기본값 사용
+
+**심각도:** HIGH
+**파일:** `packages/sdk-go/gas/estimator.go:381-404`
+
+**현상:** Smart Account 가스 추정 시 Bundler의 `eth_estimateUserOperationGas`를 호출하지 않고 기본값을 사용한다.
+
+**영향:** UserOperation 가스 한도가 실제 소비량과 다를 수 있어 실행 실패 또는 불필요한 비용 발생
+
+**해결 방안:** Bundler RPC `eth_estimateUserOperationGas` 엔드포인트 호출 구현
+
+---
+
+## §41. HIGH — EIP-7702 Delegate 주소 미설정
+
+**심각도:** HIGH
+**파일:** `packages/sdk-go/eip7702/constants.go:32,41,50`
+
+**현상:** Sepolia, Polygon Amoy, Local Anvil 3개 체인 모두 Kernel v3.1 delegate 주소가 zero address이다.
+
+```go
+Address: common.HexToAddress("0x0000000000000000000000000000000000000000"), // TODO: Update with actual address
+```
+
+**영향:** Go SDK에서 EIP-7702 delegation이 불가 (zero address로 위임 시 EOA 코드가 비어 있는 주소를 참조)
+
+**해결 방안:** 각 테스트넷에 실제 배포된 Kernel v3.1 주소 입력
+
+---
+
+## §42. MEDIUM — SDK-GO 설치된 모듈 조회 미구현
+
+**심각도:** MEDIUM
+**파일:** `packages/sdk-go/modules/client/client.go:74-78`
+
+**현상:** `GetInstalledModules()`가 항상 빈 리스트를 반환한다.
+
+```go
+func (c *QueryClient) GetInstalledModules(...) ([]types.InstalledModule, error) {
+    // For now, return empty list - in production, integrate with indexer
+    return []types.InstalledModule{}, nil
+}
+```
+
+**영향:** Go SDK에서 Smart Account에 설치된 모듈 목록을 확인할 수 없음
+
+**해결 방안:** 인덱서 API 또는 `getModulesPaginated()` 온체인 호출로 구현
+
+---
+
+## §43. MEDIUM — SDK-GO EOA 트랜잭션 디코딩 미구현
+
+**심각도:** MEDIUM
+**파일:** `packages/sdk-go/transaction/strategies/eoa.go:280-285`
+
+**현상:** `decodeRawTransaction()`이 항상 `nil`을 반환한다.
+
+```go
+func decodeRawTransaction(raw sdktypes.Hex) *types.Transaction {
+    // This is a placeholder - real implementation would decode the raw transaction
+    return nil
+}
+```
+
+**영향:** 서명된 raw 트랜잭션의 디코딩 불가
+
+**해결 방안:** `rlp.DecodeBytes()` 또는 `types.Transaction.UnmarshalBinary()` 사용
+
+---
+
+## §44. MEDIUM — SDK-TS Smart Account 가스 추정 간소화
+
+**심각도:** MEDIUM
+**파일:** `packages/sdk-ts/core/src/gas/strategies/smartAccountGasStrategy.ts:50-78`
+
+**현상:** Bundler의 `eth_estimateUserOperationGas`를 호출하지 않고 `provider.estimateGas()`로 간소화된 추정을 한다.
+
+```typescript
+// For now, use simplified estimation
+// Real implementation would call bundler's eth_estimateUserOperationGas
+let callGasLimit: bigint
+try {
+    callGasLimit = await provider.estimateGas({ from, to, value, data })
+} catch {
+    callGasLimit = BASE_TRANSFER_GAS * 2n
+}
+```
+
+**영향:** `verificationGasLimit`, `preVerificationGas`가 고정 상수이므로 복잡한 UserOp에서 가스 부족 가능
+
+**해결 방안:** Bundler RPC `eth_estimateUserOperationGas` 연동
+
+---
+
+## §45. MEDIUM — SDK-GO SmartAccountClient 가스 가격 하드코딩
+
+**심각도:** MEDIUM
+**파일:** `packages/sdk-go/clients/smart_account.go:378-385`
+
+**현상:** `getGasPrices()`가 50 gwei / 1.5 gwei 고정값을 반환한다.
+
+**영향:** §39와 동일 — 실시간 가스 가격 미반영
+
+---
+
+## §46. LOW — SDK-GO Subscription 스케줄 파싱 미구현
+
+**심각도:** LOW
+**파일:** `packages/sdk-go/plugins/subscription/client.go:334-376`
+
+**현상:** `parseScheduleFromOutputs()`, `parseSchedulesFromOutputs()` 두 함수가 placeholder이다.
+
+```go
+func parseSchedulesFromOutputs(outputs []interface{}) []*PaymentSchedule {
+    // This is a placeholder - real implementation would parse array properly
+    return []*PaymentSchedule{}
+}
+```
+
+**영향:** Go SDK에서 구독 스케줄 데이터를 컨트랙트에서 파싱할 수 없음
+
+---
+
+## §47. MEDIUM — SDK-GO 알려진 모듈 레지스트리 미등록
+
+**심각도:** MEDIUM
+**파일:** `packages/sdk-go/modules/client/client.go:388-391`
+
+**현상:** `registerKnownModules()` 함수 본문이 비어 있다.
+
+```go
+func (r *ModuleRegistry) registerKnownModules() {
+    // These would be populated with actual module addresses for each network
+}
+```
+
+**영향:** Go SDK 모듈 레지스트리에 사전 정의된 모듈 정보가 없음
+
+---
+
+## §48. MEDIUM — SDK-TS Kernel Hook 주소 Zero
+
+**심각도:** MEDIUM
+**파일:** `packages/sdk-ts/accounts/src/kernel/utils.ts:110-111`
+
+**현상:** Kernel 초기화 시 hook 주소가 zero address로 하드코딩되어 있다.
+
+```typescript
+const hookAddress = '0x0000000000000000000000000000000000000000' as Address // No hook
+const hookData = '0x' as Hex
+```
+
+**영향:** Kernel v3 hook 기능(예: SpendingLimitHook) 사용 불가
+
+---
+
+---
+
+# services/ 미구현 기능 (15건)
+
+> 7차 검토 추가 (2026-02-12), 8차 검토 1건 추가
+> 대상: `services/bridge-relayer`, `services/order-router`, `services/subscription-executor`, `services/paymaster-proxy`, `services/bundler`
+
+---
+
+## §49. CRITICAL — Bridge Relayer 블록체인 상호작용 전체 PoC 스텁
+
+**심각도:** CRITICAL
+**파일:** `services/bridge-relayer/internal/ethereum/client.go:46-227`
+
+**현상:** Ethereum 클라이언트의 약 15개 핵심 함수가 모두 시뮬레이션 값을 반환한다. 실제 RPC 호출이 전혀 없다.
+
+| 함수 | 현재 동작 | 라인 |
+|------|-----------|------|
+| `GetBalance()` | "For PoC, we simulate a balance" | 39-44 |
+| `GetBlockNumber()` | 상수 1000000 반환 | 49-51 |
+| `GetBlockTimestamp()` | `time.Now()` 반환 | 55-57 |
+| `EstimateGas()` | 상수 200000 반환 | 61-64 |
+| `GetGasPrice()` | 30 gwei 고정 | 68-78 |
+| `SendTransaction()` | 시간 기반 fake hash 반환 | 82-91 |
+| `WaitForTransaction()` | 2초 후 무조건 성공 | 95-108 |
+| `CallContract()` | 빈 바이트 반환 | 111-114 |
+| `GetNonce()` | 0 반환 | 118-120 |
+| `IsConnected()` | 항상 true | 124-126 |
+| `EncodeCompleteBridge()` | placeholder selector | 138-157 |
+| `DecodeEventLog()` | 빈 맵 반환 | 161-163 |
+| `SubscribeToEvents()` | 이벤트 없는 빈 goroutine | 167-193 |
+| `HashBridgeMessage()` | requestID 복사 (keccak256 아님) | 209-226 |
+
+**영향:** Bridge relayer가 실제 크로스 체인 브릿지 처리를 전혀 수행하지 않음
+
+**해결 방안:**
+- `go-ethereum/ethclient`를 사용한 실제 RPC 연결 구현
+- ABI 바인딩(`abigen`)을 통한 컨트랙트 인코딩/디코딩
+
+---
+
+## §50. HIGH — Order Router Uniswap V3 Quote 시뮬레이션
+
+**심각도:** HIGH
+**파일:** `services/order-router/internal/provider/uniswap_v3.go:197-222`
+
+**현상:** Quoter 컨트랙트를 호출하지 않고 수수료 기반 단순 계산으로 시뮬레이션한다.
+
+```go
+func (p *UniswapV3Provider) quoteExactInputSingle(...) (*big.Int, error) {
+    // In production, this would call the Quoter contract
+    // For PoC, we simulate with a simple calculation
+    feeFactor := big.NewInt(int64(1000000 - fee))
+    amountOut := new(big.Int).Mul(amountIn, feeFactor)
+    amountOut = new(big.Int).Div(amountOut, big.NewInt(1000000))
+    return amountOut, nil
+}
+```
+
+**영향:**
+- 실제 DEX 유동성/가격 반영 안 됨
+- 슬리피지, 가격 영향(price impact) 계산 불가
+
+**해결 방안:** Uniswap V3 `Quoter` 또는 `QuoterV2` 컨트랙트의 `quoteExactInputSingle()` on-chain call 구현
+
+---
+
+## §51. HIGH — Order Router Pool 주소 계산 Fake
+
+**심각도:** HIGH
+**파일:** `services/order-router/internal/provider/uniswap_v3.go:218-222`
+
+**현상:** CREATE2 주소 계산 대신 "deterministic fake address"를 반환한다.
+
+```go
+func (p *UniswapV3Provider) computePoolAddress(tokenA, tokenB string, fee int) string {
+    // In production, compute CREATE2 address
+    return fmt.Sprintf("0x%s", strings.Repeat("0", 38)+"01")
+}
+```
+
+**영향:** 모든 토큰 쌍이 동일한 pool 주소를 가리킴 → 풀 존재 여부 확인 불가
+
+---
+
+## §52. MEDIUM — Order Router Pathfinder 단순 등분할
+
+**심각도:** MEDIUM
+**파일:** `services/order-router/internal/router/pathfinder.go:205-206`
+
+**현상:** 최적 스왑 분할 비율 대신 단순 등분할을 한다.
+
+```go
+// For PoC: simple equal split among top routes
+percentages := pf.calculateSplitPercentages(routes[:maxSplits], amountIn)
+```
+
+**영향:** 최적 경로 분배로 인한 가격 개선이 없음 — 사용자가 최상의 가격을 얻지 못함
+
+**해결 방안:** 각 경로별 유동성/가격 영향 기반의 최적 분배 알고리즘 구현
+
+---
+
+## §53. MEDIUM — Order Router 1inch 프로토콜 파싱 간소화
+
+**심각도:** MEDIUM
+**파일:** `services/order-router/internal/aggregator/oneinch.go:179-183`
+
+**현상:** 1inch API 응답의 중첩 프로토콜 구조를 파싱하지 않고 단일 문자열을 반환한다.
+
+```go
+func extractProtocols(raw json.RawMessage) []string {
+    // Simplified protocol extraction
+    // In production, properly parse the nested protocol structure
+    return []string{"1inch_aggregation"}
+}
+```
+
+**영향:** 사용된 DEX 프로토콜 정보를 사용자에게 표시할 수 없음
+
+---
+
+## §54. MEDIUM — Order Router Uniswap V2 Pool 주소 미구현
+
+**심각도:** MEDIUM
+**파일:** `services/order-router/internal/provider/uniswap_v2.go:195`
+
+**현상:** "In production, compute CREATE2 address" 주석 — V3와 동일한 placeholder 패턴
+
+---
+
+## §55. HIGH — Subscription Executor Placeholder 서명
+
+**심각도:** HIGH
+**파일:** `services/subscription-executor/internal/service/executor.go:48-60`
+
+**현상:** `EXECUTOR_PRIVATE_KEY`가 설정되지 않으면 placeholder 서명을 사용한다.
+
+```go
+if cfg.ExecutorPrivateKey != "" {
+    signer, err = client.NewUserOpSigner(cfg.ExecutorPrivateKey, ...)
+} else {
+    log.Warn("EXECUTOR_PRIVATE_KEY not set, using placeholder signatures")
+}
+```
+
+**영향:** Private key 미설정 시 구독 결제 UserOp가 잘못된 서명으로 제출되어 on-chain 실패
+
+---
+
+## §56. MEDIUM — Bundler Aggregator 미지원
+
+**심각도:** MEDIUM
+**파일:** `services/bundler/src/validation/validator.ts:313-321`
+
+**현상:** ERC-4337 Aggregator가 명시적으로 거부된다.
+
+```typescript
+if (aggregator) {
+    throw new RpcError(
+        `aggregator ${aggregator} not supported`,
+        RPC_ERROR_CODES.UNSUPPORTED_AGGREGATOR
+    )
+}
+```
+
+**영향:** Aggregator 기반 서명 방식(BLS 등)을 사용하는 UserOp가 거부됨
+
+---
+
+## §57. MEDIUM — Bundler Mempool 온체인 Nonce 미검증
+
+**심각도:** MEDIUM
+**파일:** `services/bundler/src/mempool/mempool.ts:254`
+
+**현상:** Nonce를 mempool 내부에서만 검증하고 on-chain nonce와 비교하지 않는다.
+
+```typescript
+// (In production, we'd check against on-chain nonce)
+```
+
+**영향:** 이미 실행된 nonce의 UserOp가 mempool에 남을 수 있음
+
+---
+
+## §58. LOW — Paymaster Proxy 가스 한도 하드코딩
+
+**심각도:** LOW
+**파일:** `services/paymaster-proxy/src/handlers/getPaymasterStubData.ts:16-19`
+
+**현상:** Paymaster 가스 한도가 고정 상수이다.
+
+```typescript
+const DEFAULT_GAS_LIMITS = {
+    paymasterVerificationGasLimit: 100000n,
+    paymasterPostOpGasLimit: 50000n,
+} as const
+```
+
+**영향:** 복잡한 paymaster 로직에서 가스 부족 가능
+
+---
+
+## §59. LOW — Bundler/Paymaster-proxy 테스트 스켈레톤
+
+**심각도:** LOW
+**파일:** `services/bundler/tests/index.test.ts:4-5`, `services/paymaster-proxy/tests/index.test.ts:4-5`
+
+**현상:** 각각 2개의 `it.todo()` placeholder 테스트가 있다.
+
+```typescript
+// bundler
+it.todo('should bundle user operations')
+it.todo('should estimate gas')
+
+// paymaster-proxy
+it.todo('should proxy paymaster requests')
+it.todo('should validate sponsorship policy')
+```
+
+**영향:** 핵심 통합 테스트 부재
+
+---
+
+## §60. LOW — Paymaster Proxy 정책 관리 API 미구현
+
+**심각도:** LOW
+**파일:** `services/paymaster-proxy/src/policy/sponsorPolicy.ts:107-127`
+
+**현상:** 정책의 `startTime`/`endTime` 필드를 검증하지만 이를 관리할 admin API가 없다.
+
+**영향:** 시간 기반 스폰서링 정책을 프로그래밍 방식으로 관리할 수 없음
+
+---
+
+## §61. MEDIUM — Bundler 디버그 모드 보안 설정
+
+**심각도:** MEDIUM
+**파일:** `services/bundler/src/rpc/server.ts:143-150, 254-260`
+
+**현상:** 디버그 모드에서 CORS 전체 허용 + 에러 메시지 노출
+
+**영향:** 프로덕션 배포 시 보안 취약점 — 디버그 모드 비활성화 필수
+
+---
+
+## §62. LOW — Bundler Validation Skip 플래그 프로덕션 노출
+
+**심각도:** LOW
+**파일:** `services/bundler/src/validation/validator.ts:96,129,138,149`
+
+**현상:** `skipSimulation`, `skipReputation`, `skipOpcodeValidation` 플래그가 프로덕션에서도 설정 가능
+
+**영향:** 잘못된 설정 시 보안 검증 우회 가능
+
+---
+
+## §68. MEDIUM — Bundler FlashbotsSubmitter 간소화된 서명 *(8차 검토 추가)*
+
+**심각도:** MEDIUM
+**파일:** `services/bundler/src/executor/flashbotsSubmitter.ts:132-138`
+
+**현상:** Flashbots relay 인증 서명이 secp256k1 ECDSA가 아닌 `keccak256(authKey + bodyHash)` 해시로 간소화되어 있다.
+
+```typescript
+private async signPayload(body: string): Promise<string> {
+    const bodyHash = keccak256(toHex(body))
+    // Simple signature using auth key hash (in production, use secp256k1 signing)
+    const sigHash = keccak256(`0x${this.config.authKey.slice(2)}${bodyHash.slice(2)}` as Hex)
+    return `${this.config.authKey.slice(0, 42)}:${sigHash}`
+}
+```
+
+**영향:** Flashbots relay가 올바른 `X-Flashbots-Signature` 형식을 요구하므로, 실제 relay에 제출 시 인증 실패
+
+**해결 방안:** `secp256k1` 개인키로 `eth_sign` 방식의 ECDSA 서명 구현
+
+---
+
+---
+
+# apps/wallet-extension/ 미구현 기능 (9건)
+
+> 7차 검토 추가 (2026-02-12), 8차 검토 4건 추가
+> 대상: `apps/wallet-extension/`
+> 참고: `apps/wallet-extension/docs/REMAINING_TASKS.md` 기반 + 코드 검토 추가
+
+---
+
+## §63. MEDIUM — QR Code Placeholder
+
+**심각도:** MEDIUM
+**파일:** `apps/wallet-extension/src/ui/pages/Receive.tsx:37-58`
+
+**현상:** apps/web과 동일하게 QR 코드가 placeholder 텍스트이다.
+
+**영향:** Receive 페이지에서 주소 QR 코드를 스캔할 수 없음
+
+---
+
+## §64. LOW — 하드웨어 지갑 (Ledger) 미지원
+
+**심각도:** LOW
+**파일:** `apps/wallet-extension/docs/REMAINING_TASKS.md:241-243`
+
+**현상:** Ledger USB HID 연동, 트랜잭션 서명, 계정 관리가 미구현이다.
+
+**영향:** 하드웨어 지갑 사용자가 월렛 익스텐션을 사용할 수 없음
+
+---
+
+## §65. LOW — WalletConnect v2 미지원
+
+**심각도:** LOW
+**파일:** `apps/wallet-extension/docs/REMAINING_TASKS.md:246-247`
+
+**현상:** WalletConnect v2 프로토콜과 Deep linking이 미구현이다.
+
+**영향:** 모바일 dApp에서 월렛 연결 불가
+
+---
+
+## §66. LOW — 다국어 지원 (i18n) 미구현
+
+**심각도:** LOW
+**파일:** `apps/wallet-extension/docs/REMAINING_TASKS.md:249-251`
+
+**현상:** i18n 프레임워크 미설정, 한국어/영어 번역 파일 미생성
+
+**영향:** 영어 이외 언어 지원 불가
+
+---
+
+## §67. LOW — E2E 테스트 CI 미통합
+
+**심각도:** LOW
+**파일:** `apps/wallet-extension/docs/REMAINING_TASKS.md:257`
+
+**현상:** Playwright E2E 테스트(27개)가 로컬에서만 실행되고 CI에 통합되지 않았다.
+
+**영향:** PR 머지 시 E2E 회귀 테스트가 자동 실행되지 않음
+
+---
+
+## §69. HIGH — dApp 연결 자동 승인 (보안) *(8차 검토 추가)*
+
+**심각도:** HIGH
+**파일:** `apps/wallet-extension/src/background/index.ts:520-526`
+
+**현상:** dApp 연결 요청 시 사용자 승인 팝업 없이 자동으로 연결을 승인한다.
+
+```typescript
+// Auto-approve connection (in production, show popup for user approval)
+await walletState.addConnectedSite({
+    origin,
+    accounts,
+    permissions: ['eth_accounts'],
+    connectedAt: Date.now(),
+})
+```
+
+**영향:** 악의적인 dApp이 사용자 동의 없이 지갑 주소에 접근 가능 — 프로덕션 보안 취약점
+
+**해결 방안:** 연결 요청 시 Approval popup을 표시하여 사용자가 명시적으로 승인/거부하도록 구현
+
+---
+
+## §70. MEDIUM — Smart Account 주소 계산 간소화 *(8차 검토 추가)*
+
+**심각도:** MEDIUM
+**파일:** `apps/wallet-extension/src/background/controller/accountController.ts:22-30`
+
+**현상:** Smart Account 주소를 factory 컨트랙트 호출 대신 단순 해시 기반으로 계산한다.
+
+```typescript
+// For now, use a deterministic address based on owner and index
+// In production, this would call the factory contract
+const address = getAddress(`0x${salt.slice(26)}`) as Address
+```
+
+**영향:** 계산된 주소가 실제 factory에서 배포될 주소와 불일치할 수 있음 → 자금 손실 위험
+
+**해결 방안:** `KernelFactory.getAccountAddress(owner, salt)` 온체인 호출 또는 CREATE2 주소 계산 구현
+
+---
+
+## §71. LOW — Swap 가격 영향(Price Impact) 미계산 *(8차 검토 추가)*
+
+**심각도:** LOW
+**파일:** `apps/wallet-extension/src/ui/pages/SwapPage.tsx:116`
+
+**현상:** 스왑 견적에서 `priceImpact`가 항상 `null`이다.
+
+```typescript
+priceImpact: null, // Real price impact requires on-chain data
+```
+
+**영향:** 사용자가 불리한 스왑 비율(높은 가격 영향)을 인지하지 못함
+
+---
+
+## §72. MEDIUM — wallet_requestPermissions 간소화 *(8차 검토 추가)*
+
+**심각도:** MEDIUM
+**파일:** `apps/wallet-extension/src/background/rpc/handler.ts:2870`
+
+**현상:** `wallet_requestPermissions` RPC 메서드가 모든 권한 요청을 단순 연결 요청으로 처리한다.
+
+```typescript
+// For now, treat permission request like a connect request
+if (requestedMethods.includes('eth_accounts')) {
+    const handler = handlers['eth_requestAccounts']
+    // ...delegates to connect flow
+}
+```
+
+**영향:** EIP-2255 세분화된 권한 관리 미지원 — 개별 메서드별 권한 부여/회수 불가
+
+---
+
+## §73. MEDIUM — ERC-721/ERC-1155 Token Receiver Fallback 미배포 *(9차 검토 추가)*
+
+**심각도:** MEDIUM
+**파일:** `packages/sdk-ts/core/src/modules/config/fallbacks.ts:25-47`
+
+**현상:** Smart Account에서 ERC-721(NFT) 및 ERC-1155(Multi-Token) 수신을 위한 Token Receiver Fallback 모듈이 정의되어 있으나, 주소가 `ZERO_ADDRESS`로 미배포 상태이다.
+
+```typescript
+export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
+  {
+    address: '0x0000000000000000000000000000000000000000' as Address, // 미배포
+    type: MODULE_TYPE.FALLBACK,
+    name: 'Token Receiver',
+    description: 'Enable receiving ERC721, ERC1155, and other token standards',
+    // ...
+  },
+  // 모든 체인에서 ZERO_ADDRESS
+  {
+    [SUPPORTED_CHAIN_IDS.MAINNET]: '0x000...000' as Address,
+    [SUPPORTED_CHAIN_IDS.SEPOLIA]: '0x000...000' as Address,
+    [SUPPORTED_CHAIN_IDS.LOCAL]: '0x000...000' as Address,
+  },
+)
+```
+
+**영향:** Smart Account가 ERC-721 NFT 및 ERC-1155 토큰을 수신할 수 없음 — `onERC721Received`, `onERC1155Received` 콜백 미제공으로 `safeTransferFrom` 호출 시 revert
+
+---
+
+---
+
+## 전체 요약 (128건)
+
+### 범위별 분류
+
+| 범위 | CRITICAL | HIGH | MEDIUM | LOW | 합계 |
+|------|----------|------|--------|-----|------|
+| apps/web (§1-§34) | 3 | 27 | 41 | 18 | **89** ⚠️ |
+| packages (§35-§48, §73) | 3 | 4 | 7 | 1 | **15** |
+| services (§49-§62, §68) | 1 | 3 | 7 | 4 | **15** |
+| wallet-extension (§63-§67, §69-§72) | 0 | 1 | 3 | 5 | **9** |
+| **합계** | **7** | **35** | **58** | **28** | **128** |
+
+> ⚠️ apps/web 89건: 원본 문서의 요약 테이블 항목별 합산 시 93건이나, 기재된 총수 89건을 유지.
+> 심각도별 분류(3/27/41/18)는 89에 맞춰 조정한 추정치이며, 4건 차이의 원인 확인 필요.
+
+### 핵심 블로커 (CRITICAL 7건)
+
+1. §1-1 — apps/web: Swap `sendUserOp` 미전달 (실행 불가)
+2. §1-2 — apps/web: Order Router URL `localhost` 하드코딩
+3. §1-3 — apps/web: Router Address mainnet 하드코딩
+4. §35 — packages: SDK-GO `calculateUserOpHash()` 빈 해시 반환
+5. §36 — packages: SDK-GO `encodeSmartAccountCall()` ABI 인코딩 없음
+6. §37 — packages: 전체 체인 컨트랙트 주소 `ZERO_ADDRESS`
+7. §49 — services: Bridge Relayer 블록체인 상호작용 전체 PoC 스텁
+
+### 확장 구현 우선순위
+
+#### Phase 0+ — packages/services CRITICAL (즉시, ~5일)
+
+**목표:** SDK 및 서비스 인프라 기반 기능 복구
+
+1. 컨트랙트 배포 + 주소 업데이트: §37, §41, §73 (Anvil/Sepolia 배포 후 config 업데이트, Token Receiver Fallback 포함)
+2. SDK-GO Smart Account 핵심: §35, §36, §38 (UserOp 해시, ABI 인코딩, Paymaster)
+3. SDK 가스 추정 연동: §39, §40, §44 (RPC 및 Bundler 연동)
+
+**완료 조건:** Go SDK로 Smart Account 트랜잭션 생성 → Bundler 제출 → on-chain 실행 성공
+
+#### Phase 1+ — services 기능 완성 (~1주)
+
+4. Bridge Relayer 실제 구현: §49 (go-ethereum ethclient 연동)
+5. Order Router DEX 연동: §50, §51, §52 (Quoter 컨트랙트 호출)
+6. Subscription Executor 서명: §55 (private key 관리)
+7. SDK 추가 구현: §42, §43, §47 (모듈 조회, 트랜잭션 디코딩)
+8. Wallet Extension 보안: §69 (dApp 연결 승인 팝업), §70 (factory 주소 계산)
+
+**완료 조건:** 크로스 체인 브릿지, DEX 스왑이 실제 컨트랙트와 상호작용, 지갑 보안 기본 요건 충족
