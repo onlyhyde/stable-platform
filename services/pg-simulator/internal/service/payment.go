@@ -41,6 +41,31 @@ var (
 	ErrUnsupportedPaymentMethod  = fmt.Errorf("unsupported payment method")
 	ErrBankCommunicationError    = fmt.Errorf("failed to communicate with bank")
 	ErrAccountVerificationFailed = fmt.Errorf("account verification failed")
+	ErrInvalidAmount             = fmt.Errorf("amount must be a positive number")
+)
+
+// Payment processing constants
+const (
+	// Card validation
+	minCardNumberLength = 13
+	maxCardNumberLength = 19
+	twoDigitYearThreshold = 100
+	yearOffset            = 2000
+	maxFutureExpiryYears  = 20
+
+	// HTTP status ranges
+	httpStatusSuccessMin = 200
+	httpStatusSuccessMax = 300
+	httpStatusServerErr  = 500
+
+	// Risk-based 3DS challenge thresholds
+	highValueThreshold            = 1000
+	mediumValueThreshold          = 100
+	mediumValueChallengeProbability = 50
+	lowValueChallengeProbability    = 20
+	challengeVerificationRate       = 95
+	threeDSSuccessRate              = 95
+	percentBase                     = 100
 )
 
 // PaymentService handles payment operations
@@ -110,6 +135,11 @@ func (s *PaymentService) enqueueWebhook(eventType string, data interface{}) {
 
 // CreatePayment creates a new payment
 func (s *PaymentService) CreatePayment(req *model.CreatePaymentRequest) (*model.Payment, error) {
+	// Validate amount is a positive number
+	if parsedAmount, parseErr := strconv.ParseFloat(req.Amount, 64); parseErr != nil || parsedAmount <= 0 {
+		return nil, ErrInvalidAmount
+	}
+
 	// Atomically check and reserve idempotency key to prevent TOCTOU race
 	if req.IdempotencyKey != "" {
 		s.mu.Lock()
@@ -477,7 +507,7 @@ func (s *PaymentService) CancelPayment(id string) (*model.Payment, error) {
 
 // shouldSucceed determines if payment should succeed based on success rate
 func (s *PaymentService) shouldSucceed() bool {
-	return s.rng.Intn(100) < s.cfg.SuccessRate
+	return s.rng.Intn(percentBase) < s.cfg.SuccessRate
 }
 
 // Webhook retry configuration
@@ -542,13 +572,13 @@ func (s *PaymentService) sendWebhookSync(ctx context.Context, eventType string, 
 		resp.Body.Close()
 
 		// Success on 2xx status codes
-		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		if resp.StatusCode >= httpStatusSuccessMin && resp.StatusCode < httpStatusSuccessMax {
 			log.Printf("Webhook sent: %s, status: %d (attempt %d)", eventType, resp.StatusCode, attempt)
 			return
 		}
 
 		// Retry on 5xx server errors
-		if resp.StatusCode >= 500 {
+		if resp.StatusCode >= httpStatusServerErr {
 			log.Printf("Webhook attempt %d/%d got server error: %d", attempt, webhookMaxRetries, resp.StatusCode)
 			if attempt < webhookMaxRetries {
 				time.Sleep(backoff)
@@ -632,7 +662,7 @@ func validateLuhn(number string) error {
 	}
 
 	// Card number must be at least 13 digits (minimum for valid cards)
-	if len(cleanNumber) < 13 || len(cleanNumber) > 19 {
+	if len(cleanNumber) < minCardNumberLength || len(cleanNumber) > maxCardNumberLength {
 		return fmt.Errorf("invalid card number length: %d", len(cleanNumber))
 	}
 
@@ -702,8 +732,8 @@ func validateExpiry(expMonth, expYear string) error {
 	}
 
 	// Handle 2-digit year format (e.g., "25" -> 2025)
-	if year < 100 {
-		year += 2000
+	if year < twoDigitYearThreshold {
+		year += yearOffset
 	}
 
 	now := time.Now()
@@ -721,7 +751,7 @@ func validateExpiry(expMonth, expYear string) error {
 	}
 
 	// Reject cards with expiry too far in the future (> 20 years)
-	if year > currentYear+20 {
+	if year > currentYear+maxFutureExpiryYears {
 		return fmt.Errorf("invalid expiry year: too far in the future")
 	}
 
@@ -946,17 +976,17 @@ func (s *PaymentService) shouldRequireChallenge(payment *model.Payment) bool {
 	amount := 0.0
 	if _, err := fmt.Sscanf(payment.Amount, "%f", &amount); err == nil {
 		// High-value transactions always require challenge
-		if amount >= 1000 {
+		if amount >= highValueThreshold {
 			return true
 		}
 		// Medium-value transactions have 50% chance of challenge
-		if amount >= 100 {
-			return s.rng.Intn(100) < 50
+		if amount >= mediumValueThreshold {
+			return s.rng.Intn(percentBase) < mediumValueChallengeProbability
 		}
 	}
 
 	// Low-value transactions have 20% chance of challenge
-	return s.rng.Intn(100) < 20
+	return s.rng.Intn(percentBase) < lowValueChallengeProbability
 }
 
 // verifyChallenge simulates challenge response verification
@@ -973,7 +1003,7 @@ func (s *PaymentService) verifyChallenge(response string) bool {
 		return true
 	}
 	// Random success/failure for other responses
-	return s.rng.Intn(100) < 95
+	return s.rng.Intn(percentBase) < challengeVerificationRate
 }
 
 // generateECI generates Electronic Commerce Indicator based on card brand
@@ -1006,7 +1036,7 @@ func (s *PaymentService) generateCAVV() string {
 // Higher success rate than regular payments due to reduced fraud risk
 func (s *PaymentService) shouldSucceedAfter3DS() bool {
 	// 95% success rate for 3DS authenticated transactions (vs normal success rate)
-	return s.rng.Intn(100) < 95
+	return s.rng.Intn(percentBase) < threeDSSuccessRate
 }
 
 // --- Wallet methods ---

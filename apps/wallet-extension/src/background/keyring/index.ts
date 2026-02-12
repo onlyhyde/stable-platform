@@ -523,23 +523,6 @@ export class KeyringController {
   }
 
   /**
-   * Get mnemonic (for backup) - DEPRECATED: Use getMnemonicWithPassword instead
-   * @deprecated This method is deprecated. Use getMnemonicWithPassword for secure access.
-   */
-  getMnemonic(): string | null {
-    if (!vault.isUnlocked()) {
-      throw new Error('Vault is locked')
-    }
-
-    const hdKeyring = this.hdKeyrings[0]
-    if (!hdKeyring) {
-      return null
-    }
-
-    return hdKeyring.getMnemonic()
-  }
-
-  /**
    * Get mnemonic with password verification (secure method)
    * Requires password re-entry for security
    */

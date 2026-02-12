@@ -51,15 +51,43 @@ import {
 // Singleton validator instance
 const inputValidator = new InputValidator()
 
-// Cache createPublicClient instances by rpcUrl to avoid redundant instantiation
-const publicClientCache = new Map<string, ReturnType<typeof createPublicClient>>()
+// Cache createPublicClient instances by rpcUrl with TTL-based eviction
+const PUBLIC_CLIENT_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
+const PUBLIC_CLIENT_CACHE_MAX = 20
 
-function getPublicClient(rpcUrl: string) {
-  let client = publicClientCache.get(rpcUrl)
-  if (!client) {
-    client = createPublicClient({ transport: http(rpcUrl) })
-    publicClientCache.set(rpcUrl, client)
+const publicClientCache = new Map<
+  string,
+  { client: ReturnType<typeof createPublicClient>; lastUsed: number }
+>()
+
+function getPublicClient(rpcUrl: string): ReturnType<typeof createPublicClient> {
+  const now = Date.now()
+  const entry = publicClientCache.get(rpcUrl)
+  if (entry) {
+    entry.lastUsed = now
+    return entry.client
   }
+
+  // Evict stale entries if cache is at capacity
+  if (publicClientCache.size >= PUBLIC_CLIENT_CACHE_MAX) {
+    let oldestKey: string | null = null
+    let oldestTime = Infinity
+    for (const [key, val] of publicClientCache) {
+      if (now - val.lastUsed > PUBLIC_CLIENT_CACHE_TTL) {
+        publicClientCache.delete(key)
+      } else if (val.lastUsed < oldestTime) {
+        oldestTime = val.lastUsed
+        oldestKey = key
+      }
+    }
+    // If still at capacity after TTL eviction, remove LRU entry
+    if (publicClientCache.size >= PUBLIC_CLIENT_CACHE_MAX && oldestKey) {
+      publicClientCache.delete(oldestKey)
+    }
+  }
+
+  const client = createPublicClient({ transport: http(rpcUrl) })
+  publicClientCache.set(rpcUrl, { client, lastUsed: now })
   return client
 }
 
