@@ -25,10 +25,14 @@ export class ModuleRegistryServer {
   }
 
   private async initialize(): Promise<void> {
-    // CORS
+    // CORS - restrict origins in production
     await this.app.register(cors, {
-      origin: true,
+      origin:
+        process.env.NODE_ENV === 'production'
+          ? (process.env.ALLOWED_ORIGINS?.split(',') ?? ['https://stablenet.io'])
+          : true,
       methods: ['GET', 'POST', 'PUT', 'DELETE'],
+      credentials: true,
     })
 
     // Rate limiting

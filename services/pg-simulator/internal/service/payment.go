@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -21,6 +22,15 @@ import (
 	"github.com/stablenet/stable-platform/services/pg-simulator/internal/config"
 	"github.com/stablenet/stable-platform/services/pg-simulator/internal/model"
 )
+
+// webhookJob represents a queued webhook notification
+type webhookJob struct {
+	eventType string
+	data      interface{}
+}
+
+const webhookWorkerCount = 5
+const webhookQueueSize = 100
 
 // Error definitions
 var (
@@ -43,11 +53,16 @@ type PaymentService struct {
 	bankClient       *BankClient
 	mu               sync.RWMutex
 	rng              *rand.Rand
+	webhookChan      chan webhookJob
+	webhookWg        sync.WaitGroup
+	ctx              context.Context
+	cancel           context.CancelFunc
 }
 
 // NewPaymentService creates a new payment service
 func NewPaymentService(cfg *config.Config) *PaymentService {
-	return &PaymentService{
+	ctx, cancel := context.WithCancel(context.Background())
+	s := &PaymentService{
 		cfg:              cfg,
 		payments:         make(map[string]*model.Payment),
 		idempotencyKeys:  make(map[string]string),
@@ -55,37 +70,90 @@ func NewPaymentService(cfg *config.Config) *PaymentService {
 		checkoutSessions: make(map[string]*model.CheckoutSession),
 		bankClient:       NewBankClient(cfg.BankSimulatorURL),
 		rng:              rand.New(rand.NewSource(time.Now().UnixNano())),
+		webhookChan:      make(chan webhookJob, webhookQueueSize),
+		ctx:              ctx,
+		cancel:           cancel,
+	}
+
+	// Start bounded webhook worker pool
+	for i := 0; i < webhookWorkerCount; i++ {
+		s.webhookWg.Add(1)
+		go s.webhookWorker()
+	}
+
+	return s
+}
+
+// Close gracefully shuts down the payment service and drains webhook queue
+func (s *PaymentService) Close() {
+	s.cancel()
+	close(s.webhookChan)
+	s.webhookWg.Wait()
+}
+
+// webhookWorker processes webhook jobs from the queue
+func (s *PaymentService) webhookWorker() {
+	defer s.webhookWg.Done()
+	for job := range s.webhookChan {
+		s.sendWebhookSync(s.ctx, job.eventType, job.data)
+	}
+}
+
+// enqueueWebhook adds a webhook job to the bounded queue
+func (s *PaymentService) enqueueWebhook(eventType string, data interface{}) {
+	select {
+	case s.webhookChan <- webhookJob{eventType: eventType, data: data}:
+	default:
+		log.Printf("Webhook queue full, dropping event: %s", eventType)
 	}
 }
 
 // CreatePayment creates a new payment
 func (s *PaymentService) CreatePayment(req *model.CreatePaymentRequest) (*model.Payment, error) {
-	// Check for duplicate payment using idempotency key
-	s.mu.RLock()
+	// Atomically check and reserve idempotency key to prevent TOCTOU race
 	if req.IdempotencyKey != "" {
+		s.mu.Lock()
 		if existingPaymentID, exists := s.idempotencyKeys[req.IdempotencyKey]; exists {
-			// Return existing payment to prevent duplicate processing
 			if existingPayment, ok := s.payments[existingPaymentID]; ok {
-				s.mu.RUnlock()
+				s.mu.Unlock()
 				log.Printf("Duplicate payment detected (idempotency key: %s), returning existing payment: %s",
 					maskIdempotencyKey(req.IdempotencyKey), existingPaymentID)
 				return existingPayment, nil
 			}
+			// Key reserved but payment not yet completed - concurrent duplicate request
+			s.mu.Unlock()
+			return nil, fmt.Errorf("duplicate request: payment with this idempotency key is being processed")
 		}
+		// Reserve the key atomically to prevent concurrent duplicate processing
+		s.idempotencyKeys[req.IdempotencyKey] = ""
+		s.mu.Unlock()
 	}
-	s.mu.RUnlock()
+
+	var payment *model.Payment
+	var err error
 
 	// Route by payment method
 	switch req.Method {
 	case model.PaymentMethodCard:
-		return s.processCardPayment(req)
+		payment, err = s.processCardPayment(req)
 	case model.PaymentMethodBank:
-		return s.processBankTransfer(req)
+		payment, err = s.processBankTransfer(req)
 	case model.PaymentMethodWallet:
-		return s.processWalletPayment(req)
+		payment, err = s.processWalletPayment(req)
 	default:
-		return nil, ErrUnsupportedPaymentMethod
+		err = ErrUnsupportedPaymentMethod
 	}
+
+	// Clean up reservation on error
+	if err != nil && req.IdempotencyKey != "" {
+		s.mu.Lock()
+		if s.idempotencyKeys[req.IdempotencyKey] == "" {
+			delete(s.idempotencyKeys, req.IdempotencyKey)
+		}
+		s.mu.Unlock()
+	}
+
+	return payment, err
 }
 
 // processCardPayment processes card payment
@@ -133,7 +201,7 @@ func (s *PaymentService) processCardPayment(req *model.CreatePaymentRequest) (*m
 
 			// Send webhook notification
 			paymentCopy := *payment
-			go s.sendWebhook("payment."+string(payment.Status), &paymentCopy)
+			s.enqueueWebhook("payment."+string(payment.Status), &paymentCopy)
 
 			return payment, nil
 		}
@@ -161,7 +229,7 @@ func (s *PaymentService) processCardPayment(req *model.CreatePaymentRequest) (*m
 
 	// Send webhook notification with copy to avoid race condition
 	paymentCopy := *payment
-	go s.sendWebhook("payment."+string(payment.Status), &paymentCopy)
+	s.enqueueWebhook("payment."+string(payment.Status), &paymentCopy)
 
 	return payment, nil
 }
@@ -211,7 +279,7 @@ func (s *PaymentService) processBankTransfer(req *model.CreatePaymentRequest) (*
 
 		log.Printf("Bank transfer declined: %s (Reason: %s)", payment.ID, payment.FailureReason)
 		paymentCopy := *payment
-		go s.sendWebhook("payment.declined", &paymentCopy)
+		s.enqueueWebhook("payment.declined", &paymentCopy)
 		return payment, nil
 	}
 
@@ -232,7 +300,7 @@ func (s *PaymentService) processBankTransfer(req *model.CreatePaymentRequest) (*
 
 		log.Printf("Bank transfer failed: %s (Error: %v)", payment.ID, err)
 		paymentCopy := *payment
-		go s.sendWebhook("payment.declined", &paymentCopy)
+		s.enqueueWebhook("payment.declined", &paymentCopy)
 		return payment, nil
 	}
 
@@ -245,7 +313,7 @@ func (s *PaymentService) processBankTransfer(req *model.CreatePaymentRequest) (*
 		log.Printf("Bank transfer approved: %s (DebitID: %s, Amount: %s %s)",
 			payment.ID, debitResp.ID, payment.Amount, payment.Currency)
 		paymentCopy := *payment
-		go s.sendWebhook("payment.approved", &paymentCopy)
+		s.enqueueWebhook("payment.approved", &paymentCopy)
 	} else {
 		payment.Status = model.PaymentStatusDeclined
 		payment.FailureReason = debitResp.FailureReason
@@ -254,7 +322,7 @@ func (s *PaymentService) processBankTransfer(req *model.CreatePaymentRequest) (*
 		}
 		log.Printf("Bank transfer declined: %s (Reason: %s)", payment.ID, payment.FailureReason)
 		paymentCopy := *payment
-		go s.sendWebhook("payment.declined", &paymentCopy)
+		s.enqueueWebhook("payment.declined", &paymentCopy)
 	}
 	payment.UpdatedAt = time.Now()
 	s.mu.Unlock()
@@ -322,7 +390,7 @@ func (s *PaymentService) processWalletPayment(req *model.CreatePaymentRequest) (
 
 	// Send webhook notification
 	paymentCopy := *payment
-	go s.sendWebhook("payment."+string(payment.Status), &paymentCopy)
+	s.enqueueWebhook("payment."+string(payment.Status), &paymentCopy)
 
 	return payment, nil
 }
@@ -376,7 +444,7 @@ func (s *PaymentService) RefundPayment(id string, req *model.RefundRequest) (*mo
 
 	// Send webhook notification with copy to avoid race condition
 	paymentCopy := *payment
-	go s.sendWebhook("payment.refunded", &paymentCopy)
+	s.enqueueWebhook("payment.refunded", &paymentCopy)
 
 	return payment, nil
 }
@@ -402,7 +470,7 @@ func (s *PaymentService) CancelPayment(id string) (*model.Payment, error) {
 
 	// Send webhook notification with copy to avoid race condition
 	paymentCopy := *payment
-	go s.sendWebhook("payment.cancelled", &paymentCopy)
+	s.enqueueWebhook("payment.cancelled", &paymentCopy)
 
 	return payment, nil
 }
@@ -420,8 +488,8 @@ const (
 	webhookTimeout        = 10 * time.Second
 )
 
-// sendWebhook sends a webhook notification with exponential backoff retry
-func (s *PaymentService) sendWebhook(eventType string, data interface{}) {
+// sendWebhookSync sends a webhook notification with exponential backoff retry and context support
+func (s *PaymentService) sendWebhookSync(ctx context.Context, eventType string, data interface{}) {
 	if s.cfg.WebhookURL == "" {
 		return
 	}
@@ -442,7 +510,13 @@ func (s *PaymentService) sendWebhook(eventType string, data interface{}) {
 	backoff := webhookInitialBackoff
 
 	for attempt := 1; attempt <= webhookMaxRetries; attempt++ {
-		req, err := http.NewRequest("POST", s.cfg.WebhookURL, bytes.NewBuffer(body))
+		// Check context cancellation before each attempt
+		if ctx.Err() != nil {
+			log.Printf("Webhook cancelled: %s (context: %v)", eventType, ctx.Err())
+			return
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "POST", s.cfg.WebhookURL, bytes.NewBuffer(body))
 		if err != nil {
 			log.Printf("Failed to create webhook request: %v", err)
 			return
@@ -454,6 +528,10 @@ func (s *PaymentService) sendWebhook(eventType string, data interface{}) {
 
 		resp, err := client.Do(req)
 		if err != nil {
+			if ctx.Err() != nil {
+				log.Printf("Webhook cancelled during send: %s", eventType)
+				return
+			}
 			log.Printf("Webhook attempt %d/%d failed: %v", attempt, webhookMaxRetries, err)
 			if attempt < webhookMaxRetries {
 				time.Sleep(backoff)
@@ -810,7 +888,7 @@ func (s *PaymentService) CompleteThreeDSecure(paymentID string, req *model.Three
 
 	// Send webhook notification
 	paymentCopy := *payment
-	go s.sendWebhook("payment.3ds."+string(payment.ThreeDSecure.Status), &paymentCopy)
+	s.enqueueWebhook("payment.3ds."+string(payment.ThreeDSecure.Status), &paymentCopy)
 
 	return &model.ThreeDSecureCompleteResponse{
 		PaymentID:     paymentID,
@@ -856,7 +934,7 @@ func (s *PaymentService) FinalizePaymentAfter3DS(paymentID string) (*model.Payme
 
 	// Send webhook notification
 	paymentCopy := *payment
-	go s.sendWebhook("payment."+string(payment.Status), &paymentCopy)
+	s.enqueueWebhook("payment."+string(payment.Status), &paymentCopy)
 
 	return payment, nil
 }

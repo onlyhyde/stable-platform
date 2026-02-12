@@ -141,7 +141,7 @@ func (s *SettlementService) executeSettlementBatch(batch *model.SettlementBatch,
 		s.mu.Unlock()
 
 		log.Printf("Settlement batch completed (no eligible payments): %s", batch.ID)
-		s.paymentService.sendWebhook("settlement.batch.completed", batch)
+		s.paymentService.enqueueWebhook("settlement.batch.completed", batch)
 		return
 	}
 
@@ -219,14 +219,12 @@ func (s *SettlementService) executeSettlementBatch(batch *model.SettlementBatch,
 		batch.ID, successCount, failedCount, batch.Summary.TotalNet)
 
 	// 5. Send webhook
-	s.paymentService.sendWebhook("settlement.batch.completed", batch)
+	s.paymentService.enqueueWebhook("settlement.batch.completed", batch)
 }
 
 // getSettlementEligiblePayments returns payments eligible for settlement
+// Uses PaymentService's public method instead of directly accessing its mutex
 func (s *SettlementService) getSettlementEligiblePayments(req *model.ProcessSettlementRequest) []*model.Payment {
-	s.paymentService.mu.RLock()
-	defer s.paymentService.mu.RUnlock()
-
 	var fromDate, toDate time.Time
 	if req.FromDate != "" {
 		fromDate, _ = time.Parse("2006-01-02", req.FromDate)
@@ -239,33 +237,7 @@ func (s *SettlementService) getSettlementEligiblePayments(req *model.ProcessSett
 		toDate = time.Now()
 	}
 
-	var eligible []*model.Payment
-	for _, p := range s.paymentService.payments {
-		// Only approved, unsettled payments
-		if p.Status != model.PaymentStatusApproved {
-			continue
-		}
-		if p.SettledAt != nil {
-			continue
-		}
-
-		// Filter by merchant if specified
-		if req.MerchantID != "" && p.MerchantID != req.MerchantID {
-			continue
-		}
-
-		// Filter by date range
-		if !fromDate.IsZero() && p.CreatedAt.Before(fromDate) {
-			continue
-		}
-		if p.CreatedAt.After(toDate) {
-			continue
-		}
-
-		eligible = append(eligible, p)
-	}
-
-	return eligible
+	return s.paymentService.GetEligiblePayments(req.MerchantID, fromDate, toDate)
 }
 
 // groupByMerchant groups payments by merchant ID
@@ -366,8 +338,37 @@ func (s *SettlementService) depositToMerchant(settlement *model.Settlement) erro
 	return nil
 }
 
+// GetEligiblePayments returns payments matching settlement criteria with proper locking
+func (s *PaymentService) GetEligiblePayments(merchantID string, fromDate, toDate time.Time) []*model.Payment {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var eligible []*model.Payment
+	for _, p := range s.payments {
+		if p.Status != model.PaymentStatusApproved {
+			continue
+		}
+		if p.SettledAt != nil {
+			continue
+		}
+		if merchantID != "" && p.MerchantID != merchantID {
+			continue
+		}
+		if !fromDate.IsZero() && p.CreatedAt.Before(fromDate) {
+			continue
+		}
+		if !toDate.IsZero() && p.CreatedAt.After(toDate) {
+			continue
+		}
+		eligible = append(eligible, p)
+	}
+	return eligible
+}
+
 // markPaymentsSettled marks payments as settled (called from settlement service)
 func (s *PaymentService) markPaymentsSettled(paymentIDs []string, settledAt *time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	for _, pid := range paymentIDs {
 		if p, ok := s.payments[pid]; ok {
 			p.SettledAt = settledAt
@@ -482,7 +483,7 @@ func (s *SettlementService) CreateAdjustment(settlementID string, req *model.Cre
 		adj.ID, settlementID, req.Type, req.Amount, settlement.NetAmount)
 
 	// 7. Send webhook
-	go s.paymentService.sendWebhook("settlement.adjusted", adj)
+	s.paymentService.enqueueWebhook("settlement.adjusted", adj)
 
 	return adj, nil
 }
