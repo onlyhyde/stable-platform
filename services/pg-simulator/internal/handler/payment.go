@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"html"
 	"io"
 	"net/http"
 
@@ -308,8 +309,8 @@ func (h *PaymentHandler) FinalizePaymentAfter3DS(c *gin.Context) {
 // @Success 200 {string} string "HTML page"
 // @Router /api/v1/3ds/challenge/{acsTransactionId} [get]
 func (h *PaymentHandler) RenderChallengePage(c *gin.Context) {
-	acsTransactionID := c.Param("acsTransactionId")
-	returnURL := c.Query("returnUrl")
+	acsTransactionID := html.EscapeString(c.Param("acsTransactionId"))
+	returnURL := html.EscapeString(c.Query("returnUrl"))
 
 	// Render a simple HTML form for the challenge
 	html := `<!DOCTYPE html>
@@ -340,7 +341,7 @@ func (h *PaymentHandler) RenderChallengePage(c *gin.Context) {
         <h1>Verify Your Identity</h1>
         <p>Your bank requires additional authentication to complete this transaction.</p>
         <div class="info">
-            <strong>Transaction ID:</strong> ` + acsTransactionID[:8] + `...<br>
+            <strong>Transaction ID:</strong> ` + truncateID(acsTransactionID, 8) + `...<br>
             <strong>Note:</strong> Enter the OTP sent to your registered mobile number.
         </div>
         <form id="challengeForm">
@@ -384,6 +385,14 @@ func (h *PaymentHandler) RenderChallengePage(c *gin.Context) {
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.String(http.StatusOK, html)
+}
+
+// truncateID safely truncates a string ID for display
+func truncateID(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n]
 }
 
 // --- Wallet handlers ---
