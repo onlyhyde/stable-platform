@@ -26,6 +26,7 @@ export type ServiceUrls = {
   bundler: string
   paymaster: string
   stealthServer: string
+  indexer: string
 }
 
 /**
@@ -75,24 +76,28 @@ export const SERVICE_URLS: Record<number, ServiceUrls> = {
     bundler: getDevnetConfig().bundlerUrl,
     paymaster: getDevnetConfig().paymasterUrl,
     stealthServer: getDevnetConfig().stealthServerUrl,
+    indexer: getDevnetConfig().indexerUrl,
   },
   // StableNet Local - uses user's custom RPC settings if set
   8283: {
     bundler: getLocalConfig().bundlerUrl,
     paymaster: getLocalConfig().paymasterUrl,
     stealthServer: getLocalConfig().stealthServerUrl,
+    indexer: getLocalConfig().indexerUrl,
   },
   // StableNet Testnet - uses user's custom RPC settings if set
   82830: {
     bundler: getTestnetConfig().bundlerUrl,
     paymaster: getTestnetConfig().paymasterUrl,
     stealthServer: getTestnetConfig().stealthServerUrl,
+    indexer: getTestnetConfig().indexerUrl,
   },
   // Sepolia (legacy)
   11155111: {
     bundler: getTestnetConfig().bundlerUrl,
     paymaster: getTestnetConfig().paymasterUrl,
     stealthServer: getTestnetConfig().stealthServerUrl,
+    indexer: getTestnetConfig().indexerUrl,
   },
 }
 

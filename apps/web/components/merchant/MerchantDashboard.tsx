@@ -287,7 +287,7 @@ export function MerchantDashboard({
             <RecentTransactionsCard
               transactions={transactions}
               onViewAll={() => {}}
-              onRetry={async (id) => {}}
+              onRetry={async (_id) => {}}
             />
           </div>
         )}

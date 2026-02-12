@@ -12,6 +12,7 @@ interface StableNetContextValue {
   bundlerUrl: string
   paymasterUrl: string
   stealthServerUrl: string
+  indexerUrl: string
   entryPoint: `0x${string}`
   accountFactory: `0x${string}`
   paymaster: `0x${string}`
@@ -56,6 +57,7 @@ export function StableNetProvider({ children }: StableNetProviderProps) {
       bundlerUrl: services?.bundler ?? defaultServices.bundler,
       paymasterUrl: services?.paymaster ?? defaultServices.paymaster,
       stealthServerUrl: services?.stealthServer ?? defaultServices.stealthServer,
+      indexerUrl: services?.indexer ?? defaultServices.indexer,
       entryPoint: contracts?.entryPoint ?? defaultContracts.entryPoint,
       accountFactory: contracts?.accountFactory ?? defaultContracts.accountFactory,
       paymaster: contracts?.paymaster ?? defaultContracts.paymaster,
