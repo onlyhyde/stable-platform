@@ -32,16 +32,14 @@ export function encodeExecutionMode(
 
 /**
  * Encode a single call for Kernel execution
+ * Kernel v3 expects abi.encodePacked(target[20], value[32], callData[variable])
  */
 export function encodeSingleCall(call: Call): Hex {
-  return encodeAbiParameters(
-    [
-      { type: 'address', name: 'target' },
-      { type: 'uint256', name: 'value' },
-      { type: 'bytes', name: 'callData' },
-    ],
-    [call.to, call.value ?? 0n, call.data ?? '0x']
-  )
+  return concat([
+    call.to,                                      // 20 bytes: target address
+    pad(toHex(call.value ?? 0n), { size: 32 }),   // 32 bytes: value
+    (call.data ?? '0x') as Hex,                   // variable: callData
+  ]) as Hex
 }
 
 /**

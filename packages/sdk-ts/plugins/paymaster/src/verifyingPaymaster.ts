@@ -117,13 +117,15 @@ function encodePaymasterData(validUntil: bigint, validAfter: bigint, signature: 
 /**
  * Compute the hash that needs to be signed by the paymaster
  * This matches the getHash function in VerifyingPaymaster.sol
+ * Includes senderNonce for replay prevention
  */
 function computePaymasterHash(
   userOp: UserOperation,
   paymasterAddress: Address,
   chainId: bigint,
   validUntil: bigint,
-  validAfter: bigint
+  validAfter: bigint,
+  senderNonce: bigint = 0n
 ): Hex {
   // Pack initCode from factory + factoryData
   const initCode =
@@ -149,6 +151,7 @@ function computePaymasterHash(
         { type: 'address' },
         { type: 'uint48' },
         { type: 'uint48' },
+        { type: 'uint256' },
       ],
       [
         userOp.sender,
@@ -162,6 +165,7 @@ function computePaymasterHash(
         paymasterAddress,
         Number(validUntil),
         Number(validAfter),
+        senderNonce,
       ]
     )
   )
