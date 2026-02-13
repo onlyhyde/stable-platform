@@ -13,6 +13,7 @@ import (
 	"github.com/stablenet/sdk-go/clients"
 	"github.com/stablenet/sdk-go/core/bundler"
 	sdkconfig "github.com/stablenet/sdk-go/config"
+	"github.com/stablenet/sdk-go/core/rpc"
 	"github.com/stablenet/sdk-go/transaction"
 	sdktypes "github.com/stablenet/sdk-go/types"
 )
@@ -36,9 +37,10 @@ type SmartAccountStrategyConfig struct {
 
 // SmartAccountStrategy implements transaction.Strategy for Smart Account (ERC-4337) transactions.
 type SmartAccountStrategy struct {
-	config         SmartAccountStrategyConfig
-	bundlerClient  *bundler.Client
-	entryPoint     sdktypes.Address
+	config          SmartAccountStrategyConfig
+	bundlerClient   *bundler.Client
+	paymasterClient *rpc.Client // nil if paymaster URL not configured
+	entryPoint      sdktypes.Address
 }
 
 // NewSmartAccountStrategy creates a new Smart Account strategy.
@@ -54,10 +56,19 @@ func NewSmartAccountStrategy(cfg SmartAccountStrategyConfig) (*SmartAccountStrat
 		Timeout:    30 * time.Second,
 	})
 
+	var paymasterClient *rpc.Client
+	if cfg.PaymasterUrl != "" {
+		paymasterClient = rpc.NewClient(rpc.ClientConfig{
+			URL:     cfg.PaymasterUrl,
+			Timeout: 15 * time.Second,
+		})
+	}
+
 	return &SmartAccountStrategy{
-		config:        cfg,
-		bundlerClient: bundlerClient,
-		entryPoint:    entryPoint,
+		config:          cfg,
+		bundlerClient:   bundlerClient,
+		paymasterClient: paymasterClient,
+		entryPoint:      entryPoint,
 	}, nil
 }
 
@@ -266,11 +277,61 @@ func (s *SmartAccountStrategy) WaitForConfirmation(ctx context.Context, hash sdk
 	return nil
 }
 
-// getPaymasterData gets paymaster data for the UserOperation.
+// getPaymasterData gets paymaster data for the UserOperation by calling the paymaster proxy service.
 func (s *SmartAccountStrategy) getPaymasterData(ctx context.Context, userOp *sdktypes.PartialUserOperation, gasPayment *sdktypes.GasPaymentConfig) (*PaymasterData, error) {
-	// This is a placeholder - real implementation would call the paymaster service
-	// For now, return nil to indicate no paymaster data
-	return nil, nil
+	if s.paymasterClient == nil {
+		return nil, nil
+	}
+
+	// Build the UserOp map for the JSON-RPC request
+	userOpMap := map[string]interface{}{
+		"sender":   userOp.Sender.Hex(),
+		"nonce":    fmt.Sprintf("0x%x", userOp.Nonce),
+		"callData": fmt.Sprintf("0x%x", userOp.CallData),
+	}
+
+	// Call pm_getPaymasterStubData: params = [userOp, entryPoint, chainId]
+	chainIdHex := fmt.Sprintf("0x%x", s.config.ChainId)
+	params := []interface{}{userOpMap, s.entryPoint.Hex(), chainIdHex}
+
+	var result struct {
+		Paymaster                     string `json:"paymaster"`
+		PaymasterData                 string `json:"paymasterData"`
+		PaymasterVerificationGasLimit string `json:"paymasterVerificationGasLimit,omitempty"`
+		PaymasterPostOpGasLimit       string `json:"paymasterPostOpGasLimit,omitempty"`
+	}
+
+	err := s.paymasterClient.Call(ctx, "pm_getPaymasterStubData", params, &result)
+	if err != nil {
+		return nil, fmt.Errorf("paymaster request failed: %w", err)
+	}
+
+	if result.Paymaster == "" {
+		return nil, nil
+	}
+
+	paymasterAddr := sdktypes.Address(common.HexToAddress(result.Paymaster))
+	paymasterData, _ := sdktypes.HexFromString(result.PaymasterData)
+
+	pd := &PaymasterData{
+		Paymaster:     &paymasterAddr,
+		PaymasterData: paymasterData,
+	}
+
+	if result.PaymasterVerificationGasLimit != "" {
+		v, ok := new(big.Int).SetString(result.PaymasterVerificationGasLimit[2:], 16)
+		if ok {
+			pd.PaymasterVerificationGasLimit = v
+		}
+	}
+	if result.PaymasterPostOpGasLimit != "" {
+		v, ok := new(big.Int).SetString(result.PaymasterPostOpGasLimit[2:], 16)
+		if ok {
+			pd.PaymasterPostOpGasLimit = v
+		}
+	}
+
+	return pd, nil
 }
 
 // SmartAccountTransactionData contains Smart Account-specific transaction data.

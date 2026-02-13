@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/stablenet/sdk-go/config"
+	"github.com/stablenet/sdk-go/core/bundler"
 	"github.com/stablenet/sdk-go/types"
 )
 
@@ -424,12 +426,20 @@ func (s *EIP7702Strategy) Estimate(ctx context.Context, request *types.MultiMode
 
 // SmartAccountStrategy estimates gas for Smart Account transactions.
 type SmartAccountStrategy struct {
-	config EstimatorConfig
+	config        EstimatorConfig
+	bundlerClient *bundler.Client // nil if bundler URL not configured
 }
 
 // NewSmartAccountStrategy creates a new Smart Account gas strategy.
 func NewSmartAccountStrategy(cfg EstimatorConfig) *SmartAccountStrategy {
-	return &SmartAccountStrategy{config: cfg}
+	s := &SmartAccountStrategy{config: cfg}
+	if cfg.BundlerUrl != "" {
+		s.bundlerClient = bundler.NewClient(bundler.ClientConfig{
+			URL:     cfg.BundlerUrl,
+			Timeout: 30 * time.Second,
+		})
+	}
+	return s
 }
 
 // Mode returns the transaction mode.
@@ -443,17 +453,30 @@ func (s *SmartAccountStrategy) Supports(request *types.MultiModeTransactionReque
 }
 
 // Estimate estimates gas for Smart Account transaction.
+// Calls the bundler's eth_estimateUserOperationGas when available, falls back to config defaults.
 func (s *SmartAccountStrategy) Estimate(ctx context.Context, request *types.MultiModeTransactionRequest, gasPrices *GasPriceInfo) (*types.GasEstimate, error) {
-	// For Smart Account, we need to estimate UserOperation gas
-	// In production, this should call the bundler's eth_estimateUserOperationGas
-
-	// Use default values
 	preVerificationGas := new(big.Int).Set(config.GasConfig.DefaultPreVerificationGas)
 	verificationGasLimit := new(big.Int).Set(config.GasConfig.DefaultVerificationGasLimit)
 	callGasLimit := new(big.Int).Set(config.GasConfig.DefaultCallGasLimit)
 
-	// Add calldata gas to call gas limit
-	if len(request.Data) > 0 {
+	// Try bundler estimation if available
+	if s.bundlerClient != nil {
+		partialOp := &types.PartialUserOperation{
+			Sender:   request.From,
+			Nonce:    big.NewInt(0),
+			CallData: request.Data,
+		}
+		estimation, err := s.bundlerClient.EstimateUserOperationGas(ctx, partialOp)
+		if err == nil {
+			preVerificationGas = estimation.PreVerificationGas
+			verificationGasLimit = estimation.VerificationGasLimit
+			callGasLimit = estimation.CallGasLimit
+		}
+		// On error, fall through to defaults
+	}
+
+	// Add calldata gas to call gas limit (only for default path)
+	if s.bundlerClient == nil && len(request.Data) > 0 {
 		calldataGas := config.CalculateCalldataGas(request.Data)
 		callGasLimit.Add(callGasLimit, calldataGas)
 	}

@@ -277,9 +277,14 @@ type EOATransactionData struct {
 	ChainId uint64
 }
 
-// decodeRawTransaction is a placeholder for decoding signed transaction bytes.
-// In a real implementation, this would use RLP decoding.
+// decodeRawTransaction decodes signed transaction bytes using RLP decoding.
 func decodeRawTransaction(raw sdktypes.Hex) *types.Transaction {
-	// This is a placeholder - real implementation would decode the raw transaction
-	return nil
+	if len(raw) == 0 {
+		return nil
+	}
+	tx := new(types.Transaction)
+	if err := tx.UnmarshalBinary(raw.Bytes()); err != nil {
+		return nil
+	}
+	return tx
 }
