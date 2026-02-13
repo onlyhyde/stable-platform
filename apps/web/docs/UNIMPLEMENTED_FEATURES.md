@@ -24,6 +24,7 @@
 > 23차 검토: 2026-02-13 (Phase 17 — §60 Paymaster Proxy admin API 완성) = 1건 RESOLVED
 > 24차 검토: 2026-02-13 (Phase 18 — §63 QR Code 실제 생성, §71 Price Impact 계산+경고 UI) = 2건 RESOLVED
 > 25차 검토: 2026-02-13 (Phase 19 — §72 wallet_requestPermissions EIP-2255 준수) = 1건 RESOLVED
+> 26차 검토: 2026-02-13 (Phase 20 — §67 E2E CI 이미 구현 확인) = 1건 RESOLVED
 
 ---
 
@@ -1563,14 +1564,16 @@ Address: common.HexToAddress("0x0000000000000000000000000000000000000000"), // T
 
 ---
 
-## §67. LOW — E2E 테스트 CI 미통합
+## ~~§67. LOW — E2E 테스트 CI 미통합~~ ✅ RESOLVED (Phase 20 — 이미 구현 확인)
 
 **심각도:** LOW
-**파일:** `apps/wallet-extension/docs/REMAINING_TASKS.md:257`
 
-**현상:** Playwright E2E 테스트(27개)가 로컬에서만 실행되고 CI에 통합되지 않았다.
-
-**영향:** PR 머지 시 E2E 회귀 테스트가 자동 실행되지 않음
+✅ **RESOLVED (Phase 20):** CI에 이미 완전 통합됨:
+- `.github/workflows/ci.yml`의 `e2e` job (lines 105-156)
+- `typescript` job 완료 후 실행 (`needs: [typescript]`)
+- wallet-extension 빌드 artifact 다운로드 → Playwright chromium 설치 → `npx playwright test`
+- E2E report/results artifact 업로드 (실패 시 디버깅용)
+- `REMAINING_TASKS.md`의 기록이 outdated — 실제 CI 워크플로우에는 구현 완료
 
 ---
 
@@ -1656,7 +1659,7 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 | apps/web (§1-§34) | ~~3~~ 2 | ~~27~~ 22 | ~~41~~ 37 | 18 | **65** | ~~89~~ **24** |
 | packages (§35-§48, §73) | ~~3~~ 1 | ~~4~~ 0 | ~~7~~ 1 | ~~1~~ 0 | **12** | ~~15~~ **3** |
 | services (§49-§62, §68) | ~~1~~ 0 | ~~3~~ 0 | ~~7~~ 0 | ~~4~~ 0 | **15** | ~~15~~ **0** |
-| wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 0 | ~~5~~ 4 | **5** | ~~9~~ **4** |
+| wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 0 | ~~5~~ 3 | **6** | ~~9~~ **3** |
 | **합계** | **3** | **22** | **39** | **26** | **91** | **37** |
 
 > 15차 검토 (2026-02-13, Phase 10): packages 10건, services 5건, wallet-extension 2건 RESOLVED 확인
