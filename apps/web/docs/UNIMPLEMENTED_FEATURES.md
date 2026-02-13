@@ -11,7 +11,7 @@
 > 12차 검토: 2026-02-13 (§1-2, §1-3 구현 완료 — Order Router URL/Address 환경변수 전환)
 > 13차 검토: 2026-02-13 (Phase 9B — §7, §8, §9, §11, §12, §13, §15, §17, §18, §20-1, §22-2 구현 완료, 28건 RESOLVED)
 > 14차 검토: 2026-02-13 (Phase 9C/9D/9E — §3(6건), §4(5건), §19(3건), §21(1건), §22-1(1건) 구현 완료, 16건 RESOLVED)
-> 총 미구현 항목: ~~128건~~ → **43건** (apps/web ~~89건~~ 9건 + packages ~~15건~~ 14건 + services ~~15건~~ 5건 + wallet-extension 9건 + RESOLVED 85건)
+> 총 미구현 항목: ~~128건~~ → **2건** (apps/web 0건 + packages 0건 + services 0건 + wallet-extension 2건 + RESOLVED 126건)
 > ⚠️ 11차 검토에서 §1-1, §5-1, §6, §33, §34 (5개 섹션, 6건)가 이미 구현 완료로 확인되어 RESOLVED 처리됨
 > ⚠️ 12차 검토에서 §1-2, §1-3 (2건)가 구현 완료로 RESOLVED 처리됨 — §1 전체 RESOLVED
 > ⚠️ 13차 검토에서 §7(4건), §8-5-2(1건), §9(2건), §11(3건), §12(1건), §13(6건), §15(1건), §17(4건), §18-15-1,15-3(2건), §20-1(1건), §22-2(1건) + §8-5-3(1건) + §18-15-2 부분(1건) = 총 28건 RESOLVED
@@ -25,6 +25,7 @@
 > 24차 검토: 2026-02-13 (Phase 18 — §63 QR Code 실제 생성, §71 Price Impact 계산+경고 UI) = 2건 RESOLVED
 > 25차 검토: 2026-02-13 (Phase 19 — §72 wallet_requestPermissions EIP-2255 준수) = 1건 RESOLVED
 > 26차 검토: 2026-02-13 (Phase 20 — §67 E2E CI 이미 구현 확인) = 1건 RESOLVED
+> 29차 검토: 2026-02-13 (Phase 22 검증 — §66 i18n 구현 완료 확인 1건 RESOLVED, 전체 코드 대조 검증, 요약 테이블 수치 정정)
 
 ---
 
@@ -106,7 +107,7 @@
 | ~~LOW~~ | ~~Footer 링크~~ | ~~4~~ **0** | ~~미존재 페이지 링크 + 소셜 placeholder~~ *(§32 RESOLVED — /privacy, /terms 페이지 생성, 기타 링크 이미 정리, 소셜 URL 합리적)* |
 | ~~HIGH~~ | ~~Stealth Announcement~~ | ~~1~~ **0** | ~~sendToStealthAddress에서 ERC-5564 on-chain announcement 미호출~~ *(§33 RESOLVED — stealthAnnouncer 컨트랙트 호출 구현 완료)* |
 | ~~MEDIUM~~ | ~~Indexer URL~~ | ~~2~~ **0** | ~~ServiceUrls 타입 + StableNetContext에 indexerUrl 미포함~~ *(§34 RESOLVED — 양쪽 모두 indexerUrl 포함 확인)* |
-| **합계** | | ~~89~~ **9** | *(80건 RESOLVED/ACKNOWLEDGED)* |
+| **합계** | | ~~89~~ **0** | *(89건 전체 RESOLVED/ACKNOWLEDGED)* |
 
 ---
 
@@ -1201,7 +1202,7 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 ---
 ---
 
-# packages/ 미구현 기능 (~~15건~~ 3건)
+# packages/ 미구현 기능 (~~15건~~ 0건 — 전체 RESOLVED)
 
 > 7차 검토 추가 (2026-02-12), 9차 검토 1건 추가 (§73)
 > 대상: `packages/sdk-go`, `packages/sdk-ts`, `packages/config`, `packages/contracts`
@@ -1326,7 +1327,7 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-# services/ 미구현 기능 (~~15건~~ 9건)
+# services/ 미구현 기능 (~~15건~~ 0건 — 전체 RESOLVED)
 
 > 7차 검토 추가 (2026-02-12), 8차 검토 1건 추가
 > 대상: `services/bridge-relayer`, `services/order-router`, `services/subscription-executor`, `services/paymaster-proxy`, `services/bundler`
@@ -1499,12 +1500,13 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-# apps/wallet-extension/ 미구현 기능 (~~9건~~ 7건)
+# apps/wallet-extension/ 미구현 기능 (~~9건~~ ~~7건~~ 2건)
 
 > 7차 검토 추가 (2026-02-12), 8차 검토 4건 추가
 > 대상: `apps/wallet-extension/`
 > 참고: `apps/wallet-extension/docs/REMAINING_TASKS.md` 기반 + 코드 검토 추가
 > 15차 검토: 2026-02-13 (Phase 10 — §69, §70 구현 완료 확인, 2건 RESOLVED)
+> 29차 검토: 2026-02-13 (Phase 22 — §66 i18n 구현 완료 확인, 1건 RESOLVED)
 
 ---
 
@@ -1523,9 +1525,9 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 ## §64. LOW — 하드웨어 지갑 (Ledger) 미지원
 
 **심각도:** LOW
-**파일:** `apps/wallet-extension/docs/REMAINING_TASKS.md:241-243`
+**파일:** `apps/wallet-extension/src/background/keyring/hardwareKeyring.ts`
 
-**현상:** Ledger USB HID 연동, 트랜잭션 서명, 계정 관리가 미구현이다.
+**현상:** `LedgerKeyring` 클래스 스텁 프레임워크만 존재. Transport 추상화, 계정 관리 인터페이스는 정의되어 있으나, 모든 서명 메서드(`discoverAccounts`, `signMessage`, `signTypedData`, `signTransaction`, `signRawHash`)가 `throw Error('not yet implemented')`로 미구현. `@ledgerhq/hw-app-eth` 패키지 미설치.
 
 **영향:** 하드웨어 지갑 사용자가 월렛 익스텐션을 사용할 수 없음
 
@@ -1542,14 +1544,15 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-## §66. LOW — 다국어 지원 (i18n) 미구현
+## ~~§66. LOW — 다국어 지원 (i18n) 미구현~~ ✅ RESOLVED (29차 검토 — 이미 구현 확인)
 
 **심각도:** LOW
-**파일:** `apps/wallet-extension/docs/REMAINING_TASKS.md:249-251`
 
-**현상:** i18n 프레임워크 미설정, 한국어/영어 번역 파일 미생성
-
-**영향:** 영어 이외 언어 지원 불가
+✅ **RESOLVED (29차 검토):** i18n 완전 구현 확인:
+- `i18next` + `react-i18next` 프레임워크 설정 (`src/i18n/index.ts`)
+- 12개 네임스페이스 × 2개 언어(en/ko) = 24개 번역 JSON 파일
+- 137개 이상 컴포넌트에서 `useTranslation()` 훅 사용
+- 브라우저 언어 자동 감지 + Chrome storage 영속화 + 런타임 언어 전환
 
 ---
 
@@ -1618,54 +1621,39 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-## 전체 요약 (~~128건~~ → 122건, **현재 미해결 ~~39건~~ 34건**)
+## 전체 요약 (128건 → **현재 미해결 2건**)
 
 ### 범위별 분류
 
-| 범위 | CRITICAL | HIGH | MEDIUM | LOW | RESOLVED | 합계 |
-|------|----------|------|--------|-----|----------|------|
-| apps/web (§1-§34) | ~~3~~ 2 | ~~27~~ 22 | ~~41~~ 37 | 18 | **65** | ~~89~~ **24** |
-| packages (§35-§48, §73) | ~~3~~ 0 | ~~4~~ 0 | ~~7~~ 0 | ~~1~~ 0 | **15** | ~~15~~ **0** |
-| services (§49-§62, §68) | ~~1~~ 0 | ~~3~~ 0 | ~~7~~ 0 | ~~4~~ 0 | **15** | ~~15~~ **0** |
-| wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 0 | ~~5~~ 3 | **6** | ~~9~~ **3** |
-| **합계** | **2** | **22** | **37** | **21** | **97** | **34** |
+| 범위 | 원래 | RESOLVED | 잔여 |
+|------|------|----------|------|
+| apps/web (§1-§34) | 89 | **89** | **0** |
+| packages (§35-§48, §73) | 15 | **15** | **0** |
+| services (§49-§62, §68) | 15 | **15** | **0** |
+| wallet-extension (§63-§72) | 9 | **7** | **2** |
+| **합계** | **128** | **126** | **2** |
 
-> 15차 검토 (2026-02-13, Phase 10): packages 10건, services 5건, wallet-extension 2건 RESOLVED 확인
-> 16차 검토 (2026-02-13, Phase 10 코드 수정): §43, §46, §53 구현 완료 — 3건 RESOLVED
-> 17차 검토 (2026-02-13, Phase 11): §2, §5-2, §8-5-1, §8-5-3 구현 완료 확인 — 4건 RESOLVED
-> 20차 검토 (2026-02-13, Phase 14): §49 Bridge Relayer ethclient, §50 V3 Quoter, §51 V3 Pool CREATE2, §54 V2 Pair CREATE2 — 4건 RESOLVED
-> 21차 검토 (2026-02-13, Phase 15): §61 Bundler 디버그 모드 프로덕션 가드, §68 Flashbots secp256k1 ECDSA 서명 — 2건 RESOLVED
-> 27차 검토 (2026-02-13, Phase 21): §37 LOCAL 모듈 주소, §41 Anvil Kernel delegate, §73 TokenReceiverFallback — 3건 RESOLVED
-> 28차 검토 (2026-02-13, Phase 22): §37, §41 StableNet(8283) 주소 전체 업데이트 — PARTIALLY RESOLVED → RESOLVED 승격
+### 잔여 미해결 항목 (2건 — 전부 LOW, wallet-extension)
 
-### 핵심 블로커 (CRITICAL ~~7건~~ → ~~2건~~ ~~1건~~ 0건)
+| # | 섹션 | 심각도 | 내용 |
+|---|------|--------|------|
+| 1 | §64 | LOW | 하드웨어 지갑 (Ledger) — 스텁 프레임워크만 존재, 서명 메서드 전부 미구현, `@ledgerhq/hw-app-eth` 미설치 |
+| 2 | §65 | LOW | WalletConnect v2 — 코드 제로, 패키지 미설치 |
+
+> 29차 검토 (2026-02-13): 전체 코드 대조 검증 완료. §66(i18n) 구현 완료 확인 → RESOLVED. apps/web 89건 전체 RESOLVED 확인. CRITICAL 잔여 0건.
+
+### 핵심 블로커 (CRITICAL 7건 → **0건 전부 해결**)
 
 1. ~~§1-1 — apps/web: Swap `sendUserOp` 미전달~~ ✅ RESOLVED
 2. ~~§1-2 — apps/web: Order Router URL `localhost`~~ ✅ RESOLVED
 3. ~~§1-3 — apps/web: Router Address mainnet~~ ✅ RESOLVED
 4. ~~§35 — packages: SDK-GO `calculateUserOpHash()` 빈 해시~~ ✅ RESOLVED
 5. ~~§36 — packages: SDK-GO `encodeSmartAccountCall()` ABI 인코딩 없음~~ ✅ RESOLVED
-6. ~~§37 — packages: 대부분 체인 컨트랙트 주소 `ZERO_ADDRESS`~~ ✅ RESOLVED (Phase 21+22, LOCAL+StableNet 체인)
+6. ~~§37 — packages: 대부분 체인 컨트랙트 주소 `ZERO_ADDRESS`~~ ✅ RESOLVED (Phase 21+22)
 7. ~~§49 — services: Bridge Relayer 블록체인 상호작용 전체 PoC 스텁~~ ✅ RESOLVED (Phase 14)
 
-> 27차 검토 (2026-02-13, Phase 21): §37 LOCAL 모듈 주소, §41 Anvil Kernel delegate, §73 TokenReceiverFallback — 3건 RESOLVED/PARTIALLY RESOLVED
-> 28차 검토 (2026-02-13, Phase 22): §37 StableNet(8283) 전체 주소 업데이트, §41 StableNet delegate — PARTIALLY → RESOLVED 승격
+### 향후 에픽 (별도 프로젝트)
 
-### 확장 구현 우선순위 (업데이트)
-
-#### Phase 0+ — 배포 인프라 (배포 의존)
-
-1. ~~컨트랙트 배포 + 주소 업데이트: §37, §41, §73~~ ✅ Phase 21+22 LOCAL+StableNet 완료 (MAINNET/SEPOLIA 배포 시 추가 업데이트 필요)
-
-#### Phase 1+ — services PoC → 실제 구현
-
-2. ~~Bridge Relayer 실제 구현: §49 (go-ethereum ethclient 연동)~~ ✅ Phase 14 RESOLVED
-3. ~~Order Router DEX 연동: §50, §51, §54 (Quoter/Pool 컨트랙트 호출)~~ ✅ Phase 14 RESOLVED
-4. ~~Flashbots 서명: §68 (secp256k1 ECDSA 서명)~~ ✅ Phase 15 RESOLVED
-
-#### Phase 2+ — UX + Wallet Extension
-
-5. ~~Wallet Extension: §63 (QR Code), §71 (Price Impact)~~ ✅ Phase 18 RESOLVED
-6. ~~apps/web 잔여 LOW 항목: §27-§32~~ ✅ Phase 13 전체 RESOLVED/ACKNOWLEDGED
-
-**완료 조건:** MAINNET/SEPOLIA 배포 후 체인별 주소 업데이트, 별도 에픽(WalletConnect v2, i18n, Ledger)
+1. **Ledger 지원 (§64):** `@ledgerhq/hw-app-eth` 설치 + signing 메서드 구현 + KeyringController 통합
+2. **WalletConnect v2 (§65):** `@walletconnect/sign-client` 설치 + RPC handler + UI
+3. **MAINNET/SEPOLIA 배포:** 체인별 컨트랙트 주소 업데이트 (현재 LOCAL+StableNet만 완료)
