@@ -20,6 +20,7 @@
 > 19차 검토: 2026-02-13 (Phase 13 — §27 scheduleId 이벤트 파싱, §28 Revenue 추정 구현, §29 카탈로그 PoC 인정, §30 YTD 추정, §31 인프라 대부분 구현 확인, §32 privacy/terms 페이지 생성) = 14건 RESOLVED/ACKNOWLEDGED
 > 20차 검토: 2026-02-13 (Phase 14 — §49 Bridge Relayer go-ethereum ethclient 전면 구현, §50 Uniswap V3 Quoter eth_call 구현, §51 V3 CREATE2 pool 주소 구현, §54 V2 CREATE2 pair 주소 구현) = 4건 RESOLVED
 > 21차 검토: 2026-02-13 (Phase 15 — §61 Bundler 디버그 모드 프로덕션 가드 추가, §68 FlashbotsSubmitter secp256k1 ECDSA 서명 구현) = 2건 RESOLVED
+> 22차 검토: 2026-02-13 (Phase 16 — §62 Validation skip 플래그 프로덕션 경고 추가, §59 Bundler/Paymaster-proxy 테스트 작성) = 2건 RESOLVED
 
 ---
 
@@ -1445,24 +1446,13 @@ Address: common.HexToAddress("0x0000000000000000000000000000000000000000"), // T
 
 ---
 
-## §59. LOW — Bundler/Paymaster-proxy 테스트 스켈레톤
+## ~~§59. LOW — Bundler/Paymaster-proxy 테스트 스켈레톤~~ ✅ RESOLVED (Phase 16)
 
 **심각도:** LOW
-**파일:** `services/bundler/tests/index.test.ts:4-5`, `services/paymaster-proxy/tests/index.test.ts:4-5`
 
-**현상:** 각각 2개의 `it.todo()` placeholder 테스트가 있다.
-
-```typescript
-// bundler
-it.todo('should bundle user operations')
-it.todo('should estimate gas')
-
-// paymaster-proxy
-it.todo('should proxy paymaster requests')
-it.todo('should validate sponsorship policy')
-```
-
-**영향:** 핵심 통합 테스트 부재
+✅ **RESOLVED (Phase 16):** `it.todo()` placeholder를 실제 테스트로 교체:
+- `services/bundler/tests/index.test.ts`: UserOperationValidator 5건 (정상 검증, 포맷 오류 거부, banned sender 거부, skipReputation 동작, GasEstimator 인스턴스)
+- `services/paymaster-proxy/tests/index.test.ts`: SponsorPolicyManager 10건 (정책 허용, 미존재 정책 거부, 비활성 정책 거부, 화이트리스트/블랙리스트, 가스 한도, 일일 한도, 글로벌 한도, 추적기, 초기화)
 
 ---
 
@@ -1488,14 +1478,14 @@ it.todo('should validate sponsorship policy')
 
 ---
 
-## §62. LOW — Bundler Validation Skip 플래그 프로덕션 노출
+## ~~§62. LOW — Bundler Validation Skip 플래그 프로덕션 노출~~ ✅ RESOLVED (Phase 16)
 
 **심각도:** LOW
-**파일:** `services/bundler/src/validation/validator.ts:96,129,138,149`
 
-**현상:** `skipSimulation`, `skipReputation`, `skipOpcodeValidation` 플래그가 프로덕션에서도 설정 가능
-
-**영향:** 잘못된 설정 시 보안 검증 우회 가능
+✅ **RESOLVED (Phase 16):** `UserOperationValidator.create()` 팩토리 메서드에 프로덕션 경고 추가:
+- `NODE_ENV=production`에서 `skipSimulation`, `skipReputation`, `skipOpcodeValidation` 중 하나라도 활성화 시 logger.warn 경고
+- "Validation skip flags are active in production. This weakens security and may allow malicious UserOperations." 메시지 출력
+- §61의 debug 모드 프로덕션 차단과 이중 방어 (debug에서 파생된 skip뿐 아니라 직접 설정도 감지)
 
 ---
 
@@ -1666,7 +1656,7 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 |------|----------|------|--------|-----|----------|------|
 | apps/web (§1-§34) | ~~3~~ 2 | ~~27~~ 22 | ~~41~~ 37 | 18 | **65** | ~~89~~ **24** |
 | packages (§35-§48, §73) | ~~3~~ 1 | ~~4~~ 0 | ~~7~~ 1 | ~~1~~ 0 | **12** | ~~15~~ **3** |
-| services (§49-§62, §68) | ~~1~~ 0 | ~~3~~ 0 | ~~7~~ 0 | ~~4~~ 3 | **12** | ~~15~~ **3** |
+| services (§49-§62, §68) | ~~1~~ 0 | ~~3~~ 0 | ~~7~~ 0 | ~~4~~ 1 | **14** | ~~15~~ **1** |
 | wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 2 | 5 | **2** | ~~9~~ **7** |
 | **합계** | **3** | **22** | **39** | **26** | **91** | **37** |
 

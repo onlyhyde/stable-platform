@@ -92,6 +92,22 @@ export class UserOperationValidator {
     config: ValidatorConfig,
     logger: Logger
   ): UserOperationValidator {
+    // Warn if skip flags are used in production — these bypass critical security checks
+    if (process.env.NODE_ENV === 'production') {
+      const skipFlags = [
+        config.skipSimulation && 'skipSimulation',
+        config.skipReputation && 'skipReputation',
+        config.skipOpcodeValidation && 'skipOpcodeValidation',
+      ].filter(Boolean)
+
+      if (skipFlags.length > 0) {
+        logger.warn(
+          { skipFlags },
+          'Validation skip flags are active in production. This weakens security and may allow malicious UserOperations.'
+        )
+      }
+    }
+
     let opcodeValidator: IOpcodeValidator | undefined
     if (!config.skipOpcodeValidation) {
       const tracer = new DebugTraceCallTracer(publicClient, config.entryPoint, logger)
