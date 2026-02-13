@@ -47,7 +47,7 @@ var DelegatePresets = map[types.ChainID][]DelegatePreset{
 	types.ChainIDAnvil: {
 		{
 			Name:        "Kernel v3.1 (Local)",
-			Address:     common.HexToAddress("0x0000000000000000000000000000000000000000"), // TODO: Update with actual address
+			Address:     common.HexToAddress("0xc5a5c42992decbae36851359345fe25997f5c42d"),
 			Description: "Kernel v3.1 ERC-7579 Smart Account (Local)",
 			IsVerified:  false,
 		},
