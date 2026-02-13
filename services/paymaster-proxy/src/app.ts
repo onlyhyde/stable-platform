@@ -111,20 +111,40 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
   })
 
   // Policy management endpoints (admin) - require bearer token authentication
-  const adminToken = process.env.PAYMASTER_ADMIN_TOKEN
-  if (adminToken) {
-    const auth = bearerAuth({ token: adminToken })
-
-    app.get('/admin/policies', auth, (c) => {
+  function registerAdminRoutes(adminApp: Hono) {
+    adminApp.get('/admin/policies', (c) => {
       const policies = policyManager.getAllPolicies()
       return c.json({ policies })
     })
 
-    app.post('/admin/policies', auth, async (c) => {
+    adminApp.get('/admin/policies/:id', (c) => {
+      const policy = policyManager.getPolicy(c.req.param('id'))
+      if (!policy) {
+        return c.json({ error: `Policy ${c.req.param('id')} not found` }, 404)
+      }
+      return c.json({ policy })
+    })
+
+    adminApp.post('/admin/policies', async (c) => {
       const body = await c.req.json()
       policyManager.setPolicy(body)
       return c.json({ success: true })
     })
+
+    adminApp.delete('/admin/policies/:id', (c) => {
+      const deleted = policyManager.deletePolicy(c.req.param('id'))
+      if (!deleted) {
+        return c.json({ error: `Policy ${c.req.param('id')} not found` }, 404)
+      }
+      return c.json({ success: true })
+    })
+  }
+
+  const adminToken = process.env.PAYMASTER_ADMIN_TOKEN
+  if (adminToken) {
+    const auth = bearerAuth({ token: adminToken })
+    app.use('/admin/*', auth)
+    registerAdminRoutes(app)
   } else if (process.env.NODE_ENV === 'production') {
     // Block admin endpoints in production without token
     app.all('/admin/*', (c) => {
@@ -133,16 +153,7 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
   } else {
     // Development: allow without auth but log warning
     console.warn('[paymaster-proxy] WARNING: Admin endpoints are unauthenticated (set PAYMASTER_ADMIN_TOKEN)')
-    app.get('/admin/policies', (c) => {
-      const policies = policyManager.getAllPolicies()
-      return c.json({ policies })
-    })
-
-    app.post('/admin/policies', async (c) => {
-      const body = await c.req.json()
-      policyManager.setPolicy(body)
-      return c.json({ success: true })
-    })
+    registerAdminRoutes(app)
   }
 
   // JSON-RPC endpoint

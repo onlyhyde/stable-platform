@@ -75,6 +75,14 @@ export class SponsorPolicyManager {
   }
 
   /**
+   * Delete a policy by ID
+   * @returns true if the policy existed and was deleted
+   */
+  deletePolicy(id: string): boolean {
+    return this.policies.delete(id)
+  }
+
+  /**
    * Check if a UserOperation is allowed by policy
    */
   checkPolicy(

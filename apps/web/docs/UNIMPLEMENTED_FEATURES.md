@@ -21,6 +21,7 @@
 > 20차 검토: 2026-02-13 (Phase 14 — §49 Bridge Relayer go-ethereum ethclient 전면 구현, §50 Uniswap V3 Quoter eth_call 구현, §51 V3 CREATE2 pool 주소 구현, §54 V2 CREATE2 pair 주소 구현) = 4건 RESOLVED
 > 21차 검토: 2026-02-13 (Phase 15 — §61 Bundler 디버그 모드 프로덕션 가드 추가, §68 FlashbotsSubmitter secp256k1 ECDSA 서명 구현) = 2건 RESOLVED
 > 22차 검토: 2026-02-13 (Phase 16 — §62 Validation skip 플래그 프로덕션 경고 추가, §59 Bundler/Paymaster-proxy 테스트 작성) = 2건 RESOLVED
+> 23차 검토: 2026-02-13 (Phase 17 — §60 Paymaster Proxy admin API 완성) = 1건 RESOLVED
 
 ---
 
@@ -1456,14 +1457,17 @@ Address: common.HexToAddress("0x0000000000000000000000000000000000000000"), // T
 
 ---
 
-## §60. LOW — Paymaster Proxy 정책 관리 API 미구현
+## ~~§60. LOW — Paymaster Proxy 정책 관리 API 미구현~~ ✅ RESOLVED (Phase 17)
 
 **심각도:** LOW
-**파일:** `services/paymaster-proxy/src/policy/sponsorPolicy.ts:107-127`
 
-**현상:** 정책의 `startTime`/`endTime` 필드를 검증하지만 이를 관리할 admin API가 없다.
-
-**영향:** 시간 기반 스폰서링 정책을 프로그래밍 방식으로 관리할 수 없음
+✅ **RESOLVED (Phase 17):** Admin API 완성:
+- `SponsorPolicyManager.deletePolicy(id)` 메서드 추가
+- `GET /admin/policies/:id` — 개별 정책 조회 (404 처리)
+- `DELETE /admin/policies/:id` — 정책 삭제 (404 처리)
+- 기존 `GET /admin/policies` (전체 목록), `POST /admin/policies` (생성/수정)와 함께 완전한 CRUD
+- admin 라우트를 `registerAdminRoutes()` 함수로 추출하여 인증/비인증 분기 중복 제거
+- PAYMASTER_ADMIN_TOKEN bearer auth, 프로덕션 차단, 개발 모드 경고 유지
 
 ---
 
@@ -1656,7 +1660,7 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 |------|----------|------|--------|-----|----------|------|
 | apps/web (§1-§34) | ~~3~~ 2 | ~~27~~ 22 | ~~41~~ 37 | 18 | **65** | ~~89~~ **24** |
 | packages (§35-§48, §73) | ~~3~~ 1 | ~~4~~ 0 | ~~7~~ 1 | ~~1~~ 0 | **12** | ~~15~~ **3** |
-| services (§49-§62, §68) | ~~1~~ 0 | ~~3~~ 0 | ~~7~~ 0 | ~~4~~ 1 | **14** | ~~15~~ **1** |
+| services (§49-§62, §68) | ~~1~~ 0 | ~~3~~ 0 | ~~7~~ 0 | ~~4~~ 0 | **15** | ~~15~~ **0** |
 | wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 2 | 5 | **2** | ~~9~~ **7** |
 | **합계** | **3** | **22** | **39** | **26** | **91** | **37** |
 
