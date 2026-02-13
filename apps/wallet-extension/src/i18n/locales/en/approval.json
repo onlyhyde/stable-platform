@@ -68,5 +68,12 @@
   "severityCritical": "CRITICAL",
   "severityHigh": "HIGH",
   "severityWarning": "WARNING",
-  "severityInfo": "INFO"
+  "severityInfo": "INFO",
+
+  "wcSessionRequest": "WalletConnect session request",
+  "wcDappInfo": "dApp Information",
+  "wcRequestedPermissions": "Requested Permissions",
+  "wcRequestedChains": "Requested Chains",
+  "wcConnectionWarning": "This dApp is connecting via WalletConnect. Only approve sessions from dApps you trust.",
+  "wcApproveSession": "Approve Session"
 }

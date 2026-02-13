@@ -88,6 +88,16 @@ export function Settings() {
   const [connectedSites, setConnectedSites] = useState<ConnectedSite[]>([])
   const [isLoadingSites, setIsLoadingSites] = useState(false)
 
+  // WalletConnect state
+  const [showWcPair, setShowWcPair] = useState(false)
+  const [wcUri, setWcUri] = useState('')
+  const [isPairing, setIsPairing] = useState(false)
+  const [wcPairError, setWcPairError] = useState<string | null>(null)
+  const [wcSessions, setWcSessions] = useState<
+    Array<{ topic: string; peerMeta: { name: string; url: string; icons?: string[] }; connectedAt: number }>
+  >([])
+  const [isLoadingWcSessions, setIsLoadingWcSessions] = useState(false)
+
   // Smart Account state
   const [showSmartAccount, setShowSmartAccount] = useState(false)
   const [saInfo, setSaInfo] = useState<{
@@ -512,6 +522,77 @@ export function Settings() {
     setShowConnectedSites(true)
     loadConnectedSites()
   }, [loadConnectedSites])
+
+  // WalletConnect handlers
+  const loadWcSessions = useCallback(async () => {
+    setIsLoadingWcSessions(true)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'WC_GET_SESSIONS',
+        id: `wc-sessions-${Date.now()}`,
+        payload: {},
+      })
+      if (response?.payload?.sessions) {
+        setWcSessions(response.payload.sessions)
+      }
+    } catch {
+      // Silent fail
+    } finally {
+      setIsLoadingWcSessions(false)
+    }
+  }, [])
+
+  const handleWcPair = useCallback(async () => {
+    if (!wcUri.trim()) {
+      setWcPairError(t('wcUriRequired'))
+      return
+    }
+
+    setIsPairing(true)
+    setWcPairError(null)
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'WC_PAIR',
+        id: `wc-pair-${Date.now()}`,
+        payload: { uri: wcUri.trim() },
+      })
+
+      if (response?.payload?.success) {
+        setWcUri('')
+        setShowWcPair(false)
+        // Refresh sessions after a brief delay for the session to establish
+        setTimeout(() => loadWcSessions(), 2000)
+      } else {
+        setWcPairError(response?.payload?.error ?? t('wcPairFailed'))
+      }
+    } catch (err) {
+      setWcPairError(err instanceof Error ? err.message : t('wcPairFailed'))
+    } finally {
+      setIsPairing(false)
+    }
+  }, [wcUri, loadWcSessions, t])
+
+  const handleWcDisconnect = useCallback(
+    async (topic: string) => {
+      try {
+        await chrome.runtime.sendMessage({
+          type: 'WC_DISCONNECT_SESSION',
+          id: `wc-disconnect-${Date.now()}`,
+          payload: { topic },
+        })
+        await loadWcSessions()
+      } catch {
+        // Silent fail
+      }
+    },
+    [loadWcSessions]
+  )
+
+  // Load WC sessions on mount
+  useEffect(() => {
+    loadWcSessions()
+  }, [loadWcSessions])
 
   // Close Export Key modal
   const handleCloseExportKey = useCallback(() => {
@@ -1298,6 +1379,140 @@ export function Settings() {
                   </button>
                 </div>
               </div>
+            )}
+          </div>
+        </section>
+
+        {/* WalletConnect */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h3
+              className="text-sm font-medium"
+              style={{ color: 'rgb(var(--foreground-secondary))' }}
+            >
+              WalletConnect
+            </h3>
+            <button
+              type="button"
+              onClick={() => {
+                setShowWcPair(!showWcPair)
+                setWcPairError(null)
+              }}
+              className="text-sm"
+              style={{ color: 'rgb(var(--primary))' }}
+            >
+              {showWcPair ? tc('cancel') : t('wcConnect')}
+            </button>
+          </div>
+
+          {/* Pair Form */}
+          {showWcPair && (
+            <div
+              className="mb-4 p-3 rounded-lg"
+              style={{
+                backgroundColor: 'rgb(var(--primary) / 0.1)',
+                border: '1px solid rgb(var(--primary) / 0.2)',
+              }}
+            >
+              <h4 className="text-sm font-medium mb-2" style={{ color: 'rgb(var(--foreground))' }}>
+                {t('wcPairTitle')}
+              </h4>
+              <p className="text-xs mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {t('wcPairDesc')}
+              </p>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder={t('wcUriPlaceholder')}
+                  value={wcUri}
+                  onChange={(e) => setWcUri(e.target.value)}
+                  className="input-base w-full p-2 rounded-lg text-sm font-mono"
+                />
+                {wcPairError && (
+                  <p className="text-xs" style={{ color: 'rgb(var(--destructive))' }}>
+                    {wcPairError}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleWcPair}
+                  disabled={isPairing}
+                  className="btn-primary w-full py-2 rounded-lg text-sm disabled:opacity-50"
+                >
+                  {isPairing ? t('wcPairing') : t('wcPairBtn')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Active Sessions */}
+          <div className="space-y-2">
+            {isLoadingWcSessions ? (
+              <p className="text-xs text-center py-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {tc('loading')}
+              </p>
+            ) : wcSessions.length === 0 ? (
+              <p className="text-xs text-center py-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {t('wcNoSessions')}
+              </p>
+            ) : (
+              wcSessions.map((session) => (
+                <div
+                  key={session.topic}
+                  className="p-3 rounded-lg flex items-center justify-between"
+                  style={{ border: '1px solid rgb(var(--border))' }}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {session.peerMeta.icons?.[0] ? (
+                      <img
+                        src={session.peerMeta.icons[0]}
+                        alt=""
+                        className="w-8 h-8 rounded-lg shrink-0"
+                      />
+                    ) : (
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: 'rgb(var(--surface))' }}
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          style={{ color: 'rgb(var(--muted-foreground))' }}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p
+                        className="text-sm font-medium truncate"
+                        style={{ color: 'rgb(var(--foreground))' }}
+                      >
+                        {session.peerMeta.name}
+                      </p>
+                      <p className="text-xs truncate" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                        {session.peerMeta.url}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleWcDisconnect(session.topic)}
+                    className="ml-2 text-xs shrink-0"
+                    style={{ color: 'rgb(var(--destructive))' }}
+                  >
+                    {tc('disconnect')}
+                  </button>
+                </div>
+              ))
             )}
           </div>
         </section>

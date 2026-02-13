@@ -111,5 +111,15 @@
   "featureTabSubscription": "Tab Subscription Management",
   "featureCustomNetwork": "Custom Network Support",
 
-  "lockWallet": "Lock Wallet"
+  "lockWallet": "Lock Wallet",
+
+  "wcConnect": "+ WalletConnect",
+  "wcPairTitle": "Connect via WalletConnect",
+  "wcPairDesc": "Paste a WalletConnect URI from a dApp to connect remotely.",
+  "wcUriPlaceholder": "wc:...",
+  "wcUriRequired": "Please enter a WalletConnect URI",
+  "wcPairing": "Connecting...",
+  "wcPairBtn": "Connect",
+  "wcPairFailed": "Failed to connect via WalletConnect",
+  "wcNoSessions": "No active WalletConnect sessions"
 }

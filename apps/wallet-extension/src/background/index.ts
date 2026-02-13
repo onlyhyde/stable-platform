@@ -12,7 +12,7 @@
  */
 
 import type { Address, Hex } from 'viem'
-import { getSecurityConfig, STORAGE_KEYS } from '../config'
+import { getSecurityConfig, getWalletConnectConfig, STORAGE_KEYS } from '../config'
 import { loadDefaultNetworks, MESSAGE_TYPES } from '../shared/constants'
 import { AuditEventType, auditLogger } from '../shared/security/auditLogger'
 import { originFromUrl, resolveOrigin } from '../shared/security/originVerifier'
@@ -22,6 +22,7 @@ import type { ExtensionMessage, JsonRpcRequest, Network } from '../types'
 import { accountController } from './controller/accountController'
 import { networkController } from './controller/networkController'
 import { approvalController } from './controllers/approvalController'
+import { walletConnectController } from './controllers/walletConnectController'
 import { keyringController } from './keyring'
 import { handleRpcRequest } from './rpc/handler'
 import { createIndexerClient, type IndexerClient } from './services/IndexerClient'
@@ -1334,6 +1335,73 @@ async function handleMessage(
       }
     }
 
+    // ==========================================================================
+    // WalletConnect Messages
+    // ==========================================================================
+
+    case MESSAGE_TYPES.WC_PAIR: {
+      const { uri } = message.payload as { uri: string }
+      try {
+        await walletConnectController.pair(uri)
+        return {
+          type: MESSAGE_TYPES.RPC_RESPONSE,
+          id: message.id,
+          payload: { success: true },
+        }
+      } catch (err) {
+        return {
+          type: MESSAGE_TYPES.RPC_RESPONSE,
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to pair with WalletConnect',
+          },
+        }
+      }
+    }
+
+    case MESSAGE_TYPES.WC_GET_SESSIONS: {
+      try {
+        const sessions = await walletConnectController.getSessions()
+        return {
+          type: MESSAGE_TYPES.RPC_RESPONSE,
+          id: message.id,
+          payload: { success: true, sessions },
+        }
+      } catch (err) {
+        return {
+          type: MESSAGE_TYPES.RPC_RESPONSE,
+          id: message.id,
+          payload: {
+            success: false,
+            sessions: [],
+            error: err instanceof Error ? err.message : 'Failed to get WC sessions',
+          },
+        }
+      }
+    }
+
+    case MESSAGE_TYPES.WC_DISCONNECT_SESSION: {
+      const { topic } = message.payload as { topic: string }
+      try {
+        await walletConnectController.disconnectSession(topic)
+        return {
+          type: MESSAGE_TYPES.RPC_RESPONSE,
+          id: message.id,
+          payload: { success: true },
+        }
+      } catch (err) {
+        return {
+          type: MESSAGE_TYPES.RPC_RESPONSE,
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to disconnect WC session',
+          },
+        }
+      }
+    }
+
     default:
       return {
         type: MESSAGE_TYPES.RPC_RESPONSE,
@@ -1478,6 +1546,14 @@ async function initialize(): Promise<void> {
 
   // Start transaction watcher for receipt polling
   transactionWatcher.start()
+
+  // Initialize WalletConnect if project ID is configured
+  const wcConfig = getWalletConnectConfig()
+  if (wcConfig.projectId) {
+    walletConnectController.init(wcConfig.projectId).catch((error) => {
+      logger.error('WalletConnect initialization failed', error)
+    })
+  }
 
   // Update icon state
   await updateIconState()

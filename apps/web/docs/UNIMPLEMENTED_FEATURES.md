@@ -11,7 +11,7 @@
 > 12차 검토: 2026-02-13 (§1-2, §1-3 구현 완료 — Order Router URL/Address 환경변수 전환)
 > 13차 검토: 2026-02-13 (Phase 9B — §7, §8, §9, §11, §12, §13, §15, §17, §18, §20-1, §22-2 구현 완료, 28건 RESOLVED)
 > 14차 검토: 2026-02-13 (Phase 9C/9D/9E — §3(6건), §4(5건), §19(3건), §21(1건), §22-1(1건) 구현 완료, 16건 RESOLVED)
-> 총 미구현 항목: ~~128건~~ → **2건** (apps/web 0건 + packages 0건 + services 0건 + wallet-extension 2건 + RESOLVED 126건)
+> 총 미구현 항목: ~~128건~~ → **1건** (apps/web 0건 + packages 0건 + services 0건 + wallet-extension 1건 + RESOLVED 127건)
 > ⚠️ 11차 검토에서 §1-1, §5-1, §6, §33, §34 (5개 섹션, 6건)가 이미 구현 완료로 확인되어 RESOLVED 처리됨
 > ⚠️ 12차 검토에서 §1-2, §1-3 (2건)가 구현 완료로 RESOLVED 처리됨 — §1 전체 RESOLVED
 > ⚠️ 13차 검토에서 §7(4건), §8-5-2(1건), §9(2건), §11(3건), §12(1건), §13(6건), §15(1건), §17(4건), §18-15-1,15-3(2건), §20-1(1건), §22-2(1건) + §8-5-3(1건) + §18-15-2 부분(1건) = 총 28건 RESOLVED
@@ -26,6 +26,7 @@
 > 25차 검토: 2026-02-13 (Phase 19 — §72 wallet_requestPermissions EIP-2255 준수) = 1건 RESOLVED
 > 26차 검토: 2026-02-13 (Phase 20 — §67 E2E CI 이미 구현 확인) = 1건 RESOLVED
 > 29차 검토: 2026-02-13 (Phase 22 검증 — §66 i18n 구현 완료 확인 1건 RESOLVED, 전체 코드 대조 검증, 요약 테이블 수치 정정)
+> 30차 검토: 2026-02-13 (Phase 23 — §65 WalletConnect v2 전면 구현) = 1건 RESOLVED
 
 ---
 
@@ -1500,7 +1501,7 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-# apps/wallet-extension/ 미구현 기능 (~~9건~~ ~~7건~~ 2건)
+# apps/wallet-extension/ 미구현 기능 (~~9건~~ ~~7건~~ ~~2건~~ 1건)
 
 > 7차 검토 추가 (2026-02-12), 8차 검토 4건 추가
 > 대상: `apps/wallet-extension/`
@@ -1533,14 +1534,22 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-## §65. LOW — WalletConnect v2 미지원
+## ~~§65. LOW — WalletConnect v2 미지원~~ ✅ RESOLVED (Phase 23)
 
 **심각도:** LOW
 **파일:** `apps/wallet-extension/docs/REMAINING_TASKS.md:246-247`
 
-**현상:** WalletConnect v2 프로토콜과 Deep linking이 미구현이다.
-
-**영향:** 모바일 dApp에서 월렛 연결 불가
+✅ **RESOLVED (30차 검토, Phase 23):** WalletConnect v2 전면 구현 완료:
+- `@walletconnect/web3wallet@1.16.1`, `@walletconnect/core@2.17.1`, `@walletconnect/types@2.23.5` 설치
+- `WalletConnectController` 싱글톤 — `Web3Wallet` 인스턴스 관리, 세션 라이프사이클, 이벤트 핸들링
+- 세션 제안 → `ApprovalController` → 사용자 동의 팝업 (기존 승인 흐름 재사용)
+- WC JSON-RPC 요청 → 기존 `handleRpcRequest()` 라우팅 (origin: `wc:<peerUrl>`)
+- 세션 영속성: `chrome.storage.local` 저장, 서비스 워커 재시작 후 유지
+- Settings 페이지에 WC 페어링 입력 + 세션 관리 UI 추가
+- 승인 UI: `WalletConnectSessionApproval.tsx` (dApp 정보, 권한, 체인, 계정 선택)
+- i18n: en/ko 번역 완료 (settings 9키 + approval 6키)
+- 동적 임포트로 WC 미설정 시 번들 크기 영향 없음
+- `VITE_WALLET_WALLETCONNECT_PROJECT_ID` 환경변수로 활성화
 
 ---
 
@@ -1630,15 +1639,14 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 | apps/web (§1-§34) | 89 | **89** | **0** |
 | packages (§35-§48, §73) | 15 | **15** | **0** |
 | services (§49-§62, §68) | 15 | **15** | **0** |
-| wallet-extension (§63-§72) | 9 | **7** | **2** |
-| **합계** | **128** | **126** | **2** |
+| wallet-extension (§63-§72) | 9 | **8** | **1** |
+| **합계** | **128** | **127** | **1** |
 
-### 잔여 미해결 항목 (2건 — 전부 LOW, wallet-extension)
+### 잔여 미해결 항목 (1건 — LOW, wallet-extension)
 
 | # | 섹션 | 심각도 | 내용 |
 |---|------|--------|------|
 | 1 | §64 | LOW | 하드웨어 지갑 (Ledger) — 스텁 프레임워크만 존재, 서명 메서드 전부 미구현, `@ledgerhq/hw-app-eth` 미설치 |
-| 2 | §65 | LOW | WalletConnect v2 — 코드 제로, 패키지 미설치 |
 
 > 29차 검토 (2026-02-13): 전체 코드 대조 검증 완료. §66(i18n) 구현 완료 확인 → RESOLVED. apps/web 89건 전체 RESOLVED 확인. CRITICAL 잔여 0건.
 
@@ -1655,5 +1663,5 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 ### 향후 에픽 (별도 프로젝트)
 
 1. **Ledger 지원 (§64):** `@ledgerhq/hw-app-eth` 설치 + signing 메서드 구현 + KeyringController 통합
-2. **WalletConnect v2 (§65):** `@walletconnect/sign-client` 설치 + RPC handler + UI
+2. ~~**WalletConnect v2 (§65):**~~ ✅ RESOLVED (Phase 23)
 3. **MAINNET/SEPOLIA 배포:** 체인별 컨트랙트 주소 업데이트 (현재 LOCAL+StableNet만 완료)

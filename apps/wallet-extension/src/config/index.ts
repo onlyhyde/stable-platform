@@ -20,6 +20,8 @@ export {
   // Security configuration
   getSecurityConfig,
   getTestnetNetworkConfig,
+  // WalletConnect configuration
+  getWalletConnectConfig,
   // Storage keys
   STORAGE_KEYS,
   // Environment variable names

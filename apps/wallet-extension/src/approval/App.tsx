@@ -7,6 +7,7 @@ import { AuthorizationApproval } from './pages/AuthorizationApproval'
 import { ConnectApproval } from './pages/ConnectApproval'
 import { SignatureApproval } from './pages/SignatureApproval'
 import { TransactionApproval } from './pages/TransactionApproval'
+import { WalletConnectSessionApproval } from './pages/WalletConnectSessionApproval'
 
 export function ApprovalApp() {
   const { t } = useTranslation('approval')
@@ -181,6 +182,15 @@ export function ApprovalApp() {
     case 'authorization':
       return (
         <AuthorizationApproval
+          approval={approval}
+          onApprove={handleApprove}
+          onReject={handleReject}
+        />
+      )
+
+    case 'walletconnect_session':
+      return (
+        <WalletConnectSessionApproval
           approval={approval}
           onApprove={handleApprove}
           onReject={handleReject}

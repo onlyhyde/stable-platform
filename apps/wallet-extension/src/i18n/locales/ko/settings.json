@@ -111,5 +111,15 @@
   "featureTabSubscription": "탭 구독 관리",
   "featureCustomNetwork": "커스텀 네트워크 지원",
 
-  "lockWallet": "지갑 잠금"
+  "lockWallet": "지갑 잠금",
+
+  "wcConnect": "+ WalletConnect",
+  "wcPairTitle": "WalletConnect로 연결",
+  "wcPairDesc": "dApp에서 WalletConnect URI를 붙여넣어 원격으로 연결하세요.",
+  "wcUriPlaceholder": "wc:...",
+  "wcUriRequired": "WalletConnect URI를 입력해 주세요",
+  "wcPairing": "연결 중...",
+  "wcPairBtn": "연결",
+  "wcPairFailed": "WalletConnect 연결 실패",
+  "wcNoSessions": "활성 WalletConnect 세션이 없습니다"
 }

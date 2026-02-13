@@ -68,5 +68,12 @@
   "severityCritical": "심각",
   "severityHigh": "높음",
   "severityWarning": "경고",
-  "severityInfo": "정보"
+  "severityInfo": "정보",
+
+  "wcSessionRequest": "WalletConnect 세션 요청",
+  "wcDappInfo": "dApp 정보",
+  "wcRequestedPermissions": "요청된 권한",
+  "wcRequestedChains": "요청된 체인",
+  "wcConnectionWarning": "이 dApp은 WalletConnect를 통해 연결됩니다. 신뢰할 수 있는 dApp의 세션만 승인하세요.",
+  "wcApproveSession": "세션 승인"
 }
