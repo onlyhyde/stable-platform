@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { isAddress } from 'viem'
-import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@/components/common'
+import { isAddress, parseUnits } from 'viem'
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, useToast } from '@/components/common'
 import type { WalletToken } from '@/hooks'
 import { useUserOp, useWallet, useWalletAssets } from '@/hooks'
 import { formatTokenAmount } from '@/lib/utils'
@@ -15,6 +15,7 @@ export default function SendPage() {
   const { address, isConnected } = useWallet()
   const { native, tokens, isSupported } = useWalletAssets()
   const { sendTransaction, isLoading, error } = useUserOp()
+  const { addToast, updateToast } = useToast()
 
   const [recipient, setRecipient] = useState('')
   const [amount, setAmount] = useState('')
@@ -30,7 +31,20 @@ export default function SendPage() {
 
   const isValidRecipient = recipient === '' || isAddress(recipient)
   const isValidAmount = amount === '' || (!Number.isNaN(Number(amount)) && Number(amount) > 0)
-  const canSend = isAddress(recipient) && Number(amount) > 0 && isConnected && address
+
+  // Check if amount exceeds available balance
+  let exceedsBalance = false
+  if (amount && !Number.isNaN(Number(amount)) && Number(amount) > 0) {
+    try {
+      const parsedAmount = parseUnits(amount, decimals)
+      exceedsBalance = parsedAmount > balance
+    } catch {
+      // parseUnits may throw on invalid input — treat as not exceeding
+    }
+  }
+
+  const canSend =
+    isAddress(recipient) && Number(amount) > 0 && !exceedsBalance && isConnected && address
 
   const [sendError, setSendError] = useState<string | null>(null)
 
@@ -38,17 +52,51 @@ export default function SendPage() {
     if (!canSend || !address) return
     setSendError(null)
 
+    const toastId = addToast({
+      type: 'loading',
+      title: 'Sending Transaction',
+      message: `Transferring ${amount} ${symbol} to ${recipient.slice(0, 8)}...`,
+      persistent: true,
+    })
+
     const result = await sendTransaction(address, recipient as `0x${string}`, amount)
     if (result?.success && result.status === 'confirmed') {
+      updateToast(toastId, {
+        type: 'success',
+        title: 'Transaction Confirmed',
+        message: `${amount} ${symbol} sent successfully`,
+        txHash: result.transactionHash,
+        persistent: false,
+      })
       router.push('/payment/history')
     } else if (result?.status === 'submitted') {
-      // Bundler accepted but on-chain confirmation timed out — navigate with pending state
+      updateToast(toastId, {
+        type: 'info',
+        title: 'Transaction Submitted',
+        message: 'Awaiting on-chain confirmation...',
+        txHash: result.userOpHash,
+        persistent: false,
+      })
       router.push('/payment/history?pending=true')
     } else if (result && !result.success) {
-      setSendError('Transaction failed on-chain. Please check your balance and try again.')
+      const msg = 'Transaction failed on-chain. Please check your balance and try again.'
+      updateToast(toastId, {
+        type: 'error',
+        title: 'Transaction Failed',
+        message: msg,
+        txHash: result.transactionHash,
+        persistent: false,
+      })
+      setSendError(msg)
     } else {
-      // result is null — useUserOp already set its own error state
-      setSendError(error?.message ?? 'Transaction failed. Please try again.')
+      const msg = error?.message ?? 'Transaction failed. Please try again.'
+      updateToast(toastId, {
+        type: 'error',
+        title: 'Transaction Error',
+        message: msg,
+        persistent: false,
+      })
+      setSendError(msg)
     }
   }
 
@@ -171,7 +219,13 @@ export default function SendPage() {
             placeholder="0.0"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            error={!isValidAmount ? 'Invalid amount' : undefined}
+            error={
+              !isValidAmount
+                ? 'Invalid amount'
+                : exceedsBalance
+                  ? 'Amount exceeds available balance'
+                  : undefined
+            }
             rightElement={
               <button
                 type="button"

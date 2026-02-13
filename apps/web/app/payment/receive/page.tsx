@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { useWallet } from '@/hooks'
 import { copyToClipboard } from '@/lib/utils'
@@ -44,29 +45,23 @@ export default function ReceivePage() {
           <CardTitle>Your Address</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* QR Code Placeholder */}
+          {/* QR Code */}
           <div className="flex justify-center">
             <div
-              className="w-48 h-48 border-2 rounded-2xl flex items-center justify-center"
+              className="p-4 border-2 rounded-2xl"
               style={{
-                backgroundColor: 'rgb(var(--card))',
+                backgroundColor: '#ffffff',
                 borderColor: 'rgb(var(--border))',
               }}
             >
-              <div className="text-center p-4">
-                <svg
-                  className="w-24 h-24 mx-auto"
-                  style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path d="M3 11V3h8v8H3zm2-6v4h4V5H5zM3 21v-8h8v8H3zm2-6v4h4v-4H5zm8-10h8v8h-8V3zm2 6h4V5h-4v4zm-2 10h2v-2h-2v2zm0-4h2v-2h-2v2zm2 4h2v-2h-2v2zm2-4h2v-2h-2v2zm2 4h2v-2h-2v2zm-2-8h2v-2h-2v2zm2 0h2v-2h-2v2z" />
-                </svg>
-                <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                  QR Code
-                </p>
-              </div>
+              {address && (
+                <QRCodeSVG
+                  value={address}
+                  size={176}
+                  level="M"
+                  includeMargin={false}
+                />
+              )}
             </div>
           </div>
 

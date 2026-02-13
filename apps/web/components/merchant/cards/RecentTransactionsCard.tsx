@@ -1,7 +1,9 @@
 'use client'
 
+import { useChainId } from 'wagmi'
 import { Button } from '@/components/common/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/Card'
+import { getBlockExplorerUrl } from '@/lib/utils'
 
 type TransactionStatus = 'success' | 'failed' | 'pending' | 'refunded'
 
@@ -68,6 +70,8 @@ export function RecentTransactionsCard({
   onViewAll,
   onRetry,
 }: RecentTransactionsCardProps) {
+  const chainId = useChainId()
+
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
@@ -203,7 +207,7 @@ export function RecentTransactionsCard({
                       <div className="flex items-center justify-end gap-2">
                         {tx.txHash && (
                           <a
-                            href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
+                            href={getBlockExplorerUrl(chainId, { txHash: tx.txHash })}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs"

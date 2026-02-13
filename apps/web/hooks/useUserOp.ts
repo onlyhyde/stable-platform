@@ -245,9 +245,28 @@ export function useUserOp(config: UseUserOpConfig = {}) {
     [sendUserOp]
   )
 
+  /**
+   * Re-check a previously submitted UserOp that timed out.
+   * Useful when the initial polling reached maxAttempts but
+   * the operation may still be pending on-chain.
+   */
+  const recheckUserOp = useCallback(
+    async (userOpHash: Hex): Promise<UserOpResult> => {
+      const receipt = await waitForUserOpReceipt(userOpHash, 10, 3000)
+      return {
+        userOpHash,
+        transactionHash: receipt?.transactionHash,
+        success: receipt ? receipt.success : false,
+        status: receipt ? (receipt.success ? 'confirmed' : 'failed') : 'submitted',
+      }
+    },
+    [waitForUserOpReceipt]
+  )
+
   return {
     sendUserOp,
     sendTransaction,
+    recheckUserOp,
     isLoading,
     error,
     clearError: () => setError(null),

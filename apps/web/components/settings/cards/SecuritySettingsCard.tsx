@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Button,
   Card,
@@ -10,11 +10,82 @@ import {
   InfoBanner,
   Input,
   ToggleCard,
+  useToast,
 } from '@/components/common'
 
+const SECURITY_SETTINGS_KEY = 'stablenet_security_settings'
+
+interface SecuritySettings {
+  txConfirmation: boolean
+  sessionKeyEnabled: boolean
+  dailyEthLimit: string
+  dailyTokenLimit: string
+}
+
+const DEFAULT_SETTINGS: SecuritySettings = {
+  txConfirmation: true,
+  sessionKeyEnabled: false,
+  dailyEthLimit: '',
+  dailyTokenLimit: '',
+}
+
 export function SecuritySettingsCard() {
-  const [sessionKeyEnabled, setSessionKeyEnabled] = useState(false)
-  const [txConfirmation, setTxConfirmation] = useState(true)
+  const { addToast } = useToast()
+  const [settings, setSettings] = useState<SecuritySettings>(DEFAULT_SETTINGS)
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(SECURITY_SETTINGS_KEY)
+      if (stored) {
+        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(stored) })
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, [])
+
+  const persistSettings = useCallback((updated: SecuritySettings) => {
+    setSettings(updated)
+    localStorage.setItem(SECURITY_SETTINGS_KEY, JSON.stringify(updated))
+  }, [])
+
+  const handleToggleTxConfirmation = useCallback((checked: boolean) => {
+    const updated = { ...settings, txConfirmation: checked }
+    persistSettings(updated)
+    addToast({
+      type: 'info',
+      title: 'Setting Updated',
+      message: `Transaction confirmation ${checked ? 'enabled' : 'disabled'}`,
+    })
+  }, [settings, persistSettings, addToast])
+
+  const handleToggleSessionKeys = useCallback((checked: boolean) => {
+    const updated = { ...settings, sessionKeyEnabled: checked }
+    persistSettings(updated)
+    addToast({
+      type: 'info',
+      title: 'Setting Updated',
+      message: `Session keys ${checked ? 'enabled' : 'disabled'}`,
+    })
+  }, [settings, persistSettings, addToast])
+
+  const handleUpdateLimits = useCallback(() => {
+    persistSettings(settings)
+    addToast({
+      type: 'success',
+      title: 'Limits Updated',
+      message: 'Daily spending limits have been saved',
+    })
+  }, [settings, persistSettings, addToast])
+
+  const handleSetupRecovery = useCallback((method: string) => {
+    addToast({
+      type: 'info',
+      title: 'Coming Soon',
+      message: `${method} recovery setup will be available in a future update`,
+    })
+  }, [addToast])
 
   return (
     <div className="space-y-6">
@@ -26,15 +97,15 @@ export function SecuritySettingsCard() {
             <ToggleCard
               title="Require Confirmation"
               description="Always confirm transactions before signing"
-              checked={txConfirmation}
-              onChange={setTxConfirmation}
+              checked={settings.txConfirmation}
+              onChange={handleToggleTxConfirmation}
             />
 
             <ToggleCard
               title="Session Keys"
               description="Allow temporary keys for seamless transactions"
-              checked={sessionKeyEnabled}
-              onChange={setSessionKeyEnabled}
+              checked={settings.sessionKeyEnabled}
+              onChange={handleToggleSessionKeys}
             />
           </div>
         </CardContent>
@@ -53,14 +124,18 @@ export function SecuritySettingsCard() {
               type="number"
               placeholder="1.0"
               hint="Maximum ETH that can be spent per day"
+              value={settings.dailyEthLimit}
+              onChange={(e) => setSettings((s) => ({ ...s, dailyEthLimit: e.target.value }))}
             />
             <Input
               label="Daily Token Limit (USD)"
               type="number"
               placeholder="1000"
               hint="Maximum USD value of tokens that can be spent per day"
+              value={settings.dailyTokenLimit}
+              onChange={(e) => setSettings((s) => ({ ...s, dailyTokenLimit: e.target.value }))}
             />
-            <Button variant="secondary">Update Limits</Button>
+            <Button variant="secondary" onClick={handleUpdateLimits}>Update Limits</Button>
           </div>
         </CardContent>
       </Card>
@@ -73,8 +148,8 @@ export function SecuritySettingsCard() {
           </CardDescription>
 
           <div className="space-y-3">
-            <RecoveryOption icon={<EmailIcon />} title="Email Recovery" status="Not configured" />
-            <RecoveryOption icon={<SocialIcon />} title="Social Recovery" status="Not configured" />
+            <RecoveryOption icon={<EmailIcon />} title="Email Recovery" status="Not configured" onSetup={() => handleSetupRecovery('Email')} />
+            <RecoveryOption icon={<SocialIcon />} title="Social Recovery" status="Not configured" onSetup={() => handleSetupRecovery('Social')} />
           </div>
         </CardContent>
       </Card>
@@ -92,9 +167,10 @@ interface RecoveryOptionProps {
   icon: React.ReactNode
   title: string
   status: string
+  onSetup?: () => void
 }
 
-function RecoveryOption({ icon, title, status }: RecoveryOptionProps) {
+function RecoveryOption({ icon, title, status, onSetup }: RecoveryOptionProps) {
   return (
     <div
       className="flex items-center justify-between p-4 border rounded-lg"
@@ -116,7 +192,7 @@ function RecoveryOption({ icon, title, status }: RecoveryOptionProps) {
           </p>
         </div>
       </div>
-      <Button variant="secondary" size="sm">
+      <Button variant="secondary" size="sm" onClick={onSetup}>
         Setup
       </Button>
     </div>

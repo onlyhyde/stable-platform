@@ -2,7 +2,8 @@
 
 import type { FC } from 'react'
 import { formatUnits } from 'viem'
-import { formatAddress } from '../../lib/utils'
+import { useChainId } from 'wagmi'
+import { formatAddress, getBlockExplorerUrl } from '../../lib/utils'
 import type { PaymentHistoryEntry } from '../../types/subscription'
 import { Card, CardContent, CardHeader, CardTitle } from '../common/Card'
 
@@ -113,6 +114,7 @@ interface PaymentHistoryItemProps {
 }
 
 const PaymentHistoryItem: FC<PaymentHistoryItemProps> = ({ payment }) => {
+  const chainId = useChainId()
   const tokenInfo = TOKEN_INFO[payment.token.toLowerCase()] || { symbol: 'TOKEN', decimals: 18 }
   const amountFormatted = formatUnits(payment.amount, tokenInfo.decimals)
   const date = new Date(Number(payment.timestamp) * 1000)
@@ -174,7 +176,7 @@ const PaymentHistoryItem: FC<PaymentHistoryItemProps> = ({ payment }) => {
             <span>{date.toLocaleDateString()}</span>
             <span>&middot;</span>
             <a
-              href={`https://etherscan.io/tx/${payment.txHash}`}
+              href={getBlockExplorerUrl(chainId, { txHash: payment.txHash })}
               target="_blank"
               rel="noopener noreferrer"
               className="hover:underline"

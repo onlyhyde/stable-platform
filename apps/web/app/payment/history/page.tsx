@@ -1,14 +1,18 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/common'
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle, Pagination } from '@/components/common'
 import { useWallet } from '@/hooks'
 import { useTransactionHistory } from '@/hooks/useTransactionHistory'
 import { formatAddress, formatRelativeTime } from '@/lib/utils'
 import type { Transaction } from '@/types'
 
+const ITEMS_PER_PAGE = 10
+
 export default function HistoryPage() {
   const { isConnected, address } = useWallet()
   const { transactions, isLoading, error } = useTransactionHistory({ address })
+  const [currentPage, setCurrentPage] = useState(1)
 
   if (!isConnected) {
     return (
@@ -73,11 +77,21 @@ export default function HistoryPage() {
               </p>
             </div>
           ) : (
-            <div className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
-              {transactions.map((tx) => (
-                <TransactionItem key={tx.hash} transaction={tx} />
-              ))}
-            </div>
+            <>
+              <div className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
+                {transactions
+                  .slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+                  .map((tx) => (
+                    <TransactionItem key={tx.hash} transaction={tx} />
+                  ))}
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(transactions.length / ITEMS_PER_PAGE)}
+                onPageChange={setCurrentPage}
+                className="pt-4"
+              />
+            </>
           )}
         </CardContent>
       </Card>

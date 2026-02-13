@@ -261,6 +261,9 @@ export default function SubscriptionPage() {
                   <SubscriptionList
                     subscriptions={mySubscriptions}
                     onCancel={handleCancel}
+                    onManage={(planId) => {
+                      router.push(`/subscription/plans?planId=${planId.toString()}`)
+                    }}
                     isCancelling={isCancelling}
                     cancellingPlanId={cancellingPlanId}
                     emptyMessage="No active subscriptions. Browse plans to get started!"

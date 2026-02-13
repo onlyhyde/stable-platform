@@ -13,6 +13,7 @@ import {
 import { CreatePlanForm } from '../../../components/subscription/CreatePlanForm'
 import { useSubscription } from '../../../hooks/useSubscription'
 import { useWallet } from '../../../hooks/useWallet'
+import { useToast } from '../../../components/common/Toast'
 import type { CreatePlanParams, PlanDisplayInfo } from '../../../types/subscription'
 
 export default function MerchantDashboardPage() {
@@ -28,6 +29,7 @@ export default function MerchantDashboardPage() {
     error,
   } = useSubscription()
 
+  const { addToast } = useToast()
   const [showCreateForm, setShowCreateForm] = useState(false)
 
   useEffect(() => {
@@ -273,7 +275,20 @@ export default function MerchantDashboardPage() {
           ) : (
             <div className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
               {merchantPlans.map((plan) => (
-                <MerchantPlanRow key={plan.id.toString()} plan={plan} />
+                <MerchantPlanRow
+                  key={plan.id.toString()}
+                  plan={plan}
+                  onEdit={() => {
+                    addToast({ type: 'info', title: 'Edit Plan', message: `Editing plan "${plan.name}"` })
+                  }}
+                  onToggleActive={() => {
+                    addToast({
+                      type: 'info',
+                      title: plan.isActive ? 'Deactivating Plan' : 'Activating Plan',
+                      message: `${plan.isActive ? 'Deactivating' : 'Activating'} "${plan.name}"...`,
+                    })
+                  }}
+                />
               ))}
             </div>
           )}
@@ -298,9 +313,11 @@ export default function MerchantDashboardPage() {
 
 interface MerchantPlanRowProps {
   plan: PlanDisplayInfo
+  onEdit?: () => void
+  onToggleActive?: () => void
 }
 
-function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
+function MerchantPlanRow({ plan, onEdit, onToggleActive }: MerchantPlanRowProps) {
   return (
     <div
       className="flex items-center justify-between px-6 py-4 transition-colors"
@@ -369,10 +386,10 @@ function MerchantPlanRow({ plan }: MerchantPlanRowProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" onClick={onEdit}>
           Edit
         </Button>
-        <Button variant="ghost" size="sm" style={{ color: 'rgb(var(--destructive))' }}>
+        <Button variant="ghost" size="sm" onClick={onToggleActive} style={{ color: 'rgb(var(--destructive))' }}>
           {plan.isActive ? 'Deactivate' : 'Activate'}
         </Button>
       </div>

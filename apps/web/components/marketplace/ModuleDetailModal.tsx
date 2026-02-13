@@ -14,6 +14,7 @@ interface ModuleDetailModalProps {
   module: ModuleCardData | null
   installed: boolean
   onInstallClick: () => void
+  onUninstallClick?: () => void
 }
 
 // ============================================================================
@@ -103,6 +104,7 @@ export function ModuleDetailModal({
   module,
   installed,
   onInstallClick,
+  onUninstallClick,
 }: ModuleDetailModalProps) {
   if (!module) return null
 
@@ -182,13 +184,23 @@ export function ModuleDetailModal({
         <Button variant="secondary" onClick={onClose}>
           Close
         </Button>
-        <Button
-          variant={installed ? 'secondary' : 'primary'}
-          onClick={onInstallClick}
-          disabled={installed}
-        >
-          {installed ? 'Installed' : 'Install'}
-        </Button>
+        {installed && onUninstallClick ? (
+          <Button
+            variant="secondary"
+            onClick={onUninstallClick}
+            style={{ color: 'rgb(var(--destructive))' }}
+          >
+            Uninstall
+          </Button>
+        ) : (
+          <Button
+            variant={installed ? 'secondary' : 'primary'}
+            onClick={onInstallClick}
+            disabled={installed}
+          >
+            {installed ? 'Installed' : 'Install'}
+          </Button>
+        )}
       </ModalActions>
     </Modal>
   )

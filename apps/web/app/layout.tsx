@@ -81,13 +81,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Header />
             <div className="flex flex-1">
               <Sidebar />
-              <main className="flex-1 ml-64 min-h-[calc(100vh-4rem)]">
+              <main className="flex-1 md:ml-64 min-h-[calc(100vh-4rem)]">
                 <ErrorBoundary>
                   <div className="p-6 lg:p-8">{children}</div>
                 </ErrorBoundary>
               </main>
             </div>
-            <div className="ml-64">
+            <div className="md:ml-64">
               <Footer />
             </div>
           </div>

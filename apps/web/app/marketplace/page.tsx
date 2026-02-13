@@ -252,6 +252,17 @@ export default function MarketplacePage() {
     }
   }, [detailModalModule, handleInstallClick])
 
+  const handleDetailUninstallClick = useCallback(() => {
+    if (detailModalModule) {
+      addToast({
+        type: 'info',
+        title: 'Uninstall Module',
+        message: `Uninstalling "${detailModalModule.name}" is not yet supported on-chain.`,
+      })
+      setDetailModalModule(null)
+    }
+  }, [detailModalModule, addToast])
+
   // ============================================================================
   // Filtering
   // ============================================================================
@@ -482,6 +493,7 @@ export default function MarketplacePage() {
         module={detailModalModule}
         installed={detailModalModule ? installedModules.has(detailModalModule.id) : false}
         onInstallClick={handleDetailInstallClick}
+        onUninstallClick={handleDetailUninstallClick}
       />
     </div>
   )

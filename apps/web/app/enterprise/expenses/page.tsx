@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Button, ConnectWalletCard, PageHeader } from '@/components/common'
+import { useCallback, useMemo, useState } from 'react'
+import { Button, ConnectWalletCard, PageHeader, useToast } from '@/components/common'
 import { ExpenseListCard, ExpenseSummaryCards, SubmitExpenseModal } from '@/components/enterprise'
+import type { ExpenseFormData } from '@/components/enterprise/cards/SubmitExpenseModal'
 import { useWallet } from '@/hooks'
 import { useExpenses } from '@/hooks/useExpenses'
 
@@ -16,6 +17,7 @@ export default function ExpensesPage() {
     return { status: filterStatus as 'pending' | 'approved' | 'rejected' | 'paid' }
   }, [filterStatus])
 
+  const { addToast } = useToast()
   const { expenses, isLoading, error } = useExpenses({ filter })
 
   // Get all expenses for summary calculation (without filter)
@@ -34,6 +36,32 @@ export default function ExpensesPage() {
   const totalPaidMTD =
     allExpenses.filter((e) => e.status === 'paid').reduce((sum, e) => sum + Number(e.amount), 0) /
     1e6
+
+  const handleSubmitExpense = useCallback((data: ExpenseFormData) => {
+    addToast({
+      type: 'success',
+      title: 'Expense Submitted',
+      message: `Submitted ${data.category} expense for $${data.amount}`,
+    })
+    setIsAddModalOpen(false)
+  }, [addToast])
+
+  const handleApprove = useCallback((id: string) => {
+    addToast({ type: 'success', title: 'Expense Approved', message: `Expense ${id} has been approved` })
+  }, [addToast])
+
+  const handleReject = useCallback((id: string) => {
+    addToast({ type: 'info', title: 'Expense Rejected', message: `Expense ${id} has been rejected` })
+  }, [addToast])
+
+  const handlePay = useCallback((id: string) => {
+    addToast({
+      type: 'loading',
+      title: 'Processing Payment',
+      message: `Paying expense ${id}...`,
+      persistent: true,
+    })
+  }, [addToast])
 
   if (!isConnected) {
     return <ConnectWalletCard message="Please connect your wallet to manage expenses" />
@@ -84,9 +112,16 @@ export default function ExpensesPage() {
         expenses={expenses}
         filterStatus={filterStatus}
         onFilterChange={setFilterStatus}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onPay={handlePay}
       />
 
-      <SubmitExpenseModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
+      <SubmitExpenseModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubmit={handleSubmitExpense}
+      />
     </div>
   )
 }

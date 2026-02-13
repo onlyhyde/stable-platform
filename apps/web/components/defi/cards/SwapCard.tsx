@@ -12,12 +12,16 @@ interface SwapCardProps {
   quote: SwapQuote | null
   isLoading: boolean
   error: Error | null
+  balanceIn?: string
+  balanceOut?: string
+  slippage?: number
   onTokenInChange: (token: Token) => void
   onTokenOutChange: (token: Token) => void
   onAmountInChange: (amount: string) => void
   onSwapTokens: () => void
   onGetQuote: () => void
   onSwap: () => void
+  onSlippageChange?: (slippage: number) => void
 }
 
 export function SwapCard({
@@ -32,13 +36,40 @@ export function SwapCard({
   onTokenOutChange,
   onAmountInChange,
   onSwapTokens,
+  balanceIn = '0.00',
+  balanceOut = '0.00',
+  slippage = 0.5,
   onGetQuote,
   onSwap,
+  onSlippageChange,
 }: SwapCardProps) {
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Swap Tokens</CardTitle>
+        {/* Slippage Settings */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            Slippage
+          </span>
+          <div className="flex items-center gap-1">
+            {[0.1, 0.5, 1.0].map((val) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => onSlippageChange?.(val)}
+                className="px-2 py-1 rounded text-xs font-medium transition-colors"
+                style={{
+                  backgroundColor:
+                    slippage === val ? 'rgb(var(--primary))' : 'rgb(var(--secondary))',
+                  color: slippage === val ? 'white' : 'rgb(var(--foreground))',
+                }}
+              >
+                {val}%
+              </button>
+            ))}
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Token In */}
@@ -55,7 +86,7 @@ export function SwapCard({
               You pay
             </label>
             <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Balance: 0.00
+              Balance: {balanceIn}
             </span>
           </div>
           <div className="flex gap-3">
@@ -73,8 +104,8 @@ export function SwapCard({
                 const token = tokens.find((t) => t.address === e.target.value)
                 if (token) onTokenInChange(token)
               }}
-              className="px-4 py-2 bg-white border rounded-lg font-medium"
-              style={{ borderColor: 'rgb(var(--border))' }}
+              className="px-4 py-2 border rounded-lg font-medium"
+              style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgb(var(--card))' }}
               aria-label="Select token to pay"
             >
               {tokens.map((token) => (
@@ -91,8 +122,8 @@ export function SwapCard({
           <button
             type="button"
             onClick={onSwapTokens}
-            className="p-2 bg-white border rounded-full hover:opacity-80 transition-colors"
-            style={{ borderColor: 'rgb(var(--border))' }}
+            className="p-2 border rounded-full hover:opacity-80 transition-colors"
+            style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgb(var(--card))' }}
             aria-label="Swap token positions"
           >
             <svg
@@ -123,13 +154,13 @@ export function SwapCard({
               You receive
             </span>
             <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Balance: 0.00
+              Balance: {balanceOut}
             </span>
           </div>
           <div className="flex gap-3">
             <div
-              className="flex-1 px-4 py-2 bg-white border rounded-lg"
-              style={{ borderColor: 'rgb(var(--border))', color: 'rgb(var(--foreground))' }}
+              className="flex-1 px-4 py-2 border rounded-lg"
+              style={{ borderColor: 'rgb(var(--border))', color: 'rgb(var(--foreground))', backgroundColor: 'rgb(var(--card))' }}
             >
               {quote ? formatTokenAmount(quote.amountOut, tokenOut.decimals) : '0.0'}
             </div>
@@ -139,8 +170,8 @@ export function SwapCard({
                 const token = tokens.find((t) => t.address === e.target.value)
                 if (token) onTokenOutChange(token)
               }}
-              className="px-4 py-2 bg-white border rounded-lg font-medium"
-              style={{ borderColor: 'rgb(var(--border))' }}
+              className="px-4 py-2 border rounded-lg font-medium"
+              style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgb(var(--card))' }}
               aria-label="Select token to receive"
             >
               {tokens.map((token) => (
@@ -172,6 +203,10 @@ export function SwapCard({
               </span>
             </div>
             <div className="flex justify-between text-sm">
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Slippage Tolerance</span>
+              <span style={{ color: 'rgb(var(--foreground))' }}>{slippage}%</span>
+            </div>
+            <div className="flex justify-between text-sm">
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>Gas Fee</span>
               <span style={{ color: 'rgb(var(--foreground))' }}>Sponsored</span>
             </div>
@@ -180,7 +215,13 @@ export function SwapCard({
 
         {/* Error */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div
+            className="p-3 rounded-lg border"
+            style={{
+              backgroundColor: 'rgb(var(--destructive) / 0.1)',
+              borderColor: 'rgb(var(--destructive) / 0.3)',
+            }}
+          >
             <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
               {error.message}
             </p>

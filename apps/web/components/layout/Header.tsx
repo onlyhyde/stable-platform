@@ -1,10 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { Button, NetworkSelector, WalletSelectorModal } from '@/components/common'
+import { useEffect, useRef, useState } from 'react'
+import { Button, NetworkSelector, NetworkWarningBanner, WalletSelectorModal } from '@/components/common'
 import { useBalance, useWallet } from '@/hooks'
-import { formatAddress, formatTokenAmount } from '@/lib/utils'
+import { copyToClipboard, formatAddress, formatTokenAmount } from '@/lib/utils'
 import { ThemeToggle } from '@/providers'
 
 export function Header() {
@@ -12,6 +12,31 @@ export function Header() {
   const { balance, symbol, decimals } = useBalance({ address, watch: true })
   const [showWalletModal, setShowWalletModal] = useState(false)
   const [pendingConnector, setPendingConnector] = useState<string>()
+  const [showAccountMenu, setShowAccountMenu] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const accountMenuRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setShowAccountMenu(false)
+      }
+    }
+    if (showAccountMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showAccountMenu])
+
+  const handleCopyAddress = async () => {
+    if (!address) return
+    const success = await copyToClipboard(address)
+    if (success) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   const handleSelectWallet = (connectorId: string) => {
     setPendingConnector(connectorId)
@@ -85,44 +110,103 @@ export function Header() {
                 </span>
               </div>
 
-              {/* Account Button */}
-              <button
-                type="button"
-                onClick={() => disconnect()}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 group"
-                style={{
-                  backgroundColor: 'rgb(var(--secondary))',
-                  border: '1px solid rgb(var(--border))',
-                }}
-              >
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[rgb(var(--primary))] via-[rgb(var(--accent))] to-[rgb(var(--info))] ring-2 ring-white dark:ring-[rgb(var(--card))] shadow-sm" />
-                <div className="flex flex-col items-start">
-                  <span
-                    className="text-sm font-semibold"
-                    style={{ color: 'rgb(var(--foreground))' }}
-                  >
-                    {formatAddress(address)}
-                  </span>
-                  <span className="text-2xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                    Connected
-                  </span>
-                </div>
-                <svg
-                  className="w-4 h-4 ml-1"
-                  style={{ color: 'rgb(var(--muted-foreground))' }}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
+              {/* Account Button with Dropdown */}
+              <div className="relative" ref={accountMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowAccountMenu((prev) => !prev)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 group"
+                  style={{
+                    backgroundColor: 'rgb(var(--secondary))',
+                    border: '1px solid rgb(var(--border))',
+                  }}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
-              </button>
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[rgb(var(--primary))] via-[rgb(var(--accent))] to-[rgb(var(--info))] ring-2 ring-white dark:ring-[rgb(var(--card))] shadow-sm" />
+                  <div className="flex flex-col items-start">
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: 'rgb(var(--foreground))' }}
+                    >
+                      {formatAddress(address)}
+                    </span>
+                    <span className="text-2xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                      Connected
+                    </span>
+                  </div>
+                  <svg
+                    className={`w-4 h-4 ml-1 transition-transform ${showAccountMenu ? 'rotate-180' : ''}`}
+                    style={{ color: 'rgb(var(--muted-foreground))' }}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {showAccountMenu && (
+                  <div
+                    className="absolute right-0 mt-2 w-56 rounded-xl border shadow-lg overflow-hidden z-50"
+                    style={{
+                      backgroundColor: 'rgb(var(--card))',
+                      borderColor: 'rgb(var(--border))',
+                    }}
+                  >
+                    {/* Copy Address */}
+                    <button
+                      type="button"
+                      onClick={handleCopyAddress}
+                      className="flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors hover:opacity-80"
+                      style={{ color: 'rgb(var(--foreground))' }}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      {copied ? 'Copied!' : 'Copy Address'}
+                    </button>
+
+                    {/* Settings */}
+                    <Link
+                      href="/settings"
+                      onClick={() => setShowAccountMenu(false)}
+                      className="flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors hover:opacity-80"
+                      style={{ color: 'rgb(var(--foreground))' }}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Settings
+                    </Link>
+
+                    {/* Divider */}
+                    <div style={{ borderTop: '1px solid rgb(var(--border))' }} />
+
+                    {/* Disconnect */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        disconnect()
+                        setShowAccountMenu(false)
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors hover:opacity-80"
+                      style={{ color: 'rgb(var(--destructive))' }}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      Disconnect
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <Button
@@ -161,6 +245,7 @@ export function Header() {
         isConnecting={isConnecting}
         pendingConnector={pendingConnector}
       />
+      <NetworkWarningBanner />
     </header>
   )
 }

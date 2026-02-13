@@ -1,13 +1,40 @@
 export default function Loading() {
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative w-12 h-12">
-          <div className="absolute inset-0 rounded-full border-4 border-dark-200 dark:border-dark-700" />
-          <div className="absolute inset-0 rounded-full border-4 border-t-primary-500 animate-spin" />
-        </div>
-        <p className="text-sm font-medium text-dark-500 dark:text-dark-400">Loading...</p>
+    <div className="space-y-6 animate-pulse">
+      {/* Header skeleton */}
+      <div className="space-y-2">
+        <div
+          className="h-8 w-48 rounded-lg"
+          style={{ backgroundColor: 'rgb(var(--secondary))' }}
+        />
+        <div
+          className="h-4 w-72 rounded-lg"
+          style={{ backgroundColor: 'rgb(var(--secondary))' }}
+        />
       </div>
+
+      {/* Cards skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="h-32 rounded-xl border"
+            style={{
+              backgroundColor: 'rgb(var(--card))',
+              borderColor: 'rgb(var(--border))',
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Content skeleton */}
+      <div
+        className="h-64 rounded-xl border"
+        style={{
+          backgroundColor: 'rgb(var(--card))',
+          borderColor: 'rgb(var(--border))',
+        }}
+      />
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { ErrorFallback } from '@/components/error'
 
-export default function ErrorPage({
+export default function PaymentError({
   error,
   reset,
 }: {
@@ -11,13 +11,15 @@ export default function ErrorPage({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('App error:', error)
+    console.error('Payment error:', error)
   }, [error])
 
   return (
     <div className="flex items-center justify-center min-h-[60vh] p-6">
       <ErrorFallback
         error={error}
+        title="Payment Error"
+        message="Something went wrong with the payment operation. Please try again."
         resetError={reset}
         showResetButton
         showHomeButton

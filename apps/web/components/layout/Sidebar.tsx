@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 interface NavItem {
@@ -226,12 +227,22 @@ const bottomNavigation: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
-  return (
-    <aside
-      className="fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] w-64 border-r bg-[rgb(var(--sidebar))/0.8] backdrop-blur-xl"
-      style={{ borderColor: 'rgb(var(--sidebar-border))' }}
-    >
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname])
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden'
+      return () => { document.body.style.overflow = '' }
+    }
+  }, [mobileOpen])
+
+  const sidebarContent = (
       <div className="flex flex-col h-full">
         {/* Main Navigation */}
         <nav className="flex-1 flex flex-col gap-1 p-4 overflow-y-auto scrollbar-thin">
@@ -356,6 +367,76 @@ export function Sidebar() {
           })}
         </nav>
       </div>
-    </aside>
+  )
+
+  return (
+    <>
+      {/* Mobile Hamburger Button */}
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        className="fixed top-[1.125rem] left-4 z-50 p-2 rounded-lg md:hidden"
+        style={{
+          backgroundColor: 'rgb(var(--card))',
+          border: '1px solid rgb(var(--border))',
+          color: 'rgb(var(--foreground))',
+        }}
+        aria-label="Open menu"
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      {/* Desktop Sidebar */}
+      <aside
+        className="fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] w-64 border-r bg-[rgb(var(--sidebar))/0.8] backdrop-blur-xl hidden md:block"
+        style={{ borderColor: 'rgb(var(--sidebar-border))' }}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+            onKeyDown={(e) => e.key === 'Escape' && setMobileOpen(false)}
+            role="button"
+            tabIndex={0}
+            aria-label="Close menu"
+          />
+          {/* Sidebar Panel */}
+          <aside
+            className="fixed left-0 top-0 h-full w-64 border-r backdrop-blur-xl"
+            style={{
+              backgroundColor: 'rgb(var(--sidebar))',
+              borderColor: 'rgb(var(--sidebar-border))',
+            }}
+          >
+            {/* Close button */}
+            <div className="flex items-center justify-between h-16 px-4 border-b" style={{ borderColor: 'rgb(var(--sidebar-border))' }}>
+              <span className="font-bold text-lg" style={{ color: 'rgb(var(--foreground))' }}>
+                Menu
+              </span>
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                className="p-2 rounded-lg"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+                aria-label="Close menu"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   )
 }

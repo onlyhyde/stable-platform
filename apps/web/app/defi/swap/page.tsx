@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ConnectWalletCard, PageHeader } from '@/components/common'
+import { ConnectWalletCard, PageHeader, useToast } from '@/components/common'
 import { SwapCard } from '@/components/defi'
 import { useSwap, useUserOp, useWallet } from '@/hooks'
 import { useTokens } from '@/hooks/useTokens'
@@ -14,10 +14,12 @@ export default function SwapPage() {
   const { quote, isLoading, error, getQuote, executeSwap } = useSwap({
     sendUserOp,
   })
+  const { addToast, updateToast } = useToast()
 
   const [tokenIn, setTokenIn] = useState<Token | null>(null)
   const [tokenOut, setTokenOut] = useState<Token | null>(null)
   const [amountIn, setAmountIn] = useState('')
+  const [slippage, setSlippage] = useState(0.5)
 
   // Initialize default tokens when loaded
   useEffect(() => {
@@ -42,8 +44,29 @@ export default function SwapPage() {
   }
 
   async function handleSwap() {
-    if (!quote || !address) return
-    await executeSwap(quote, address)
+    if (!quote || !address || !tokenIn || !tokenOut) return
+    const toastId = addToast({
+      type: 'loading',
+      title: 'Swapping Tokens',
+      message: `Swapping ${amountIn} ${tokenIn.symbol} for ${tokenOut.symbol}...`,
+      persistent: true,
+    })
+    try {
+      await executeSwap(quote, address)
+      updateToast(toastId, {
+        type: 'success',
+        title: 'Swap Complete',
+        message: `Swapped ${amountIn} ${tokenIn.symbol} for ${tokenOut.symbol}`,
+        persistent: false,
+      })
+    } catch {
+      updateToast(toastId, {
+        type: 'error',
+        title: 'Swap Failed',
+        message: error?.message ?? 'Swap transaction failed',
+        persistent: false,
+      })
+    }
   }
 
   if (!isConnected) {
@@ -70,12 +93,14 @@ export default function SwapPage() {
         quote={quote}
         isLoading={isLoading}
         error={error}
+        slippage={slippage}
         onTokenInChange={setTokenIn}
         onTokenOutChange={setTokenOut}
         onAmountInChange={setAmountIn}
         onSwapTokens={handleSwapTokens}
         onGetQuote={handleGetQuote}
         onSwap={handleSwap}
+        onSlippageChange={setSlippage}
       />
     </div>
   )

@@ -29,7 +29,7 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
   isRevoking,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [_selectedKey, setSelectedKey] = useState<SessionKeyInfo | null>(null)
+  const [selectedKey, setSelectedKey] = useState<SessionKeyInfo | null>(null)
   const [revokingKey, setRevokingKey] = useState<Address | null>(null)
 
   const handleRevoke = async (sessionKey: Address) => {
@@ -42,8 +42,7 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
   }
 
   const handleViewDetails = (sessionKey: SessionKeyInfo) => {
-    setSelectedKey(sessionKey)
-    // In a full implementation, this would open a details modal
+    setSelectedKey((prev) => (prev?.sessionKey === sessionKey.sessionKey ? null : sessionKey))
   }
 
   const activeKeys = sessionKeys.filter((k) => k.state === 'active')
@@ -197,6 +196,52 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
                 onViewDetails={handleViewDetails}
               />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Selected Key Details */}
+      {selectedKey && (
+        <div
+          className="rounded-lg border p-4 space-y-2"
+          style={{ backgroundColor: 'rgb(var(--secondary))', borderColor: 'rgb(var(--border))' }}
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+              Session Key Details
+            </h3>
+            <button
+              type="button"
+              onClick={() => setSelectedKey(null)}
+              className="text-sm"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
+              Close
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+            <div>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Key: </span>
+              <code className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>
+                {selectedKey.sessionKey.slice(0, 10)}...{selectedKey.sessionKey.slice(-8)}
+              </code>
+            </div>
+            <div>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>State: </span>
+              <span className="capitalize" style={{ color: 'rgb(var(--foreground))' }}>{selectedKey.state}</span>
+            </div>
+            <div>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Created: </span>
+              <span style={{ color: 'rgb(var(--foreground))' }}>
+                {new Date(Number(selectedKey.createdAt) * 1000).toLocaleString()}
+              </span>
+            </div>
+            <div>
+              <span style={{ color: 'rgb(var(--muted-foreground))' }}>Expires: </span>
+              <span style={{ color: 'rgb(var(--foreground))' }}>
+                {selectedKey.expiry === 0n ? 'No expiry' : new Date(Number(selectedKey.expiry) * 1000).toLocaleString()}
+              </span>
+            </div>
           </div>
         </div>
       )}

@@ -1,7 +1,8 @@
 'use client'
 
+import { useChainId } from 'wagmi'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common'
-import { formatAddress, formatRelativeTime } from '@/lib/utils'
+import { formatAddress, formatRelativeTime, getBlockExplorerUrl } from '@/lib/utils'
 import type { AuditLog } from '@/types'
 import { EmptyState } from '../EmptyState'
 
@@ -26,6 +27,8 @@ interface AuditLogCardProps {
 }
 
 export function AuditLogCard({ logs }: AuditLogCardProps) {
+  const chainId = useChainId()
+
   return (
     <Card>
       <CardHeader>
@@ -130,7 +133,7 @@ export function AuditLogCard({ logs }: AuditLogCardProps) {
                     </div>
                     {log.txHash && (
                       <a
-                        href={`https://etherscan.io/tx/${log.txHash}`}
+                        href={getBlockExplorerUrl(chainId, { txHash: log.txHash })}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm flex items-center gap-1 hover:opacity-80"

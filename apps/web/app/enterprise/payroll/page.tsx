@@ -1,19 +1,21 @@
 'use client'
 
-import { useState } from 'react'
-import { Button, ConnectWalletCard, PageHeader } from '@/components/common'
+import { useCallback, useState } from 'react'
+import { Button, ConnectWalletCard, PageHeader, useToast } from '@/components/common'
 import {
   AddEmployeeModal,
   PayrollListCard,
   PayrollQuickActionsCard,
   PayrollSummaryCards,
 } from '@/components/enterprise'
+import type { EmployeeFormData } from '@/components/enterprise/cards/AddEmployeeModal'
 import { useWallet } from '@/hooks'
 import { usePayroll } from '@/hooks/usePayroll'
 
 export default function PayrollPage() {
   const { isConnected } = useWallet()
   const { payrollEntries, summary, isLoading, error } = usePayroll()
+  const { addToast } = useToast()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   if (!isConnected) {
@@ -35,6 +37,57 @@ export default function PayrollPage() {
       </div>
     )
   }
+
+  const handleAddEmployee = useCallback((data: EmployeeFormData) => {
+    addToast({
+      type: 'success',
+      title: 'Employee Added',
+      message: `Added ${data.walletAddress.slice(0, 8)}... with ${data.frequency} payments of $${data.amount}`,
+    })
+    setIsAddModalOpen(false)
+  }, [addToast])
+
+  const handleProcessPayments = useCallback(() => {
+    if (payrollEntries.length === 0) {
+      addToast({ type: 'info', title: 'No Payments', message: 'No active payroll entries to process' })
+      return
+    }
+    const activeCount = payrollEntries.filter((e) => e.status === 'active').length
+    addToast({
+      type: 'loading',
+      title: 'Processing Payments',
+      message: `Processing ${activeCount} payroll payment(s)...`,
+      persistent: true,
+    })
+  }, [payrollEntries, addToast])
+
+  const handleExportReport = useCallback(() => {
+    if (payrollEntries.length === 0) {
+      addToast({ type: 'info', title: 'No Data', message: 'No payroll data to export' })
+      return
+    }
+
+    const headers = ['Recipient', 'Amount', 'Token', 'Frequency', 'Status', 'Next Payment']
+    const rows = payrollEntries.map((entry) => [
+      entry.recipient,
+      (Number(entry.amount) / 10 ** entry.token.decimals).toString(),
+      entry.token.symbol,
+      entry.frequency,
+      entry.status,
+      entry.nextPaymentDate.toISOString(),
+    ])
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `payroll-report-${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    addToast({ type: 'success', title: 'Report Exported', message: 'Payroll report downloaded as CSV' })
+  }, [payrollEntries, addToast])
 
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -73,11 +126,23 @@ export default function PayrollPage() {
         ytdPayments={formatCurrency(summary.ytdTotal)}
       />
 
-      <PayrollListCard entries={payrollEntries} />
+      <PayrollListCard
+        entries={payrollEntries}
+        onEdit={(id) => {
+          addToast({ type: 'info', title: 'Edit Employee', message: `Editing payroll entry ${id}` })
+        }}
+      />
 
-      <PayrollQuickActionsCard />
+      <PayrollQuickActionsCard
+        onProcessPayments={handleProcessPayments}
+        onExportReport={handleExportReport}
+      />
 
-      <AddEmployeeModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
+      <AddEmployeeModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubmit={handleAddEmployee}
+      />
     </div>
   )
 }

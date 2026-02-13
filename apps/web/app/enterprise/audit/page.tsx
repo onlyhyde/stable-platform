@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import { Button, ConnectWalletCard, PageHeader } from '@/components/common'
+import { Button, ConnectWalletCard, PageHeader, Pagination } from '@/components/common'
 import {
   AuditFilterCard,
   AuditLogCard,
@@ -21,6 +21,9 @@ export default function AuditPage() {
     if (filterAction === 'all') return undefined
     return { action: filterAction }
   }, [filterAction])
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
 
   const { logs: auditLogs, isLoading, error } = useAuditLogs({ filter })
 
@@ -126,7 +129,18 @@ export default function AuditPage() {
         onFilterChange={setFilterAction}
       />
 
-      <AuditLogCard logs={filteredLogs} />
+      <AuditLogCard
+        logs={filteredLogs.slice(
+          (currentPage - 1) * ITEMS_PER_PAGE,
+          currentPage * ITEMS_PER_PAGE
+        )}
+      />
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={Math.ceil(filteredLogs.length / ITEMS_PER_PAGE)}
+        onPageChange={setCurrentPage}
+      />
 
       <ComplianceInfoCard />
     </div>

@@ -1,15 +1,17 @@
 'use client'
 
-import { useState } from 'react'
-import { Button, ConnectWalletCard, PageHeader } from '@/components/common'
+import { useCallback, useState } from 'react'
+import { Button, ConnectWalletCard, PageHeader, useToast } from '@/components/common'
 import { AddLiquidityModal, AvailablePoolsCard, YourPositionsCard } from '@/components/defi'
+import type { LiquidityFormData } from '@/components/defi/cards/AddLiquidityModal'
 import { useWallet } from '@/hooks'
 import { usePools } from '@/hooks/usePools'
-import type { Pool } from '@/types'
+import type { LiquidityPosition, Pool } from '@/types'
 
 export default function PoolPage() {
   const { isConnected } = useWallet()
   const { pools, isLoading, error } = usePools()
+  const { addToast } = useToast()
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null)
   const [isAddLiquidityOpen, setIsAddLiquidityOpen] = useState(false)
 
@@ -22,6 +24,25 @@ export default function PoolPage() {
     setIsAddLiquidityOpen(false)
     setSelectedPool(null)
   }
+
+  const handleSubmitLiquidity = useCallback(async (data: LiquidityFormData) => {
+    addToast({
+      type: 'loading',
+      title: 'Adding Liquidity',
+      message: `Adding liquidity to pool ${data.poolAddress.slice(0, 8)}...`,
+      persistent: true,
+    })
+    handleCloseModal()
+  }, [addToast])
+
+  const handleRemoveLiquidity = useCallback((position: LiquidityPosition) => {
+    addToast({
+      type: 'loading',
+      title: 'Removing Liquidity',
+      message: `Removing liquidity from ${position.token0.symbol}/${position.token1.symbol} pool...`,
+      persistent: true,
+    })
+  }, [addToast])
 
   if (!isConnected) {
     return <ConnectWalletCard message="Please connect your wallet to view pools" />
@@ -61,7 +82,7 @@ export default function PoolPage() {
         </Button>
       </div>
 
-      <YourPositionsCard />
+      <YourPositionsCard onRemoveLiquidity={handleRemoveLiquidity} />
 
       <AvailablePoolsCard pools={pools} onAddLiquidity={handleAddLiquidity} />
 
@@ -69,6 +90,7 @@ export default function PoolPage() {
         isOpen={isAddLiquidityOpen}
         onClose={handleCloseModal}
         selectedPool={selectedPool}
+        onSubmit={handleSubmitLiquidity}
       />
     </div>
   )
