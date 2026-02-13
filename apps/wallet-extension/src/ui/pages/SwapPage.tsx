@@ -111,9 +111,16 @@ export function SwapPage() {
     const slippageBps = form.slippage * 100 // convert % to bps
     const minOutputNum = estimatedOutputNum * (1 - slippageBps / 10000)
 
+    // Estimate price impact: swap fee (0.3%) + size-based impact approximation
+    // For small trades impact ≈ fee; larger trades have proportionally higher impact
+    const swapFeePercent = DEFAULT_SWAP_FEE / 10000 // 0.3%
+    const toValue = estimatedOutputNum * toPrice
+    const executionSlip = fromValue > 0 ? Math.abs(fromValue - toValue) / fromValue : 0
+    const priceImpact = Math.max(swapFeePercent, executionSlip) * 100 // as percentage
+
     setEstimate({
       estimatedOutput: estimatedOutputNum.toFixed(6),
-      priceImpact: null, // Real price impact requires on-chain data
+      priceImpact: Math.round(priceImpact * 100) / 100,
       minOutput: minOutputNum.toFixed(6),
     })
   }, [form.fromAmount, form.fromToken, form.toToken, form.slippage, tokenPrices])
@@ -417,6 +424,22 @@ export function SwapPage() {
             <span>{t('slippageTolerance')}</span>
             <span>{form.slippage}%</span>
           </div>
+          {estimate.priceImpact != null && (
+            <div
+              className="flex justify-between"
+              style={{
+                color:
+                  estimate.priceImpact > 5
+                    ? 'rgb(var(--destructive))'
+                    : estimate.priceImpact > 2
+                      ? 'rgb(var(--warning, 234 179 8))'
+                      : 'rgb(var(--muted-foreground))',
+              }}
+            >
+              <span>{t('priceImpact', 'Price Impact')}</span>
+              <span>{estimate.priceImpact}%</span>
+            </div>
+          )}
           <div className="flex justify-between" style={{ color: 'rgb(var(--muted-foreground))' }}>
             <span>{t('feeTier')}</span>
             <span>{DEFAULT_SWAP_FEE / 10000}%</span>

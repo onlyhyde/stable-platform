@@ -22,6 +22,7 @@
 > 21차 검토: 2026-02-13 (Phase 15 — §61 Bundler 디버그 모드 프로덕션 가드 추가, §68 FlashbotsSubmitter secp256k1 ECDSA 서명 구현) = 2건 RESOLVED
 > 22차 검토: 2026-02-13 (Phase 16 — §62 Validation skip 플래그 프로덕션 경고 추가, §59 Bundler/Paymaster-proxy 테스트 작성) = 2건 RESOLVED
 > 23차 검토: 2026-02-13 (Phase 17 — §60 Paymaster Proxy admin API 완성) = 1건 RESOLVED
+> 24차 검토: 2026-02-13 (Phase 18 — §63 QR Code 실제 생성, §71 Price Impact 계산+경고 UI) = 2건 RESOLVED
 
 ---
 
@@ -1516,14 +1517,15 @@ Address: common.HexToAddress("0x0000000000000000000000000000000000000000"), // T
 
 ---
 
-## §63. MEDIUM — QR Code Placeholder
+## ~~§63. MEDIUM — QR Code Placeholder~~ ✅ RESOLVED (Phase 18)
 
 **심각도:** MEDIUM
-**파일:** `apps/wallet-extension/src/ui/pages/Receive.tsx:37-58`
 
-**현상:** apps/web과 동일하게 QR 코드가 placeholder 텍스트이다.
-
-**영향:** Receive 페이지에서 주소 QR 코드를 스캔할 수 없음
+✅ **RESOLVED (Phase 18):** QR 코드 실제 생성:
+- `qrcode` 라이브러리(이미 의존성에 포함)로 `toDataURL()` 호출하여 실제 QR 이미지 생성
+- `useEffect`로 `selectedAccount` 변경 시 QR 데이터 URL 갱신
+- placeholder SVG 아이콘 → 실제 QR 이미지 `<img>` 태그로 교체 (로딩 중 pulse 애니메이션)
+- `qrcode.d.ts` 타입 선언 추가
 
 ---
 
@@ -1587,18 +1589,15 @@ Address: common.HexToAddress("0x0000000000000000000000000000000000000000"), // T
 
 ---
 
-## §71. LOW — Swap 가격 영향(Price Impact) 미계산 *(8차 검토 추가)*
+## ~~§71. LOW — Swap 가격 영향(Price Impact) 미계산~~ ✅ RESOLVED (Phase 18) *(8차 검토 추가)*
 
 **심각도:** LOW
-**파일:** `apps/wallet-extension/src/ui/pages/SwapPage.tsx:116`
 
-**현상:** 스왑 견적에서 `priceImpact`가 항상 `null`이다.
-
-```typescript
-priceImpact: null, // Real price impact requires on-chain data
-```
-
-**영향:** 사용자가 불리한 스왑 비율(높은 가격 영향)을 인지하지 못함
+✅ **RESOLVED (Phase 18):** Price impact 계산 및 경고 UI:
+- `priceImpact: null` → 스왑 수수료(0.3%) + 실행 슬리피지 기반 근사 계산
+- Swap Details 섹션에 "Price Impact" 행 추가
+- 색상 코딩: >5% 빨간색(destructive), >2% 노란색(warning), 기본 회색
+- `DEFAULT_SWAP_FEE` (3000 = 0.3%) 기준 최소 impact 보장
 
 ---
 
@@ -1661,7 +1660,7 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 | apps/web (§1-§34) | ~~3~~ 2 | ~~27~~ 22 | ~~41~~ 37 | 18 | **65** | ~~89~~ **24** |
 | packages (§35-§48, §73) | ~~3~~ 1 | ~~4~~ 0 | ~~7~~ 1 | ~~1~~ 0 | **12** | ~~15~~ **3** |
 | services (§49-§62, §68) | ~~1~~ 0 | ~~3~~ 0 | ~~7~~ 0 | ~~4~~ 0 | **15** | ~~15~~ **0** |
-| wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 2 | 5 | **2** | ~~9~~ **7** |
+| wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 1 | ~~5~~ 4 | **4** | ~~9~~ **5** |
 | **합계** | **3** | **22** | **39** | **26** | **91** | **37** |
 
 > 15차 검토 (2026-02-13, Phase 10): packages 10건, services 5건, wallet-extension 2건 RESOLVED 확인

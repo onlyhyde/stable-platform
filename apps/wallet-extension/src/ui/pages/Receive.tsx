@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import QRCode from 'qrcode'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWalletStore } from '../hooks/useWalletStore'
 
@@ -8,6 +9,16 @@ export function Receive() {
   const [copied, setCopied] = useState(false)
 
   const currentAccount = accounts.find((a) => a.address === selectedAccount)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!selectedAccount) return
+    QRCode.toDataURL(selectedAccount, {
+      width: 192,
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' },
+    }).then(setQrDataUrl).catch(() => setQrDataUrl(null))
+  }, [selectedAccount])
 
   async function copyAddress() {
     if (!selectedAccount) return
@@ -34,29 +45,33 @@ export function Receive() {
         {tc('receive')}
       </h2>
 
-      {/* QR Code Placeholder */}
+      {/* QR Code */}
       <div className="flex justify-center mb-6">
         <div
-          className="w-48 h-48 rounded-2xl flex items-center justify-center"
+          className="w-48 h-48 rounded-2xl flex items-center justify-center overflow-hidden"
           style={{
             backgroundColor: 'rgb(var(--card))',
             border: '2px solid rgb(var(--border))',
           }}
         >
-          <div className="text-center p-4">
-            <svg
-              className="w-24 h-24 mx-auto"
-              style={{ color: 'rgb(var(--muted-foreground))' }}
-              fill="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path d="M3 11V3h8v8H3zm2-6v4h4V5H5zM3 21v-8h8v8H3zm2-6v4h4v-4H5zm8-10h8v8h-8V3zm2 6h4V5h-4v4zm-2 10h2v-2h-2v2zm0-4h2v-2h-2v2zm2 4h2v-2h-2v2zm2-4h2v-2h-2v2zm2 4h2v-2h-2v2zm-2-8h2v-2h-2v2zm2 0h2v-2h-2v2z" />
-            </svg>
-            <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              QR Code
-            </p>
-          </div>
+          {qrDataUrl ? (
+            <img src={qrDataUrl} alt="Wallet address QR code" className="w-full h-full" />
+          ) : (
+            <div className="text-center p-4">
+              <svg
+                className="w-24 h-24 mx-auto animate-pulse"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M3 11V3h8v8H3zm2-6v4h4V5H5zM3 21v-8h8v8H3zm2-6v4h4v-4H5zm8-10h8v8h-8V3zm2 6h4V5h-4v4zm-2 10h2v-2h-2v2zm0-4h2v-2h-2v2zm2 4h2v-2h-2v2zm2-4h2v-2h-2v2zm2 4h2v-2h-2v2zm-2-8h2v-2h-2v2zm2 0h2v-2h-2v2z" />
+              </svg>
+              <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {tc('loading', 'Loading...')}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
