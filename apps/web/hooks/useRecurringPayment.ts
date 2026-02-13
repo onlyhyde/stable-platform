@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Address, Hash } from 'viem'
+import { decodeEventLog } from 'viem'
 import { useAccount, useChainId, usePublicClient, useWalletClient } from 'wagmi'
 import { getContractAddresses } from '../lib/config'
 
@@ -148,6 +149,18 @@ const recurringPaymentManager_ABI = [
     stateMutability: 'view',
     inputs: [{ name: 'scheduleId', type: 'uint256' }],
     outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'ScheduleCreated',
+    type: 'event',
+    inputs: [
+      { name: 'scheduleId', type: 'uint256', indexed: true },
+      { name: 'payer', type: 'address', indexed: true },
+      { name: 'recipient', type: 'address', indexed: false },
+      { name: 'amount', type: 'uint256', indexed: false },
+      { name: 'token', type: 'address', indexed: false },
+      { name: 'interval', type: 'uint256', indexed: false },
+    ],
   },
 ] as const
 
@@ -481,9 +494,26 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
           ],
         })
 
-        // For now, return a placeholder scheduleId
-        // In production, we'd wait for the transaction and get the actual ID from events
-        const scheduleId = BigInt(Date.now())
+        // Wait for receipt and parse ScheduleCreated event for the actual scheduleId
+        let scheduleId = BigInt(0)
+        if (publicClient) {
+          const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+          for (const log of receipt.logs) {
+            try {
+              const decoded = decodeEventLog({
+                abi: recurringPaymentManager_ABI,
+                data: log.data,
+                topics: log.topics,
+              })
+              if (decoded.eventName === 'ScheduleCreated') {
+                scheduleId = (decoded.args as { scheduleId: bigint }).scheduleId
+                break
+              }
+            } catch {
+              // Not a matching event, skip
+            }
+          }
+        }
 
         // Refresh schedules
         await refresh()
@@ -497,7 +527,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
         setIsCreating(false)
       }
     },
-    [walletClient, targetAccount, refresh, recurringPaymentManager]
+    [walletClient, publicClient, targetAccount, refresh, recurringPaymentManager]
   )
 
   // Cancel a payment schedule

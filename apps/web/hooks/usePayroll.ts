@@ -164,11 +164,18 @@ export function usePayroll(config: UsePayrollConfig = {}): UsePayrollReturn {
       return entry.nextPaymentDate < nearest ? entry.nextPaymentDate : nearest
     }, null)
 
+    // Estimate YTD from monthly total and months elapsed this year
+    const now = new Date()
+    const yearStart = new Date(now.getFullYear(), 0, 1)
+    const msElapsed = now.getTime() - yearStart.getTime()
+    const monthsElapsed = msElapsed / (30.44 * 24 * 60 * 60 * 1000)
+    const ytdTotal = totalMonthly * monthsElapsed
+
     return {
       totalMonthly,
       activeEmployees: activeEntries.length,
       nextPaymentDate,
-      ytdTotal: 0, // Would need historical data
+      ytdTotal,
     }
   }, [payrollEntries])
 

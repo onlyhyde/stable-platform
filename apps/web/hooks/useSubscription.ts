@@ -477,12 +477,31 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         .filter((p) => p.isActive)
         .reduce((sum, p) => sum + Number(p.subscriberCount), 0)
 
+      // Estimate revenue from plan data
+      const SECONDS_PER_MONTH = 2_592_000n // 30 days
+      const nowSeconds = BigInt(Math.floor(Date.now() / 1000))
+
+      let monthlyRevenue = 0n
+      let totalRevenue = 0n
+      for (const plan of loadedPlans) {
+        if (!plan.isActive || plan.interval === 0n) continue
+        // Monthly revenue: price * subscribers * (seconds_per_month / interval)
+        const paymentsPerMonth = SECONDS_PER_MONTH / plan.interval
+        monthlyRevenue += plan.price * plan.subscriberCount * paymentsPerMonth
+        // Total revenue estimate: price * subscribers * payments since creation
+        if (plan.createdAt > 0n && plan.createdAt < nowSeconds) {
+          const elapsed = nowSeconds - plan.createdAt
+          const estimatedPayments = elapsed / plan.interval
+          totalRevenue += plan.price * plan.subscriberCount * estimatedPayments
+        }
+      }
+
       setMerchantStats({
         totalPlans: loadedPlans.length,
         totalSubscribers,
         activeSubscribers,
-        totalRevenue: 0n, // Would need to query events
-        monthlyRevenue: 0n,
+        totalRevenue,
+        monthlyRevenue,
       })
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to load merchant plans'))
