@@ -134,14 +134,20 @@ func (s *EOAStrategy) Execute(ctx context.Context, prepared *transaction.Prepare
 		return nil, fmt.Errorf("failed to sign transaction: %w", err)
 	}
 
+	// Decode the signed transaction bytes
+	decodedTx, err := decodeRawTransaction(signedTx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode signed transaction: %w", err)
+	}
+
 	// Send the raw transaction
-	err = s.client.SendTransaction(ctx, decodeRawTransaction(signedTx))
+	err = s.client.SendTransaction(ctx, decodedTx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send transaction: %w", err)
 	}
 
-	// Get the transaction hash
-	txHash := common.BytesToHash(signedTx[:32]) // Simplified - real implementation would properly decode
+	// Get the transaction hash from the decoded transaction
+	txHash := decodedTx.Hash()
 
 	result := &sdktypes.TransactionResult{
 		Hash:      sdktypes.Hash(txHash),
@@ -278,13 +284,13 @@ type EOATransactionData struct {
 }
 
 // decodeRawTransaction decodes signed transaction bytes using RLP decoding.
-func decodeRawTransaction(raw sdktypes.Hex) *types.Transaction {
+func decodeRawTransaction(raw sdktypes.Hex) (*types.Transaction, error) {
 	if len(raw) == 0 {
-		return nil
+		return nil, fmt.Errorf("empty transaction bytes")
 	}
 	tx := new(types.Transaction)
 	if err := tx.UnmarshalBinary(raw.Bytes()); err != nil {
-		return nil
+		return nil, fmt.Errorf("failed to decode transaction: %w", err)
 	}
-	return tx
+	return tx, nil
 }

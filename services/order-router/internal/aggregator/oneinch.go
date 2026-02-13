@@ -176,8 +176,41 @@ type oneInchSwapResponse struct {
 	} `json:"tx"`
 }
 
+// extractProtocols parses the 1inch API protocols response.
+// The format is a 3-level nested array: [routes][steps][parts]
+// Each part contains a "name" field identifying the DEX protocol used.
 func extractProtocols(raw json.RawMessage) []string {
-	// Simplified protocol extraction
-	// In production, properly parse the nested protocol structure
-	return []string{"1inch_aggregation"}
+	if len(raw) == 0 {
+		return []string{"1inch_aggregation"}
+	}
+
+	// 1inch protocols structure: [][][]{ name: string, part: number, ... }
+	var routes [][][]struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(raw, &routes); err != nil {
+		return []string{"1inch_aggregation"}
+	}
+
+	seen := make(map[string]struct{})
+	var protocols []string
+	for _, route := range routes {
+		for _, step := range route {
+			for _, part := range step {
+				name := part.Name
+				if name == "" {
+					continue
+				}
+				if _, exists := seen[name]; !exists {
+					seen[name] = struct{}{}
+					protocols = append(protocols, name)
+				}
+			}
+		}
+	}
+
+	if len(protocols) == 0 {
+		return []string{"1inch_aggregation"}
+	}
+	return protocols
 }

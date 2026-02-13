@@ -147,14 +147,20 @@ func (s *EIP7702Strategy) Execute(ctx context.Context, prepared *transaction.Pre
 		return nil, fmt.Errorf("failed to sign transaction: %w", err)
 	}
 
+	// Decode the signed transaction bytes
+	decodedTx, err := decodeRawTransaction(signedTx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode signed transaction: %w", err)
+	}
+
 	// Send the raw transaction
-	err = s.client.SendTransaction(ctx, decodeRawTransaction(signedTx))
+	err = s.client.SendTransaction(ctx, decodedTx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send transaction: %w", err)
 	}
 
-	// Get the transaction hash
-	txHash := common.BytesToHash(signedTx[:32])
+	// Get the transaction hash from the decoded transaction
+	txHash := decodedTx.Hash()
 
 	result := &sdktypes.TransactionResult{
 		Hash:      sdktypes.Hash(txHash),

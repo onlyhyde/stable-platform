@@ -195,7 +195,19 @@ func (c *RecurringPaymentClient) GetActiveSchedules(ctx context.Context, account
 		return []*PaymentSchedule{}, nil
 	}
 
-	return parseSchedulesFromOutputs(outputs), nil
+	// Parse schedule IDs from the response, then fetch each full schedule
+	ids := parseScheduleIDsFromOutputs(outputs)
+	schedules := make([]*PaymentSchedule, 0, len(ids))
+	for _, id := range ids {
+		schedule, err := c.GetSchedule(ctx, account, id)
+		if err != nil {
+			continue // Skip schedules that fail to load
+		}
+		if schedule != nil {
+			schedules = append(schedules, schedule)
+		}
+	}
+	return schedules, nil
 }
 
 // IsPaymentDue checks if a payment is due for a schedule.
@@ -332,7 +344,6 @@ func (c *RecurringPaymentClient) IsInitialized(ctx context.Context, account type
 // ============================================================================
 
 func parseScheduleFromOutputs(outputs []interface{}) *PaymentSchedule {
-	// This is a placeholder - real implementation would parse the struct properly
 	schedule := &PaymentSchedule{}
 
 	if len(outputs) >= 8 {
@@ -370,9 +381,15 @@ func parseScheduleFromOutputs(outputs []interface{}) *PaymentSchedule {
 	return schedule
 }
 
-func parseSchedulesFromOutputs(outputs []interface{}) []*PaymentSchedule {
-	// This is a placeholder - real implementation would parse array properly
-	return []*PaymentSchedule{}
+func parseScheduleIDsFromOutputs(outputs []interface{}) []*big.Int {
+	if len(outputs) == 0 {
+		return nil
+	}
+	// getActiveSchedules returns uint256[] — go-ethereum ABI decodes as []*big.Int
+	if ids, ok := outputs[0].([]*big.Int); ok {
+		return ids
+	}
+	return nil
 }
 
 func mustType(t string) abi.Type {

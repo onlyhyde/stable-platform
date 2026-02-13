@@ -1410,7 +1410,7 @@ const socialLinks = [
 ---
 ---
 
-# packages/ 미구현 기능 (~~15건~~ 5건)
+# packages/ 미구현 기능 (~~15건~~ 3건)
 
 > 7차 검토 추가 (2026-02-12), 9차 검토 1건 추가 (§73)
 > 대상: `packages/sdk-go`, `packages/sdk-ts`, `packages/config`, `packages/contracts`
@@ -1496,23 +1496,11 @@ Address: common.HexToAddress("0x0000000000000000000000000000000000000000"), // T
 
 ---
 
-## §43. MEDIUM — SDK-GO EOA 트랜잭션 디코딩 미구현
+## ~~§43. MEDIUM — SDK-GO EOA 트랜잭션 디코딩 미구현~~ ✅ RESOLVED
 
 **심각도:** MEDIUM
-**파일:** `packages/sdk-go/transaction/strategies/eoa.go:280-285`
 
-**현상:** `decodeRawTransaction()`이 항상 `nil`을 반환한다.
-
-```go
-func decodeRawTransaction(raw sdktypes.Hex) *types.Transaction {
-    // This is a placeholder - real implementation would decode the raw transaction
-    return nil
-}
-```
-
-**영향:** 서명된 raw 트랜잭션의 디코딩 불가
-
-**해결 방안:** `rlp.DecodeBytes()` 또는 `types.Transaction.UnmarshalBinary()` 사용
+✅ **RESOLVED (Phase 10):** `decodeRawTransaction()`이 `tx.UnmarshalBinary()` 사용하여 정상 디코딩. 에러 반환 추가. `Execute()`에서 `decodedTx.Hash()`로 정확한 tx hash 추출. `eip7702.go`도 동일 수정.
 
 ---
 
@@ -1532,21 +1520,11 @@ func decodeRawTransaction(raw sdktypes.Hex) *types.Transaction {
 
 ---
 
-## §46. LOW — SDK-GO Subscription 스케줄 파싱 미구현
+## ~~§46. LOW — SDK-GO Subscription 스케줄 파싱 미구현~~ ✅ RESOLVED
 
 **심각도:** LOW
-**파일:** `packages/sdk-go/plugins/subscription/client.go:334-376`
 
-**현상:** `parseScheduleFromOutputs()`, `parseSchedulesFromOutputs()` 두 함수가 placeholder이다.
-
-```go
-func parseSchedulesFromOutputs(outputs []interface{}) []*PaymentSchedule {
-    // This is a placeholder - real implementation would parse array properly
-    return []*PaymentSchedule{}
-}
-```
-
-**영향:** Go SDK에서 구독 스케줄 데이터를 컨트랙트에서 파싱할 수 없음
+✅ **RESOLVED (Phase 10):** `parseScheduleFromOutputs()` placeholder 주석 제거 (실제 파싱 로직 존재). `parseSchedulesFromOutputs()` → `parseScheduleIDsFromOutputs()`로 교체하여 `uint256[]` ID 배열 파싱 후 `GetSchedule()` 개별 조회 구현.
 
 ---
 
@@ -1568,7 +1546,7 @@ func parseSchedulesFromOutputs(outputs []interface{}) []*PaymentSchedule {
 
 ---
 
-# services/ 미구현 기능 (~~15건~~ 10건)
+# services/ 미구현 기능 (~~15건~~ 9건)
 
 > 7차 검토 추가 (2026-02-12), 8차 검토 1건 추가
 > 대상: `services/bridge-relayer`, `services/order-router`, `services/subscription-executor`, `services/paymaster-proxy`, `services/bundler`
@@ -1660,22 +1638,11 @@ func (p *UniswapV3Provider) computePoolAddress(tokenA, tokenB string, fee int) s
 
 ---
 
-## §53. MEDIUM — Order Router 1inch 프로토콜 파싱 간소화
+## ~~§53. MEDIUM — Order Router 1inch 프로토콜 파싱 간소화~~ ✅ RESOLVED
 
 **심각도:** MEDIUM
-**파일:** `services/order-router/internal/aggregator/oneinch.go:179-183`
 
-**현상:** 1inch API 응답의 중첩 프로토콜 구조를 파싱하지 않고 단일 문자열을 반환한다.
-
-```go
-func extractProtocols(raw json.RawMessage) []string {
-    // Simplified protocol extraction
-    // In production, properly parse the nested protocol structure
-    return []string{"1inch_aggregation"}
-}
-```
-
-**영향:** 사용된 DEX 프로토콜 정보를 사용자에게 표시할 수 없음
+✅ **RESOLVED (Phase 10):** `extractProtocols()`가 1inch API의 3단계 중첩 배열 `[routes][steps][parts]` 구조를 파싱하여 고유 DEX 프로토콜 이름 추출. 파싱 실패 시 `"1inch_aggregation"` fallback 유지.
 
 ---
 
@@ -1943,19 +1910,20 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 
 ---
 
-## 전체 요약 (~~128건~~ → 122건, **현재 미해결 50건**)
+## 전체 요약 (~~128건~~ → 122건, **현재 미해결 47건**)
 
 ### 범위별 분류
 
 | 범위 | CRITICAL | HIGH | MEDIUM | LOW | RESOLVED | 합계 |
 |------|----------|------|--------|-----|----------|------|
 | apps/web (§1-§34) | ~~3~~ 2 | ~~27~~ 24 | ~~41~~ 39 | 18 | **61** | ~~89~~ **28** |
-| packages (§35-§48, §73) | ~~3~~ 1 | ~~4~~ 0 | ~~7~~ 2 | 1 | **10** | ~~15~~ **5** |
-| services (§49-§62, §68) | 1 | ~~3~~ 2 | ~~7~~ 3 | ~~4~~ 3 | **5** | ~~15~~ **10** |
+| packages (§35-§48, §73) | ~~3~~ 1 | ~~4~~ 0 | ~~7~~ 1 | ~~1~~ 0 | **12** | ~~15~~ **3** |
+| services (§49-§62, §68) | 1 | ~~3~~ 2 | ~~7~~ 2 | ~~4~~ 3 | **6** | ~~15~~ **9** |
 | wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 2 | 5 | **2** | ~~9~~ **7** |
-| **합계** | **4** | **26** | **46** | **27** | **78** | **50** |
+| **합계** | **4** | **26** | **44** | **26** | **81** | **47** |
 
 > 15차 검토 (2026-02-13, Phase 10): packages 10건, services 5건, wallet-extension 2건 RESOLVED 확인
+> 16차 검토 (2026-02-13, Phase 10 코드 수정): §43, §46, §53 구현 완료 — 3건 RESOLVED
 
 ### 핵심 블로커 (CRITICAL ~~7건~~ → 2건)
 
@@ -1976,13 +1944,12 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 #### Phase 1+ — services PoC → 실제 구현
 
 2. Bridge Relayer 실제 구현: §49 (go-ethereum ethclient 연동)
-3. Order Router DEX 연동: §50, §51, §53, §54 (Quoter/Pool 컨트랙트 호출)
+3. Order Router DEX 연동: §50, §51, §54 (Quoter/Pool 컨트랙트 호출)
 4. Flashbots 서명: §68 (secp256k1 ECDSA 서명)
 
-#### Phase 2+ — SDK 마무리 + UX
+#### Phase 2+ — UX + Wallet Extension
 
-5. SDK-GO 잔여: §43 (트랜잭션 디코딩), §46 (구독 스케줄 파싱)
-6. Wallet Extension: §63 (QR Code), §71 (Price Impact)
-7. apps/web 잔여 LOW 항목: §27-§32
+5. Wallet Extension: §63 (QR Code), §71 (Price Impact)
+6. apps/web 잔여 LOW 항목: §27-§32
 
 **완료 조건:** 크로스 체인 브릿지, DEX 스왑이 실제 컨트랙트와 상호작용, 지갑 보안 기본 요건 충족
