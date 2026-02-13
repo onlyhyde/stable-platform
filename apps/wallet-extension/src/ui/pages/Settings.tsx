@@ -98,6 +98,16 @@ export function Settings() {
   >([])
   const [isLoadingWcSessions, setIsLoadingWcSessions] = useState(false)
 
+  // Ledger state
+  const [isLedgerConnected, setIsLedgerConnected] = useState(false)
+  const [isLedgerConnecting, setIsLedgerConnecting] = useState(false)
+  const [ledgerError, setLedgerError] = useState<string | null>(null)
+  const [ledgerDiscoveredAccounts, setLedgerDiscoveredAccounts] = useState<
+    Array<{ address: string; path: string; index: number; selected: boolean }>
+  >([])
+  const [isDiscoveringAccounts, setIsDiscoveringAccounts] = useState(false)
+  const [isAddingLedgerAccounts, setIsAddingLedgerAccounts] = useState(false)
+
   // Smart Account state
   const [showSmartAccount, setShowSmartAccount] = useState(false)
   const [saInfo, setSaInfo] = useState<{
@@ -675,6 +685,111 @@ export function Settings() {
     }
   }, [newValidator, selectedAccount, selectedChainId, loadSmartAccountInfo, t])
 
+  // Ledger handlers
+  const handleConnectLedger = useCallback(async () => {
+    setIsLedgerConnecting(true)
+    setLedgerError(null)
+    setLedgerDiscoveredAccounts([])
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'LEDGER_CONNECT',
+        id: `ledger-connect-${Date.now()}`,
+        payload: {},
+      })
+
+      if (response?.payload?.success) {
+        setIsLedgerConnected(true)
+
+        // Auto-discover first 5 accounts
+        setIsDiscoveringAccounts(true)
+        const discoverResponse = await chrome.runtime.sendMessage({
+          type: 'LEDGER_DISCOVER_ACCOUNTS',
+          id: `ledger-discover-${Date.now()}`,
+          payload: { startIndex: 0, count: 5 },
+        })
+
+        if (discoverResponse?.payload?.success) {
+          setLedgerDiscoveredAccounts(
+            discoverResponse.payload.accounts.map(
+              (a: { address: string; path: string; index: number }) => ({
+                ...a,
+                selected: false,
+              })
+            )
+          )
+        } else {
+          setLedgerError(discoverResponse?.payload?.error ?? t('ledgerError', { error: 'Unknown' }))
+        }
+        setIsDiscoveringAccounts(false)
+      } else {
+        setLedgerError(response?.payload?.error ?? t('ledgerError', { error: 'Connection failed' }))
+      }
+    } catch (err) {
+      setLedgerError(err instanceof Error ? err.message : t('ledgerError', { error: 'Unknown' }))
+    } finally {
+      setIsLedgerConnecting(false)
+    }
+  }, [t])
+
+  const handleDisconnectLedger = useCallback(async () => {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'LEDGER_DISCONNECT',
+        id: `ledger-disconnect-${Date.now()}`,
+        payload: {},
+      })
+      setIsLedgerConnected(false)
+      setLedgerDiscoveredAccounts([])
+      setLedgerError(null)
+    } catch {
+      // Silent fail
+    }
+  }, [])
+
+  const handleToggleLedgerAccount = useCallback(
+    (index: number) => {
+      setLedgerDiscoveredAccounts((prev) =>
+        prev.map((a) => (a.index === index ? { ...a, selected: !a.selected } : a))
+      )
+    },
+    []
+  )
+
+  const handleAddLedgerAccounts = useCallback(async () => {
+    const selectedAccounts = ledgerDiscoveredAccounts.filter((a) => a.selected)
+    if (selectedAccounts.length === 0) return
+
+    setIsAddingLedgerAccounts(true)
+    setLedgerError(null)
+
+    try {
+      for (const account of selectedAccounts) {
+        await chrome.runtime.sendMessage({
+          type: 'LEDGER_ADD_ACCOUNT',
+          id: `ledger-add-${Date.now()}-${account.index}`,
+          payload: {
+            account: {
+              address: account.address,
+              path: account.path,
+              index: account.index,
+            },
+          },
+        })
+      }
+
+      // Remove added accounts from discovered list
+      setLedgerDiscoveredAccounts((prev) => prev.filter((a) => !a.selected))
+
+      // Sync state
+      await syncWithBackground()
+    } catch (err) {
+      setLedgerError(err instanceof Error ? err.message : t('ledgerError', { error: 'Unknown' }))
+    } finally {
+      setIsAddingLedgerAccounts(false)
+    }
+  }, [ledgerDiscoveredAccounts, syncWithBackground, t])
+
   const autoLockOptions = [
     { value: 1, label: t('1minute') },
     { value: 5, label: t('5minutes') },
@@ -1093,6 +1208,114 @@ export function Settings() {
               </div>
             </div>
           )}
+
+          {/* Ledger Hardware Wallet */}
+          <div
+            className="p-3 rounded-lg"
+            style={{ border: '1px solid rgb(var(--border))' }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                  Ledger
+                </span>
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full"
+                  style={{
+                    backgroundColor: isLedgerConnected
+                      ? 'rgb(var(--success) / 0.15)'
+                      : 'rgb(var(--muted-foreground) / 0.15)',
+                    color: isLedgerConnected
+                      ? 'rgb(var(--success))'
+                      : 'rgb(var(--muted-foreground))',
+                  }}
+                >
+                  {isLedgerConnected ? t('ledgerConnected') : t('ledgerDisconnected')}
+                </span>
+              </div>
+              {isLedgerConnected ? (
+                <button
+                  type="button"
+                  onClick={handleDisconnectLedger}
+                  className="text-xs"
+                  style={{ color: 'rgb(var(--destructive))' }}
+                >
+                  {t('disconnectLedger')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleConnectLedger}
+                  disabled={isLedgerConnecting}
+                  className="text-sm"
+                  style={{ color: 'rgb(var(--primary))' }}
+                >
+                  {isLedgerConnecting ? t('ledgerConnecting') : t('connectLedger')}
+                </button>
+              )}
+            </div>
+            <p className="text-xs mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              {t('ledgerDesc')}
+            </p>
+
+            {ledgerError && (
+              <p className="text-xs mb-2" style={{ color: 'rgb(var(--destructive))' }}>
+                {ledgerError}
+              </p>
+            )}
+
+            {isDiscoveringAccounts && (
+              <p className="text-xs text-center py-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {t('ledgerDiscoverAccounts')}
+              </p>
+            )}
+
+            {ledgerDiscoveredAccounts.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  {t('ledgerSelectAccounts')}
+                </p>
+                {ledgerDiscoveredAccounts.map((account) => (
+                  <label
+                    key={account.index}
+                    className="flex items-center gap-2 p-2 rounded cursor-pointer"
+                    style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={account.selected}
+                      onChange={() => handleToggleLedgerAccount(account.index)}
+                      className="rounded"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-xs font-mono truncate"
+                        style={{ color: 'rgb(var(--foreground))' }}
+                      >
+                        {account.address}
+                      </p>
+                      <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                        {account.path}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddLedgerAccounts}
+                  disabled={
+                    isAddingLedgerAccounts ||
+                    !ledgerDiscoveredAccounts.some((a) => a.selected)
+                  }
+                  className="btn-primary w-full py-2 rounded-lg text-sm disabled:opacity-50"
+                >
+                  {isAddingLedgerAccounts
+                    ? t('ledgerAddingAccounts')
+                    : t('ledgerAddAccounts')}
+                </button>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Security Settings */}

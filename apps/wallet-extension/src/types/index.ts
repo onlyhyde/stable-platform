@@ -120,6 +120,16 @@ export type MessageType =
   | 'WC_PAIR'
   | 'WC_GET_SESSIONS'
   | 'WC_DISCONNECT_SESSION'
+  // Ledger hardware wallet messages
+  | 'LEDGER_CONNECT'
+  | 'LEDGER_DISCONNECT'
+  | 'LEDGER_DISCOVER_ACCOUNTS'
+  | 'LEDGER_ADD_ACCOUNT'
+  | 'LEDGER_CONNECTED'
+  | 'LEDGER_DISCONNECTED'
+  | 'LEDGER_ACCOUNTS_DISCOVERED'
+  | 'LEDGER_ACCOUNT_ADDED'
+  | 'LEDGER_ERROR'
 
 export interface ExtensionMessage<T = unknown> {
   type: MessageType

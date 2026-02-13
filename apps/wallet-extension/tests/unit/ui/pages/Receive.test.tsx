@@ -6,6 +6,10 @@ jest.mock('../../../../src/ui/hooks/useWalletStore', () => ({
   useWalletStore: jest.fn(),
 }))
 
+jest.mock('qrcode', () => ({
+  toDataURL: jest.fn().mockResolvedValue('data:image/png;base64,mock'),
+}))
+
 const TEST_ADDRESS = '0x1234567890abcdef1234567890abcdef12345678'
 
 function setupStore(overrides: Record<string, unknown> = {}) {
@@ -47,11 +51,13 @@ describe('Receive', () => {
     expect(screen.getByText(TEST_ADDRESS)).toBeTruthy()
   })
 
-  it('should display QR Code placeholder', () => {
+  it('should display QR Code image', async () => {
     setupStore()
 
     render(<Receive />)
-    expect(screen.getByText('QR Code')).toBeTruthy()
+    await waitFor(() => {
+      expect(screen.getByAltText('Wallet address QR code')).toBeTruthy()
+    })
   })
 
   it('should display "Account Address" label', () => {

@@ -18,7 +18,7 @@ import { AuditEventType, auditLogger } from '../shared/security/auditLogger'
 import { originFromUrl, resolveOrigin } from '../shared/security/originVerifier'
 import { createLogger } from '../shared/utils/logger'
 import { validateExtensionMessage } from '../shared/validation/messageSchema'
-import type { ExtensionMessage, JsonRpcRequest, Network } from '../types'
+import type { ExtensionMessage, JsonRpcRequest, MessageType, Network } from '../types'
 import { accountController } from './controller/accountController'
 import { networkController } from './controller/networkController'
 import { approvalController } from './controllers/approvalController'
@@ -1332,6 +1332,108 @@ async function handleMessage(
         return { type: 'TOKEN_PRICES' as const, id: message.id, payload: { prices } }
       } catch {
         return { type: 'TOKEN_PRICES' as const, id: message.id, payload: { prices: {} } }
+      }
+    }
+
+    // ==========================================================================
+    // Ledger Hardware Wallet Messages
+    // ==========================================================================
+
+    case MESSAGE_TYPES.LEDGER_CONNECT: {
+      try {
+        await keyringController.connectLedger()
+        return {
+          type: 'LEDGER_CONNECTED' as MessageType,
+          id: message.id,
+          payload: { success: true },
+        }
+      } catch (err) {
+        return {
+          type: 'LEDGER_ERROR' as MessageType,
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to connect Ledger',
+          },
+        }
+      }
+    }
+
+    case MESSAGE_TYPES.LEDGER_DISCONNECT: {
+      try {
+        await keyringController.disconnectLedger()
+        return {
+          type: 'LEDGER_DISCONNECTED' as MessageType,
+          id: message.id,
+          payload: { success: true },
+        }
+      } catch (err) {
+        return {
+          type: 'LEDGER_ERROR' as MessageType,
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to disconnect Ledger',
+          },
+        }
+      }
+    }
+
+    case MESSAGE_TYPES.LEDGER_DISCOVER_ACCOUNTS: {
+      const { startIndex = 0, count = 5 } = (message.payload as {
+        startIndex?: number
+        count?: number
+      }) ?? {}
+
+      try {
+        const accounts = await keyringController.discoverLedgerAccounts(startIndex, count)
+        return {
+          type: 'LEDGER_ACCOUNTS_DISCOVERED' as MessageType,
+          id: message.id,
+          payload: { success: true, accounts },
+        }
+      } catch (err) {
+        return {
+          type: 'LEDGER_ERROR' as MessageType,
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to discover accounts',
+          },
+        }
+      }
+    }
+
+    case MESSAGE_TYPES.LEDGER_ADD_ACCOUNT: {
+      const { account } = message.payload as {
+        account: { address: Address; path: string; index: number }
+      }
+
+      try {
+        await keyringController.addLedgerAccount(account)
+
+        // Add to wallet state
+        await walletState.addAccount({
+          address: account.address,
+          name: `Ledger ${account.index + 1}`,
+          type: 'eoa',
+          keyringType: 'hardware',
+        })
+
+        return {
+          type: 'LEDGER_ACCOUNT_ADDED' as MessageType,
+          id: message.id,
+          payload: { success: true, address: account.address },
+        }
+      } catch (err) {
+        return {
+          type: 'LEDGER_ERROR' as MessageType,
+          id: message.id,
+          payload: {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to add Ledger account',
+          },
+        }
       }
     }
 

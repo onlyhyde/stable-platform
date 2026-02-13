@@ -11,7 +11,8 @@
 > 12차 검토: 2026-02-13 (§1-2, §1-3 구현 완료 — Order Router URL/Address 환경변수 전환)
 > 13차 검토: 2026-02-13 (Phase 9B — §7, §8, §9, §11, §12, §13, §15, §17, §18, §20-1, §22-2 구현 완료, 28건 RESOLVED)
 > 14차 검토: 2026-02-13 (Phase 9C/9D/9E — §3(6건), §4(5건), §19(3건), §21(1건), §22-1(1건) 구현 완료, 16건 RESOLVED)
-> 총 미구현 항목: ~~128건~~ → **1건** (apps/web 0건 + packages 0건 + services 0건 + wallet-extension 1건 + RESOLVED 127건)
+> 총 미구현 항목: ~~128건~~ → **0건** (apps/web 0건 + packages 0건 + services 0건 + wallet-extension 0건 + RESOLVED 128건)
+> 31차 검토: 2026-02-14 (Phase 24 — §64 Ledger 하드웨어 지갑 전면 구현) = 1건 RESOLVED → **전체 128건 RESOLVED 완료**
 > ⚠️ 11차 검토에서 §1-1, §5-1, §6, §33, §34 (5개 섹션, 6건)가 이미 구현 완료로 확인되어 RESOLVED 처리됨
 > ⚠️ 12차 검토에서 §1-2, §1-3 (2건)가 구현 완료로 RESOLVED 처리됨 — §1 전체 RESOLVED
 > ⚠️ 13차 검토에서 §7(4건), §8-5-2(1건), §9(2건), §11(3건), §12(1건), §13(6건), §15(1건), §17(4건), §18-15-1,15-3(2건), §20-1(1건), §22-2(1건) + §8-5-3(1건) + §18-15-2 부분(1건) = 총 28건 RESOLVED
@@ -88,7 +89,7 @@
 | ~~MEDIUM~~ | ~~Enterprise Expenses~~ | ~~1~~ **0** | ~~Submit Expense 콜백 미연결~~ *(§12 RESOLVED — approve/reject/pay/submit 콜백 + toast 구현)* |
 | ~~MEDIUM~~ | ~~컴포넌트 미연결 콜백~~ | ~~6~~ **0** | ~~SessionKey Detail, Subscription Manage, Expense approve/reject, Payroll Edit, Module Uninstall~~ *(§13 전체 RESOLVED)* |
 | ~~MEDIUM~~ | ~~하드코딩 네트워크 URL~~ | ~~2~~ **0** | ~~Etherscan URL 네트워크별 미분기~~ *(§14 전체 RESOLVED — `getBlockExplorerUrl()` 유틸 구현 완료, PaymentHistory + AuditLogCard 모두 동적 explorer URL 사용)* |
-| MEDIUM | Stealth Withdraw | ~~1~~ **0** | ~~onWithdraw 콜백 미전달, 인출 불가~~ *(§15 RESOLVED — placeholder 콜백 + toast, ECDH 파생 로직은 별도 구현 필요)* |
+| ~~MEDIUM~~ | ~~Stealth Withdraw~~ | ~~1~~ **0** | ~~onWithdraw 콜백 미전달, 인출 불가~~ *(§15 RESOLVED — placeholder 콜백 + toast, ECDH 파생 로직은 별도 구현 필요)* |
 | ~~MEDIUM~~ | ~~ErrorBoundary~~ | ~~2~~ **0** | ~~개별 페이지 미적용~~ *(§16 RESOLVED — stealth/subscription/enterprise error.tsx 추가, 전 라우트 error 처리 완료)* |
 | ~~MEDIUM~~ | ~~Toast 피드백~~ | ~~4~~ **0** | ~~대부분 페이지에서 성공/실패 피드백 없음~~ *(§17 전체 RESOLVED — payroll, expenses, settings, stealth 등 toast 추가)* |
 | ~~MEDIUM~~ | ~~Account Settings~~ | ~~3~~ **0** | ~~계정 이름 저장 안 됨, Smart Account 정보 하드코딩, 복사 피드백 없음~~ *(§18 전체 RESOLVED — 15-1 localStorage, 15-2 useSmartAccount+useModule 실제 조회, 15-3 복사 toast)* |
@@ -1523,14 +1524,19 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-## §64. LOW — 하드웨어 지갑 (Ledger) 미지원
+## ~~§64. LOW — 하드웨어 지갑 (Ledger) 미지원~~ ✅ RESOLVED (Phase 24)
 
 **심각도:** LOW
 **파일:** `apps/wallet-extension/src/background/keyring/hardwareKeyring.ts`
 
-**현상:** `LedgerKeyring` 클래스 스텁 프레임워크만 존재. Transport 추상화, 계정 관리 인터페이스는 정의되어 있으나, 모든 서명 메서드(`discoverAccounts`, `signMessage`, `signTypedData`, `signTransaction`, `signRawHash`)가 `throw Error('not yet implemented')`로 미구현. `@ledgerhq/hw-app-eth` 패키지 미설치.
-
-**영향:** 하드웨어 지갑 사용자가 월렛 익스텐션을 사용할 수 없음
+✅ **RESOLVED (Phase 24):** Ledger 하드웨어 지갑 전면 구현 완료:
+- `@ledgerhq/hw-app-eth@^7.3.3`, `@ledgerhq/hw-transport-webhid@^6.31.0`, `@ledgerhq/hw-transport@^6.32.0` 설치
+- `LedgerKeyring` 5개 서명 메서드 구현: `discoverAccounts` (BIP44 경로), `signMessage` (EIP-191), `signTypedData` (EIP-712 hashDomain/hashStruct), `signTransaction` (RLP 직렬화), `signRawHash`
+- `LedgerWebHIDTransport` WebHID 래퍼 생성 (`ledgerTransport.ts`)
+- `KeyringController` 통합: `hardwareKeyrings[]` 배열, `reconstructKeyrings` hardware 케이스, 모든 서명 메서드에 hardware keyring 검색 추가, Ledger 전용 메서드 5개 (`connectLedger`, `discoverLedgerAccounts`, `addLedgerAccount`, `disconnectLedger`, `isLedgerConnected`)
+- Background 메시지 핸들러 4개: `LEDGER_CONNECT`, `LEDGER_DISCONNECT`, `LEDGER_DISCOVER_ACCOUNTS`, `LEDGER_ADD_ACCOUNT`
+- Settings UI: 연결/해제 버튼, 계정 탐색 (5개 자동), 체크박스 선택 추가, 연결 상태 배지
+- i18n: en/ko 각 14개 번역 키 추가
 
 ---
 
@@ -1639,16 +1645,13 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 | apps/web (§1-§34) | 89 | **89** | **0** |
 | packages (§35-§48, §73) | 15 | **15** | **0** |
 | services (§49-§62, §68) | 15 | **15** | **0** |
-| wallet-extension (§63-§72) | 9 | **8** | **1** |
-| **합계** | **128** | **127** | **1** |
+| wallet-extension (§63-§72) | 9 | **9** | **0** |
+| **합계** | **128** | **128** | **0** |
 
-### 잔여 미해결 항목 (1건 — LOW, wallet-extension)
-
-| # | 섹션 | 심각도 | 내용 |
-|---|------|--------|------|
-| 1 | §64 | LOW | 하드웨어 지갑 (Ledger) — 스텁 프레임워크만 존재, 서명 메서드 전부 미구현, `@ledgerhq/hw-app-eth` 미설치 |
+### ~~잔여 미해결 항목~~ → **0건 (전체 RESOLVED)**
 
 > 29차 검토 (2026-02-13): 전체 코드 대조 검증 완료. §66(i18n) 구현 완료 확인 → RESOLVED. apps/web 89건 전체 RESOLVED 확인. CRITICAL 잔여 0건.
+> 31차 검토 (2026-02-14, Phase 24): §64 Ledger 하드웨어 지갑 전면 구현 완료 → RESOLVED. 128건 전체 RESOLVED.
 
 ### 핵심 블로커 (CRITICAL 7건 → **0건 전부 해결**)
 
@@ -1662,6 +1665,6 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ### 향후 에픽 (별도 프로젝트)
 
-1. **Ledger 지원 (§64):** `@ledgerhq/hw-app-eth` 설치 + signing 메서드 구현 + KeyringController 통합
+1. ~~**Ledger 지원 (§64):**~~ ✅ RESOLVED (Phase 24)
 2. ~~**WalletConnect v2 (§65):**~~ ✅ RESOLVED (Phase 23)
 3. **MAINNET/SEPOLIA 배포:** 체인별 컨트랙트 주소 업데이트 (현재 LOCAL+StableNet만 완료)

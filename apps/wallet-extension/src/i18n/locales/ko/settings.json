@@ -121,5 +121,20 @@
   "wcPairing": "연결 중...",
   "wcPairBtn": "연결",
   "wcPairFailed": "WalletConnect 연결 실패",
-  "wcNoSessions": "활성 WalletConnect 세션이 없습니다"
+  "wcNoSessions": "활성 WalletConnect 세션이 없습니다",
+
+  "connectLedger": "Ledger 연결",
+  "disconnectLedger": "연결 해제",
+  "ledgerConnected": "연결됨",
+  "ledgerDisconnected": "연결 안 됨",
+  "ledgerConnecting": "연결 중...",
+  "ledgerDiscoverAccounts": "계정 탐색 중...",
+  "ledgerSelectAccounts": "추가할 계정을 선택하세요:",
+  "ledgerAddAccounts": "선택 추가",
+  "ledgerAddingAccounts": "추가 중...",
+  "ledgerNoAccountsFound": "장치에서 계정을 찾을 수 없습니다",
+  "ledgerAccountAdded": "Ledger 계정 추가됨: {{address}}",
+  "ledgerError": "Ledger 오류: {{error}}",
+  "ledgerDesc": "Ledger 하드웨어 지갑을 연결하여 안전하게 계정을 관리하세요.",
+  "featureLedger": "Ledger 하드웨어 지갑 지원"
 }

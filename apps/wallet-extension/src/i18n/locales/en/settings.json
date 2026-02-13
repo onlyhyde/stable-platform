@@ -121,5 +121,20 @@
   "wcPairing": "Connecting...",
   "wcPairBtn": "Connect",
   "wcPairFailed": "Failed to connect via WalletConnect",
-  "wcNoSessions": "No active WalletConnect sessions"
+  "wcNoSessions": "No active WalletConnect sessions",
+
+  "connectLedger": "Connect Ledger",
+  "disconnectLedger": "Disconnect",
+  "ledgerConnected": "Connected",
+  "ledgerDisconnected": "Disconnected",
+  "ledgerConnecting": "Connecting...",
+  "ledgerDiscoverAccounts": "Discovering accounts...",
+  "ledgerSelectAccounts": "Select accounts to add:",
+  "ledgerAddAccounts": "Add Selected",
+  "ledgerAddingAccounts": "Adding...",
+  "ledgerNoAccountsFound": "No accounts found on the device",
+  "ledgerAccountAdded": "Ledger account added: {{address}}",
+  "ledgerError": "Ledger error: {{error}}",
+  "ledgerDesc": "Connect your Ledger hardware wallet to manage accounts securely.",
+  "featureLedger": "Ledger Hardware Wallet Support"
 }

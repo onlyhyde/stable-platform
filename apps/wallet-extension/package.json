@@ -19,6 +19,9 @@
     "dev:test-server": "node e2e/test-server.js"
   },
   "dependencies": {
+    "@ledgerhq/hw-app-eth": "^7.3.3",
+    "@ledgerhq/hw-transport": "^6.32.0",
+    "@ledgerhq/hw-transport-webhid": "^6.31.0",
     "@noble/hashes": "^1.3.3",
     "@stablenet/core": "workspace:*",
     "@stablenet/plugin-stealth": "workspace:*",

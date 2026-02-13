@@ -6,6 +6,7 @@
  */
 
 import type { Address, Hex } from 'viem'
+import { hashDomain, hashStruct, serializeTransaction } from 'viem'
 import type {
   HardwareAccountInfo,
   HardwareDeviceType,
@@ -68,14 +69,28 @@ export interface IHardwareKeyring {
 }
 
 // ============================================================================
-// Ledger Keyring Stub
+// Ledger Keyring Implementation
 // ============================================================================
 
 const DEFAULT_HD_PATH = "m/44'/60'/0'/0"
 
 /**
+ * Build the EIP712Domain type array based on which domain fields are present.
+ */
+function getTypesForEIP712Domain(domain: Record<string, unknown>) {
+  const types: Array<{ name: string; type: string }> = []
+  if (domain.name !== undefined) types.push({ name: 'name', type: 'string' })
+  if (domain.version !== undefined) types.push({ name: 'version', type: 'string' })
+  if (domain.chainId !== undefined) types.push({ name: 'chainId', type: 'uint256' })
+  if (domain.verifyingContract !== undefined)
+    types.push({ name: 'verifyingContract', type: 'address' })
+  if (domain.salt !== undefined) types.push({ name: 'salt', type: 'bytes32' })
+  return types
+}
+
+/**
  * Ledger hardware wallet keyring.
- * Stub implementation - requires @ledgerhq/hw-app-eth for full functionality.
+ * Uses @ledgerhq/hw-app-eth to communicate with the Ledger device.
  */
 export class LedgerKeyring implements IHardwareKeyring {
   readonly deviceType: HardwareDeviceType = 'ledger'
@@ -83,6 +98,7 @@ export class LedgerKeyring implements IHardwareKeyring {
   private hdPath: string
   private accounts: HardwareAccountInfo[] = []
   private transport: HardwareTransport | null = null
+  private ethApp: import('@ledgerhq/hw-app-eth').default | null = null
 
   constructor(data?: HardwareKeyringData) {
     this.hdPath = DEFAULT_HD_PATH
@@ -109,13 +125,27 @@ export class LedgerKeyring implements IHardwareKeyring {
     return this.accounts.some((a) => a.address.toLowerCase() === address.toLowerCase())
   }
 
-  async discoverAccounts(_startIndex: number, _count: number): Promise<KeyringAccount[]> {
+  async discoverAccounts(startIndex: number, count: number): Promise<KeyringAccount[]> {
     this.ensureConnected()
-    // TODO: Implement with @ledgerhq/hw-app-eth
-    // 1. Get Ethereum app on Ledger
-    // 2. For each index, derive address from path
-    // 3. Return discovered accounts
-    throw new Error('Ledger account discovery not yet implemented. Install @ledgerhq/hw-app-eth.')
+    const ethApp = this.ensureEthApp()
+
+    const discovered: KeyringAccount[] = []
+
+    for (let i = startIndex; i < startIndex + count; i++) {
+      const path = `${this.hdPath}/${i}`
+      const result = await ethApp.getAddress(path)
+      const address = result.address as Address
+
+      discovered.push({
+        address,
+        type: 'hardware' as const,
+        name: `Ledger ${i + 1}`,
+        index: i,
+        path,
+      })
+    }
+
+    return discovered
   }
 
   addDiscoveredAccount(account: HardwareAccountInfo): void {
@@ -124,27 +154,86 @@ export class LedgerKeyring implements IHardwareKeyring {
     }
   }
 
-  async signMessage(_address: Address, _message: string): Promise<Hex> {
+  async signMessage(address: Address, message: string): Promise<Hex> {
     this.ensureConnected()
-    // TODO: Implement with Ledger personal_sign
-    throw new Error('Ledger message signing not yet implemented. Install @ledgerhq/hw-app-eth.')
+    const ethApp = this.ensureEthApp()
+    const accountInfo = this.getAccountInfo(address)
+
+    // Convert message to hex without 0x prefix for Ledger
+    const messageHex = Buffer.from(message).toString('hex')
+    const result = await ethApp.signPersonalMessage(accountInfo.path, messageHex)
+
+    return this.composeSignature(result.v, result.r, result.s)
   }
 
-  async signTypedData(_address: Address, _typedData: unknown): Promise<Hex> {
+  async signTypedData(address: Address, typedData: unknown): Promise<Hex> {
     this.ensureConnected()
-    // TODO: Implement with Ledger EIP-712 signing
-    throw new Error('Ledger typed data signing not yet implemented. Install @ledgerhq/hw-app-eth.')
+    const ethApp = this.ensureEthApp()
+    const accountInfo = this.getAccountInfo(address)
+
+    // Parse typed data
+    const typed = typedData as {
+      domain: Record<string, unknown>
+      types: Record<string, Array<{ name: string; type: string }>>
+      primaryType: string
+      message: Record<string, unknown>
+    }
+
+    // Build full types including EIP712Domain
+    const fullTypes = {
+      EIP712Domain: getTypesForEIP712Domain(typed.domain),
+      ...typed.types,
+    }
+
+    // Compute domain separator and struct hash using viem
+    const domainSeparatorHash = hashDomain({
+      domain: typed.domain,
+      types: fullTypes,
+    } as Parameters<typeof hashDomain>[0])
+
+    const structHash = hashStruct({
+      data: typed.message,
+      primaryType: typed.primaryType,
+      types: fullTypes,
+    } as Parameters<typeof hashStruct>[0])
+
+    // Remove 0x prefix for Ledger
+    const result = await ethApp.signEIP712HashedMessage(
+      accountInfo.path,
+      domainSeparatorHash.slice(2),
+      structHash.slice(2)
+    )
+
+    return this.composeSignature(result.v, result.r, result.s)
   }
 
-  async signTransaction(_address: Address, _tx: unknown): Promise<Hex> {
+  async signTransaction(address: Address, tx: unknown): Promise<Hex> {
     this.ensureConnected()
-    // TODO: Implement with Ledger transaction signing
-    throw new Error('Ledger transaction signing not yet implemented. Install @ledgerhq/hw-app-eth.')
+    const ethApp = this.ensureEthApp()
+    const accountInfo = this.getAccountInfo(address)
+
+    // Serialize the transaction using viem
+    const serialized = serializeTransaction(tx as Parameters<typeof serializeTransaction>[0])
+
+    // Remove 0x prefix for Ledger
+    const rawTxHex = serialized.slice(2)
+    const result = await ethApp.signTransaction(accountInfo.path, rawTxHex)
+
+    return this.composeSignature(result.v, result.r, result.s)
   }
 
-  async signRawHash(_address: Address, _hash: Hex): Promise<Hex> {
+  async signRawHash(address: Address, hash: Hex): Promise<Hex> {
     this.ensureConnected()
-    throw new Error('Ledger raw hash signing not yet implemented. Install @ledgerhq/hw-app-eth.')
+    const ethApp = this.ensureEthApp()
+    const accountInfo = this.getAccountInfo(address)
+
+    // Ledger does not natively support raw hash signing.
+    // Use signPersonalMessage as a fallback — note this adds the EIP-191 prefix.
+    // For EIP-7702 authorization, the caller should be aware of this limitation.
+    const hashHex = hash.startsWith('0x') ? hash.slice(2) : hash
+    const result = await ethApp.signPersonalMessage(accountInfo.path, hashHex)
+
+    return this.composeSignature(result.v, result.r, result.s)
   }
 
   serialize(): HardwareKeyringData {
@@ -156,7 +245,8 @@ export class LedgerKeyring implements IHardwareKeyring {
 
   sanitize(): void {
     // Hardware keyrings don't hold sensitive data in memory
-    // but we clear the transport reference
+    // but we clear the transport reference and eth app
+    this.ethApp = null
     this.transport = null
   }
 
@@ -167,18 +257,58 @@ export class LedgerKeyring implements IHardwareKeyring {
   async connectDevice(transport: HardwareTransport): Promise<void> {
     this.transport = transport
     await transport.connect()
+
+    // Create Eth app instance from the raw transport
+    const rawTransport = (transport as { getRawTransport?: () => unknown }).getRawTransport?.()
+    if (rawTransport) {
+      const { default: Eth } = await import('@ledgerhq/hw-app-eth')
+      this.ethApp = new Eth(rawTransport as import('@ledgerhq/hw-transport').default)
+    }
   }
 
   async disconnectDevice(): Promise<void> {
+    this.ethApp = null
     if (this.transport) {
       await this.transport.disconnect()
       this.transport = null
     }
   }
 
+  // --------------------------------------------------------------------------
+  // Private helpers
+  // --------------------------------------------------------------------------
+
   private ensureConnected(): void {
     if (!this.transport?.isConnected) {
       throw new Error('Ledger device is not connected. Call connectDevice() first.')
     }
+  }
+
+  private ensureEthApp(): import('@ledgerhq/hw-app-eth').default {
+    if (!this.ethApp) {
+      throw new Error('Ledger Ethereum app not initialized. Reconnect the device.')
+    }
+    return this.ethApp
+  }
+
+  private getAccountInfo(address: Address): HardwareAccountInfo {
+    const info = this.accounts.find(
+      (a) => a.address.toLowerCase() === address.toLowerCase()
+    )
+    if (!info) {
+      throw new Error(`Account ${address} not found in Ledger keyring`)
+    }
+    return info
+  }
+
+  /**
+   * Compose v, r, s into a single 65-byte hex signature.
+   */
+  private composeSignature(v: number | string, r: string, s: string): Hex {
+    const vNum = typeof v === 'string' ? Number.parseInt(v, 16) : v
+    const rHex = r.length === 64 ? r : r.padStart(64, '0')
+    const sHex = s.length === 64 ? s : s.padStart(64, '0')
+    const vHex = (vNum >= 27 ? vNum : vNum + 27).toString(16).padStart(2, '0')
+    return `0x${rHex}${sHex}${vHex}` as Hex
   }
 }

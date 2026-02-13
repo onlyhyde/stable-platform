@@ -1,5 +1,7 @@
 import type { Address, Hex } from 'viem'
 import type {
+  HardwareAccountInfo,
+  HardwareKeyringData,
   HDKeyringData,
   KeyringAccount,
   KeyringControllerState,
@@ -8,7 +10,10 @@ import type {
   SimpleKeyringData,
   VaultData,
 } from '../../types'
+import { LedgerKeyring } from './hardwareKeyring'
+import type { HardwareTransport } from './hardwareKeyring'
 import { HDKeyring } from './hdKeyring'
+import { LedgerWebHIDTransport } from './ledgerTransport'
 import { SimpleKeyring } from './simpleKeyring'
 import { vault } from './vault'
 
@@ -24,6 +29,7 @@ type KeyringListener = (event: KeyringEventType, data?: unknown) => void
 export class KeyringController {
   private hdKeyrings: HDKeyring[] = []
   private simpleKeyrings: SimpleKeyring[] = []
+  private hardwareKeyrings: LedgerKeyring[] = []
   private selectedAddress: Address | null = null
   private listeners: Set<KeyringListener> = new Set()
 
@@ -53,12 +59,15 @@ export class KeyringController {
   private reconstructKeyrings(data: VaultData): void {
     this.hdKeyrings = []
     this.simpleKeyrings = []
+    this.hardwareKeyrings = []
 
     for (const serialized of data.keyrings) {
       if (serialized.type === 'hd') {
         this.hdKeyrings.push(new HDKeyring(serialized.data as HDKeyringData))
       } else if (serialized.type === 'simple') {
         this.simpleKeyrings.push(new SimpleKeyring(serialized.data as SimpleKeyringData))
+      } else if (serialized.type === 'hardware') {
+        this.hardwareKeyrings.push(new LedgerKeyring(serialized.data as HardwareKeyringData))
       }
     }
 
@@ -177,10 +186,14 @@ export class KeyringController {
     for (const keyring of this.simpleKeyrings) {
       keyring.sanitize()
     }
+    for (const keyring of this.hardwareKeyrings) {
+      keyring.sanitize()
+    }
 
     vault.lock()
     this.hdKeyrings = []
     this.simpleKeyrings = []
+    this.hardwareKeyrings = []
     // Keep selectedAddress to restore on unlock
 
     this.emit('lock')
@@ -197,6 +210,10 @@ export class KeyringController {
     }
 
     for (const keyring of this.simpleKeyrings) {
+      accounts.push(...keyring.getAccounts())
+    }
+
+    for (const keyring of this.hardwareKeyrings) {
       accounts.push(...keyring.getAccounts())
     }
 
@@ -385,6 +402,12 @@ export class KeyringController {
       }
     }
 
+    for (const keyring of this.hardwareKeyrings) {
+      if (keyring.hasAccount(address)) {
+        return keyring.signMessage(address, message)
+      }
+    }
+
     throw new Error('Account not found')
   }
 
@@ -415,6 +438,12 @@ export class KeyringController {
       }
     }
 
+    for (const keyring of this.hardwareKeyrings) {
+      if (keyring.hasAccount(address)) {
+        return keyring.signTypedData(address, typedData)
+      }
+    }
+
     throw new Error('Account not found')
   }
 
@@ -442,6 +471,12 @@ export class KeyringController {
           address,
           transaction as Parameters<typeof keyring.signTransaction>[1]
         )
+      }
+    }
+
+    for (const keyring of this.hardwareKeyrings) {
+      if (keyring.hasAccount(address)) {
+        return keyring.signTransaction(address, transaction)
       }
     }
 
@@ -500,6 +535,12 @@ export class KeyringController {
     }
 
     for (const keyring of this.simpleKeyrings) {
+      if (keyring.hasAccount(address)) {
+        return keyring.signRawHash(address, hash)
+      }
+    }
+
+    for (const keyring of this.hardwareKeyrings) {
       if (keyring.hasAccount(address)) {
         return keyring.signRawHash(address, hash)
       }
@@ -593,6 +634,89 @@ export class KeyringController {
    */
   async changePassword(oldPassword: string, newPassword: string): Promise<void> {
     await vault.changePassword(oldPassword, newPassword)
+  }
+
+  // ==========================================================================
+  // Ledger Hardware Wallet Methods
+  // ==========================================================================
+
+  /**
+   * Connect a Ledger device via WebHID
+   */
+  async connectLedger(): Promise<void> {
+    const transport = new LedgerWebHIDTransport()
+
+    // Create or reuse existing hardware keyring
+    let ledgerKeyring = this.hardwareKeyrings[0]
+    if (!ledgerKeyring) {
+      ledgerKeyring = new LedgerKeyring()
+      this.hardwareKeyrings.push(ledgerKeyring)
+    }
+
+    await ledgerKeyring.connectDevice(transport)
+  }
+
+  /**
+   * Discover Ledger accounts from the connected device
+   */
+  async discoverLedgerAccounts(
+    startIndex: number,
+    count: number
+  ): Promise<KeyringAccount[]> {
+    const ledgerKeyring = this.hardwareKeyrings[0]
+    if (!ledgerKeyring) {
+      throw new Error('No Ledger keyring found. Connect a Ledger device first.')
+    }
+    return ledgerKeyring.discoverAccounts(startIndex, count)
+  }
+
+  /**
+   * Add a discovered Ledger account to the keyring and persist to vault
+   */
+  async addLedgerAccount(account: HardwareAccountInfo): Promise<void> {
+    if (!vault.isUnlocked()) {
+      throw new Error('Vault is locked')
+    }
+
+    let ledgerKeyring = this.hardwareKeyrings[0]
+    if (!ledgerKeyring) {
+      ledgerKeyring = new LedgerKeyring()
+      this.hardwareKeyrings.push(ledgerKeyring)
+    }
+
+    ledgerKeyring.addDiscoveredAccount(account)
+
+    // Persist hardware keyring to vault
+    const data = vault.getData()
+    const keyrings = [...data.keyrings]
+    const hwIndex = keyrings.findIndex((k) => k.type === 'hardware')
+    if (hwIndex >= 0) {
+      keyrings[hwIndex] = { type: 'hardware', data: ledgerKeyring.serialize() }
+    } else {
+      keyrings.push({ type: 'hardware', data: ledgerKeyring.serialize() })
+    }
+
+    await vault.updateData({ keyrings })
+
+    this.emit('accountsChanged', this.getAllAccounts())
+  }
+
+  /**
+   * Disconnect the Ledger device
+   */
+  async disconnectLedger(): Promise<void> {
+    const ledgerKeyring = this.hardwareKeyrings[0]
+    if (ledgerKeyring) {
+      await ledgerKeyring.disconnectDevice()
+    }
+  }
+
+  /**
+   * Check if a Ledger device is connected
+   */
+  isLedgerConnected(): boolean {
+    const ledgerKeyring = this.hardwareKeyrings[0]
+    return ledgerKeyring?.isDeviceConnected() ?? false
   }
 
   /**
