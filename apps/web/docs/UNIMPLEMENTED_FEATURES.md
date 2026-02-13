@@ -46,8 +46,8 @@
 23. [~~MEDIUM - 페이지네이션 없음~~ ✅ RESOLVED](#22-페이지네이션-없음)
 24. [~~MEDIUM - 미지원 네트워크 경고 UI 없음~~ ✅ RESOLVED](#23-미지원-네트워크-경고-ui-없음)
 25. [MEDIUM - UserOp 확인 timeout 후 재확인 수단 없음](#24-userop-확인-timeout-후-재확인-수단-없음)
-26. [LOW - Send 폼 잔액 초과 검증 없음](#25-send-폼-잔액-초과-검증-없음)
-27. [LOW - Next.js 라우트 파일 부재](#26-nextjs-라우트-파일-부재)
+26. [~~LOW - Send 폼 잔액 초과 검증 없음~~ ✅ RESOLVED](#25-send-폼-잔액-초과-검증-없음)
+27. [~~LOW - Next.js 라우트 파일 부재~~ ✅ RESOLVED](#26-nextjs-라우트-파일-부재)
 28. [LOW - Recurring Payment Placeholder ID](#27-recurring-payment-placeholder-id)
 29. [LOW - Subscription Revenue 계산](#28-subscription-revenue-계산)
 30. [LOW - Marketplace 하드코딩 카탈로그](#29-marketplace-하드코딩-카탈로그)
@@ -87,8 +87,8 @@
 | ~~MEDIUM~~ | ~~페이지네이션~~ | ~~2~~ **0** | ~~Payment history~~, ~~Audit logs~~ 페이지네이션 없음 *(§22 전체 RESOLVED — §22-2 Audit logs + §22-1 Payment History pagination 구현 확인)* |
 | ~~MEDIUM~~ | ~~미지원 네트워크 경고~~ | ~~1~~ **0** | ~~미지원 체인 전환 시 사용자 경고 UI 없음~~ *(§23 RESOLVED — `NetworkWarningBanner` 컴포넌트 구현 완료, Header에 렌더링, 원클릭 Switch Network 버튼 포함)* |
 | MEDIUM | UserOp 확인 timeout | 1 | 30초 polling 후 재확인/재시도 수단 없음 |
-| LOW | Send 폼 잔액 검증 | 1 | amount > 0만 체크, 잔액 초과 검증 없음 |
-| LOW | Next.js 라우트 파일 | 3 | loading.tsx, error.tsx, not-found.tsx 없음 |
+| ~~LOW~~ | ~~Send 폼 잔액 검증~~ | ~~1~~ **0** | ~~amount > 0만 체크, 잔액 초과 검증 없음~~ *(§25 RESOLVED — `exceedsBalance` 체크 + `canSend` 조건 + "Amount exceeds available balance" 에러 메시지 구현)* |
+| ~~LOW~~ | ~~Next.js 라우트 파일~~ | ~~3~~ **0** | ~~loading.tsx, error.tsx, not-found.tsx 없음~~ *(§26 전체 RESOLVED — 전역 loading.tsx/error.tsx/not-found.tsx + 라우트별 error.tsx 3개 구현)* |
 | LOW | Recurring Payment | 1 | Placeholder scheduleId |
 | LOW | Subscription Revenue | 2 | Revenue 계산 미구현 |
 | LOW | Marketplace Catalog | 1 | 하드코딩된 모듈 목록 |
@@ -97,7 +97,7 @@
 | LOW | Footer 링크 | 4 | 8개 미존재 페이지 링크 + 3개 소셜 placeholder URL |
 | ~~HIGH~~ | ~~Stealth Announcement~~ | ~~1~~ **0** | ~~sendToStealthAddress에서 ERC-5564 on-chain announcement 미호출~~ *(§33 RESOLVED — stealthAnnouncer 컨트랙트 호출 구현 완료)* |
 | ~~MEDIUM~~ | ~~Indexer URL~~ | ~~2~~ **0** | ~~ServiceUrls 타입 + StableNetContext에 indexerUrl 미포함~~ *(§34 RESOLVED — 양쪽 모두 indexerUrl 포함 확인)* |
-| **합계** | | ~~89~~ **32** | *(57건 RESOLVED)* |
+| **합계** | | ~~89~~ **28** | *(61건 RESOLVED)* |
 
 ---
 
@@ -992,64 +992,25 @@ const waitForUserOpReceipt = useCallback(
 
 ---
 
-## 25. Send 폼 잔액 초과 검증 없음
+## ~~25. Send 폼 잔액 초과 검증 없음~~ ✅ RESOLVED
 
 **심각도: LOW** *(5차 검토 추가)*
 
-**파일:** `app/payment/send/page.tsx:31-33`
+~~**파일:** `app/payment/send/page.tsx`~~
 
-```typescript
-const isValidRecipient = recipient === '' || isAddress(recipient)
-const isValidAmount = amount === '' || (!Number.isNaN(Number(amount)) && Number(amount) > 0)
-const canSend = isAddress(recipient) && Number(amount) > 0 && isConnected && address
-```
-
-`balance`를 조회하여 화면에 표시하지만(라인 24-29), 입력된 `amount`가 잔액을 초과하는지 검증하지 않음:
-- 잔액 0.1 ETH일 때 100 ETH 입력 가능
-- "Send" 버튼 활성화되어 온체인 트랜잭션 시도 → 실패
-- "MAX" 버튼(라인 176-184)은 존재하지만 초과 입력 사전 경고 없음
-
-### 해결 방안
-
-- `canSend` 조건에 잔액 초과 검증 추가:
-  ```typescript
-  const amountBigInt = parseUnits(amount || '0', decimals)
-  const canSend = isAddress(recipient) && Number(amount) > 0 && amountBigInt <= balance && isConnected && address
-  ```
-- 잔액 초과 시 `"Insufficient balance"` 에러 메시지 표시
-- "Send" 버튼 비활성화로 불필요한 온체인 트랜잭션 방지
+✅ **RESOLVED**: `exceedsBalance` 변수로 `parseUnits(amount, decimals) > balance` 체크 구현. `canSend` 조건에 `!exceedsBalance` 포함. Input에 "Amount exceeds available balance" 에러 메시지 표시. Send 버튼 자동 비활성화.
 
 ---
 
-## 26. Next.js 라우트 파일 부재
+## ~~26. Next.js 라우트 파일 부재~~ ✅ RESOLVED
 
 **심각도: LOW** *(3차 검토 추가)*
 
-### 26-1. loading.tsx 없음
+~~### 26-1. loading.tsx 없음~~
+~~### 26-2. error.tsx 없음~~
+~~### 26-3. not-found.tsx 없음~~
 
-`app/` 디렉토리 전체에 `loading.tsx` 파일이 하나도 없음.
-- Next.js App Router의 Streaming/Suspense 기반 로딩 UI 미활용
-- 현재 각 컴포넌트에서 inline `isLoading` 체크로 처리 중
-- 페이지 전환 시 스켈레톤 UI 없이 빈 화면 표시
-
-### 26-2. error.tsx 없음
-
-`app/` 디렉토리에 `error.tsx` 파일이 없음.
-- 서버 사이드 또는 클라이언트 사이드 에러 시 기본 Next.js 에러 화면만 표시
-- 사용자 친화적 에러 페이지 없음
-
-### 26-3. not-found.tsx 없음
-
-`app/` 디렉토리에 `not-found.tsx` 파일이 없음.
-- 존재하지 않는 URL 접근 시 기본 404 화면 표시
-- Footer의 잘못된 링크(/blog, /about 등) 접근 시 브랜딩된 404 페이지 없음
-
-### 해결 방안
-
-- `app/loading.tsx` 전역 로딩 스켈레톤 추가
-- `app/error.tsx` 전역 에러 페이지 추가 (ErrorBoundary 활용)
-- `app/not-found.tsx` 커스텀 404 페이지 추가
-- 데이터 무거운 라우트(`/enterprise/*`, `/payment/history`)에 라우트별 `loading.tsx` 추가
+✅ **RESOLVED**: 전역 `app/loading.tsx` (스켈레톤 UI), `app/error.tsx` (ErrorFallback 컴포넌트 활용), `app/not-found.tsx` (브랜딩 404 페이지) 모두 구현. 라우트별 `error.tsx`도 payment, smart-account, defi에 추가.
 
 ---
 
@@ -1271,7 +1232,7 @@ const socialLinks = [
 | 0-3 | RPC/컨트랙트 주소 환경변수 전환 | §31 | `lib/wagmi.ts`, `lib/moduleAddresses.ts`, `lib/constants.ts` |
 | ~~0-4~~ | ~~Block explorer URL 동적 분기 유틸~~ | ~~§14~~ | ✅ 이미 `lib/utils.ts`에 `getBlockExplorerUrl()` 구현 완료 |
 | 0-5 | ErrorBoundary 전역 + 주요 페이지 적용 | §16 | `app/layout.tsx`, 트랜잭션 관련 페이지 |
-| 0-6 | Next.js `loading.tsx`, `error.tsx`, `not-found.tsx` | §26 | `app/` |
+| ~~0-6~~ | ~~Next.js `loading.tsx`, `error.tsx`, `not-found.tsx`~~ | ~~§26~~ | ✅ 전역 + 라우트별 모두 구현 완료 |
 | 0-7 | Toast 피드백을 모든 폼/트랜잭션에 적용 | §17 | 전체 페이지 |
 | ~~0-8~~ | ~~모바일 반응형 (sidebar drawer, `ml-64` → `md:ml-64`)~~ | ~~§20~~ | ✅ Phase 9H 구현 완료 |
 
@@ -1279,7 +1240,7 @@ const socialLinks = [
 
 | 순서 | 작업 | 관련 섹션 | 파일 |
 |------|------|-----------|------|
-| 1-1 | Send 폼 잔액 초과 검증 | §25 | `app/payment/send/page.tsx` |
+| ~~1-1~~ | ~~Send 폼 잔액 초과 검증~~ | ~~§25~~ | ✅ 이미 `exceedsBalance` 체크 구현 확인 |
 | 1-2 | UserOp receipt timeout 후 pending 트래킹 + 재확인 | §24 | `hooks/useUserOp.ts`, `app/payment/history/page.tsx` |
 | 1-3 | QR Code 생성 라이브러리 연동 | §10 | `app/payment/receive/page.tsx` |
 | ~~1-4~~ | ~~Payment History 페이지네이션~~ | ~~§22~~ | ✅ 이미 구현 확인 (Phase 9E) |
