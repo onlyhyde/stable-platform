@@ -54,9 +54,10 @@ var SpendingLimitHook = CreateModuleEntry(
 		},
 	},
 	map[uint64]types.Address{
-		ChainIDMainnet: common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDSepolia: common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDLocal:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDStableNet: common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
 	},
 	DefaultSupportedChains,
 )
@@ -97,9 +98,10 @@ var AuditHook = CreateModuleEntry(
 		},
 	},
 	map[uint64]types.Address{
-		ChainIDMainnet: common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDSepolia: common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDLocal:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDStableNet: common.HexToAddress("0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699"),
 	},
 	DefaultSupportedChains,
 )
@@ -141,9 +143,10 @@ var WhitelistHook = CreateModuleEntry(
 		},
 	},
 	map[uint64]types.Address{
-		ChainIDMainnet: common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDSepolia: common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDLocal:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDStableNet: common.HexToAddress("0x0000000000000000000000000000000000000000"),
 	},
 	DefaultSupportedChains,
 )
@@ -189,9 +192,10 @@ var TimelockHook = CreateModuleEntry(
 		},
 	},
 	map[uint64]types.Address{
-		ChainIDMainnet: common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDSepolia: common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDLocal:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDStableNet: common.HexToAddress("0x0000000000000000000000000000000000000000"),
 	},
 	DefaultSupportedChains,
 )

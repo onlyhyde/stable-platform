@@ -23,6 +23,7 @@ const (
 	ChainIDAvalancheFuji ChainID = 43113
 	ChainIDLocal         ChainID = 31337
 	ChainIDAnvil         ChainID = 31337
+	ChainIDStableNet     ChainID = 8283
 )
 
 // String returns the string representation of the chain ID.
@@ -62,6 +63,8 @@ func (c ChainID) String() string {
 		return "avalanche-fuji"
 	case ChainIDLocal:
 		return "localhost"
+	case ChainIDStableNet:
+		return "stablenet"
 	default:
 		return "unknown"
 	}
@@ -72,7 +75,7 @@ func (c ChainID) IsTestnet() bool {
 	switch c {
 	case ChainIDGoerli, ChainIDSepolia, ChainIDPolygonMumbai, ChainIDPolygonAmoy,
 		ChainIDArbitrumGoerli, ChainIDOptimismGoerli, ChainIDBaseGoerli,
-		ChainIDBSCTestnet, ChainIDAvalancheFuji, ChainIDLocal:
+		ChainIDBSCTestnet, ChainIDAvalancheFuji, ChainIDLocal, ChainIDStableNet:
 		return true
 	default:
 		return false
@@ -124,6 +127,7 @@ var DefaultCurrencies = map[ChainID]NetworkCurrency{
 	ChainIDAvalanche:      {Name: "Avalanche", Symbol: "AVAX", Decimals: 18},
 	ChainIDAvalancheFuji:  {Name: "Fuji AVAX", Symbol: "AVAX", Decimals: 18},
 	ChainIDLocal:          {Name: "Local Ether", Symbol: "ETH", Decimals: 18},
+	ChainIDStableNet:      {Name: "WKRC", Symbol: "WKRC", Decimals: 18},
 }
 
 // GetDefaultCurrency returns the default native currency for a chain.

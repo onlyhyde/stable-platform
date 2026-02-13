@@ -1225,16 +1225,14 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-## ~~§37. CRITICAL — 전체 체인 컨트랙트 주소 ZERO_ADDRESS~~ ✅ PARTIALLY RESOLVED
+## ~~§37. CRITICAL — 전체 체인 컨트랙트 주소 ZERO_ADDRESS~~ ✅ RESOLVED
 
 **심각도:** CRITICAL
 
-✅ **PARTIALLY RESOLVED (Phase 21):** SDK-TS 모듈 config LOCAL(31337) 체인 주소를 poc-contract broadcast 아티팩트에서 추출하여 업데이트 완료:
-- `executors.ts`: SessionKeyExecutor(`0xa82ff9aF...`), RecurringPaymentExecutor(`0x1613beB3...`)
-- `hooks.ts`: SpendingLimitHook(`0xF5059a5D...`)
-- `fallbacks.ts`: TokenReceiverFallback(`0x95401dc8...`)
+✅ **RESOLVED (Phase 21+22):** SDK-TS/SDK-Go 모듈 config에 LOCAL(31337) + StableNet(8283) 체인 주소 업데이트 완료:
+- Phase 21: LOCAL(31337) 주소를 poc-contract broadcast 아티팩트에서 추출
+- Phase 22: StableNet(8283) 주소를 실제 배포된 컨트랙트에서 업데이트 — validators, executors, hooks, fallbacks, addresses/generated.go, eip7702/constants.go 전체
 - MAINNET/SEPOLIA 주소는 해당 네트워크 배포 후 업데이트 필요
-- WebAuthnValidator, MultiSigValidator는 poc-contract에서 미배포 상태 (broadcast에 없음)
 
 ---
 
@@ -1262,11 +1260,11 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-## ~~§41. HIGH — EIP-7702 Delegate 주소 미설정~~ ✅ PARTIALLY RESOLVED
+## ~~§41. HIGH — EIP-7702 Delegate 주소 미설정~~ ✅ RESOLVED
 
 **심각도:** HIGH
 
-✅ **PARTIALLY RESOLVED (Phase 21):** Local Anvil 체인 Kernel v3.1 delegate 주소를 poc-contract broadcast에서 업데이트(`0xc5a5c42992decbae36851359345fe25997f5c42d`). Sepolia/Polygon Amoy는 해당 네트워크 배포 후 업데이트 필요.
+✅ **RESOLVED (Phase 21+22):** Local Anvil 체인(`0xc5a5c429...`) + StableNet(8283) Kernel v3.1 delegate 주소(`0x7186e5C2...`) 업데이트 완료. Sepolia/Polygon Amoy는 해당 네트워크 배포 후 업데이트 필요.
 
 ---
 
@@ -1638,24 +1636,26 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 > 20차 검토 (2026-02-13, Phase 14): §49 Bridge Relayer ethclient, §50 V3 Quoter, §51 V3 Pool CREATE2, §54 V2 Pair CREATE2 — 4건 RESOLVED
 > 21차 검토 (2026-02-13, Phase 15): §61 Bundler 디버그 모드 프로덕션 가드, §68 Flashbots secp256k1 ECDSA 서명 — 2건 RESOLVED
 > 27차 검토 (2026-02-13, Phase 21): §37 LOCAL 모듈 주소, §41 Anvil Kernel delegate, §73 TokenReceiverFallback — 3건 RESOLVED
+> 28차 검토 (2026-02-13, Phase 22): §37, §41 StableNet(8283) 주소 전체 업데이트 — PARTIALLY RESOLVED → RESOLVED 승격
 
-### 핵심 블로커 (CRITICAL ~~7건~~ → ~~2건~~ 1건)
+### 핵심 블로커 (CRITICAL ~~7건~~ → ~~2건~~ ~~1건~~ 0건)
 
 1. ~~§1-1 — apps/web: Swap `sendUserOp` 미전달~~ ✅ RESOLVED
 2. ~~§1-2 — apps/web: Order Router URL `localhost`~~ ✅ RESOLVED
 3. ~~§1-3 — apps/web: Router Address mainnet~~ ✅ RESOLVED
 4. ~~§35 — packages: SDK-GO `calculateUserOpHash()` 빈 해시~~ ✅ RESOLVED
 5. ~~§36 — packages: SDK-GO `encodeSmartAccountCall()` ABI 인코딩 없음~~ ✅ RESOLVED
-6. ~~§37 — packages: 대부분 체인 컨트랙트 주소 `ZERO_ADDRESS`~~ ✅ PARTIALLY RESOLVED (Phase 21, LOCAL 체인)
+6. ~~§37 — packages: 대부분 체인 컨트랙트 주소 `ZERO_ADDRESS`~~ ✅ RESOLVED (Phase 21+22, LOCAL+StableNet 체인)
 7. ~~§49 — services: Bridge Relayer 블록체인 상호작용 전체 PoC 스텁~~ ✅ RESOLVED (Phase 14)
 
-> 27차 검토 (2026-02-13, Phase 21): §37 LOCAL 주소 업데이트, §41 Anvil delegate 주소, §73 TokenReceiverFallback — 3건 RESOLVED/PARTIALLY RESOLVED
+> 27차 검토 (2026-02-13, Phase 21): §37 LOCAL 모듈 주소, §41 Anvil Kernel delegate, §73 TokenReceiverFallback — 3건 RESOLVED/PARTIALLY RESOLVED
+> 28차 검토 (2026-02-13, Phase 22): §37 StableNet(8283) 전체 주소 업데이트, §41 StableNet delegate — PARTIALLY → RESOLVED 승격
 
 ### 확장 구현 우선순위 (업데이트)
 
 #### Phase 0+ — 배포 인프라 (배포 의존)
 
-1. ~~컨트랙트 배포 + 주소 업데이트: §37, §41, §73~~ ✅ Phase 21 LOCAL 체인 완료 (MAINNET/SEPOLIA 배포 시 추가 업데이트 필요)
+1. ~~컨트랙트 배포 + 주소 업데이트: §37, §41, §73~~ ✅ Phase 21+22 LOCAL+StableNet 완료 (MAINNET/SEPOLIA 배포 시 추가 업데이트 필요)
 
 #### Phase 1+ — services PoC → 실제 구현
 

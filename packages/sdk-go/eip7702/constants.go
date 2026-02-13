@@ -52,6 +52,15 @@ var DelegatePresets = map[types.ChainID][]DelegatePreset{
 			IsVerified:  false,
 		},
 	},
+	// StableNet (Chain ID 8283)
+	types.ChainIDStableNet: {
+		{
+			Name:        "Kernel v3.1 (StableNet)",
+			Address:     common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
+			Description: "Kernel v3.1 ERC-7579 Smart Account (StableNet)",
+			IsVerified:  true,
+		},
+	},
 }
 
 // GetDelegatePresets returns the delegate presets for a chain.

@@ -83,32 +83,32 @@ export const ANVIL_TOKENS: TokenDefinition[] = []
 export const LOCAL_ADDRESSES: ChainAddresses = {
   chainId: 8283,
   core: {
-    entryPoint: ENTRY_POINT_V07,
-    kernel: ZERO_ADDRESS,
-    kernelFactory: ZERO_ADDRESS,
+    entryPoint: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
+    kernel: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
+    kernelFactory: '0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699' as Address,
   },
   validators: {
-    ecdsaValidator: ZERO_ADDRESS,
-    webAuthnValidator: ZERO_ADDRESS,
-    multiEcdsaValidator: ZERO_ADDRESS,
+    ecdsaValidator: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
+    webAuthnValidator: '0xEf6817fe73741A8F10088f9511c64b666a338A14' as Address,
+    multiEcdsaValidator: '0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699' as Address,
   },
   executors: {
-    ownableExecutor: ZERO_ADDRESS,
+    ownableExecutor: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
   },
   hooks: {
-    spendingLimitHook: ZERO_ADDRESS,
+    spendingLimitHook: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
   },
   paymasters: {
-    verifyingPaymaster: ZERO_ADDRESS,
-    tokenPaymaster: ZERO_ADDRESS,
+    verifyingPaymaster: '0xbEbb0338503F9E28FFDC84C3548F8454F12Dd1D3' as Address,
+    tokenPaymaster: '0xb33DC2d82eAee723ca7687D70209ed9A861b3B46' as Address,
   },
   privacy: {
-    stealthAnnouncer: ZERO_ADDRESS,
-    stealthRegistry: ZERO_ADDRESS,
+    stealthAnnouncer: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
+    stealthRegistry: '0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699' as Address,
   },
   compliance: {
-    kycRegistry: ZERO_ADDRESS,
-    complianceValidator: ZERO_ADDRESS,
+    kycRegistry: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
+    complianceValidator: '0xD23Ee0D8E8DfabE76AA52a872Ce015B0BcAED6Ce' as Address,
   },
   delegatePresets: [],
 }

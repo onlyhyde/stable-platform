@@ -90,6 +90,45 @@ var chainAddresses = map[types.ChainID]ChainAddresses{
 		DelegatePresets: []DelegatePreset{},
 	},
 
+	// StableNet (Chain ID 8283)
+	types.ChainIDStableNet: {
+		ChainID: types.ChainIDStableNet,
+		Core: CoreAddresses{
+			EntryPoint:    common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
+			Kernel:        common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
+			KernelFactory: common.HexToAddress("0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699"),
+		},
+		Validators: ValidatorAddresses{
+			ECDSAValidator:      common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
+			WebAuthnValidator:   common.HexToAddress("0xEf6817fe73741A8F10088f9511c64b666a338A14"),
+			MultiECDSAValidator: common.HexToAddress("0xD23Ee0D8E8DfabE76AA52a872Ce015B0BcAED6Ce"),
+		},
+		Executors: ExecutorAddresses{
+			OwnableExecutor: common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
+		},
+		Hooks: HookAddresses{
+			SpendingLimitHook: common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
+		},
+		Paymasters: PaymasterAddresses{
+			VerifyingPaymaster: common.HexToAddress("0xbEbb0338503F9E28FFDC84C3548F8454F12Dd1D3"),
+			TokenPaymaster:     common.HexToAddress("0xb33DC2d82eAee723ca7687D70209ed9A861b3B46"),
+		},
+		Privacy: PrivacyAddresses{
+			StealthAnnouncer: common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
+			StealthRegistry:  common.HexToAddress("0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699"),
+		},
+		Compliance: ComplianceAddresses{
+			KYCRegistry:         common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
+			ComplianceValidator: common.HexToAddress("0xD23Ee0D8E8DfabE76AA52a872Ce015B0BcAED6Ce"),
+		},
+		Subscriptions: SubscriptionAddresses{
+			SubscriptionManager:      common.HexToAddress("0x0000000000000000000000000000000000000000"),
+			RecurringPaymentExecutor: common.HexToAddress("0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699"),
+			PermissionManager:        common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		},
+		DelegatePresets: []DelegatePreset{},
+	},
+
 	// Polygon Amoy Testnet
 	types.ChainIDPolygonAmoy: {
 		ChainID: types.ChainIDPolygonAmoy,
@@ -137,6 +176,11 @@ var serviceURLs = map[types.ChainID]ServiceURLs{
 		Paymaster:     "http://localhost:4338",
 		StealthServer: "http://localhost:4339",
 	},
+	types.ChainIDStableNet: {
+		Bundler:       "http://localhost:4337",
+		Paymaster:     "http://localhost:4338",
+		StealthServer: "http://localhost:4339",
+	},
 	types.ChainIDSepolia: {
 		Bundler:       "https://bundler.sepolia.stablenet.io",
 		Paymaster:     "https://paymaster.sepolia.stablenet.io",
@@ -168,6 +212,14 @@ var defaultTokens = map[types.ChainID][]TokenDefinition{
 			Address:  common.HexToAddress("0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"),
 			Name:     "Dai Stablecoin",
 			Symbol:   "DAI",
+			Decimals: 18,
+		},
+	},
+	types.ChainIDStableNet: {
+		{
+			Address:  common.HexToAddress("0x0000000000000000000000000000000000000000"),
+			Name:     "WKRC",
+			Symbol:   "WKRC",
 			Decimals: 18,
 		},
 	},
