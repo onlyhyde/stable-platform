@@ -23,6 +23,7 @@
 > 22차 검토: 2026-02-13 (Phase 16 — §62 Validation skip 플래그 프로덕션 경고 추가, §59 Bundler/Paymaster-proxy 테스트 작성) = 2건 RESOLVED
 > 23차 검토: 2026-02-13 (Phase 17 — §60 Paymaster Proxy admin API 완성) = 1건 RESOLVED
 > 24차 검토: 2026-02-13 (Phase 18 — §63 QR Code 실제 생성, §71 Price Impact 계산+경고 UI) = 2건 RESOLVED
+> 25차 검토: 2026-02-13 (Phase 19 — §72 wallet_requestPermissions EIP-2255 준수) = 1건 RESOLVED
 
 ---
 
@@ -1601,22 +1602,17 @@ Address: common.HexToAddress("0x0000000000000000000000000000000000000000"), // T
 
 ---
 
-## §72. MEDIUM — wallet_requestPermissions 간소화 *(8차 검토 추가)*
+## ~~§72. MEDIUM — wallet_requestPermissions 간소화~~ ✅ RESOLVED (Phase 19) *(8차 검토 추가)*
 
 **심각도:** MEDIUM
-**파일:** `apps/wallet-extension/src/background/rpc/handler.ts:2870`
 
-**현상:** `wallet_requestPermissions` RPC 메서드가 모든 권한 요청을 단순 연결 요청으로 처리한다.
-
-```typescript
-// For now, treat permission request like a connect request
-if (requestedMethods.includes('eth_accounts')) {
-    const handler = handlers['eth_requestAccounts']
-    // ...delegates to connect flow
-}
-```
-
-**영향:** EIP-2255 세분화된 권한 관리 미지원 — 개별 메서드별 권한 부여/회수 불가
+✅ **RESOLVED (Phase 19):** EIP-2255 준수 권한 관리:
+- `SUPPORTED_PERMISSIONS` 상수로 지원 권한 목록 명시 (`eth_accounts`)
+- 미지원 권한은 무시 (partial grant 허용 — EIP-2255 규격)
+- `eth_accounts` 권한: 미연결 → connect flow → 연결 후 granted 반환 / 이미 연결 → 즉시 granted
+- 응답에 `caveats: [{ type: 'restrictReturnedAccounts', value: connectedAccounts }]` 포함
+- `wallet_getPermissions`도 동일한 `caveats` 구조로 업데이트
+- 연결 실패 시 빈 배열 반환 (granted 없음)
 
 ---
 
@@ -1660,7 +1656,7 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 | apps/web (§1-§34) | ~~3~~ 2 | ~~27~~ 22 | ~~41~~ 37 | 18 | **65** | ~~89~~ **24** |
 | packages (§35-§48, §73) | ~~3~~ 1 | ~~4~~ 0 | ~~7~~ 1 | ~~1~~ 0 | **12** | ~~15~~ **3** |
 | services (§49-§62, §68) | ~~1~~ 0 | ~~3~~ 0 | ~~7~~ 0 | ~~4~~ 0 | **15** | ~~15~~ **0** |
-| wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 1 | ~~5~~ 4 | **4** | ~~9~~ **5** |
+| wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 0 | ~~5~~ 4 | **5** | ~~9~~ **4** |
 | **합계** | **3** | **22** | **39** | **26** | **91** | **37** |
 
 > 15차 검토 (2026-02-13, Phase 10): packages 10건, services 5건, wallet-extension 2건 RESOLVED 확인
