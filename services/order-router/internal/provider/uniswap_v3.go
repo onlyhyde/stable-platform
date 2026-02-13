@@ -1,33 +1,87 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strings"
+	"sync"
+
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/stablenet/stable-platform/services/order-router/internal/model"
 )
 
+// quoterABIJSON defines the Uniswap V3 Quoter contract ABI
+const quoterABIJSON = `[{
+	"name":"quoteExactInputSingle","type":"function","stateMutability":"nonpayable",
+	"inputs":[
+		{"name":"tokenIn","type":"address"},
+		{"name":"tokenOut","type":"address"},
+		{"name":"fee","type":"uint24"},
+		{"name":"amountIn","type":"uint256"},
+		{"name":"sqrtPriceLimitX96","type":"uint160"}
+	],
+	"outputs":[{"name":"amountOut","type":"uint256"}]
+},{
+	"name":"quoteExactOutputSingle","type":"function","stateMutability":"nonpayable",
+	"inputs":[
+		{"name":"tokenIn","type":"address"},
+		{"name":"tokenOut","type":"address"},
+		{"name":"fee","type":"uint24"},
+		{"name":"amountOut","type":"uint256"},
+		{"name":"sqrtPriceLimitX96","type":"uint160"}
+	],
+	"outputs":[{"name":"amountIn","type":"uint256"}]
+}]`
+
+// v3PoolInitCodeHash is the Uniswap V3 pool creation code hash used for CREATE2 address computation
+var v3PoolInitCodeHash = common.FromHex("e34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54")
+
 // UniswapV3Provider implements DEXProvider for Uniswap V3
 type UniswapV3Provider struct {
-	rpcURL       string
-	routerAddr   string
-	quoterAddr   string
-	factoryAddr  string
-	chainID      int
+	rpcURL      string
+	routerAddr  string
+	quoterAddr  string
+	factoryAddr string
+	chainID     int
+	quoterABI   abi.ABI
+
+	mu        sync.Mutex
+	ethClient *ethclient.Client
 }
 
 // NewUniswapV3Provider creates a new Uniswap V3 provider
 func NewUniswapV3Provider(rpcURL, routerAddr, quoterAddr string, chainID int) *UniswapV3Provider {
+	parsedABI, _ := abi.JSON(strings.NewReader(quoterABIJSON))
 	return &UniswapV3Provider{
 		rpcURL:      rpcURL,
 		routerAddr:  routerAddr,
 		quoterAddr:  quoterAddr,
 		factoryAddr: "0x1F98431c8aD98523631AE4a59f267346ea31F984", // Uniswap V3 Factory
 		chainID:     chainID,
+		quoterABI:   parsedABI,
 	}
+}
+
+func (p *UniswapV3Provider) getClient() (*ethclient.Client, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.ethClient != nil {
+		return p.ethClient, nil
+	}
+	client, err := ethclient.Dial(p.rpcURL)
+	if err != nil {
+		return nil, fmt.Errorf("dial RPC: %w", err)
+	}
+	p.ethClient = client
+	return client, nil
 }
 
 func (p *UniswapV3Provider) Name() string {
@@ -52,9 +106,9 @@ func (p *UniswapV3Provider) GetPools(ctx context.Context, tokenIn, tokenOut stri
 		pool := model.Pool{
 			Address:  poolAddr,
 			Protocol: p.Name(),
-			Token0: model.Token{Address: tokenIn},
-			Token1: model.Token{Address: tokenOut},
-			Fee:    fee,
+			Token0:   model.Token{Address: tokenIn},
+			Token1:   model.Token{Address: tokenOut},
+			Fee:      fee,
 		}
 		pools = append(pools, pool)
 	}
@@ -194,31 +248,125 @@ func (p *UniswapV3Provider) EstimateGas(ctx context.Context, route *model.Route)
 
 // Internal helper functions
 
+// quoteExactInputSingle calls the Quoter contract via eth_call to get an accurate on-chain quote
 func (p *UniswapV3Provider) quoteExactInputSingle(ctx context.Context, tokenIn, tokenOut string, fee int, amountIn *big.Int) (*big.Int, error) {
-	// In production, this would call the Quoter contract
-	// For PoC, we simulate with a simple calculation
-	// amountOut = amountIn * (1 - fee/1000000)
+	client, err := p.getClient()
+	if err != nil {
+		return nil, err
+	}
 
-	feeFactor := big.NewInt(int64(1000000 - fee))
-	amountOut := new(big.Int).Mul(amountIn, feeFactor)
-	amountOut = new(big.Int).Div(amountOut, big.NewInt(1000000))
+	data, err := p.quoterABI.Pack("quoteExactInputSingle",
+		common.HexToAddress(tokenIn),
+		common.HexToAddress(tokenOut),
+		big.NewInt(int64(fee)),
+		amountIn,
+		big.NewInt(0), // sqrtPriceLimitX96 = 0 (no limit)
+	)
+	if err != nil {
+		return nil, fmt.Errorf("pack quoter call: %w", err)
+	}
+
+	quoterAddr := common.HexToAddress(p.quoterAddr)
+	result, err := client.CallContract(ctx, ethereum.CallMsg{
+		To:   &quoterAddr,
+		Data: data,
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("call quoter: %w", err)
+	}
+
+	values, err := p.quoterABI.Methods["quoteExactInputSingle"].Outputs.Unpack(result)
+	if err != nil {
+		return nil, fmt.Errorf("unpack quoter result: %w", err)
+	}
+	if len(values) == 0 {
+		return nil, fmt.Errorf("empty quoter result")
+	}
+
+	amountOut, ok := values[0].(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("unexpected quoter result type")
+	}
 
 	return amountOut, nil
 }
 
+// quoteExactOutputSingle calls the Quoter contract via eth_call for exact output quotes
 func (p *UniswapV3Provider) quoteExactOutputSingle(ctx context.Context, tokenIn, tokenOut string, fee int, amountOut *big.Int) (*big.Int, error) {
-	// amountIn = amountOut / (1 - fee/1000000)
-	feeFactor := big.NewInt(int64(1000000 - fee))
-	amountIn := new(big.Int).Mul(amountOut, big.NewInt(1000000))
-	amountIn = new(big.Int).Div(amountIn, feeFactor)
+	client, err := p.getClient()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := p.quoterABI.Pack("quoteExactOutputSingle",
+		common.HexToAddress(tokenIn),
+		common.HexToAddress(tokenOut),
+		big.NewInt(int64(fee)),
+		amountOut,
+		big.NewInt(0), // sqrtPriceLimitX96 = 0 (no limit)
+	)
+	if err != nil {
+		return nil, fmt.Errorf("pack quoter call: %w", err)
+	}
+
+	quoterAddr := common.HexToAddress(p.quoterAddr)
+	result, err := client.CallContract(ctx, ethereum.CallMsg{
+		To:   &quoterAddr,
+		Data: data,
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("call quoter: %w", err)
+	}
+
+	values, err := p.quoterABI.Methods["quoteExactOutputSingle"].Outputs.Unpack(result)
+	if err != nil {
+		return nil, fmt.Errorf("unpack quoter result: %w", err)
+	}
+	if len(values) == 0 {
+		return nil, fmt.Errorf("empty quoter result")
+	}
+
+	amountIn, ok := values[0].(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("unexpected quoter result type")
+	}
 
 	return amountIn, nil
 }
 
+// computePoolAddress computes the Uniswap V3 pool address using CREATE2
 func (p *UniswapV3Provider) computePoolAddress(tokenA, tokenB string, fee int) string {
-	// In production, compute CREATE2 address
-	// For PoC, return a deterministic fake address
-	return fmt.Sprintf("0x%s", strings.Repeat("0", 38)+"01")
+	addrA := common.HexToAddress(tokenA)
+	addrB := common.HexToAddress(tokenB)
+
+	// Sort tokens (Uniswap convention: token0 < token1)
+	var token0, token1 common.Address
+	if bytes.Compare(addrA.Bytes(), addrB.Bytes()) < 0 {
+		token0, token1 = addrA, addrB
+	} else {
+		token0, token1 = addrB, addrA
+	}
+
+	// Salt: keccak256(abi.encode(token0, token1, fee))
+	addressTy, _ := abi.NewType("address", "", nil)
+	uint24Ty, _ := abi.NewType("uint24", "", nil)
+	args := abi.Arguments{
+		{Type: addressTy},
+		{Type: addressTy},
+		{Type: uint24Ty},
+	}
+	salt, _ := args.Pack(token0, token1, big.NewInt(int64(fee)))
+	saltHash := crypto.Keccak256(salt)
+
+	// CREATE2: keccak256(0xff ++ factory ++ salt ++ init_code_hash)
+	factory := common.HexToAddress(p.factoryAddr)
+	data := make([]byte, 1+20+32+32)
+	data[0] = 0xff
+	copy(data[1:21], factory.Bytes())
+	copy(data[21:53], saltHash)
+	copy(data[53:85], v3PoolInitCodeHash)
+
+	return common.BytesToAddress(crypto.Keccak256(data)[12:]).Hex()
 }
 
 func (p *UniswapV3Provider) encodeExactInputSingle(tokenIn, tokenOut string, fee int, recipient string, deadline int64, amountIn, amountOutMin *big.Int) string {

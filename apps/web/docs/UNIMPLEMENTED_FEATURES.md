@@ -11,13 +11,14 @@
 > 12차 검토: 2026-02-13 (§1-2, §1-3 구현 완료 — Order Router URL/Address 환경변수 전환)
 > 13차 검토: 2026-02-13 (Phase 9B — §7, §8, §9, §11, §12, §13, §15, §17, §18, §20-1, §22-2 구현 완료, 28건 RESOLVED)
 > 14차 검토: 2026-02-13 (Phase 9C/9D/9E — §3(6건), §4(5건), §19(3건), §21(1건), §22-1(1건) 구현 완료, 16건 RESOLVED)
-> 총 미구현 항목: ~~128건~~ → **47건** (apps/web ~~89건~~ 9건 + packages ~~15건~~ 14건 + services 15건 + wallet-extension 9건 + RESOLVED 81건)
+> 총 미구현 항목: ~~128건~~ → **43건** (apps/web ~~89건~~ 9건 + packages ~~15건~~ 14건 + services ~~15건~~ 5건 + wallet-extension 9건 + RESOLVED 85건)
 > ⚠️ 11차 검토에서 §1-1, §5-1, §6, §33, §34 (5개 섹션, 6건)가 이미 구현 완료로 확인되어 RESOLVED 처리됨
 > ⚠️ 12차 검토에서 §1-2, §1-3 (2건)가 구현 완료로 RESOLVED 처리됨 — §1 전체 RESOLVED
 > ⚠️ 13차 검토에서 §7(4건), §8-5-2(1건), §9(2건), §11(3건), §12(1건), §13(6건), §15(1건), §17(4건), §18-15-1,15-3(2건), §20-1(1건), §22-2(1건) + §8-5-3(1건) + §18-15-2 부분(1건) = 총 28건 RESOLVED
 > ⚠️ 14차 검토에서 §3(6건 전체), §4(5건 전체), §19(3건 전체), §21(1건), §22-1(1건) = 총 16건 RESOLVED
 > ⚠️ 18차 검토 (Phase 12): §10(1건 이미 구현), §16(2건 ErrorBoundary 추가), §18-2(1건 Smart Account 실제 조회), §24(1건 pending UserOp 저장+재확인 UI) = 5건 RESOLVED
 > 19차 검토: 2026-02-13 (Phase 13 — §27 scheduleId 이벤트 파싱, §28 Revenue 추정 구현, §29 카탈로그 PoC 인정, §30 YTD 추정, §31 인프라 대부분 구현 확인, §32 privacy/terms 페이지 생성) = 14건 RESOLVED/ACKNOWLEDGED
+> 20차 검토: 2026-02-13 (Phase 14 — §49 Bridge Relayer go-ethereum ethclient 전면 구현, §50 Uniswap V3 Quoter eth_call 구현, §51 V3 CREATE2 pool 주소 구현, §54 V2 CREATE2 pair 주소 구현) = 4건 RESOLVED
 
 ---
 
@@ -1338,79 +1339,47 @@ Address: common.HexToAddress("0x0000000000000000000000000000000000000000"), // T
 
 ---
 
-## §49. CRITICAL — Bridge Relayer 블록체인 상호작용 전체 PoC 스텁
+## ~~§49. CRITICAL — Bridge Relayer 블록체인 상호작용 전체 PoC 스텁~~ ✅ RESOLVED
 
 **심각도:** CRITICAL
-**파일:** `services/bridge-relayer/internal/ethereum/client.go:46-227`
 
-**현상:** Ethereum 클라이언트의 약 15개 핵심 함수가 모두 시뮬레이션 값을 반환한다. 실제 RPC 호출이 전혀 없다.
-
-| 함수 | 현재 동작 | 라인 |
-|------|-----------|------|
-| `GetBalance()` | "For PoC, we simulate a balance" | 39-44 |
-| `GetBlockNumber()` | 상수 1000000 반환 | 49-51 |
-| `GetBlockTimestamp()` | `time.Now()` 반환 | 55-57 |
-| `EstimateGas()` | 상수 200000 반환 | 61-64 |
-| `GetGasPrice()` | 30 gwei 고정 | 68-78 |
-| `SendTransaction()` | 시간 기반 fake hash 반환 | 82-91 |
-| `WaitForTransaction()` | 2초 후 무조건 성공 | 95-108 |
-| `CallContract()` | 빈 바이트 반환 | 111-114 |
-| `GetNonce()` | 0 반환 | 118-120 |
-| `IsConnected()` | 항상 true | 124-126 |
-| `EncodeCompleteBridge()` | placeholder selector | 138-157 |
-| `DecodeEventLog()` | 빈 맵 반환 | 161-163 |
-| `SubscribeToEvents()` | 이벤트 없는 빈 goroutine | 167-193 |
-| `HashBridgeMessage()` | requestID 복사 (keccak256 아님) | 209-226 |
-
-**영향:** Bridge relayer가 실제 크로스 체인 브릿지 처리를 전혀 수행하지 않음
-
-**해결 방안:**
-- `go-ethereum/ethclient`를 사용한 실제 RPC 연결 구현
-- ABI 바인딩(`abigen`)을 통한 컨트랙트 인코딩/디코딩
+✅ **RESOLVED (Phase 14):** go-ethereum v1.14.13 ethclient 기반 전면 재구현 완료:
+- `NewClient`: `ethclient.Dial()` 으로 source/target 체인 RPC 연결, `crypto.HexToECDSA`로 private key 파싱
+- `GetLatestBlock`: `ethclient.BlockNumber()` 실제 RPC 호출
+- `GetBlockTimestamp`: `ethclient.HeaderByNumber()` → `header.Time`
+- `EstimateGas`: `ethclient.EstimateGas()` + gasBuffer
+- `GetGasPrice`: `ethclient.SuggestGasPrice()` + maxGasPrice 캡
+- `SendTransaction`: nonce 조회 → gas 추정 → `types.NewTx(LegacyTx)` → `types.SignTx` → `ethclient.SendTransaction`
+- `WaitForTransaction`: receipt polling + block confirmations 대기
+- `CallContract`: `ethclient.CallContract()` (eth_call)
+- `GetNonce`: `ethclient.PendingNonceAt()`
+- `IsConnected`: `ethclient.ChainID()` 성공 여부
+- `EncodeCompleteBridge`: `abi.ABI.Pack("completeBridge", ...)` 실제 ABI 인코딩
+- `DecodeEventLog`: `event.Inputs.UnpackIntoMap()` + indexed topics 파싱
+- `SubscribeToEvents`: `ethclient.FilterLogs()` 폴링 기반 이벤트 스트림
+- `HashBridgeMessage`: `abi.Arguments.Pack()` → `crypto.Keccak256Hash()` Solidity-compatible 해싱
 
 ---
 
-## §50. HIGH — Order Router Uniswap V3 Quote 시뮬레이션
+## ~~§50. HIGH — Order Router Uniswap V3 Quote 시뮬레이션~~ ✅ RESOLVED
 
 **심각도:** HIGH
-**파일:** `services/order-router/internal/provider/uniswap_v3.go:197-222`
 
-**현상:** Quoter 컨트랙트를 호출하지 않고 수수료 기반 단순 계산으로 시뮬레이션한다.
-
-```go
-func (p *UniswapV3Provider) quoteExactInputSingle(...) (*big.Int, error) {
-    // In production, this would call the Quoter contract
-    // For PoC, we simulate with a simple calculation
-    feeFactor := big.NewInt(int64(1000000 - fee))
-    amountOut := new(big.Int).Mul(amountIn, feeFactor)
-    amountOut = new(big.Int).Div(amountOut, big.NewInt(1000000))
-    return amountOut, nil
-}
-```
-
-**영향:**
-- 실제 DEX 유동성/가격 반영 안 됨
-- 슬리피지, 가격 영향(price impact) 계산 불가
-
-**해결 방안:** Uniswap V3 `Quoter` 또는 `QuoterV2` 컨트랙트의 `quoteExactInputSingle()` on-chain call 구현
+✅ **RESOLVED (Phase 14):** Quoter 컨트랙트 eth_call 기반 on-chain 견적 구현:
+- `quoteExactInputSingle`: `abi.ABI.Pack("quoteExactInputSingle", tokenIn, tokenOut, fee, amountIn, sqrtPriceLimitX96=0)` → `ethclient.CallContract()` → `Outputs.Unpack()` 결과 파싱
+- `quoteExactOutputSingle`: 동일 패턴으로 역방향 견적
+- Quoter ABI JSON 정의 + lazy ethclient 초기화 패턴 적용
 
 ---
 
-## §51. HIGH — Order Router Pool 주소 계산 Fake
+## ~~§51. HIGH — Order Router Pool 주소 계산 Fake~~ ✅ RESOLVED
 
 **심각도:** HIGH
-**파일:** `services/order-router/internal/provider/uniswap_v3.go:218-222`
 
-**현상:** CREATE2 주소 계산 대신 "deterministic fake address"를 반환한다.
-
-```go
-func (p *UniswapV3Provider) computePoolAddress(tokenA, tokenB string, fee int) string {
-    // In production, compute CREATE2 address
-    return fmt.Sprintf("0x%s", strings.Repeat("0", 38)+"01")
-}
-```
-
-**영향:** 모든 토큰 쌍이 동일한 pool 주소를 가리킴 → 풀 존재 여부 확인 불가
+✅ **RESOLVED (Phase 14):** Uniswap V3 CREATE2 pool 주소 계산 구현:
+- Token 정렬 (`bytes.Compare`) → `abi.encode(token0, token1, fee)` → `keccak256(salt)`
+- `keccak256(0xff ++ factory ++ saltHash ++ initCodeHash)` CREATE2 주소 도출
+- V3 init code hash: `e34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54`
 
 ---
 
@@ -1430,12 +1399,16 @@ func (p *UniswapV3Provider) computePoolAddress(tokenA, tokenB string, fee int) s
 
 ---
 
-## §54. MEDIUM — Order Router Uniswap V2 Pool 주소 미구현
+## ~~§54. MEDIUM — Order Router Uniswap V2 Pool 주소 미구현~~ ✅ RESOLVED
 
 **심각도:** MEDIUM
-**파일:** `services/order-router/internal/provider/uniswap_v2.go:195`
 
-**현상:** "In production, compute CREATE2 address" 주석 — V3와 동일한 placeholder 패턴
+✅ **RESOLVED (Phase 14):** Uniswap V2 CREATE2 pair 주소 계산 구현:
+- Token 정렬 → `abi.encodePacked(token0, token1)` (20+20 바이트 연결) → `keccak256(salt)`
+- CREATE2: `keccak256(0xff ++ factory ++ saltHash ++ initCodeHash)`
+- V2 init code hash: `96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f`
+- SushiSwap init code hash: `e18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303`
+- `initCodeHash` 필드를 구조체에 추가하여 DEX별 해시 설정
 
 ---
 
@@ -1694,7 +1667,7 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 
 ---
 
-## 전체 요약 (~~128건~~ → 122건, **현재 미해결 43건**)
+## 전체 요약 (~~128건~~ → 122건, **현재 미해결 39건**)
 
 ### 범위별 분류
 
@@ -1702,13 +1675,14 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 |------|----------|------|--------|-----|----------|------|
 | apps/web (§1-§34) | ~~3~~ 2 | ~~27~~ 22 | ~~41~~ 37 | 18 | **65** | ~~89~~ **24** |
 | packages (§35-§48, §73) | ~~3~~ 1 | ~~4~~ 0 | ~~7~~ 1 | ~~1~~ 0 | **12** | ~~15~~ **3** |
-| services (§49-§62, §68) | 1 | ~~3~~ 2 | ~~7~~ 2 | ~~4~~ 3 | **6** | ~~15~~ **9** |
+| services (§49-§62, §68) | ~~1~~ 0 | ~~3~~ 0 | ~~7~~ 1 | ~~4~~ 3 | **10** | ~~15~~ **5** |
 | wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 2 | 5 | **2** | ~~9~~ **7** |
-| **합계** | **4** | **24** | **42** | **26** | **85** | **43** |
+| **합계** | **3** | **22** | **41** | **26** | **89** | **39** |
 
 > 15차 검토 (2026-02-13, Phase 10): packages 10건, services 5건, wallet-extension 2건 RESOLVED 확인
 > 16차 검토 (2026-02-13, Phase 10 코드 수정): §43, §46, §53 구현 완료 — 3건 RESOLVED
 > 17차 검토 (2026-02-13, Phase 11): §2, §5-2, §8-5-1, §8-5-3 구현 완료 확인 — 4건 RESOLVED
+> 20차 검토 (2026-02-13, Phase 14): §49 Bridge Relayer ethclient, §50 V3 Quoter, §51 V3 Pool CREATE2, §54 V2 Pair CREATE2 — 4건 RESOLVED
 
 ### 핵심 블로커 (CRITICAL ~~7건~~ → 2건)
 
@@ -1718,7 +1692,7 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 4. ~~§35 — packages: SDK-GO `calculateUserOpHash()` 빈 해시~~ ✅ RESOLVED
 5. ~~§36 — packages: SDK-GO `encodeSmartAccountCall()` ABI 인코딩 없음~~ ✅ RESOLVED
 6. §37 — packages: 대부분 체인 컨트랙트 주소 `ZERO_ADDRESS` *(배포 의존, subscription 3개 제외)*
-7. §49 — services: Bridge Relayer 블록체인 상호작용 전체 PoC 스텁
+7. ~~§49 — services: Bridge Relayer 블록체인 상호작용 전체 PoC 스텁~~ ✅ RESOLVED (Phase 14)
 
 ### 확장 구현 우선순위 (업데이트)
 
@@ -1728,8 +1702,8 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 
 #### Phase 1+ — services PoC → 실제 구현
 
-2. Bridge Relayer 실제 구현: §49 (go-ethereum ethclient 연동)
-3. Order Router DEX 연동: §50, §51, §54 (Quoter/Pool 컨트랙트 호출)
+2. ~~Bridge Relayer 실제 구현: §49 (go-ethereum ethclient 연동)~~ ✅ Phase 14 RESOLVED
+3. ~~Order Router DEX 연동: §50, §51, §54 (Quoter/Pool 컨트랙트 호출)~~ ✅ Phase 14 RESOLVED
 4. Flashbots 서명: §68 (secp256k1 ECDSA 서명)
 
 #### Phase 2+ — UX + Wallet Extension

@@ -1,42 +1,57 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/stablenet/stable-platform/services/order-router/internal/model"
+)
+
+// Well-known init code hashes for CREATE2 pair address computation
+var (
+	// Uniswap V2 factory init code hash
+	v2InitCodeHash = common.FromHex("96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f")
+	// SushiSwap factory init code hash
+	sushiInitCodeHash = common.FromHex("e18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303")
 )
 
 // UniswapV2Provider implements DEXProvider for Uniswap V2 and forks
 type UniswapV2Provider struct {
-	name        string
-	rpcURL      string
-	routerAddr  string
-	factoryAddr string
-	chainID     int
+	name         string
+	rpcURL       string
+	routerAddr   string
+	factoryAddr  string
+	initCodeHash []byte
+	chainID      int
 }
 
 // NewUniswapV2Provider creates a new Uniswap V2 provider
 func NewUniswapV2Provider(name, rpcURL, routerAddr, factoryAddr string, chainID int) *UniswapV2Provider {
 	return &UniswapV2Provider{
-		name:        name,
-		rpcURL:      rpcURL,
-		routerAddr:  routerAddr,
-		factoryAddr: factoryAddr,
-		chainID:     chainID,
+		name:         name,
+		rpcURL:       rpcURL,
+		routerAddr:   routerAddr,
+		factoryAddr:  factoryAddr,
+		initCodeHash: v2InitCodeHash,
+		chainID:      chainID,
 	}
 }
 
 // NewSushiSwapProvider creates a SushiSwap provider (Uniswap V2 fork)
 func NewSushiSwapProvider(rpcURL, routerAddr string, chainID int) *UniswapV2Provider {
 	return &UniswapV2Provider{
-		name:        "sushiswap",
-		rpcURL:      rpcURL,
-		routerAddr:  routerAddr,
-		factoryAddr: "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac", // SushiSwap Factory
-		chainID:     chainID,
+		name:         "sushiswap",
+		rpcURL:       rpcURL,
+		routerAddr:   routerAddr,
+		factoryAddr:  "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac", // SushiSwap Factory
+		initCodeHash: sushiInitCodeHash,
+		chainID:      chainID,
 	}
 }
 
@@ -191,9 +206,34 @@ func (p *UniswapV2Provider) getAmountIn(amountOut, reserveIn, reserveOut *big.In
 	return result.Add(result, big.NewInt(1))
 }
 
+// computePairAddress computes the Uniswap V2 pair address using CREATE2
 func (p *UniswapV2Provider) computePairAddress(tokenA, tokenB string) string {
-	// In production, compute CREATE2 address
-	return fmt.Sprintf("0x%s", strings.Repeat("0", 38)+"02")
+	addrA := common.HexToAddress(tokenA)
+	addrB := common.HexToAddress(tokenB)
+
+	// Sort tokens (Uniswap convention: token0 < token1)
+	var token0, token1 common.Address
+	if bytes.Compare(addrA.Bytes(), addrB.Bytes()) < 0 {
+		token0, token1 = addrA, addrB
+	} else {
+		token0, token1 = addrB, addrA
+	}
+
+	// Salt: keccak256(abi.encodePacked(token0, token1))
+	packed := make([]byte, 40) // 20 bytes + 20 bytes
+	copy(packed[:20], token0.Bytes())
+	copy(packed[20:], token1.Bytes())
+	saltHash := crypto.Keccak256(packed)
+
+	// CREATE2: keccak256(0xff ++ factory ++ salt ++ init_code_hash)
+	factory := common.HexToAddress(p.factoryAddr)
+	data := make([]byte, 1+20+32+32)
+	data[0] = 0xff
+	copy(data[1:21], factory.Bytes())
+	copy(data[21:53], saltHash)
+	copy(data[53:85], p.initCodeHash)
+
+	return common.BytesToAddress(crypto.Keccak256(data)[12:]).Hex()
 }
 
 func (p *UniswapV2Provider) encodeSwapExactTokensForTokens(amountIn, amountOutMin *big.Int, path []string, to string, deadline int64) string {
