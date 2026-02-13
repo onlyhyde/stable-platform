@@ -236,6 +236,18 @@ export function parseConfig(options: CliOptions): BundlerConfig {
   // Debug: CLI > env > default
   const debug = options.debug ?? getEnvBool(ENV_VARS.DEBUG) ?? DEFAULT_CONFIG.debug!
 
+  // Block debug mode in production unless explicitly overridden
+  if (debug && process.env.NODE_ENV === 'production') {
+    const forceDebug = process.env.BUNDLER_FORCE_DEBUG === 'true'
+    if (!forceDebug) {
+      throw new Error(
+        'Debug mode is not allowed in production (NODE_ENV=production). ' +
+          'Debug mode disables simulation validation, allows all CORS origins, and exposes internal error details. ' +
+          'Set BUNDLER_FORCE_DEBUG=true to override (NOT recommended).'
+      )
+    }
+  }
+
   // Max nonce gap: CLI > env > default (10)
   const maxNonceGapNum = options.maxNonceGap ?? getEnvNumber(ENV_VARS.MAX_NONCE_GAP)
   const maxNonceGap = maxNonceGapNum !== undefined ? BigInt(maxNonceGapNum) : undefined

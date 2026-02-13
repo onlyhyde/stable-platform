@@ -100,6 +100,19 @@ export class RpcServer {
       logger
     )
 
+    // Warn when debug mode is enabled — it bypasses critical security checks
+    if (config.debug) {
+      this.logger.warn(
+        {
+          corsAllowAll: true,
+          skipSimulation: !!config.debug,
+          skipOpcodeValidation: config.enableOpcodeValidation === false || !!config.debug,
+          exposeErrorDetails: true,
+        },
+        'DEBUG MODE ENABLED: CORS allows all origins, simulation/opcode validation bypassed, internal error details exposed to clients. Do NOT use in production.'
+      )
+    }
+
     // Get server config from environment
     const serverConfig = getServerConfig()
 

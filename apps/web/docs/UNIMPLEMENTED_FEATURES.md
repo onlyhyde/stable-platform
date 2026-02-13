@@ -19,6 +19,7 @@
 > ⚠️ 18차 검토 (Phase 12): §10(1건 이미 구현), §16(2건 ErrorBoundary 추가), §18-2(1건 Smart Account 실제 조회), §24(1건 pending UserOp 저장+재확인 UI) = 5건 RESOLVED
 > 19차 검토: 2026-02-13 (Phase 13 — §27 scheduleId 이벤트 파싱, §28 Revenue 추정 구현, §29 카탈로그 PoC 인정, §30 YTD 추정, §31 인프라 대부분 구현 확인, §32 privacy/terms 페이지 생성) = 14건 RESOLVED/ACKNOWLEDGED
 > 20차 검토: 2026-02-13 (Phase 14 — §49 Bridge Relayer go-ethereum ethclient 전면 구현, §50 Uniswap V3 Quoter eth_call 구현, §51 V3 CREATE2 pool 주소 구현, §54 V2 CREATE2 pair 주소 구현) = 4건 RESOLVED
+> 21차 검토: 2026-02-13 (Phase 15 — §61 Bundler 디버그 모드 프로덕션 가드 추가, §68 FlashbotsSubmitter secp256k1 ECDSA 서명 구현) = 2건 RESOLVED
 
 ---
 
@@ -1476,14 +1477,14 @@ it.todo('should validate sponsorship policy')
 
 ---
 
-## §61. MEDIUM — Bundler 디버그 모드 보안 설정
+## ~~§61. MEDIUM — Bundler 디버그 모드 보안 설정~~ ✅ RESOLVED (Phase 15)
 
 **심각도:** MEDIUM
-**파일:** `services/bundler/src/rpc/server.ts:143-150, 254-260`
 
-**현상:** 디버그 모드에서 CORS 전체 허용 + 에러 메시지 노출
-
-**영향:** 프로덕션 배포 시 보안 취약점 — 디버그 모드 비활성화 필수
+✅ **RESOLVED (Phase 15):** 프로덕션 환경 보안 가드 구현:
+- `cli/config.ts:parseConfig()`: `NODE_ENV=production`에서 `debug=true` 시 즉시 에러 throw (BUNDLER_FORCE_DEBUG=true로 긴급 오버라이드 가능)
+- `rpc/server.ts`: 생성자에서 debug 모드 활성화 시 CORS/simulation/opcode/error 관련 보안 경고 로깅
+- CORS 전체 허용, simulation/opcode 검증 우회, 에러 상세 노출이 debug 모드에서만 가능하도록 기존 로직 유지 + 프로덕션 차단 레이어 추가
 
 ---
 
@@ -1498,25 +1499,15 @@ it.todo('should validate sponsorship policy')
 
 ---
 
-## §68. MEDIUM — Bundler FlashbotsSubmitter 간소화된 서명 *(8차 검토 추가)*
+## ~~§68. MEDIUM — Bundler FlashbotsSubmitter 간소화된 서명~~ ✅ RESOLVED (Phase 15) *(8차 검토 추가)*
 
 **심각도:** MEDIUM
-**파일:** `services/bundler/src/executor/flashbotsSubmitter.ts:132-138`
 
-**현상:** Flashbots relay 인증 서명이 secp256k1 ECDSA가 아닌 `keccak256(authKey + bodyHash)` 해시로 간소화되어 있다.
-
-```typescript
-private async signPayload(body: string): Promise<string> {
-    const bodyHash = keccak256(toHex(body))
-    // Simple signature using auth key hash (in production, use secp256k1 signing)
-    const sigHash = keccak256(`0x${this.config.authKey.slice(2)}${bodyHash.slice(2)}` as Hex)
-    return `${this.config.authKey.slice(0, 42)}:${sigHash}`
-}
-```
-
-**영향:** Flashbots relay가 올바른 `X-Flashbots-Signature` 형식을 요구하므로, 실제 relay에 제출 시 인증 실패
-
-**해결 방안:** `secp256k1` 개인키로 `eth_sign` 방식의 ECDSA 서명 구현
+✅ **RESOLVED (Phase 15):** secp256k1 ECDSA 서명 구현:
+- `viem/accounts`의 `privateKeyToAccount(authKey)`로 signing account 생성 (생성자에서 1회)
+- `signPayload()`: `keccak256(toHex(body))` → `account.signMessage({ message: { raw: bodyHash } })` EIP-191 서명
+- `X-Flashbots-Signature` 형식: `account.address:signature` (Flashbots relay 호환)
+- 기존 `keccak256(authKey + bodyHash)` 해시 방식 제거
 
 ---
 
@@ -1675,14 +1666,15 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 |------|----------|------|--------|-----|----------|------|
 | apps/web (§1-§34) | ~~3~~ 2 | ~~27~~ 22 | ~~41~~ 37 | 18 | **65** | ~~89~~ **24** |
 | packages (§35-§48, §73) | ~~3~~ 1 | ~~4~~ 0 | ~~7~~ 1 | ~~1~~ 0 | **12** | ~~15~~ **3** |
-| services (§49-§62, §68) | ~~1~~ 0 | ~~3~~ 0 | ~~7~~ 1 | ~~4~~ 3 | **10** | ~~15~~ **5** |
+| services (§49-§62, §68) | ~~1~~ 0 | ~~3~~ 0 | ~~7~~ 0 | ~~4~~ 3 | **12** | ~~15~~ **3** |
 | wallet-extension (§63-§67, §69-§71) | 0 | ~~1~~ 0 | ~~3~~ 2 | 5 | **2** | ~~9~~ **7** |
-| **합계** | **3** | **22** | **41** | **26** | **89** | **39** |
+| **합계** | **3** | **22** | **39** | **26** | **91** | **37** |
 
 > 15차 검토 (2026-02-13, Phase 10): packages 10건, services 5건, wallet-extension 2건 RESOLVED 확인
 > 16차 검토 (2026-02-13, Phase 10 코드 수정): §43, §46, §53 구현 완료 — 3건 RESOLVED
 > 17차 검토 (2026-02-13, Phase 11): §2, §5-2, §8-5-1, §8-5-3 구현 완료 확인 — 4건 RESOLVED
 > 20차 검토 (2026-02-13, Phase 14): §49 Bridge Relayer ethclient, §50 V3 Quoter, §51 V3 Pool CREATE2, §54 V2 Pair CREATE2 — 4건 RESOLVED
+> 21차 검토 (2026-02-13, Phase 15): §61 Bundler 디버그 모드 프로덕션 가드, §68 Flashbots secp256k1 ECDSA 서명 — 2건 RESOLVED
 
 ### 핵심 블로커 (CRITICAL ~~7건~~ → 2건)
 
@@ -1704,7 +1696,7 @@ export const TOKEN_RECEIVER_FALLBACK: ModuleRegistryEntry = createModuleEntry(
 
 2. ~~Bridge Relayer 실제 구현: §49 (go-ethereum ethclient 연동)~~ ✅ Phase 14 RESOLVED
 3. ~~Order Router DEX 연동: §50, §51, §54 (Quoter/Pool 컨트랙트 호출)~~ ✅ Phase 14 RESOLVED
-4. Flashbots 서명: §68 (secp256k1 ECDSA 서명)
+4. ~~Flashbots 서명: §68 (secp256k1 ECDSA 서명)~~ ✅ Phase 15 RESOLVED
 
 #### Phase 2+ — UX + Wallet Extension
 

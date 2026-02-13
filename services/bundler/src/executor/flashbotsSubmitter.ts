@@ -1,4 +1,5 @@
 import { type Hex, keccak256, toHex } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 import type { Logger } from '../utils/logger'
 import type { BundleSubmission, BundleSubmissionResult, IBundleSubmitter } from './submitter'
 
@@ -47,11 +48,13 @@ interface FlashbotsRelayResponse {
 export class FlashbotsSubmitter implements IBundleSubmitter {
   private readonly config: FlashbotsConfig
   private readonly logger: Logger
+  private readonly account: ReturnType<typeof privateKeyToAccount>
   private requestId = 0
 
   constructor(config: FlashbotsConfig, logger: Logger) {
     this.config = config
     this.logger = logger.child({ module: 'flashbotsSubmitter' })
+    this.account = privateKeyToAccount(config.authKey)
   }
 
   async submit(submission: BundleSubmission): Promise<BundleSubmissionResult> {
@@ -128,13 +131,13 @@ export class FlashbotsSubmitter implements IBundleSubmitter {
   /**
    * Sign payload with auth key for X-Flashbots-Signature header
    * Format: <address>:<signature>
+   *
+   * Flashbots relay requires: keccak256(body) signed via EIP-191 (eth_sign)
+   * using the secp256k1 private key, returning `signerAddress:signature`
    */
   private async signPayload(body: string): Promise<string> {
-    // Hash the payload
     const bodyHash = keccak256(toHex(body))
-    // Simple signature using auth key hash (in production, use secp256k1 signing)
-    const sigHash = keccak256(`0x${this.config.authKey.slice(2)}${bodyHash.slice(2)}` as Hex)
-    // Return simplified signature format
-    return `${this.config.authKey.slice(0, 42)}:${sigHash}`
+    const signature = await this.account.signMessage({ message: { raw: bodyHash } })
+    return `${this.account.address}:${signature}`
   }
 }
