@@ -35,16 +35,16 @@
 12. [~~MEDIUM - Enterprise Payroll~~ ✅ RESOLVED](#11-enterprise-payroll)
 13. [~~MEDIUM - Enterprise Expenses~~ ✅ RESOLVED](#12-enterprise-expenses)
 14. [~~MEDIUM - 컴포넌트 미연결 콜백들~~ ✅ RESOLVED](#13-컴포넌트-미연결-콜백들)
-15. [MEDIUM - 하드코딩된 네트워크 URL](#14-하드코딩된-네트워크-url)
+15. [~~MEDIUM - 하드코딩된 네트워크 URL~~ ✅ RESOLVED](#14-하드코딩된-네트워크-url)
 16. [~~MEDIUM - Stealth Withdraw 미연결~~ ✅ RESOLVED](#15-stealth-withdraw-미연결)
 17. [MEDIUM - ErrorBoundary 미적용](#16-errorboundary-미적용)
 18. [~~MEDIUM - Toast 피드백 미활용~~ ✅ RESOLVED](#17-toast-피드백-미활용)
 19. [MEDIUM - Account Settings 미구현 (부분)](#18-account-settings-미구현)
 20. [~~MEDIUM - Swap UI 미완성~~ ✅ RESOLVED](#19-swap-ui-미완성)
-21. [MEDIUM - 모바일 반응형 미구현](#20-모바일-반응형-미구현)
+21. [~~MEDIUM - 모바일 반응형 미구현~~ ✅ RESOLVED](#20-모바일-반응형-미구현)
 22. [~~MEDIUM - Header 계정 드롭다운 미구현~~ ✅ RESOLVED](#21-header-계정-드롭다운-미구현)
 23. [~~MEDIUM - 페이지네이션 없음~~ ✅ RESOLVED](#22-페이지네이션-없음)
-24. [MEDIUM - 미지원 네트워크 경고 UI 없음](#23-미지원-네트워크-경고-ui-없음)
+24. [~~MEDIUM - 미지원 네트워크 경고 UI 없음~~ ✅ RESOLVED](#23-미지원-네트워크-경고-ui-없음)
 25. [MEDIUM - UserOp 확인 timeout 후 재확인 수단 없음](#24-userop-확인-timeout-후-재확인-수단-없음)
 26. [LOW - Send 폼 잔액 초과 검증 없음](#25-send-폼-잔액-초과-검증-없음)
 27. [LOW - Next.js 라우트 파일 부재](#26-nextjs-라우트-파일-부재)
@@ -76,16 +76,16 @@
 | ~~MEDIUM~~ | ~~Enterprise Payroll~~ | ~~3~~ **0** | ~~Process Payments, Export Report, Add Employee 미연결~~ *(§11 전체 RESOLVED — 콜백 + CSV export + toast 구현)* |
 | ~~MEDIUM~~ | ~~Enterprise Expenses~~ | ~~1~~ **0** | ~~Submit Expense 콜백 미연결~~ *(§12 RESOLVED — approve/reject/pay/submit 콜백 + toast 구현)* |
 | ~~MEDIUM~~ | ~~컴포넌트 미연결 콜백~~ | ~~6~~ **0** | ~~SessionKey Detail, Subscription Manage, Expense approve/reject, Payroll Edit, Module Uninstall~~ *(§13 전체 RESOLVED)* |
-| MEDIUM | 하드코딩 네트워크 URL | 2 | Etherscan URL 네트워크별 미분기 |
+| ~~MEDIUM~~ | ~~하드코딩 네트워크 URL~~ | ~~2~~ **0** | ~~Etherscan URL 네트워크별 미분기~~ *(§14 전체 RESOLVED — `getBlockExplorerUrl()` 유틸 구현 완료, PaymentHistory + AuditLogCard 모두 동적 explorer URL 사용)* |
 | MEDIUM | Stealth Withdraw | ~~1~~ **0** | ~~onWithdraw 콜백 미전달, 인출 불가~~ *(§15 RESOLVED — placeholder 콜백 + toast, ECDH 파생 로직은 별도 구현 필요)* |
 | MEDIUM | ErrorBoundary | 2 | 구현됨, `app/layout.tsx`에 전역 적용 but 개별 페이지 미적용 *(정정)* |
 | ~~MEDIUM~~ | ~~Toast 피드백~~ | ~~4~~ **0** | ~~대부분 페이지에서 성공/실패 피드백 없음~~ *(§17 전체 RESOLVED — payroll, expenses, settings, stealth 등 toast 추가)* |
 | MEDIUM | Account Settings | ~~3~~ **1** | ~~계정 이름 저장 안 됨, Smart Account 정보 하드코딩, 복사 피드백 없음~~ *(§18-15-1, 15-3 RESOLVED — localStorage 저장 + 복사 toast, 15-2 SA 정보 미해결)* |
 | ~~MEDIUM~~ | ~~Swap UI~~ | ~~3~~ **0** | ~~잔액 하드코딩, 슬리피지 설정 없음, Gas 하드코딩~~ *(§19 전체 RESOLVED — balanceIn/balanceOut 토큰 데이터 연결, 슬리피지 UI 확인 완료, Gas fee paymaster 동적 표시)* |
-| MEDIUM | 모바일 반응형 | ~~3~~ **2** | ~~햄버거 메뉴 없음~~, sidebar 고정, 모바일 네트워크/잔액 숨김 *(§20-1 RESOLVED — 햄버거 메뉴 + 모바일 overlay sidebar 구현)* |
+| ~~MEDIUM~~ | ~~모바일 반응형~~ | ~~3~~ **0** | ~~햄버거 메뉴 없음, sidebar 고정, 모바일 네트워크/잔액 숨김~~ *(§20 전체 RESOLVED — §20-1 햄버거+overlay, §20-2 md:ml-64 적용, §20-3 모바일 drawer에 NetworkSelector+Balance 추가)* |
 | ~~MEDIUM~~ | ~~Header 계정~~ | ~~1~~ **0** | ~~계정 버튼 클릭 시 즉시 disconnect (드롭다운 없음)~~ *(§21 RESOLVED — Copy/Settings/Disconnect 드롭다운 이미 구현 확인)* |
 | ~~MEDIUM~~ | ~~페이지네이션~~ | ~~2~~ **0** | ~~Payment history~~, ~~Audit logs~~ 페이지네이션 없음 *(§22 전체 RESOLVED — §22-2 Audit logs + §22-1 Payment History pagination 구현 확인)* |
-| MEDIUM | 미지원 네트워크 경고 | 1 | 미지원 체인 전환 시 사용자 경고 UI 없음 |
+| ~~MEDIUM~~ | ~~미지원 네트워크 경고~~ | ~~1~~ **0** | ~~미지원 체인 전환 시 사용자 경고 UI 없음~~ *(§23 RESOLVED — `NetworkWarningBanner` 컴포넌트 구현 완료, Header에 렌더링, 원클릭 Switch Network 버튼 포함)* |
 | MEDIUM | UserOp 확인 timeout | 1 | 30초 polling 후 재확인/재시도 수단 없음 |
 | LOW | Send 폼 잔액 검증 | 1 | amount > 0만 체크, 잔액 초과 검증 없음 |
 | LOW | Next.js 라우트 파일 | 3 | loading.tsx, error.tsx, not-found.tsx 없음 |
@@ -97,7 +97,7 @@
 | LOW | Footer 링크 | 4 | 8개 미존재 페이지 링크 + 3개 소셜 placeholder URL |
 | ~~HIGH~~ | ~~Stealth Announcement~~ | ~~1~~ **0** | ~~sendToStealthAddress에서 ERC-5564 on-chain announcement 미호출~~ *(§33 RESOLVED — stealthAnnouncer 컨트랙트 호출 구현 완료)* |
 | ~~MEDIUM~~ | ~~Indexer URL~~ | ~~2~~ **0** | ~~ServiceUrls 타입 + StableNetContext에 indexerUrl 미포함~~ *(§34 RESOLVED — 양쪽 모두 indexerUrl 포함 확인)* |
-| **합계** | | ~~89~~ **37** | *(52건 RESOLVED)* |
+| **합계** | | ~~89~~ **32** | *(57건 RESOLVED)* |
 
 ---
 
@@ -647,26 +647,23 @@ interface PayrollQuickActionsCardProps {
 
 ---
 
-## 14. 하드코딩된 네트워크 URL
+## ~~14. 하드코딩된 네트워크 URL~~ ✅ RESOLVED
 
 **심각도: MEDIUM** *(2차 검토 추가)*
 
-### 11-1. PaymentHistory Etherscan URL
+~~### 11-1. PaymentHistory Etherscan URL~~
 
-**파일:** `components/payment/PaymentHistory.tsx`
+~~**파일:** `components/payment/PaymentHistory.tsx`~~
 
-Etherscan URL이 하드코딩되어 있어, StableNet 또는 다른 네트워크에서 올바른 block explorer 링크를 제공하지 못함.
+~~Etherscan URL이 하드코딩되어 있어, StableNet 또는 다른 네트워크에서 올바른 block explorer 링크를 제공하지 못함.~~
 
-### 11-2. AuditLogCard Etherscan URL
+~~### 11-2. AuditLogCard Etherscan URL~~
 
-**파일:** `components/enterprise/cards/AuditLogCard.tsx`
+~~**파일:** `components/enterprise/cards/AuditLogCard.tsx`~~
 
-동일하게 Etherscan URL이 하드코딩되어 있음. 현재 연결된 chain에 따라 동적으로 explorer URL을 결정해야 함.
+~~동일하게 Etherscan URL이 하드코딩되어 있음. 현재 연결된 chain에 따라 동적으로 explorer URL을 결정해야 함.~~
 
-### 해결 방안
-
-- `useChainInfo` hook 또는 wagmi의 chain config에서 block explorer URL을 동적으로 가져오도록 수정
-- `getBlockExplorerUrl(chainId)` 유틸 함수 구현
+✅ **RESOLVED**: `lib/utils.ts`에 `getBlockExplorerUrl(chainId, options)` 유틸 구현 완료. `PaymentHistory.tsx`와 `AuditLogCard.tsx` 모두 해당 유틸을 사용하여 동적 explorer URL 제공.
 
 ---
 
@@ -869,52 +866,27 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-## 20. 모바일 반응형 미구현
+## ~~20. 모바일 반응형 미구현~~ ✅ RESOLVED (Phase 9H)
 
 **심각도: MEDIUM** *(4차 검토 추가)*
 
 ### ~~20-1. 햄버거 메뉴 없음~~ ✅ RESOLVED (13차 검토)
 
-**파일:** `components/layout/Sidebar.tsx`
+~~**파일:** `components/layout/Sidebar.tsx`~~
 
 > **13차 검토 (2026-02-13):** Sidebar.tsx에 모바일 햄버거 메뉴 버튼 + overlay sidebar 구현. fixed 위치 버튼(md:hidden), backdrop blur 오버레이, 라우트 변경 시 자동 닫기, body 스크롤 잠금 포함.
 
-### 20-2. Sidebar 고정 레이아웃
+### ~~20-2. Sidebar 고정 레이아웃~~ ✅ RESOLVED (Phase 9H)
 
-**파일:** `app/layout.tsx:85, 89`
+~~**파일:** `app/layout.tsx`~~
 
-```tsx
-// 라인 85
-<main className="flex-1 ml-64 min-h-[calc(100vh-4rem)]">
+> **Phase 9H:** `ml-64` → `md:ml-64` 반응형 분기 이미 적용 확인. 모바일에서 sidebar 숨김 + drawer 방식 동작.
 
-// 라인 89
-<div className="ml-64">
-  <Footer />
-</div>
-```
+### ~~20-3. 모바일에서 주요 UI 숨김~~ ✅ RESOLVED (Phase 9H)
 
-`ml-64`(256px 좌측 마진)가 반응형 분기(`md:ml-64` 등) 없이 모든 화면 크기에 고정 적용됨. Sidebar도 `w-64`로 고정 너비이며 `hidden`/`block` 반응형 분기 없음.
+~~**파일:** `components/layout/Header.tsx`, `components/layout/Sidebar.tsx`~~
 
-### 20-3. 모바일에서 주요 UI 숨김
-
-**파일:** `components/layout/Header.tsx:67, 73`
-
-```tsx
-// 라인 67 - NetworkSelector
-<NetworkSelector className="hidden md:flex" />
-
-// 라인 73 - Balance 영역
-<div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl" ...>
-```
-
-`NetworkSelector`는 768px 미만에서 숨김. Balance는 640px 미만에서 숨김. 이를 대체하는 모바일 UI가 없음.
-
-### 해결 방안
-
-- Header에 모바일용 햄버거 메뉴 토글 버튼 추가 (`md:hidden`)
-- 모바일용 drawer/sheet 방식 Sidebar 구현
-- `ml-64`를 `md:ml-64`로 변경
-- 모바일 drawer에 네트워크/잔액 정보 표시
+> **Phase 9H:** Header 로고에 `pl-10 md:pl-0` 추가 (햄버거 간섭 방지). Sidebar 모바일 drawer에 NetworkSelector + Balance 표시 추가. 모바일에서도 네트워크/잔액 확인 가능.
 
 ---
 
@@ -970,31 +942,18 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-## 23. 미지원 네트워크 경고 UI 없음
+## ~~23. 미지원 네트워크 경고 UI 없음~~ ✅ RESOLVED
 
 **심각도: MEDIUM** *(5차 검토 추가)*
 
-**파일:** `components/common/NetworkSelector.tsx`, `hooks/useWalletNetworks.ts`
+~~**파일:** `components/common/NetworkSelector.tsx`, `hooks/useWalletNetworks.ts`~~
 
-`chainChanged` 이벤트 핸들러(`hooks/useWalletNetworks.ts:152-154`)는 구현되어 있지만, 체인 변경 시 `fetchWalletNetworks()`만 호출할 뿐 미지원 체인 여부를 검증하지 않음:
+~~`chainChanged` 이벤트 핸들러는 구현되어 있지만, 미지원 체인 경고 UI 없음.~~
 
-```typescript
-// hooks/useWalletNetworks.ts:152-154
-const handleChainChanged = () => {
-  fetchWalletNetworks()
-}
-```
-
-사용자가 MetaMask 등에서 직접 미지원 체인으로 전환하면:
-- `NetworkSelector`에 "Unknown Network"만 표시
-- 경고 배너/모달이 없어 사용자가 왜 기능이 동작하지 않는지 알 수 없음
-- 미지원 체인 상태에서 트랜잭션 시도 시 암호화된 에러 메시지만 발생
-
-### 해결 방안
-
-- `app/layout.tsx` 또는 Header 하단에 미지원 체인 경고 배너 추가
-- 배너에 "Switch to StableNet" 원클릭 전환 버튼 포함
-- `useWalletNetworks`에 `isUnsupportedChain` 상태 추가
+✅ **RESOLVED**: `NetworkWarningBanner` 컴포넌트(`components/common/NetworkWarningBanner.tsx`)가 구현 완료:
+- wagmi `useChainId()`/`useChains()`로 미지원 체인 감지 (리액티브)
+- Chain ID 표시 + "Switch Network" 원클릭 전환 버튼
+- `Header.tsx`에 렌더링되어 전역 동작
 
 ---
 
@@ -1310,11 +1269,11 @@ const socialLinks = [
 | ~~0-1~~ | ~~`ServiceUrls` 타입에 `indexer` 추가~~ | ~~§34~~ | ✅ 구현 완료 |
 | ~~0-2~~ | ~~`StableNetContext`에 `indexerUrl` 추가~~ | ~~§34~~ | ✅ 구현 완료 |
 | 0-3 | RPC/컨트랙트 주소 환경변수 전환 | §31 | `lib/wagmi.ts`, `lib/moduleAddresses.ts`, `lib/constants.ts` |
-| 0-4 | Block explorer URL 동적 분기 유틸 | §14 | `lib/utils.ts` (신규: `getBlockExplorerUrl()`) |
+| ~~0-4~~ | ~~Block explorer URL 동적 분기 유틸~~ | ~~§14~~ | ✅ 이미 `lib/utils.ts`에 `getBlockExplorerUrl()` 구현 완료 |
 | 0-5 | ErrorBoundary 전역 + 주요 페이지 적용 | §16 | `app/layout.tsx`, 트랜잭션 관련 페이지 |
 | 0-6 | Next.js `loading.tsx`, `error.tsx`, `not-found.tsx` | §26 | `app/` |
 | 0-7 | Toast 피드백을 모든 폼/트랜잭션에 적용 | §17 | 전체 페이지 |
-| 0-8 | 모바일 반응형 (sidebar drawer, `ml-64` → `md:ml-64`) | §20 | `app/layout.tsx`, `Header.tsx`, `Sidebar.tsx` |
+| ~~0-8~~ | ~~모바일 반응형 (sidebar drawer, `ml-64` → `md:ml-64`)~~ | ~~§20~~ | ✅ Phase 9H 구현 완료 |
 
 ### 1. Payment (Send / Receive / History)
 
@@ -1325,7 +1284,7 @@ const socialLinks = [
 | 1-3 | QR Code 생성 라이브러리 연동 | §10 | `app/payment/receive/page.tsx` |
 | ~~1-4~~ | ~~Payment History 페이지네이션~~ | ~~§22~~ | ✅ 이미 구현 확인 (Phase 9E) |
 | ~~1-5~~ | ~~`useTransactionHistory`에 indexer fetch 함수 연결~~ | ~~§3-6~~ | ✅ 구현 완료 (Phase 9C — IndexerClient) |
-| 1-6 | Etherscan URL을 동적 explorer URL로 교체 | §14 | `components/payment/PaymentHistory.tsx` |
+| ~~1-6~~ | ~~Etherscan URL을 동적 explorer URL로 교체~~ | ~~§14~~ | ✅ 이미 `getBlockExplorerUrl()` 사용 확인 |
 
 ### 2. Swap (Token Exchange)
 
@@ -1389,7 +1348,7 @@ const socialLinks = [
 | 7-7 | Submit Expense `onSubmit` 연결 | §12 | `app/enterprise/expenses/page.tsx` |
 | 7-8 | Expense approve/reject/pay 콜백 연결 | §13-3 | `components/enterprise/cards/ExpenseListCard.tsx` |
 | 7-9 | Audit Logs 페이지네이션 | §22 | `app/enterprise/audit/page.tsx` |
-| 7-10 | Audit Log Etherscan URL 동적 분기 | §14 | `components/enterprise/cards/AuditLogCard.tsx` |
+| ~~7-10~~ | ~~Audit Log Etherscan URL 동적 분기~~ | ~~§14~~ | ✅ 이미 `getBlockExplorerUrl()` 사용 확인 |
 | ~~7-11~~ | ~~Enterprise Overview 통계 실제 데이터 연결~~ | ~~§4-2~~ | ✅ 구현 완료 (Phase 9D) |
 | 7-12 | Payroll YTD 계산 | §30 | `hooks/usePayroll.ts` |
 
@@ -1419,7 +1378,7 @@ const socialLinks = [
 | 10-4 | Security toggle 상태 저장 | §7-1 | `components/settings/cards/SecuritySettingsCard.tsx` |
 | 10-5 | Update Limits `onClick` 구현 | §7-2 | `components/settings/cards/SecuritySettingsCard.tsx` |
 | 10-6 | Recovery Options Setup `onClick` 구현 | §7-3 | `components/settings/cards/SecuritySettingsCard.tsx` |
-| 10-7 | 미지원 네트워크 경고 UI + 원클릭 전환 | §23 | `app/layout.tsx`, `hooks/useWalletNetworks.ts` |
+| ~~10-7~~ | ~~미지원 네트워크 경고 UI + 원클릭 전환~~ | ~~§23~~ | ✅ `NetworkWarningBanner` 컴포넌트 구현 완료 |
 
 ### 11. Header & Navigation
 
