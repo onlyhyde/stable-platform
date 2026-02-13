@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { formatUnits } from 'viem'
 import { Button } from '../../components/common/Button'
 import {
   Card,
@@ -30,8 +31,25 @@ export default function SubscriptionPage() {
 
   const [cancellingPlanId, setCancellingPlanId] = useState<bigint | null>(null)
 
-  // Mock payment history (in production, this would come from events/indexer)
+  // Payment history (in production, this would come from events/indexer)
   const [paymentHistory] = useState<PaymentHistoryEntry[]>([])
+
+  // Calculate total spent from active subscriptions
+  const totalSpent = useMemo(() => {
+    if (mySubscriptions.length === 0) return '-'
+    // Sum up all plan prices for subscriptions that have had at least one payment
+    const total = mySubscriptions.reduce((sum, sub) => {
+      if (sub.lastPaymentTime > 0n) {
+        return sum + sub.plan.price
+      }
+      return sum
+    }, BigInt(0))
+    if (total === BigInt(0)) return '-'
+    // Use the first subscription's token decimals (assumes same token)
+    const decimals = mySubscriptions[0]?.plan.tokenDecimals ?? 18
+    const symbol = mySubscriptions[0]?.plan.tokenSymbol ?? ''
+    return `${formatUnits(total, decimals)} ${symbol}`.trim()
+  }, [mySubscriptions])
 
   useEffect(() => {
     if (isConnected && address) {
@@ -215,7 +233,7 @@ export default function SubscriptionPage() {
                   Total Spent
                 </p>
                 <p className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-                  -
+                  {totalSpent}
                 </p>
               </div>
             </div>

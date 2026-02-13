@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { PayrollEntry } from '@/types'
 
+const STORAGE_KEY = 'stablenet:payroll'
+
 interface UsePayrollConfig {
   fetchPayroll?: () => Promise<PayrollEntry[]>
   autoFetch?: boolean
@@ -21,6 +23,59 @@ interface UsePayrollReturn {
   isLoading: boolean
   error: Error | null
   refresh: () => Promise<void>
+  addEntry: (entry: PayrollEntry) => void
+  updateEntry: (id: string, updates: Partial<PayrollEntry>) => void
+  removeEntry: (id: string) => void
+}
+
+function serializeEntries(entries: PayrollEntry[]): string {
+  return JSON.stringify(
+    entries.map((e) => ({
+      ...e,
+      amount: e.amount.toString(),
+      nextPaymentDate: e.nextPaymentDate.toISOString(),
+      token: {
+        ...e.token,
+        balance: e.token.balance !== undefined ? e.token.balance.toString() : undefined,
+      },
+    }))
+  )
+}
+
+function deserializeEntries(json: string): PayrollEntry[] {
+  const raw = JSON.parse(json) as Array<Record<string, unknown>>
+  return raw.map((e) => ({
+    ...(e as unknown as PayrollEntry),
+    amount: BigInt(e.amount as string),
+    nextPaymentDate: new Date(e.nextPaymentDate as string),
+    token: {
+      ...(e.token as Record<string, unknown>),
+      balance:
+        (e.token as Record<string, unknown>).balance != null
+          ? BigInt((e.token as Record<string, unknown>).balance as string)
+          : undefined,
+    },
+  })) as PayrollEntry[]
+}
+
+function loadFromStorage(): PayrollEntry[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (!stored) return []
+    return deserializeEntries(stored)
+  } catch {
+    return []
+  }
+}
+
+function saveToStorage(entries: PayrollEntry[]): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(STORAGE_KEY, serializeEntries(entries))
+  } catch {
+    // Storage full or unavailable
+  }
 }
 
 export function usePayroll(config: UsePayrollConfig = {}): UsePayrollReturn {
@@ -30,24 +85,27 @@ export function usePayroll(config: UsePayrollConfig = {}): UsePayrollReturn {
   const [error, setError] = useState<Error | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!fetchPayroll) {
-      setIsLoading(false)
+    // Use external fetch if provided (DI override)
+    if (fetchPayroll) {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const result = await fetchPayroll()
+        setPayrollEntries(result)
+      } catch (err) {
+        const fetchError = err instanceof Error ? err : new Error('Failed to fetch payroll')
+        setError(fetchError)
+        setPayrollEntries([])
+      } finally {
+        setIsLoading(false)
+      }
       return
     }
 
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const result = await fetchPayroll()
-      setPayrollEntries(result)
-    } catch (err) {
-      const fetchError = err instanceof Error ? err : new Error('Failed to fetch payroll')
-      setError(fetchError)
-      setPayrollEntries([])
-    } finally {
-      setIsLoading(false)
-    }
+    // Default: load from localStorage
+    const entries = loadFromStorage()
+    setPayrollEntries(entries)
+    setIsLoading(false)
   }, [fetchPayroll])
 
   useEffect(() => {
@@ -55,6 +113,30 @@ export function usePayroll(config: UsePayrollConfig = {}): UsePayrollReturn {
       refresh()
     }
   }, [autoFetch, refresh])
+
+  const addEntry = useCallback((entry: PayrollEntry) => {
+    setPayrollEntries((prev) => {
+      const next = [...prev, entry]
+      saveToStorage(next)
+      return next
+    })
+  }, [])
+
+  const updateEntry = useCallback((id: string, updates: Partial<PayrollEntry>) => {
+    setPayrollEntries((prev) => {
+      const next = prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
+      saveToStorage(next)
+      return next
+    })
+  }, [])
+
+  const removeEntry = useCallback((id: string) => {
+    setPayrollEntries((prev) => {
+      const next = prev.filter((e) => e.id !== id)
+      saveToStorage(next)
+      return next
+    })
+  }, [])
 
   const summary = useMemo<PayrollSummary>(() => {
     const activeEntries = payrollEntries.filter((e) => e.status === 'active')
@@ -96,5 +178,8 @@ export function usePayroll(config: UsePayrollConfig = {}): UsePayrollReturn {
     isLoading,
     error,
     refresh,
+    addEntry,
+    updateEntry,
+    removeEntry,
   }
 }

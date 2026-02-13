@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ConnectWalletCard, PageHeader, useToast } from '@/components/common'
 import { SwapCard } from '@/components/defi'
-import { useSwap, useUserOp, useWallet } from '@/hooks'
+import { usePaymaster, useSwap, useUserOp, useWallet } from '@/hooks'
 import { useTokens } from '@/hooks/useTokens'
+import { formatTokenAmount } from '@/lib/utils'
 import type { Token } from '@/types'
 
 export default function SwapPage() {
@@ -14,12 +15,14 @@ export default function SwapPage() {
   const { quote, isLoading, error, getQuote, executeSwap } = useSwap({
     sendUserOp,
   })
+  const { checkSponsorshipEligibility } = usePaymaster()
   const { addToast, updateToast } = useToast()
 
   const [tokenIn, setTokenIn] = useState<Token | null>(null)
   const [tokenOut, setTokenOut] = useState<Token | null>(null)
   const [amountIn, setAmountIn] = useState('')
   const [slippage, setSlippage] = useState(0.5)
+  const [gasSponsored, setGasSponsored] = useState<boolean | null>(null)
 
   // Initialize default tokens when loaded
   useEffect(() => {
@@ -28,6 +31,43 @@ export default function SwapPage() {
       setTokenOut(tokens[1])
     }
   }, [tokens, tokenIn, tokenOut])
+
+  // Check paymaster sponsorship eligibility
+  useEffect(() => {
+    if (!address) return
+    checkSponsorshipEligibility(address).then((result) => {
+      setGasSponsored(result?.eligible ?? null)
+    })
+  }, [address, checkSponsorshipEligibility])
+
+  // Compute formatted balances from token data
+  const balanceIn = useMemo(() => {
+    if (!tokenIn?.balance) return '0'
+    return formatTokenAmount(tokenIn.balance, tokenIn.decimals)
+  }, [tokenIn])
+
+  const balanceOut = useMemo(() => {
+    if (!tokenOut?.balance) return '0'
+    return formatTokenAmount(tokenOut.balance, tokenOut.decimals)
+  }, [tokenOut])
+
+  // Update tokenIn/tokenOut from the master tokens list when it refreshes
+  const handleTokenInChange = useCallback(
+    (token: Token) => {
+      // Find the token in our list to get fresh balance
+      const fresh = tokens.find((t) => t.address === token.address) ?? token
+      setTokenIn(fresh)
+    },
+    [tokens]
+  )
+
+  const handleTokenOutChange = useCallback(
+    (token: Token) => {
+      const fresh = tokens.find((t) => t.address === token.address) ?? token
+      setTokenOut(fresh)
+    },
+    [tokens]
+  )
 
   function handleSwapTokens() {
     if (!tokenIn || !tokenOut) return
@@ -93,9 +133,12 @@ export default function SwapPage() {
         quote={quote}
         isLoading={isLoading}
         error={error}
+        balanceIn={balanceIn}
+        balanceOut={balanceOut}
         slippage={slippage}
-        onTokenInChange={setTokenIn}
-        onTokenOutChange={setTokenOut}
+        gasSponsored={gasSponsored}
+        onTokenInChange={handleTokenInChange}
+        onTokenOutChange={handleTokenOutChange}
         onAmountInChange={setAmountIn}
         onSwapTokens={handleSwapTokens}
         onGetQuote={handleGetQuote}

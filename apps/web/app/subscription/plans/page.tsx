@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '../../../components/common/Button'
 import { Card, CardContent } from '../../../components/common/Card'
+import { useToast } from '../../../components/common/Toast'
 import { PermissionModal } from '../../../components/subscription/PermissionModal'
 import { SubscriptionPlanCard } from '../../../components/subscription/SubscriptionPlanCard'
 import { useSubscription } from '../../../hooks/useSubscription'
@@ -24,6 +25,7 @@ export default function PlansPage() {
     error,
   } = useSubscription()
 
+  const { addToast } = useToast()
   const [selectedPlan, setSelectedPlan] = useState<PlanDisplayInfo | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -38,7 +40,7 @@ export default function PlansPage() {
 
   const handleSubscribeClick = (plan: PlanDisplayInfo) => {
     if (!isConnected) {
-      // Would trigger connect wallet modal
+      addToast({ type: 'info', title: 'Connect your wallet to subscribe' })
       return
     }
     setSelectedPlan(plan)
@@ -118,6 +120,21 @@ export default function PlansPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Wallet Connection Banner */}
+      {!isConnected && (
+        <div
+          className="rounded-lg p-4 border"
+          style={{
+            backgroundColor: 'rgb(var(--primary) / 0.05)',
+            borderColor: 'rgb(var(--primary) / 0.2)',
+          }}
+        >
+          <p style={{ color: 'rgb(var(--foreground))' }}>
+            <strong>Connect your wallet</strong> to subscribe to plans
+          </p>
+        </div>
+      )}
 
       {/* Plans Grid */}
       {isLoading ? (

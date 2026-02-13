@@ -658,6 +658,24 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
             })
             await publicClient.waitForTransactionReceipt({ hash: approveTxHash })
           }
+
+          // Also approve permissionManager for recurring payment execution
+          const pmAllowance = (await publicClient.readContract({
+            address: plan.token,
+            abi: ERC20_ABI,
+            functionName: 'allowance',
+            args: [address, permissionManager],
+          })) as bigint
+
+          if (pmAllowance < plan.price) {
+            const pmApproveTxHash = await walletClient.writeContract({
+              address: plan.token,
+              abi: ERC20_ABI,
+              functionName: 'approve',
+              args: [permissionManager, maxUint256],
+            })
+            await publicClient.waitForTransactionReceipt({ hash: pmApproveTxHash })
+          }
         }
 
         // Step 2: Subscribe with the permission ID
@@ -682,7 +700,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         setIsSubscribing(false)
       }
     },
-    [publicClient, address, walletClient, toPlanDisplayInfo, requestPermission, subscriptionManager]
+    [publicClient, address, walletClient, toPlanDisplayInfo, requestPermission, subscriptionManager, permissionManager]
   )
 
   // Cancel subscription

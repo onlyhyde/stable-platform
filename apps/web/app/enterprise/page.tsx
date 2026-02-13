@@ -2,10 +2,16 @@
 
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/common'
+import { useExpenses } from '@/hooks/useExpenses'
+import { usePayroll } from '@/hooks/usePayroll'
 import { useWallet } from '@/hooks'
 
 export default function EnterprisePage() {
   const { isConnected } = useWallet()
+  const { summary } = usePayroll()
+  const { expenses } = useExpenses()
+
+  const pendingExpenses = expenses.filter((e) => e.status === 'pending').length
 
   return (
     <div className="space-y-6">
@@ -121,7 +127,7 @@ export default function EnterprisePage() {
                 Total Payroll (MTD)
               </p>
               <p className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-                $0.00
+                ${summary.totalMonthly.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </CardContent>
           </Card>
@@ -131,7 +137,7 @@ export default function EnterprisePage() {
                 Pending Expenses
               </p>
               <p className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-                0
+                {pendingExpenses}
               </p>
             </CardContent>
           </Card>
@@ -141,7 +147,7 @@ export default function EnterprisePage() {
                 Active Employees
               </p>
               <p className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-                0
+                {summary.activeEmployees}
               </p>
             </CardContent>
           </Card>

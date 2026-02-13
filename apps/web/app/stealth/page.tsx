@@ -1,5 +1,7 @@
 'use client'
 
+import { useMemo } from 'react'
+import { formatEther } from 'viem'
 import { PageHeader } from '@/components/common'
 import {
   HowItWorksCard,
@@ -7,10 +9,21 @@ import {
   StealthNavigationCards,
   StealthStatsCards,
 } from '@/components/stealth'
-import { useWallet } from '@/hooks'
+import { useWallet, useStealth } from '@/hooks'
 
 export default function StealthPage() {
   const { isConnected } = useWallet()
+  const { announcements } = useStealth()
+
+  const stats = useMemo(() => {
+    const uniqueAddresses = new Set(announcements.map((a) => a.stealthAddress))
+    const totalWei = announcements.reduce((sum, a) => sum + a.value, BigInt(0))
+    return {
+      addressesUsed: uniqueAddresses.size,
+      pendingAnnouncements: announcements.length,
+      totalReceived: `${formatEther(totalWei)} ETH`,
+    }
+  }, [announcements])
 
   return (
     <div className="space-y-6">
@@ -26,7 +39,11 @@ export default function StealthPage() {
       <HowItWorksCard />
 
       {isConnected && (
-        <StealthStatsCards addressesUsed={0} pendingAnnouncements={0} totalReceived="0 ETH" />
+        <StealthStatsCards
+          addressesUsed={stats.addressesUsed}
+          pendingAnnouncements={stats.pendingAnnouncements}
+          totalReceived={stats.totalReceived}
+        />
       )}
     </div>
   )

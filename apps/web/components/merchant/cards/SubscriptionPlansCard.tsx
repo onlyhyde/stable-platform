@@ -44,10 +44,12 @@ const TOKENS = [
 export function SubscriptionPlansCard({
   plans,
   onCreatePlan,
-  onUpdatePlan: _onUpdatePlan,
+  onUpdatePlan,
   onTogglePlan,
 }: SubscriptionPlansCardProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -55,6 +57,14 @@ export function SubscriptionPlansCard({
     price: '',
     token: 'USDC',
     interval: 'monthly' as const,
+    isActive: true,
+  })
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    token: 'USDC',
+    interval: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly',
     isActive: true,
   })
 
@@ -80,6 +90,39 @@ export function SubscriptionPlansCard({
         interval: 'monthly',
         isActive: true,
       })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleEditClick = (plan: SubscriptionPlan) => {
+    setEditingPlan(plan)
+    setEditFormData({
+      name: plan.name,
+      description: plan.description,
+      price: plan.price.toString(),
+      token: plan.token,
+      interval: plan.interval,
+      isActive: plan.isActive,
+    })
+    setShowEditModal(true)
+  }
+
+  const handleUpdatePlan = async () => {
+    if (!editingPlan || !editFormData.name || !editFormData.price) return
+
+    setIsLoading(true)
+    try {
+      await onUpdatePlan(editingPlan.id, {
+        name: editFormData.name,
+        description: editFormData.description,
+        price: Number.parseFloat(editFormData.price),
+        token: editFormData.token,
+        interval: editFormData.interval,
+        isActive: editFormData.isActive,
+      })
+      setShowEditModal(false)
+      setEditingPlan(null)
     } finally {
       setIsLoading(false)
     }
@@ -214,9 +257,7 @@ export function SubscriptionPlansCard({
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        /* TODO: Edit modal */
-                      }}
+                      onClick={() => handleEditClick(plan)}
                       className="text-sm"
                       style={{ color: 'rgb(var(--primary))' }}
                     >
@@ -229,6 +270,154 @@ export function SubscriptionPlansCard({
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Plan Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setEditingPlan(null)
+        }}
+        title="Edit Subscription Plan"
+      >
+        <div className="space-y-4">
+          <div>
+            <span
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
+              Plan Name *
+            </span>
+            <Input
+              placeholder="e.g., Pro Plan"
+              value={editFormData.name}
+              onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <span
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
+              Description
+            </span>
+            <textarea
+              className="w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2"
+              style={{
+                border: '1px solid rgb(var(--border-hover))',
+                backgroundColor: 'rgb(var(--background))',
+                color: 'rgb(var(--foreground))',
+              }}
+              rows={3}
+              placeholder="Describe what's included in this plan"
+              value={editFormData.description}
+              onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+              >
+                Price *
+              </span>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={editFormData.price}
+                onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })}
+              />
+            </div>
+            <div>
+              <span
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+              >
+                Token
+              </span>
+              <select
+                className="w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2"
+                style={{
+                  border: '1px solid rgb(var(--border-hover))',
+                  backgroundColor: 'rgb(var(--background))',
+                  color: 'rgb(var(--foreground))',
+                }}
+                value={editFormData.token}
+                onChange={(e) => setEditFormData({ ...editFormData, token: e.target.value })}
+              >
+                {TOKENS.map((token) => (
+                  <option key={token.value} value={token.value}>
+                    {token.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <span
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
+              Billing Interval
+            </span>
+            <select
+              className="w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2"
+              style={{
+                border: '1px solid rgb(var(--border-hover))',
+                backgroundColor: 'rgb(var(--background))',
+                color: 'rgb(var(--foreground))',
+              }}
+              value={editFormData.interval}
+              onChange={(e) =>
+                setEditFormData({ ...editFormData, interval: e.target.value as typeof editFormData.interval })
+              }
+            >
+              {INTERVALS.map((interval) => (
+                <option key={interval.value} value={interval.value}>
+                  {interval.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="editIsActive"
+              checked={editFormData.isActive}
+              onChange={(e) => setEditFormData({ ...editFormData, isActive: e.target.checked })}
+              className="rounded"
+              style={{ borderColor: 'rgb(var(--border-hover))' }}
+            />
+            <label
+              htmlFor="editIsActive"
+              className="text-sm"
+              style={{ color: 'rgb(var(--foreground) / 0.8)' }}
+            >
+              Plan is active and accepting subscriptions
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="secondary" onClick={() => {
+              setShowEditModal(false)
+              setEditingPlan(null)
+            }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdatePlan}
+              disabled={isLoading || !editFormData.name || !editFormData.price}
+            >
+              {isLoading ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Create Plan Modal */}
       <Modal

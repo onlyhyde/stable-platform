@@ -1,7 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import type { Address } from 'viem'
+import { createIndexerClient } from '@stablenet/core'
 import type { Token } from '@/types'
+import { useStableNetContext } from '@/providers/StableNetProvider'
+import { useWallet } from '@/hooks/useWallet'
 
 interface UseTokensConfig {
   fetchTokens?: () => Promise<Token[]>
@@ -16,23 +20,51 @@ interface UseTokensReturn {
 }
 
 export function useTokens(config: UseTokensConfig = {}): UseTokensReturn {
-  const { fetchTokens, autoFetch = true } = config
+  const { fetchTokens: externalFetch, autoFetch = true } = config
+  const { indexerUrl } = useStableNetContext()
+  const { address } = useWallet()
   const [tokens, setTokens] = useState<Token[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!fetchTokens) {
+    // Use external fetch if provided (DI override)
+    if (externalFetch) {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const result = await externalFetch()
+        setTokens(result)
+      } catch (err) {
+        const fetchError = err instanceof Error ? err : new Error('Failed to fetch tokens')
+        setError(fetchError)
+        setTokens([])
+      } finally {
+        setIsLoading(false)
+      }
+      return
+    }
+
+    // No address — skip fetch
+    if (!address) {
       setIsLoading(false)
       return
     }
 
+    // Default: use IndexerClient
     setIsLoading(true)
     setError(null)
-
     try {
-      const result = await fetchTokens()
-      setTokens(result)
+      const client = createIndexerClient(indexerUrl)
+      const balances = await client.getTokenBalances(address, 'ERC20')
+      const mapped: Token[] = balances.map((tb) => ({
+        address: tb.address as Address,
+        name: tb.name ?? 'Unknown',
+        symbol: tb.symbol ?? '???',
+        decimals: tb.decimals ?? 18,
+        balance: BigInt(tb.balance),
+      }))
+      setTokens(mapped)
     } catch (err) {
       const fetchError = err instanceof Error ? err : new Error('Failed to fetch tokens')
       setError(fetchError)
@@ -40,7 +72,7 @@ export function useTokens(config: UseTokensConfig = {}): UseTokensReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [fetchTokens])
+  }, [externalFetch, address, indexerUrl])
 
   useEffect(() => {
     if (autoFetch) {

@@ -15,6 +15,7 @@ interface SwapCardProps {
   balanceIn?: string
   balanceOut?: string
   slippage?: number
+  gasSponsored?: boolean | null
   onTokenInChange: (token: Token) => void
   onTokenOutChange: (token: Token) => void
   onAmountInChange: (amount: string) => void
@@ -36,9 +37,10 @@ export function SwapCard({
   onTokenOutChange,
   onAmountInChange,
   onSwapTokens,
-  balanceIn = '0.00',
-  balanceOut = '0.00',
+  balanceIn = '0',
+  balanceOut = '0',
   slippage = 0.5,
+  gasSponsored,
   onGetQuote,
   onSwap,
   onSlippageChange,
@@ -208,7 +210,9 @@ export function SwapCard({
             </div>
             <div className="flex justify-between text-sm">
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>Gas Fee</span>
-              <span style={{ color: 'rgb(var(--foreground))' }}>Sponsored</span>
+              <span style={{ color: gasSponsored ? 'rgb(var(--success))' : 'rgb(var(--foreground))' }}>
+                {gasSponsored === null ? 'Checking...' : gasSponsored ? 'Sponsored' : 'User pays gas'}
+              </span>
             </div>
           </div>
         )}

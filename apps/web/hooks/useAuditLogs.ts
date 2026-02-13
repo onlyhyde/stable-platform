@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AuditLog } from '@/types'
 
+const STORAGE_KEY = 'stablenet:audit-logs'
+
 interface AuditLogFilter {
   action?: string
   actor?: string
@@ -21,6 +23,44 @@ interface UseAuditLogsReturn {
   isLoading: boolean
   error: Error | null
   refresh: () => Promise<void>
+  addLog: (log: AuditLog) => void
+}
+
+function serializeLogs(logs: AuditLog[]): string {
+  return JSON.stringify(
+    logs.map((l) => ({
+      ...l,
+      timestamp: l.timestamp.toISOString(),
+    }))
+  )
+}
+
+function deserializeLogs(json: string): AuditLog[] {
+  const raw = JSON.parse(json) as Array<Record<string, unknown>>
+  return raw.map((l) => ({
+    ...(l as unknown as AuditLog),
+    timestamp: new Date(l.timestamp as string),
+  })) as AuditLog[]
+}
+
+function loadFromStorage(): AuditLog[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (!stored) return []
+    return deserializeLogs(stored)
+  } catch {
+    return []
+  }
+}
+
+function saveToStorage(logs: AuditLog[]): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(STORAGE_KEY, serializeLogs(logs))
+  } catch {
+    // Storage full or unavailable
+  }
 }
 
 export function useAuditLogs(config: UseAuditLogsConfig = {}): UseAuditLogsReturn {
@@ -30,24 +70,27 @@ export function useAuditLogs(config: UseAuditLogsConfig = {}): UseAuditLogsRetur
   const [error, setError] = useState<Error | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!fetchLogs) {
-      setIsLoading(false)
+    // Use external fetch if provided (DI override)
+    if (fetchLogs) {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const result = await fetchLogs()
+        setAllLogs(result)
+      } catch (err) {
+        const fetchError = err instanceof Error ? err : new Error('Failed to fetch audit logs')
+        setError(fetchError)
+        setAllLogs([])
+      } finally {
+        setIsLoading(false)
+      }
       return
     }
 
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const result = await fetchLogs()
-      setAllLogs(result)
-    } catch (err) {
-      const fetchError = err instanceof Error ? err : new Error('Failed to fetch audit logs')
-      setError(fetchError)
-      setAllLogs([])
-    } finally {
-      setIsLoading(false)
-    }
+    // Default: load from localStorage
+    const logs = loadFromStorage()
+    setAllLogs(logs)
+    setIsLoading(false)
   }, [fetchLogs])
 
   useEffect(() => {
@@ -55,6 +98,14 @@ export function useAuditLogs(config: UseAuditLogsConfig = {}): UseAuditLogsRetur
       refresh()
     }
   }, [autoFetch, refresh])
+
+  const addLog = useCallback((log: AuditLog) => {
+    setAllLogs((prev) => {
+      const next = [...prev, log]
+      saveToStorage(next)
+      return next
+    })
+  }, [])
 
   const logs = useMemo(() => {
     if (!filter) return allLogs
@@ -73,5 +124,6 @@ export function useAuditLogs(config: UseAuditLogsConfig = {}): UseAuditLogsRetur
     isLoading,
     error,
     refresh,
+    addLog,
   }
 }

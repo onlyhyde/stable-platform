@@ -213,6 +213,9 @@ describe('Page Integration with Data Hooks', () => {
         isLoading: true,
         error: null,
         refresh: vi.fn(),
+        addEntry: vi.fn(),
+        updateEntry: vi.fn(),
+        removeEntry: vi.fn(),
       })
 
       const PayrollPage = (await import('@/app/enterprise/payroll/page')).default
@@ -233,6 +236,9 @@ describe('Page Integration with Data Hooks', () => {
         isLoading: false,
         error: null,
         refresh: vi.fn(),
+        addEntry: vi.fn(),
+        updateEntry: vi.fn(),
+        removeEntry: vi.fn(),
       })
 
       const PayrollPage = (await import('@/app/enterprise/payroll/page')).default
@@ -256,6 +262,7 @@ describe('Page Integration with Data Hooks', () => {
         isLoading: true,
         error: null,
         refresh: vi.fn(),
+        addLog: vi.fn(),
       })
 
       const AuditPage = (await import('@/app/enterprise/audit/page')).default
@@ -281,6 +288,7 @@ describe('Page Integration with Data Hooks', () => {
         isLoading: false,
         error: null,
         refresh: vi.fn(),
+        addLog: vi.fn(),
       })
 
       const AuditPage = (await import('@/app/enterprise/audit/page')).default
@@ -304,6 +312,9 @@ describe('Page Integration with Data Hooks', () => {
         isLoading: true,
         error: null,
         refresh: vi.fn(),
+        addExpense: vi.fn(),
+        updateExpense: vi.fn(),
+        removeExpense: vi.fn(),
       })
 
       const ExpensesPage = (await import('@/app/enterprise/expenses/page')).default
@@ -336,6 +347,9 @@ describe('Page Integration with Data Hooks', () => {
         isLoading: false,
         error: null,
         refresh: vi.fn(),
+        addExpense: vi.fn(),
+        updateExpense: vi.fn(),
+        removeExpense: vi.fn(),
       })
 
       const ExpensesPage = (await import('@/app/enterprise/expenses/page')).default

@@ -1,14 +1,18 @@
 'use client'
 
 import Link from 'next/link'
+import { formatEther } from 'viem'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import type { WalletToken } from '@/hooks'
 import { useWallet, useWalletAssets } from '@/hooks'
+import { useTransactionHistory } from '@/hooks/useTransactionHistory'
 import { formatAddress, formatTokenAmount } from '@/lib/utils'
 
 export default function DashboardPage() {
   const { address, isConnected, connect } = useWallet()
   const { native, tokens, isLoading, isSupported, refetch, addToken: _addToken } = useWalletAssets()
+  const { transactions } = useTransactionHistory({ address })
+  const recentTxs = transactions.slice(0, 5)
 
   // For backward compatibility
   const balance = native?.balance ? BigInt(native.balance) : BigInt(0)
@@ -218,35 +222,100 @@ export default function DashboardPage() {
 
       {/* Recent Activity */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Activity</CardTitle>
+          <Link
+            href="/payment/history"
+            className="text-sm font-medium"
+            style={{ color: 'rgb(var(--primary))' }}
+          >
+            View all
+          </Link>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <svg
-              className="w-12 h-12 mx-auto mb-4"
-              style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-            <p style={{ color: 'rgb(var(--muted-foreground))' }}>No recent transactions</p>
-            <Link
-              href="/payment/history"
-              className="font-medium mt-2 inline-block"
-              style={{ color: 'rgb(var(--primary))' }}
-            >
-              View all activity
-            </Link>
-          </div>
+          {recentTxs.length === 0 ? (
+            <div className="text-center py-8">
+              <svg
+                className="w-12 h-12 mx-auto mb-4"
+                style={{ color: 'rgb(var(--muted-foreground) / 0.5)' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+              <p style={{ color: 'rgb(var(--muted-foreground))' }}>No recent transactions</p>
+            </div>
+          ) : (
+            <div className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
+              {recentTxs.map((tx) => {
+                const isSent = address && tx.from.toLowerCase() === address.toLowerCase()
+                return (
+                  <div key={tx.hash} className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                        style={{
+                          backgroundColor: isSent
+                            ? 'rgb(var(--destructive) / 0.1)'
+                            : 'rgb(var(--success) / 0.1)',
+                        }}
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          style={{
+                            color: isSent ? 'rgb(var(--destructive))' : 'rgb(var(--success))',
+                          }}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d={
+                              isSent
+                                ? 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8'
+                                : 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4'
+                            }
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                          {isSent ? 'Sent' : 'Received'}
+                        </p>
+                        <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                          {isSent ? `To ${formatAddress(tx.to, 4)}` : `From ${formatAddress(tx.from, 4)}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p
+                        className="text-sm font-medium"
+                        style={{
+                          color: isSent ? 'rgb(var(--destructive))' : 'rgb(var(--success))',
+                        }}
+                      >
+                        {isSent ? '-' : '+'}{formatEther(tx.value)} ETH
+                      </p>
+                      <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                        {tx.status}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

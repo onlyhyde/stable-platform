@@ -1,7 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { type Address, formatUnits, parseUnits } from 'viem'
 import { PageHeader } from '@/components/common/PageHeader'
+import { useToast } from '@/components/common/Toast'
+import { useSubscription } from '@/hooks/useSubscription'
+import { useWallet } from '@/hooks/useWallet'
+import { INTERVAL_PRESETS } from '@/types/subscription'
+import type { PlanDisplayInfo } from '@/types/subscription'
 import { ApiKeysCard } from './cards/ApiKeysCard'
 import { MerchantStatsCards } from './cards/MerchantStatsCards'
 import { PaymentAnalyticsCard } from './cards/PaymentAnalyticsCard'
@@ -9,7 +16,8 @@ import { RecentTransactionsCard } from './cards/RecentTransactionsCard'
 import { SubscriptionPlansCard } from './cards/SubscriptionPlansCard'
 import { WebhookSettingsCard } from './cards/WebhookSettingsCard'
 
-// Types
+// ---------- Local types (matching child card prop shapes) ----------
+
 interface MerchantStats {
   totalRevenue: number
   revenueChange: number
@@ -87,169 +95,243 @@ const TABS: Tab[] = [
   { id: 'api-keys', label: 'API Keys' },
 ]
 
-interface MerchantDashboardProps {
-  merchantId: string
-  merchantName: string
+// ---------- Constants ----------
+
+const TOKEN_REVERSE: Record<string, Address> = {
+  USDC: '0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44',
+  ETH: '0x0000000000000000000000000000000000000000',
 }
 
-export function MerchantDashboard({
-  merchantId: _merchantId,
-  merchantName,
-}: MerchantDashboardProps) {
+const TOKEN_DECIMALS: Record<string, number> = {
+  USDC: 6,
+  ETH: 18,
+}
+
+const WEBHOOKS_STORAGE_KEY = 'stablenet:merchant-webhooks'
+const APIKEYS_STORAGE_KEY = 'stablenet:merchant-apikeys'
+
+// ---------- Helpers ----------
+
+function mapInterval(seconds: bigint): 'daily' | 'weekly' | 'monthly' | 'yearly' {
+  const s = Number(seconds)
+  if (s === 86400) return 'daily'
+  if (s === 604800) return 'weekly'
+  if (s === 2592000) return 'monthly'
+  if (s === 31536000) return 'yearly'
+  return 'monthly'
+}
+
+function toCardPlan(p: PlanDisplayInfo): SubscriptionPlan {
+  return {
+    id: p.id.toString(),
+    name: p.name,
+    description: p.description,
+    price: Number(formatUnits(p.price, p.tokenDecimals)),
+    token: p.tokenSymbol,
+    interval: mapInterval(p.interval),
+    activeSubscribers: Number(p.subscriberCount),
+    totalRevenue: 0,
+    isActive: p.isActive,
+    createdAt: new Date(Number(p.createdAt) * 1000),
+  }
+}
+
+function loadFromStorage<T>(key: string, dateFields: string[]): T[] {
+  try {
+    const stored = localStorage.getItem(key)
+    if (!stored) return []
+    const parsed = JSON.parse(stored) as Record<string, unknown>[]
+    return parsed.map((item) => {
+      const result = { ...item }
+      for (const field of dateFields) {
+        if (result[field]) result[field] = new Date(result[field] as string)
+      }
+      return result as T
+    })
+  } catch {
+    return []
+  }
+}
+
+function saveToStorage<T>(key: string, data: T[]): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(data))
+  } catch {
+    // Ignore storage errors (quota exceeded, etc.)
+  }
+}
+
+// ---------- Component ----------
+
+export function MerchantDashboard() {
+  const router = useRouter()
+  const { isConnected, address } = useWallet()
+  const { merchantPlans, merchantStats, loadMerchantPlans, createPlan } = useSubscription()
+  const { addToast } = useToast()
+
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
+  const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([])
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
 
-  // Mock data - in real app, these would come from API
+  // Load merchant plans on mount
+  useEffect(() => {
+    if (isConnected && address) {
+      loadMerchantPlans()
+    }
+  }, [isConnected, address, loadMerchantPlans])
+
+  // Load webhooks and API keys from localStorage
+  useEffect(() => {
+    setWebhooks(
+      loadFromStorage<WebhookEndpoint>(WEBHOOKS_STORAGE_KEY, ['createdAt', 'lastTriggered'])
+    )
+    setApiKeys(
+      loadFromStorage<ApiKey>(APIKEYS_STORAGE_KEY, ['createdAt', 'lastUsed', 'expiresAt'])
+    )
+  }, [])
+
+  // Map contract data to card-compatible types
+  const plans: SubscriptionPlan[] = merchantPlans.map(toCardPlan)
+
   const stats: MerchantStats = {
-    totalRevenue: 125430,
-    revenueChange: 12.5,
-    activeSubscriptions: 1234,
-    subscriptionChange: 8.2,
-    successfulPayments: 3456,
-    paymentSuccessRate: 98.5,
-    avgTransactionValue: 36.28,
-    avgValueChange: 3.1,
+    totalRevenue: 0,
+    revenueChange: 0,
+    activeSubscriptions: merchantStats?.activeSubscribers ?? 0,
+    subscriptionChange: 0,
+    successfulPayments: 0,
+    paymentSuccessRate: 0,
+    avgTransactionValue: 0,
+    avgValueChange: 0,
   }
 
-  const paymentData: PaymentData[] = Array.from({ length: 30 }, (_, i) => {
-    const date = new Date()
-    date.setDate(date.getDate() - (29 - i))
-    return {
-      date: date.toISOString().split('T')[0],
-      successful: Math.floor(Math.random() * 100) + 50,
-      failed: Math.floor(Math.random() * 10),
-      revenue: Math.floor(Math.random() * 5000) + 1000,
-    }
-  })
+  const transactions: Transaction[] = []
+  const paymentData: PaymentData[] = []
 
-  const transactions: Transaction[] = [
-    {
-      id: 'tx_001',
-      subscriptionId: 'sub_001',
-      subscriberAddress: '0x1234567890abcdef1234567890abcdef12345678',
-      amount: 9.99,
-      token: 'USDC',
-      status: 'success',
-      txHash: '0xabc123...',
-      createdAt: new Date(Date.now() - 3600000),
-    },
-    {
-      id: 'tx_002',
-      subscriptionId: 'sub_002',
-      subscriberAddress: '0xabcdef1234567890abcdef1234567890abcdef12',
-      amount: 29.99,
-      token: 'USDC',
-      status: 'success',
-      txHash: '0xdef456...',
-      createdAt: new Date(Date.now() - 7200000),
-    },
-    {
-      id: 'tx_003',
-      subscriptionId: 'sub_003',
-      subscriberAddress: '0x567890abcdef1234567890abcdef1234567890ab',
-      amount: 9.99,
-      token: 'USDC',
-      status: 'failed',
-      createdAt: new Date(Date.now() - 10800000),
-      errorMessage: 'Insufficient allowance',
-    },
-  ]
+  // ---------- Plan Handlers ----------
 
-  const plans: SubscriptionPlan[] = [
-    {
-      id: 'plan_001',
-      name: 'Basic',
-      description: 'Essential features for individuals',
-      price: 9.99,
-      token: 'USDC',
-      interval: 'monthly',
-      activeSubscribers: 523,
-      totalRevenue: 15690,
-      isActive: true,
-      createdAt: new Date('2024-01-01'),
-    },
-    {
-      id: 'plan_002',
-      name: 'Pro',
-      description: 'Advanced features for professionals',
-      price: 29.99,
-      token: 'USDC',
-      interval: 'monthly',
-      activeSubscribers: 287,
-      totalRevenue: 25797,
-      isActive: true,
-      createdAt: new Date('2024-01-01'),
-    },
-  ]
-
-  const webhooks: WebhookEndpoint[] = [
-    {
-      id: 'wh_001',
-      url: 'https://api.example.com/webhooks/payments',
-      events: ['payment.success', 'payment.failed'],
-      active: true,
-      secret: 'whsec_abc123def456',
-      createdAt: new Date('2024-01-15'),
-      lastTriggered: new Date(Date.now() - 3600000),
-    },
-  ]
-
-  const apiKeys: ApiKey[] = [
-    {
-      id: 'key_001',
-      name: 'Production Server',
-      keyPrefix: 'sk_live_abc123',
-      permissions: ['subscriptions:read', 'subscriptions:write', 'payments:read'],
-      createdAt: new Date('2024-01-10'),
-      lastUsed: new Date(Date.now() - 1800000),
-    },
-  ]
-
-  // Handlers
   const handleCreatePlan = async (
-    _plan: Omit<SubscriptionPlan, 'id' | 'activeSubscribers' | 'totalRevenue' | 'createdAt'>
+    plan: Omit<SubscriptionPlan, 'id' | 'activeSubscribers' | 'totalRevenue' | 'createdAt'>
   ) => {
-    // TODO: API call to create plan
+    const tokenAddress = TOKEN_REVERSE[plan.token] ?? TOKEN_REVERSE.USDC
+    const decimals = TOKEN_DECIMALS[plan.token] ?? 6
+    const priceWei = parseUnits(plan.price.toString(), decimals)
+    const intervalSeconds =
+      INTERVAL_PRESETS[plan.interval as keyof typeof INTERVAL_PRESETS] ?? INTERVAL_PRESETS.monthly
+
+    try {
+      await createPlan({
+        name: plan.name,
+        description: plan.description,
+        price: priceWei,
+        interval: intervalSeconds,
+        token: tokenAddress,
+      })
+      await loadMerchantPlans()
+      addToast({
+        type: 'success',
+        title: 'Plan Created',
+        message: `"${plan.name}" created successfully`,
+      })
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Create Plan Failed',
+        message: err instanceof Error ? err.message : 'Failed to create plan',
+      })
+    }
   }
 
   const handleUpdatePlan = async (_id: string, _updates: Partial<SubscriptionPlan>) => {
-    // TODO: API call to update plan
+    addToast({
+      type: 'info',
+      title: 'Not Supported',
+      message: 'Plan update requires a contract upgrade',
+    })
   }
 
   const handleTogglePlan = async (_id: string, _isActive: boolean) => {
-    // TODO: API call to toggle plan
+    addToast({
+      type: 'info',
+      title: 'Not Supported',
+      message: 'Plan toggle requires a contract upgrade',
+    })
   }
 
-  const handleAddWebhook = async (_url: string, _events: string[]) => {
-    // TODO: API call to add webhook
+  // ---------- Webhook Handlers ----------
+
+  const handleAddWebhook = async (url: string, events: string[]) => {
+    const newWebhook: WebhookEndpoint = {
+      id: crypto.randomUUID(),
+      url,
+      events,
+      active: true,
+      secret: `whsec_${crypto.randomUUID().replace(/-/g, '')}`,
+      createdAt: new Date(),
+    }
+    const updated = [...webhooks, newWebhook]
+    setWebhooks(updated)
+    saveToStorage(WEBHOOKS_STORAGE_KEY, updated)
+    addToast({ type: 'success', title: 'Webhook Added', message: `Endpoint ${url} added` })
   }
 
-  const handleDeleteWebhook = async (_id: string) => {
-    // TODO: API call to delete webhook
+  const handleDeleteWebhook = async (id: string) => {
+    const updated = webhooks.filter((w) => w.id !== id)
+    setWebhooks(updated)
+    saveToStorage(WEBHOOKS_STORAGE_KEY, updated)
+    addToast({ type: 'success', title: 'Webhook Deleted', message: 'Endpoint removed' })
   }
 
-  const handleToggleWebhook = async (_id: string, _active: boolean) => {
-    // TODO: API call to toggle webhook
+  const handleToggleWebhook = async (id: string, active: boolean) => {
+    const updated = webhooks.map((w) => (w.id === id ? { ...w, active } : w))
+    setWebhooks(updated)
+    saveToStorage(WEBHOOKS_STORAGE_KEY, updated)
   }
 
-  const handleRegenerateSecret = async (_id: string) => {
-    // TODO: API call to regenerate secret
-    return 'whsec_new_secret_xyz'
+  const handleRegenerateSecret = async (id: string) => {
+    const newSecret = `whsec_${crypto.randomUUID().replace(/-/g, '')}`
+    const updated = webhooks.map((w) => (w.id === id ? { ...w, secret: newSecret } : w))
+    setWebhooks(updated)
+    saveToStorage(WEBHOOKS_STORAGE_KEY, updated)
+    addToast({
+      type: 'success',
+      title: 'Secret Regenerated',
+      message: 'New webhook secret generated',
+    })
+    return newSecret
   }
 
-  const handleCreateApiKey = async (_name: string, _permissions: string[]) => {
-    // TODO: API call to create API key
-    return { key: 'sk_live_new_key_abc123def456ghi789' }
+  // ---------- API Key Handlers ----------
+
+  const handleCreateApiKey = async (name: string, permissions: string[]) => {
+    const fullKey = `sk_live_${crypto.randomUUID().replace(/-/g, '')}`
+    const newKey: ApiKey = {
+      id: crypto.randomUUID(),
+      name,
+      keyPrefix: fullKey.slice(0, 14) + '...',
+      permissions,
+      createdAt: new Date(),
+    }
+    const updated = [...apiKeys, newKey]
+    setApiKeys(updated)
+    saveToStorage(APIKEYS_STORAGE_KEY, updated)
+    addToast({ type: 'success', title: 'API Key Created', message: `Key "${name}" created` })
+    return { key: fullKey }
   }
 
-  const handleRevokeApiKey = async (_id: string) => {
-    // TODO: API call to revoke API key
+  const handleRevokeApiKey = async (id: string) => {
+    const updated = apiKeys.filter((k) => k.id !== id)
+    setApiKeys(updated)
+    saveToStorage(APIKEYS_STORAGE_KEY, updated)
+    addToast({ type: 'success', title: 'API Key Revoked', message: 'Key has been revoked' })
   }
+
+  // ---------- Render ----------
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'rgb(var(--background))' }}>
       <PageHeader
-        title={`${merchantName} Dashboard`}
+        title="Merchant Dashboard"
         description="Manage your subscriptions, payments, and integrations"
       />
 
@@ -286,8 +368,14 @@ export function MerchantDashboard({
             />
             <RecentTransactionsCard
               transactions={transactions}
-              onViewAll={() => {}}
-              onRetry={async (_id) => {}}
+              onViewAll={() => router.push('/payment/history')}
+              onRetry={async (_id) => {
+                addToast({
+                  type: 'info',
+                  title: 'Not Supported',
+                  message: 'Retry is not yet supported',
+                })
+              }}
             />
           </div>
         )}
