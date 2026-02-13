@@ -1,7 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import type { Address } from 'viem'
 import { Button, Card, CardContent, CardDescription, CardTitle, Input, useToast } from '@/components/common'
+import { useModule, MODULE_TYPES } from '@/hooks/useModule'
+import { useSmartAccount } from '@/hooks/useSmartAccount'
 
 const ACCOUNT_NAME_KEY = 'stablenet_account_name'
 
@@ -17,14 +20,40 @@ export function AccountSettingsCard({
   onDisconnect,
 }: AccountSettingsCardProps) {
   const { addToast } = useToast()
+  const { status: saStatus, contracts } = useSmartAccount()
+  const { isModuleInstalled } = useModule()
   const [accountName, setAccountName] = useState('My Account')
   const [copied, setCopied] = useState(false)
+  const [installedModules, setInstalledModules] = useState<string[]>([])
+  const [modulesChecked, setModulesChecked] = useState(false)
 
   // Load account name from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(ACCOUNT_NAME_KEY)
     if (stored) setAccountName(stored)
   }, [])
+
+  // Check installed modules when smart account is detected
+  useEffect(() => {
+    if (!saStatus.isSmartAccount || !address || modulesChecked) return
+
+    const checkModules = async () => {
+      const addr = address as Address
+      const modules: string[] = []
+
+      const ecdsaInstalled = await isModuleInstalled(
+        addr,
+        MODULE_TYPES.VALIDATOR,
+        contracts.ecdsaValidator as Address
+      )
+      if (ecdsaInstalled) modules.push('ECDSA Validator')
+
+      setInstalledModules(modules.length > 0 ? modules : ['None detected'])
+      setModulesChecked(true)
+    }
+
+    checkModules()
+  }, [saStatus.isSmartAccount, address, contracts.ecdsaValidator, isModuleInstalled, modulesChecked])
 
   // Persist account name to localStorage on change
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,8 +204,21 @@ export function AccountSettingsCard({
               <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 Deployment Status
               </span>
-              <span className="text-sm font-medium" style={{ color: 'rgb(var(--success))' }}>
-                Deployed
+              <span
+                className="text-sm font-medium"
+                style={{
+                  color: saStatus.isLoading
+                    ? 'rgb(var(--muted-foreground))'
+                    : saStatus.isSmartAccount
+                      ? 'rgb(var(--success))'
+                      : 'rgb(var(--warning))',
+                }}
+              >
+                {saStatus.isLoading
+                  ? 'Checking...'
+                  : saStatus.isSmartAccount
+                    ? 'Deployed'
+                    : 'Not Deployed'}
               </span>
             </div>
             <div
@@ -187,7 +229,13 @@ export function AccountSettingsCard({
                 Modules
               </span>
               <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                ECDSA Validator
+                {saStatus.isLoading
+                  ? 'Checking...'
+                  : !saStatus.isSmartAccount
+                    ? 'N/A'
+                    : !modulesChecked
+                      ? 'Loading...'
+                      : installedModules.join(', ')}
               </span>
             </div>
           </div>

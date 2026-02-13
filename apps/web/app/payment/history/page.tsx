@@ -1,8 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, Pagination } from '@/components/common'
+import { useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
+import type { Hex } from 'viem'
+import { Button, Card, CardContent, CardHeader, CardTitle, Pagination, useToast } from '@/components/common'
 import { useWallet } from '@/hooks'
+import { useUserOp } from '@/hooks/useUserOp'
+import type { PendingUserOp } from '@/hooks/useUserOp'
 import { useTransactionHistory } from '@/hooks/useTransactionHistory'
 import { formatAddress, formatRelativeTime } from '@/lib/utils'
 import type { Transaction } from '@/types'
@@ -10,9 +14,51 @@ import type { Transaction } from '@/types'
 const ITEMS_PER_PAGE = 10
 
 export default function HistoryPage() {
+  const searchParams = useSearchParams()
+  const showPending = searchParams.get('pending') === 'true'
   const { isConnected, address } = useWallet()
   const { transactions, isLoading, error } = useTransactionHistory({ address })
+  const { recheckUserOp, getPendingUserOps, removePendingUserOp } = useUserOp()
+  const { addToast } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
+  const [pendingOps, setPendingOps] = useState<PendingUserOp[]>([])
+  const [recheckingHash, setRecheckingHash] = useState<Hex | null>(null)
+
+  // Load pending ops on mount and when showPending changes
+  useEffect(() => {
+    setPendingOps(getPendingUserOps())
+  }, [showPending, getPendingUserOps])
+
+  const handleRecheck = useCallback(
+    async (userOpHash: Hex) => {
+      setRecheckingHash(userOpHash)
+      try {
+        const result = await recheckUserOp(userOpHash)
+        if (result.status === 'confirmed') {
+          addToast({ type: 'success', title: 'Confirmed', message: 'Transaction confirmed on-chain' })
+          setPendingOps((prev) => prev.filter((op) => op.userOpHash !== userOpHash))
+        } else if (result.status === 'failed') {
+          addToast({ type: 'error', title: 'Failed', message: 'Transaction failed on-chain' })
+          setPendingOps((prev) => prev.filter((op) => op.userOpHash !== userOpHash))
+        } else {
+          addToast({ type: 'info', title: 'Still Pending', message: 'Transaction is still being processed' })
+        }
+      } catch {
+        addToast({ type: 'error', title: 'Error', message: 'Failed to recheck transaction' })
+      } finally {
+        setRecheckingHash(null)
+      }
+    },
+    [recheckUserOp, addToast]
+  )
+
+  const handleDismissPending = useCallback(
+    (userOpHash: Hex) => {
+      removePendingUserOp(userOpHash)
+      setPendingOps((prev) => prev.filter((op) => op.userOpHash !== userOpHash))
+    },
+    [removePendingUserOp]
+  )
 
   if (!isConnected) {
     return (
@@ -48,6 +94,60 @@ export default function HistoryPage() {
         </h1>
         <p style={{ color: 'rgb(var(--muted-foreground))' }}>View your past transactions</p>
       </div>
+
+      {/* Pending Operations Banner */}
+      {pendingOps.length > 0 && (
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: 'rgb(var(--warning))' }}
+              />
+              <span className="text-sm font-medium" style={{ color: 'rgb(var(--warning))' }}>
+                {pendingOps.length} pending operation{pendingOps.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {pendingOps.map((op) => (
+                <div
+                  key={op.userOpHash}
+                  className="flex items-center justify-between p-3 rounded-lg"
+                  style={{ backgroundColor: 'rgb(var(--warning) / 0.05)', border: '1px solid rgb(var(--warning) / 0.2)' }}
+                >
+                  <div>
+                    <p className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
+                      {op.userOpHash.slice(0, 10)}...{op.userOpHash.slice(-8)}
+                    </p>
+                    <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                      Submitted {formatRelativeTime(op.timestamp)}
+                      {op.to ? ` to ${op.to.slice(0, 8)}...` : ''}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleRecheck(op.userOpHash)}
+                      isLoading={recheckingHash === op.userOpHash}
+                      className="text-xs px-3 py-1"
+                    >
+                      Recheck
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => handleDismissPending(op.userOpHash)}
+                      className="text-xs px-2 py-1 rounded transition-colors"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

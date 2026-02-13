@@ -16,6 +16,7 @@
 > ⚠️ 12차 검토에서 §1-2, §1-3 (2건)가 구현 완료로 RESOLVED 처리됨 — §1 전체 RESOLVED
 > ⚠️ 13차 검토에서 §7(4건), §8-5-2(1건), §9(2건), §11(3건), §12(1건), §13(6건), §15(1건), §17(4건), §18-15-1,15-3(2건), §20-1(1건), §22-2(1건) + §8-5-3(1건) + §18-15-2 부분(1건) = 총 28건 RESOLVED
 > ⚠️ 14차 검토에서 §3(6건 전체), §4(5건 전체), §19(3건 전체), §21(1건), §22-1(1건) = 총 16건 RESOLVED
+> ⚠️ 18차 검토 (Phase 12): §10(1건 이미 구현), §16(2건 ErrorBoundary 추가), §18-2(1건 Smart Account 실제 조회), §24(1건 pending UserOp 저장+재확인 UI) = 5건 RESOLVED
 
 ---
 
@@ -31,21 +32,21 @@
 8. [~~MEDIUM - Security Settings~~ ✅ RESOLVED](#7-security-settings)
 9. [MEDIUM - Subscription 편집 기능](#8-subscription-편집-기능)
 10. [~~MEDIUM - DeFi Pool Liquidity~~ ✅ RESOLVED](#9-defi-pool-liquidity)
-11. [MEDIUM - QR Code](#10-qr-code)
+11. [~~MEDIUM - QR Code~~ ✅ RESOLVED](#10-qr-code)
 12. [~~MEDIUM - Enterprise Payroll~~ ✅ RESOLVED](#11-enterprise-payroll)
 13. [~~MEDIUM - Enterprise Expenses~~ ✅ RESOLVED](#12-enterprise-expenses)
 14. [~~MEDIUM - 컴포넌트 미연결 콜백들~~ ✅ RESOLVED](#13-컴포넌트-미연결-콜백들)
 15. [~~MEDIUM - 하드코딩된 네트워크 URL~~ ✅ RESOLVED](#14-하드코딩된-네트워크-url)
 16. [~~MEDIUM - Stealth Withdraw 미연결~~ ✅ RESOLVED](#15-stealth-withdraw-미연결)
-17. [MEDIUM - ErrorBoundary 미적용](#16-errorboundary-미적용)
+17. [~~MEDIUM - ErrorBoundary 미적용~~ ✅ RESOLVED](#16-errorboundary-미적용)
 18. [~~MEDIUM - Toast 피드백 미활용~~ ✅ RESOLVED](#17-toast-피드백-미활용)
-19. [MEDIUM - Account Settings 미구현 (부분)](#18-account-settings-미구현)
+19. [~~MEDIUM - Account Settings 미구현~~ ✅ RESOLVED](#18-account-settings-미구현)
 20. [~~MEDIUM - Swap UI 미완성~~ ✅ RESOLVED](#19-swap-ui-미완성)
 21. [~~MEDIUM - 모바일 반응형 미구현~~ ✅ RESOLVED](#20-모바일-반응형-미구현)
 22. [~~MEDIUM - Header 계정 드롭다운 미구현~~ ✅ RESOLVED](#21-header-계정-드롭다운-미구현)
 23. [~~MEDIUM - 페이지네이션 없음~~ ✅ RESOLVED](#22-페이지네이션-없음)
 24. [~~MEDIUM - 미지원 네트워크 경고 UI 없음~~ ✅ RESOLVED](#23-미지원-네트워크-경고-ui-없음)
-25. [MEDIUM - UserOp 확인 timeout 후 재확인 수단 없음](#24-userop-확인-timeout-후-재확인-수단-없음)
+25. [~~MEDIUM - UserOp 확인 timeout 후 재확인 수단 없음~~ ✅ RESOLVED](#24-userop-확인-timeout-후-재확인-수단-없음)
 26. [~~LOW - Send 폼 잔액 초과 검증 없음~~ ✅ RESOLVED](#25-send-폼-잔액-초과-검증-없음)
 27. [~~LOW - Next.js 라우트 파일 부재~~ ✅ RESOLVED](#26-nextjs-라우트-파일-부재)
 28. [LOW - Recurring Payment Placeholder ID](#27-recurring-payment-placeholder-id)
@@ -72,21 +73,21 @@
 | ~~MEDIUM~~ | ~~Security Settings~~ | ~~4~~ **0** | ~~Toggle/Button 동작 안 함~~ *(§7 전체 RESOLVED — localStorage 저장 + toast 피드백 구현)* |
 | ~~MEDIUM~~ | ~~Subscription Edit~~ | ~~3~~ **0** | ~~Edit/Deactivate 버튼 미구현~~ *(§8 전체 RESOLVED — Edit 모달 구현, Merchant 버튼 wiring, Plans fallback UI)* |
 | ~~MEDIUM~~ | ~~DeFi Pool~~ | ~~2~~ **0** | ~~Add/Remove Liquidity 콜백 미연결~~ *(§9 전체 RESOLVED — toast 포함 콜백 연결)* |
-| MEDIUM | QR Code | 1 | 실제 QR 생성 미구현 |
+| ~~MEDIUM~~ | ~~QR Code~~ | ~~1~~ **0** | ~~실제 QR 생성 미구현~~ *(§10 RESOLVED — qrcode.react v4.2.0 + QRCodeSVG 이미 구현)* |
 | ~~MEDIUM~~ | ~~Enterprise Payroll~~ | ~~3~~ **0** | ~~Process Payments, Export Report, Add Employee 미연결~~ *(§11 전체 RESOLVED — 콜백 + CSV export + toast 구현)* |
 | ~~MEDIUM~~ | ~~Enterprise Expenses~~ | ~~1~~ **0** | ~~Submit Expense 콜백 미연결~~ *(§12 RESOLVED — approve/reject/pay/submit 콜백 + toast 구현)* |
 | ~~MEDIUM~~ | ~~컴포넌트 미연결 콜백~~ | ~~6~~ **0** | ~~SessionKey Detail, Subscription Manage, Expense approve/reject, Payroll Edit, Module Uninstall~~ *(§13 전체 RESOLVED)* |
 | ~~MEDIUM~~ | ~~하드코딩 네트워크 URL~~ | ~~2~~ **0** | ~~Etherscan URL 네트워크별 미분기~~ *(§14 전체 RESOLVED — `getBlockExplorerUrl()` 유틸 구현 완료, PaymentHistory + AuditLogCard 모두 동적 explorer URL 사용)* |
 | MEDIUM | Stealth Withdraw | ~~1~~ **0** | ~~onWithdraw 콜백 미전달, 인출 불가~~ *(§15 RESOLVED — placeholder 콜백 + toast, ECDH 파생 로직은 별도 구현 필요)* |
-| MEDIUM | ErrorBoundary | 2 | 구현됨, `app/layout.tsx`에 전역 적용 but 개별 페이지 미적용 *(정정)* |
+| ~~MEDIUM~~ | ~~ErrorBoundary~~ | ~~2~~ **0** | ~~개별 페이지 미적용~~ *(§16 RESOLVED — stealth/subscription/enterprise error.tsx 추가, 전 라우트 error 처리 완료)* |
 | ~~MEDIUM~~ | ~~Toast 피드백~~ | ~~4~~ **0** | ~~대부분 페이지에서 성공/실패 피드백 없음~~ *(§17 전체 RESOLVED — payroll, expenses, settings, stealth 등 toast 추가)* |
-| MEDIUM | Account Settings | ~~3~~ **1** | ~~계정 이름 저장 안 됨, Smart Account 정보 하드코딩, 복사 피드백 없음~~ *(§18-15-1, 15-3 RESOLVED — localStorage 저장 + 복사 toast, 15-2 SA 정보 미해결)* |
+| ~~MEDIUM~~ | ~~Account Settings~~ | ~~3~~ **0** | ~~계정 이름 저장 안 됨, Smart Account 정보 하드코딩, 복사 피드백 없음~~ *(§18 전체 RESOLVED — 15-1 localStorage, 15-2 useSmartAccount+useModule 실제 조회, 15-3 복사 toast)* |
 | ~~MEDIUM~~ | ~~Swap UI~~ | ~~3~~ **0** | ~~잔액 하드코딩, 슬리피지 설정 없음, Gas 하드코딩~~ *(§19 전체 RESOLVED — balanceIn/balanceOut 토큰 데이터 연결, 슬리피지 UI 확인 완료, Gas fee paymaster 동적 표시)* |
 | ~~MEDIUM~~ | ~~모바일 반응형~~ | ~~3~~ **0** | ~~햄버거 메뉴 없음, sidebar 고정, 모바일 네트워크/잔액 숨김~~ *(§20 전체 RESOLVED — §20-1 햄버거+overlay, §20-2 md:ml-64 적용, §20-3 모바일 drawer에 NetworkSelector+Balance 추가)* |
 | ~~MEDIUM~~ | ~~Header 계정~~ | ~~1~~ **0** | ~~계정 버튼 클릭 시 즉시 disconnect (드롭다운 없음)~~ *(§21 RESOLVED — Copy/Settings/Disconnect 드롭다운 이미 구현 확인)* |
 | ~~MEDIUM~~ | ~~페이지네이션~~ | ~~2~~ **0** | ~~Payment history~~, ~~Audit logs~~ 페이지네이션 없음 *(§22 전체 RESOLVED — §22-2 Audit logs + §22-1 Payment History pagination 구현 확인)* |
 | ~~MEDIUM~~ | ~~미지원 네트워크 경고~~ | ~~1~~ **0** | ~~미지원 체인 전환 시 사용자 경고 UI 없음~~ *(§23 RESOLVED — `NetworkWarningBanner` 컴포넌트 구현 완료, Header에 렌더링, 원클릭 Switch Network 버튼 포함)* |
-| MEDIUM | UserOp 확인 timeout | 1 | 30초 polling 후 재확인/재시도 수단 없음 |
+| ~~MEDIUM~~ | ~~UserOp 확인 timeout~~ | ~~1~~ **0** | ~~30초 polling 후 재확인/재시도 수단 없음~~ *(§24 RESOLVED — localStorage pending ops + history 재확인 UI)* |
 | ~~LOW~~ | ~~Send 폼 잔액 검증~~ | ~~1~~ **0** | ~~amount > 0만 체크, 잔액 초과 검증 없음~~ *(§25 RESOLVED — `exceedsBalance` 체크 + `canSend` 조건 + "Amount exceeds available balance" 에러 메시지 구현)* |
 | ~~LOW~~ | ~~Next.js 라우트 파일~~ | ~~3~~ **0** | ~~loading.tsx, error.tsx, not-found.tsx 없음~~ *(§26 전체 RESOLVED — 전역 loading.tsx/error.tsx/not-found.tsx + 라우트별 error.tsx 3개 구현)* |
 | LOW | Recurring Payment | 1 | Placeholder scheduleId |
@@ -97,7 +98,7 @@
 | LOW | Footer 링크 | 4 | 8개 미존재 페이지 링크 + 3개 소셜 placeholder URL |
 | ~~HIGH~~ | ~~Stealth Announcement~~ | ~~1~~ **0** | ~~sendToStealthAddress에서 ERC-5564 on-chain announcement 미호출~~ *(§33 RESOLVED — stealthAnnouncer 컨트랙트 호출 구현 완료)* |
 | ~~MEDIUM~~ | ~~Indexer URL~~ | ~~2~~ **0** | ~~ServiceUrls 타입 + StableNetContext에 indexerUrl 미포함~~ *(§34 RESOLVED — 양쪽 모두 indexerUrl 포함 확인)* |
-| **합계** | | ~~89~~ **28** | *(61건 RESOLVED)* |
+| **합계** | | ~~89~~ **23** | *(66건 RESOLVED)* |
 
 ---
 
@@ -472,25 +473,11 @@ TVL, 24시간 거래량, 사용자 포지션 수 모두 하드코딩.
 
 ---
 
-## 10. QR Code
+## ~~10. QR Code~~ ✅ RESOLVED (18차 검토 — Phase 12)
 
 **심각도: MEDIUM**
-**파일:** `app/payment/receive/page.tsx:47-70`
 
-```tsx
-{/* QR Code Placeholder */}
-<div className="w-48 h-48 border-2 rounded-2xl flex items-center justify-center">
-  {/* SVG 아이콘만 표시 */}
-  <p className="text-xs mt-2">QR Code</p>
-</div>
-```
-
-실제 QR 코드 생성 라이브러리(qrcode.react 등)가 연동되지 않음. 지갑 주소를 담은 QR 코드를 보여줘야 하지만 현재는 정적 아이콘만 표시.
-
-### 해결 방안
-
-- `qrcode.react` 또는 `next-qrcode` 패키지 설치
-- address를 인코딩한 QR 코드 렌더링
+> **18차 검토 (2026-02-13, Phase 12):** §10 RESOLVED. `qrcode.react` v4.2.0 이미 `package.json`에 설치됨. `app/payment/receive/page.tsx`에서 `QRCodeSVG` 컴포넌트로 실제 QR 코드 렌더링 구현 완료 (`value={address}`, `size={176}`, `level="M"`).
 
 ---
 
@@ -659,35 +646,23 @@ IncomingPaymentsCard에 `onWithdraw` 콜백이 전달되지 않음. Withdraw 버
 
 ---
 
-## 16. ErrorBoundary 미적용
+## ~~16. ErrorBoundary 미적용~~ ✅ RESOLVED (18차 검토 — Phase 12)
 
 **심각도: MEDIUM** *(3차 검토 추가)*
 
-### 13-1. ErrorBoundary 컴포넌트 구현 완료, 사용처 1건 *(11차 검토 정정)*
+> **18차 검토 (2026-02-13, Phase 12):** §16 RESOLVED. 전역 `app/error.tsx` + `app/layout.tsx` ErrorBoundary 이미 적용. 라우트별 `error.tsx` 추가: `payment/error.tsx`, `smart-account/error.tsx`, `defi/error.tsx` (기존) + `stealth/error.tsx`, `subscription/error.tsx`, `enterprise/error.tsx` (Phase 12 추가). 모든 트랜잭션 관련 라우트 그룹에 세분화된 에러 처리 적용 완료.
 
-**파일:** `components/error/ErrorBoundary.tsx`
+### ~~13-1. ErrorBoundary 컴포넌트 구현 완료~~ ✅ RESOLVED
 
-- `ErrorBoundary` 클래스 컴포넌트 완전 구현
-- `withErrorBoundary` HOC까지 제공
-- `ErrorFallback` UI도 완성
+### ~~13-2. 적용 필요 페이지~~ ✅ RESOLVED
 
-~~하지만 `app/` 디렉토리 전체에서 **단 한 곳도 사용하지 않음**.~~ → **정정:** `app/layout.tsx`에서 전역 ErrorBoundary로 1곳 사용 중. 단, 개별 트랜잭션 페이지에는 미적용되어 세분화된 에러 처리가 부족함.
-
-### 13-2. 적용 필요 페이지
-
-| 페이지 | 이유 |
+| 페이지 | 상태 |
 |--------|------|
-| `app/payment/send/page.tsx` | 트랜잭션 실행 중 에러 가능 |
-| `app/smart-account/page.tsx` | 컨트랙트 호출 에러 가능 |
-| `app/defi/swap/page.tsx` | DEX 트랜잭션 에러 가능 |
-| `app/stealth/send/page.tsx` | 스텔스 트랜잭션 에러 가능 |
-| `app/subscription/page.tsx` | 구독 관련 컨트랙트 에러 가능 |
-
-### 해결 방안
-
-- ~~또는 `app/layout.tsx`에 전역 ErrorBoundary 추가~~ ✅ 이미 적용됨
-- 트랜잭션 관련 페이지에 개별 `ErrorBoundary` 래핑 추가 적용
-- `withErrorBoundary` HOC를 high-risk 컴포넌트에 적용
+| `app/payment/send/page.tsx` | ✅ `app/payment/error.tsx` 적용 |
+| `app/smart-account/page.tsx` | ✅ `app/smart-account/error.tsx` 적용 |
+| `app/defi/swap/page.tsx` | ✅ `app/defi/error.tsx` 적용 |
+| `app/stealth/send/page.tsx` | ✅ `app/stealth/error.tsx` 추가 (Phase 12) |
+| `app/subscription/page.tsx` | ✅ `app/subscription/error.tsx` 추가 (Phase 12) |
 
 ---
 
@@ -739,16 +714,9 @@ const [accountName, setAccountName] = useState('My Account')
 - 페이지 새로고침 시 항상 "My Account"로 초기화
 - localStorage나 다른 영속 저장소에 저장하지 않음
 
-### 15-2. Smart Account 정보 하드코딩
+### ~~15-2. Smart Account 정보 하드코딩~~ ✅ RESOLVED (18차 검토 — Phase 12)
 
-```typescript
-// 라인 158-173
-Deployment Status → 항상 "Deployed"
-Modules → 항상 "ECDSA Validator"
-```
-
-- 실제 스마트 계정의 배포 상태를 확인하지 않음 (미배포 상태에서도 "Deployed" 표시)
-- 설치된 모듈 목록을 조회하지 않음 (항상 "ECDSA Validator" 고정)
+> **Phase 12:** `useSmartAccount` hook으로 실제 배포 상태 조회 (`status.isSmartAccount`, `status.isLoading`). `useModule.isModuleInstalled()`로 ECDSA Validator 설치 여부 실시간 확인. 미배포 시 "Not Deployed", 로딩 중 "Checking..." 표시.
 
 ### ~~15-3. 주소 복사 피드백 없음~~ ✅ RESOLVED
 
@@ -917,38 +885,13 @@ Gas Fee가 조건 없이 항상 `"Sponsored"`로 표시. Paymaster 사용 가능
 
 ---
 
-## 24. UserOp 확인 timeout 후 재확인 수단 없음
+## ~~24. UserOp 확인 timeout 후 재확인 수단 없음~~ ✅ RESOLVED (18차 검토 — Phase 12)
 
 **심각도: MEDIUM** *(5차 검토 추가)*
 
-**파일:** `hooks/useUserOp.ts:78-111`
-
-```typescript
-const waitForUserOpReceipt = useCallback(
-  async (
-    userOpHash: Hex,
-    maxAttempts = 15,
-    intervalMs = 2000
-  ): Promise<{ transactionHash: Hex; success: boolean } | null> => {
-    for (let i = 0; i < maxAttempts; i++) {
-      // ... polling logic ...
-    }
-    return null  // 30초 후 null 반환
-  },
-  [bundlerUrl]
-)
-```
-
-15회 × 2초 = 30초간 polling 후 `null` 반환 시 status가 `'submitted'`로 설정됨. Send 페이지에서 `router.push('/payment/history?pending=true')`로 이동하지만:
-- Payment History에서 `?pending=true` 쿼리 파라미터를 처리하는 로직 없음
-- `userOpHash`가 저장/전달되지 않아 재확인 불가
-- 네트워크 혼잡 시 사용자는 트랜잭션 성공/실패 확인 불가
-
-### 해결 방안
-
-- Pending 트랜잭션 목록 표시 (localStorage에 `userOpHash` + 타임스탬프 저장)
-- Payment History에서 pending 트랜잭션의 백그라운드 polling 또는 "재확인" 버튼 제공
-- Block explorer 링크 제공 (`userOpHash`로 조회)
+> **18차 검토 (2026-02-13, Phase 12):** §24 RESOLVED.
+> - `useUserOp.ts`: Polling timeout 시 `localStorage`에 `PendingUserOp` 자동 저장 (`userOpHash`, `timestamp`, `to`). 24시간 후 자동 만료. `recheckUserOp()` 성공 시 pending 목록에서 자동 제거. `getPendingUserOps()`, `removePendingUserOp()` 함수 export.
+> - `payment/history/page.tsx`: `?pending=true` 쿼리 파라미터 인식. Pending ops 배너 표시 (hash 축약, 제출 시간, 수신 주소). "Recheck" 버튼으로 `recheckUserOp()` 호출 + 결과 toast. "Dismiss" 버튼으로 수동 제거.
 
 ---
 
@@ -1191,7 +1134,7 @@ const socialLinks = [
 | ~~0-2~~ | ~~`StableNetContext`에 `indexerUrl` 추가~~ | ~~§34~~ | ✅ 구현 완료 |
 | 0-3 | RPC/컨트랙트 주소 환경변수 전환 | §31 | `lib/wagmi.ts`, `lib/moduleAddresses.ts`, `lib/constants.ts` |
 | ~~0-4~~ | ~~Block explorer URL 동적 분기 유틸~~ | ~~§14~~ | ✅ 이미 `lib/utils.ts`에 `getBlockExplorerUrl()` 구현 완료 |
-| 0-5 | ErrorBoundary 전역 + 주요 페이지 적용 | §16 | `app/layout.tsx`, 트랜잭션 관련 페이지 |
+| ~~0-5~~ | ~~ErrorBoundary 전역 + 주요 페이지 적용~~ | ~~§16~~ | ✅ Phase 12 구현 완료 (stealth/subscription/enterprise error.tsx 추가) |
 | ~~0-6~~ | ~~Next.js `loading.tsx`, `error.tsx`, `not-found.tsx`~~ | ~~§26~~ | ✅ 전역 + 라우트별 모두 구현 완료 |
 | 0-7 | Toast 피드백을 모든 폼/트랜잭션에 적용 | §17 | 전체 페이지 |
 | ~~0-8~~ | ~~모바일 반응형 (sidebar drawer, `ml-64` → `md:ml-64`)~~ | ~~§20~~ | ✅ Phase 9H 구현 완료 |
@@ -1201,8 +1144,8 @@ const socialLinks = [
 | 순서 | 작업 | 관련 섹션 | 파일 |
 |------|------|-----------|------|
 | ~~1-1~~ | ~~Send 폼 잔액 초과 검증~~ | ~~§25~~ | ✅ 이미 `exceedsBalance` 체크 구현 확인 |
-| 1-2 | UserOp receipt timeout 후 pending 트래킹 + 재확인 | §24 | `hooks/useUserOp.ts`, `app/payment/history/page.tsx` |
-| 1-3 | QR Code 생성 라이브러리 연동 | §10 | `app/payment/receive/page.tsx` |
+| ~~1-2~~ | ~~UserOp receipt timeout 후 pending 트래킹 + 재확인~~ | ~~§24~~ | ✅ Phase 12 구현 완료 (localStorage + history 재확인 UI) |
+| ~~1-3~~ | ~~QR Code 생성 라이브러리 연동~~ | ~~§10~~ | ✅ 이미 qrcode.react + QRCodeSVG 구현 확인 |
 | ~~1-4~~ | ~~Payment History 페이지네이션~~ | ~~§22~~ | ✅ 이미 구현 확인 (Phase 9E) |
 | ~~1-5~~ | ~~`useTransactionHistory`에 indexer fetch 함수 연결~~ | ~~§3-6~~ | ✅ 구현 완료 (Phase 9C — IndexerClient) |
 | ~~1-6~~ | ~~Etherscan URL을 동적 explorer URL로 교체~~ | ~~§14~~ | ✅ 이미 `getBlockExplorerUrl()` 사용 확인 |
@@ -1294,7 +1237,7 @@ const socialLinks = [
 | 순서 | 작업 | 관련 섹션 | 파일 |
 |------|------|-----------|------|
 | 10-1 | 계정 이름 localStorage 저장 | §18-1 | `components/settings/cards/AccountSettingsCard.tsx` |
-| 10-2 | Smart Account 배포 상태/모듈 실제 조회 | §18-2 | `components/settings/cards/AccountSettingsCard.tsx` |
+| ~~10-2~~ | ~~Smart Account 배포 상태/모듈 실제 조회~~ | ~~§18-2~~ | ✅ Phase 12 구현 완료 (useSmartAccount + useModule) |
 | 10-3 | 주소 복사 피드백 (toast / "Copied!") | §18-3 | `components/settings/cards/AccountSettingsCard.tsx` |
 | 10-4 | Security toggle 상태 저장 | §7-1 | `components/settings/cards/SecuritySettingsCard.tsx` |
 | 10-5 | Update Limits `onClick` 구현 | §7-2 | `components/settings/cards/SecuritySettingsCard.tsx` |

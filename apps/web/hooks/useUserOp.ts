@@ -52,6 +52,47 @@ const EXECUTE_ABI = [
   },
 ] as const
 
+// Pending UserOp localStorage key
+const PENDING_OPS_KEY = 'stablenet:pending-user-ops'
+
+export interface PendingUserOp {
+  userOpHash: Hex
+  timestamp: number
+  to?: string
+}
+
+function loadPendingOps(): PendingUserOp[] {
+  try {
+    const stored = localStorage.getItem(PENDING_OPS_KEY)
+    if (!stored) return []
+    const ops = JSON.parse(stored) as PendingUserOp[]
+    // Prune ops older than 24 hours
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000
+    return ops.filter((op) => op.timestamp > cutoff)
+  } catch {
+    return []
+  }
+}
+
+function savePendingOp(op: PendingUserOp): void {
+  try {
+    const ops = loadPendingOps()
+    ops.push(op)
+    localStorage.setItem(PENDING_OPS_KEY, JSON.stringify(ops))
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function removePendingOp(userOpHash: Hex): void {
+  try {
+    const ops = loadPendingOps().filter((op) => op.userOpHash !== userOpHash)
+    localStorage.setItem(PENDING_OPS_KEY, JSON.stringify(ops))
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 // Default gas values (fallback if estimation not provided)
 const DEFAULT_GAS = {
   callGasLimit: BigInt(100000),
@@ -204,6 +245,15 @@ export function useUserOp(config: UseUserOpConfig = {}) {
         // 8. Poll for UserOp receipt to confirm on-chain inclusion
         const receipt = await waitForUserOpReceipt(userOpHash)
 
+        // If polling timed out, save to pending ops for later recheck
+        if (!receipt) {
+          savePendingOp({
+            userOpHash,
+            timestamp: Date.now(),
+            to: params.to,
+          })
+        }
+
         return {
           userOpHash,
           transactionHash: receipt?.transactionHash,
@@ -253,6 +303,10 @@ export function useUserOp(config: UseUserOpConfig = {}) {
   const recheckUserOp = useCallback(
     async (userOpHash: Hex): Promise<UserOpResult> => {
       const receipt = await waitForUserOpReceipt(userOpHash, 10, 3000)
+      // Remove from pending if resolved
+      if (receipt) {
+        removePendingOp(userOpHash)
+      }
       return {
         userOpHash,
         transactionHash: receipt?.transactionHash,
@@ -267,6 +321,8 @@ export function useUserOp(config: UseUserOpConfig = {}) {
     sendUserOp,
     sendTransaction,
     recheckUserOp,
+    getPendingUserOps: loadPendingOps,
+    removePendingUserOp: removePendingOp,
     isLoading,
     error,
     clearError: () => setError(null),
