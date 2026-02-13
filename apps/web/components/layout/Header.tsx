@@ -53,8 +53,8 @@ export function Header() {
       style={{ borderColor: 'rgb(var(--border))' }}
     >
       <div className="flex h-16 items-center justify-between px-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
+        {/* Logo — add left padding on mobile for hamburger button */}
+        <Link href="/" className="flex items-center gap-3 group pl-10 md:pl-0">
           <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[rgb(var(--primary))] to-[rgb(var(--primary-hover))] flex items-center justify-center shadow-lg group-hover:shadow-[0_0_20px_-5px_rgb(var(--primary)/0.5)] transition-shadow duration-300">
             <svg className="w-6 h-6" viewBox="0 0 25 28" fill="none" aria-hidden="true">
               <path

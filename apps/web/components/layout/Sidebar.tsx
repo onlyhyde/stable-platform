@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { NetworkSelector } from '@/components/common'
+import { useBalance, useWallet } from '@/hooks'
+import { cn, formatTokenAmount } from '@/lib/utils'
 
 interface NavItem {
   name: string
@@ -228,6 +230,8 @@ const bottomNavigation: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { address, isConnected } = useWallet()
+  const { balance, symbol, decimals } = useBalance({ address, watch: true })
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -432,6 +436,32 @@ export function Sidebar() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            </div>
+            {/* Mobile-only: Network & Balance */}
+            <div
+              className="px-4 py-3 border-b space-y-3"
+              style={{ borderColor: 'rgb(var(--sidebar-border))' }}
+            >
+              <NetworkSelector />
+              {isConnected && address && (
+                <div
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                  style={{
+                    backgroundColor: 'rgb(var(--secondary))',
+                    border: '1px solid rgb(var(--border))',
+                  }}
+                >
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[rgb(var(--info))] to-[rgb(var(--info-muted))] flex items-center justify-center">
+                    <span className="text-2xs font-bold text-white">Ξ</span>
+                  </div>
+                  <span className="text-sm font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+                    {formatTokenAmount(balance, decimals)}
+                  </span>
+                  <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                    {symbol}
+                  </span>
+                </div>
+              )}
             </div>
             {sidebarContent}
           </aside>
