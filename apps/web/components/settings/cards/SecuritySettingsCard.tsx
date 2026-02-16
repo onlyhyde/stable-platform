@@ -149,8 +149,10 @@ export function SecuritySettingsCard() {
 
           <div className="space-y-3">
             <RecoveryOption icon={<EmailIcon />} title="Email Recovery" status="Not configured" onSetup={() => handleSetupRecovery('Email')} />
-            <RecoveryOption icon={<SocialIcon />} title="Social Recovery" status="Not configured" onSetup={() => handleSetupRecovery('Social')} />
           </div>
+          <p className="mt-4 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            For Social Recovery with guardians, see the dedicated section below.
+          </p>
         </CardContent>
       </Card>
 

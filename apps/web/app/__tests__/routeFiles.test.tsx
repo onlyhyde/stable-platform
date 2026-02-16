@@ -5,9 +5,10 @@ describe('Next.js Route Files', () => {
   describe('loading.tsx', () => {
     it('should render a loading indicator', async () => {
       const Loading = (await import('@/app/loading')).default
-      render(<Loading />)
+      const { container } = render(<Loading />)
 
-      expect(screen.getByText(/loading/i)).toBeInTheDocument()
+      // loading.tsx renders a skeleton with animate-pulse (no text)
+      expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
     })
   })
 
@@ -24,7 +25,7 @@ describe('Next.js Route Files', () => {
       const NotFound = (await import('@/app/not-found')).default
       render(<NotFound />)
 
-      const homeLink = screen.getByRole('link', { name: /home/i })
+      const homeLink = screen.getByRole('link', { name: /dashboard/i })
       expect(homeLink).toBeInTheDocument()
       expect(homeLink).toHaveAttribute('href', '/')
     })

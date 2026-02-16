@@ -24,6 +24,8 @@ export type {
   SponsorshipPolicy,
 } from './usePaymaster'
 export { usePaymaster } from './usePaymaster'
+export type { Guardian, RecoveryConfig, UseRecoveryModuleReturn } from './useRecoveryModule'
+export { useRecoveryModule } from './useRecoveryModule'
 export { useRecurringPayment } from './useRecurringPayment'
 export { useSessionKey } from './useSessionKey'
 export { useSmartAccount } from './useSmartAccount'

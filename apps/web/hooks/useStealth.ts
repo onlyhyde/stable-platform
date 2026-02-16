@@ -2,8 +2,12 @@
 
 import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
-import { encodeFunctionData } from 'viem'
+import { createWalletClient, encodeFunctionData, http, toHex } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import { computeStealthKey, createMetadata } from '@stablenet/plugin-stealth'
+import type { StealthAnnouncement } from '@stablenet/plugin-stealth'
 import { useStableNetContext } from '@/providers'
+import { getConfigByChainId, getStablenetLocal } from '@/lib/chains'
 import type { Announcement, StealthMetaAddress } from '@/types'
 
 /** Fetch with AbortController timeout (default 10s). */
@@ -20,6 +24,8 @@ function fetchWithTimeout(
 interface UseStealthConfig {
   getSpendingPublicKey?: () => Promise<Hex>
   getViewingPublicKey?: () => Promise<Hex>
+  getSpendingPrivateKey?: () => Promise<Hex>
+  getViewingPrivateKey?: () => Promise<Hex>
   signTypedData?: (data: unknown) => Promise<Hex>
   registerOnChain?: (params: { metaAddress: string; signature: Hex }) => Promise<{
     transactionHash: Hex
@@ -28,7 +34,7 @@ interface UseStealthConfig {
 }
 
 export function useStealth(config: UseStealthConfig = {}) {
-  const { stealthServerUrl, stealthAnnouncer } = useStableNetContext()
+  const { stealthServerUrl, stealthAnnouncer, publicClient, chainId } = useStableNetContext()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [stealthMetaAddress, setStealthMetaAddress] = useState<StealthMetaAddress | null>(null)
@@ -37,6 +43,8 @@ export function useStealth(config: UseStealthConfig = {}) {
   const {
     getSpendingPublicKey,
     getViewingPublicKey,
+    getSpendingPrivateKey,
+    getViewingPrivateKey,
     signTypedData,
     registerOnChain,
     sendTransaction,
@@ -374,6 +382,103 @@ export function useStealth(config: UseStealthConfig = {}) {
     [sendTransaction, stealthServerUrl, stealthAnnouncer]
   )
 
+  /**
+   * Withdraw ETH from a stealth address using ECDH key derivation.
+   *
+   * Computes the stealth private key from the announcement's ephemeral public key
+   * and the user's spending/viewing private keys, then sends the funds to the
+   * specified recipient address.
+   */
+  const withdrawFromStealthAddress = useCallback(
+    async (params: {
+      announcement: Announcement
+      recipientAddress: Address
+      spendingKey?: Hex
+      viewingKey?: Hex
+    }): Promise<{ hash: Hex } | null> => {
+      const { announcement, recipientAddress, spendingKey, viewingKey } = params
+
+      // Use provided keys or fall back to config callbacks
+      const spendingPrivKey = spendingKey ?? (getSpendingPrivateKey ? await getSpendingPrivateKey() : undefined)
+      const viewingPrivKey = viewingKey ?? (getViewingPrivateKey ? await getViewingPrivateKey() : undefined)
+
+      if (!spendingPrivKey || !viewingPrivKey) {
+        setError(new Error('Spending and viewing private keys are required for withdrawal'))
+        return null
+      }
+
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        // Convert web app Announcement to SDK StealthAnnouncement format
+        const viewTagHex = toHex(announcement.viewTag, { size: 1 })
+        const metadata = createMetadata(viewTagHex)
+        const stealthAnnouncement: StealthAnnouncement = {
+          schemeId: announcement.schemeId as 0 | 1,
+          stealthAddress: announcement.stealthAddress,
+          caller: announcement.caller,
+          ephemeralPubKey: announcement.ephemeralPubKey,
+          metadata,
+          blockNumber: announcement.blockNumber,
+          txHash: announcement.transactionHash,
+          logIndex: 0,
+        }
+
+        // Compute stealth private key via ECDH
+        const result = computeStealthKey({
+          announcement: stealthAnnouncement,
+          spendingPrivateKey: spendingPrivKey,
+          viewingPrivateKey: viewingPrivKey,
+        })
+
+        if (!result) {
+          throw new Error('Failed to derive stealth key — this announcement may not belong to this wallet')
+        }
+
+        // Create wallet client with the derived stealth private key
+        const stealthAccount = privateKeyToAccount(result.stealthPrivateKey)
+        const networkConfig = getConfigByChainId(chainId)
+        const chain = getStablenetLocal()
+        const walletClient = createWalletClient({
+          account: stealthAccount,
+          chain,
+          transport: http(networkConfig?.rpcUrl),
+        })
+
+        // Estimate gas to deduct from the transfer value
+        const gasEstimate = await publicClient.estimateGas({
+          account: stealthAccount,
+          to: recipientAddress,
+          value: announcement.value,
+        })
+        const gasPrice = await publicClient.getGasPrice()
+        const gasCost = gasEstimate * gasPrice
+        const sendValue = announcement.value - gasCost
+
+        if (sendValue <= 0n) {
+          throw new Error('Insufficient balance in stealth address to cover gas costs')
+        }
+
+        // Send ETH from stealth address to recipient
+        const hash = await walletClient.sendTransaction({
+          to: recipientAddress,
+          value: sendValue,
+        })
+
+        return { hash }
+      } catch (err) {
+        const withdrawError =
+          err instanceof Error ? err : new Error('Failed to withdraw from stealth address')
+        setError(withdrawError)
+        return null
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [getSpendingPrivateKey, getViewingPrivateKey, publicClient, chainId]
+  )
+
   return {
     stealthMetaAddress,
     announcements,
@@ -381,6 +486,7 @@ export function useStealth(config: UseStealthConfig = {}) {
     getStealthMetaAddressURI,
     generateStealthAddress,
     sendToStealthAddress,
+    withdrawFromStealthAddress,
     fetchAnnouncements,
     registerMetaAddress,
     registerStealthMetaAddress,

@@ -3,4 +3,5 @@ export {
   DeveloperSettingsCard,
   NetworkSettingsCard,
   SecuritySettingsCard,
+  SocialRecoveryCard,
 } from './cards'

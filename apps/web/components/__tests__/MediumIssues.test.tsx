@@ -5,6 +5,11 @@ import userEvent from '@testing-library/user-event'
 import type { Address, Hex } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+// AuditLogCard uses useChainId from wagmi
+vi.mock('wagmi', () => ({
+  useChainId: vi.fn(() => 31337),
+}))
+
 // ============================================
 // 1. IncomingPaymentsCard Tests
 // ============================================

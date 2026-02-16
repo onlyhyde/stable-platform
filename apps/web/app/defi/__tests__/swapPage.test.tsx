@@ -19,7 +19,24 @@ vi.mock('@/hooks', () => ({
   useUserOp: vi.fn(() => ({
     sendUserOp: mockSendUserOp,
   })),
+  usePaymaster: vi.fn(() => ({
+    checkSponsorshipEligibility: vi.fn().mockResolvedValue({ eligible: false }),
+  })),
 }))
+
+// SwapPage uses useToast from @/components/common
+vi.mock('@/components/common', async () => {
+  const actual = await vi.importActual<typeof import('@/components/common')>('@/components/common')
+  return {
+    ...actual,
+    useToast: vi.fn(() => ({
+      toasts: [],
+      addToast: vi.fn(() => 'toast-id'),
+      removeToast: vi.fn(),
+      updateToast: vi.fn(),
+    })),
+  }
+})
 
 vi.mock('@/hooks/useTokens', () => ({
   useTokens: vi.fn(() => ({

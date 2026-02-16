@@ -8,6 +8,7 @@ import {
   DeveloperSettingsCard,
   NetworkSettingsCard,
   SecuritySettingsCard,
+  SocialRecoveryCard,
 } from '@/components/settings'
 import { useWallet } from '@/hooks'
 import { defaultChain } from '@/lib/chains'
@@ -150,7 +151,12 @@ export default function SettingsPage() {
           />
         )}
 
-        {activeTab === 'security' && <SecuritySettingsCard />}
+        {activeTab === 'security' && (
+          <>
+            <SecuritySettingsCard />
+            <SocialRecoveryCard />
+          </>
+        )}
 
         {activeTab === 'developer' && <DeveloperSettingsCard />}
       </div>

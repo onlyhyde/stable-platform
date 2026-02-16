@@ -6,14 +6,14 @@ import { MODULE_TYPES, type ModuleType } from '@/hooks/useModule'
 // Contract Addresses (PoC devnet - matching useSmartAccount.ts constants)
 // ============================================================================
 
-const ECDSA_VALIDATOR = '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707' as const
-const SESSION_KEY_VALIDATOR = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6' as const
-const SUBSCRIPTION_EXECUTOR = '0x610178dA211FEF7D417bC0e6FeD39F05609AD788' as const
-const SPENDING_LIMIT_HOOK = '0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e' as const
-const SOCIAL_RECOVERY_VALIDATOR = '0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0' as const
-const DEX_SWAP_EXECUTOR = '0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82' as const
-const STEALTH_ADDRESS_FALLBACK = '0x9A676e781A523b5d0C0e43731313A708CB607508' as const
-const MULTISIG_VALIDATOR = '0x0B306BF915C4d645ff596e518fAf3F9669b97016' as const
+const ECDSA_VALIDATOR = '0xb33dc2d82eaee723ca7687d70209ed9a861b3b46' as const
+const SESSION_KEY_VALIDATOR = '0x621b0872c00f6328bd9001a121af09dd18b193e0' as const
+const SUBSCRIPTION_EXECUTOR = '0x3157c4a86d07a223e3b46f20633f5486e96b8f3c' as const
+const SPENDING_LIMIT_HOOK = '0x304cb9f3725e8b807c2fe951c8db7fea4176f1c5' as const
+const SOCIAL_RECOVERY_VALIDATOR = '0x38fb544beee122a2ea593e7d9c8f019751273287' as const
+const DEX_SWAP_EXECUTOR = '0x2f86f04c1D29Ac39752384B34167a42E6d1730F9' as const
+const STEALTH_ADDRESS_FALLBACK = '0x430669578b1e8f02ab648832ef4ec823d814726b' as const
+const MULTISIG_VALIDATOR = '0x284d8e1d4864bfab4ea1dfe283f7f849c075bfa5' as const
 
 // ============================================================================
 // Module Registry

@@ -7,14 +7,23 @@ import { usePools } from '../usePools'
 import { useTokens } from '../useTokens'
 import { useTransactionHistory } from '../useTransactionHistory'
 
-// Mock context
-vi.mock('@/providers', () => ({
+// Mock context — hooks import from @/providers/StableNetProvider directly
+vi.mock('@/providers/StableNetProvider', () => ({
   useStableNetContext: () => ({
     chainId: 31337,
+    indexerUrl: 'http://localhost:4000',
     publicClient: {
       readContract: vi.fn(),
       multicall: vi.fn(),
     },
+  }),
+}))
+
+// useTokens imports useWallet from @/hooks/useWallet
+vi.mock('@/hooks/useWallet', () => ({
+  useWallet: () => ({
+    isConnected: true,
+    address: '0x1234567890123456789012345678901234567890',
   }),
 }))
 
