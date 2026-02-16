@@ -12,6 +12,11 @@
 9. `08-delegation-validator-executor-and-alt-key.md`
 10. `09-compatibility-with-existing-contracts.md`
 11. `10-seminar-playbook.md`
+12. `11-code-study-master-guide.md`
+13. `12-phase1-line-by-line-guide.md`
+14. `13-seminar-script-90min.md`
+15. `14-json-rpc-packet-cookbook.md`
+16. `15-seminar-script-slide-map.md`
 
 ## 코드 근거
 - `poc-contract/docs/KERNEL_ARCHITECTURE.md`
