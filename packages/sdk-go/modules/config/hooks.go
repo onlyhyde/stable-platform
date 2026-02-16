@@ -57,7 +57,7 @@ var SpendingLimitHook = CreateModuleEntry(
 		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDStableNet: common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
+		ChainIDStableNet: common.HexToAddress("0x304cb9f3725e8b807c2fe951c8db7fea4176f1c5"),
 	},
 	DefaultSupportedChains,
 )
@@ -101,7 +101,7 @@ var AuditHook = CreateModuleEntry(
 		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDStableNet: common.HexToAddress("0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699"),
+		ChainIDStableNet: common.HexToAddress("0xae0a55d267722102880b774899998a2c338d960d"),
 	},
 	DefaultSupportedChains,
 )

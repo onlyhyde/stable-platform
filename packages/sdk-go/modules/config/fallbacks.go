@@ -38,7 +38,7 @@ var TokenReceiverFallback = CreateModuleEntry(
 		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDStableNet: common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
+		ChainIDStableNet: common.HexToAddress("0x39ff4ad6e3b8357fba61a9b10b74b344902e01a4"),
 	},
 	DefaultSupportedChains,
 )
@@ -82,7 +82,7 @@ var FlashLoanReceiverFallback = CreateModuleEntry(
 		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDStableNet: common.HexToAddress("0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699"),
+		ChainIDStableNet: common.HexToAddress("0xa9340c9a01cc85467eb43291845c28b1d0f47d02"),
 	},
 	DefaultSupportedChains,
 )

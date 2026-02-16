@@ -83,32 +83,32 @@ export const ANVIL_TOKENS: TokenDefinition[] = []
 export const LOCAL_ADDRESSES: ChainAddresses = {
   chainId: 8283,
   core: {
-    entryPoint: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
-    kernel: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
-    kernelFactory: '0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699' as Address,
+    entryPoint: '0xef6817fe73741a8f10088f9511c64b666a338a14' as Address,
+    kernel: '0xa61b944dd427a85495b685d93237cb73087e0035' as Address,
+    kernelFactory: '0xbebb0338503f9e28ffdc84c3548f8454f12dd1d3' as Address,
   },
   validators: {
-    ecdsaValidator: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
-    webAuthnValidator: '0xEf6817fe73741A8F10088f9511c64b666a338A14' as Address,
-    multiEcdsaValidator: '0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699' as Address,
+    ecdsaValidator: '0xb33dc2d82eaee723ca7687d70209ed9a861b3b46' as Address,
+    webAuthnValidator: '0x169844994bd5b64c3a264c54d6b0863bb7df0487' as Address,
+    multiEcdsaValidator: '0x284d8e1d4864bfab4ea1dfe283f7f849c075bfa5' as Address,
   },
   executors: {
-    ownableExecutor: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
+    ownableExecutor: '0x621b0872c00f6328bd9001a121af09dd18b193e0' as Address,
   },
   hooks: {
-    spendingLimitHook: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
+    spendingLimitHook: '0x304cb9f3725e8b807c2fe951c8db7fea4176f1c5' as Address,
   },
   paymasters: {
-    verifyingPaymaster: '0xbEbb0338503F9E28FFDC84C3548F8454F12Dd1D3' as Address,
-    tokenPaymaster: '0xb33DC2d82eAee723ca7687D70209ed9A861b3B46' as Address,
+    verifyingPaymaster: '0xfed3fc34af59a30c5a19ff8caf260604ddf39fc0' as Address,
+    tokenPaymaster: '0xaf420bfe67697a5724235e4676136f264023d099' as Address,
   },
   privacy: {
-    stealthAnnouncer: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
-    stealthRegistry: '0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699' as Address,
+    stealthAnnouncer: '0x7706eeaacd036c8c981147991913419e3fc33abc' as Address,
+    stealthRegistry: '0xfb8b3fce6fd358b6f13a05a216bdc1deb46c7cd9' as Address,
   },
   compliance: {
-    kycRegistry: '0x7186e5C27Cb08eAF041005D193268006889083f6' as Address,
-    complianceValidator: '0xD23Ee0D8E8DfabE76AA52a872Ce015B0BcAED6Ce' as Address,
+    kycRegistry: '0xcb23f218447bebb4e0244b40fba5ae0d0e749649' as Address,
+    complianceValidator: '0xce4959e3a3d4ae3a92d6c9b6b4c570b4ff501346' as Address,
   },
   delegatePresets: [],
 }

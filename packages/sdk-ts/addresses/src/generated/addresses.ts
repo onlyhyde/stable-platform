@@ -52,6 +52,45 @@ export const CHAIN_ADDRESSES: Record<number, ChainAddresses> = {
     },
     delegatePresets: [],
   },
+
+  // StableNet (Chain ID 8283)
+  8283: {
+    chainId: 8283,
+    core: {
+      entryPoint: '0xef6817fe73741a8f10088f9511c64b666a338a14',
+      kernel: '0xa61b944dd427a85495b685d93237cb73087e0035',
+      kernelFactory: '0xbebb0338503f9e28ffdc84c3548f8454f12dd1d3',
+    },
+    validators: {
+      ecdsaValidator: '0xb33dc2d82eaee723ca7687d70209ed9a861b3b46',
+      webAuthnValidator: '0x169844994bd5b64c3a264c54d6b0863bb7df0487',
+      multiEcdsaValidator: '0x284d8e1d4864bfab4ea1dfe283f7f849c075bfa5',
+    },
+    executors: {
+      ownableExecutor: '0x621b0872c00f6328bd9001a121af09dd18b193e0',
+    },
+    hooks: {
+      spendingLimitHook: '0x304cb9f3725e8b807c2fe951c8db7fea4176f1c5',
+    },
+    paymasters: {
+      verifyingPaymaster: '0xfed3fc34af59a30c5a19ff8caf260604ddf39fc0',
+      tokenPaymaster: '0xaf420bfe67697a5724235e4676136f264023d099',
+    },
+    privacy: {
+      stealthAnnouncer: '0x7706eeaacd036c8c981147991913419e3fc33abc',
+      stealthRegistry: '0xfb8b3fce6fd358b6f13a05a216bdc1deb46c7cd9',
+    },
+    compliance: {
+      kycRegistry: '0xcb23f218447bebb4e0244b40fba5ae0d0e749649',
+      complianceValidator: '0xce4959e3a3d4ae3a92d6c9b6b4c570b4ff501346',
+    },
+    subscriptions: {
+      subscriptionManager: '0x3157c4a86d07a223e3b46f20633f5486e96b8f3c',
+      recurringPaymentExecutor: '0x3157c4a86d07a223e3b46f20633f5486e96b8f3c',
+      permissionManager: '0x38fb544beee122a2ea593e7d9c8f019751273287',
+    },
+    delegatePresets: [],
+  },
 }
 
 /**
@@ -62,6 +101,11 @@ export const SERVICE_URLS: Record<
   { bundler: string; paymaster: string; stealthServer: string }
 > = {
   31337: {
+    bundler: 'http://localhost:4337',
+    paymaster: 'http://localhost:4338',
+    stealthServer: 'http://localhost:4339',
+  },
+  8283: {
     bundler: 'http://localhost:4337',
     paymaster: 'http://localhost:4338',
     stealthServer: 'http://localhost:4339',
@@ -99,6 +143,20 @@ export const DEFAULT_TOKENS: Record<
       name: 'Dai Stablecoin',
       symbol: 'DAI',
       decimals: 18,
+    },
+  ],
+  8283: [
+    {
+      address: '0x7186e5c27cb08eaf041005d193268006889083f6',
+      name: 'WKRC',
+      symbol: 'WKRC',
+      decimals: 18,
+    },
+    {
+      address: '0x085ee10cc10be8fb2ce51feb13e809a0c3f98699',
+      name: 'USD Coin',
+      symbol: 'USDC',
+      decimals: 6,
     },
   ],
 }

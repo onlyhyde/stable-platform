@@ -75,7 +75,7 @@ var SessionKeyExecutor = CreateModuleEntry(
 		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDStableNet: common.HexToAddress("0x7186e5C27Cb08eAF041005D193268006889083f6"),
+		ChainIDStableNet: common.HexToAddress("0x621b0872c00f6328bd9001a121af09dd18b193e0"),
 	},
 	DefaultSupportedChains,
 )
@@ -146,7 +146,7 @@ var RecurringPaymentExecutor = CreateModuleEntry(
 		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDStableNet: common.HexToAddress("0x085Ee10CC10BE8FB2cE51fEB13E809a0c3f98699"),
+		ChainIDStableNet: common.HexToAddress("0x3157c4a86d07a223e3b46f20633f5486e96b8f3c"),
 	},
 	DefaultSupportedChains,
 )
@@ -195,7 +195,7 @@ var SwapExecutor = CreateModuleEntry(
 		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDStableNet: common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDStableNet: common.HexToAddress("0x2f86f04c1D29Ac39752384B34167a42E6d1730F9"),
 	},
 	DefaultSupportedChains,
 )
@@ -239,7 +239,7 @@ var StakingExecutor = CreateModuleEntry(
 		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDStableNet: common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDStableNet: common.HexToAddress("0x037d4ef9321dffb793b3df4adc723946776599e6"),
 	},
 	DefaultSupportedChains,
 )
@@ -288,7 +288,7 @@ var LendingExecutor = CreateModuleEntry(
 		ChainIDMainnet:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDSepolia:   common.HexToAddress("0x0000000000000000000000000000000000000000"),
 		ChainIDLocal:     common.HexToAddress("0x0000000000000000000000000000000000000000"),
-		ChainIDStableNet: common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		ChainIDStableNet: common.HexToAddress("0xca65a420afc302a167021a503e80b97d4a22e43b"),
 	},
 	DefaultSupportedChains,
 )
