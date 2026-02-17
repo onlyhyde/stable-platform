@@ -101,7 +101,7 @@ function takeSnapshot(mempool: Mempool): HeapSnapshot {
   }
 }
 
-function formatSnapshot(snap: HeapSnapshot): string {
+function _formatSnapshot(snap: HeapSnapshot): string {
   return [
     `heap=${snap.heapUsedMb.toFixed(1)}MB`,
     `total=${snap.heapTotalMb.toFixed(1)}MB`,
@@ -130,13 +130,9 @@ async function run(): Promise<void> {
   })
 
   let hashCounter = 0
-  let totalAdded = 0
-  let totalRemoved = 0
+  let _totalAdded = 0
+  let _totalRemoved = 0
   let cycleCount = 0
-
-  // ── Warmup Phase ──
-  // Run 10 seconds of warm-up to let V8 JIT compile and stabilize heap
-  console.log('Warmup phase (10s)...')
   const warmupEnd = Date.now() + 10_000
   while (Date.now() < warmupEnd) {
     hashCounter++
@@ -167,10 +163,6 @@ async function run(): Promise<void> {
   forceGC()
   await new Promise((r) => setTimeout(r, 500))
   forceGC()
-
-  // ── Fill Phase ──
-  // Fill the pool to capacity first so we measure steady-state, not initial fill
-  console.log('Fill phase (filling pool to capacity)...')
   const poolCapacity = 10000
   while (mempool.size < poolCapacity * 0.95) {
     hashCounter++
@@ -181,7 +173,7 @@ async function run(): Promise<void> {
 
     try {
       mempool.add(createUserOp(sender, nonce, gasPriceVariation), hash, entryPoint)
-      totalAdded++
+      _totalAdded++
     } catch {
       // expected: sender limit
     }
@@ -196,8 +188,6 @@ async function run(): Promise<void> {
   await new Promise((r) => setTimeout(r, 500))
   forceGC()
 
-  console.log(`Pool filled: ${formatSnapshot(takeSnapshot(mempool))}`)
-
   // ── Measurement Phase ──
   // Now measure from steady state — any heap growth here is a real leak
   const snapshots: HeapSnapshot[] = []
@@ -206,10 +196,6 @@ async function run(): Promise<void> {
 
   // Baseline snapshot after pool is at capacity
   snapshots.push(takeSnapshot(mempool))
-  console.log(`Baseline: ${formatSnapshot(snapshots[0]!)}`)
-  console.log(
-    `Measuring for ${config.durationSeconds}s (batch=${config.batchSize}, threshold=${config.heapGrowthThresholdMbPerMin} MB/min)...`
-  )
 
   while (Date.now() < endTime) {
     cycleCount++
@@ -227,7 +213,7 @@ async function run(): Promise<void> {
       try {
         mempool.add(createUserOp(sender, nonce, gasPriceVariation), hash, entryPoint)
         addedHashes.push(hash)
-        totalAdded++
+        _totalAdded++
       } catch {
         // Expected: sender limit or mempool full
       }
@@ -243,22 +229,19 @@ async function run(): Promise<void> {
     for (const hash of toSubmit) {
       mempool.updateStatus(hash, 'included')
       mempool.remove(hash)
-      totalRemoved++
+      _totalRemoved++
     }
 
     // Phase 4: Evict expired entries (TTL=10s, so this works within test window)
     const evicted = mempool.evictExpired()
-    totalRemoved += evicted
+    _totalRemoved += evicted
 
     // Take periodic snapshots (every 20 cycles)
     if (cycleCount % 20 === 0) {
       const snap = takeSnapshot(mempool)
       snapshots.push(snap)
 
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(0)
-      console.log(
-        `  [${elapsed}s] ${formatSnapshot(snap)} | added=${totalAdded} removed=${totalRemoved}`
-      )
+      const _elapsed = ((Date.now() - startTime) / 1000).toFixed(0)
     }
 
     // Small delay to prevent tight loop
@@ -270,9 +253,6 @@ async function run(): Promise<void> {
   await new Promise((r) => setTimeout(r, 200))
   const finalSnap = takeSnapshot(mempool)
   snapshots.push(finalSnap)
-
-  console.log(`\nFinal: ${formatSnapshot(finalSnap)}`)
-  console.log(`Total: added=${totalAdded}, removed=${totalRemoved}, cycles=${cycleCount}`)
 
   // Calculate heap growth rate using linear regression on snapshots
   // (more robust than just first vs last)
@@ -287,11 +267,6 @@ async function run(): Promise<void> {
       // Check for index leaks: senderCount and nonceEntryCount should be
       // proportional to pool size, not to totalAdded
       const indexRatio = mempool.size > 0 ? mempool.senderCount / mempool.size : 0
-
-      console.log(
-        `\nHeap growth: ${heapGrowthMbPerMin.toFixed(2)} MB/min (threshold: ${config.heapGrowthThresholdMbPerMin} MB/min)`
-      )
-      console.log(`Index ratio (senders/pool): ${indexRatio.toFixed(3)}`)
 
       if (indexRatio > 2.0 && mempool.size > 0) {
         console.error('\nINDEX LEAK DETECTED')
@@ -309,8 +284,6 @@ async function run(): Promise<void> {
         )
         process.exit(1)
       }
-
-      console.log('\nNo memory leak detected.')
     }
   }
 

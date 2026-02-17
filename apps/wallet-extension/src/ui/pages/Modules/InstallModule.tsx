@@ -873,12 +873,14 @@ function CustomModuleInput({ initialType, onSubmit, onBack }: CustomModuleInputP
       {/* Contract Address */}
       <div className="mb-4">
         <label
+          htmlFor="custom-module-address"
           className="block text-sm font-medium mb-1"
           style={{ color: 'rgb(var(--foreground))' }}
         >
           {t('customModuleAddress')}
         </label>
         <input
+          id="custom-module-address"
           type="text"
           value={address}
           onChange={(e) => {
@@ -904,6 +906,7 @@ function CustomModuleInput({ initialType, onSubmit, onBack }: CustomModuleInputP
       {/* Module Type */}
       <div className="mb-4">
         <label
+          htmlFor="module-type-selector"
           className="block text-sm font-medium mb-2"
           style={{ color: 'rgb(var(--foreground))' }}
         >
@@ -946,12 +949,14 @@ function CustomModuleInput({ initialType, onSubmit, onBack }: CustomModuleInputP
       {/* Init Data (Optional) */}
       <div className="mb-4">
         <label
+          htmlFor="custom-module-initdata"
           className="block text-sm font-medium mb-1"
           style={{ color: 'rgb(var(--foreground))' }}
         >
           {t('initDataOptional')}
         </label>
         <textarea
+          id="custom-module-initdata"
           value={initData}
           onChange={(e) => setInitData(e.target.value)}
           placeholder="0x..."
@@ -972,12 +977,14 @@ function CustomModuleInput({ initialType, onSubmit, onBack }: CustomModuleInputP
       {/* Module Name (Optional) */}
       <div className="mb-6">
         <label
+          htmlFor="custom-module-name"
           className="block text-sm font-medium mb-1"
           style={{ color: 'rgb(var(--foreground))' }}
         >
           {t('moduleNameOptional')}
         </label>
         <input
+          id="custom-module-name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}

@@ -108,7 +108,7 @@ describe('createGasEstimator', () => {
 
       await expect(
         estimator.estimate({
-          mode: 'nonexistent' as any,
+          mode: 'nonexistent' as unknown,
           from: '0x1234567890abcdef1234567890abcdef12345678',
           to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
           value: 0n,

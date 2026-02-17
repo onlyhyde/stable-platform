@@ -150,7 +150,7 @@ function computePaymasterHash(params: {
   )
 }
 
-async function sendUserOp(bundlerUrl: string, op: Record<string, any>, entryPoint: Address) {
+async function sendUserOp(bundlerUrl: string, op: Record<string, unknown>, entryPoint: Address) {
   const response = await fetch(bundlerUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -164,7 +164,7 @@ async function sendUserOp(bundlerUrl: string, op: Record<string, any>, entryPoin
   return response.json()
 }
 
-async function waitForReceipt(bundlerUrl: string, hash: string, maxWait = 15000): Promise<any> {
+async function waitForReceipt(bundlerUrl: string, hash: string, maxWait = 15000): Promise<unknown> {
   const start = Date.now()
   while (Date.now() - start < maxWait) {
     await new Promise((r) => setTimeout(r, 2000))
@@ -727,7 +727,7 @@ async function main() {
         functionName: 'simulateValidation',
         args: [{ ...packedOp, signature: userOpSignature }],
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
       const raw: string = err?.cause?.data || err?.data || ''
       if (
         typeof raw === 'string' &&

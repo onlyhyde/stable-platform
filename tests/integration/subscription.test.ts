@@ -202,7 +202,7 @@ describe('Subscription Plugin Integration', () => {
 
       // Read the latest plan (planCount is 1-indexed in most implementations,
       // but the contract may use 0-indexed — try both)
-      let plan
+      let plan: Awaited<ReturnType<typeof subscriptionMgr.getPlan>>
       try {
         plan = await subscriptionMgr.getPlan(publicClient, planCount)
       } catch {

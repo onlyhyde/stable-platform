@@ -9,7 +9,7 @@ const logger = createLogger('WalletConnectController')
 
 // The wallet instance is created via dynamic import, so we use the awaited return type
 type Web3WalletInstance = Awaited<
-  ReturnType<(typeof import('@walletconnect/web3wallet'))['Web3Wallet']['init']>
+  ReturnType<typeof import('@walletconnect/web3wallet')['Web3Wallet']['init']>
 >
 
 /**
@@ -138,9 +138,7 @@ class WalletConnectController {
    * Handle incoming session proposal from a dApp.
    * Creates an approval request via ApprovalController.
    */
-  private async handleSessionProposal(
-    proposal: Web3WalletTypes.SessionProposal
-  ): Promise<void> {
+  private async handleSessionProposal(proposal: Web3WalletTypes.SessionProposal): Promise<void> {
     const { id, params } = proposal
     const { proposer, requiredNamespaces, optionalNamespaces } = params
 
@@ -167,9 +165,7 @@ class WalletConnectController {
       const selectedChainId = state.networks.selectedChainId
       const accounts = result.accounts
 
-      const eip155Accounts = accounts.map(
-        (addr: string) => `eip155:${selectedChainId}:${addr}`
-      )
+      const eip155Accounts = accounts.map((addr: string) => `eip155:${selectedChainId}:${addr}`)
 
       const supportedMethods = [
         'eth_sendTransaction',
@@ -230,9 +226,7 @@ class WalletConnectController {
    * Handle incoming JSON-RPC request from a connected dApp.
    * Routes through the existing handleRpcRequest flow.
    */
-  private async handleSessionRequest(
-    event: Web3WalletTypes.SessionRequest
-  ): Promise<void> {
+  private async handleSessionRequest(event: Web3WalletTypes.SessionRequest): Promise<void> {
     const { id, topic, params } = event
     const { request } = params
 
@@ -298,9 +292,7 @@ class WalletConnectController {
   /**
    * Handle session delete (remote disconnect)
    */
-  private async handleSessionDelete(
-    event: Web3WalletTypes.SessionDelete
-  ): Promise<void> {
+  private async handleSessionDelete(event: Web3WalletTypes.SessionDelete): Promise<void> {
     await this.removeSessionFromStorage(event.topic)
     logger.info('WalletConnect session deleted by peer', { topic: event.topic })
   }

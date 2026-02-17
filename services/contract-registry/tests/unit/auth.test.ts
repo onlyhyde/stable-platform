@@ -15,7 +15,7 @@ describe('Auth Middleware', () => {
     const hook = createAuthHook(undefined)
     const mockRequest = { headers: {} }
 
-    const result = await hook(mockRequest as any, mockReply as any)
+    const result = await hook(mockRequest as unknown, mockReply as unknown)
 
     expect(result).toBeUndefined()
     expect(mockReply.status).not.toHaveBeenCalled()
@@ -25,7 +25,7 @@ describe('Auth Middleware', () => {
     const hook = createAuthHook('test-api-key')
     const mockRequest = { headers: { 'x-api-key': 'test-api-key' } }
 
-    const result = await hook(mockRequest as any, mockReply as any)
+    const result = await hook(mockRequest as unknown, mockReply as unknown)
 
     expect(result).toBeUndefined()
     expect(mockReply.status).not.toHaveBeenCalled()
@@ -35,7 +35,7 @@ describe('Auth Middleware', () => {
     const hook = createAuthHook('test-api-key')
     const mockRequest = { headers: { 'x-api-key': 'wrong-key' } }
 
-    await hook(mockRequest as any, mockReply as any)
+    await hook(mockRequest as unknown, mockReply as unknown)
 
     expect(mockReply.status).toHaveBeenCalledWith(401)
     expect(mockReply.send).toHaveBeenCalledWith({
@@ -48,7 +48,7 @@ describe('Auth Middleware', () => {
     const hook = createAuthHook('test-api-key')
     const mockRequest = { headers: {} }
 
-    await hook(mockRequest as any, mockReply as any)
+    await hook(mockRequest as unknown, mockReply as unknown)
 
     expect(mockReply.status).toHaveBeenCalledWith(401)
   })

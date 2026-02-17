@@ -9,7 +9,7 @@ import {
   StealthNavigationCards,
   StealthStatsCards,
 } from '@/components/stealth'
-import { useWallet, useStealth } from '@/hooks'
+import { useStealth, useWallet } from '@/hooks'
 
 export default function StealthPage() {
   const { isConnected } = useWallet()

@@ -188,7 +188,7 @@ export function TransactionStepper({
       {/* Stepper visualization */}
       <div className="flex items-center px-4 mb-6">
         {steps.map((step, i) => (
-          <div key={step.label + i} className="contents">
+          <div key={step.label} className="contents">
             <div className="flex flex-col items-center gap-1.5">
               <StepCircle stepIndex={i} activeStep={activeStep} isFailed={isFailed} />
               <span

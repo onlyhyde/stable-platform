@@ -176,7 +176,10 @@ describe('TransactionDetail', () => {
     // View on Explorer appears in both stepper and details card
     const links = screen.getAllByText('View on Explorer')
     expect(links.length).toBeGreaterThanOrEqual(1)
-    expect(links[0].closest('a')).toHaveAttribute('href', `https://etherscan.io/tx/${MOCK_TX.txHash}`)
+    expect(links[0].closest('a')).toHaveAttribute(
+      'href',
+      `https://etherscan.io/tx/${MOCK_TX.txHash}`
+    )
   })
 
   it('should not show explorer link when no explorerUrl', () => {

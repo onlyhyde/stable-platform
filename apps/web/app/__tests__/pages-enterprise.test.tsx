@@ -8,10 +8,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/components/common', () => {
   const React = require('react')
   const c = () => {
-    return ({ children }: any) => React.createElement('div', null, children)
+    return ({ children }: unknown) => React.createElement('div', null, children)
   }
   return {
-    Button: ({ children, onClick, disabled }: any) =>
+    Button: ({ children, onClick, disabled }: unknown) =>
       React.createElement('button', { onClick, disabled, type: 'button' }, children),
     Card: c(),
     CardContent: c(),
@@ -19,14 +19,14 @@ vi.mock('@/components/common', () => {
     CardFooter: c(),
     CardHeader: c(),
     CardTitle: c(),
-    ConnectWalletCard: ({ message }: any) => React.createElement('div', null, message),
+    ConnectWalletCard: ({ message }: unknown) => React.createElement('div', null, message),
     InfoBanner: c(),
     Input: c(),
     Modal: c(),
     ModalActions: c(),
     NetworkSelector: c(),
     NetworkWarningBanner: c(),
-    PageHeader: ({ title, description }: any) =>
+    PageHeader: ({ title, description }: unknown) =>
       React.createElement(
         'div',
         null,
@@ -53,24 +53,26 @@ vi.mock('@/components/enterprise', () => {
   return {
     AddEmployeeModal: () => null,
     AuditFilterCard: () => null,
-    AuditLogCard: ({ logs }: any) =>
+    AuditLogCard: ({ logs }: unknown) =>
       React.createElement(
         'div',
         null,
-        logs?.map((l: any, i: number) => React.createElement('div', { key: i }, l.details))
+        logs?.map((l: unknown, i: number) => React.createElement('div', { key: i }, l.details))
       ),
     AuditSummaryCards: () => null,
     ComplianceInfoCard: () => null,
-    ExpenseListCard: ({ expenses }: any) =>
+    ExpenseListCard: ({ expenses }: unknown) =>
       React.createElement(
         'div',
         null,
-        expenses?.map((e: any, i: number) => React.createElement('div', { key: i }, e.description))
+        expenses?.map((e: unknown, i: number) =>
+          React.createElement('div', { key: i }, e.description)
+        )
       ),
     ExpenseSummaryCards: () => null,
     PayrollListCard: () => null,
     PayrollQuickActionsCard: () => null,
-    PayrollSummaryCards: ({ monthlyPayroll }: any) =>
+    PayrollSummaryCards: ({ monthlyPayroll }: unknown) =>
       React.createElement('div', null, monthlyPayroll),
     SubmitExpenseModal: () => null,
   }
@@ -84,9 +86,9 @@ vi.mock('@/lib/utils', () => ({
   formatUSD: (v: number) => `$${v.toFixed(2)}`,
   formatPercent: () => '0%',
   formatDate: () => '2024-01-01',
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' '),
+  cn: (...classes: unknown[]) => classes.filter(Boolean).join(' '),
   copyToClipboard: async () => true,
-  delay: (ms: number) => new Promise((r: any) => setTimeout(r, ms)),
+  delay: (ms: number) => new Promise((r: unknown) => setTimeout(r, ms)),
   getBlockExplorerUrl: () => 'https://explorer.example.com',
   sanitizeErrorMessage: () => 'An error occurred',
   getRpcSettings: () => null,
@@ -154,7 +156,6 @@ vi.mock('@/hooks/useExpenses', () => ({
     refresh: vi.fn(),
   })),
 }))
-
 
 vi.mock('@/hooks', () => ({
   useWallet: vi.fn(() => ({
@@ -351,5 +352,4 @@ describe('Page Integration — Enterprise & History', () => {
       expect(screen.getByText(/AWS Cloud Services/)).toBeInTheDocument()
     })
   })
-
 })

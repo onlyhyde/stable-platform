@@ -146,13 +146,13 @@ describe('createEIP7702Strategy', () => {
 
     it('should throw when from is missing', () => {
       expect(() =>
-        createStrategy().validate(createRequest({ from: undefined as any }), createAccount())
+        createStrategy().validate(createRequest({ from: undefined as unknown }), createAccount())
       ).toThrow(/Missing "from" address/)
     })
 
     it('should throw when to is missing', () => {
       expect(() =>
-        createStrategy().validate(createRequest({ to: undefined as any }), createAccount())
+        createStrategy().validate(createRequest({ to: undefined as unknown }), createAccount())
       ).toThrow(/Missing "to"/)
     })
   })
@@ -175,13 +175,13 @@ describe('createEIP7702Strategy', () => {
         createRequest({ to: ZERO_ADDR }),
         createAccount()
       )
-      const data = prepared.strategyData as any
+      const data = prepared.strategyData as unknown
       expect(data.isRevocation).toBe(true)
     })
 
     it('should not mark as revocation for normal delegate', async () => {
       const prepared = await createStrategy().prepare(createRequest(), createAccount())
-      const data = prepared.strategyData as any
+      const data = prepared.strategyData as unknown
       expect(data.isRevocation).toBe(false)
     })
   })
@@ -233,7 +233,7 @@ describe('createEIP7702Strategy', () => {
   describe('waitForConfirmation()', () => {
     it('should delegate to builder.waitForReceipt', async () => {
       const strategy = createStrategy()
-      const hash = ('0x' + 'ff'.repeat(32)) as any
+      const hash = ('0x' + 'ff'.repeat(32)) as unknown
 
       await strategy.waitForConfirmation!(hash)
 
@@ -242,7 +242,7 @@ describe('createEIP7702Strategy', () => {
 
     it('should pass options to waitForReceipt', async () => {
       const strategy = createStrategy()
-      const hash = ('0x' + 'ff'.repeat(32)) as any
+      const hash = ('0x' + 'ff'.repeat(32)) as unknown
       const options = { confirmations: 3, timeout: 120_000 }
 
       await strategy.waitForConfirmation!(hash, options)

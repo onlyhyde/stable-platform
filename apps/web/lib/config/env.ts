@@ -172,7 +172,10 @@ export function getLocalConfig() {
     ),
     explorerUrl: getEnvString(WEB_ENV_VARS.LOCAL_EXPLORER_URL, DEFAULTS.LOCAL_EXPLORER_URL),
     indexerUrl: getEnvString(WEB_ENV_VARS.LOCAL_INDEXER_URL, DEFAULTS.LOCAL_INDEXER_URL),
-    orderRouterUrl: getEnvString(WEB_ENV_VARS.LOCAL_ORDER_ROUTER_URL, DEFAULTS.LOCAL_ORDER_ROUTER_URL),
+    orderRouterUrl: getEnvString(
+      WEB_ENV_VARS.LOCAL_ORDER_ROUTER_URL,
+      DEFAULTS.LOCAL_ORDER_ROUTER_URL
+    ),
     contracts: {
       entryPoint: getEnvString(
         WEB_ENV_VARS.LOCAL_ENTRY_POINT,
@@ -242,7 +245,10 @@ export function getTestnetConfig() {
     ),
     explorerUrl: getEnvString(WEB_ENV_VARS.TESTNET_EXPLORER_URL, DEFAULTS.TESTNET_EXPLORER_URL),
     indexerUrl: getEnvString(WEB_ENV_VARS.TESTNET_INDEXER_URL, DEFAULTS.TESTNET_INDEXER_URL),
-    orderRouterUrl: getEnvString(WEB_ENV_VARS.TESTNET_ORDER_ROUTER_URL, DEFAULTS.TESTNET_ORDER_ROUTER_URL),
+    orderRouterUrl: getEnvString(
+      WEB_ENV_VARS.TESTNET_ORDER_ROUTER_URL,
+      DEFAULTS.TESTNET_ORDER_ROUTER_URL
+    ),
     contracts: {
       entryPoint: getEnvString(
         WEB_ENV_VARS.TESTNET_ENTRY_POINT,

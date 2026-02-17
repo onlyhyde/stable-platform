@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import type { Address, Hex } from 'viem'
-import { encodeFunctionData, decodeFunctionResult } from 'viem'
+import { encodeFunctionData } from 'viem'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 
-import { useModule, MODULE_TYPES } from './useModule'
+import { MODULE_TYPES, useModule } from './useModule'
 import { useSmartAccount } from './useSmartAccount'
 
 // ============================================================================
@@ -155,11 +155,7 @@ export function useRecoveryModule(): UseRecoveryModuleReturn {
   const checkInstalled = useCallback(async (): Promise<boolean> => {
     if (!address || !status.isSmartAccount) return false
     try {
-      return await isModuleInstalled(
-        address,
-        MODULE_TYPES.VALIDATOR,
-        SOCIAL_RECOVERY_VALIDATOR
-      )
+      return await isModuleInstalled(address, MODULE_TYPES.VALIDATOR, SOCIAL_RECOVERY_VALIDATOR)
     } catch {
       return false
     }
@@ -280,7 +276,15 @@ export function useRecoveryModule(): UseRecoveryModuleReturn {
         setIsInstalling(false)
       }
     },
-    [address, walletClient, publicClient, status.isSmartAccount, buildInstallModuleCall, loadLabels, saveLabels]
+    [
+      address,
+      walletClient,
+      publicClient,
+      status.isSmartAccount,
+      buildInstallModuleCall,
+      loadLabels,
+      saveLabels,
+    ]
   )
 
   // Add guardian
@@ -446,9 +450,7 @@ export function useRecoveryModule(): UseRecoveryModuleReturn {
       setConfig((prev) => ({
         ...prev,
         guardians: prev.guardians.map((g) =>
-          g.address.toLowerCase() === guardianAddress.toLowerCase()
-            ? { ...g, label }
-            : g
+          g.address.toLowerCase() === guardianAddress.toLowerCase() ? { ...g, label } : g
         ),
       }))
     },
@@ -460,7 +462,7 @@ export function useRecoveryModule(): UseRecoveryModuleReturn {
     if (address && status.isSmartAccount) {
       refresh()
     }
-  }, [address, status.isSmartAccount]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [address, status.isSmartAccount, refresh]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     config,

@@ -183,8 +183,8 @@ function parseRevertResult(raw: string): {
 }
 
 async function trySimulate(
-  publicClient: any,
-  packedOp: any,
+  publicClient: unknown,
+  packedOp: unknown,
   signature: Hex,
   label: string
 ): Promise<void> {
@@ -195,7 +195,7 @@ async function trySimulate(
       functionName: 'simulateValidation',
       args: [{ ...packedOp, signature }],
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     const raw: string = err?.cause?.raw || err?.cause?.data || ''
     if (!raw) {
       return
@@ -272,7 +272,7 @@ async function main() {
       functionName: 'isModuleType',
       args: [1n], // 1 = validator
     })
-  } catch (_e: any) {}
+  } catch (_e: unknown) {}
 
   // Build UserOp
   const factoryData = encodeFunctionData({
@@ -444,7 +444,7 @@ async function main() {
       functionName: 'getNonce',
       args: [smartAccountAddress, 0n],
     })
-  } catch (_e: any) {}
+  } catch (_e: unknown) {}
   {
     const _sigEip191 = await signer.signMessage({
       message: { raw: ('0x' + '00'.repeat(32)) as Hex },
@@ -481,7 +481,7 @@ async function main() {
 
     try {
       const _result = await publicClient.request({
-        method: 'eth_call' as any,
+        method: 'eth_call' as unknown,
         params: [
           {
             to: CONFIG.entryPoint,
@@ -490,7 +490,7 @@ async function main() {
           'latest',
         ],
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
       const data = err?.cause?.data || err?.data || err?.error?.data || 'no data'
 
       if (typeof data === 'string' && data.startsWith('0x')) {

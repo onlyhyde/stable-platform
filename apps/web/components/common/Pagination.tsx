@@ -35,7 +35,10 @@ export const Pagination: FC<PaginationProps> = ({
   }
 
   return (
-    <nav className={`flex items-center justify-center gap-1 ${className ?? ''}`} aria-label="Pagination">
+    <nav
+      className={`flex items-center justify-center gap-1 ${className ?? ''}`}
+      aria-label="Pagination"
+    >
       {/* Previous */}
       <button
         type="button"
@@ -48,7 +51,13 @@ export const Pagination: FC<PaginationProps> = ({
         }}
         aria-label="Previous page"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
       </button>
@@ -57,7 +66,7 @@ export const Pagination: FC<PaginationProps> = ({
       {pages.map((page, idx) =>
         page === 'ellipsis' ? (
           <span
-            key={`ellipsis-${idx}`}
+            key={idx < pages.length / 2 ? 'ellipsis-start' : 'ellipsis-end'}
             className="px-2 py-2 text-sm"
             style={{ color: 'rgb(var(--muted-foreground))' }}
           >
@@ -95,7 +104,13 @@ export const Pagination: FC<PaginationProps> = ({
         }}
         aria-label="Next page"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </button>

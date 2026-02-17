@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
 import { AddTokenModal } from '../components/AddTokenModal'
@@ -51,13 +51,7 @@ export function Home() {
   const balanceUsd =
     balance !== undefined && nativePriceUsd ? Number(formatEther(balance)) * nativePriceUsd : null
 
-  useEffect(() => {
-    if (selectedAccount && balance === undefined) {
-      loadBalance()
-    }
-  }, [selectedAccount, balance, loadBalance])
-
-  async function loadBalance() {
+  const loadBalance = useCallback(async () => {
     if (!selectedAccount) return
 
     setIsLoadingBalance(true)
@@ -83,7 +77,13 @@ export function Home() {
     } finally {
       setIsLoadingBalance(false)
     }
-  }
+  }, [selectedAccount, updateBalance])
+
+  useEffect(() => {
+    if (selectedAccount && balance === undefined) {
+      loadBalance()
+    }
+  }, [selectedAccount, balance, loadBalance])
 
   function handleRefreshAll() {
     loadBalance()

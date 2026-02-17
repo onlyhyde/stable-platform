@@ -12,17 +12,17 @@ export default function PrivacyPage() {
               <h2 className="text-lg font-semibold">1. Information We Collect</h2>
               <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 StableNet is a decentralized application. We do not collect personal information
-                beyond what is publicly available on the blockchain. Wallet addresses and transaction
-                data are inherently public on-chain.
+                beyond what is publicly available on the blockchain. Wallet addresses and
+                transaction data are inherently public on-chain.
               </p>
             </section>
 
             <section>
               <h2 className="text-lg font-semibold">2. Local Storage</h2>
               <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                We use browser local storage to persist user preferences, account names, and
-                pending transaction state. This data remains on your device and is not transmitted
-                to any server.
+                We use browser local storage to persist user preferences, account names, and pending
+                transaction state. This data remains on your device and is not transmitted to any
+                server.
               </p>
             </section>
 

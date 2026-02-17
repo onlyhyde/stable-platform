@@ -292,9 +292,7 @@ export class LedgerKeyring implements IHardwareKeyring {
   }
 
   private getAccountInfo(address: Address): HardwareAccountInfo {
-    const info = this.accounts.find(
-      (a) => a.address.toLowerCase() === address.toLowerCase()
-    )
+    const info = this.accounts.find((a) => a.address.toLowerCase() === address.toLowerCase())
     if (!info) {
       throw new Error(`Account ${address} not found in Ledger keyring`)
     }

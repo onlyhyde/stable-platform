@@ -135,7 +135,7 @@ test.describe('Network Management', () => {
       // Connect first
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+          return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
         })
         .catch(() => {})
 
@@ -154,7 +154,7 @@ test.describe('Network Management', () => {
       // Request network switch
       await dappPage
         .evaluate((chainId) => {
-          return (window as any).ethereum?.request({
+          return (window as unknown).ethereum?.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId }],
           })
@@ -192,7 +192,7 @@ test.describe('Network Management', () => {
       // Connect
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+          return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
         })
         .catch(() => {})
 
@@ -209,7 +209,7 @@ test.describe('Network Management', () => {
 
       // Request and approve network switch
       const switchPromise = dappPage.evaluate((chainId) => {
-        return (window as any).ethereum?.request({
+        return (window as unknown).ethereum?.request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId }],
         })
@@ -243,7 +243,7 @@ test.describe('Network Management', () => {
       // Connect
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+          return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
         })
         .catch(() => {})
 
@@ -260,7 +260,7 @@ test.describe('Network Management', () => {
 
       // Request and reject network switch
       const switchPromise = dappPage.evaluate((chainId) => {
-        return (window as any).ethereum?.request({
+        return (window as unknown).ethereum?.request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId }],
         })
@@ -296,7 +296,7 @@ test.describe('Network Management', () => {
       // Connect
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+          return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
         })
         .catch(() => {})
 
@@ -314,7 +314,7 @@ test.describe('Network Management', () => {
       // Request to add a new network
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({
+          return (window as unknown).ethereum?.request({
             method: 'wallet_addEthereumChain',
             params: [
               {

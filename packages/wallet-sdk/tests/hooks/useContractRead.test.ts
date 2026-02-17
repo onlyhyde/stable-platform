@@ -59,7 +59,7 @@ describe('useContractRead', () => {
         abi: erc20Abi,
         functionName: 'balanceOf',
         args: BALANCE_OF_ARGS,
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 
@@ -99,7 +99,7 @@ describe('useContractRead', () => {
         abi: erc20Abi,
         functionName: 'balanceOf',
         args: BALANCE_OF_ARGS,
-        provider: provider as any,
+        provider: provider as unknown,
         enabled: false,
       })
     )
@@ -123,7 +123,7 @@ describe('useContractRead', () => {
         abi: erc20Abi,
         functionName: 'balanceOf',
         args: BALANCE_OF_ARGS,
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 
@@ -150,7 +150,7 @@ describe('useContractRead', () => {
         abi: erc20Abi,
         functionName: 'balanceOf',
         args: BALANCE_OF_ARGS,
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 
@@ -176,7 +176,7 @@ describe('useContractRead', () => {
         address: TEST_ADDRESS,
         abi: erc20Abi,
         functionName: 'name',
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 
@@ -196,7 +196,7 @@ describe('useContractRead', () => {
         address: TEST_ADDRESS,
         abi: erc20Abi,
         functionName: 'decimals',
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 

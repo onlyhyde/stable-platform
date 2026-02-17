@@ -148,11 +148,16 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
   } else if (process.env.NODE_ENV === 'production') {
     // Block admin endpoints in production without token
     app.all('/admin/*', (c) => {
-      return c.json({ error: 'Admin endpoints disabled: PAYMASTER_ADMIN_TOKEN not configured' }, 503)
+      return c.json(
+        { error: 'Admin endpoints disabled: PAYMASTER_ADMIN_TOKEN not configured' },
+        503
+      )
     })
   } else {
     // Development: allow without auth but log warning
-    console.warn('[paymaster-proxy] WARNING: Admin endpoints are unauthenticated (set PAYMASTER_ADMIN_TOKEN)')
+    console.warn(
+      '[paymaster-proxy] WARNING: Admin endpoints are unauthenticated (set PAYMASTER_ADMIN_TOKEN)'
+    )
     registerAdminRoutes(app)
   }
 

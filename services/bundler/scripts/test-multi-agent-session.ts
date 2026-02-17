@@ -293,7 +293,7 @@ function computePaymasterHash(params: {
   )
 }
 
-async function sendUserOp(bundlerUrl: string, op: Record<string, any>, entryPoint: Address) {
+async function sendUserOp(bundlerUrl: string, op: Record<string, unknown>, entryPoint: Address) {
   const response = await fetch(bundlerUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -307,7 +307,7 @@ async function sendUserOp(bundlerUrl: string, op: Record<string, any>, entryPoin
   return response.json()
 }
 
-async function waitForReceipt(bundlerUrl: string, hash: string, maxWait = 30000): Promise<any> {
+async function waitForReceipt(bundlerUrl: string, hash: string, maxWait = 30000): Promise<unknown> {
   const start = Date.now()
   while (Date.now() - start < maxWait) {
     await new Promise((r) => setTimeout(r, 2000))
@@ -391,14 +391,14 @@ function buildExecHash(
  * Build, sign, and send a UserOp with VerifyingPaymaster sponsorship
  */
 async function buildAndSendSponsoredUserOp(params: {
-  publicClient: any
+  publicClient: unknown
   sender: Address
   callData: Hex
   signer: ReturnType<typeof privateKeyToAccount>
   deployerSigner: ReturnType<typeof privateKeyToAccount>
   nonceKey?: bigint
   label: string
-}): Promise<{ success: boolean; receipt: any; error?: any }> {
+}): Promise<{ success: boolean; receipt: unknown; error?: unknown }> {
   const { publicClient, sender, callData, signer, deployerSigner, label: _label } = params
   const nonceKey = params.nonceKey ?? 0n
 
@@ -509,13 +509,13 @@ async function buildAndSendSponsoredUserOp(params: {
  * Build, sign, and send a UserOp with ERC20Paymaster (USDC gas payment)
  */
 async function buildAndSendErc20PaymasterUserOp(params: {
-  publicClient: any
+  publicClient: unknown
   sender: Address
   callData: Hex
   signer: ReturnType<typeof privateKeyToAccount>
   nonceKey?: bigint
   label: string
-}): Promise<{ success: boolean; receipt: any; error?: any }> {
+}): Promise<{ success: boolean; receipt: unknown; error?: unknown }> {
   const { publicClient, sender, callData, signer, label: _label } = params
   const nonceKey = params.nonceKey ?? 0n
 
@@ -804,7 +804,7 @@ async function main() {
         abi: SESSION_KEY_EXECUTOR_ABI,
         functionName: 'getSessionKey',
         args: [eoaAddress, agent1Signer.address],
-      })) as any
+      })) as unknown
       agent1Active = sk.isActive
 
       agent1HasPerm = (await publicClient.readContract({
@@ -818,7 +818,7 @@ async function main() {
           EXACT_INPUT_SINGLE_SELECTOR,
         ],
       })) as boolean
-    } catch (_err: any) {}
+    } catch (_err: unknown) {}
 
     const step2Ok = isInstalled && agent1Active && agent1HasPerm
     results.push({ step: 'Step 2: SessionKeyExecutor + Agent 1', success: step2Ok })
@@ -871,7 +871,7 @@ async function main() {
         abi: SESSION_KEY_EXECUTOR_ABI,
         functionName: 'getSessionKey',
         args: [eoaAddress, agent2Signer.address],
-      })) as any
+      })) as unknown
       agent2Active = sk.isActive
 
       agent2HasPerm = (await publicClient.readContract({
@@ -880,7 +880,7 @@ async function main() {
         functionName: 'hasPermission',
         args: [eoaAddress, agent2Signer.address, CONFIG.usdc, TRANSFER_SELECTOR],
       })) as boolean
-    } catch (_err: any) {}
+    } catch (_err: unknown) {}
 
     const step3Ok = agent2Active && agent2HasPerm
     results.push({ step: 'Step 3: Agent 2 batch 등록', success: step3Ok })
@@ -931,7 +931,7 @@ async function main() {
         abi: SESSION_KEY_EXECUTOR_ABI,
         functionName: 'getSessionKey',
         args: [eoaAddress, agent3Signer.address],
-      })) as any
+      })) as unknown
       agent3Active = sk.isActive
 
       agent3HasPerm = (await publicClient.readContract({
@@ -940,7 +940,7 @@ async function main() {
         functionName: 'hasPermission',
         args: [eoaAddress, agent3Signer.address, CONFIG.usdc, APPROVE_SELECTOR],
       })) as boolean
-    } catch (_err: any) {}
+    } catch (_err: unknown) {}
 
     const step4Ok = agent3Active && agent3HasPerm
     results.push({ step: 'Step 4: Agent 3 batch 등록', success: step4Ok })
@@ -1020,7 +1020,7 @@ async function main() {
       args: [eoaAddress, agent3Signer.address, CONFIG.usdc, APPROVE_SELECTOR],
     })) as boolean
     if (!agent3ApprovePerm) step5Ok = false
-  } catch (_err: any) {
+  } catch (_err: unknown) {
     step5Ok = false
   }
 
@@ -1050,7 +1050,7 @@ async function main() {
       abi: SESSION_KEY_EXECUTOR_ABI,
       functionName: 'getSessionKey',
       args: [eoaAddress, agent2Signer.address],
-    })) as any
+    })) as unknown
     const sessionNonce = sessionKeyData.nonce as bigint
 
     // Build USDC.transfer calldata
@@ -1101,7 +1101,7 @@ async function main() {
       const transferred = recipientAfter6 - recipientBefore6
       step6Ok = transferred >= transferAmount
     }
-  } catch (_err: any) {}
+  } catch (_err: unknown) {}
 
   results.push({ step: 'Step 6: executeOnBehalf Agent 2 USDC transfer', success: step6Ok })
 
@@ -1223,7 +1223,7 @@ async function main() {
       abi: SESSION_KEY_EXECUTOR_ABI,
       functionName: 'getSessionKey',
       args: [eoaAddress, agent1Signer.address],
-    })) as any
+    })) as unknown
     const sessionNonce8 = sessionKeyData8.nonce as bigint
 
     const transferCalldata8 = encodeFunctionData({
@@ -1244,20 +1244,14 @@ async function main() {
 
     // Agent 1 signs (does NOT have USDC.transfer permission)
     const sig8 = await agent1Signer.signMessage({ message: { raw: execHash8 } })
-
-    // This should revert — try with simulateContract first to get revert reason
-    try {
-      await publicClient.simulateContract({
-        address: CONFIG.sessionKeyExecutor,
-        abi: SESSION_KEY_EXECUTOR_ABI,
-        functionName: 'executeOnBehalf',
-        args: [eoaAddress, CONFIG.usdc, 0n, transferCalldata8, sessionNonce8, sig8],
-        account: deployerSigner.address,
-        gas: 500000n,
-      })
-    } catch (simErr: any) {
-      throw simErr // Re-throw to hit the outer catch
-    }
+    await publicClient.simulateContract({
+      address: CONFIG.sessionKeyExecutor,
+      abi: SESSION_KEY_EXECUTOR_ABI,
+      functionName: 'executeOnBehalf',
+      args: [eoaAddress, CONFIG.usdc, 0n, transferCalldata8, sessionNonce8, sig8],
+      account: deployerSigner.address,
+      gas: 500000n,
+    })
 
     // If simulation passes, send the tx and check receipt
     const txHash8 = await deployerWallet.writeContract({
@@ -1281,7 +1275,7 @@ async function main() {
     } else {
       step8Ok = false
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     const errMsg = err?.shortMessage || err?.message || ''
     // Validate this is a permission/execution revert, not a transient error
     const isContractRevert =
@@ -1332,7 +1326,7 @@ async function main() {
         abi: SESSION_KEY_EXECUTOR_ABI,
         functionName: 'getSessionKey',
         args: [eoaAddress, agent3Signer.address],
-      })) as any
+      })) as unknown
 
       const activeKeys = (await publicClient.readContract({
         address: CONFIG.sessionKeyExecutor,
@@ -1344,7 +1338,7 @@ async function main() {
       }
 
       step9Ok = !sk3.isActive && activeKeys.length === 2
-    } catch (_err: any) {}
+    } catch (_err: unknown) {}
   }
 
   results.push({ step: 'Step 9: Revocation Agent 3', success: step9Ok })

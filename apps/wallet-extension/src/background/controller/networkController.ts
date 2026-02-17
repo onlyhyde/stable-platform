@@ -150,7 +150,9 @@ export class NetworkController {
    * Emit a network event
    */
   private emit(event: string, data: unknown): void {
-    this.eventListeners.get(event)?.forEach((listener) => listener(data))
+    this.eventListeners.get(event)?.forEach((listener) => {
+      listener(data)
+    })
   }
 }
 

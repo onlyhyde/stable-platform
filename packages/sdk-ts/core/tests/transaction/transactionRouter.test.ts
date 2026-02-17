@@ -91,7 +91,7 @@ describe('createTransactionRouter', () => {
 
     it('should use default mode when not specified', () => {
       const mode = router.resolveMode(
-        { from: '0x' + '1'.repeat(40), to: '0x' + '2'.repeat(40), value: 0n } as any,
+        { from: '0x' + '1'.repeat(40), to: '0x' + '2'.repeat(40), value: 0n } as unknown,
         { type: 'eoa', address: ('0x' + '1'.repeat(40)) as `0x${string}` }
       )
       // Default for EOA account should be 'eoa'
@@ -126,7 +126,7 @@ describe('createTransactionRouter', () => {
         prepare: vi.fn(),
         execute: vi.fn(),
       }
-      router.registerStrategy(customStrategy as any)
+      router.registerStrategy(customStrategy as unknown)
       expect(router.isSupported('smartAccount')).toBe(true)
     })
   })

@@ -79,7 +79,6 @@ async function main() {
     functionName: 'getNonce',
     args: [smartAccountAddress, 0n],
   })) as bigint
-  console.log('Nonce:', currentNonce.toString())
 
   const execMode = `0x${'00'.repeat(32)}` as Hex
   // Kernel v3 expects abi.encodePacked(target[20], value[32], callData[variable])
@@ -119,7 +118,6 @@ async function main() {
     functionName: 'senderNonce',
     args: [smartAccountAddress],
   })) as bigint
-  console.log('Paymaster senderNonce:', senderNonce.toString())
 
   const paymasterHash = keccak256(
     encodeAbiParameters(
@@ -193,8 +191,6 @@ async function main() {
     args: [packedOp],
   })) as Hex
   const userOpSignature = await signer.signMessage({ message: { raw: userOpHash } })
-
-  console.log('\nTesting handleOps via eth_call from bundler:', CONFIG.bundlerAddress)
   try {
     const handleOpsData = encodeFunctionData({
       abi: [
@@ -212,20 +208,16 @@ async function main() {
       args: [[{ ...packedOp, signature: userOpSignature }], CONFIG.bundlerAddress],
     })
 
-    const result = await publicClient.call({
+    const _result = await publicClient.call({
       account: CONFIG.bundlerAddress,
       to: CONFIG.entryPoint,
       data: handleOpsData,
       gas: 3000000n,
     })
-    console.log('handleOps SUCCESS! Result:', result)
-  } catch (err: any) {
+  } catch (err: unknown) {
     const data = err?.cause?.data || err?.data || ''
-    console.log('handleOps FAILED!')
-    console.log('Error:', err?.shortMessage || err?.message)
     if (data) {
-      const dataStr = typeof data === 'string' ? data : JSON.stringify(data)
-      console.log('Revert data:', dataStr.slice(0, 200))
+      const _dataStr = typeof data === 'string' ? data : JSON.stringify(data)
       if (
         typeof data === 'string' &&
         (data.startsWith('0x220266b6') || data.startsWith('0x65c8fd4d'))
@@ -235,8 +227,7 @@ async function main() {
           const reasonOffset = parseInt(decoded.slice(64, 128), 16) * 2
           const reasonLen = parseInt(decoded.slice(reasonOffset, reasonOffset + 64), 16)
           const reasonHex = decoded.slice(reasonOffset + 64, reasonOffset + 64 + reasonLen * 2)
-          const reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
-          console.log('FailedOp reason:', reason)
+          const _reason = Buffer.from(reasonHex, 'hex').toString('utf-8')
         } catch {}
       }
     }

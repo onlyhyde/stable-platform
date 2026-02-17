@@ -60,11 +60,76 @@ export function BuyPage({ onBack }: BuyPageProps) {
   const [_isLoadingCurrencies, setIsLoadingCurrencies] = useState(true)
 
   useEffect(() => {
+    async function loadBankAccounts() {
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'GET_LINKED_BANK_ACCOUNTS',
+        })
+        if (response?.accounts) {
+          setLinkedBankAccounts(response.accounts)
+        }
+      } catch {
+        // Silent fail for optional feature
+      }
+    }
+
+    async function loadOrders() {
+      setIsLoadingOrders(true)
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'GET_ONRAMP_ORDERS',
+        })
+        if (response?.orders) {
+          setOrders(response.orders)
+        }
+      } catch {
+        // Silent fail
+      } finally {
+        setIsLoadingOrders(false)
+      }
+    }
+
+    async function loadKycStatus() {
+      if (!selectedAccount) {
+        setIsLoadingKyc(false)
+        return
+      }
+      setIsLoadingKyc(true)
+      try {
+        const response = await fetch(`http://localhost:3002/api/v1/kyc/status/${selectedAccount}`)
+        if (response.ok) {
+          const data = await response.json()
+          setKycStatus(data.status ?? 'none')
+        }
+      } catch {
+        // KYC service unavailable, allow proceeding without
+        setKycStatus('none')
+      } finally {
+        setIsLoadingKyc(false)
+      }
+    }
+
+    async function loadSupportedCurrencies() {
+      setIsLoadingCurrencies(true)
+      try {
+        const response = await fetch('http://localhost:3002/api/v1/supported-assets')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.fiatCurrencies?.length) setSupportedFiat(data.fiatCurrencies)
+          if (data.cryptoCurrencies?.length) setSupportedCrypto(data.cryptoCurrencies)
+        }
+      } catch {
+        // API unavailable, use defaults
+      } finally {
+        setIsLoadingCurrencies(false)
+      }
+    }
+
     loadBankAccounts()
     loadOrders()
     loadKycStatus()
     loadSupportedCurrencies()
-  }, [loadBankAccounts, loadKycStatus, loadOrders, loadSupportedCurrencies])
+  }, [selectedAccount])
 
   // Poll pending orders for status updates
   useEffect(() => {
@@ -73,12 +138,22 @@ export function BuyPage({ onBack }: BuyPageProps) {
 
     const pollInterval = setInterval(async () => {
       setIsPollingOrder(true)
-      await loadOrders()
-      setIsPollingOrder(false)
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'GET_ONRAMP_ORDERS',
+        })
+        if (response?.orders) {
+          setOrders(response.orders)
+        }
+      } catch {
+        // Silent fail
+      } finally {
+        setIsPollingOrder(false)
+      }
     }, 15_000)
 
     return () => clearInterval(pollInterval)
-  }, [orders, loadOrders])
+  }, [orders])
 
   // Quote expiration timer
   useEffect(() => {
@@ -92,71 +167,6 @@ export function BuyPage({ onBack }: BuyPageProps) {
     }, 1000)
     return () => clearInterval(checkExpiration)
   }, [quote])
-
-  async function loadBankAccounts() {
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'GET_LINKED_BANK_ACCOUNTS',
-      })
-      if (response?.accounts) {
-        setLinkedBankAccounts(response.accounts)
-      }
-    } catch {
-      // Silent fail for optional feature
-    }
-  }
-
-  async function loadOrders() {
-    setIsLoadingOrders(true)
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'GET_ONRAMP_ORDERS',
-      })
-      if (response?.orders) {
-        setOrders(response.orders)
-      }
-    } catch {
-      // Silent fail
-    } finally {
-      setIsLoadingOrders(false)
-    }
-  }
-
-  async function loadKycStatus() {
-    if (!selectedAccount) {
-      setIsLoadingKyc(false)
-      return
-    }
-    setIsLoadingKyc(true)
-    try {
-      const response = await fetch(`http://localhost:3002/api/v1/kyc/status/${selectedAccount}`)
-      if (response.ok) {
-        const data = await response.json()
-        setKycStatus(data.status ?? 'none')
-      }
-    } catch {
-      // KYC service unavailable, allow proceeding without
-      setKycStatus('none')
-    } finally {
-      setIsLoadingKyc(false)
-    }
-  }
-
-  async function loadSupportedCurrencies() {
-    setIsLoadingCurrencies(true)
-    try {
-      const response = await fetch('http://localhost:3002/api/v1/supported-assets')
-      if (response.ok) {
-        const data = await response.json()
-        if (data.fiatCurrencies?.length) setSupportedFiat(data.fiatCurrencies)
-        if (data.cryptoCurrencies?.length) setSupportedCrypto(data.cryptoCurrencies)
-      }
-    } catch {
-      // API unavailable, use defaults
-    } finally {
-      setIsLoadingCurrencies(false)
-    }
-  }
 
   async function handleGetQuote() {
     if (!fiatAmount || Number.parseFloat(fiatAmount) <= 0) {

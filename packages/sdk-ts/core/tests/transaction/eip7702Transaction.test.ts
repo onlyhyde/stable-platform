@@ -102,7 +102,7 @@ describe('createEIP7702TransactionBuilder', () => {
       }
       const builder = createEIP7702TransactionBuilder({
         chainId: 1,
-        provider: provider as any,
+        provider: provider as unknown,
       })
       expect(builder).toBeDefined()
     })

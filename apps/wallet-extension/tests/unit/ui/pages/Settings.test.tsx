@@ -55,7 +55,7 @@ describe('Settings', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     // Mock chrome API - return settings quickly
-    ;(global as any).chrome = {
+    ;(global as unknown).chrome = {
       runtime: {
         sendMessage: jest.fn().mockResolvedValue({
           payload: { enabled: false, minutes: 5 },

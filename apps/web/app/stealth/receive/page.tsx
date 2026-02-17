@@ -2,9 +2,18 @@
 
 import { useCallback, useState } from 'react'
 import type { Hex } from 'viem'
-import { keccak256, concat, toHex } from 'viem'
+import { concat, keccak256, toHex } from 'viem'
 import { useSignMessage } from 'wagmi'
-import { Button, Card, CardContent, CardHeader, CardTitle, ConnectWalletCard, PageHeader, useToast } from '@/components/common'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  ConnectWalletCard,
+  PageHeader,
+  useToast,
+} from '@/components/common'
 import { IncomingPaymentsCard, StealthMetaAddressCard } from '@/components/stealth'
 import { useStealth, useWallet } from '@/hooks'
 import type { Announcement } from '@/types'
@@ -72,55 +81,58 @@ export default function StealthReceivePage() {
     }
   }
 
-  const handleWithdraw = useCallback(async (announcement: Announcement) => {
-    if (!stealthKeys || !address) {
-      addToast({
-        type: 'error',
-        title: 'Keys Required',
-        message: 'Please derive your stealth keys first by clicking "Unlock Stealth Keys".',
-      })
-      return
-    }
-
-    const toastId = addToast({
-      type: 'loading',
-      title: 'Withdrawing',
-      message: `Withdrawing ${(Number(announcement.value) / 1e18).toFixed(4)} ETH from stealth address...`,
-      persistent: true,
-    })
-
-    try {
-      const result = await withdrawFromStealthAddress({
-        announcement,
-        recipientAddress: address,
-        spendingKey: stealthKeys.spending,
-        viewingKey: stealthKeys.viewing,
-      })
-
-      if (result?.hash) {
-        updateToast(toastId, {
-          type: 'success',
-          title: 'Withdrawal Sent',
-          message: `Transaction submitted: ${result.hash.slice(0, 10)}...`,
-          persistent: false,
+  const handleWithdraw = useCallback(
+    async (announcement: Announcement) => {
+      if (!stealthKeys || !address) {
+        addToast({
+          type: 'error',
+          title: 'Keys Required',
+          message: 'Please derive your stealth keys first by clicking "Unlock Stealth Keys".',
         })
-      } else {
+        return
+      }
+
+      const toastId = addToast({
+        type: 'loading',
+        title: 'Withdrawing',
+        message: `Withdrawing ${(Number(announcement.value) / 1e18).toFixed(4)} ETH from stealth address...`,
+        persistent: true,
+      })
+
+      try {
+        const result = await withdrawFromStealthAddress({
+          announcement,
+          recipientAddress: address,
+          spendingKey: stealthKeys.spending,
+          viewingKey: stealthKeys.viewing,
+        })
+
+        if (result?.hash) {
+          updateToast(toastId, {
+            type: 'success',
+            title: 'Withdrawal Sent',
+            message: `Transaction submitted: ${result.hash.slice(0, 10)}...`,
+            persistent: false,
+          })
+        } else {
+          updateToast(toastId, {
+            type: 'error',
+            title: 'Withdrawal Failed',
+            message: error?.message ?? 'Could not withdraw from stealth address',
+            persistent: false,
+          })
+        }
+      } catch {
         updateToast(toastId, {
           type: 'error',
           title: 'Withdrawal Failed',
-          message: error?.message ?? 'Could not withdraw from stealth address',
+          message: 'Could not withdraw from stealth address',
           persistent: false,
         })
       }
-    } catch {
-      updateToast(toastId, {
-        type: 'error',
-        title: 'Withdrawal Failed',
-        message: 'Could not withdraw from stealth address',
-        persistent: false,
-      })
-    }
-  }, [addToast, updateToast, stealthKeys, address, withdrawFromStealthAddress, error])
+    },
+    [addToast, updateToast, stealthKeys, address, withdrawFromStealthAddress, error]
+  )
 
   if (!isConnected) {
     return <ConnectWalletCard message="Please connect your wallet to receive privately" />
@@ -159,8 +171,8 @@ export default function StealthReceivePage() {
           ) : (
             <div className="space-y-3">
               <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Sign a message with your wallet to derive your stealth private keys.
-                This is required to withdraw funds from stealth addresses.
+                Sign a message with your wallet to derive your stealth private keys. This is
+                required to withdraw funds from stealth addresses.
               </p>
               <Button onClick={handleDeriveKeys} isLoading={isDeriving}>
                 Unlock Stealth Keys

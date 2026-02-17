@@ -9,11 +9,8 @@ declare module 'qrcode' {
   }
 
   function toDataURL(text: string, options?: QRCodeOptions): Promise<string>
-  function toCanvas(
-    canvas: HTMLCanvasElement,
-    text: string,
-    options?: QRCodeOptions
-  ): Promise<void>
+  function toCanvas(canvas: HTMLCanvasElement, text: string, options?: QRCodeOptions): Promise<void>
+  // biome-ignore lint/suspicious/noShadowRestrictedNames: matches qrcode library API
   function toString(text: string, options?: QRCodeOptions): Promise<string>
 
   export { toDataURL, toCanvas, toString }

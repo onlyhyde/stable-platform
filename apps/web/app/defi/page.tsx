@@ -12,7 +12,10 @@ export default function DeFiPage() {
     const tvl = pools.reduce((sum, p) => sum + p.tvl, 0)
     // volume24h would come from indexer — not available in pool data
     return {
-      totalValueLocked: tvl > 0 ? `$${tvl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00',
+      totalValueLocked:
+        tvl > 0
+          ? `$${tvl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          : '$0.00',
       volume24h: '$0.00',
       yourPositions: pools.length,
     }

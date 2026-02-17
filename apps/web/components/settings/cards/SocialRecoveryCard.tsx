@@ -13,7 +13,7 @@ import {
   ModalActions,
   useToast,
 } from '@/components/common'
-import { useRecoveryModule, type Guardian } from '@/hooks/useRecoveryModule'
+import { type Guardian, useRecoveryModule } from '@/hooks/useRecoveryModule'
 import { useSmartAccount } from '@/hooks/useSmartAccount'
 
 // ============================================================================
@@ -45,14 +45,14 @@ export function SocialRecoveryCard() {
     removeGuardian,
     updateThreshold,
     refresh,
-    setGuardianLabel,
   } = useRecoveryModule()
 
   // Setup modal state
   const [showSetup, setShowSetup] = useState(false)
+  const [guardianIdCounter, setGuardianIdCounter] = useState(1)
   const [setupGuardians, setSetupGuardians] = useState<
-    { address: string; weight: string; label: string }[]
-  >([{ address: '', weight: '1', label: '' }])
+    { id: number; address: string; weight: string; label: string }[]
+  >([{ id: 0, address: '', weight: '1', label: '' }])
   const [setupThreshold, setSetupThreshold] = useState('1')
 
   // Add guardian modal
@@ -68,8 +68,12 @@ export function SocialRecoveryCard() {
   // ============================================================================
 
   const handleAddSetupRow = useCallback(() => {
-    setSetupGuardians((prev) => [...prev, { address: '', weight: '1', label: '' }])
-  }, [])
+    setGuardianIdCounter((prev) => prev + 1)
+    setSetupGuardians((prev) => [
+      ...prev,
+      { id: guardianIdCounter, address: '', weight: '1', label: '' },
+    ])
+  }, [guardianIdCounter])
 
   const handleRemoveSetupRow = useCallback((index: number) => {
     setSetupGuardians((prev) => prev.filter((_, i) => i !== index))
@@ -94,7 +98,11 @@ export function SocialRecoveryCard() {
       }))
 
     if (guardians.length === 0) {
-      addToast({ type: 'error', title: 'Error', message: 'Add at least one valid guardian address' })
+      addToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Add at least one valid guardian address',
+      })
       return
     }
 
@@ -117,7 +125,8 @@ export function SocialRecoveryCard() {
         message: `Social recovery set up with ${guardians.length} guardian(s)`,
       })
       setShowSetup(false)
-      setSetupGuardians([{ address: '', weight: '1', label: '' }])
+      setSetupGuardians([{ id: 0, address: '', weight: '1', label: '' }])
+      setGuardianIdCounter(1)
       setSetupThreshold('1')
     } else {
       addToast({ type: 'error', title: 'Setup Failed', message: error || 'Transaction failed' })
@@ -251,19 +260,19 @@ export function SocialRecoveryCard() {
         </Card>
 
         {/* Setup Modal */}
-        <Modal
-          isOpen={showSetup}
-          onClose={() => setShowSetup(false)}
-          title="Setup Social Recovery"
-        >
+        <Modal isOpen={showSetup} onClose={() => setShowSetup(false)} title="Setup Social Recovery">
           <div className="space-y-4">
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Add trusted guardians who can collectively recover your account.
-              Each guardian has a weight, and recovery requires meeting the threshold.
+              Add trusted guardians who can collectively recover your account. Each guardian has a
+              weight, and recovery requires meeting the threshold.
             </p>
 
             {setupGuardians.map((row, index) => (
-              <div key={index} className="space-y-2 p-3 border rounded-lg" style={{ borderColor: 'rgb(var(--border))' }}>
+              <div
+                key={row.id}
+                className="space-y-2 p-3 border rounded-lg"
+                style={{ borderColor: 'rgb(var(--border))' }}
+              >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                     Guardian {index + 1}
@@ -344,8 +353,8 @@ export function SocialRecoveryCard() {
             <div>
               <CardTitle>Social Recovery</CardTitle>
               <CardDescription className="mt-1">
-                {config.guardians.length} guardian{config.guardians.length !== 1 ? 's' : ''} configured
-                {' '}&middot; Threshold: {config.threshold}/{totalWeight}
+                {config.guardians.length} guardian{config.guardians.length !== 1 ? 's' : ''}{' '}
+                configured &middot; Threshold: {config.threshold}/{totalWeight}
               </CardDescription>
             </div>
             <StatusBadge status="Active" variant="success" />
@@ -371,11 +380,17 @@ export function SocialRecoveryCard() {
                   </div>
                   <div>
                     {guardian.label && (
-                      <p className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: 'rgb(var(--foreground))' }}
+                      >
                         {guardian.label}
                       </p>
                     )}
-                    <p className="text-xs font-mono" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                    <p
+                      className="text-xs font-mono"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
                       {shortenAddress(guardian.address)}
                     </p>
                   </div>
@@ -413,12 +428,7 @@ export function SocialRecoveryCard() {
             >
               Edit Threshold
             </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={refresh}
-              disabled={isLoading}
-            >
+            <Button variant="secondary" size="sm" onClick={refresh} disabled={isLoading}>
               {isLoading ? 'Loading...' : 'Refresh'}
             </Button>
           </div>

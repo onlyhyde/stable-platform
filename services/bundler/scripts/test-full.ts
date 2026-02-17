@@ -307,7 +307,6 @@ async function main() {
   // 2. Check if account already deployed & get nonce
   const accountCode = await publicClient.getCode({ address: smartAccountAddress })
   const isDeployed = !!accountCode && accountCode !== '0x'
-  console.log('Account deployed:', isDeployed)
 
   // Get nonce from EntryPoint (key=0 for default validator)
   const currentNonce = (await publicClient.readContract({
@@ -327,7 +326,6 @@ async function main() {
     functionName: 'getNonce',
     args: [smartAccountAddress, 0n],
   })) as bigint
-  console.log('Current nonce:', currentNonce.toString())
 
   // Factory data only needed if account not yet deployed
   let factoryData: Hex | undefined
@@ -386,7 +384,6 @@ async function main() {
     functionName: 'senderNonce',
     args: [smartAccountAddress],
   })) as bigint
-  console.log('\nPaymaster senderNonce:', senderNonce.toString())
 
   // Compute paymaster hash (includes senderNonce for replay prevention)
   const paymasterHash = computePaymasterHash({
@@ -403,7 +400,6 @@ async function main() {
     validAfter,
     senderNonce,
   })
-  console.log('Paymaster hash:', paymasterHash)
 
   // Sign paymaster hash
   const paymasterSignature = await paymasterSigner.signMessage({
@@ -459,28 +455,16 @@ async function main() {
       functionName: 'simulateValidation',
       args: [{ ...packedOp, signature: userOpSignature }],
     })
-    const validationResult = simResult as any
-    console.log('SUCCESS! ValidationResult returned (v0.9)')
-    console.log('  preOpGas:', validationResult.returnInfo.preOpGas.toString())
-    console.log('  prefund:', validationResult.returnInfo.prefund.toString())
-    console.log(
-      '  accountValidationData:',
-      validationResult.returnInfo.accountValidationData.toString()
-    )
-    console.log(
-      '  paymasterValidationData:',
-      validationResult.returnInfo.paymasterValidationData.toString()
-    )
+    const validationResult = simResult as unknown
     // Check SIG_FAILED: aggregator = address(1) in lowest 160 bits
     const pmvd = BigInt(validationResult.returnInfo.paymasterValidationData)
     const pmSigFailed = (pmvd & ((1n << 160n) - 1n)) === 1n
     const acctVd = BigInt(validationResult.returnInfo.accountValidationData)
     const acctSigFailed = (acctVd & ((1n << 160n) - 1n)) === 1n
-    if (pmSigFailed) console.log('  ⚠️  PAYMASTER SIG_FAILED! Hash mismatch.')
-    if (acctSigFailed) console.log('  ⚠️  ACCOUNT SIG_FAILED!')
-    if (!pmSigFailed && !acctSigFailed) console.log('  → Account + Paymaster signatures valid')
-    simulationPassed = !pmSigFailed && !acctSigFailed
-  } catch (err: any) {
+    if (pmSigFailed)
+      if (acctSigFailed)
+        if (!pmSigFailed && !acctSigFailed) simulationPassed = !pmSigFailed && !acctSigFailed
+  } catch (err: unknown) {
     const raw: string = err?.cause?.raw || err?.cause?.data || err?.data || ''
     const result = parseRevertResult(raw)
     if (result.type === 'ValidationResult' && result.raw) {
@@ -546,25 +530,16 @@ async function main() {
           ],
           ('0x' + result.raw.slice(10)) as Hex
         )
-        const vr = decoded[0] as any
-        console.log('SUCCESS! ValidationResult decoded from revert (v0.9)')
-        console.log('  preOpGas:', vr.returnInfo.preOpGas.toString())
-        console.log('  prefund:', vr.returnInfo.prefund.toString())
-        console.log('  accountValidationData:', vr.returnInfo.accountValidationData.toString())
-        console.log('  paymasterValidationData:', vr.returnInfo.paymasterValidationData.toString())
+        const vr = decoded[0] as unknown
         const pmvd = BigInt(vr.returnInfo.paymasterValidationData)
         const pmSigFailed = (pmvd & ((1n << 160n) - 1n)) === 1n
         const acctVd = BigInt(vr.returnInfo.accountValidationData)
         const acctSigFailed = (acctVd & ((1n << 160n) - 1n)) === 1n
-        if (pmSigFailed) console.log('  ⚠️  PAYMASTER SIG_FAILED! Hash mismatch.')
-        if (acctSigFailed) console.log('  ⚠️  ACCOUNT SIG_FAILED!')
-        if (!pmSigFailed && !acctSigFailed) console.log('  → Account + Paymaster signatures valid')
-        simulationPassed = !pmSigFailed && !acctSigFailed
-      } catch (decodeErr: any) {
-        console.log('ValidationResult revert detected but decode failed:', decodeErr.message)
-      }
+        if (pmSigFailed)
+          if (acctSigFailed)
+            if (!pmSigFailed && !acctSigFailed) simulationPassed = !pmSigFailed && !acctSigFailed
+      } catch (_decodeErr: unknown) {}
     } else if (result.type === 'FailedOp') {
-      console.log(`FAILED: FailedOp "${result.reason}"`)
     } else if (result.type === 'FailedOpWithRevert') {
       console.info('FailedOpWithRevert:', result.reason, 'inner:', result.inner)
     } else {
@@ -640,7 +615,7 @@ async function main() {
         const _status = await statusRes.json()
       }
     }
-  } catch (_err: any) {}
+  } catch (_err: unknown) {}
 }
 
 main().catch(console.error)

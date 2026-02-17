@@ -373,7 +373,10 @@ export function SubscriptionPlansCard({
               }}
               value={editFormData.interval}
               onChange={(e) =>
-                setEditFormData({ ...editFormData, interval: e.target.value as typeof editFormData.interval })
+                setEditFormData({
+                  ...editFormData,
+                  interval: e.target.value as typeof editFormData.interval,
+                })
               }
             >
               {INTERVALS.map((interval) => (
@@ -403,10 +406,13 @@ export function SubscriptionPlansCard({
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => {
-              setShowEditModal(false)
-              setEditingPlan(null)
-            }}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowEditModal(false)
+                setEditingPlan(null)
+              }}
+            >
               Cancel
             </Button>
             <Button

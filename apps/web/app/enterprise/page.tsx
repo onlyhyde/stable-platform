@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/common'
+import { useWallet } from '@/hooks'
 import { useExpenses } from '@/hooks/useExpenses'
 import { usePayroll } from '@/hooks/usePayroll'
-import { useWallet } from '@/hooks'
 
 export default function EnterprisePage() {
   const { isConnected } = useWallet()
@@ -127,7 +127,11 @@ export default function EnterprisePage() {
                 Total Payroll (MTD)
               </p>
               <p className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
-                ${summary.totalMonthly.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                $
+                {summary.totalMonthly.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </p>
             </CardContent>
           </Card>

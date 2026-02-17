@@ -20,29 +20,35 @@ export default function PoolPage() {
     setIsAddLiquidityOpen(true)
   }
 
-  function handleCloseModal() {
+  const handleCloseModal = useCallback(() => {
     setIsAddLiquidityOpen(false)
     setSelectedPool(null)
-  }
+  }, [])
 
-  const handleSubmitLiquidity = useCallback(async (data: LiquidityFormData) => {
-    addToast({
-      type: 'loading',
-      title: 'Adding Liquidity',
-      message: `Adding liquidity to pool ${data.poolAddress.slice(0, 8)}...`,
-      persistent: true,
-    })
-    handleCloseModal()
-  }, [addToast])
+  const handleSubmitLiquidity = useCallback(
+    async (data: LiquidityFormData) => {
+      addToast({
+        type: 'loading',
+        title: 'Adding Liquidity',
+        message: `Adding liquidity to pool ${data.poolAddress.slice(0, 8)}...`,
+        persistent: true,
+      })
+      handleCloseModal()
+    },
+    [addToast, handleCloseModal]
+  )
 
-  const handleRemoveLiquidity = useCallback((position: LiquidityPosition) => {
-    addToast({
-      type: 'loading',
-      title: 'Removing Liquidity',
-      message: `Removing liquidity from ${position.token0.symbol}/${position.token1.symbol} pool...`,
-      persistent: true,
-    })
-  }, [addToast])
+  const handleRemoveLiquidity = useCallback(
+    (position: LiquidityPosition) => {
+      addToast({
+        type: 'loading',
+        title: 'Removing Liquidity',
+        message: `Removing liquidity from ${position.token0.symbol}/${position.token1.symbol} pool...`,
+        persistent: true,
+      })
+    },
+    [addToast]
+  )
 
   if (!isConnected) {
     return <ConnectWalletCard message="Please connect your wallet to view pools" />

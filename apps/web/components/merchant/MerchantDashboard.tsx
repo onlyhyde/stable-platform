@@ -1,14 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { type Address, formatUnits, parseUnits } from 'viem'
 import { PageHeader } from '@/components/common/PageHeader'
 import { useToast } from '@/components/common/Toast'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useWallet } from '@/hooks/useWallet'
-import { INTERVAL_PRESETS } from '@/types/subscription'
 import type { PlanDisplayInfo } from '@/types/subscription'
+import { INTERVAL_PRESETS } from '@/types/subscription'
 import { ApiKeysCard } from './cards/ApiKeysCard'
 import { MerchantStatsCards } from './cards/MerchantStatsCards'
 import { PaymentAnalyticsCard } from './cards/PaymentAnalyticsCard'
@@ -186,9 +186,7 @@ export function MerchantDashboard() {
     setWebhooks(
       loadFromStorage<WebhookEndpoint>(WEBHOOKS_STORAGE_KEY, ['createdAt', 'lastTriggered'])
     )
-    setApiKeys(
-      loadFromStorage<ApiKey>(APIKEYS_STORAGE_KEY, ['createdAt', 'lastUsed', 'expiresAt'])
-    )
+    setApiKeys(loadFromStorage<ApiKey>(APIKEYS_STORAGE_KEY, ['createdAt', 'lastUsed', 'expiresAt']))
   }, [])
 
   // Map contract data to card-compatible types
@@ -197,15 +195,18 @@ export function MerchantDashboard() {
   // Estimate stats from on-chain plan data
   const activePlans = plans.filter((p) => p.isActive)
   const totalSubscribers = plans.reduce((sum, p) => sum + p.activeSubscribers, 0)
-  const estimatedMonthlyRevenue = activePlans.reduce(
-    (sum, p) => {
-      // Normalize to monthly: daily×30, weekly×4, yearly÷12
-      const multiplier =
-        p.interval === 'daily' ? 30 : p.interval === 'weekly' ? 4 : p.interval === 'yearly' ? 1 / 12 : 1
-      return sum + p.price * p.activeSubscribers * multiplier
-    },
-    0
-  )
+  const estimatedMonthlyRevenue = activePlans.reduce((sum, p) => {
+    // Normalize to monthly: daily×30, weekly×4, yearly÷12
+    const multiplier =
+      p.interval === 'daily'
+        ? 30
+        : p.interval === 'weekly'
+          ? 4
+          : p.interval === 'yearly'
+            ? 1 / 12
+            : 1
+    return sum + p.price * p.activeSubscribers * multiplier
+  }, 0)
   const avgTxValue =
     activePlans.length > 0
       ? activePlans.reduce((sum, p) => sum + p.price, 0) / activePlans.length

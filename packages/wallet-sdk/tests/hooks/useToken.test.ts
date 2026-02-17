@@ -27,7 +27,7 @@ function encodeUint256(value: bigint): string {
 
 function createTokenMockProvider() {
   return createMockProvider({
-    eth_call: (params: any) => {
+    eth_call: (params: unknown) => {
       const callData = params?.[0]?.data as string
       if (!callData) return '0x'
       // name()

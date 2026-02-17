@@ -36,7 +36,13 @@ export class LedgerWebHIDTransport implements HardwareTransport {
       throw new Error('Transport not connected')
     }
     // Low-level send — not typically used directly; LedgerKeyring uses getRawTransport()
-    return this.transport.send(command[0]!, command[1]!, command[2]!, command[3]!, Buffer.from(command.slice(5)))
+    return this.transport.send(
+      command[0]!,
+      command[1]!,
+      command[2]!,
+      command[3]!,
+      Buffer.from(command.slice(5))
+    )
   }
 
   /**

@@ -142,7 +142,9 @@ describe('Activity', () => {
 
     render(<Activity />)
     // Filter out the refresh button (has aria-label="Refresh")
-    const items = screen.getAllByRole('button').filter(btn => btn.getAttribute('aria-label') !== 'Refresh')
+    const items = screen
+      .getAllByRole('button')
+      .filter((btn) => btn.getAttribute('aria-label') !== 'Refresh')
     // First item should be the newer transaction
     expect(items[0].textContent).toContain('Send')
   })
@@ -175,7 +177,9 @@ describe('Activity', () => {
 
     render(<Activity />)
 
-    const txButtons = screen.getAllByRole('button').filter(btn => btn.getAttribute('aria-label') !== 'Refresh')
+    const txButtons = screen
+      .getAllByRole('button')
+      .filter((btn) => btn.getAttribute('aria-label') !== 'Refresh')
     fireEvent.click(txButtons[0])
 
     expect(mockSetSelectedTxId).toHaveBeenCalledWith(tx.id)
@@ -195,7 +199,9 @@ describe('Activity', () => {
 
     render(<Activity />)
 
-    const txButtons = screen.getAllByRole('button').filter(btn => btn.getAttribute('aria-label') !== 'Refresh')
+    const txButtons = screen
+      .getAllByRole('button')
+      .filter((btn) => btn.getAttribute('aria-label') !== 'Refresh')
     fireEvent.click(txButtons[0])
 
     expect(mockSetSelectedTxId).toHaveBeenCalledWith(tx.id)

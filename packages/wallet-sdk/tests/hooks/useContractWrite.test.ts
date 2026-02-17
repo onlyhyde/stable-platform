@@ -30,7 +30,7 @@ function withAccount(
   provider: ReturnType<typeof createMockProvider>,
   account = '0x1234567890abcdef1234567890abcdef12345678'
 ) {
-  ;(provider as any).account = account
+  ;(provider as unknown).account = account
   return provider
 }
 
@@ -43,7 +43,7 @@ describe('useContractWrite', () => {
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 
@@ -62,7 +62,7 @@ describe('useContractWrite', () => {
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 
@@ -103,14 +103,14 @@ describe('useContractWrite', () => {
   it('should throw if no account connected', async () => {
     const provider = createMockProvider()
     // Explicitly ensure no account
-    ;(provider as any).account = undefined
+    ;(provider as unknown).account = undefined
 
     const { result } = renderHook(() =>
       useContractWrite({
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 
@@ -142,7 +142,7 @@ describe('useContractWrite', () => {
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 
@@ -168,7 +168,7 @@ describe('useContractWrite', () => {
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 
@@ -204,7 +204,7 @@ describe('useContractWrite', () => {
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as any,
+        provider: provider as unknown,
         value: BigInt('1000000000000000000'), // 1 ETH
       })
     )
@@ -233,7 +233,7 @@ describe('useContractWrite', () => {
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as any,
+        provider: provider as unknown,
         gas: BigInt(100000),
         maxFeePerGas: BigInt(30000000000),
         maxPriorityFeePerGas: BigInt(2000000000),
@@ -268,7 +268,7 @@ describe('useContractWrite', () => {
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 
@@ -296,7 +296,7 @@ describe('useContractWrite', () => {
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 
@@ -324,7 +324,7 @@ describe('useContractWrite', () => {
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as any,
+        provider: provider as unknown,
       })
     )
 

@@ -77,5 +77,8 @@ export const PopularQuerySchema = z.object({
 })
 
 export const InstallationQuerySchema = z.object({
-  accountAddress: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional(),
+  accountAddress: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{40}$/)
+    .optional(),
 })

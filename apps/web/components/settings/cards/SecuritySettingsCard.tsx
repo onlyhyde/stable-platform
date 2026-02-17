@@ -50,25 +50,31 @@ export function SecuritySettingsCard() {
     localStorage.setItem(SECURITY_SETTINGS_KEY, JSON.stringify(updated))
   }, [])
 
-  const handleToggleTxConfirmation = useCallback((checked: boolean) => {
-    const updated = { ...settings, txConfirmation: checked }
-    persistSettings(updated)
-    addToast({
-      type: 'info',
-      title: 'Setting Updated',
-      message: `Transaction confirmation ${checked ? 'enabled' : 'disabled'}`,
-    })
-  }, [settings, persistSettings, addToast])
+  const handleToggleTxConfirmation = useCallback(
+    (checked: boolean) => {
+      const updated = { ...settings, txConfirmation: checked }
+      persistSettings(updated)
+      addToast({
+        type: 'info',
+        title: 'Setting Updated',
+        message: `Transaction confirmation ${checked ? 'enabled' : 'disabled'}`,
+      })
+    },
+    [settings, persistSettings, addToast]
+  )
 
-  const handleToggleSessionKeys = useCallback((checked: boolean) => {
-    const updated = { ...settings, sessionKeyEnabled: checked }
-    persistSettings(updated)
-    addToast({
-      type: 'info',
-      title: 'Setting Updated',
-      message: `Session keys ${checked ? 'enabled' : 'disabled'}`,
-    })
-  }, [settings, persistSettings, addToast])
+  const handleToggleSessionKeys = useCallback(
+    (checked: boolean) => {
+      const updated = { ...settings, sessionKeyEnabled: checked }
+      persistSettings(updated)
+      addToast({
+        type: 'info',
+        title: 'Setting Updated',
+        message: `Session keys ${checked ? 'enabled' : 'disabled'}`,
+      })
+    },
+    [settings, persistSettings, addToast]
+  )
 
   const handleUpdateLimits = useCallback(() => {
     persistSettings(settings)
@@ -79,13 +85,16 @@ export function SecuritySettingsCard() {
     })
   }, [settings, persistSettings, addToast])
 
-  const handleSetupRecovery = useCallback((method: string) => {
-    addToast({
-      type: 'info',
-      title: 'Coming Soon',
-      message: `${method} recovery setup will be available in a future update`,
-    })
-  }, [addToast])
+  const handleSetupRecovery = useCallback(
+    (method: string) => {
+      addToast({
+        type: 'info',
+        title: 'Coming Soon',
+        message: `${method} recovery setup will be available in a future update`,
+      })
+    },
+    [addToast]
+  )
 
   return (
     <div className="space-y-6">
@@ -135,7 +144,9 @@ export function SecuritySettingsCard() {
               value={settings.dailyTokenLimit}
               onChange={(e) => setSettings((s) => ({ ...s, dailyTokenLimit: e.target.value }))}
             />
-            <Button variant="secondary" onClick={handleUpdateLimits}>Update Limits</Button>
+            <Button variant="secondary" onClick={handleUpdateLimits}>
+              Update Limits
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -148,7 +159,12 @@ export function SecuritySettingsCard() {
           </CardDescription>
 
           <div className="space-y-3">
-            <RecoveryOption icon={<EmailIcon />} title="Email Recovery" status="Not configured" onSetup={() => handleSetupRecovery('Email')} />
+            <RecoveryOption
+              icon={<EmailIcon />}
+              title="Email Recovery"
+              status="Not configured"
+              onSetup={() => handleSetupRecovery('Email')}
+            />
           </div>
           <p className="mt-4 text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
             For Social Recovery with guardians, see the dedicated section below.
@@ -221,7 +237,7 @@ function EmailIcon() {
   )
 }
 
-function SocialIcon() {
+function _SocialIcon() {
   return (
     <svg
       className="w-5 h-5"

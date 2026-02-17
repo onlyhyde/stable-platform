@@ -10,7 +10,7 @@ import type {
 import { filterValidAddresses, parseChainIdHex } from '../validation'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type EventListener = (...args: any[]) => void
+type EventListener = (...args: unknown[]) => void
 
 /**
  * Transaction event data emitted when a transaction is sent
@@ -359,7 +359,7 @@ export class StableNetProvider {
     listener: (event: TransactionConfirmedEvent) => void
   ): () => void
   on(event: 'balanceChange', listener: (event: BalanceChangeEvent) => void): () => void
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: overload implementation requires widest type
   on(event: string, listener: (...args: any[]) => void): () => void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set())

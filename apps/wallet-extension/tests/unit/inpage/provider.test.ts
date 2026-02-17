@@ -33,10 +33,10 @@ jest.mock('../../../src/shared/utils/logger', () => ({
 }))
 
 describe('StableNetProvider', () => {
-  let _provider: any
+  let _provider: unknown
   let messageListeners: Array<(event: MessageEvent) => void>
   let originalPostMessage: typeof window.postMessage
-  let postedMessages: any[]
+  let postedMessages: unknown[]
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -53,7 +53,7 @@ describe('StableNetProvider', () => {
     const originalAddEventListener = window.addEventListener
     window.addEventListener = jest.fn((type, listener) => {
       if (type === 'message') {
-        messageListeners.push(listener as any)
+        messageListeners.push(listener as unknown)
       }
       return originalAddEventListener.call(window, type, listener as EventListener)
     })
@@ -76,7 +76,7 @@ describe('StableNetProvider', () => {
   })
 
   // Helper to simulate receiving a message from content script
-  function _simulateMessage(data: any): void {
+  function _simulateMessage(data: unknown): void {
     const event = new MessageEvent('message', {
       source: window,
       data: {
@@ -84,7 +84,9 @@ describe('StableNetProvider', () => {
         data,
       },
     })
-    messageListeners.forEach((listener) => listener(event))
+    messageListeners.forEach((listener) => {
+      listener(event)
+    })
   }
 
   describe('Event System (Task 6.1)', () => {
@@ -103,7 +105,9 @@ describe('StableNetProvider', () => {
             return testProvider
           },
           emit(event: string, data: unknown) {
-            eventListeners.get(event)?.forEach((l) => l(data))
+            eventListeners.get(event)?.forEach((l) => {
+              l(data)
+            })
           },
         }
 
@@ -130,7 +134,9 @@ describe('StableNetProvider', () => {
             return testProvider
           },
           emit(event: string, data: unknown) {
-            eventListeners.get(event)?.forEach((l) => l(data))
+            eventListeners.get(event)?.forEach((l) => {
+              l(data)
+            })
           },
         }
 
@@ -160,7 +166,9 @@ describe('StableNetProvider', () => {
             return testProvider
           },
           emit(event: string, data: unknown) {
-            eventListeners.get(event)?.forEach((l) => l(data))
+            eventListeners.get(event)?.forEach((l) => {
+              l(data)
+            })
           },
         }
 
@@ -185,7 +193,9 @@ describe('StableNetProvider', () => {
             return testProvider
           },
           emit(event: string, data: unknown) {
-            eventListeners.get(event)?.forEach((l) => l(data))
+            eventListeners.get(event)?.forEach((l) => {
+              l(data)
+            })
           },
         }
 
@@ -211,7 +221,9 @@ describe('StableNetProvider', () => {
             return testProvider
           },
           emit(event: string, data: unknown) {
-            eventListeners.get(event)?.forEach((l) => l(data))
+            eventListeners.get(event)?.forEach((l) => {
+              l(data)
+            })
           },
         }
 
@@ -251,7 +263,9 @@ describe('StableNetProvider', () => {
             return testProvider.on(event, onceListener)
           },
           emit(event: string, data: unknown) {
-            eventListeners.get(event)?.forEach((l) => l(data))
+            eventListeners.get(event)?.forEach((l) => {
+              l(data)
+            })
           },
         }
 
@@ -442,7 +456,9 @@ describe('Provider Event Integration', () => {
 
       const handleProviderEvent = (message: { event: string; data: unknown }) => {
         const { event, data } = message
-        eventListeners.get(event)?.forEach((listener) => listener(data))
+        eventListeners.get(event)?.forEach((listener) => {
+          listener(data)
+        })
       }
 
       // Register listeners

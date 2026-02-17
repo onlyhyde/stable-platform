@@ -1,9 +1,6 @@
 import type { Address, Hex } from 'viem'
-import { describe, expect, it, beforeEach } from 'vitest'
-import {
-  SponsorPolicyManager,
-  type PolicyResult,
-} from '../src/policy/sponsorPolicy'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { SponsorPolicyManager } from '../src/policy/sponsorPolicy'
 import type { SponsorPolicy, UserOperationRpc } from '../src/types'
 
 // Test constants

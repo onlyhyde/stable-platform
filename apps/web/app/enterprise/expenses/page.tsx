@@ -37,31 +37,51 @@ export default function ExpensesPage() {
     allExpenses.filter((e) => e.status === 'paid').reduce((sum, e) => sum + Number(e.amount), 0) /
     1e6
 
-  const handleSubmitExpense = useCallback((data: ExpenseFormData) => {
-    addToast({
-      type: 'success',
-      title: 'Expense Submitted',
-      message: `Submitted ${data.category} expense for $${data.amount}`,
-    })
-    setIsAddModalOpen(false)
-  }, [addToast])
+  const handleSubmitExpense = useCallback(
+    (data: ExpenseFormData) => {
+      addToast({
+        type: 'success',
+        title: 'Expense Submitted',
+        message: `Submitted ${data.category} expense for $${data.amount}`,
+      })
+      setIsAddModalOpen(false)
+    },
+    [addToast]
+  )
 
-  const handleApprove = useCallback((id: string) => {
-    addToast({ type: 'success', title: 'Expense Approved', message: `Expense ${id} has been approved` })
-  }, [addToast])
+  const handleApprove = useCallback(
+    (id: string) => {
+      addToast({
+        type: 'success',
+        title: 'Expense Approved',
+        message: `Expense ${id} has been approved`,
+      })
+    },
+    [addToast]
+  )
 
-  const handleReject = useCallback((id: string) => {
-    addToast({ type: 'info', title: 'Expense Rejected', message: `Expense ${id} has been rejected` })
-  }, [addToast])
+  const handleReject = useCallback(
+    (id: string) => {
+      addToast({
+        type: 'info',
+        title: 'Expense Rejected',
+        message: `Expense ${id} has been rejected`,
+      })
+    },
+    [addToast]
+  )
 
-  const handlePay = useCallback((id: string) => {
-    addToast({
-      type: 'loading',
-      title: 'Processing Payment',
-      message: `Paying expense ${id}...`,
-      persistent: true,
-    })
-  }, [addToast])
+  const handlePay = useCallback(
+    (id: string) => {
+      addToast({
+        type: 'loading',
+        title: 'Processing Payment',
+        message: `Paying expense ${id}...`,
+        persistent: true,
+      })
+    },
+    [addToast]
+  )
 
   if (!isConnected) {
     return <ConnectWalletCard message="Please connect your wallet to manage expenses" />

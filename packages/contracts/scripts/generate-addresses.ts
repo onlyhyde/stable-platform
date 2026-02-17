@@ -230,6 +230,7 @@ function generateAddressesTs(deployments: ChainDeployment[]): string {
   lines.push(' * Default tokens by chain ID')
   lines.push(' */')
   lines.push(
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: generates TypeScript type literal
     'export const DEFAULT_TOKENS: Record<number, Array<{ address: `0x${string}`; name: string; symbol: string; decimals: number; logoUrl?: string }>> = {'
   )
 

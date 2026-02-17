@@ -32,10 +32,7 @@ export default function MerchantDashboardPage() {
                 />
               </svg>
             </div>
-            <h2
-              className="text-xl font-semibold mb-2"
-              style={{ color: 'rgb(var(--foreground))' }}
-            >
+            <h2 className="text-xl font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
               Connect to Continue
             </h2>
             <p className="mb-6" style={{ color: 'rgb(var(--muted-foreground))' }}>

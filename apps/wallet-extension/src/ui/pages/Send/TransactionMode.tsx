@@ -191,7 +191,7 @@ function ModeCard({ mode, isSelected, isDisabled, showDescription, onSelect }: M
       }}
       onClick={onSelect}
       disabled={isDisabled}
-      aria-selected={isSelected}
+      aria-pressed={isSelected}
     >
       <div className="flex items-center gap-3">
         {/* Icon */}

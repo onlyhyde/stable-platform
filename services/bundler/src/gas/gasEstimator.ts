@@ -344,6 +344,7 @@ export class GasEstimator {
         functionName: 'simulateValidation',
         args: [packedOp],
         gas: gasLimit,
+        // biome-ignore lint/suspicious/noExplicitAny: simulateContract type mismatch with packed UserOp
       } as any)
 
       // simulateValidation always reverts, so if we get here something is wrong

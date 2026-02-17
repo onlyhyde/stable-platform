@@ -3,14 +3,8 @@ export default function Loading() {
     <div className="space-y-6 animate-pulse">
       {/* Header skeleton */}
       <div className="space-y-2">
-        <div
-          className="h-8 w-48 rounded-lg"
-          style={{ backgroundColor: 'rgb(var(--secondary))' }}
-        />
-        <div
-          className="h-4 w-72 rounded-lg"
-          style={{ backgroundColor: 'rgb(var(--secondary))' }}
-        />
+        <div className="h-8 w-48 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
+        <div className="h-4 w-72 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }} />
       </div>
 
       {/* Cards skeleton */}

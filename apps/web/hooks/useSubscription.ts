@@ -719,7 +719,15 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         setIsSubscribing(false)
       }
     },
-    [publicClient, address, walletClient, toPlanDisplayInfo, requestPermission, subscriptionManager, permissionManager]
+    [
+      publicClient,
+      address,
+      walletClient,
+      toPlanDisplayInfo,
+      requestPermission,
+      subscriptionManager,
+      permissionManager,
+    ]
   )
 
   // Cancel subscription

@@ -40,6 +40,24 @@ export function TransactionDetail() {
     return () => clearInterval(timer)
   }, [tx, syncWithBackground])
 
+  // Map tx status to stepper status
+  const stepperStatus: TransactionStepperStatus = useMemo(() => {
+    if (!tx) return 'pending'
+    switch (tx.status) {
+      case 'submitted':
+        return 'submitted'
+      case 'pending':
+        return 'pending'
+      case 'confirmed':
+        return 'confirmed'
+      case 'failed':
+      case 'cancelled':
+        return 'failed'
+      default:
+        return 'pending'
+    }
+  }, [tx])
+
   function truncateHash(hash: string): string {
     return `${hash.slice(0, 10)}...${hash.slice(-8)}`
   }
@@ -128,23 +146,6 @@ export function TransactionDetail() {
 
   const isPending = tx.status === 'pending' || tx.status === 'submitted'
   const displayHash = tx.txHash ?? tx.id
-
-  // Map tx status to stepper status
-  const stepperStatus: TransactionStepperStatus = useMemo(() => {
-    switch (tx.status) {
-      case 'submitted':
-        return 'submitted'
-      case 'pending':
-        return 'pending'
-      case 'confirmed':
-        return 'confirmed'
-      case 'failed':
-      case 'cancelled':
-        return 'failed'
-      default:
-        return 'pending'
-    }
-  }, [tx.status])
 
   return (
     <div className="p-4 space-y-4">

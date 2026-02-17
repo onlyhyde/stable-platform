@@ -228,7 +228,9 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
             </div>
             <div>
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>State: </span>
-              <span className="capitalize" style={{ color: 'rgb(var(--foreground))' }}>{selectedKey.state}</span>
+              <span className="capitalize" style={{ color: 'rgb(var(--foreground))' }}>
+                {selectedKey.state}
+              </span>
             </div>
             <div>
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>Created: </span>
@@ -239,7 +241,9 @@ export const SessionKeyList: FC<SessionKeyListProps> = ({
             <div>
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>Expires: </span>
               <span style={{ color: 'rgb(var(--foreground))' }}>
-                {selectedKey.expiry === 0n ? 'No expiry' : new Date(Number(selectedKey.expiry) * 1000).toLocaleString()}
+                {selectedKey.expiry === 0n
+                  ? 'No expiry'
+                  : new Date(Number(selectedKey.expiry) * 1000).toLocaleString()}
               </span>
             </div>
           </div>

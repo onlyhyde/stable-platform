@@ -98,7 +98,7 @@ describe('Home', () => {
     mockSetPage.mockClear()
     mockUpdateBalance.mockClear()
     // Mock chrome.runtime.sendMessage
-    ;(global as any).chrome = {
+    ;(global as unknown).chrome = {
       runtime: {
         sendMessage: jest.fn().mockResolvedValue({
           payload: { result: '0x1bc16d674ec80000' }, // 2 ETH
@@ -287,7 +287,7 @@ describe('Home', () => {
 
   it('should show dash balance when balance is undefined and loading fails', async () => {
     // Mock chrome to return no result so balance stays undefined
-    ;(global as any).chrome = {
+    ;(global as unknown).chrome = {
       runtime: {
         sendMessage: jest.fn().mockResolvedValue({ payload: {} }),
       },

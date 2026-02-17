@@ -3,8 +3,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData } from 'viem'
-import { useStableNetContext } from '@/providers'
 import { getServiceUrls } from '@/lib/constants'
+import { useStableNetContext } from '@/providers'
 import type { SwapQuote, Token } from '@/types'
 
 interface SwapParams {

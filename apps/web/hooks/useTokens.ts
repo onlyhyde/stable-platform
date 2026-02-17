@@ -1,11 +1,11 @@
 'use client'
 
+import { createIndexerClient } from '@stablenet/core'
 import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
-import { createIndexerClient } from '@stablenet/core'
-import type { Token } from '@/types'
-import { useStableNetContext } from '@/providers/StableNetProvider'
 import { useWallet } from '@/hooks/useWallet'
+import { useStableNetContext } from '@/providers/StableNetProvider'
+import type { Token } from '@/types'
 
 interface UseTokensConfig {
   fetchTokens?: () => Promise<Token[]>

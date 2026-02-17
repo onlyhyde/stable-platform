@@ -20,8 +20,8 @@ export default function TermsPage() {
               <h2 className="text-lg font-semibold">2. Use of Service</h2>
               <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 StableNet provides a web interface for managing ERC-4337 smart accounts. You are
-                solely responsible for the security of your private keys and wallet credentials.
-                We do not have access to your funds or the ability to recover lost keys.
+                solely responsible for the security of your private keys and wallet credentials. We
+                do not have access to your funds or the ability to recover lost keys.
               </p>
             </section>
 

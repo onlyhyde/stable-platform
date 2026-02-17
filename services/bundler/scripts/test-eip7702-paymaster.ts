@@ -158,7 +158,7 @@ function computePaymasterHash(params: {
   )
 }
 
-async function sendUserOp(bundlerUrl: string, op: Record<string, any>, entryPoint: Address) {
+async function sendUserOp(bundlerUrl: string, op: Record<string, unknown>, entryPoint: Address) {
   const response = await fetch(bundlerUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -172,7 +172,7 @@ async function sendUserOp(bundlerUrl: string, op: Record<string, any>, entryPoin
   return response.json()
 }
 
-async function waitForReceipt(bundlerUrl: string, hash: string, maxWait = 15000): Promise<any> {
+async function waitForReceipt(bundlerUrl: string, hash: string, maxWait = 15000): Promise<unknown> {
   const start = Date.now()
   while (Date.now() - start < maxWait) {
     await new Promise((r) => setTimeout(r, 2000))
@@ -207,31 +207,17 @@ async function main() {
 
   const eoaAddress = eoaSigner.address
 
-  console.log('=== EIP-7702 + ERC20 Paymaster E2E Test (Case 4) ===\n')
-  console.log('EOA (will become smart account):', eoaAddress)
-  console.log('Kernel Implementation:', CONFIG.kernelImpl)
-  console.log('Deployer:', deployerSigner.address)
-
   // Pre-condition checks
   const eoaCode = await publicClient.getCode({ address: eoaAddress })
   const isDelegated = eoaCode && eoaCode !== '0x' && eoaCode.toLowerCase().startsWith('0xef0100')
-  const eoaNativeBalance = await publicClient.getBalance({ address: eoaAddress })
-  const eoaUsdcBalance = (await publicClient.readContract({
+  const _eoaNativeBalance = await publicClient.getBalance({ address: eoaAddress })
+  const _eoaUsdcBalance = (await publicClient.readContract({
     address: CONFIG.usdc,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: [eoaAddress],
   })) as bigint
   const eoaExternalNonce = await publicClient.getTransactionCount({ address: eoaAddress })
-
-  console.log(`\nPre-conditions:`)
-  console.log(
-    `  EOA code: ${eoaCode === '0x' || !eoaCode ? '0x (no delegation)' : eoaCode.slice(0, 20) + '...'}`
-  )
-  console.log(`  EOA delegated: ${isDelegated}`)
-  console.log(`  EOA native balance: ${eoaNativeBalance} wei`)
-  console.log(`  EOA USDC: ${(Number(eoaUsdcBalance) / 1e6).toFixed(2)}`)
-  console.log(`  EOA external nonce: ${eoaExternalNonce}`)
 
   // ================================================================
   // STEP 1: EIP-7702 Delegation (no initialize)
@@ -242,59 +228,33 @@ async function main() {
   //   - 따라서 delegation만 설정하고 initialize()는 호출하지 않음
   // ================================================================
   if (!isDelegated) {
-    console.log('\n--- Step 1: EIP-7702 Delegation ---')
-
-    // EOA signs the authorization for delegation
-    console.log('  Signing EIP-7702 authorization...')
     const authorization = await eoaSigner.signAuthorization({
       contractAddress: CONFIG.kernelImpl,
       chainId: CONFIG.chainId,
       nonce: eoaExternalNonce,
     })
-    console.log('  Authorization signed:')
-    console.log(`    address: ${authorization.address}`)
-    console.log(`    chainId: ${authorization.chainId}`)
-    console.log(`    nonce: ${authorization.nonce}`)
-
-    // Deployer sends Type 4 tx with authorizationList only (no calldata)
-    // Kernel v3 detects 0xef01 delegation prefix and uses EOA signing as default validator
-    console.log('  Sending Type 4 tx (delegation only)...')
     const txHash = await deployerWallet.sendTransaction({
       to: eoaAddress,
       authorizationList: [authorization],
       gas: 100000n,
     })
-    console.log(`  Tx hash: ${txHash}`)
 
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
-    console.log(`  Tx status: ${receipt.status}`)
+    const _receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
 
     // Verify delegation
     const newCode = await publicClient.getCode({ address: eoaAddress })
     const delegationSuccess =
       newCode && newCode !== '0x' && newCode.toLowerCase().startsWith('0xef0100')
-    console.log(`  EOA code after: ${newCode ? newCode.slice(0, 20) + '...' : '0x'}`)
-    console.log(`  Delegation success: ${delegationSuccess}`)
 
     if (!delegationSuccess) {
-      console.log('  ❌ Step 1 FAILED - delegation not set')
       return
     }
 
     // Extract delegate address from code (0xef0100 + 20 bytes address)
-    const delegateAddr = newCode ? `0x${newCode.slice(8, 48)}` : 'unknown'
-    console.log(`  Delegate address: ${delegateAddr}`)
-    console.log('  ✅ Step 1 SUCCESS!')
+    const _delegateAddr = newCode ? `0x${newCode.slice(8, 48)}` : 'unknown'
   } else {
-    console.log('\n--- Step 1: Already delegated, skipping ---')
-    const delegateAddr = eoaCode ? `0x${eoaCode.slice(8, 48)}` : 'unknown'
-    console.log(`  Delegate address: ${delegateAddr}`)
+    const _delegateAddr = eoaCode ? `0x${eoaCode.slice(8, 48)}` : 'unknown'
   }
-
-  // ================================================================
-  // STEP 2: USDC Approve via VerifyingPaymaster (sponsored)
-  // ================================================================
-  console.log('\n--- Step 2: USDC Approve via VerifyingPaymaster (sponsored) ---')
 
   // Check current allowance
   const currentAllowance = (await publicClient.readContract({
@@ -305,8 +265,6 @@ async function main() {
   })) as bigint
 
   if (currentAllowance > 0n) {
-    console.log(`  USDC allowance already set: ${currentAllowance}`)
-    console.log('  Skipping approve step.')
   } else {
     // sender = EOA address (now a smart account via delegation)
     // No initCode needed (code already set via delegation)
@@ -316,7 +274,6 @@ async function main() {
       functionName: 'getNonce',
       args: [eoaAddress, 0n],
     })) as bigint
-    console.log(`  EntryPoint nonce: ${epNonce}`)
 
     // Build callData: execute(mode, encodePacked(USDC, 0, approve(erc20Paymaster, max)))
     const execMode = `0x${'00'.repeat(32)}` as Hex
@@ -403,8 +360,6 @@ async function main() {
       args: [packedOp],
     })) as Hex
     const userOpSig = await eoaSigner.signMessage({ message: { raw: userOpHash } })
-
-    console.log('  Sending approve UserOp to bundler...')
     const result = await sendUserOp(
       CONFIG.bundlerUrl,
       {
@@ -426,17 +381,12 @@ async function main() {
     )
 
     if (result.error) {
-      console.log('  Bundler error:', JSON.stringify(result.error))
       return
     }
-    console.log('  UserOp hash:', result.result)
 
     const opReceipt = await waitForReceipt(CONFIG.bundlerUrl, result.result)
     if (opReceipt) {
-      console.log(`  Tx: ${opReceipt.receipt?.transactionHash}`)
-      console.log(`  Success: ${opReceipt.success}`)
     } else {
-      console.log('  Receipt not available within timeout')
     }
 
     // Verify allowance
@@ -447,26 +397,12 @@ async function main() {
       args: [eoaAddress, CONFIG.erc20Paymaster],
     })) as bigint
     if (newAllowance === 0n) {
-      console.log('  ❌ Step 2 FAILED - allowance still zero')
       return
     }
-    console.log(`  Allowance set: ${newAllowance > 0n ? 'YES' : 'NO'}`)
-    console.log('  ✅ Step 2 SUCCESS!')
   }
-
-  // ================================================================
-  // STEP 3: USDC Transfer via ERC20Paymaster (pay gas in USDC)
-  //
-  // EOA(Kernel) → execute() → USDC.transfer(deployer, 1 USDC)
-  // 가스비는 ERC20Paymaster가 대납하고, EOA의 USDC로 정산
-  // ================================================================
-  console.log('\n--- Step 3: USDC Transfer via ERC20Paymaster (pay gas in USDC) ---')
 
   const transferRecipient = deployerSigner.address
   const transferAmount = 1000000n // 1 USDC (6 decimals)
-  console.log(
-    `  Transfer: ${(Number(transferAmount) / 1e6).toFixed(2)} USDC → ${transferRecipient}`
-  )
 
   const currentNonce = (await publicClient.readContract({
     address: CONFIG.entryPoint,
@@ -474,7 +410,6 @@ async function main() {
     functionName: 'getNonce',
     args: [eoaAddress, 0n],
   })) as bigint
-  console.log(`  Nonce: ${currentNonce}`)
 
   const usdcBefore = (await publicClient.readContract({
     address: CONFIG.usdc,
@@ -488,8 +423,6 @@ async function main() {
     functionName: 'balanceOf',
     args: [transferRecipient],
   })) as bigint
-  console.log(`  EOA USDC before:       ${(Number(usdcBefore) / 1e6).toFixed(6)}`)
-  console.log(`  Recipient USDC before: ${(Number(recipientUsdcBefore) / 1e6).toFixed(6)}`)
 
   // Build callData: execute(mode, encodePacked(USDC, 0, transfer(recipient, amount)))
   // Kernel single call: abi.encodePacked(target[20], value[32], callData[variable])
@@ -547,10 +480,7 @@ async function main() {
     functionName: 'getUserOpHash',
     args: [packedOp],
   })) as Hex
-  console.log(`  UserOp hash: ${userOpHash}`)
   const userOpSig = await eoaSigner.signMessage({ message: { raw: userOpHash } })
-
-  console.log('  Sending ERC20Paymaster UserOp to bundler...')
   const result = await sendUserOp(
     CONFIG.bundlerUrl,
     {
@@ -572,9 +502,6 @@ async function main() {
   )
 
   if (result.error) {
-    console.log('  Bundler error:', JSON.stringify(result.error, null, 2))
-    // Attempt simulation for debugging
-    console.log('\n  Attempting direct simulation...')
     try {
       await publicClient.readContract({
         address: CONFIG.entryPoint,
@@ -647,7 +574,7 @@ async function main() {
         functionName: 'simulateValidation',
         args: [{ ...packedOp, signature: userOpSig }],
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
       const raw: string = err?.cause?.data || err?.data || ''
       if (
         typeof raw === 'string' &&
@@ -656,26 +583,15 @@ async function main() {
         const decoded = raw.slice(10)
         const reasonOffset = parseInt(decoded.slice(64, 128), 16) * 2
         const reasonLen = parseInt(decoded.slice(reasonOffset, reasonOffset + 64), 16)
-        const reasonHex = decoded.slice(reasonOffset + 64, reasonOffset + 64 + reasonLen * 2)
-        console.log('  FailedOp:', Buffer.from(reasonHex, 'hex').toString('utf-8'))
+        const _reasonHex = decoded.slice(reasonOffset + 64, reasonOffset + 64 + reasonLen * 2)
       } else {
-        console.log('  Simulation error:', err?.shortMessage || err?.message)
       }
     }
     return
   }
-
-  console.log('  UserOp hash from bundler:', result.result)
-
-  console.log('  Waiting for receipt...')
   const receipt = await waitForReceipt(CONFIG.bundlerUrl, result.result)
   if (receipt) {
-    console.log('  ✅ Step 3 SUCCESS!')
-    console.log(`    Tx: ${receipt.receipt?.transactionHash}`)
-    console.log(`    Success: ${receipt.success}`)
-    console.log(`    Gas cost: ${receipt.actualGasCost}`)
   } else {
-    console.log('  Receipt not available within timeout')
   }
 
   // Final balance checks
@@ -692,43 +608,18 @@ async function main() {
     args: [transferRecipient],
   })) as bigint
 
-  const newNonce = (await publicClient.readContract({
+  const _newNonce = (await publicClient.readContract({
     address: CONFIG.entryPoint,
     abi: EP_ABI,
     functionName: 'getNonce',
     args: [eoaAddress, 0n],
   })) as bigint
 
-  const usdcTransferred = recipientUsdcAfter - recipientUsdcBefore
-  const usdcGasFee = usdcBefore - usdcAfter - transferAmount
-
-  // ================================================================
-  // Summary
-  // ================================================================
-  console.log('\n=== Summary ===')
-  console.log(`  EOA address: ${eoaAddress}`)
+  const _usdcTransferred = recipientUsdcAfter - recipientUsdcBefore
+  const _usdcGasFee = usdcBefore - usdcAfter - transferAmount
   const finalCode = await publicClient.getCode({ address: eoaAddress })
-  console.log(
-    `  EOA delegated: ${finalCode && finalCode !== '0x' && finalCode.toLowerCase().startsWith('0xef0100')}`
-  )
   if (finalCode && finalCode.length >= 48) {
-    console.log(`  Delegate: 0x${finalCode.slice(8, 48)}`)
   }
-  console.log(`  Recipient: ${transferRecipient}`)
-  console.log(`  `)
-  console.log(`  [EOA USDC]`)
-  console.log(`    before:      ${(Number(usdcBefore) / 1e6).toFixed(6)}`)
-  console.log(`    after:       ${(Number(usdcAfter) / 1e6).toFixed(6)}`)
-  console.log(`    transferred: ${(Number(transferAmount) / 1e6).toFixed(6)} (to recipient)`)
-  console.log(`    gas fee:     ${(Number(usdcGasFee) / 1e6).toFixed(6)} (paid to ERC20Paymaster)`)
-  console.log(`    total spent: ${(Number(usdcBefore - usdcAfter) / 1e6).toFixed(6)}`)
-  console.log(`  `)
-  console.log(`  [Recipient USDC]`)
-  console.log(`    before:      ${(Number(recipientUsdcBefore) / 1e6).toFixed(6)}`)
-  console.log(`    after:       ${(Number(recipientUsdcAfter) / 1e6).toFixed(6)}`)
-  console.log(`    received:    ${(Number(usdcTransferred) / 1e6).toFixed(6)}`)
-  console.log(`  `)
-  console.log(`  Nonce: ${currentNonce} -> ${newNonce}`)
 }
 
 main().catch(console.error)

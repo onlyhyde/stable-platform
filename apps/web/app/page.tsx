@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { formatEther } from 'viem'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
@@ -290,11 +291,16 @@ export default function DashboardPage() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                        <p
+                          className="text-sm font-medium"
+                          style={{ color: 'rgb(var(--foreground))' }}
+                        >
                           {isSent ? 'Sent' : 'Received'}
                         </p>
                         <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                          {isSent ? `To ${formatAddress(tx.to, 4)}` : `From ${formatAddress(tx.from, 4)}`}
+                          {isSent
+                            ? `To ${formatAddress(tx.to, 4)}`
+                            : `From ${formatAddress(tx.from, 4)}`}
                         </p>
                       </div>
                     </div>
@@ -305,7 +311,8 @@ export default function DashboardPage() {
                           color: isSent ? 'rgb(var(--destructive))' : 'rgb(var(--success))',
                         }}
                       >
-                        {isSent ? '-' : '+'}{formatEther(tx.value)} ETH
+                        {isSent ? '-' : '+'}
+                        {formatEther(tx.value)} ETH
                       </p>
                       <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                         {tx.status}
@@ -381,10 +388,12 @@ function TokenList({ tokens }: { tokens: WalletToken[] }) {
           <div className="flex items-center gap-3">
             {/* Token Icon */}
             {token.logoURI ? (
-              <img
+              <Image
                 src={token.logoURI}
                 alt={token.symbol}
-                className="w-8 h-8 rounded-full"
+                width={32}
+                height={32}
+                className="rounded-full"
                 onError={(e) => {
                   ;(e.target as HTMLImageElement).style.display = 'none'
                 }}

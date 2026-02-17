@@ -11,7 +11,6 @@ import type {
   VaultData,
 } from '../../types'
 import { LedgerKeyring } from './hardwareKeyring'
-import type { HardwareTransport } from './hardwareKeyring'
 import { HDKeyring } from './hdKeyring'
 import { LedgerWebHIDTransport } from './ledgerTransport'
 import { SimpleKeyring } from './simpleKeyring'
@@ -659,10 +658,7 @@ export class KeyringController {
   /**
    * Discover Ledger accounts from the connected device
    */
-  async discoverLedgerAccounts(
-    startIndex: number,
-    count: number
-  ): Promise<KeyringAccount[]> {
+  async discoverLedgerAccounts(startIndex: number, count: number): Promise<KeyringAccount[]> {
     const ledgerKeyring = this.hardwareKeyrings[0]
     if (!ledgerKeyring) {
       throw new Error('No Ledger keyring found. Connect a Ledger device first.')

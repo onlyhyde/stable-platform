@@ -94,7 +94,11 @@ export function Settings() {
   const [isPairing, setIsPairing] = useState(false)
   const [wcPairError, setWcPairError] = useState<string | null>(null)
   const [wcSessions, setWcSessions] = useState<
-    Array<{ topic: string; peerMeta: { name: string; url: string; icons?: string[] }; connectedAt: number }>
+    Array<{
+      topic: string
+      peerMeta: { name: string; url: string; icons?: string[] }
+      connectedAt: number
+    }>
   >([])
   const [isLoadingWcSessions, setIsLoadingWcSessions] = useState(false)
 
@@ -747,14 +751,11 @@ export function Settings() {
     }
   }, [])
 
-  const handleToggleLedgerAccount = useCallback(
-    (index: number) => {
-      setLedgerDiscoveredAccounts((prev) =>
-        prev.map((a) => (a.index === index ? { ...a, selected: !a.selected } : a))
-      )
-    },
-    []
-  )
+  const handleToggleLedgerAccount = useCallback((index: number) => {
+    setLedgerDiscoveredAccounts((prev) =>
+      prev.map((a) => (a.index === index ? { ...a, selected: !a.selected } : a))
+    )
+  }, [])
 
   const handleAddLedgerAccounts = useCallback(async () => {
     const selectedAccounts = ledgerDiscoveredAccounts.filter((a) => a.selected)
@@ -1210,10 +1211,7 @@ export function Settings() {
           )}
 
           {/* Ledger Hardware Wallet */}
-          <div
-            className="p-3 rounded-lg"
-            style={{ border: '1px solid rgb(var(--border))' }}
-          >
+          <div className="p-3 rounded-lg" style={{ border: '1px solid rgb(var(--border))' }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
@@ -1265,7 +1263,10 @@ export function Settings() {
             )}
 
             {isDiscoveringAccounts && (
-              <p className="text-xs text-center py-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              <p
+                className="text-xs text-center py-2"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
                 {t('ledgerDiscoverAccounts')}
               </p>
             )}
@@ -1304,14 +1305,11 @@ export function Settings() {
                   type="button"
                   onClick={handleAddLedgerAccounts}
                   disabled={
-                    isAddingLedgerAccounts ||
-                    !ledgerDiscoveredAccounts.some((a) => a.selected)
+                    isAddingLedgerAccounts || !ledgerDiscoveredAccounts.some((a) => a.selected)
                   }
                   className="btn-primary w-full py-2 rounded-lg text-sm disabled:opacity-50"
                 >
-                  {isAddingLedgerAccounts
-                    ? t('ledgerAddingAccounts')
-                    : t('ledgerAddAccounts')}
+                  {isAddingLedgerAccounts ? t('ledgerAddingAccounts') : t('ledgerAddAccounts')}
                 </button>
               </div>
             )}
@@ -1671,11 +1669,17 @@ export function Settings() {
           {/* Active Sessions */}
           <div className="space-y-2">
             {isLoadingWcSessions ? (
-              <p className="text-xs text-center py-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              <p
+                className="text-xs text-center py-2"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
                 {tc('loading')}
               </p>
             ) : wcSessions.length === 0 ? (
-              <p className="text-xs text-center py-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              <p
+                className="text-xs text-center py-2"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
                 {t('wcNoSessions')}
               </p>
             ) : (
@@ -1721,7 +1725,10 @@ export function Settings() {
                       >
                         {session.peerMeta.name}
                       </p>
-                      <p className="text-xs truncate" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                      <p
+                        className="text-xs truncate"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
                         {session.peerMeta.url}
                       </p>
                     </div>

@@ -31,25 +31,25 @@ export function Bank({ onBack }: BankPageProps) {
   const [isTransferring, setIsTransferring] = useState(false)
 
   useEffect(() => {
-    loadLinkedAccounts()
-  }, [loadLinkedAccounts])
-
-  async function loadLinkedAccounts() {
-    setIsLoading(true)
-    setError('')
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'GET_LINKED_BANK_ACCOUNTS',
-      })
-      if (response?.accounts) {
-        setLinkedAccounts(response.accounts)
+    async function loadLinkedAccounts() {
+      setIsLoading(true)
+      setError('')
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'GET_LINKED_BANK_ACCOUNTS',
+        })
+        if (response?.accounts) {
+          setLinkedAccounts(response.accounts)
+        }
+      } catch (_err) {
+        setError(t('failedToLoadBankAccounts'))
+      } finally {
+        setIsLoading(false)
       }
-    } catch (_err) {
-      setError(t('failedToLoadBankAccounts'))
-    } finally {
-      setIsLoading(false)
     }
-  }
+
+    loadLinkedAccounts()
+  }, [t])
 
   async function handleLinkAccount() {
     if (!linkForm.accountNo || !linkForm.ownerName) {

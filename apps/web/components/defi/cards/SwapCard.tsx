@@ -162,7 +162,11 @@ export function SwapCard({
           <div className="flex gap-3">
             <div
               className="flex-1 px-4 py-2 border rounded-lg"
-              style={{ borderColor: 'rgb(var(--border))', color: 'rgb(var(--foreground))', backgroundColor: 'rgb(var(--card))' }}
+              style={{
+                borderColor: 'rgb(var(--border))',
+                color: 'rgb(var(--foreground))',
+                backgroundColor: 'rgb(var(--card))',
+              }}
             >
               {quote ? formatTokenAmount(quote.amountOut, tokenOut.decimals) : '0.0'}
             </div>
@@ -210,8 +214,14 @@ export function SwapCard({
             </div>
             <div className="flex justify-between text-sm">
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>Gas Fee</span>
-              <span style={{ color: gasSponsored ? 'rgb(var(--success))' : 'rgb(var(--foreground))' }}>
-                {gasSponsored === null ? 'Checking...' : gasSponsored ? 'Sponsored' : 'User pays gas'}
+              <span
+                style={{ color: gasSponsored ? 'rgb(var(--success))' : 'rgb(var(--foreground))' }}
+              >
+                {gasSponsored === null
+                  ? 'Checking...'
+                  : gasSponsored
+                    ? 'Sponsored'
+                    : 'User pays gas'}
               </span>
             </div>
           </div>

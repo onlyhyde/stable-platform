@@ -217,7 +217,7 @@ async function main() {
       functionName: 'simulateValidation',
       args: [packedOp],
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Parse error data
     const _errStr = JSON.stringify(err, (_, v) => (typeof v === 'bigint' ? v.toString() : v), 2)
   }

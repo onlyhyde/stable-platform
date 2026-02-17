@@ -39,7 +39,7 @@ test.describe('Transaction Signing', () => {
       // Request connection via ethereum provider
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+          return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
         })
         .catch(() => {
           // Expected to fail/timeout - we just want to trigger the popup
@@ -74,7 +74,7 @@ test.describe('Transaction Signing', () => {
 
       // Request connection
       const connectionPromise = dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
       })
 
       // Wait for popup
@@ -110,7 +110,7 @@ test.describe('Transaction Signing', () => {
 
       // Request connection
       const connectionPromise = dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+        return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
       })
 
       // Wait for popup
@@ -151,7 +151,7 @@ test.describe('Transaction Signing', () => {
       // First connect
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+          return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
         })
         .catch(() => {})
 
@@ -170,7 +170,7 @@ test.describe('Transaction Signing', () => {
       // Send transaction
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({
+          return (window as unknown).ethereum?.request({
             method: 'eth_sendTransaction',
             params: [
               {
@@ -213,7 +213,7 @@ test.describe('Transaction Signing', () => {
       // Connect first
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+          return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
         })
         .catch(() => {})
 
@@ -231,7 +231,7 @@ test.describe('Transaction Signing', () => {
 
       // Send transaction and approve
       const txPromise = dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({
+        return (window as unknown).ethereum?.request({
           method: 'eth_sendTransaction',
           params: [
             {
@@ -274,7 +274,7 @@ test.describe('Transaction Signing', () => {
       // Connect and approve
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+          return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
         })
         .catch(() => {})
 
@@ -291,7 +291,7 @@ test.describe('Transaction Signing', () => {
 
       // Send and reject transaction
       const txPromise = dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({
+        return (window as unknown).ethereum?.request({
           method: 'eth_sendTransaction',
           params: [
             {
@@ -336,7 +336,7 @@ test.describe('Transaction Signing', () => {
       // Connect
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+          return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
         })
         .catch(() => {})
 
@@ -355,8 +355,8 @@ test.describe('Transaction Signing', () => {
       const message = 'Hello, StableNet!'
       await dappPage
         .evaluate((msg) => {
-          const accounts = (window as any).ethereum?.selectedAddress
-          return (window as any).ethereum?.request({
+          const accounts = (window as unknown).ethereum?.selectedAddress
+          return (window as unknown).ethereum?.request({
             method: 'personal_sign',
             params: [msg, accounts || '0x0000000000000000000000000000000000000001'],
           })
@@ -386,7 +386,7 @@ test.describe('Transaction Signing', () => {
       // Connect and approve
       await dappPage
         .evaluate(() => {
-          return (window as any).ethereum?.request({ method: 'eth_requestAccounts' })
+          return (window as unknown).ethereum?.request({ method: 'eth_requestAccounts' })
         })
         .catch(() => {})
 
@@ -403,7 +403,7 @@ test.describe('Transaction Signing', () => {
 
       // Sign message
       const signPromise = dappPage.evaluate(() => {
-        return (window as any).ethereum?.request({
+        return (window as unknown).ethereum?.request({
           method: 'personal_sign',
           params: ['Hello, StableNet!', '0x0000000000000000000000000000000000000001'],
         })

@@ -199,11 +199,15 @@ export function useStableNetWallet(): UseStableNetWalletResult {
     if (!provider) return
 
     const handleTxSent = (event: TransactionSentEvent) => {
-      txSentHandlersRef.current.forEach((handler) => handler(event))
+      txSentHandlersRef.current.forEach((handler) => {
+        handler(event)
+      })
     }
 
     const handleTxConfirmed = (event: TransactionConfirmedEvent) => {
-      txConfirmedHandlersRef.current.forEach((handler) => handler(event))
+      txConfirmedHandlersRef.current.forEach((handler) => {
+        handler(event)
+      })
     }
 
     const unsubSent = provider.onTransactionSent(handleTxSent)

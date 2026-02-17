@@ -142,8 +142,8 @@ function parseRevertResult(raw: string): { type: string; reason?: string; inner?
 }
 
 async function trySimulate(
-  publicClient: any,
-  packedOp: any,
+  publicClient: unknown,
+  packedOp: unknown,
   signature: Hex,
   label: string
 ): Promise<void> {
@@ -154,7 +154,7 @@ async function trySimulate(
       functionName: 'simulateValidation',
       args: [{ ...packedOp, signature }],
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     const raw: string = err?.cause?.raw || ''
     const result = parseRevertResult(raw)
     if (result.type === 'ValidationResult') {

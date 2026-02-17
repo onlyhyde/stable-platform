@@ -88,7 +88,6 @@ export function Modal({
           }}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
-          // biome-ignore lint/a11y/useSemanticElements: Using div with role="dialog" for custom modal styling and portal rendering; native <dialog> requires different show/close API
           role="dialog"
           aria-modal="true"
           aria-labelledby={title ? 'modal-title' : undefined}

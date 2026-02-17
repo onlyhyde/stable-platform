@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
+import { useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { useWallet } from '@/hooks'
 import { copyToClipboard } from '@/lib/utils'
@@ -54,14 +54,7 @@ export default function ReceivePage() {
                 borderColor: 'rgb(var(--border))',
               }}
             >
-              {address && (
-                <QRCodeSVG
-                  value={address}
-                  size={176}
-                  level="M"
-                  includeMargin={false}
-                />
-              )}
+              {address && <QRCodeSVG value={address} size={176} level="M" includeMargin={false} />}
             </div>
           </div>
 

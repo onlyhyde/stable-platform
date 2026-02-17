@@ -98,12 +98,12 @@ const mockChromeRuntime = {
 
 // Ensure chrome global is set
 beforeAll(() => {
-  ;(global as any).chrome = {
-    ...(global as any).chrome,
+  ;(global as unknown).chrome = {
+    ...(global as unknown).chrome,
     windows: mockChromeWindows,
     tabs: mockChromeTabs,
     runtime: {
-      ...(global as any).chrome?.runtime,
+      ...(global as unknown).chrome?.runtime,
       ...mockChromeRuntime,
     },
   }
@@ -164,8 +164,8 @@ describe('ApprovalController', () => {
       const state = controller.getState()
       const approval = state.pendingApprovals[0]
       expect(approval.type).toBe('connect')
-      expect((approval.data as any).warnings).toContain('Suspicious origin')
-      expect((approval.data as any).riskLevel).toBe('high')
+      expect((approval.data as unknown).warnings).toContain('Suspicious origin')
+      expect((approval.data as unknown).riskLevel).toBe('high')
 
       controller.reject(approval.id, 'cleanup').catch(() => {})
       promise.catch(() => {})
@@ -199,7 +199,7 @@ describe('ApprovalController', () => {
       expect(state.pendingApprovals).toHaveLength(1)
       expect(state.pendingApprovals[0].type).toBe('transaction')
 
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.from).toBe(TEST_ACCOUNTS.account1.address)
       expect(data.to).toBe(TEST_ACCOUNTS.account2.address)
       expect(data.value).toBe(1000000000000000000n)
@@ -219,7 +219,7 @@ describe('ApprovalController', () => {
       await waitForPending()
 
       const state = controller.getState()
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.warnings.some((w: string) => w.includes('High value'))).toBe(true)
       expect(data.riskLevel).toBe('medium')
 
@@ -238,7 +238,7 @@ describe('ApprovalController', () => {
       await waitForPending()
 
       const state = controller.getState()
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.warnings.some((w: string) => w.includes('Critical'))).toBe(true)
       expect(data.riskLevel).toBe('high')
 
@@ -258,7 +258,7 @@ describe('ApprovalController', () => {
       await waitForPending()
 
       const state = controller.getState()
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.warnings.some((w: string) => w.includes('permanently lost'))).toBe(true)
 
       controller.reject(state.pendingApprovals[0].id, 'cleanup').catch(() => {})
@@ -279,7 +279,7 @@ describe('ApprovalController', () => {
       expect(state.pendingApprovals).toHaveLength(1)
       expect(state.pendingApprovals[0].type).toBe('signature')
 
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.method).toBe('personal_sign')
       expect(data.address).toBe(TEST_ACCOUNTS.account1.address)
 
@@ -298,7 +298,7 @@ describe('ApprovalController', () => {
       )
 
       const state = controller.getState()
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.riskWarnings.some((w: string) => w.includes('token spending'))).toBe(true)
 
       controller.reject(state.pendingApprovals[0].id, 'cleanup').catch(() => {})
@@ -315,7 +315,7 @@ describe('ApprovalController', () => {
       )
 
       const state = controller.getState()
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.displayMessage).toBe('Hello')
 
       controller.reject(state.pendingApprovals[0].id, 'cleanup').catch(() => {})
@@ -331,7 +331,7 @@ describe('ApprovalController', () => {
       expect(state.pendingApprovals).toHaveLength(1)
       expect(state.pendingApprovals[0].type).toBe('switchNetwork')
 
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.chainId).toBe(137)
       expect(data.chainName).toBe('Polygon')
 
@@ -355,7 +355,7 @@ describe('ApprovalController', () => {
       expect(state.pendingApprovals).toHaveLength(1)
       expect(state.pendingApprovals[0].type).toBe('addNetwork')
 
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.chainId).toBe(42161)
       expect(data.chainName).toBe('Arbitrum One')
 
@@ -379,7 +379,7 @@ describe('ApprovalController', () => {
       expect(state.pendingApprovals).toHaveLength(1)
       expect(state.pendingApprovals[0].type).toBe('authorization')
 
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.account).toBe(TEST_ACCOUNTS.account1.address)
       expect(data.contractAddress).toBe(contractAddr)
       expect(data.isRevocation).toBe(false)
@@ -399,7 +399,7 @@ describe('ApprovalController', () => {
       )
 
       const state = controller.getState()
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.isRevocation).toBe(true)
 
       controller.reject(state.pendingApprovals[0].id, 'cleanup').catch(() => {})
@@ -744,7 +744,7 @@ describe('ApprovalController', () => {
       await new Promise((r) => setTimeout(r, 50))
 
       const state = controller.getState()
-      const data = state.pendingApprovals[0].data as any
+      const data = state.pendingApprovals[0].data as unknown
       expect(data.warnings.some((w: string) => w.includes('UNLIMITED'))).toBe(true)
       expect(data.riskLevel).toBe('high')
 

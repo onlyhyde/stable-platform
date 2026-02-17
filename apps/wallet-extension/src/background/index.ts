@@ -746,9 +746,7 @@ async function handleMessage(
       try {
         const mnemonic = await keyringController.getMnemonicWithPassword(password)
         const selectedAddress = walletState.getState().accounts.selectedAccount ?? 'unknown'
-        auditLogger
-          .logAccount(AuditEventType.MNEMONIC_VIEWED, selectedAddress)
-          .catch(() => {})
+        auditLogger.logAccount(AuditEventType.MNEMONIC_VIEWED, selectedAddress).catch(() => {})
         return {
           type: 'MNEMONIC',
           id: message.id,
@@ -1380,10 +1378,11 @@ async function handleMessage(
     }
 
     case MESSAGE_TYPES.LEDGER_DISCOVER_ACCOUNTS: {
-      const { startIndex = 0, count = 5 } = (message.payload as {
-        startIndex?: number
-        count?: number
-      }) ?? {}
+      const { startIndex = 0, count = 5 } =
+        (message.payload as {
+          startIndex?: number
+          count?: number
+        }) ?? {}
 
       try {
         const accounts = await keyringController.discoverLedgerAccounts(startIndex, count)

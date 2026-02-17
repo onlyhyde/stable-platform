@@ -1,10 +1,10 @@
 'use client'
 
+import { createIndexerClient } from '@stablenet/core'
 import { useCallback, useEffect, useState } from 'react'
 import type { Address, Hex } from 'viem'
-import { createIndexerClient } from '@stablenet/core'
-import type { Transaction } from '@/types'
 import { useStableNetContext } from '@/providers/StableNetProvider'
+import type { Transaction } from '@/types'
 
 interface UseTransactionHistoryConfig {
   address?: Address

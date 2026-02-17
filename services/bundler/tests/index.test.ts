@@ -1,10 +1,10 @@
 import type { Address, Hex, PublicClient } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { GasEstimator } from '../src/gas/gasEstimator'
 import { RPC_ERROR_CODES, RpcError } from '../src/types'
 import { createLogger } from '../src/utils/logger'
 import type {
   IFormatValidator,
-  IOpcodeValidator,
   IReputationManager,
   ISimulationValidator,
   ReputationConfig,
@@ -17,7 +17,6 @@ import {
   type ValidatorConfig,
   type ValidatorDependencies,
 } from '../src/validation/validator'
-import { GasEstimator } from '../src/gas/gasEstimator'
 
 // Test constants
 const TEST_SENDER = '0x1234567890123456789012345678901234567890' as Address

@@ -108,7 +108,7 @@ async function main() {
       functionName: 'createAccount',
       args: [initializeData, salt],
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err?.cause?.raw) console.info('Raw:', err.cause.raw.slice(0, 200))
   }
 
@@ -229,7 +229,7 @@ async function main() {
       functionName: 'simulateValidation',
       args: [{ ...packedOp, signature }],
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     const raw: string = err?.cause?.raw || ''
     if (raw.startsWith('0xe0cff05f')) {
       // Decode validation data
@@ -282,7 +282,7 @@ async function main() {
       functionName: 'simulateValidation',
       args: [{ ...packedOpNoPaymaster, signature: sigNoPaymaster }],
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     const raw: string = err?.cause?.raw || ''
     if (raw.startsWith('0xe0cff05f')) {
     } else if (raw.startsWith('0x65c8fd4d')) {
@@ -319,7 +319,7 @@ async function main() {
         },
       ],
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     const raw: string = err?.cause?.raw || ''
     if (raw.startsWith('0xe0cff05f')) {
     } else {
@@ -339,7 +339,7 @@ async function main() {
         { ...packedOp, signature: await signer.signMessage({ message: { raw: entryPointHash } }) },
       ],
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     const raw: string = err?.cause?.raw || ''
     if (raw.startsWith('0xe0cff05f')) {
     } else {

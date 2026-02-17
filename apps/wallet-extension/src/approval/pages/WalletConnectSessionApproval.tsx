@@ -29,35 +29,35 @@ export function WalletConnectSessionApproval({
   const [selectedAccounts, setSelectedAccounts] = useState<Set<Address>>(new Set())
   const [loading, setLoading] = useState(true)
 
-  const loadAccounts = async () => {
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'GET_APPROVAL',
-        id: `get-accounts-${Date.now()}`,
-        payload: { approvalId: approval.id },
-      })
-
-      if (response?.payload?.accounts) {
-        const walletAccounts = response.payload.accounts as WalletAccount[]
-        setAccounts(walletAccounts)
-
-        const selectedAccount = response.payload.selectedAccount as Address | null
-        if (selectedAccount) {
-          setSelectedAccounts(new Set([selectedAccount]))
-        } else if (walletAccounts.length > 0 && walletAccounts[0]) {
-          setSelectedAccounts(new Set([walletAccounts[0].address]))
-        }
-      }
-    } catch (err) {
-      logger.error('Failed to load accounts', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    const loadAccounts = async () => {
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'GET_APPROVAL',
+          id: `get-accounts-${Date.now()}`,
+          payload: { approvalId: approval.id },
+        })
+
+        if (response?.payload?.accounts) {
+          const walletAccounts = response.payload.accounts as WalletAccount[]
+          setAccounts(walletAccounts)
+
+          const selectedAccount = response.payload.selectedAccount as Address | null
+          if (selectedAccount) {
+            setSelectedAccounts(new Set([selectedAccount]))
+          } else if (walletAccounts.length > 0 && walletAccounts[0]) {
+            setSelectedAccounts(new Set([walletAccounts[0].address]))
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to load accounts', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     loadAccounts()
-  }, [loadAccounts])
+  }, [approval.id])
 
   const toggleAccount = (address: Address) => {
     setSelectedAccounts((prev) => {
@@ -274,7 +274,10 @@ export function WalletConnectSessionApproval({
           {/* Chains */}
           {approval.data.requiredChains.length > 0 && (
             <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgb(var(--border))' }}>
-              <p className="text-xs font-medium mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              <p
+                className="text-xs font-medium mb-1"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
                 {t('wcRequestedChains')}
               </p>
               <div className="flex flex-wrap gap-1">

@@ -17,7 +17,9 @@ export function Receive() {
       width: 192,
       margin: 1,
       color: { dark: '#000000', light: '#ffffff' },
-    }).then(setQrDataUrl).catch(() => setQrDataUrl(null))
+    })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(null))
   }, [selectedAccount])
 
   async function copyAddress() {

@@ -31,7 +31,6 @@ import {
   formatBalance,
   formatBlock,
   formatTransactionType,
-  parseBigInt,
   parseUserOperation,
 } from './utils'
 import { validateRpcParams } from './validation'

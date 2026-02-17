@@ -34,37 +34,37 @@ export function ConnectApproval({ approval, onApprove, onReject }: ConnectApprov
     }
   }
 
-  const loadAccounts = async () => {
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'GET_APPROVAL',
-        id: `get-accounts-${Date.now()}`,
-        payload: { approvalId: approval.id },
-      })
-
-      if (response?.payload?.accounts) {
-        const walletAccounts = response.payload.accounts as WalletAccount[]
-        setAccounts(walletAccounts)
-
-        // Pre-select the currently selected account
-        const selectedAccount = response.payload.selectedAccount as Address | null
-        if (selectedAccount) {
-          setSelectedAccounts(new Set([selectedAccount]))
-        } else if (walletAccounts.length > 0 && walletAccounts[0]) {
-          // Default to first account if no selection
-          setSelectedAccounts(new Set([walletAccounts[0].address]))
-        }
-      }
-    } catch (err) {
-      logger.error('Failed to load accounts', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    const loadAccounts = async () => {
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'GET_APPROVAL',
+          id: `get-accounts-${Date.now()}`,
+          payload: { approvalId: approval.id },
+        })
+
+        if (response?.payload?.accounts) {
+          const walletAccounts = response.payload.accounts as WalletAccount[]
+          setAccounts(walletAccounts)
+
+          // Pre-select the currently selected account
+          const selectedAccount = response.payload.selectedAccount as Address | null
+          if (selectedAccount) {
+            setSelectedAccounts(new Set([selectedAccount]))
+          } else if (walletAccounts.length > 0 && walletAccounts[0]) {
+            // Default to first account if no selection
+            setSelectedAccounts(new Set([walletAccounts[0].address]))
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to load accounts', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     loadAccounts()
-  }, [loadAccounts])
+  }, [approval.id])
 
   const toggleAccount = (address: Address) => {
     setSelectedAccounts((prev) => {

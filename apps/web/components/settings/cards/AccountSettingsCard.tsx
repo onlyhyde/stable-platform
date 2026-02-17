@@ -2,8 +2,16 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
-import { Button, Card, CardContent, CardDescription, CardTitle, Input, useToast } from '@/components/common'
-import { useModule, MODULE_TYPES } from '@/hooks/useModule'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+  Input,
+  useToast,
+} from '@/components/common'
+import { MODULE_TYPES, useModule } from '@/hooks/useModule'
 import { useSmartAccount } from '@/hooks/useSmartAccount'
 
 const ACCOUNT_NAME_KEY = 'stablenet_account_name'
@@ -53,7 +61,13 @@ export function AccountSettingsCard({
     }
 
     checkModules()
-  }, [saStatus.isSmartAccount, address, contracts.ecdsaValidator, isModuleInstalled, modulesChecked])
+  }, [
+    saStatus.isSmartAccount,
+    address,
+    contracts.ecdsaValidator,
+    isModuleInstalled,
+    modulesChecked,
+  ])
 
   // Persist account name to localStorage on change
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,12 +128,34 @@ export function AccountSettingsCard({
                   title={copied ? 'Copied!' : 'Copy address'}
                 >
                   {copied ? (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   ) : (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
                     </svg>
                   )}
                 </button>

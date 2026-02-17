@@ -130,10 +130,7 @@ export default function AuditPage() {
       />
 
       <AuditLogCard
-        logs={filteredLogs.slice(
-          (currentPage - 1) * ITEMS_PER_PAGE,
-          currentPage * ITEMS_PER_PAGE
-        )}
+        logs={filteredLogs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)}
       />
 
       <Pagination

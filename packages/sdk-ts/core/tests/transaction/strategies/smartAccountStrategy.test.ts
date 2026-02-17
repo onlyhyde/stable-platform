@@ -135,14 +135,18 @@ describe('createSmartAccountStrategy', () => {
     it('should support deployed DELEGATED accounts', () => {
       const strategy = createStrategy()
       expect(
-        strategy.supports(createAccount({ type: ACCOUNT_TYPE.DELEGATED, isDeployed: true } as any))
+        strategy.supports(
+          createAccount({ type: ACCOUNT_TYPE.DELEGATED, isDeployed: true } as unknown)
+        )
       ).toBe(true)
     })
 
     it('should NOT support undeployed DELEGATED accounts', () => {
       const strategy = createStrategy()
       expect(
-        strategy.supports(createAccount({ type: ACCOUNT_TYPE.DELEGATED, isDeployed: false } as any))
+        strategy.supports(
+          createAccount({ type: ACCOUNT_TYPE.DELEGATED, isDeployed: false } as unknown)
+        )
       ).toBe(false)
     })
 
@@ -161,14 +165,14 @@ describe('createSmartAccountStrategy', () => {
     it('should throw when from is missing', () => {
       const strategy = createStrategy()
       expect(() =>
-        strategy.validate(createRequest({ from: undefined as any }), createAccount())
+        strategy.validate(createRequest({ from: undefined as unknown }), createAccount())
       ).toThrow(/Missing "from" address/)
     })
 
     it('should throw when to is missing', () => {
       const strategy = createStrategy()
       expect(() =>
-        strategy.validate(createRequest({ to: undefined as any }), createAccount())
+        strategy.validate(createRequest({ to: undefined as unknown }), createAccount())
       ).toThrow(/Missing "to" address/)
     })
 
@@ -176,7 +180,7 @@ describe('createSmartAccountStrategy', () => {
       const strategy = createStrategy() // no paymasterUrl
       expect(() =>
         strategy.validate(
-          createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.SPONSOR } as any }),
+          createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.SPONSOR } as unknown }),
           createAccount()
         )
       ).toThrow(/Paymaster URL is required/)
@@ -186,7 +190,7 @@ describe('createSmartAccountStrategy', () => {
       const strategy = createStrategy()
       expect(() =>
         strategy.validate(
-          createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.ERC20 } as any }),
+          createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.ERC20 } as unknown }),
           createAccount()
         )
       ).toThrow(/Paymaster URL is required/)
@@ -196,7 +200,7 @@ describe('createSmartAccountStrategy', () => {
       const strategy = createStrategy({ paymasterUrl: 'https://paymaster.example.com' })
       expect(() =>
         strategy.validate(
-          createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.SPONSOR } as any }),
+          createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.SPONSOR } as unknown }),
           createAccount()
         )
       ).not.toThrow()
@@ -206,7 +210,7 @@ describe('createSmartAccountStrategy', () => {
       const strategy = createStrategy()
       expect(() =>
         strategy.validate(
-          createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.NATIVE } as any }),
+          createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.NATIVE } as unknown }),
           createAccount()
         )
       ).not.toThrow()
@@ -256,7 +260,7 @@ describe('createSmartAccountStrategy', () => {
         createAccount()
       )
       expect(prepared.strategyData).toBeDefined()
-      const data = prepared.strategyData as any
+      const data = prepared.strategyData as unknown
       expect(data.userOp.callData).toBeTruthy()
       // Kernel execute callData should contain the original data
       expect(data.userOp.callData.length).toBeGreaterThan(4)
@@ -272,11 +276,11 @@ describe('createSmartAccountStrategy', () => {
 
       const strategy = createStrategy({ paymasterUrl: 'https://paymaster.example.com' })
       const prepared = await strategy.prepare(
-        createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.SPONSOR } as any }),
+        createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.SPONSOR } as unknown }),
         createAccount()
       )
       expect(mockGetPaymasterData).toHaveBeenCalled()
-      const data = prepared.strategyData as any
+      const data = prepared.strategyData as unknown
       expect(data.paymasterData).toBeDefined()
       expect(data.paymasterData.paymaster).toBe(PAYMASTER_ADDR)
     })
@@ -308,7 +312,7 @@ describe('createSmartAccountStrategy', () => {
 
       const strategy = createStrategy({ paymasterUrl: 'https://paymaster.example.com' })
       const prepared = await strategy.prepare(
-        createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.SPONSOR } as any }),
+        createRequest({ gasPayment: { type: GAS_PAYMENT_TYPE.SPONSOR } as unknown }),
         createAccount()
       )
       const signer = createMockSigner()
@@ -362,7 +366,7 @@ describe('createSmartAccountStrategy', () => {
       const strategy = createStrategy()
       const hash = '0x' + 'ff'.repeat(32)
 
-      await strategy.waitForConfirmation!(hash as any)
+      await strategy.waitForConfirmation!(hash as unknown)
 
       expect(mockWaitForUserOperationReceipt).toHaveBeenCalledWith(
         hash,
@@ -374,7 +378,7 @@ describe('createSmartAccountStrategy', () => {
       const strategy = createStrategy()
       const hash = '0x' + 'ff'.repeat(32)
 
-      await strategy.waitForConfirmation!(hash as any, { timeout: 120_000 })
+      await strategy.waitForConfirmation!(hash as unknown, { timeout: 120_000 })
 
       expect(mockWaitForUserOperationReceipt).toHaveBeenCalledWith(
         hash,

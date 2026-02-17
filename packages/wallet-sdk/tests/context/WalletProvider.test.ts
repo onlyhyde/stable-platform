@@ -49,7 +49,7 @@ function createMockStableNetProvider(overrides: Record<string, unknown> = {}) {
 
 function wrapper(props?: Record<string, unknown>) {
   return ({ children }: { children: ReactNode }) =>
-    createElement(WalletProvider, { ...props, children } as any)
+    createElement(WalletProvider, { ...props, children } as unknown)
 }
 
 // ============================================================================

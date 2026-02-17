@@ -548,7 +548,7 @@ describe('Subscription E2E Flow', () => {
 
       // Grant permission via direct contract call
       // Note: Using any type due to viem 2.x strict typing requirements
-      const txHash = (await (ctx.walletClient.writeContract as any)({
+      const txHash = (await (ctx.walletClient.writeContract as unknown)({
         address: permissionManagerAddress,
         abi: PERMISSION_MANAGER_ABI,
         functionName: 'grantPermission',

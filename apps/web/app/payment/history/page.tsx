@@ -3,11 +3,19 @@
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import type { Hex } from 'viem'
-import { Button, Card, CardContent, CardHeader, CardTitle, Pagination, useToast } from '@/components/common'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Pagination,
+  useToast,
+} from '@/components/common'
 import { useWallet } from '@/hooks'
-import { useUserOp } from '@/hooks/useUserOp'
-import type { PendingUserOp } from '@/hooks/useUserOp'
 import { useTransactionHistory } from '@/hooks/useTransactionHistory'
+import type { PendingUserOp } from '@/hooks/useUserOp'
+import { useUserOp } from '@/hooks/useUserOp'
 import { formatAddress, formatRelativeTime } from '@/lib/utils'
 import type { Transaction } from '@/types'
 
@@ -15,7 +23,7 @@ const ITEMS_PER_PAGE = 10
 
 export default function HistoryPage() {
   const searchParams = useSearchParams()
-  const showPending = searchParams.get('pending') === 'true'
+  const _showPending = searchParams.get('pending') === 'true'
   const { isConnected, address } = useWallet()
   const { transactions, isLoading, error } = useTransactionHistory({ address })
   const { recheckUserOp, getPendingUserOps, removePendingUserOp } = useUserOp()
@@ -27,7 +35,7 @@ export default function HistoryPage() {
   // Load pending ops on mount and when showPending changes
   useEffect(() => {
     setPendingOps(getPendingUserOps())
-  }, [showPending, getPendingUserOps])
+  }, [getPendingUserOps])
 
   const handleRecheck = useCallback(
     async (userOpHash: Hex) => {
@@ -35,13 +43,21 @@ export default function HistoryPage() {
       try {
         const result = await recheckUserOp(userOpHash)
         if (result.status === 'confirmed') {
-          addToast({ type: 'success', title: 'Confirmed', message: 'Transaction confirmed on-chain' })
+          addToast({
+            type: 'success',
+            title: 'Confirmed',
+            message: 'Transaction confirmed on-chain',
+          })
           setPendingOps((prev) => prev.filter((op) => op.userOpHash !== userOpHash))
         } else if (result.status === 'failed') {
           addToast({ type: 'error', title: 'Failed', message: 'Transaction failed on-chain' })
           setPendingOps((prev) => prev.filter((op) => op.userOpHash !== userOpHash))
         } else {
-          addToast({ type: 'info', title: 'Still Pending', message: 'Transaction is still being processed' })
+          addToast({
+            type: 'info',
+            title: 'Still Pending',
+            message: 'Transaction is still being processed',
+          })
         }
       } catch {
         addToast({ type: 'error', title: 'Error', message: 'Failed to recheck transaction' })
@@ -113,7 +129,10 @@ export default function HistoryPage() {
                 <div
                   key={op.userOpHash}
                   className="flex items-center justify-between p-3 rounded-lg"
-                  style={{ backgroundColor: 'rgb(var(--warning) / 0.05)', border: '1px solid rgb(var(--warning) / 0.2)' }}
+                  style={{
+                    backgroundColor: 'rgb(var(--warning) / 0.05)',
+                    border: '1px solid rgb(var(--warning) / 0.2)',
+                  }}
                 >
                   <div>
                     <p className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>

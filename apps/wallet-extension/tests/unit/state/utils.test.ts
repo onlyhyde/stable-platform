@@ -84,7 +84,7 @@ describe('State Utilities', () => {
       const target = { a: 1, b: { nested: true } }
       const source = { b: null }
 
-      const result = deepMerge(target, source as any)
+      const result = deepMerge(target, source as unknown)
 
       expect(result).toEqual({ a: 1, b: null })
     })
@@ -110,7 +110,7 @@ describe('State Utilities', () => {
         },
       }
 
-      const result = deepMerge(walletState, update as any)
+      const result = deepMerge(walletState, update as unknown)
 
       expect(result).toEqual({
         isLocked: false,
@@ -142,7 +142,7 @@ describe('State Utilities', () => {
         },
       }
 
-      const result = deepMerge(state, update as any)
+      const result = deepMerge(state, update as unknown)
 
       // Should preserve name and rpcUrl
       expect(result.network.name).toBe('mainnet')
@@ -256,7 +256,7 @@ describe('State Utilities', () => {
       // Update only network
       const updatedState = deepMerge(state, {
         network: { chainId: 11155111 },
-      } as any)
+      } as unknown)
 
       // Selected account should be preserved
       expect(updatedState.selectedAccount).toBe('0xabc')

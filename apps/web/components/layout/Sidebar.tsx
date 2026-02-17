@@ -236,141 +236,143 @@ export function Sidebar() {
   // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false)
-  }, [pathname])
+  }, [])
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (mobileOpen) {
       document.body.style.overflow = 'hidden'
-      return () => { document.body.style.overflow = '' }
+      return () => {
+        document.body.style.overflow = ''
+      }
     }
   }, [mobileOpen])
 
   const sidebarContent = (
-      <div className="flex flex-col h-full">
-        {/* Main Navigation */}
-        <nav className="flex-1 flex flex-col gap-1 p-4 overflow-y-auto scrollbar-thin">
-          {/* Section Label */}
-          <span
-            className="px-3 py-2 text-xs font-semibold uppercase tracking-wider"
-            style={{ color: 'rgb(var(--muted-foreground))' }}
-          >
-            Main Menu
-          </span>
+    <div className="flex flex-col h-full">
+      {/* Main Navigation */}
+      <nav className="flex-1 flex flex-col gap-1 p-4 overflow-y-auto scrollbar-thin">
+        {/* Section Label */}
+        <span
+          className="px-3 py-2 text-xs font-semibold uppercase tracking-wider"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+        >
+          Main Menu
+        </span>
 
-          {navigation.map((item) => {
-            const isActive =
-              pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+        {navigation.map((item) => {
+          const isActive =
+            pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
 
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 group relative'
-                )}
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={cn(
+                'flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 group relative'
+              )}
+              style={{
+                backgroundColor: isActive ? 'rgb(var(--sidebar-active))' : 'transparent',
+                color: isActive
+                  ? 'rgb(var(--sidebar-active-foreground))'
+                  : 'rgb(var(--sidebar-foreground))',
+              }}
+            >
+              {/* Active Indicator */}
+              {isActive && (
+                <div
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
+                  style={{ backgroundColor: 'rgb(var(--primary))' }}
+                />
+              )}
+
+              <span
+                className="transition-colors duration-200"
                 style={{
-                  backgroundColor: isActive ? 'rgb(var(--sidebar-active))' : 'transparent',
-                  color: isActive
-                    ? 'rgb(var(--sidebar-active-foreground))'
-                    : 'rgb(var(--sidebar-foreground))',
+                  color: isActive ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
                 }}
               >
-                {/* Active Indicator */}
-                {isActive && (
-                  <div
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
-                    style={{ backgroundColor: 'rgb(var(--primary))' }}
-                  />
-                )}
+                {item.icon}
+              </span>
 
+              <span className="flex-1">{item.name}</span>
+
+              {item.badge && (
                 <span
-                  className="transition-colors duration-200"
-                  style={{
-                    color: isActive ? 'rgb(var(--primary))' : 'rgb(var(--muted-foreground))',
-                  }}
-                >
-                  {item.icon}
-                </span>
-
-                <span className="flex-1">{item.name}</span>
-
-                {item.badge && (
-                  <span
-                    className={cn(
-                      'px-2 py-0.5 text-2xs font-semibold rounded-full',
-                      item.badgeVariant === 'primary' && 'badge-primary',
-                      item.badgeVariant === 'accent' && 'badge-accent',
-                      item.badgeVariant === 'success' && 'badge-success',
-                      item.badgeVariant === 'warning' && 'badge-warning'
-                    )}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-
-                {/* Hover Arrow */}
-                <svg
                   className={cn(
-                    'w-4 h-4 transition-all duration-200',
-                    isActive
-                      ? 'opacity-100'
-                      : 'opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0'
+                    'px-2 py-0.5 text-2xs font-semibold rounded-full',
+                    item.badgeVariant === 'primary' && 'badge-primary',
+                    item.badgeVariant === 'accent' && 'badge-accent',
+                    item.badgeVariant === 'success' && 'badge-success',
+                    item.badgeVariant === 'warning' && 'badge-warning'
                   )}
-                  style={{
-                    color: isActive ? 'rgb(var(--primary) / 0.7)' : 'rgb(var(--muted-foreground))',
-                  }}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </Link>
-            )
-          })}
-        </nav>
+                  {item.badge}
+                </span>
+              )}
 
-        {/* Divider */}
-        <div className="px-4">
-          <div className="divider" />
-        </div>
-
-        {/* Bottom Navigation */}
-        <nav className="p-4">
-          {bottomNavigation.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 group"
+              {/* Hover Arrow */}
+              <svg
+                className={cn(
+                  'w-4 h-4 transition-all duration-200',
+                  isActive
+                    ? 'opacity-100'
+                    : 'opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0'
+                )}
                 style={{
-                  backgroundColor: isActive ? 'rgb(var(--secondary))' : 'transparent',
+                  color: isActive ? 'rgb(var(--primary) / 0.7)' : 'rgb(var(--muted-foreground))',
+                }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Divider */}
+      <div className="px-4">
+        <div className="divider" />
+      </div>
+
+      {/* Bottom Navigation */}
+      <nav className="p-4">
+        {bottomNavigation.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 group"
+              style={{
+                backgroundColor: isActive ? 'rgb(var(--secondary))' : 'transparent',
+                color: isActive ? 'rgb(var(--foreground))' : 'rgb(var(--muted-foreground))',
+              }}
+            >
+              <span
+                className="transition-colors"
+                style={{
                   color: isActive ? 'rgb(var(--foreground))' : 'rgb(var(--muted-foreground))',
                 }}
               >
-                <span
-                  className="transition-colors"
-                  style={{
-                    color: isActive ? 'rgb(var(--foreground))' : 'rgb(var(--muted-foreground))',
-                  }}
-                >
-                  {item.icon}
-                </span>
-                {item.name}
-              </Link>
-            )
-          })}
-        </nav>
-      </div>
+                {item.icon}
+              </span>
+              {item.name}
+            </Link>
+          )
+        })}
+      </nav>
+    </div>
   )
 
   return (
@@ -387,8 +389,19 @@ export function Sidebar() {
         }}
         aria-label="Open menu"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 6h16M4 12h16M4 18h16"
+          />
         </svg>
       </button>
 
@@ -404,12 +417,11 @@ export function Sidebar() {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm w-full h-full border-none cursor-default"
             onClick={() => setMobileOpen(false)}
             onKeyDown={(e) => e.key === 'Escape' && setMobileOpen(false)}
-            role="button"
-            tabIndex={0}
             aria-label="Close menu"
           />
           {/* Sidebar Panel */}
@@ -421,7 +433,10 @@ export function Sidebar() {
             }}
           >
             {/* Close button */}
-            <div className="flex items-center justify-between h-16 px-4 border-b" style={{ borderColor: 'rgb(var(--sidebar-border))' }}>
+            <div
+              className="flex items-center justify-between h-16 px-4 border-b"
+              style={{ borderColor: 'rgb(var(--sidebar-border))' }}
+            >
               <span className="font-bold text-lg" style={{ color: 'rgb(var(--foreground))' }}>
                 Menu
               </span>
@@ -432,8 +447,19 @@ export function Sidebar() {
                 style={{ color: 'rgb(var(--muted-foreground))' }}
                 aria-label="Close menu"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -454,7 +480,10 @@ export function Sidebar() {
                   <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[rgb(var(--info))] to-[rgb(var(--info-muted))] flex items-center justify-center">
                     <span className="text-2xs font-bold text-white">Ξ</span>
                   </div>
-                  <span className="text-sm font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
+                  <span
+                    className="text-sm font-semibold"
+                    style={{ color: 'rgb(var(--foreground))' }}
+                  >
                     {formatTokenAmount(balance, decimals)}
                   </span>
                   <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>

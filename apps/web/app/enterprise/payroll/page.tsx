@@ -18,38 +18,25 @@ export default function PayrollPage() {
   const { addToast } = useToast()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
-  if (!isConnected) {
-    return <ConnectWalletCard message="Please connect your wallet to manage payroll" />
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Loading payroll...</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p style={{ color: 'rgb(var(--destructive))' }}>Error: {error.message}</p>
-      </div>
-    )
-  }
-
-  const handleAddEmployee = useCallback((data: EmployeeFormData) => {
-    addToast({
-      type: 'success',
-      title: 'Employee Added',
-      message: `Added ${data.walletAddress.slice(0, 8)}... with ${data.frequency} payments of $${data.amount}`,
-    })
-    setIsAddModalOpen(false)
-  }, [addToast])
+  const handleAddEmployee = useCallback(
+    (data: EmployeeFormData) => {
+      addToast({
+        type: 'success',
+        title: 'Employee Added',
+        message: `Added ${data.walletAddress.slice(0, 8)}... with ${data.frequency} payments of $${data.amount}`,
+      })
+      setIsAddModalOpen(false)
+    },
+    [addToast]
+  )
 
   const handleProcessPayments = useCallback(() => {
     if (payrollEntries.length === 0) {
-      addToast({ type: 'info', title: 'No Payments', message: 'No active payroll entries to process' })
+      addToast({
+        type: 'info',
+        title: 'No Payments',
+        message: 'No active payroll entries to process',
+      })
       return
     }
     const activeCount = payrollEntries.filter((e) => e.status === 'active').length
@@ -86,8 +73,32 @@ export default function PayrollPage() {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
-    addToast({ type: 'success', title: 'Report Exported', message: 'Payroll report downloaded as CSV' })
+    addToast({
+      type: 'success',
+      title: 'Report Exported',
+      message: 'Payroll report downloaded as CSV',
+    })
   }, [payrollEntries, addToast])
+
+  if (!isConnected) {
+    return <ConnectWalletCard message="Please connect your wallet to manage payroll" />
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Loading payroll...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p style={{ color: 'rgb(var(--destructive))' }}>Error: {error.message}</p>
+      </div>
+    )
+  }
 
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

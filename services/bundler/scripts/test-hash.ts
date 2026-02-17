@@ -315,7 +315,7 @@ async function main() {
       functionName: 'simulateValidation',
       args: [{ ...packedOp, signature }],
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
     const raw = err?.cause?.raw || err?.cause?.data || 'no raw data'
     const _name = err?.cause?.name || 'unknown'
     if (typeof raw === 'string' && raw.startsWith('0xe0cff05f')) {

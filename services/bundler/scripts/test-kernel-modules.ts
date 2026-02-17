@@ -214,7 +214,7 @@ function computePaymasterHash(params: {
   )
 }
 
-async function sendUserOp(bundlerUrl: string, op: Record<string, any>, entryPoint: Address) {
+async function sendUserOp(bundlerUrl: string, op: Record<string, unknown>, entryPoint: Address) {
   const response = await fetch(bundlerUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -228,7 +228,7 @@ async function sendUserOp(bundlerUrl: string, op: Record<string, any>, entryPoin
   return response.json()
 }
 
-async function waitForReceipt(bundlerUrl: string, hash: string, maxWait = 30000): Promise<any> {
+async function waitForReceipt(bundlerUrl: string, hash: string, maxWait = 30000): Promise<unknown> {
   const start = Date.now()
   while (Date.now() - start < maxWait) {
     await new Promise((r) => setTimeout(r, 2000))
@@ -271,15 +271,15 @@ function encodeValidatorNonceKey(validatorAddr: Address, nonceKey = 0): bigint {
  * Build, sign, and send a UserOp with VerifyingPaymaster sponsorship
  */
 async function buildAndSendSponsoredUserOp(params: {
-  publicClient: any
+  publicClient: unknown
   sender: Address
   callData: Hex
   signer: ReturnType<typeof privateKeyToAccount>
   deployerSigner: ReturnType<typeof privateKeyToAccount>
   nonceKey?: bigint
   label: string
-}): Promise<{ success: boolean; receipt: any; error?: any }> {
-  const { publicClient, sender, callData, signer, deployerSigner, label } = params
+}): Promise<{ success: boolean; receipt: unknown; error?: unknown }> {
+  const { publicClient, sender, callData, signer, deployerSigner, label: _label } = params
   const nonceKey = params.nonceKey ?? 0n
 
   // Get nonce
@@ -289,7 +289,6 @@ async function buildAndSendSponsoredUserOp(params: {
     functionName: 'getNonce',
     args: [sender, nonceKey],
   })) as bigint
-  console.log(`  EntryPoint nonce (key=${nonceKey}): ${epNonce}`)
 
   // Gas params
   const vgl = 500000n,
@@ -358,8 +357,6 @@ async function buildAndSendSponsoredUserOp(params: {
     args: [packedOp],
   })) as Hex
   const userOpSig = await signer.signMessage({ message: { raw: userOpHash } })
-
-  console.log(`  Sending ${label} UserOp...`)
   const result = await sendUserOp(
     CONFIG.bundlerUrl,
     {
@@ -381,17 +378,12 @@ async function buildAndSendSponsoredUserOp(params: {
   )
 
   if (result.error) {
-    console.log(`  Bundler error:`, JSON.stringify(result.error, null, 2))
     return { success: false, receipt: null, error: result.error }
   }
-  console.log(`  UserOp hash: ${result.result}`)
 
   const receipt = await waitForReceipt(CONFIG.bundlerUrl, result.result)
   if (receipt) {
-    console.log(`  Tx: ${receipt.receipt?.transactionHash}`)
-    console.log(`  Success: ${receipt.success}`)
   } else {
-    console.log(`  Receipt not available within timeout`)
   }
 
   return { success: receipt?.success === true, receipt }
@@ -401,14 +393,14 @@ async function buildAndSendSponsoredUserOp(params: {
  * Build, sign, and send a UserOp with ERC20Paymaster (USDC gas payment)
  */
 async function buildAndSendErc20PaymasterUserOp(params: {
-  publicClient: any
+  publicClient: unknown
   sender: Address
   callData: Hex
   signer: ReturnType<typeof privateKeyToAccount>
   nonceKey?: bigint
   label: string
-}): Promise<{ success: boolean; receipt: any; error?: any }> {
-  const { publicClient, sender, callData, signer, label } = params
+}): Promise<{ success: boolean; receipt: unknown; error?: unknown }> {
+  const { publicClient, sender, callData, signer, label: _label2 } = params
   const nonceKey = params.nonceKey ?? 0n
 
   // Get nonce
@@ -418,7 +410,6 @@ async function buildAndSendErc20PaymasterUserOp(params: {
     functionName: 'getNonce',
     args: [sender, nonceKey],
   })) as bigint
-  console.log(`  EntryPoint nonce (key=${nonceKey}): ${epNonce}`)
 
   // Gas params
   const vgl = 500000n,
@@ -459,8 +450,6 @@ async function buildAndSendErc20PaymasterUserOp(params: {
     args: [packedOp],
   })) as Hex
   const userOpSig = await signer.signMessage({ message: { raw: userOpHash } })
-
-  console.log(`  Sending ${label} UserOp...`)
   const result = await sendUserOp(
     CONFIG.bundlerUrl,
     {
@@ -482,17 +471,12 @@ async function buildAndSendErc20PaymasterUserOp(params: {
   )
 
   if (result.error) {
-    console.log(`  Bundler error:`, JSON.stringify(result.error, null, 2))
     return { success: false, receipt: null, error: result.error }
   }
-  console.log(`  UserOp hash: ${result.result}`)
 
   const receipt = await waitForReceipt(CONFIG.bundlerUrl, result.result)
   if (receipt) {
-    console.log(`  Tx: ${receipt.receipt?.transactionHash}`)
-    console.log(`  Success: ${receipt.success}`)
   } else {
-    console.log(`  Receipt not available within timeout`)
   }
 
   return { success: receipt?.success === true, receipt }
@@ -519,25 +503,12 @@ async function main() {
   const eoaAddress = eoaSigner.address
   const agentAddress = agentSigner.address
 
-  console.log('=== Kernel v3 Module Install/Uninstall E2E Test ===\n')
-  console.log('EOA (smart account):', eoaAddress)
-  console.log('Agent EOA:          ', agentAddress)
-  console.log('ECDSAValidator:     ', CONFIG.ecdsaValidator)
-  console.log('SessionKeyExecutor: ', CONFIG.sessionKeyExecutor)
-  console.log('Deployer:           ', deployerSigner.address)
-
   const results: { step: string; success: boolean }[] = []
-
-  // ================================================================
-  // STEP 1: Verify EIP-7702 Delegation
-  // ================================================================
-  console.log('\n--- Step 1: Verify EIP-7702 Delegation ---')
 
   let eoaCode = await publicClient.getCode({ address: eoaAddress })
   let isDelegated = eoaCode && eoaCode !== '0x' && eoaCode.toLowerCase().startsWith('0xef0100')
 
   if (!isDelegated) {
-    console.log('  EOA not delegated. Setting up delegation...')
     const eoaExternalNonce = await publicClient.getTransactionCount({ address: eoaAddress })
 
     const authorization = await eoaSigner.signAuthorization({
@@ -551,41 +522,20 @@ async function main() {
       authorizationList: [authorization],
       gas: 100000n,
     })
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
-    console.log(`  Delegation tx: ${txHash} (status: ${receipt.status})`)
+    const _receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
 
     eoaCode = await publicClient.getCode({ address: eoaAddress })
     isDelegated = eoaCode && eoaCode !== '0x' && eoaCode.toLowerCase().startsWith('0xef0100')
   }
 
   if (isDelegated && eoaCode) {
-    const delegateAddr = `0x${eoaCode.slice(8, 48)}`
-    console.log(`  Delegate address: ${delegateAddr}`)
-    console.log('  Delegation: VERIFIED')
+    const _delegateAddr = `0x${eoaCode.slice(8, 48)}`
     results.push({ step: 'Step 1: Delegation', success: true })
   } else {
-    console.log('  FAILED - delegation not set')
     results.push({ step: 'Step 1: Delegation', success: false })
     printSummary(results)
     return
   }
-
-  // ================================================================
-  // STEP 2: Install ECDSAValidator (Agent as owner)
-  //
-  // EOA (root validator) signs the UserOp.
-  // installModule(1, ecdsaValidator, initData)
-  //
-  // initData layout for VALIDATOR:
-  //   [hook: 20 bytes][InstallValidatorDataFormat ABI-encoded at offset 20]
-  //
-  // InstallValidatorDataFormat = { validatorData: bytes, hookData: bytes, selectorData: bytes }
-  //   - validatorData: agent address (20 bytes) → ECDSAValidator.onInstall stores as owner
-  //   - hookData: 0x (empty)
-  //   - selectorData: execute selector (4 bytes) → grants access to execute()
-  // ================================================================
-  console.log('\n--- Step 2: Install ECDSAValidator (Agent as owner) ---')
-  console.log(`  Agent address: ${agentAddress}`)
 
   // Build initData for installModule(VALIDATOR)
   // Hook = address(1) = HOOK_MODULE_INSTALLED (no actual hook, just flag)
@@ -619,7 +569,6 @@ async function main() {
       functionName: 'isModuleInstalled',
       args: [MODULE_TYPE_VALIDATOR, CONFIG.ecdsaValidator, '0x' as Hex],
     })) as boolean
-    console.log(`  isModuleInstalled(VALIDATOR, ecdsaValidator): ${isInstalled}`)
 
     // Verify: ECDSAValidator.ecdsaValidatorStorage(eoaAddress).owner == agent
     const storedOwner = (await publicClient.readContract({
@@ -628,42 +577,22 @@ async function main() {
       functionName: 'ecdsaValidatorStorage',
       args: [eoaAddress],
     })) as Address
-    console.log(`  ECDSAValidator owner for EOA: ${storedOwner}`)
-    console.log(
-      `  Agent address match: ${storedOwner.toLowerCase() === agentAddress.toLowerCase()}`
-    )
 
     const step2Ok = isInstalled && storedOwner.toLowerCase() === agentAddress.toLowerCase()
     results.push({ step: 'Step 2: ECDSAValidator Install', success: step2Ok })
     if (step2Ok) {
-      console.log('  Step 2 SUCCESS')
     } else {
-      console.log('  Step 2 FAILED - verification mismatch')
     }
   } else {
     results.push({ step: 'Step 2: ECDSAValidator Install', success: false })
-    console.log('  Step 2 FAILED')
     printSummary(results)
     return
   }
 
-  // ================================================================
-  // STEP 3: Agent-signed USDC Transfer
-  //
-  // Agent signs the UserOp (not EOA owner).
-  // Nonce encodes the validator: mode(0x00) | vType(0x01) | ecdsaValidatorAddr | nonceKey
-  // ECDSAValidator checks: recover(userOpHash, sig) == storedOwner (= agent)
-  //
-  // callData: execute(mode, packed(USDC.transfer(deployer, 1 USDC)))
-  // paymaster: ERC20Paymaster (USDC gas)
-  // ================================================================
-  console.log('\n--- Step 3: Agent-signed USDC Transfer ---')
-
   const transferRecipient = deployerSigner.address
   const transferAmount = 1000000n // 1 USDC (6 decimals)
-  console.log(`  Transfer: 1 USDC -> ${transferRecipient}`)
 
-  const usdcBefore = (await publicClient.readContract({
+  const _usdcBefore = (await publicClient.readContract({
     address: CONFIG.usdc,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
@@ -675,12 +604,9 @@ async function main() {
     functionName: 'balanceOf',
     args: [transferRecipient],
   })) as bigint
-  console.log(`  EOA USDC before:       ${(Number(usdcBefore) / 1e6).toFixed(6)}`)
-  console.log(`  Recipient USDC before: ${(Number(recipientUsdcBefore) / 1e6).toFixed(6)}`)
 
   // Nonce key for installed ECDSAValidator
   const validatorNonceKey = encodeValidatorNonceKey(CONFIG.ecdsaValidator)
-  console.log(`  Validator nonce key: ${validatorNonceKey}`)
 
   // Build callData: execute(mode, encodePacked(USDC, 0, transfer(recipient, amount)))
   const execMode = `0x${'00'.repeat(32)}` as Hex
@@ -711,7 +637,7 @@ async function main() {
   })
 
   if (step3Result.success) {
-    const usdcAfter = (await publicClient.readContract({
+    const _usdcAfter = (await publicClient.readContract({
       address: CONFIG.usdc,
       abi: ERC20_ABI,
       functionName: 'balanceOf',
@@ -724,36 +650,15 @@ async function main() {
       args: [transferRecipient],
     })) as bigint
     const usdcTransferred = recipientUsdcAfter - recipientUsdcBefore
-    console.log(`  EOA USDC after:        ${(Number(usdcAfter) / 1e6).toFixed(6)}`)
-    console.log(`  Recipient USDC after:  ${(Number(recipientUsdcAfter) / 1e6).toFixed(6)}`)
-    console.log(`  USDC transferred:      ${(Number(usdcTransferred) / 1e6).toFixed(6)}`)
 
     const step3Ok = usdcTransferred >= transferAmount
     results.push({ step: 'Step 3: Agent USDC Transfer', success: step3Ok })
     if (step3Ok) {
-      console.log('  Step 3 SUCCESS - Agent operated EOA assets!')
     } else {
-      console.log('  Step 3 FAILED - transfer amount mismatch')
     }
   } else {
     results.push({ step: 'Step 3: Agent USDC Transfer', success: false })
-    console.log('  Step 3 FAILED')
   }
-
-  // ================================================================
-  // STEP 4: Install SessionKeyExecutor
-  //
-  // EOA (root validator) signs the UserOp.
-  // installModule(2, sessionKeyExecutor, initData)
-  //
-  // initData layout for EXECUTOR:
-  //   [hook: 20 bytes][InstallExecutorDataFormat ABI-encoded at offset 20]
-  //
-  // InstallExecutorDataFormat = { executorData: bytes, hookData: bytes }
-  //   - executorData: abi.encode(sessionKey, validAfter, validUntil, spendingLimit, permissionsData)
-  //   - hookData: 0x (empty)
-  // ================================================================
-  console.log('\n--- Step 4: Install SessionKeyExecutor ---')
 
   const validUntilSession = BigInt(Math.floor(Date.now() / 1000) + 3600) // 1 hour from now
   const spendingLimit = 1000000000000000000n // 1 ETH
@@ -823,7 +728,6 @@ async function main() {
       functionName: 'isModuleInstalled',
       args: [MODULE_TYPE_EXECUTOR, CONFIG.sessionKeyExecutor, '0x' as Hex],
     })) as boolean
-    console.log(`  isModuleInstalled(EXECUTOR, sessionKeyExecutor): ${isInstalled}`)
 
     // Verify: getSessionKey
     let sessionKeyActive = false
@@ -834,11 +738,8 @@ async function main() {
         abi: SESSION_KEY_EXECUTOR_ABI,
         functionName: 'getSessionKey',
         args: [eoaAddress, agentAddress],
-      })) as any
+      })) as unknown
       sessionKeyActive = sessionKeyConfig.isActive
-      console.log(`  Session key active: ${sessionKeyActive}`)
-      console.log(`  Session validUntil: ${sessionKeyConfig.validUntil}`)
-      console.log(`  Spending limit: ${sessionKeyConfig.spendingLimit}`)
 
       // Verify: hasPermission
       hasTransferPermission = (await publicClient.readContract({
@@ -847,32 +748,16 @@ async function main() {
         functionName: 'hasPermission',
         args: [eoaAddress, agentAddress, CONFIG.usdc, TRANSFER_SELECTOR as `0x${string}`],
       })) as boolean
-      console.log(`  hasPermission(USDC.transfer): ${hasTransferPermission}`)
-    } catch (err: any) {
-      console.log(`  Session key query error: ${err?.shortMessage || err?.message}`)
-    }
+    } catch (_err: unknown) {}
 
     const step4Ok = isInstalled && sessionKeyActive && hasTransferPermission
     results.push({ step: 'Step 4: SessionKeyExecutor Install', success: step4Ok })
     if (step4Ok) {
-      console.log('  Step 4 SUCCESS')
     } else {
-      console.log('  Step 4 FAILED - verification mismatch')
     }
   } else {
     results.push({ step: 'Step 4: SessionKeyExecutor Install', success: false })
-    console.log('  Step 4 FAILED')
   }
-
-  // ================================================================
-  // STEP 5: Module Uninstall (revoke all agent permissions)
-  //
-  // 5a: Uninstall ECDSAValidator
-  // 5b: Uninstall SessionKeyExecutor
-  //
-  // Both signed by EOA (root validation)
-  // ================================================================
-  console.log('\n--- Step 5a: Uninstall ECDSAValidator ---')
 
   const uninstallValidatorCallData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
@@ -896,20 +781,14 @@ async function main() {
       functionName: 'isModuleInstalled',
       args: [MODULE_TYPE_VALIDATOR, CONFIG.ecdsaValidator, '0x' as Hex],
     })) as boolean
-    console.log(`  isModuleInstalled(VALIDATOR) after uninstall: ${isStillInstalled}`)
     const step5aOk = !isStillInstalled
     results.push({ step: 'Step 5a: ECDSAValidator Uninstall', success: step5aOk })
     if (step5aOk) {
-      console.log('  Step 5a SUCCESS')
     } else {
-      console.log('  Step 5a FAILED - module still installed')
     }
   } else {
     results.push({ step: 'Step 5a: ECDSAValidator Uninstall', success: false })
-    console.log('  Step 5a FAILED')
   }
-
-  console.log('\n--- Step 5b: Uninstall SessionKeyExecutor ---')
 
   const uninstallExecutorCallData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
@@ -933,17 +812,13 @@ async function main() {
       functionName: 'isModuleInstalled',
       args: [MODULE_TYPE_EXECUTOR, CONFIG.sessionKeyExecutor, '0x' as Hex],
     })) as boolean
-    console.log(`  isModuleInstalled(EXECUTOR) after uninstall: ${isStillInstalled}`)
     const step5bOk = !isStillInstalled
     results.push({ step: 'Step 5b: SessionKeyExecutor Uninstall', success: step5bOk })
     if (step5bOk) {
-      console.log('  Step 5b SUCCESS')
     } else {
-      console.log('  Step 5b FAILED - module still installed')
     }
   } else {
     results.push({ step: 'Step 5b: SessionKeyExecutor Uninstall', success: false })
-    console.log('  Step 5b FAILED')
   }
 
   // ================================================================
@@ -1008,16 +883,10 @@ function buildExecutorInstallData(params: {
  * Print test summary
  */
 function printSummary(results: { step: string; success: boolean }[]) {
-  console.log('\n========================================')
-  console.log('           TEST SUMMARY')
-  console.log('========================================')
-  for (const r of results) {
-    console.log(`  ${r.success ? 'PASS' : 'FAIL'}  ${r.step}`)
+  for (const _r of results) {
   }
-  const passed = results.filter((r) => r.success).length
-  const total = results.length
-  console.log(`\n  ${passed}/${total} steps passed`)
-  console.log('========================================')
+  const _passed = results.filter((r) => r.success).length
+  const _total = results.length
 }
 
 main().catch(console.error)

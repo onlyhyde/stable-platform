@@ -1,13 +1,13 @@
 'use client'
 
+import type { StealthAnnouncement } from '@stablenet/plugin-stealth'
+import { computeStealthKey, createMetadata } from '@stablenet/plugin-stealth'
 import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { createWalletClient, encodeFunctionData, http, toHex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { computeStealthKey, createMetadata } from '@stablenet/plugin-stealth'
-import type { StealthAnnouncement } from '@stablenet/plugin-stealth'
-import { useStableNetContext } from '@/providers'
 import { getConfigByChainId, getStablenetLocal } from '@/lib/chains'
+import { useStableNetContext } from '@/providers'
 import type { Announcement, StealthMetaAddress } from '@/types'
 
 /** Fetch with AbortController timeout (default 10s). */
@@ -399,8 +399,10 @@ export function useStealth(config: UseStealthConfig = {}) {
       const { announcement, recipientAddress, spendingKey, viewingKey } = params
 
       // Use provided keys or fall back to config callbacks
-      const spendingPrivKey = spendingKey ?? (getSpendingPrivateKey ? await getSpendingPrivateKey() : undefined)
-      const viewingPrivKey = viewingKey ?? (getViewingPrivateKey ? await getViewingPrivateKey() : undefined)
+      const spendingPrivKey =
+        spendingKey ?? (getSpendingPrivateKey ? await getSpendingPrivateKey() : undefined)
+      const viewingPrivKey =
+        viewingKey ?? (getViewingPrivateKey ? await getViewingPrivateKey() : undefined)
 
       if (!spendingPrivKey || !viewingPrivKey) {
         setError(new Error('Spending and viewing private keys are required for withdrawal'))
@@ -433,7 +435,9 @@ export function useStealth(config: UseStealthConfig = {}) {
         })
 
         if (!result) {
-          throw new Error('Failed to derive stealth key — this announcement may not belong to this wallet')
+          throw new Error(
+            'Failed to derive stealth key — this announcement may not belong to this wallet'
+          )
         }
 
         // Create wallet client with the derived stealth private key

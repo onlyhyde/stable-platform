@@ -16,27 +16,27 @@ export function ApprovalApp() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const loadApproval = async (id: string) => {
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'GET_APPROVAL',
-        id: `get-approval-${Date.now()}`,
-        payload: { approvalId: id },
-      })
-
-      if (response?.payload?.approval) {
-        setApproval(response.payload.approval)
-      } else {
-        setError(t('approvalNotFound'))
-      }
-    } catch (_err) {
-      setError(t('failedToLoad'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    const loadApproval = async (id: string) => {
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'GET_APPROVAL',
+          id: `get-approval-${Date.now()}`,
+          payload: { approvalId: id },
+        })
+
+        if (response?.payload?.approval) {
+          setApproval(response.payload.approval)
+        } else {
+          setError(t('approvalNotFound'))
+        }
+      } catch (_err) {
+        setError(t('failedToLoad'))
+      } finally {
+        setLoading(false)
+      }
+    }
+
     // Get approval ID from URL params
     const params = new URLSearchParams(window.location.search)
     const approvalId = params.get('id')
@@ -49,11 +49,7 @@ export function ApprovalApp() {
 
     // Fetch approval details from background
     loadApproval(approvalId)
-  }, [
-    // Fetch approval details from background
-    loadApproval,
-    t,
-  ])
+  }, [t])
 
   const handleApprove = async (data?: unknown) => {
     if (!approval) return
