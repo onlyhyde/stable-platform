@@ -24,7 +24,6 @@ export class ReputationManager implements IReputationManager {
   constructor(logger: Logger, config?: Partial<ReputationConfig>) {
     this.logger = logger.child({ module: 'reputation' })
     this.config = { ...DEFAULT_REPUTATION_CONFIG, ...config }
-    this.lastDecayTime = Date.now()
   }
 
   /**

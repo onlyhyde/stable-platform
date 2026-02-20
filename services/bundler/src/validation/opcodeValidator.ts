@@ -121,7 +121,6 @@ export class OpcodeValidator {
     config: OpcodeValidatorConfig = {}
   ) {
     this.tracer = tracer
-    this.entryPoint = entryPoint
     this.logger = logger.child({ module: 'opcodeValidator' })
     this.config = { ...DEFAULT_CONFIG, ...config }
 
