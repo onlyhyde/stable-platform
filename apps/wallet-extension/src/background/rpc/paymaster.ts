@@ -49,7 +49,9 @@ export async function requestPaymasterSponsorship(
   paymasterUrl: string,
   userOp: UserOperation,
   entryPoint: Address,
-  chainId: number
+  chainId: number,
+  /** ERC-20 token address for token-based gas payment. If omitted, requests sponsored gas. */
+  tokenAddress?: Address
 ): Promise<{
   paymaster: Address
   paymasterData: Hex
@@ -74,11 +76,15 @@ export async function requestPaymasterSponsorship(
       factoryData: userOp.factoryData ?? undefined,
     }
 
+    // Build context for paymaster (includes token info for ERC-20 payments)
+    const paymasterContext = tokenAddress ? { token: tokenAddress } : {}
+
     // Step 1: Get stub data for gas estimation
     const stubResult = (await fetchFromPaymaster(paymasterUrl, 'pm_getPaymasterStubData', [
       userOpHex,
       entryPoint,
       chainIdHex,
+      paymasterContext,
     ])) as
       | {
           paymaster?: string
@@ -103,6 +109,7 @@ export async function requestPaymasterSponsorship(
       },
       entryPoint,
       chainIdHex,
+      paymasterContext,
     ])) as
       | {
           paymaster?: string

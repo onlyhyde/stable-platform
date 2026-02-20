@@ -21,6 +21,9 @@ interface SmartAccountDashboardProps {
   isLoading: boolean
   onNavigateToModules: () => void
   onNavigateToInstall: () => void
+  onNavigateToGasSponsorship: () => void
+  onNavigateToSessionKeys: () => void
+  onNavigateToSpendingLimits: () => void
   onRevokeDelegation: () => void
 }
 
@@ -36,6 +39,9 @@ export function SmartAccountDashboard({
   isLoading,
   onNavigateToModules,
   onNavigateToInstall,
+  onNavigateToGasSponsorship,
+  onNavigateToSessionKeys,
+  onNavigateToSpendingLimits,
   onRevokeDelegation,
 }: SmartAccountDashboardProps) {
   const { t } = useTranslation('modules')
@@ -199,6 +205,7 @@ export function SmartAccountDashboard({
           status={network?.paymasterUrl ? t('dashboard.available') : t('dashboard.notConfigured')}
           isActive={!!network?.paymasterUrl}
           detail={gasSponsorshipDetail}
+          onClick={onNavigateToGasSponsorship}
         />
         <FeatureCard
           icon="🔑"
@@ -209,6 +216,7 @@ export function SmartAccountDashboard({
               : t('dashboard.none')
           }
           isActive={sessionKeyCount > 0}
+          onClick={onNavigateToSessionKeys}
         />
         <FeatureCard
           icon="💰"
@@ -216,6 +224,7 @@ export function SmartAccountDashboard({
           status={hasSpendingLimits ? t('dashboard.active') : t('dashboard.notConfigured')}
           isActive={hasSpendingLimits}
           detail={spendingLimitDetail}
+          onClick={onNavigateToSpendingLimits}
         />
         <FeatureCard
           icon="🧩"
@@ -223,6 +232,7 @@ export function SmartAccountDashboard({
           status={t('dashboard.installedCount', { count: totalModuleCount })}
           isActive={totalModuleCount > 0}
           detail={moduleBreakdown || undefined}
+          onClick={onNavigateToModules}
         />
       </div>
 
@@ -299,11 +309,31 @@ interface FeatureCardProps {
   status: string
   isActive: boolean
   detail?: string
+  onClick?: () => void
 }
 
-function FeatureCard({ icon, label, status, isActive, detail }: FeatureCardProps) {
+function FeatureCard({ icon, label, status, isActive, detail, onClick }: FeatureCardProps) {
   return (
-    <div className="rounded-lg p-3" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+    <div
+      className="rounded-lg p-3 transition-colors"
+      style={{
+        backgroundColor: 'rgb(var(--secondary))',
+        cursor: onClick ? 'pointer' : undefined,
+      }}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onClick()
+              }
+            }
+          : undefined
+      }
+    >
       <span className="text-xl">{icon}</span>
       <p className="text-sm font-medium mt-1" style={{ color: 'rgb(var(--foreground))' }}>
         {label}

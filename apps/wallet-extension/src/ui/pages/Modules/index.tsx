@@ -8,16 +8,19 @@ import { useModuleMarketplace } from './hooks/useModuleMarketplace'
 import { useModules } from './hooks/useModules'
 import { useSmartAccountInfo } from './hooks/useSmartAccountInfo'
 
+import { GasSponsorshipView } from './GasSponsorshipView'
 import { InstallModuleWizard } from './InstallModule'
 import { ModuleDetails } from './ModuleDetails'
 import { ModuleList } from './ModuleList'
+import { SessionKeysView } from './SessionKeysView'
 import { SmartAccountDashboard } from './SmartAccountDashboard'
+import { SpendingLimitsView } from './SpendingLimitsView'
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type ModuleView = 'overview' | 'list' | 'details' | 'install' | 'delegate'
+type ModuleView = 'overview' | 'list' | 'details' | 'install' | 'delegate' | 'gas-sponsorship' | 'session-keys' | 'spending-limits'
 type ModuleTab = 'installed' | 'browse'
 
 // ============================================================================
@@ -117,9 +120,57 @@ export function ModulesPage() {
         isLoading={isLoading || isLoadingSmartInfo}
         onNavigateToModules={() => setView('list')}
         onNavigateToInstall={() => setView('install')}
+        onNavigateToGasSponsorship={() => setView('gas-sponsorship')}
+        onNavigateToSessionKeys={() => setView('session-keys')}
+        onNavigateToSpendingLimits={() => setView('spending-limits')}
         onRevokeDelegation={() => {
           setDelegateMode('revoke')
           setView('delegate')
+        }}
+      />
+    )
+  }
+
+  // View: Gas Sponsorship
+  if (view === 'gas-sponsorship') {
+    return (
+      <GasSponsorshipView
+        account={selectedAccount}
+        network={currentNetwork}
+        onBack={() => setView('overview')}
+      />
+    )
+  }
+
+  // View: Session Keys
+  if (view === 'session-keys') {
+    return (
+      <SessionKeysView
+        account={selectedAccount}
+        installedModules={installedModules}
+        onBack={() => setView('overview')}
+        onNavigateToInstall={() => {
+          setSelectedModuleType(MODULE_TYPE.EXECUTOR)
+          setView('install')
+        }}
+        onModuleClick={(address) => {
+          setSelectedModuleAddress(address)
+          setView('details')
+        }}
+      />
+    )
+  }
+
+  // View: Spending Limits
+  if (view === 'spending-limits') {
+    return (
+      <SpendingLimitsView
+        account={selectedAccount}
+        installedModules={installedModules}
+        onBack={() => setView('overview')}
+        onNavigateToInstall={() => {
+          setSelectedModuleType(MODULE_TYPE.HOOK)
+          setView('install')
         }}
       />
     )

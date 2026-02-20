@@ -143,13 +143,6 @@ export const RPC_ERRORS = {
 } as const
 
 /**
- * EntryPoint addresses
- */
-export const ENTRY_POINT_ADDRESSES = {
-  V07: '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as const,
-} as const
-
-/**
  * Popup dimensions
  */
 export const POPUP_DIMENSIONS = {

@@ -1,4 +1,4 @@
-import type { ModuleRegistryEntry } from '@stablenet/core'
+import type { GasPaymentConfig, ModuleRegistryEntry } from '@stablenet/core'
 import { useCallback, useState } from 'react'
 import type { Address, Hash, Hex } from 'viem'
 import { useSelectedNetwork } from '../../../hooks'
@@ -9,6 +9,8 @@ interface InstallModuleParams {
   config: Record<string, unknown>
   /** Pre-encoded init data (e.g., from WebAuthn registration) */
   initData?: Hex
+  /** Gas payment mode (native, sponsor, erc20) */
+  gasPayment?: GasPaymentConfig
 }
 
 interface InstallCustomModuleParams {
@@ -17,6 +19,8 @@ interface InstallCustomModuleParams {
   moduleType: string
   initData?: Hex
   name?: string
+  /** Gas payment mode (native, sponsor, erc20) */
+  gasPayment?: GasPaymentConfig
 }
 
 interface UseModuleInstallReturn {
@@ -66,6 +70,8 @@ export function useModuleInstall(): UseModuleInstallReturn {
                 initData: params.initData ?? params.config,
                 initDataEncoded: !!params.initData,
                 chainId: currentNetwork.chainId,
+                gasPaymentMode: params.gasPayment?.type ?? 'sponsor',
+                gasPaymentTokenAddress: params.gasPayment?.tokenAddress,
               },
             ],
           },
@@ -112,6 +118,8 @@ export function useModuleInstall(): UseModuleInstallReturn {
                 initData: params.initData ?? '0x',
                 initDataEncoded: true,
                 chainId: currentNetwork.chainId,
+                gasPaymentMode: params.gasPayment?.type ?? 'sponsor',
+                gasPaymentTokenAddress: params.gasPayment?.tokenAddress,
               },
             ],
           },

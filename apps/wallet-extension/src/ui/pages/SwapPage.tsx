@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
 import { useAssets, useSelectedNetwork } from '../hooks'
+import { useNetworkCurrency } from '../hooks/useNetworkCurrency'
 import { useTokenPrices } from '../hooks/useTokenPrices'
 import { useWalletStore } from '../hooks/useWalletStore'
 
-// Native ETH placeholder address (zero address signals native token)
+// Native token placeholder address (zero address signals native token)
 const NATIVE_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000' as const
 const DEFAULT_SWAP_FEE = 3000 // Uniswap V3 0.3% fee tier
 const DEFAULT_DEADLINE_MINUTES = 20
@@ -34,11 +35,12 @@ export function SwapPage() {
   const { selectedAccount, accounts, balances, setPage } = useWalletStore()
   const { tokens: assetTokens } = useAssets()
   const currentNetwork = useSelectedNetwork()
+  const { symbol: nativeSymbol } = useNetworkCurrency()
   const currentAccount = accounts.find((a) => a.address === selectedAccount)
   const balance = selectedAccount ? balances[selectedAccount] : undefined
 
   const [form, setForm] = useState<SwapFormState>({
-    fromToken: 'ETH',
+    fromToken: '',
     toToken: '',
     fromAmount: '',
     slippage: 0.5,
@@ -49,8 +51,15 @@ export function SwapPage() {
   const [estimate, setEstimate] = useState<SwapEstimate | null>(null)
   const [swapExecutorAddress, setSwapExecutorAddress] = useState<string | null>(null)
 
+  // Initialize fromToken with native symbol
+  useEffect(() => {
+    if (nativeSymbol && !form.fromToken) {
+      setForm((prev) => ({ ...prev, fromToken: nativeSymbol }))
+    }
+  }, [nativeSymbol, form.fromToken])
+
   // Collect symbols for price lookup
-  const allSymbols = ['ETH', ...assetTokens.map((t) => t.symbol).filter(Boolean)]
+  const allSymbols = [nativeSymbol, ...assetTokens.map((t) => t.symbol).filter(Boolean)]
   const uniqueSymbols = [...new Set(allSymbols)]
   const { prices: tokenPrices } = useTokenPrices(uniqueSymbols)
 
@@ -97,8 +106,7 @@ export function SwapPage() {
       return
     }
 
-    const fromPrice =
-      form.fromToken === 'ETH' ? (tokenPrices.ETH ?? 0) : (tokenPrices[form.fromToken] ?? 0)
+    const fromPrice = tokenPrices[form.fromToken] ?? 0
     const toPrice = tokenPrices[form.toToken] ?? 0
 
     if (fromPrice === 0 || toPrice === 0) {
@@ -129,23 +137,28 @@ export function SwapPage() {
     updateEstimate()
   }, [updateEstimate])
 
+  // Check if a symbol is the native token
+  function isNativeToken(symbol: string): boolean {
+    return symbol === nativeSymbol
+  }
+
   // Resolve token symbol to address
   function getTokenAddress(symbol: string): string {
-    if (symbol === 'ETH') return NATIVE_TOKEN_ADDRESS
+    if (isNativeToken(symbol)) return NATIVE_TOKEN_ADDRESS
     const token = assetTokens.find((t) => t.symbol === symbol)
     return token?.address ?? NATIVE_TOKEN_ADDRESS
   }
 
   // Get token decimals
   function getTokenDecimals(symbol: string): number {
-    if (symbol === 'ETH') return 18
+    if (isNativeToken(symbol)) return currentNetwork?.currency.decimals ?? 18
     const token = assetTokens.find((t) => t.symbol === symbol)
     return token?.decimals ?? 18
   }
 
   // Get display balance for selected from token
   function getFromBalance(): string | null {
-    if (form.fromToken === 'ETH' && balance !== undefined) {
+    if (isNativeToken(form.fromToken) && balance !== undefined) {
       return Number(formatEther(balance)).toFixed(4)
     }
     const token = assetTokens.find((t) => t.symbol === form.fromToken)
@@ -163,11 +176,11 @@ export function SwapPage() {
   }
 
   function handleSetMaxAmount() {
-    if (form.fromToken === 'ETH' && balance !== undefined) {
+    if (isNativeToken(form.fromToken) && balance !== undefined) {
       // Leave some gas for the swap tx
-      const maxEth = Number(formatEther(balance))
+      const maxNative = Number(formatEther(balance))
       const reserveForGas = 0.01
-      const maxAmount = Math.max(0, maxEth - reserveForGas)
+      const maxAmount = Math.max(0, maxNative - reserveForGas)
       setForm((prev) => ({ ...prev, fromAmount: maxAmount.toString() }))
     } else {
       const token = assetTokens.find((t) => t.symbol === form.fromToken)
@@ -313,7 +326,7 @@ export function SwapPage() {
               border: '1px solid rgb(var(--border))',
             }}
           >
-            <option value="ETH">ETH</option>
+            <option value={nativeSymbol}>{nativeSymbol}</option>
             {assetTokens.map((t) => (
               <option key={t.address} value={t.symbol}>
                 {t.symbol}

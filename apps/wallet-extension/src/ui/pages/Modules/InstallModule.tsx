@@ -1,5 +1,7 @@
 import {
   type Account,
+  GAS_PAYMENT_TYPE,
+  type GasPaymentConfig,
   getModuleTypeName,
   MODULE_TYPE,
   type ModuleRegistryEntry,
@@ -9,10 +11,11 @@ import {
   type SpendingLimitHookConfig,
   type WebAuthnValidatorConfig,
 } from '@stablenet/core'
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Address, Hex } from 'viem'
+import type { Address, Hash, Hex } from 'viem'
 import { formatEther, isAddress } from 'viem'
+import { GasPaymentSelector } from '../Send/GasPayment'
 import { useModuleInstall } from './hooks/useModuleInstall'
 import { useModuleRegistry } from './hooks/useModuleRegistry'
 import { saveWebAuthnCredential } from './hooks/useWebAuthn'
@@ -37,6 +40,8 @@ type WizardStep =
   | 'custom-address'
   | 'confirm'
   | 'pending'
+  | 'confirming'
+  | 'success'
 
 interface InstallModuleWizardProps {
   account: Account
@@ -66,10 +71,84 @@ export function InstallModuleWizard({
   const [customType, setCustomType] = useState<ModuleType | null>(null)
   const [customName, setCustomName] = useState('')
   const [customAddrInitData, setCustomAddrInitData] = useState<Hex>('0x')
+  const [gasPayment, setGasPayment] = useState<GasPaymentConfig>({
+    type: GAS_PAYMENT_TYPE.SPONSOR,
+  })
   const [error, setError] = useState<string | null>(null)
+  const [userOpHash, setUserOpHash] = useState<Hash | null>(null)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const { availableModules } = useModuleRegistry()
   const { installModule, installCustomModule } = useModuleInstall()
+
+  // Poll for UserOp receipt and status while confirming
+  const pollReceipt = useCallback(async (hash: Hash) => {
+    try {
+      // Check receipt first (on-chain confirmation)
+      const receiptResponse = await chrome.runtime.sendMessage({
+        type: 'RPC_REQUEST',
+        id: `receipt-poll-${Date.now()}`,
+        payload: {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getUserOperationReceipt',
+          params: [hash],
+        },
+      })
+      if (receiptResponse?.payload?.result) {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current)
+          pollingRef.current = null
+        }
+        if (receiptResponse.payload.result.success === false) {
+          setError(t('operationReverted', 'Transaction reverted on-chain'))
+          setStep('confirm')
+        } else {
+          setStep('success')
+        }
+        return
+      }
+
+      // Check bundler status (detect pre-chain failures like bundle revert)
+      const statusResponse = await chrome.runtime.sendMessage({
+        type: 'RPC_REQUEST',
+        id: `status-poll-${Date.now()}`,
+        payload: {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'debug_bundler_getUserOperationStatus',
+          params: [hash],
+        },
+      })
+      const opStatus = statusResponse?.payload?.result
+      if (opStatus && (opStatus.status === 'failed' || opStatus.status === 'dropped')) {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current)
+          pollingRef.current = null
+        }
+        setError(opStatus.error ?? t('operationFailed', 'Operation failed during bundling'))
+        setUserOpHash(null)
+        setStep('confirm')
+      }
+    } catch {
+      // Silently continue polling
+    }
+  }, [t])
+
+  useEffect(() => {
+    if (step !== 'confirming' || !userOpHash) return
+
+    // Initial poll
+    pollReceipt(userOpHash)
+    pollingRef.current = setInterval(() => pollReceipt(userOpHash), 3000)
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }
+  }, [step, userOpHash, pollReceipt])
 
   // Filter modules by selected type
   const filteredModules = useMemo(() => {
@@ -289,26 +368,31 @@ export function InstallModuleWizard({
     setError(null)
 
     try {
+      let hash: Hash | undefined
       if (selectedModule) {
-        await installModule({
+        hash = await installModule({
           account: account.address,
           module: selectedModule,
           config: configValues,
           initData: customInitData ?? undefined,
+          gasPayment,
         })
       } else if (customAddress && customType !== null) {
-        await installCustomModule({
+        hash = await installCustomModule({
           account: account.address,
           moduleAddress: customAddress as Address,
           moduleType: String(customType),
           initData: customAddrInitData !== '0x' ? customAddrInitData : undefined,
           name: customName || undefined,
+          gasPayment,
         })
       } else {
         setStep('confirm')
         return
       }
-      onComplete()
+      // Transition to confirming — poll for on-chain receipt
+      setUserOpHash(hash)
+      setStep('confirming')
     } catch (err) {
       setError(err instanceof Error ? err.message : t('installationFailed'))
       setStep('confirm')
@@ -449,6 +533,9 @@ export function InstallModuleWizard({
             module={selectedModule}
             config={configValues}
             error={error}
+            gasPayment={gasPayment}
+            onGasPaymentChange={setGasPayment}
+            accountAddress={account.address}
             onConfirm={handleInstall}
             onBack={() => setStep(hasConfig ? 'configure' : 'select-module')}
           />
@@ -462,12 +549,15 @@ export function InstallModuleWizard({
             initData={customAddrInitData}
             config={configValues}
             error={error}
+            gasPayment={gasPayment}
+            onGasPaymentChange={setGasPayment}
+            accountAddress={account.address}
             onConfirm={handleInstall}
             onBack={() => setStep('custom-address')}
           />
         )}
 
-        {/* Step: Pending */}
+        {/* Step: Pending (submitting to bundler) */}
         {step === 'pending' && (
           <div className="pending-state text-center py-12">
             <div
@@ -478,6 +568,61 @@ export function InstallModuleWizard({
             <p className="text-sm mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
               {t('confirmTransaction')}
             </p>
+          </div>
+        )}
+
+        {/* Step: Confirming (waiting for on-chain confirmation) */}
+        {step === 'confirming' && (
+          <div className="confirming-state text-center py-12">
+            <div
+              className="w-12 h-12 mx-auto mb-4 border-4 border-t-transparent rounded-full animate-spin"
+              style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
+            />
+            <p style={{ color: 'rgb(var(--foreground))' }}>
+              {t('waitingConfirmation', 'Waiting for on-chain confirmation...')}
+            </p>
+            {userOpHash && (
+              <p
+                className="text-xs mt-3 font-mono break-all px-4"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
+                {userOpHash}
+              </p>
+            )}
+            <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              {t('doNotClose', 'Please do not close this window')}
+            </p>
+          </div>
+        )}
+
+        {/* Step: Success */}
+        {step === 'success' && (
+          <div className="success-state text-center py-12">
+            <div
+              className="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="rgb(var(--primary))"
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              {t('moduleInstalled', 'Module installed successfully')}
+            </p>
+            <button
+              type="button"
+              className="mt-6 px-6 py-2.5 rounded-lg text-sm font-medium"
+              style={{ backgroundColor: 'rgb(var(--primary))', color: 'white' }}
+              onClick={onComplete}
+            >
+              {t('done', 'Done')}
+            </button>
           </div>
         )}
       </div>
@@ -710,6 +855,9 @@ interface InstallConfirmationProps {
   module: ModuleRegistryEntry
   config: Record<string, unknown>
   error: string | null
+  gasPayment: GasPaymentConfig
+  onGasPaymentChange: (config: GasPaymentConfig) => void
+  accountAddress: Address
   onConfirm: () => void
   onBack: () => void
 }
@@ -718,6 +866,9 @@ function InstallConfirmation({
   module,
   config,
   error,
+  gasPayment,
+  onGasPaymentChange,
+  accountAddress,
   onConfirm,
   onBack,
 }: InstallConfirmationProps) {
@@ -765,6 +916,16 @@ function InstallConfirmation({
           </dl>
         </div>
       )}
+
+      {/* Gas Payment */}
+      <div className="mb-4">
+        <GasPaymentSelector
+          gasPayment={gasPayment}
+          onGasPaymentChange={onGasPaymentChange}
+          gasEstimate={null}
+          accountAddress={accountAddress}
+        />
+      </div>
 
       {/* Error */}
       {error && (
@@ -1027,6 +1188,9 @@ interface CustomInstallConfirmationProps {
   initData: Hex
   config: Record<string, unknown>
   error: string | null
+  gasPayment: GasPaymentConfig
+  onGasPaymentChange: (config: GasPaymentConfig) => void
+  accountAddress: Address
   onConfirm: () => void
   onBack: () => void
 }
@@ -1037,6 +1201,9 @@ function CustomInstallConfirmation({
   name,
   initData,
   error,
+  gasPayment,
+  onGasPaymentChange,
+  accountAddress,
   onConfirm,
   onBack,
 }: CustomInstallConfirmationProps) {
@@ -1095,6 +1262,16 @@ function CustomInstallConfirmation({
             </div>
           )}
         </dl>
+      </div>
+
+      {/* Gas Payment */}
+      <div className="mb-4">
+        <GasPaymentSelector
+          gasPayment={gasPayment}
+          onGasPaymentChange={onGasPaymentChange}
+          gasEstimate={null}
+          accountAddress={accountAddress}
+        />
       </div>
 
       {/* Error */}

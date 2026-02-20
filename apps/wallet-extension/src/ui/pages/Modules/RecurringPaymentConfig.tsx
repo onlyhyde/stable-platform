@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
 import { encodeAbiParameters, formatEther, isAddress, parseAbiParameters, parseEther } from 'viem'
+import { useNetworkCurrency } from '../../hooks/useNetworkCurrency'
 
 // ============================================================================
 // Types
@@ -118,6 +119,7 @@ export function RecurringPaymentConfigUI({
 }: RecurringPaymentConfigProps) {
   const { t } = useTranslation('modules')
   const { t: tc } = useTranslation('common')
+  const { symbol: nativeSymbol } = useNetworkCurrency()
   const [step, setStep] = useState<Step>('recipient')
   const [form, setForm] = useState<FormState>({
     recipient: '',
@@ -306,7 +308,7 @@ export function RecurringPaymentConfigUI({
               htmlFor="amount-per-payment"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              {t('amountPerPayment', { unit: form.tokenType === 'native' ? 'ETH' : tc('tokens') })}
+              {t('amountPerPayment', { unit: form.tokenType === 'native' ? nativeSymbol : tc('tokens') })}
             </label>
             <input
               id="amount-per-payment"
@@ -330,7 +332,7 @@ export function RecurringPaymentConfigUI({
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                {amount} ETH
+                {amount} {nativeSymbol}
               </button>
             ))}
           </div>
@@ -450,11 +452,11 @@ export function RecurringPaymentConfigUI({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">{t('token')}</span>
-              <span className="font-medium">{form.tokenType === 'native' ? 'ETH' : 'ERC-20'}</span>
+              <span className="font-medium">{form.tokenType === 'native' ? nativeSymbol : 'ERC-20'}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">{t('amountPerPaymentLabel')}</span>
-              <span className="font-medium">{form.amountEth} ETH</span>
+              <span className="font-medium">{form.amountEth} {nativeSymbol}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">{t('frequency')}</span>
@@ -548,6 +550,7 @@ export function RecurringPaymentDisplay({
 }: RecurringPaymentDisplayProps) {
   const { t } = useTranslation('modules')
   const { t: tc } = useTranslation('common')
+  const { symbol: nativeSymbol } = useNetworkCurrency()
   const isNativeToken = token === ZERO_ADDRESS
   const remainingPayments = maxPayments === 0 ? t('unlimited') : maxPayments - paymentsMade
   const nextPaymentDate = new Date(nextPaymentTime * 1000)
@@ -575,7 +578,7 @@ export function RecurringPaymentDisplay({
       <div className="flex justify-between items-center">
         <span className="text-gray-600">{t('recurringAmount')}</span>
         <span className="font-medium">
-          {formatEther(amount)} {isNativeToken ? 'ETH' : tc('tokens')}
+          {formatEther(amount)} {isNativeToken ? nativeSymbol : tc('tokens')}
         </span>
       </div>
 

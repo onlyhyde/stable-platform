@@ -57,6 +57,7 @@ export type SupportedMethod =
   | 'eth_getUserOperationByHash'
   | 'eth_getUserOperationReceipt'
   | 'eth_supportedEntryPoints'
+  | 'debug_bundler_getUserOperationStatus'
   // Read methods
   | 'eth_getBalance'
   | 'eth_call'
@@ -82,11 +83,15 @@ export type SupportedMethod =
   // Smart Account management
   | 'stablenet_getSmartAccountInfo'
   | 'stablenet_getRegistryModules'
+  | 'stablenet_getInstalledModules'
   | 'stablenet_speedUpTransaction'
   | 'stablenet_cancelTransaction'
   | 'stablenet_setRootValidator'
   // Swap methods
   | 'stablenet_executeSwap'
+  // Paymaster methods
+  | 'pm_registerAccount'
+  | 'pm_accountStatus'
 
 /**
  * RPC method parameters

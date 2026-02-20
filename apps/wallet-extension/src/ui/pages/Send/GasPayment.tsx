@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import type { Address } from 'viem'
 import { formatEther, formatUnits } from 'viem'
 
+import { useNetworkCurrency } from '../../hooks/useNetworkCurrency'
 import { usePaymasterClient } from './hooks/usePaymasterClient'
 
 // ============================================================================
@@ -68,6 +69,7 @@ export function GasPaymentSelector({
   onCustomGasChange,
 }: GasPaymentSelectorProps) {
   const { t } = useTranslation('send')
+  const { symbol: nativeSymbol } = useNetworkCurrency()
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [customMaxFee, setCustomMaxFee] = useState('')
   const [customPriorityFee, setCustomPriorityFee] = useState('')
@@ -87,14 +89,14 @@ export function GasPaymentSelector({
     const nativeCost = gasEstimate?.estimatedCost ?? 0n
 
     const options: PaymentOption[] = [
-      // Native ETH
+      // Native currency
       {
         type: GAS_PAYMENT_TYPE.NATIVE,
-        label: t('payWithNative', { symbol: 'ETH' }),
-        description: t('useNativeForGas', { symbol: 'ETH' }),
+        label: t('payWithNative', { symbol: nativeSymbol }),
+        description: t('useNativeForGas', { symbol: nativeSymbol }),
         icon: 'Ξ',
         available: true,
-        cost: nativeCost > 0n ? `${formatEther(nativeCost)} ETH` : t('calculating'),
+        cost: nativeCost > 0n ? `${formatEther(nativeCost)} ${nativeSymbol}` : t('calculating'),
       },
 
       // Sponsored
@@ -106,7 +108,7 @@ export function GasPaymentSelector({
         available: sponsorPolicy?.isAvailable ?? false,
         unavailableReason: sponsorPolicy?.reason,
         cost: 'Free',
-        savings: nativeCost > 0n ? `Save ${formatEther(nativeCost)} ETH` : undefined,
+        savings: nativeCost > 0n ? `Save ${formatEther(nativeCost)} ${nativeSymbol}` : undefined,
       },
     ]
 
@@ -434,6 +436,7 @@ interface GasPaymentDisplayProps {
 
 export function GasPaymentDisplay({ gasPayment, gasEstimate }: GasPaymentDisplayProps) {
   const { t } = useTranslation('send')
+  const { symbol: nativeSymbol } = useNetworkCurrency()
   const displayText = useMemo(() => {
     if (!gasEstimate) return t('estimating')
 
@@ -447,9 +450,9 @@ export function GasPaymentDisplay({ gasPayment, gasEstimate }: GasPaymentDisplay
         }
         return t('payWithToken', { symbol: gasPayment.tokenSymbol || 'Token' })
       default:
-        return `${formatEther(gasEstimate.estimatedCost)} ETH`
+        return `${formatEther(gasEstimate.estimatedCost)} ${nativeSymbol}`
     }
-  }, [gasPayment, gasEstimate, t])
+  }, [gasPayment, gasEstimate, nativeSymbol, t])
 
   const icon = useMemo(() => {
     switch (gasPayment.type) {
@@ -486,6 +489,7 @@ export function GasPaymentSummary({
   tokenBalance,
 }: GasPaymentSummaryProps) {
   const { t } = useTranslation('send')
+  const { symbol: nativeSymbol } = useNetworkCurrency()
   const isSponsored = gasPayment.type === GAS_PAYMENT_TYPE.SPONSOR
   const isERC20 = gasPayment.type === GAS_PAYMENT_TYPE.ERC20
 
@@ -503,7 +507,7 @@ export function GasPaymentSummary({
         <div className="flex justify-between">
           <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('method')}</span>
           <span style={{ color: 'rgb(var(--foreground))' }}>
-            {isSponsored ? t('sponsored') : isERC20 ? `${gasPayment.tokenSymbol}` : 'ETH'}
+            {isSponsored ? t('sponsored') : isERC20 ? `${gasPayment.tokenSymbol}` : nativeSymbol}
           </span>
         </div>
 

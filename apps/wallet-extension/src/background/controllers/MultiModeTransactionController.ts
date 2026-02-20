@@ -26,6 +26,7 @@ import {
   type TransactionRouter,
   type UserOperation,
 } from '@stablenet/core'
+import { getEntryPoint, isChainSupported } from '@stablenet/contracts'
 import type { Address, Hex } from 'viem'
 import { createLogger } from '../../shared/utils/logger'
 import type {
@@ -39,6 +40,12 @@ import type {
 import type { TransactionStatus, TransactionType } from './transactionController.types'
 
 const logger = createLogger('MultiModeTransactionController')
+
+function resolveEntryPoint(chainId: number, explicit?: Address): Address {
+  if (explicit) return explicit
+  if (isChainSupported(chainId)) return getEntryPoint(chainId) as Address
+  return ENTRY_POINT_V07_ADDRESS as Address
+}
 
 type TransactionEventType =
   | 'transaction:added'
@@ -95,7 +102,7 @@ export class MultiModeTransactionController {
     this.bundlerClient = options.bundlerUrl
       ? createBundlerClient({
           url: options.bundlerUrl,
-          entryPoint: options.entryPointAddress ?? ENTRY_POINT_V07_ADDRESS,
+          entryPoint: resolveEntryPoint(options.chainId, options.entryPointAddress),
           chainId: BigInt(options.chainId),
         })
       : null
@@ -584,7 +591,7 @@ export class MultiModeTransactionController {
       this.bundlerClient = this.options.bundlerUrl
         ? createBundlerClient({
             url: this.options.bundlerUrl,
-            entryPoint: this.options.entryPointAddress ?? ENTRY_POINT_V07_ADDRESS,
+            entryPoint: resolveEntryPoint(this.options.chainId, this.options.entryPointAddress),
             chainId: BigInt(this.options.chainId),
           })
         : null
@@ -746,7 +753,7 @@ export class MultiModeTransactionController {
     if (partialUserOp.paymasterPostOpGasLimit)
       userOp.paymasterPostOpGasLimit = partialUserOp.paymasterPostOpGasLimit
 
-    const entryPoint = this.options.entryPointAddress ?? ENTRY_POINT_V07_ADDRESS
+    const entryPoint = resolveEntryPoint(this.options.chainId, this.options.entryPointAddress)
     return getUserOperationHash(userOp, entryPoint, BigInt(this.options.chainId))
   }
 

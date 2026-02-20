@@ -49,7 +49,7 @@ export function Settings() {
     chainId: '',
     rpcUrl: '',
     bundlerUrl: '',
-    currencySymbol: 'ETH',
+    currencySymbol: '',
     explorerUrl: '',
     indexerUrl: '',
   })
@@ -256,8 +256,8 @@ export function Settings() {
         explorerUrl: networkForm.explorerUrl.trim() || undefined,
         indexerUrl: networkForm.indexerUrl.trim() || undefined,
         currency: {
-          name: networkForm.currencySymbol.trim() || 'ETH',
-          symbol: networkForm.currencySymbol.trim() || 'ETH',
+          name: networkForm.currencySymbol.trim() || 'Native',
+          symbol: networkForm.currencySymbol.trim(),
           decimals: 18,
         },
         isCustom: true,
@@ -270,7 +270,7 @@ export function Settings() {
         chainId: '',
         rpcUrl: '',
         bundlerUrl: '',
-        currencySymbol: 'ETH',
+        currencySymbol: '',
         explorerUrl: '',
         indexerUrl: '',
       })

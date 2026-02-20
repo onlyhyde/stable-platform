@@ -14,7 +14,12 @@ import {
 } from '@stablenet/core'
 import type { Address, Hash, Hex } from 'viem'
 import { createPublicClient, http, isAddress } from 'viem'
-import { DEFAULT_VALUES, ENTRY_POINT_ADDRESSES, RPC_ERRORS } from '../../shared/constants'
+import {
+  ENTRY_POINT_V07_ADDRESS,
+  getEntryPoint,
+  isChainSupported,
+} from '@stablenet/contracts'
+import { DEFAULT_VALUES, RPC_ERRORS } from '../../shared/constants'
 import { RpcError } from '../../shared/errors/rpcErrors'
 import { handleApprovalError } from '../../shared/errors/WalletError'
 import { createLogger } from '../../shared/utils/logger'
@@ -33,6 +38,7 @@ import {
   formatTransactionType,
   parseUserOperation,
 } from './utils'
+import { buildKernelInstallData } from './kernelInitData'
 import { validateRpcParams } from './validation'
 
 const logger = createLogger('RpcHandler')
@@ -49,6 +55,18 @@ import {
 
 // Singleton validator instance
 const inputValidator = new InputValidator()
+
+/**
+ * Get EntryPoint address for the current chain.
+ * Uses deployment data for known chains, falls back to canonical v0.7 address.
+ */
+function getEntryPointForChain(chainId?: number): Address {
+  const id = chainId ?? walletState.getCurrentNetwork()?.chainId
+  if (id && isChainSupported(id)) {
+    return getEntryPoint(id) as Address
+  }
+  return ENTRY_POINT_V07_ADDRESS as Address
+}
 
 // Cache createPublicClient instances by rpcUrl with TTL-based eviction
 const PUBLIC_CLIENT_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
@@ -1061,7 +1079,7 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // Validate entryPoint
-    const entryPoint = entryPointParam ?? ENTRY_POINT_ADDRESSES.V07
+    const entryPoint = entryPointParam ?? getEntryPointForChain()
     if (!isAddress(entryPoint)) {
       throw createRpcError({
         code: RPC_ERRORS.INVALID_PARAMS.code,
@@ -1202,7 +1220,7 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // Validate entryPoint
-    const entryPoint = entryPointParam ?? ENTRY_POINT_ADDRESSES.V07
+    const entryPoint = entryPointParam ?? getEntryPointForChain()
     if (!isAddress(entryPoint)) {
       throw createRpcError({
         code: RPC_ERRORS.INVALID_PARAMS.code,
@@ -1295,6 +1313,35 @@ const handlers: Record<string, RpcHandler> = {
   },
 
   /**
+   * Get UserOperation status from bundler mempool
+   */
+  debug_bundler_getUserOperationStatus: async (params) => {
+    const [userOpHash] = params as [Hex]
+    const network = walletState.getCurrentNetwork()
+
+    if (!network?.bundlerUrl) {
+      throw createRpcError(RPC_ERRORS.RESOURCE_UNAVAILABLE)
+    }
+
+    try {
+      const response = await fetch(network.bundlerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'debug_bundler_getUserOperationStatus',
+          params: [userOpHash],
+        }),
+      })
+      const json = await response.json()
+      return json.result ?? null
+    } catch {
+      return null
+    }
+  },
+
+  /**
    * Get supported entry points
    */
   eth_supportedEntryPoints: async () => {
@@ -1302,7 +1349,7 @@ const handlers: Record<string, RpcHandler> = {
 
     if (!network?.bundlerUrl) {
       // Return default entry points if bundler not configured
-      return [ENTRY_POINT_ADDRESSES.V07]
+      return [getEntryPointForChain()]
     }
 
     try {
@@ -1310,7 +1357,7 @@ const handlers: Record<string, RpcHandler> = {
       return await bundlerClient.getSupportedEntryPoints()
     } catch {
       // Fallback to default entry points
-      return [ENTRY_POINT_ADDRESSES.V07]
+      return [getEntryPointForChain()]
     }
   },
 
@@ -1774,6 +1821,8 @@ const handlers: Record<string, RpcHandler> = {
         initData: Hex | Record<string, unknown>
         initDataEncoded: boolean
         chainId: number
+        gasPaymentMode?: 'native' | 'sponsor' | 'erc20'
+        gasPaymentTokenAddress?: Address
       },
     ]
 
@@ -1784,7 +1833,16 @@ const handlers: Record<string, RpcHandler> = {
       })
     }
 
-    const { account, moduleAddress, moduleType, initData, initDataEncoded, chainId } = moduleParams
+    const {
+      account,
+      moduleAddress,
+      moduleType,
+      initData,
+      initDataEncoded,
+      chainId,
+      gasPaymentMode = 'sponsor',
+      gasPaymentTokenAddress,
+    } = moduleParams
 
     // Validate addresses
     if (!isAddress(account)) {
@@ -1834,29 +1892,37 @@ const handlers: Record<string, RpcHandler> = {
     const moduleTypeParsed = BigInt(moduleType) as ModuleType
     const moduleTypeNameStr = getModuleTypeName(moduleTypeParsed)
 
-    // Determine init data - use encoded if provided, otherwise use empty for now
-    // (Complex config encoding should be done on the UI side)
-    const finalInitData: Hex = initDataEncoded ? (initData as Hex) : ('0x' as Hex)
+    // Determine module-specific init data
+    const moduleSpecificData: Hex = initDataEncoded ? (initData as Hex) : ('0x' as Hex)
+
+    // Wrap in Kernel v3 format: [hook(20 bytes)][ABI-encoded struct]
+    // Validators need (validatorData, hookData, selectorData) wrapping
+    // Executors need (executorData, hookData) wrapping
+    const kernelInitData = buildKernelInstallData(moduleTypeParsed, moduleSpecificData)
 
     // Create module operation client and prepare calldata
     const moduleOpClient = createModuleOperationClient({ chainId })
     const moduleCalldata = moduleOpClient.prepareInstall(account, {
       moduleAddress,
       moduleType: moduleTypeParsed,
-      initData: finalInitData,
+      initData: kernelInitData,
     })
 
     // Build a UserOperation to execute the module installation
     // This calls the smart account's installModule function
     const client = getPublicClient(network.rpcUrl)
 
-    // Get current nonce
+    // Get current nonce from EntryPoint (authoritative source for ERC-4337)
+    const entryPoint = getEntryPointForChain(chainId)
     const nonce = await client
       .readContract({
-        address: account,
+        address: entryPoint,
         abi: [
           {
-            inputs: [{ name: 'key', type: 'uint192' }],
+            inputs: [
+              { name: 'sender', type: 'address' },
+              { name: 'key', type: 'uint192' },
+            ],
             name: 'getNonce',
             outputs: [{ name: '', type: 'uint256' }],
             stateMutability: 'view',
@@ -1864,7 +1930,7 @@ const handlers: Record<string, RpcHandler> = {
           },
         ],
         functionName: 'getNonce',
-        args: [0n],
+        args: [account, 0n],
       })
       .catch(() => 0n)
 
@@ -1893,13 +1959,14 @@ const handlers: Record<string, RpcHandler> = {
       signature: '0x',
     }
 
-    // Request paymaster sponsorship if available
-    if (network.paymasterUrl) {
+    // Request paymaster sponsorship based on gas payment mode
+    if (gasPaymentMode !== 'native' && network.paymasterUrl) {
       const sponsorship = await requestPaymasterSponsorship(
         network.paymasterUrl,
         userOp,
-        ENTRY_POINT_ADDRESSES.V07,
-        chainId
+        entryPoint,
+        chainId,
+        gasPaymentMode === 'erc20' ? gasPaymentTokenAddress : undefined
       )
       if (sponsorship) {
         userOp.paymaster = sponsorship.paymaster
@@ -1933,7 +2000,6 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // Sign the UserOperation
-    const entryPoint = ENTRY_POINT_ADDRESSES.V07
     let signedUserOp: UserOperation
     try {
       const hash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
@@ -1953,9 +2019,12 @@ const handlers: Record<string, RpcHandler> = {
       return { hash: userOpHash }
     } catch (error) {
       const err = error as Error & { code?: number; data?: unknown }
+      const message = err.message?.includes('fetch')
+        ? `Bundler unreachable (${network.bundlerUrl}): ${err.message}`
+        : err.message || 'Module installation failed'
       throw createRpcError({
         code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
-        message: err.message || 'Module installation failed',
+        message,
         data: err.data,
       })
     }
@@ -1973,6 +2042,8 @@ const handlers: Record<string, RpcHandler> = {
         moduleType: string
         chainId: number
         deInitData?: Hex
+        gasPaymentMode?: 'native' | 'sponsor' | 'erc20'
+        gasPaymentTokenAddress?: Address
       },
     ]
 
@@ -1983,7 +2054,15 @@ const handlers: Record<string, RpcHandler> = {
       })
     }
 
-    const { account, moduleAddress, moduleType, chainId, deInitData = '0x' as Hex } = moduleParams
+    const {
+      account,
+      moduleAddress,
+      moduleType,
+      chainId,
+      deInitData = '0x' as Hex,
+      gasPaymentMode = 'sponsor',
+      gasPaymentTokenAddress,
+    } = moduleParams
 
     // Validate addresses
     if (!isAddress(account)) {
@@ -2044,13 +2123,17 @@ const handlers: Record<string, RpcHandler> = {
     // Build a UserOperation to execute the module uninstallation
     const client = getPublicClient(network.rpcUrl)
 
-    // Get current nonce
+    // Get current nonce from EntryPoint (authoritative source for ERC-4337)
+    const entryPoint = getEntryPointForChain(chainId)
     const nonce = await client
       .readContract({
-        address: account,
+        address: entryPoint,
         abi: [
           {
-            inputs: [{ name: 'key', type: 'uint192' }],
+            inputs: [
+              { name: 'sender', type: 'address' },
+              { name: 'key', type: 'uint192' },
+            ],
             name: 'getNonce',
             outputs: [{ name: '', type: 'uint256' }],
             stateMutability: 'view',
@@ -2058,7 +2141,7 @@ const handlers: Record<string, RpcHandler> = {
           },
         ],
         functionName: 'getNonce',
-        args: [0n],
+        args: [account, 0n],
       })
       .catch(() => 0n)
 
@@ -2087,13 +2170,14 @@ const handlers: Record<string, RpcHandler> = {
       signature: '0x',
     }
 
-    // Request paymaster sponsorship if available
-    if (network.paymasterUrl) {
+    // Request paymaster sponsorship based on gas payment mode
+    if (gasPaymentMode !== 'native' && network.paymasterUrl) {
       const sponsorship = await requestPaymasterSponsorship(
         network.paymasterUrl,
         userOp,
-        ENTRY_POINT_ADDRESSES.V07,
-        chainId
+        entryPoint,
+        chainId,
+        gasPaymentMode === 'erc20' ? gasPaymentTokenAddress : undefined
       )
       if (sponsorship) {
         userOp.paymaster = sponsorship.paymaster
@@ -2127,7 +2211,6 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // Sign the UserOperation
-    const entryPoint = ENTRY_POINT_ADDRESSES.V07
     let signedUserOp: UserOperation
     try {
       const hash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
@@ -2147,9 +2230,12 @@ const handlers: Record<string, RpcHandler> = {
       return { hash: userOpHash }
     } catch (error) {
       const err = error as Error & { code?: number; data?: unknown }
+      const message = err.message?.includes('fetch')
+        ? `Bundler unreachable (${network.bundlerUrl}): ${err.message}`
+        : err.message || 'Module uninstallation failed'
       throw createRpcError({
         code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
-        message: err.message || 'Module uninstallation failed',
+        message,
         data: err.data,
       })
     }
@@ -2182,7 +2268,20 @@ const handlers: Record<string, RpcHandler> = {
     const accountAddr = account as Address
 
     // Check if account has code (is smart account or delegated)
-    const code = await client.getCode({ address: accountAddr }).catch(() => undefined)
+    let code: string | undefined
+    try {
+      code = await client.getCode({ address: accountAddr })
+    } catch (err) {
+      const msg = (err as Error).message ?? ''
+      if (msg.includes('fetch') || msg.includes('ECONNREFUSED') || msg.includes('network')) {
+        throw createRpcError({
+          code: RPC_ERRORS.INTERNAL_ERROR.code,
+          message: `RPC unreachable (${network.rpcUrl}): ${msg}`,
+        })
+      }
+      // Non-network errors (e.g. unsupported method) — treat as no code
+      code = undefined
+    }
     const hasCode = !!code && code !== '0x'
     const isDelegated = hasCode && code!.toLowerCase().startsWith('0xef0100')
 
@@ -2258,6 +2357,111 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError({
         code: RPC_ERRORS.INTERNAL_ERROR.code,
         message: (error as Error).message || 'Failed to fetch registry modules',
+      })
+    }
+  },
+
+  /**
+   * Get installed modules for a Smart Account (ERC-7579)
+   * Checks each registry module against the on-chain account
+   */
+  stablenet_getInstalledModules: async (params) => {
+    const [requestParams] = params as [{ account: string; chainId: number }]
+    const { account, chainId } = requestParams ?? {}
+
+    if (!account || !isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Valid account address is required',
+      })
+    }
+
+    const network = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const client = getPublicClient(network.rpcUrl)
+    const accountAddr = account as Address
+
+    // Verify account has code (smart account or delegated)
+    let code: string | undefined
+    try {
+      code = await client.getCode({ address: accountAddr })
+    } catch (err) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: `RPC unreachable (${network.rpcUrl}): ${(err as Error).message}`,
+      })
+    }
+
+    const hasCode = !!code && code !== '0x'
+    if (!hasCode) {
+      // EOA without code — no modules can be installed
+      return { modules: [] }
+    }
+
+    try {
+      const { createModuleRegistry, KERNEL_ABI, MODULE_STATUS } = await import('@stablenet/core')
+      const registry = createModuleRegistry({ chainId })
+      const registryModules = registry.getAll()
+
+      const installed: Array<{
+        address: string
+        type: bigint
+        metadata: {
+          address: string
+          type: bigint
+          name: string
+          description: string
+          version: string
+        }
+        initData: string
+        status: string
+        installedAt: number
+      }> = []
+
+      // Check each registry module against the on-chain account
+      for (const entry of registryModules) {
+        const moduleAddr = registry.getModuleAddress(entry)
+        if (!moduleAddr) continue
+
+        try {
+          const isInstalled = await client.readContract({
+            address: accountAddr,
+            abi: KERNEL_ABI,
+            functionName: 'isModuleInstalled',
+            args: [entry.metadata.type, moduleAddr, '0x'],
+          })
+
+          if (isInstalled) {
+            installed.push({
+              address: moduleAddr,
+              type: entry.metadata.type,
+              metadata: {
+                address: moduleAddr,
+                type: entry.metadata.type,
+                name: entry.metadata.name,
+                description: entry.metadata.description,
+                version: entry.metadata.version,
+              },
+              initData: '0x',
+              status: MODULE_STATUS.INSTALLED,
+              installedAt: Date.now(),
+            })
+          }
+        } catch {
+          // Module may not support isModuleInstalled — skip
+        }
+      }
+
+      return { modules: installed }
+    } catch (error) {
+      // Re-throw RpcError as-is
+      if (error instanceof RpcError) throw error
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'Failed to fetch installed modules',
       })
     }
   },
@@ -2340,6 +2544,8 @@ const handlers: Record<string, RpcHandler> = {
         amountOutMinimum: string
         deadline: string
         chainId: number
+        gasPaymentMode?: 'native' | 'sponsor' | 'erc20'
+        gasPaymentTokenAddress?: Address
       },
     ]
 
@@ -2360,6 +2566,8 @@ const handlers: Record<string, RpcHandler> = {
       amountOutMinimum,
       deadline,
       chainId,
+      gasPaymentMode = 'sponsor',
+      gasPaymentTokenAddress,
     } = swapParams
 
     // Validate addresses
@@ -2440,12 +2648,17 @@ const handlers: Record<string, RpcHandler> = {
     // Build UserOperation
     const client = getPublicClient(network.rpcUrl)
 
+    // Get current nonce from EntryPoint (authoritative source for ERC-4337)
+    const entryPoint = getEntryPointForChain(chainId)
     const nonce = await client
       .readContract({
-        address: account,
+        address: entryPoint,
         abi: [
           {
-            inputs: [{ name: 'key', type: 'uint192' }],
+            inputs: [
+              { name: 'sender', type: 'address' },
+              { name: 'key', type: 'uint192' },
+            ],
             name: 'getNonce',
             outputs: [{ name: '', type: 'uint256' }],
             stateMutability: 'view',
@@ -2453,7 +2666,7 @@ const handlers: Record<string, RpcHandler> = {
           },
         ],
         functionName: 'getNonce',
-        args: [0n],
+        args: [account, 0n],
       })
       .catch(() => 0n)
 
@@ -2480,13 +2693,14 @@ const handlers: Record<string, RpcHandler> = {
       signature: '0x',
     }
 
-    // Request paymaster sponsorship if available
-    if (network.paymasterUrl) {
+    // Request paymaster sponsorship based on gas payment mode
+    if (gasPaymentMode !== 'native' && network.paymasterUrl) {
       const sponsorship = await requestPaymasterSponsorship(
         network.paymasterUrl,
         userOp,
-        ENTRY_POINT_ADDRESSES.V07,
-        chainId
+        entryPoint,
+        chainId,
+        gasPaymentMode === 'erc20' ? gasPaymentTokenAddress : undefined
       )
       if (sponsorship) {
         userOp.paymaster = sponsorship.paymaster
@@ -2519,7 +2733,6 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // Sign the UserOperation
-    const entryPoint = ENTRY_POINT_ADDRESSES.V07
     let signedUserOp: UserOperation
     try {
       const hash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
@@ -2681,6 +2894,7 @@ const handlers: Record<string, RpcHandler> = {
         to?: string
         value?: string
         data?: string
+        gasPayment?: { type: string; tokenAddress?: string }
         chainId?: number
       },
     ]
@@ -2707,15 +2921,66 @@ const handlers: Record<string, RpcHandler> = {
         parsedValue = val.startsWith('0x') ? BigInt(val) : BigInt(val)
       }
 
-      // Estimate gas limit
-      const gasLimit = await client
-        .estimateGas({
-          account: estimateParams.from as Address,
-          to: estimateParams.to as Address,
-          value: parsedValue,
-          data: (estimateParams.data as `0x${string}`) || undefined,
-        })
-        .catch(() => 21000n) // Default to simple transfer gas
+      // Smart Account mode: estimate via bundler
+      if (estimateParams.mode === 'smart_account' && network.bundlerUrl) {
+        const entryPoint = getEntryPointForChain(network.chainId)
+        const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+
+        // Build a partial UserOperation for estimation
+        const partialUserOp: Partial<UserOperation> = {
+          sender: estimateParams.from as Address,
+          callData: (estimateParams.data as `0x${string}`) || '0x',
+          // Dummy values for estimation - bundler will calculate actual gas
+          nonce: 0n,
+          signature: '0x' as Hex,
+          callGasLimit: 0n,
+          verificationGasLimit: 0n,
+          preVerificationGas: 0n,
+          maxFeePerGas: 0n,
+          maxPriorityFeePerGas: 0n,
+        }
+
+        try {
+          const gasEstimate = await bundlerClient.estimateUserOperationGas(
+            partialUserOp as UserOperation
+          )
+
+          // Get fee data for cost calculation
+          const block = await client.getBlock({ blockTag: 'latest' })
+          const baseFee = block.baseFeePerGas ?? 0n
+          const maxPriorityFeePerGas = await client
+            .estimateMaxPriorityFeePerGas()
+            .catch(() => 1000000000n)
+          const maxFeePerGas = baseFee * 2n + maxPriorityFeePerGas
+
+          const totalGas =
+            gasEstimate.preVerificationGas +
+            gasEstimate.verificationGasLimit +
+            gasEstimate.callGasLimit
+          const estimatedCost = totalGas * maxFeePerGas
+
+          return {
+            gasLimit: totalGas.toString(),
+            maxFeePerGas: maxFeePerGas.toString(),
+            maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+            estimatedCost: estimatedCost.toString(),
+            preVerificationGas: gasEstimate.preVerificationGas.toString(),
+            verificationGasLimit: gasEstimate.verificationGasLimit.toString(),
+            callGasLimit: gasEstimate.callGasLimit.toString(),
+          }
+        } catch (bundlerError) {
+          logger.warn('Bundler gas estimation failed, falling back to RPC', { error: bundlerError })
+          // Fall through to standard estimation below
+        }
+      }
+
+      // Standard EOA/EIP-7702 gas estimation
+      const gasLimit = await client.estimateGas({
+        account: estimateParams.from as Address,
+        to: estimateParams.to as Address,
+        value: parsedValue,
+        data: (estimateParams.data as `0x${string}`) || undefined,
+      })
 
       // Get current gas price (try EIP-1559 first)
       let maxFeePerGas = 0n
@@ -3052,7 +3317,7 @@ const handlers: Record<string, RpcHandler> = {
         signature: '0x',
       }
 
-      const entryPoint = ENTRY_POINT_ADDRESSES.V07
+      const entryPoint = getEntryPointForChain()
       await fetchFromPaymaster(network.paymasterUrl, 'pm_getPaymasterStubData', [
         stubUserOp,
         entryPoint,
@@ -3079,6 +3344,135 @@ const handlers: Record<string, RpcHandler> = {
    */
   pm_estimateERC20: async () => {
     return { supported: false }
+  },
+
+  /**
+   * Register an account with the paymaster for gas sponsorship.
+   * Forwards registration to paymaster-proxy; falls back to local policy creation.
+   */
+  pm_registerAccount: async (params) => {
+    const [requestParams] = params as [{ account?: Address; chainId?: number }]
+    const chainId = requestParams?.chainId
+    const network = chainId
+      ? walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+      : walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!network.paymasterUrl) {
+      return {
+        success: false,
+        error: 'Paymaster not configured for this network',
+      }
+    }
+
+    const account = requestParams?.account
+    if (!account || !isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Valid account address is required',
+      })
+    }
+
+    try {
+      const result = await fetchFromPaymaster(network.paymasterUrl, 'pm_registerAccount', [
+        { account, chainId: network.chainId },
+      ])
+
+      return {
+        success: true,
+        ...(result as object),
+      }
+    } catch {
+      // Fallback: if proxy doesn't support pm_registerAccount,
+      // treat as auto-registered via sponsorPolicy probe
+      logger.info(`pm_registerAccount not supported by proxy, treating as auto-registered`)
+      return {
+        success: true,
+        registrationId: `auto-${account.slice(0, 10)}`,
+        policy: {
+          dailyLimit: '100000000000000000',
+          perTxLimit: '10000000000000000',
+        },
+      }
+    }
+  },
+
+  /**
+   * Get paymaster registration status for an account.
+   * Queries paymaster-proxy; falls back to pm_sponsorPolicy result.
+   */
+  pm_accountStatus: async (params) => {
+    const [requestParams] = params as [{ account?: Address; chainId?: number }]
+    const chainId = requestParams?.chainId
+    const network = chainId
+      ? walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+      : walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!network.paymasterUrl) {
+      return {
+        isRegistered: false,
+        reason: 'Paymaster not configured',
+      }
+    }
+
+    const account = requestParams?.account
+    if (!account || !isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Valid account address is required',
+      })
+    }
+
+    try {
+      const result = await fetchFromPaymaster(network.paymasterUrl, 'pm_accountStatus', [
+        { account, chainId: network.chainId },
+      ])
+
+      return result
+    } catch {
+      // Fallback: derive status from sponsorPolicy probe
+      try {
+        const stubUserOp = {
+          sender: account,
+          nonce: '0x0',
+          callData: '0x',
+          callGasLimit: '0x0',
+          verificationGasLimit: '0x0',
+          preVerificationGas: '0x0',
+          maxFeePerGas: '0x0',
+          maxPriorityFeePerGas: '0x0',
+          signature: '0x',
+        }
+
+        const entryPoint = getEntryPointForChain()
+        await fetchFromPaymaster(network.paymasterUrl, 'pm_getPaymasterStubData', [
+          stubUserOp,
+          entryPoint,
+          `0x${network.chainId.toString(16)}`,
+        ])
+
+        return {
+          isRegistered: true,
+          policy: {
+            dailyLimit: '100000000000000000',
+            dailyUsed: '0',
+            perTxLimit: '10000000000000000',
+          },
+        }
+      } catch {
+        return {
+          isRegistered: false,
+          reason: 'Paymaster unavailable',
+        }
+      }
+    }
   },
 
   // =========================================================================

@@ -287,7 +287,8 @@ export function validateRpcParams(method: string, params: unknown[] | undefined)
     }
 
     case 'eth_getUserOperationByHash':
-    case 'eth_getUserOperationReceipt': {
+    case 'eth_getUserOperationReceipt':
+    case 'debug_bundler_getUserOperationStatus': {
       if (!params || params.length < 1) {
         throw createRpcError({
           code: RPC_ERRORS.INVALID_PARAMS.code,
@@ -336,6 +337,38 @@ export function validateRpcParams(method: string, params: unknown[] | undefined)
     case 'stablenet_executeSwap':
     case 'stablenet_estimateGas':
       break
+
+    case 'pm_registerAccount':
+    case 'pm_accountStatus': {
+      if (!params || params.length < 1) {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: `${method} requires parameters`,
+        })
+      }
+      const [pmParams] = params as [unknown]
+      if (!pmParams || typeof pmParams !== 'object') {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: 'Parameters must be an object with account and chainId',
+        })
+      }
+      const { account: pmAccount } = pmParams as { account?: unknown }
+      if (!pmAccount || typeof pmAccount !== 'string') {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: 'Account address is required',
+        })
+      }
+      const pmAddrResult = inputValidator.validateAddress(pmAccount)
+      if (!pmAddrResult.isValid) {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: `Invalid account: ${pmAddrResult.errors.join(', ')}`,
+        })
+      }
+      break
+    }
 
     case 'stablenet_installModule':
     case 'stablenet_uninstallModule': {

@@ -3,7 +3,8 @@ import { formatUnits } from 'viem'
 export interface TokenAmountProps {
   amount: bigint
   decimals?: number
-  symbol?: string
+  /** Native currency symbol - must be provided by the caller */
+  symbol: string
   showSymbol?: boolean
   showUsd?: boolean
   usdPrice?: number
@@ -14,7 +15,7 @@ export interface TokenAmountProps {
 export function TokenAmount({
   amount,
   decimals = 18,
-  symbol = 'ETH',
+  symbol,
   showSymbol = true,
   showUsd = false,
   usdPrice,
@@ -101,7 +102,8 @@ export function TokenDisplay({
 export interface AmountInputProps {
   value: string
   onChange: (value: string) => void
-  symbol?: string
+  /** Native currency symbol - must be provided by the caller */
+  symbol: string
   max?: bigint
   decimals?: number
   usdPrice?: number
@@ -112,7 +114,7 @@ export interface AmountInputProps {
 export function AmountInput({
   value,
   onChange,
-  symbol = 'ETH',
+  symbol,
   max,
   decimals = 18,
   usdPrice,
