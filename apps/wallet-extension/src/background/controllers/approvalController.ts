@@ -13,7 +13,6 @@ import type {
   SignatureApprovalRequest,
   SwitchNetworkApprovalRequest,
   TransactionApprovalRequest,
-  WalletConnectSessionApprovalRequest,
 } from '../../types'
 import { generateRandomHex } from '../keyring/crypto'
 import { decodeCallData } from '../security/callDataDecoder'
@@ -425,51 +424,6 @@ export class ApprovalController {
         s: Hex
       }
       authorizationHash: Hex
-    }>
-  }
-
-  /**
-   * Request WalletConnect session approval
-   */
-  async requestWalletConnectSession(params: {
-    proposalId: number
-    proposerName: string
-    proposerUrl: string
-    proposerDescription?: string
-    proposerIcon?: string
-    requiredChains: string[]
-    requiredMethods: string[]
-    requiredEvents: string[]
-    optionalChains?: string[]
-    optionalMethods?: string[]
-    optionalEvents?: string[]
-  }): Promise<{ accounts: Address[]; approved: boolean }> {
-    const approval: WalletConnectSessionApprovalRequest = {
-      id: generateRandomHex(16),
-      type: 'walletconnect_session',
-      status: 'pending',
-      origin: `wc:${params.proposerUrl}`,
-      favicon: params.proposerIcon,
-      timestamp: Date.now(),
-      expiresAt: Date.now() + getApprovalExpiryMs(),
-      data: {
-        proposalId: params.proposalId,
-        proposerName: params.proposerName,
-        proposerUrl: params.proposerUrl,
-        proposerDescription: params.proposerDescription,
-        proposerIcon: params.proposerIcon,
-        requiredChains: params.requiredChains,
-        requiredMethods: params.requiredMethods,
-        requiredEvents: params.requiredEvents,
-        optionalChains: params.optionalChains,
-        optionalMethods: params.optionalMethods,
-        optionalEvents: params.optionalEvents,
-      },
-    }
-
-    return this.addApprovalAndWait(approval) as Promise<{
-      accounts: Address[]
-      approved: boolean
     }>
   }
 

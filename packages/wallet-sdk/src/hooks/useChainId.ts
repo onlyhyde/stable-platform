@@ -3,11 +3,12 @@
  */
 
 import { useEffect, useState } from 'react'
+import { useOptionalProvider } from '../context/WalletContext'
 import type { StableNetProvider } from '../provider/StableNetProvider'
 
 interface UseChainIdOptions {
-  /** Provider instance */
-  provider: StableNetProvider | null
+  /** Provider instance (auto-injected from WalletProvider if omitted) */
+  provider?: StableNetProvider | null
 }
 
 interface UseChainIdResult {
@@ -32,7 +33,8 @@ interface UseChainIdResult {
  * ```
  */
 export function useChainId(options: UseChainIdOptions): UseChainIdResult {
-  const { provider } = options
+  const contextProvider = useOptionalProvider()
+  const provider = options.provider ?? contextProvider
 
   const [chainId, setChainId] = useState<number | null>(null)
   const [chainIdHex, setChainIdHex] = useState<string | null>(null)
@@ -77,11 +79,11 @@ export function useChainId(options: UseChainIdOptions): UseChainIdResult {
       setChainId(Number.parseInt(newChainIdHex, 16))
     }
 
-    provider.on('chainChanged', handleChainChanged)
+    const unsubChainChanged = provider.on('chainChanged', handleChainChanged)
 
     return () => {
       mounted = false
-      provider.removeListener('chainChanged', handleChainChanged as (...args: unknown[]) => void)
+      unsubChainChanged()
     }
   }, [provider])
 

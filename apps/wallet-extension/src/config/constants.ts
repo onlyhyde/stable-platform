@@ -73,8 +73,6 @@ export const WALLET_ENV_VARS = {
   RPC_REQUEST_TIMEOUT_MS: 'VITE_WALLET_RPC_REQUEST_TIMEOUT_MS',
   TOAST_DURATION_MS: 'VITE_WALLET_TOAST_DURATION_MS',
 
-  // WalletConnect
-  WALLETCONNECT_PROJECT_ID: 'VITE_WALLET_WALLETCONNECT_PROJECT_ID',
 } as const
 
 /**
@@ -355,19 +353,6 @@ export function getRpcConfig() {
 export function getUiConfig() {
   return {
     toastDurationMs: getEnvNumber(WALLET_ENV_VARS.TOAST_DURATION_MS, DEFAULTS.TOAST_DURATION_MS),
-  }
-}
-
-// =============================================================================
-// WalletConnect Configuration
-// =============================================================================
-
-/**
- * Get WalletConnect configuration
- */
-export function getWalletConnectConfig() {
-  return {
-    projectId: getEnvString(WALLET_ENV_VARS.WALLETCONNECT_PROJECT_ID, ''),
   }
 }
 

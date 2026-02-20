@@ -1,4 +1,5 @@
-import type { EIP1193Provider, WalletSDKConfig } from '../types'
+import type { EIP1193Provider } from 'viem'
+import type { WalletSDKConfig } from '../types'
 import { getProviderRegistry } from './eip6963'
 import { StableNetProvider } from './StableNetProvider'
 

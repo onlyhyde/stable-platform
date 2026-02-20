@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { type Abi, type Address, decodeFunctionResult, encodeFunctionData } from 'viem'
+import { useOptionalProvider } from '../context/WalletContext'
 import type { StableNetProvider } from '../provider/StableNetProvider'
 
 interface UseContractReadOptions<TAbi extends Abi = Abi, TFunctionName extends string = string> {
@@ -23,8 +24,8 @@ interface UseContractReadOptions<TAbi extends Abi = Abi, TFunctionName extends s
   chainId?: number
   /** Whether the query is enabled (defaults to true) */
   enabled?: boolean
-  /** Provider instance */
-  provider: StableNetProvider | null
+  /** Provider instance (auto-injected from WalletProvider if omitted) */
+  provider?: StableNetProvider | null
   /** Auto-refresh on account/chain change */
   watch?: boolean
 }
@@ -77,11 +78,20 @@ function buildCacheKey(
 export function useContractRead<TAbi extends Abi = Abi, TFunctionName extends string = string>(
   options: UseContractReadOptions<TAbi, TFunctionName>
 ): UseContractReadResult {
-  const { address, abi, functionName, args, enabled = true, provider, watch = false } = options
+  const contextProvider = useOptionalProvider()
+  const { address, abi, functionName, args, enabled = true, provider: explicitProvider, watch = false } = options
+  const provider = explicitProvider ?? contextProvider
 
   const [data, setData] = useState<unknown | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+
+  // Stable serialization of args for value-based comparison in deps
+  const argsCacheKey = buildCacheKey(address, functionName, args)
+
+  // Keep a ref to the latest args so the callback always reads current values
+  const argsRef = useRef(args)
+  argsRef.current = args
 
   // Track the last cache key to avoid setting stale data
   const lastCacheKeyRef = useRef<string>('')
@@ -92,7 +102,8 @@ export function useContractRead<TAbi extends Abi = Abi, TFunctionName extends st
       return
     }
 
-    const cacheKey = buildCacheKey(address, functionName, args)
+    const currentArgs = argsRef.current
+    const cacheKey = buildCacheKey(address, functionName, currentArgs)
     lastCacheKeyRef.current = cacheKey
 
     setIsLoading(true)
@@ -105,7 +116,7 @@ export function useContractRead<TAbi extends Abi = Abi, TFunctionName extends st
       const calldata = encodeFunctionData({
         abi,
         functionName,
-        args,
+        args: currentArgs,
       } as Parameters<typeof encodeFunctionData>[0])
 
       // Execute via eth_call
@@ -134,7 +145,8 @@ export function useContractRead<TAbi extends Abi = Abi, TFunctionName extends st
     } finally {
       setIsLoading(false)
     }
-  }, [provider, address, abi, functionName, args, enabled])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provider, address, abi, functionName, argsCacheKey, enabled])
 
   // Fetch on mount and when dependencies change
   useEffect(() => {

@@ -7,12 +7,12 @@ export {
   getKnownProviders,
   getProviderRegistry,
   ProviderRegistry,
+  resetProviderRegistry,
   type ProviderRegistryEvent,
   type ProviderRegistryListener,
   type RegisteredProvider,
 } from './eip6963'
 export type {
-  BalanceChangeEvent,
   StableNetProviderEvent,
   TransactionConfirmedEvent,
   TransactionSentEvent,

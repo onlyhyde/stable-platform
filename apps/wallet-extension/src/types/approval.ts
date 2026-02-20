@@ -12,7 +12,6 @@ export type ApprovalType =
   | 'switchNetwork'
   | 'addNetwork'
   | 'authorization'
-  | 'walletconnect_session'
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired'
 
@@ -221,30 +220,6 @@ export interface AuthorizationApprovalRequest extends BaseApprovalRequest {
 }
 
 /**
- * WalletConnect session approval
- */
-export interface WalletConnectSessionApprovalRequest extends BaseApprovalRequest {
-  type: 'walletconnect_session'
-  data: {
-    proposalId: number
-    proposerName: string
-    proposerUrl: string
-    proposerDescription?: string
-    proposerIcon?: string
-    requiredChains: string[]
-    requiredMethods: string[]
-    requiredEvents: string[]
-    optionalChains?: string[]
-    optionalMethods?: string[]
-    optionalEvents?: string[]
-  }
-  result?: {
-    accounts: Address[]
-    approved: boolean
-  }
-}
-
-/**
  * Union type for all approval requests
  */
 export type ApprovalRequest =
@@ -255,7 +230,6 @@ export type ApprovalRequest =
   | SwitchNetworkApprovalRequest
   | AddNetworkApprovalRequest
   | AuthorizationApprovalRequest
-  | WalletConnectSessionApprovalRequest
 
 /**
  * Approval controller state

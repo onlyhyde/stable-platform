@@ -2,12 +2,13 @@
  * useContractWrite - Hook for writing to smart contracts
  *
  * Encodes function calls using viem's encodeFunctionData and sends
- * transactions through the provider's eth_sendTransaction. Includes
- * optional gas estimation via eth_estimateGas.
+ * transactions through StableNetProvider.sendTransaction(), which
+ * handles hex encoding and emits transaction lifecycle events.
  */
 
 import { useCallback, useState } from 'react'
 import { type Abi, type Address, encodeFunctionData, type Hash } from 'viem'
+import { useOptionalProvider } from '../context/WalletContext'
 import type { StableNetProvider } from '../provider/StableNetProvider'
 
 interface UseContractWriteOptions<TAbi extends Abi = Abi, TFunctionName extends string = string> {
@@ -17,8 +18,8 @@ interface UseContractWriteOptions<TAbi extends Abi = Abi, TFunctionName extends 
   abi: TAbi
   /** Function name to call */
   functionName: TFunctionName
-  /** Provider instance */
-  provider: StableNetProvider | null
+  /** Provider instance (auto-injected from WalletProvider if omitted) */
+  provider?: StableNetProvider | null
   /** Value in wei to send with the transaction */
   value?: bigint
   /** Gas limit override (auto-estimated if not provided) */
@@ -73,19 +74,21 @@ interface UseContractWriteResult {
  * ```
  */
 export function useContractWrite<TAbi extends Abi = Abi, TFunctionName extends string = string>(
-  options: UseContractWriteOptions<TAbi, TFunctionName>
+  options: UseContractWriteOptions<TAbi, TFunctionName>,
 ): UseContractWriteResult {
+  const contextProvider = useOptionalProvider()
   const {
     address,
     abi,
     functionName,
-    provider,
+    provider: explicitProvider,
     value,
     gas,
     gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
   } = options
+  const provider = explicitProvider ?? contextProvider
 
   const [txHash, setTxHash] = useState<Hash | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -121,47 +124,16 @@ export function useContractWrite<TAbi extends Abi = Abi, TFunctionName extends s
           args,
         } as Parameters<typeof encodeFunctionData>[0])
 
-        // Build the transaction object
-        const tx: Record<string, string | undefined> = {
-          from: provider.account,
+        // Send via StableNetProvider.sendTransaction()
+        // This handles hex conversion and emits transaction lifecycle events
+        const hash = await provider.sendTransaction({
           to: address,
           data: calldata,
-          value: value !== undefined ? `0x${value.toString(16)}` : undefined,
-        }
-
-        // Apply gas overrides if provided
-        if (gas !== undefined) {
-          tx.gas = `0x${gas.toString(16)}`
-        }
-        if (gasPrice !== undefined) {
-          tx.gasPrice = `0x${gasPrice.toString(16)}`
-        }
-        if (maxFeePerGas !== undefined) {
-          tx.maxFeePerGas = `0x${maxFeePerGas.toString(16)}`
-        }
-        if (maxPriorityFeePerGas !== undefined) {
-          tx.maxPriorityFeePerGas = `0x${maxPriorityFeePerGas.toString(16)}`
-        }
-
-        // Estimate gas if no gas limit was provided
-        if (gas === undefined) {
-          try {
-            const estimatedGas = await provider.request<string>({
-              method: 'eth_estimateGas',
-              params: [tx],
-            })
-            // Add a 20% buffer to the estimated gas
-            const gasWithBuffer = (BigInt(estimatedGas) * 120n) / 100n
-            tx.gas = `0x${gasWithBuffer.toString(16)}`
-          } catch {
-            // Gas estimation failed; let the node handle it
-          }
-        }
-
-        // Send the transaction
-        const hash = await provider.request<Hash>({
-          method: 'eth_sendTransaction',
-          params: [tx],
+          value,
+          gas,
+          gasPrice,
+          maxFeePerGas,
+          maxPriorityFeePerGas,
         })
 
         setTxHash(hash)
@@ -174,7 +146,7 @@ export function useContractWrite<TAbi extends Abi = Abi, TFunctionName extends s
         setIsLoading(false)
       }
     },
-    [provider, address, abi, functionName, value, gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas]
+    [provider, address, abi, functionName, value, gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas],
   )
 
   return {

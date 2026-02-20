@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
+import { useOptionalProvider } from '../context/WalletContext'
 import type { StableNetProvider } from '../provider/StableNetProvider'
 
 interface UseBalanceOptions {
   /** Address to fetch balance for (defaults to connected account) */
   address?: Address
-  /** Provider instance */
-  provider: StableNetProvider | null
+  /** Provider instance (auto-injected from WalletProvider if omitted) */
+  provider?: StableNetProvider | null
   /** Connected account (used when address not specified) */
   account?: Address | null
   /** Auto-refresh on account/chain change */
@@ -28,7 +29,9 @@ interface UseBalanceResult {
  * React hook for fetching account balance
  */
 export function useBalance(options: UseBalanceOptions): UseBalanceResult {
-  const { address, provider, account, watch = true } = options
+  const contextProvider = useOptionalProvider()
+  const { address, provider: explicitProvider, account, watch = true } = options
+  const provider = explicitProvider ?? contextProvider
   const targetAddress = address ?? account
 
   const [balance, setBalance] = useState<bigint | null>(null)

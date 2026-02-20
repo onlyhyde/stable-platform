@@ -6,7 +6,7 @@
  */
 
 import type { Address, Hex } from 'viem'
-import { hashDomain, hashStruct, serializeTransaction } from 'viem'
+import { hashDomain, hashStruct, serializeTransaction, toHex } from 'viem'
 import type {
   HardwareAccountInfo,
   HardwareDeviceType,
@@ -160,7 +160,7 @@ export class LedgerKeyring implements IHardwareKeyring {
     const accountInfo = this.getAccountInfo(address)
 
     // Convert message to hex without 0x prefix for Ledger
-    const messageHex = Buffer.from(message).toString('hex')
+    const messageHex = toHex(new TextEncoder().encode(message)).slice(2)
     const result = await ethApp.signPersonalMessage(accountInfo.path, messageHex)
 
     return this.composeSignature(result.v, result.r, result.s)

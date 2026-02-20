@@ -1,12 +1,7 @@
-import type { Address, Hash } from 'viem'
+import type { Address, Hash, EIP1193Provider, ProviderConnectInfo, ProviderRpcError } from 'viem'
 import { walletSdkLogger } from '../logger'
-import type {
-  BalanceInfo,
-  ConnectInfo,
-  EIP1193Provider,
-  ProviderRpcError,
-  TransactionRequest,
-} from '../types'
+import type { StableNetRpcSchema } from '../rpc'
+import type { TransactionRequest } from '../types'
 import { filterValidAddresses, parseChainIdHex } from '../validation'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,15 +29,6 @@ export interface TransactionConfirmedEvent {
 }
 
 /**
- * Balance change event data
- */
-export interface BalanceChangeEvent {
-  address: Address
-  balance: BalanceInfo
-  previousBalance?: BalanceInfo
-}
-
-/**
  * Extended provider events including transaction lifecycle
  */
 export type StableNetProviderEvent =
@@ -52,7 +38,6 @@ export type StableNetProviderEvent =
   | 'chainChanged'
   | 'transactionSent'
   | 'transactionConfirmed'
-  | 'balanceChange'
 
 /**
  * StableNet Provider wrapper
@@ -72,6 +57,34 @@ export class StableNetProvider {
   constructor(provider: EIP1193Provider) {
     this.provider = provider
     this.setupEventListeners()
+  }
+
+  /**
+   * Internal RPC request helper for arbitrary methods (standard + custom).
+   * Bypasses viem's strict method typing for flexibility.
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: allows arbitrary RPC methods beyond viem's typed set
+  private rpc(args: { method: string; params?: unknown[] | object }): Promise<any> {
+    // biome-ignore lint/suspicious/noExplicitAny: forwarding arbitrary RPC args
+    return this.provider.request(args as any)
+  }
+
+  /**
+   * Type-safe request for StableNet custom RPC methods.
+   *
+   * @example
+   * ```typescript
+   * const signed = await provider.stableNetRequest(
+   *   'wallet_signAuthorization',
+   *   { authorization: { chainId: 1, address: '0x...', nonce: 0n } }
+   * )
+   * ```
+   */
+  async stableNetRequest<M extends keyof StableNetRpcSchema>(
+    method: M,
+    params: StableNetRpcSchema[M]['params']
+  ): Promise<StableNetRpcSchema[M]['result']> {
+    return this.rpc({ method, params: [params] })
   }
 
   // State getters
@@ -97,30 +110,28 @@ export class StableNetProvider {
    * Setup internal event listeners
    */
   private setupEventListeners(): void {
-    this.provider.on('connect', (info: unknown) => {
-      const connectInfo = info as ConnectInfo
+    this.provider.on('connect', (connectInfo: ProviderConnectInfo) => {
       this._isConnected = true
       this._chainId = connectInfo.chainId
       this.emit('connect', connectInfo)
     })
 
-    this.provider.on('disconnect', (error: unknown) => {
+    this.provider.on('disconnect', (error: ProviderRpcError) => {
       this._isConnected = false
       this._account = null
-      this.emit('disconnect', error as ProviderRpcError)
+      this.emit('disconnect', error)
     })
 
-    this.provider.on('accountsChanged', (accounts: unknown) => {
-      const accountList = Array.isArray(accounts) ? filterValidAddresses(accounts) : []
+    this.provider.on('accountsChanged', (accounts: Address[]) => {
+      const accountList = filterValidAddresses(accounts)
       this._account = accountList[0] ?? null
       this._isConnected = accountList.length > 0
       this.emit('accountsChanged', accountList)
     })
 
-    this.provider.on('chainChanged', (chainId: unknown) => {
-      const chainIdStr = typeof chainId === 'string' ? chainId : String(chainId)
-      this._chainId = chainIdStr
-      this.emit('chainChanged', chainIdStr)
+    this.provider.on('chainChanged', (chainId: string) => {
+      this._chainId = chainId
+      this.emit('chainChanged', chainId)
     })
   }
 
@@ -128,7 +139,7 @@ export class StableNetProvider {
    * Connect to wallet
    */
   async connect(): Promise<Address[]> {
-    const result = await this.provider.request({
+    const result = await this.rpc({
       method: 'eth_requestAccounts',
     })
     const accounts = Array.isArray(result) ? filterValidAddresses(result) : []
@@ -160,7 +171,7 @@ export class StableNetProvider {
    * Get connected accounts
    */
   async getAccounts(): Promise<Address[]> {
-    const result = await this.provider.request({
+    const result = await this.rpc({
       method: 'eth_accounts',
     })
     return Array.isArray(result) ? filterValidAddresses(result) : []
@@ -170,20 +181,70 @@ export class StableNetProvider {
    * Get current chain ID
    */
   async getChainId(): Promise<string> {
-    const result = await this.provider.request({
+    const result = await this.rpc({
       method: 'eth_chainId',
     })
     return typeof result === 'string' ? result : String(result)
   }
 
   /**
-   * Switch to a different chain
+   * Add a new chain to the wallet
    */
-  async switchChain(chainId: number): Promise<void> {
-    await this.provider.request({
-      method: 'wallet_switchEthereumChain',
-      params: [{ chainId: `0x${chainId.toString(16)}` }],
+  async addChain(chain: {
+    chainId: number
+    chainName: string
+    nativeCurrency: { name: string; symbol: string; decimals: number }
+    rpcUrls: readonly string[]
+    blockExplorerUrls?: string[]
+    iconUrls?: string[]
+  }): Promise<void> {
+    await this.rpc({
+      method: 'wallet_addEthereumChain',
+      params: [
+        {
+          chainId: `0x${chain.chainId.toString(16)}`,
+          chainName: chain.chainName,
+          nativeCurrency: chain.nativeCurrency,
+          rpcUrls: chain.rpcUrls,
+          blockExplorerUrls: chain.blockExplorerUrls,
+          iconUrls: chain.iconUrls,
+        },
+      ],
     })
+  }
+
+  /**
+   * Switch to a different chain.
+   * If the chain is not added (4902 error), automatically attempts
+   * to add it first using the provided chain config.
+   */
+  async switchChain(
+    chainId: number,
+    addChainConfig?: {
+      chainName: string
+      nativeCurrency: { name: string; symbol: string; decimals: number }
+      rpcUrls: readonly string[]
+      blockExplorerUrls?: string[]
+      iconUrls?: string[]
+    },
+  ): Promise<void> {
+    try {
+      await this.rpc({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: `0x${chainId.toString(16)}` }],
+      })
+    } catch (err) {
+      const error = err as { code?: number; data?: { originalError?: { code?: number } } }
+      const isChainNotAdded =
+        error.code === 4902 || error.data?.originalError?.code === 4902
+
+      if (isChainNotAdded && addChainConfig) {
+        await this.addChain({ chainId, ...addChainConfig })
+        return
+      }
+
+      throw err
+    }
   }
 
   /**
@@ -194,7 +255,7 @@ export class StableNetProvider {
       throw new Error('No account connected')
     }
 
-    const signature = (await this.provider.request({
+    const signature = (await this.rpc({
       method: 'personal_sign',
       params: [message, this._account],
     })) as string
@@ -217,7 +278,7 @@ export class StableNetProvider {
       throw new Error('Failed to serialize typed data: ensure the object is JSON-serializable')
     }
 
-    const signature = (await this.provider.request({
+    const signature = (await this.rpc({
       method: 'eth_signTypedData_v4',
       params: [this._account, serialized],
     })) as string
@@ -237,7 +298,7 @@ export class StableNetProvider {
       throw new Error('No account connected')
     }
 
-    const txHash = (await this.provider.request({
+    const txHash = (await this.rpc({
       method: 'eth_sendTransaction',
       params: [
         {
@@ -287,7 +348,7 @@ export class StableNetProvider {
     let attempt = 0
     while (Date.now() - startTime < timeout) {
       try {
-        const receipt = (await this.provider.request({
+        const receipt = (await this.rpc({
           method: 'eth_getTransactionReceipt',
           params: [hash],
         })) as {
@@ -297,7 +358,7 @@ export class StableNetProvider {
         } | null
 
         if (receipt?.blockNumber) {
-          const currentBlock = (await this.provider.request({
+          const currentBlock = (await this.rpc({
             method: 'eth_blockNumber',
           })) as string
 
@@ -338,7 +399,7 @@ export class StableNetProvider {
       throw new Error('No account specified')
     }
 
-    const balance = (await this.provider.request({
+    const balance = (await this.rpc({
       method: 'eth_getBalance',
       params: [targetAddress, 'latest'],
     })) as string
@@ -349,7 +410,7 @@ export class StableNetProvider {
   /**
    * Subscribe to events
    */
-  on(event: 'connect', listener: (info: ConnectInfo) => void): () => void
+  on(event: 'connect', listener: (info: ProviderConnectInfo) => void): () => void
   on(event: 'disconnect', listener: (error: ProviderRpcError) => void): () => void
   on(event: 'accountsChanged', listener: (accounts: Address[]) => void): () => void
   on(event: 'chainChanged', listener: (chainId: string) => void): () => void
@@ -358,7 +419,6 @@ export class StableNetProvider {
     event: 'transactionConfirmed',
     listener: (event: TransactionConfirmedEvent) => void
   ): () => void
-  on(event: 'balanceChange', listener: (event: BalanceChangeEvent) => void): () => void
   // biome-ignore lint/suspicious/noExplicitAny: overload implementation requires widest type
   on(event: string, listener: (...args: any[]) => void): () => void {
     if (!this.eventListeners.has(event)) {
@@ -399,7 +459,7 @@ export class StableNetProvider {
    * Generic RPC request method
    */
   async request<T = unknown>(args: { method: string; params?: unknown[] | object }): Promise<T> {
-    return this.provider.request(args) as Promise<T>
+    return this.rpc(args) as Promise<T>
   }
 
   /**
@@ -407,7 +467,8 @@ export class StableNetProvider {
    */
   removeListener(event: string, listener: (...args: unknown[]) => void): void {
     this.eventListeners.get(event)?.delete(listener as EventListener)
-    this.provider.removeListener(event, listener)
+    // biome-ignore lint/suspicious/noExplicitAny: viem's removeListener requires keyof EIP1193EventMap
+    this.provider.removeListener(event as any, listener as any)
   }
 
   // ============================================================================
@@ -418,7 +479,7 @@ export class StableNetProvider {
    * Subscribe to connect events
    * @returns Unsubscribe function
    */
-  onConnect(handler: (info: ConnectInfo) => void): () => void {
+  onConnect(handler: (info: ProviderConnectInfo) => void): () => void {
     return this.on('connect', handler)
   }
 
@@ -464,14 +525,6 @@ export class StableNetProvider {
     return this.on('transactionConfirmed', handler as EventListener)
   }
 
-  /**
-   * Subscribe to balance change events
-   * @returns Unsubscribe function
-   */
-  onBalanceChange(handler: (event: BalanceChangeEvent) => void): () => void {
-    return this.on('balanceChange', handler as EventListener)
-  }
-
   // ============================================================================
   // StableNet Custom RPC Methods
   // ============================================================================
@@ -492,7 +545,7 @@ export class StableNetProvider {
     s: Hash
     v: number
   }> {
-    const result = await this.provider.request({
+    const result = await this.rpc({
       method: 'wallet_signAuthorization',
       params: [authorization],
     })
@@ -520,7 +573,7 @@ export class StableNetProvider {
       throw new Error('No account specified')
     }
 
-    const result = await this.provider.request({
+    const result = await this.rpc({
       method: 'wallet_getDelegationStatus',
       params: [{ address: targetAddress }],
     })
@@ -544,7 +597,7 @@ export class StableNetProvider {
       isActive: boolean
     }[]
   > {
-    const result = await this.provider.request({
+    const result = await this.rpc({
       method: 'wallet_getInstalledModules',
       params: [{ account: account ?? this._account }],
     })
@@ -575,7 +628,7 @@ export class StableNetProvider {
     validUntil: number
     installTxHash?: Hash
   }> {
-    const result = await this.provider.request({
+    const result = await this.rpc({
       method: 'wallet_createSessionKey',
       params: [config],
     })
@@ -595,7 +648,7 @@ export class StableNetProvider {
     ephemeralPubKey: Hash
     viewTag: Hash
   }> {
-    const result = await this.provider.request({
+    const result = await this.rpc({
       method: 'wallet_generateStealthAddress',
       params: [{ recipientMeta }],
     })
@@ -620,7 +673,7 @@ export class StableNetProvider {
       timestamp: number
     }[]
   > {
-    const result = await this.provider.request({
+    const result = await this.rpc({
       method: 'wallet_scanStealthPayments',
       params: [options ?? {}],
     })
@@ -643,7 +696,7 @@ export class StableNetProvider {
     viewingPubKey: Hash
     metaAddress: Address
   }> {
-    const result = await this.provider.request({
+    const result = await this.rpc({
       method: 'wallet_getStealthMetaAddress',
       params: [{ account: this._account }],
     })

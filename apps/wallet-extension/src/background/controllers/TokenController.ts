@@ -137,6 +137,13 @@ function padNumber(value: string): string {
 /**
  * Decode string from ABI-encoded data
  */
+function hexToUtf8(hexStr: string): string {
+  const bytes = new Uint8Array(
+    (hexStr.match(/.{2}/g) ?? []).map((b) => Number.parseInt(b, 16))
+  )
+  return new TextDecoder().decode(bytes).replace(/\0/g, '')
+}
+
 function decodeString(data: string): string {
   const hex = data.replace('0x', '')
 
@@ -146,11 +153,11 @@ function decodeString(data: string): string {
     const lengthHex = hex.slice(64, 128)
     const length = Number.parseInt(lengthHex, 16)
     const stringHex = hex.slice(128, 128 + length * 2)
-    return Buffer.from(stringHex, 'hex').toString('utf8').replace(/\0/g, '')
+    return hexToUtf8(stringHex)
   }
 
   // Static bytes32 string
-  return Buffer.from(hex, 'hex').toString('utf8').replace(/\0/g, '')
+  return hexToUtf8(hex)
 }
 
 /**

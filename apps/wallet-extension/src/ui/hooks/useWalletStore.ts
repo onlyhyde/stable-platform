@@ -4,6 +4,54 @@ import { DEFAULT_NETWORKS, MESSAGE_TYPES } from '../../shared/constants'
 import { SYNC_TIMEOUT_MS, sendMessageWithTimeout } from '../../shared/utils/messaging'
 import type { Account, Network, PendingTransaction, WalletState } from '../../types'
 
+/**
+ * Convert a serialized transaction (BigInt fields as strings) back to
+ * a proper PendingTransaction with bigint values.
+ *
+ * `sanitizeForMessage` in the background converts bigint → string for
+ * JSON-safe message passing. This reverses that conversion.
+ */
+function deserializeTransaction(raw: Record<string, unknown>): PendingTransaction {
+  const toBigInt = (v: unknown): bigint | undefined => {
+    if (v === undefined || v === null) return undefined
+    if (typeof v === 'bigint') return v
+    if (typeof v === 'string' || typeof v === 'number') return BigInt(v)
+    return undefined
+  }
+
+  const tokenTransfer = raw.tokenTransfer as Record<string, unknown> | undefined
+
+  return {
+    id: raw.id as string,
+    from: raw.from as PendingTransaction['from'],
+    to: raw.to as PendingTransaction['to'],
+    value: toBigInt(raw.value) ?? 0n,
+    data: raw.data as PendingTransaction['data'],
+    chainId: raw.chainId as number,
+    status: raw.status as PendingTransaction['status'],
+    type: raw.type as PendingTransaction['type'],
+    userOpHash: raw.userOpHash as PendingTransaction['userOpHash'],
+    txHash: raw.txHash as PendingTransaction['txHash'],
+    timestamp: raw.timestamp as number,
+    gasUsed: toBigInt(raw.gasUsed),
+    gasPrice: toBigInt(raw.gasPrice),
+    maxFeePerGas: toBigInt(raw.maxFeePerGas),
+    maxPriorityFeePerGas: toBigInt(raw.maxPriorityFeePerGas),
+    blockNumber: toBigInt(raw.blockNumber),
+    methodName: raw.methodName as string | undefined,
+    tokenTransfer: tokenTransfer
+      ? {
+          tokenAddress: tokenTransfer.tokenAddress as PendingTransaction['from'],
+          symbol: tokenTransfer.symbol as string,
+          decimals: tokenTransfer.decimals as number,
+          amount: toBigInt(tokenTransfer.amount) ?? 0n,
+          direction: tokenTransfer.direction as 'in' | 'out',
+        }
+      : undefined,
+    error: raw.error as string | undefined,
+  }
+}
+
 type Page =
   | 'home'
   | 'send'
@@ -182,8 +230,12 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
         const networks = state.networks?.networks ?? DEFAULT_NETWORKS
         const selectedChainId =
           state.networks?.selectedChainId ?? DEFAULT_NETWORKS[0]?.chainId ?? 31337
-        const pendingTransactions = state.transactions?.pendingTransactions ?? []
-        const history = state.transactions?.history ?? []
+        const pendingTransactions = (state.transactions?.pendingTransactions ?? []).map(
+          (tx: Record<string, unknown>) => deserializeTransaction(tx)
+        )
+        const history = (state.transactions?.history ?? []).map(
+          (tx: Record<string, unknown>) => deserializeTransaction(tx)
+        )
 
         set({
           accounts,

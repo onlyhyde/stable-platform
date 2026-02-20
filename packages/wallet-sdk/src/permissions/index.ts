@@ -7,8 +7,7 @@
  * @see https://eips.ethereum.org/EIPS/eip-2255
  */
 
-import type { Address } from 'viem'
-import type { EIP1193Provider } from '../types'
+import type { Address, EIP1193Provider } from 'viem'
 
 /**
  * Permission target types
@@ -124,9 +123,10 @@ export class PermissionManager {
    * ```
    */
   async requestPermissions(requests: PermissionRequest): Promise<Permission[]> {
+    // biome-ignore lint/suspicious/noExplicitAny: PermissionRequest is wider than viem's strict type
     const permissions = (await this.provider.request({
       method: 'wallet_requestPermissions',
-      params: [requests],
+      params: [requests as any],
     })) as Permission[]
 
     // Update cache
@@ -232,9 +232,10 @@ export class PermissionManager {
    */
   async revokePermission(target: PermissionTarget | string): Promise<void> {
     try {
+      // biome-ignore lint/suspicious/noExplicitAny: dynamic permission target key
       await this.provider.request({
         method: 'wallet_revokePermissions',
-        params: [{ [target]: {} }],
+        params: [{ [target]: {} } as any],
       })
 
       // Clear cache

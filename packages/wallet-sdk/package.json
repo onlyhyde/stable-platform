@@ -14,9 +14,15 @@
     "./react": {
       "import": "./dist/react.js",
       "types": "./dist/react.d.ts"
+    },
+    "./wagmi": {
+      "import": "./dist/wagmi.js",
+      "types": "./dist/wagmi.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -27,24 +33,37 @@
   },
   "peerDependencies": {
     "react": ">=18.0.0",
-    "viem": ">=2.0.0"
+    "viem": ">=2.0.0",
+    "@wagmi/core": ">=2.0.0"
   },
   "peerDependenciesMeta": {
     "react": {
       "optional": true
+    },
+    "@wagmi/core": {
+      "optional": true
     }
   },
   "devDependencies": {
+    "@tanstack/react-query": "^5.90.19",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^18.2.0",
+    "@wagmi/core": "^3.4.0",
     "jsdom": "^25.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tsup": "^8.0.0",
     "typescript": "^5.3.0",
     "viem": "^2.21.0",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "wagmi": "^2.19.5"
   },
-  "keywords": ["ethereum", "wallet", "web3", "eip-1193", "stablenet"],
+  "keywords": [
+    "ethereum",
+    "wallet",
+    "web3",
+    "eip-1193",
+    "stablenet"
+  ],
   "license": "MIT"
 }

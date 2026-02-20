@@ -46,7 +46,6 @@ export {
 } from './permissions'
 // Provider event types
 export type {
-  BalanceChangeEvent,
   StableNetProviderEvent,
   TransactionConfirmedEvent,
   TransactionSentEvent,
@@ -125,7 +124,7 @@ export type {
   NetworkInfo,
   // Provider types
   ProviderEvent,
-  ProviderMessage,
+  ProviderConnectInfo,
   ProviderRpcError,
   // Utility types
   Result,

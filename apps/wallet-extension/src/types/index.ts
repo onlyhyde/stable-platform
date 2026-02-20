@@ -11,7 +11,6 @@ export * from './network'
 export * from './onramp'
 export * from './rpc'
 export * from './transaction'
-export * from './walletconnect'
 
 /**
  * Message types for extension communication
@@ -116,10 +115,6 @@ export type MessageType =
   // Token price messages
   | 'GET_TOKEN_PRICES'
   | 'TOKEN_PRICES'
-  // WalletConnect messages
-  | 'WC_PAIR'
-  | 'WC_GET_SESSIONS'
-  | 'WC_DISCONNECT_SESSION'
   // Ledger hardware wallet messages
   | 'LEDGER_CONNECT'
   | 'LEDGER_DISCONNECT'

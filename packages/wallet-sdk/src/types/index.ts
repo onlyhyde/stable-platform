@@ -5,9 +5,16 @@
  */
 
 // Re-export viem types for convenience
-export type { Address, Hash, Hex } from 'viem'
+export type {
+  Address,
+  Hash,
+  Hex,
+  EIP1193Provider,
+  ProviderConnectInfo,
+  ProviderRpcError,
+} from 'viem'
 
-import type { Address, Hash, Hex } from 'viem'
+import type { Address, EIP1193Provider, Hash, Hex, ProviderConnectInfo } from 'viem'
 
 // ============================================================================
 // Network & Chain Types
@@ -183,7 +190,7 @@ export interface TransactionRecord {
 }
 
 // ============================================================================
-// EIP-1193 Provider Types
+// EIP-1193 Provider Types (re-exported from viem for type safety)
 // ============================================================================
 
 /**
@@ -197,43 +204,9 @@ export type ProviderEvent =
   | 'message'
 
 /**
- * EIP-1193 Provider connect info
+ * Backward-compatible alias for viem's ProviderConnectInfo
  */
-export interface ConnectInfo {
-  chainId: string
-}
-
-/**
- * EIP-1193 Provider RPC error
- */
-export interface ProviderRpcError extends Error {
-  code: number
-  data?: unknown
-}
-
-/**
- * EIP-1193 Provider message
- */
-export interface ProviderMessage {
-  type: string
-  data: unknown
-}
-
-/**
- * EIP-1193 Provider interface
- */
-export interface EIP1193Provider {
-  request<T = unknown>(args: { method: string; params?: unknown[] | object }): Promise<T>
-  on(event: 'connect', listener: (info: ConnectInfo) => void): void
-  on(event: 'disconnect', listener: (error: ProviderRpcError) => void): void
-  on(event: 'chainChanged', listener: (chainId: string) => void): void
-  on(event: 'accountsChanged', listener: (accounts: string[]) => void): void
-  on(event: 'message', listener: (message: ProviderMessage) => void): void
-  on(event: string, listener: (...args: unknown[]) => void): void
-  removeListener(event: string, listener: (...args: unknown[]) => void): void
-  // EIP-6963 support
-  isStableNet?: boolean
-}
+export type ConnectInfo = ProviderConnectInfo
 
 /**
  * EIP-6963 Provider info

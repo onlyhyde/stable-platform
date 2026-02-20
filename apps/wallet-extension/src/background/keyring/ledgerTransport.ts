@@ -41,7 +41,7 @@ export class LedgerWebHIDTransport implements HardwareTransport {
       command[1]!,
       command[2]!,
       command[3]!,
-      Buffer.from(command.slice(5))
+      new Uint8Array(command.slice(5)) as unknown as Buffer
     )
   }
 

@@ -3,7 +3,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { Address } from 'viem'
+import { type Address, formatUnits } from 'viem'
+import { useOptionalProvider } from '../context/WalletContext'
 import type { StableNetProvider } from '../provider/StableNetProvider'
 import type { BalanceInfo, TokenInfo } from '../types'
 
@@ -18,8 +19,8 @@ interface UseTokenOptions {
   tokenAddress: Address
   /** Account address to check balance for */
   account?: Address | null
-  /** Provider instance */
-  provider: StableNetProvider | null
+  /** Provider instance (auto-injected from WalletProvider if omitted) */
+  provider?: StableNetProvider | null
   /** Auto-refresh on account/chain change */
   watch?: boolean
 }
@@ -62,12 +63,12 @@ function decodeString(hex: string): string {
     const safeLength = Math.min(length, available)
 
     const stringHex = data.slice(128, 128 + safeLength)
-    const bytes = []
+    const bytes: number[] = []
     for (let i = 0; i < stringHex.length; i += 2) {
       const byte = Number.parseInt(stringHex.slice(i, i + 2), 16)
       if (byte !== 0) bytes.push(byte)
     }
-    return String.fromCharCode(...bytes)
+    return new TextDecoder('utf-8').decode(new Uint8Array(bytes))
   } catch {
     return ''
   }
@@ -106,7 +107,9 @@ function decodeUint256(hex: string): bigint {
  * ```
  */
 export function useToken(options: UseTokenOptions): UseTokenResult {
-  const { tokenAddress, account, provider, watch = true } = options
+  const contextProvider = useOptionalProvider()
+  const { tokenAddress, account, provider: explicitProvider, watch = true } = options
+  const provider = explicitProvider ?? contextProvider
 
   const [token, setToken] = useState<TokenInfo | null>(null)
   const [balance, setBalance] = useState<BalanceInfo | null>(null)
@@ -166,7 +169,7 @@ export function useToken(options: UseTokenOptions): UseTokenResult {
         })
 
         const raw = decodeUint256(balanceResult)
-        const formatted = (Number(raw) / 10 ** decimals).toFixed(Math.min(decimals, 6))
+        const formatted = formatUnits(raw, decimals)
 
         const balanceInfo: BalanceInfo = {
           raw,

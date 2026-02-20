@@ -75,7 +75,6 @@ export const STORAGE_KEYS = {
   ENCRYPTED_VAULT: 'stablenet_encrypted_vault',
   CONNECTED_SITES: 'stablenet_connected_sites',
   PREFERENCES: 'stablenet_preferences',
-  WALLETCONNECT_SESSIONS: 'stablenet_wc_sessions',
 } as const
 
 /**
@@ -100,10 +99,6 @@ export const MESSAGE_TYPES = {
   DISCONNECT: 'DISCONNECT',
   APPROVAL_RESPONSE: 'APPROVAL_RESPONSE',
   PROVIDER_EVENT: 'PROVIDER_EVENT',
-  // WalletConnect messages
-  WC_PAIR: 'WC_PAIR',
-  WC_GET_SESSIONS: 'WC_GET_SESSIONS',
-  WC_DISCONNECT_SESSION: 'WC_DISCONNECT_SESSION',
   // Ledger hardware wallet messages
   LEDGER_CONNECT: 'LEDGER_CONNECT',
   LEDGER_DISCONNECT: 'LEDGER_DISCONNECT',

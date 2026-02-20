@@ -18,10 +18,17 @@ const initialState: WalletState = {
  * @returns Wallet state and actions
  */
 export function useWallet(config: WalletSDKConfig = {}) {
+  const { autoConnect, timeout, networks } = config
+
   const [state, setState] = useState<WalletState>(initialState)
   const [error, setError] = useState<Error | null>(null)
   const providerRef = useRef<StableNetProvider | null>(null)
   const unsubscribesRef = useRef<Array<() => void>>([])
+
+  // Stable serialization of networks for value-based comparison
+  const networksKey = JSON.stringify(networks ?? null)
+  const networksRef = useRef(networks)
+  networksRef.current = networks
 
   // Initialize provider
   useEffect(() => {
@@ -29,7 +36,7 @@ export function useWallet(config: WalletSDKConfig = {}) {
 
     const init = async () => {
       try {
-        const provider = await detectProvider(config)
+        const provider = await detectProvider({ autoConnect, timeout, networks: networksRef.current })
         if (!mounted) return
 
         if (provider) {
@@ -92,7 +99,7 @@ export function useWallet(config: WalletSDKConfig = {}) {
           }
 
           // Auto-connect if configured
-          if (config.autoConnect && accounts.length === 0) {
+          if (autoConnect && accounts.length === 0) {
             try {
               setState((prev) => ({ ...prev, isConnecting: true }))
               await provider.connect()
@@ -121,7 +128,8 @@ export function useWallet(config: WalletSDKConfig = {}) {
       }
       unsubscribesRef.current = []
     }
-  }, [config.autoConnect, config.timeout, config])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoConnect, timeout, networksKey])
 
   // Connect action
   const connect = useCallback(async (): Promise<Address[]> => {

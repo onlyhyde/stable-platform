@@ -1,4 +1,5 @@
 import type { Address, Hex } from 'viem'
+import { bytesToHex } from 'viem'
 import { english, generateMnemonic, mnemonicToAccount } from 'viem/accounts'
 import { clearString } from '../../shared/security/memorySanitizer'
 import type { HDKeyringData, KeyringAccount } from '../../types'
@@ -227,9 +228,8 @@ export class HDKeyring {
       throw new Error('Private key not available')
     }
 
-    // Convert Uint8Array to hex string
-    const privateKeyHex = `0x${Buffer.from(hdKey.privateKey).toString('hex')}` as Hex
-    return privateKeyHex
+    // Convert Uint8Array to hex string using viem's bytesToHex
+    return bytesToHex(hdKey.privateKey)
   }
 
   /**

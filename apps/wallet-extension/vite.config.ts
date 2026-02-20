@@ -2,6 +2,7 @@ import react from '@vitejs/plugin-react'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 import { build, defineConfig } from 'vite'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 // Plugin to copy manifest and assets
 function copyManifestPlugin() {
@@ -44,11 +45,47 @@ function copyManifestPlugin() {
   }
 }
 
-// Plugin to build content script and inpage as IIFE
-function buildIIFEScripts() {
+// Plugin to build standalone scripts (content script, inpage, background service worker)
+function buildStandaloneScripts() {
   return {
-    name: 'build-iife-scripts',
+    name: 'build-standalone-scripts',
     async closeBundle() {
+      // Build background service worker as a standalone ES module (no code splitting)
+      // This ensures the Buffer polyfill is inlined before any code that uses it,
+      // avoiding the ESM import hoisting issue with shared chunks.
+      await build({
+        configFile: false,
+        plugins: [
+          nodePolyfills({
+            include: ['buffer'],
+            globals: { Buffer: true },
+          }),
+        ],
+        define: {
+          'process.env': '{}',
+          'process.env.NODE_ENV': JSON.stringify('production'),
+        },
+        build: {
+          emptyOutDir: false,
+          outDir: 'dist',
+          rollupOptions: {
+            input: resolve(__dirname, 'src/background/index.ts'),
+            output: {
+              format: 'es',
+              entryFileNames: 'background.js',
+              inlineDynamicImports: true,
+            },
+          },
+          minify: true,
+          sourcemap: false,
+        },
+        resolve: {
+          alias: {
+            '@': resolve(__dirname, 'src'),
+          },
+        },
+      })
+
       // Build content script as IIFE
       await build({
         configFile: false,
@@ -105,14 +142,13 @@ function buildIIFEScripts() {
 }
 
 export default defineConfig({
-  plugins: [react(), copyManifestPlugin(), buildIIFEScripts()],
+  plugins: [react(), copyManifestPlugin(), buildStandaloneScripts()],
   build: {
     rollupOptions: {
       input: {
         popup: resolve(__dirname, 'src/ui/popup.html'),
         sidepanel: resolve(__dirname, 'src/ui/sidepanel.html'),
         approval: resolve(__dirname, 'src/approval/approval.html'),
-        background: resolve(__dirname, 'src/background/index.ts'),
       },
       output: {
         entryFileNames: '[name].js',

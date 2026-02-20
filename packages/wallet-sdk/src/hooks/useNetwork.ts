@@ -4,12 +4,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { type NetworkRegistry, networkRegistry } from '../config'
+import { useOptionalProvider } from '../context/WalletContext'
 import type { StableNetProvider } from '../provider/StableNetProvider'
 import type { NetworkInfo } from '../types'
 
 interface UseNetworkOptions {
-  /** Provider instance */
-  provider: StableNetProvider | null
+  /** Provider instance (auto-injected from WalletProvider if omitted) */
+  provider?: StableNetProvider | null
   /** Custom network registry (optional) */
   registry?: NetworkRegistry
 }
@@ -55,7 +56,9 @@ interface UseNetworkResult {
  * ```
  */
 export function useNetwork(options: UseNetworkOptions): UseNetworkResult {
-  const { provider, registry = networkRegistry } = options
+  const contextProvider = useOptionalProvider()
+  const { provider: explicitProvider, registry = networkRegistry } = options
+  const provider = explicitProvider ?? contextProvider
 
   const [chainId, setChainId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -96,11 +99,11 @@ export function useNetwork(options: UseNetworkOptions): UseNetworkResult {
       setChainId(Number.parseInt(chainIdHex, 16))
     }
 
-    provider.on('chainChanged', handleChainChanged)
+    const unsubChainChanged = provider.on('chainChanged', handleChainChanged)
 
     return () => {
       mounted = false
-      provider.removeListener('chainChanged', handleChainChanged as (...args: unknown[]) => void)
+      unsubChainChanged()
     }
   }, [provider])
 

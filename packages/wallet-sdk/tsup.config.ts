@@ -4,11 +4,12 @@ export default defineConfig({
   entry: {
     index: 'src/index.ts',
     react: 'src/react.ts',
+    wagmi: 'src/wagmi.ts',
   },
   format: ['esm'],
   dts: true,
   sourcemap: true,
   clean: true,
-  external: ['react', 'viem'],
+  external: ['react', 'viem', '@wagmi/core'],
   treeshake: true,
 })

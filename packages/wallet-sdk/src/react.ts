@@ -29,7 +29,7 @@
 export type { WalletContextValue, WalletProviderProps } from './context/WalletProvider'
 
 // React Context Provider
-export { useWalletContext, WalletProvider } from './context/WalletProvider'
+export { useOptionalProvider, useWalletContext, WalletProvider } from './context/WalletProvider'
 export { useBalance } from './hooks/useBalance'
 export { useChainId } from './hooks/useChainId'
 export { useContractRead } from './hooks/useContractRead'

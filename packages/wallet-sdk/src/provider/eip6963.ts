@@ -8,7 +8,8 @@
  */
 
 import { walletSdkLogger } from '../logger'
-import type { EIP1193Provider, EIP6963ProviderDetail, EIP6963ProviderInfo } from '../types'
+import type { EIP1193Provider } from 'viem'
+import type { EIP6963ProviderDetail, EIP6963ProviderInfo } from '../types'
 
 /**
  * EIP-6963 event types
@@ -254,6 +255,18 @@ export function getProviderRegistry(): ProviderRegistry {
     defaultRegistry = new ProviderRegistry()
   }
   return defaultRegistry
+}
+
+/**
+ * Destroy and reset the singleton provider registry.
+ * Removes all event listeners, clears providers, and releases the singleton.
+ * A new instance will be created on the next `getProviderRegistry()` call.
+ */
+export function resetProviderRegistry(): void {
+  if (defaultRegistry) {
+    defaultRegistry.destroy()
+    defaultRegistry = null
+  }
 }
 
 /**
