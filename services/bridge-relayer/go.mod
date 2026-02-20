@@ -8,7 +8,10 @@ require (
 	github.com/ethereum/go-ethereum v1.16.8
 	github.com/gin-gonic/gin v1.11.0
 	github.com/joho/godotenv v1.5.1
+	github.com/stable-net/shared v0.0.0
 )
+
+replace github.com/stable-net/shared => ../shared/go
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
@@ -57,5 +60,5 @@ require (
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
-	google.golang.org/protobuf v1.36.9 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 )

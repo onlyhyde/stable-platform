@@ -26,8 +26,8 @@ export interface LoggerOptions {
  */
 export function createLogger(level: LogLevel = 'info', pretty = true) {
   return pino({
-    name: 'bundler',
     level,
+    base: { service: 'bundler', version: '1.0.0' },
     transport: pretty
       ? {
           target: 'pino-pretty',

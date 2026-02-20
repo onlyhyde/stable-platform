@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/stable-net/shared/health"
 
 	"github.com/stablenet/stable-platform/services/onramp-simulator/internal/config"
 	"github.com/stablenet/stable-platform/services/onramp-simulator/internal/handler"
@@ -52,31 +53,12 @@ func main() {
 	r.Use(middleware.DefaultRateLimiter().Middleware()) // Rate limiting: 100 req/min per IP
 	r.Use(bodyLimitMiddleware(1024 * 1024))             // 1MB max body size
 
-	// Health check endpoints (Kubernetes probes compatible)
-	startTime := time.Now()
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":    "ok",
-			"service":   "onramp-simulator",
-			"version":   "1.0.0",
-			"timestamp": time.Now().UTC().Format(time.RFC3339),
-			"uptime":    time.Since(startTime).String(),
-		})
-	})
-	r.GET("/ready", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"ready":   true,
-			"service": "onramp-simulator",
-		})
-	})
-	r.GET("/live", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"alive":   true,
-			"service": "onramp-simulator",
-		})
-	})
+	// Health check endpoints (shared package)
+	checker := health.NewChecker("onramp-simulator", "1.0.0")
+	checker.RegisterRoutes(r)
 
 	// Prometheus metrics endpoint
+	startTime := time.Now()
 	var requestCount, errorCount int64
 	r.GET("/metrics", func(c *gin.Context) {
 		uptime := time.Since(startTime).Seconds()

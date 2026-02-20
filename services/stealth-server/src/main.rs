@@ -28,6 +28,10 @@ async fn main() -> std::io::Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    // Set root span with service metadata for structured logging
+    let _root_span =
+        tracing::info_span!("", service = "stealth-server", version = "1.0.0").entered();
+
     info!("Starting stealth-server...");
 
     // Load configuration

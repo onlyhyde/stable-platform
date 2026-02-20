@@ -27,8 +27,8 @@ export function createLogger(options: LoggerOptions = {}) {
   const { level = 'info', pretty = true, name = 'paymaster-proxy' } = options
 
   return pino({
-    name,
     level,
+    base: { service: name, version: '1.0.0' },
     transport: pretty
       ? {
           target: 'pino-pretty',

@@ -10,8 +10,11 @@ require (
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.23.2
+	github.com/stable-net/shared v0.0.0
 	golang.org/x/crypto v0.48.0
 )
+
+replace github.com/stable-net/shared => ../shared/go
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -52,5 +55,5 @@ require (
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
-	google.golang.org/protobuf v1.36.9 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 )

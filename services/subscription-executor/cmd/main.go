@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/stable-net/shared/health"
 
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/config"
 	"github.com/stablenet/stable-platform/services/subscription-executor/internal/handler"
@@ -95,56 +96,14 @@ func main() {
 	r.Use(middleware.DefaultRateLimiter().Middleware())                  // Rate limiting: 100 req/min per IP
 	r.Use(middleware.NewIdempotencyMiddleware(repo).Middleware()) // API idempotency
 
-	// Health check endpoints (Kubernetes probes compatible)
-	startTime := time.Now()
-	r.GET("/health", func(c *gin.Context) {
-		status := "ok"
-		dbStatus := "connected"
-
-		// Check database connectivity with timeout
-		pingCtx, pingCancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	// Health check endpoints (shared package)
+	checker := health.NewChecker("subscription-executor", "1.0.0")
+	checker.AddCheck("database", health.DatabaseCheck(func() error {
+		pingCtx, pingCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer pingCancel()
-
-		if err := repo.Ping(pingCtx); err != nil {
-			dbStatus = "disconnected"
-			status = "degraded"
-		}
-
-		c.JSON(200, gin.H{
-			"status":    status,
-			"service":   "subscription-executor",
-			"version":   "1.0.0",
-			"timestamp": time.Now().UTC().Format(time.RFC3339),
-			"uptime":    time.Since(startTime).String(),
-			"database":  dbStatus,
-		})
-	})
-	r.GET("/ready", func(c *gin.Context) {
-		// Check if database is ready
-		pingCtx, pingCancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
-		defer pingCancel()
-
-		ready := true
-		if err := repo.Ping(pingCtx); err != nil {
-			ready = false
-		}
-
-		statusCode := 200
-		if !ready {
-			statusCode = 503
-		}
-
-		c.JSON(statusCode, gin.H{
-			"ready":   ready,
-			"service": "subscription-executor",
-		})
-	})
-	r.GET("/live", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"alive":   true,
-			"service": "subscription-executor",
-		})
-	})
+		return repo.Ping(pingCtx)
+	}))
+	checker.RegisterRoutes(r)
 
 	// Prometheus metrics endpoint - use the real Prometheus handler
 	r.GET("/metrics", metrics.GinMetricsHandler())
