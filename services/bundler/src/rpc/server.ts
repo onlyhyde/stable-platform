@@ -321,6 +321,9 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
       case 'debug_bundler_clearReputation':
         return this.debugClearReputation()
 
+      case 'debug_bundler_getUserOperationStatus':
+        return this.debugGetUserOperationStatus(params)
+
       default:
         throw new RpcError(`Method ${method} not found`, RPC_ERROR_CODES.METHOD_NOT_FOUND)
     }
@@ -332,23 +335,27 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
   private async ethSendUserOperation(params: unknown[]): Promise<Hex> {
     const [packedOp, entryPoint] = params as [Record<string, Hex>, Address]
 
-    // Validate entry point
-    if (!this.config.entryPoints.includes(entryPoint)) {
+    // Validate entry point (case-insensitive address comparison)
+    const entryPointLower = entryPoint.toLowerCase()
+    const matchedEntryPoint = this.config.entryPoints.find(
+      (ep) => ep.toLowerCase() === entryPointLower
+    )
+    if (!matchedEntryPoint) {
       throw new RpcError(`EntryPoint ${entryPoint} not supported`, RPC_ERROR_CODES.INVALID_PARAMS)
     }
 
     // Unpack UserOperation
     const userOp = unpackUserOperation(packedOp)
 
-    // Calculate hash
+    // Calculate hash (uses canonical entryPoint from config for consistency)
     const chainId = BigInt(await this.publicClient.getChainId())
-    const userOpHash = getUserOperationHash(userOp, entryPoint, chainId)
+    const userOpHash = getUserOperationHash(userOp, matchedEntryPoint, chainId)
 
     // Validate UserOperation (format, reputation, state, simulation)
     await this.validator.validate(userOp)
 
-    // Add to mempool
-    this.mempool.add(userOp, userOpHash, entryPoint)
+    // Add to mempool (uses canonical entryPoint from config for consistent lookups)
+    this.mempool.add(userOp, userOpHash, matchedEntryPoint)
 
     this.logger.info({ userOpHash, sender: userOp.sender }, 'UserOperation received and validated')
 
@@ -367,8 +374,9 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
   }> {
     const [packedOp, entryPoint] = params as [Record<string, Hex>, Address]
 
-    // Validate entry point
-    if (!this.config.entryPoints.includes(entryPoint)) {
+    // Validate entry point (case-insensitive address comparison)
+    const entryPointLower = entryPoint.toLowerCase()
+    if (!this.config.entryPoints.some((ep) => ep.toLowerCase() === entryPointLower)) {
       throw new RpcError(`EntryPoint ${entryPoint} not supported`, RPC_ERROR_CODES.INVALID_PARAMS)
     }
 
@@ -524,7 +532,7 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
     const [entryPoint] = params as [Address]
     const entries = this.mempool.dump()
     return entries
-      .filter((e) => !entryPoint || e.entryPoint === entryPoint)
+      .filter((e) => !entryPoint || e.entryPoint.toLowerCase() === entryPoint.toLowerCase())
       .map((e) => ({
         userOp: this.packUserOpForResponse(e.userOp),
         userOpHash: e.userOpHash,
@@ -588,6 +596,27 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
 
     this.validator.clearAllReputation()
     return { success: true }
+  }
+
+  /**
+   * debug_bundler_getUserOperationStatus
+   * Returns the current status of a UserOperation in the mempool.
+   * Available without debug flag so wallets can track UserOp lifecycle.
+   */
+  private debugGetUserOperationStatus(
+    params: unknown[]
+  ): { status: string; error?: string } | null {
+    const [hash] = params as [Hex]
+
+    const entry = this.mempool.get(hash)
+    if (!entry) {
+      return null
+    }
+
+    return {
+      status: entry.status,
+      error: entry.error,
+    }
   }
 
   /**

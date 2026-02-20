@@ -14,6 +14,24 @@ export { CHAIN_ADDRESSES, DEFAULT_TOKENS, SERVICE_URLS }
  */
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address
 
+// ─── Canonical Addresses (same on all production EVM chains via CREATE2) ─────
+// These are used as SDK defaults for chains without local deployment data.
+
+/** Canonical EntryPoint v0.7 (ERC-4337) */
+export const ENTRY_POINT_V07_ADDRESS: Address = '0x0000000071727De22E5E9d8BAf0edAc6f37da032'
+
+/** Canonical Kernel v3.1 Factory (ZeroDev) */
+export const KERNEL_V3_1_FACTORY_ADDRESS: Address = '0x6723b44Abeec4E71eBE3232BD5B455805baDD22f'
+
+/** Canonical ECDSA Validator (ZeroDev) */
+export const ECDSA_VALIDATOR_ADDRESS: Address = '0xd9AB5096a832b9ce79914329DAEE236f8Eea0390'
+
+/** Canonical Kernel implementation addresses */
+export const KERNEL_ADDRESSES = {
+  KERNEL_V3_1: '0x94F097E1ebEB4ecA3AAE54cabb08905B239A7D27' as Address,
+  KERNEL_V3_0: '0xd3082872F8B06073A021b4602e022d5A070d7cfC' as Address,
+} as const
+
 /**
  * Check if an address is the zero address
  */
@@ -61,6 +79,15 @@ export function getChainAddresses(chainId: number): ChainAddresses {
 }
 
 /**
+ * Get a contract address by its raw key name
+ * Useful for dynamic access when you know the key from addresses.json
+ */
+export function getContractAddress(chainId: number, key: string): Address {
+  const addresses = getChainAddresses(chainId)
+  return (addresses.raw[key] as Address) ?? ZERO_ADDRESS
+}
+
+/**
  * Get service URLs for a chain
  * @throws Error if chain is not supported
  */
@@ -90,95 +117,131 @@ export function getChainConfig(chainId: number): ChainConfig {
   }
 }
 
-/**
- * Get EntryPoint address for a chain
- */
+// ─── Core ────────────────────────────────────────────────────────────────────
+
 export function getEntryPoint(chainId: number): Address {
   return getChainAddresses(chainId).core.entryPoint
 }
 
-/**
- * Get Kernel implementation address for a chain
- */
 export function getKernel(chainId: number): Address {
   return getChainAddresses(chainId).core.kernel
 }
 
-/**
- * Get KernelFactory address for a chain
- */
 export function getKernelFactory(chainId: number): Address {
   return getChainAddresses(chainId).core.kernelFactory
 }
 
-/**
- * Get VerifyingPaymaster address for a chain
- */
-export function getVerifyingPaymaster(chainId: number): Address {
-  return getChainAddresses(chainId).paymasters.verifyingPaymaster
+export function getFactoryStaker(chainId: number): Address {
+  return getChainAddresses(chainId).core.factoryStaker
 }
 
-/**
- * Get ECDSAValidator address for a chain
- */
+// ─── Validators ──────────────────────────────────────────────────────────────
+
 export function getEcdsaValidator(chainId: number): Address {
   return getChainAddresses(chainId).validators.ecdsaValidator
 }
 
-/**
- * Get StealthAnnouncer address for a chain
- */
+export function getWebAuthnValidator(chainId: number): Address {
+  return getChainAddresses(chainId).validators.webAuthnValidator
+}
+
+export function getMultiChainValidator(chainId: number): Address {
+  return getChainAddresses(chainId).validators.multiChainValidator
+}
+
+export function getMultiSigValidator(chainId: number): Address {
+  return getChainAddresses(chainId).validators.multiSigValidator
+}
+
+// ─── Paymasters ──────────────────────────────────────────────────────────────
+
+export function getVerifyingPaymaster(chainId: number): Address {
+  return getChainAddresses(chainId).paymasters.verifyingPaymaster
+}
+
+export function getErc20Paymaster(chainId: number): Address {
+  return getChainAddresses(chainId).paymasters.erc20Paymaster
+}
+
+export function getSponsorPaymaster(chainId: number): Address {
+  return getChainAddresses(chainId).paymasters.sponsorPaymaster
+}
+
+// ─── Privacy ─────────────────────────────────────────────────────────────────
+
 export function getStealthAnnouncer(chainId: number): Address {
   return getChainAddresses(chainId).privacy.stealthAnnouncer
 }
 
-/**
- * Get StealthRegistry address for a chain
- */
 export function getStealthRegistry(chainId: number): Address {
   return getChainAddresses(chainId).privacy.stealthRegistry
 }
 
-/**
- * Get SubscriptionManager address for a chain
- */
+// ─── Subscriptions ───────────────────────────────────────────────────────────
+
 export function getSubscriptionManager(chainId: number): Address {
   return getChainAddresses(chainId).subscriptions.subscriptionManager
 }
 
-/**
- * Get RecurringPaymentExecutor address for a chain
- */
 export function getRecurringPaymentExecutor(chainId: number): Address {
   return getChainAddresses(chainId).subscriptions.recurringPaymentExecutor
 }
 
-/**
- * Get ERC7715 PermissionManager address for a chain
- */
 export function getPermissionManager(chainId: number): Address {
   return getChainAddresses(chainId).subscriptions.permissionManager
 }
 
-/**
- * Get delegate presets for EIP-7702
- */
+// ─── Tokens ──────────────────────────────────────────────────────────────────
+
+export function getWkrc(chainId: number): Address {
+  return getChainAddresses(chainId).tokens.wkrc
+}
+
+export function getUsdc(chainId: number): Address {
+  return getChainAddresses(chainId).tokens.usdc
+}
+
+// ─── DeFi ────────────────────────────────────────────────────────────────────
+
+export function getLendingPool(chainId: number): Address {
+  return getChainAddresses(chainId).defi.lendingPool
+}
+
+export function getStakingVault(chainId: number): Address {
+  return getChainAddresses(chainId).defi.stakingVault
+}
+
+export function getPriceOracle(chainId: number): Address {
+  return getChainAddresses(chainId).defi.priceOracle
+}
+
+// ─── Uniswap ─────────────────────────────────────────────────────────────────
+
+export function getUniswapFactory(chainId: number): Address {
+  return getChainAddresses(chainId).uniswap.factory
+}
+
+export function getUniswapRouter(chainId: number): Address {
+  return getChainAddresses(chainId).uniswap.swapRouter
+}
+
+export function getUniswapQuoter(chainId: number): Address {
+  return getChainAddresses(chainId).uniswap.quoter
+}
+
+// ─── Delegate Presets ────────────────────────────────────────────────────────
+
 export function getDelegatePresets(chainId: number) {
   return getChainAddresses(chainId).delegatePresets
 }
 
-/**
- * Get default delegate preset for EIP-7702
- */
 export function getDefaultDelegatePreset(chainId: number) {
   const presets = getDelegatePresets(chainId)
   return presets[0] ?? null
 }
 
-/**
- * Legacy compatibility exports
- * These match the old CONTRACT_ADDRESSES structure for gradual migration
- */
+// ─── Legacy compatibility ────────────────────────────────────────────────────
+
 export function getLegacyContractAddresses(chainId: number) {
   const addresses = getChainAddresses(chainId)
   return {

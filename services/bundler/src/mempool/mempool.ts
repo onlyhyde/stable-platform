@@ -81,9 +81,11 @@ export class Mempool {
    * Add a UserOperation to the mempool
    */
   add(userOp: UserOperation, userOpHash: Hex, entryPoint: Address): MempoolEntry {
-    // Check if already exists
-    if (this.pool.has(userOpHash)) {
-      throw new Error(`UserOperation ${userOpHash} already in mempool`)
+    // Return existing entry if already in mempool (idempotent)
+    const existing = this.pool.get(userOpHash)
+    if (existing) {
+      this.logger.debug({ userOpHash }, 'UserOperation already in mempool, returning existing entry')
+      return existing
     }
 
     // Check sender limits

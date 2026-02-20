@@ -24,7 +24,7 @@ flowchart LR
     B -->|"UserOp 제출"| C
     C -->|"실행 결과"| D["기존 주소 + 스마트 기능 + 가스 대납"]
 
-    style D fill:#6f6
+    style D fill:
 ```
 
 - **EIP-7702**: 기존 EOA 주소를 유지한 채, delegate code를 붙여 스마트 계정처럼 동작
@@ -80,13 +80,13 @@ flowchart TB
     end
 
     subgraph "오프체인 인프라"
-        W --> B[Bundler<br/>Alto]
+        W --> B[Bundler]
         W --> PP[Paymaster Proxy<br/>ERC-7677]
         PP --> PM_SVC[Pimlico Service]
     end
 
     subgraph "온체인 컨트랙트"
-        B --> EP[EntryPoint v0.7]
+        B --> EP[EntryPoint]
         EP --> EOA["EOA (0xABC...)<br/>code: 0xef0100 + Kernel"]
         EOA --> |delegatecall| K[Kernel Logic]
         K --> V[Validator Modules]
@@ -97,9 +97,6 @@ flowchart TB
         EP --> PM[SponsorPaymaster]
     end
 
-    style EOA fill:#6cf
-    style EP fill:#f96
-    style PM fill:#9f6
 ```
 
 ## UserOperation 핵심 필드
@@ -219,8 +216,6 @@ flowchart TD
     Q4 -->|Yes| FULL["7702 + 7579 + 4337<br/>Full Stack ⭐"]
     Q4 -->|No| DIRECT[7702 + 7579<br/>직접 트랜잭션]
 
-    style FULL fill:#6f6,stroke:#333
-    style KERNEL fill:#6cf,stroke:#333
 ```
 
 ## POC 컨트랙트 맵

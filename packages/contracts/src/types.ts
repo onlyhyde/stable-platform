@@ -7,6 +7,7 @@ export interface CoreAddresses {
   entryPoint: Address
   kernel: Address
   kernelFactory: Address
+  factoryStaker: Address
 }
 
 /**
@@ -15,14 +16,16 @@ export interface CoreAddresses {
 export interface ValidatorAddresses {
   ecdsaValidator: Address
   webAuthnValidator: Address
-  multiEcdsaValidator: Address
+  multiChainValidator: Address
+  multiSigValidator: Address
+  weightedEcdsaValidator: Address
 }
 
 /**
  * Executor module addresses
  */
 export interface ExecutorAddresses {
-  ownableExecutor: Address
+  sessionKeyExecutor: Address
 }
 
 /**
@@ -37,7 +40,9 @@ export interface HookAddresses {
  */
 export interface PaymasterAddresses {
   verifyingPaymaster: Address
-  tokenPaymaster: Address
+  erc20Paymaster: Address
+  permit2Paymaster: Address
+  sponsorPaymaster: Address
 }
 
 /**
@@ -53,7 +58,9 @@ export interface PrivacyAddresses {
  */
 export interface ComplianceAddresses {
   kycRegistry: Address
-  complianceValidator: Address
+  regulatoryRegistry: Address
+  auditHook: Address
+  auditLogger: Address
 }
 
 /**
@@ -63,6 +70,45 @@ export interface SubscriptionAddresses {
   subscriptionManager: Address
   recurringPaymentExecutor: Address
   permissionManager: Address
+}
+
+/**
+ * Token contract addresses
+ */
+export interface TokenAddresses {
+  wkrc: Address
+  usdc: Address
+}
+
+/**
+ * DeFi protocol addresses
+ */
+export interface DefiAddresses {
+  lendingPool: Address
+  stakingVault: Address
+  priceOracle: Address
+  proofOfReserve: Address
+  privateBank: Address
+  permit2: Address
+}
+
+/**
+ * Uniswap V3 addresses
+ */
+export interface UniswapAddresses {
+  factory: Address
+  swapRouter: Address
+  quoter: Address
+  nftPositionManager: Address
+  wkrcUsdcPool: Address
+}
+
+/**
+ * Fallback handler addresses
+ */
+export interface FallbackAddresses {
+  flashLoanFallback: Address
+  tokenReceiverFallback: Address
 }
 
 /**
@@ -88,7 +134,13 @@ export interface ChainAddresses {
   privacy: PrivacyAddresses
   compliance: ComplianceAddresses
   subscriptions: SubscriptionAddresses
+  tokens: TokenAddresses
+  defi: DefiAddresses
+  uniswap: UniswapAddresses
+  fallbacks: FallbackAddresses
   delegatePresets: DelegatePreset[]
+  /** All contract addresses as flat key-value pairs (for dynamic access) */
+  raw: Record<string, Address>
 }
 
 /**

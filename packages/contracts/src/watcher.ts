@@ -158,65 +158,80 @@ export class ContractAddressWatcher extends EventEmitter {
         ZERO) as `0x${string}`
     }
 
-    const coreData = data.core as Record<string, string> | undefined
-    const validatorsData = data.validators as Record<string, string> | undefined
-    const executorsData = data.executors as Record<string, string> | undefined
-    const hooksData = data.hooks as Record<string, string> | undefined
-    const paymastersData = data.paymasters as Record<string, string> | undefined
-    const privacyData = data.privacy as Record<string, string> | undefined
-    const complianceData = data.compliance as Record<string, string> | undefined
-    const subscriptionsData = data.subscriptions as Record<string, string> | undefined
+    // Build raw record from flat keys
+    const raw: Record<string, `0x${string}`> = {}
+    for (const [key, value] of Object.entries(data)) {
+      if (key.startsWith('_') || key === 'chainId' || typeof value !== 'string') continue
+      raw[key] = value as `0x${string}`
+    }
 
     return {
       chainId,
       core: {
-        entryPoint: getAddr(data.entryPoint, coreData?.entryPoint),
-        kernel: getAddr(data.kernel, coreData?.kernel),
-        kernelFactory: getAddr(data.kernelFactory, data.accountFactory, coreData?.kernelFactory),
+        entryPoint: getAddr(data.entryPoint),
+        kernel: getAddr(data.kernel),
+        kernelFactory: getAddr(data.kernelFactory, data.accountFactory),
+        factoryStaker: getAddr(data.factoryStaker),
       },
       validators: {
-        ecdsaValidator: getAddr(data.ecdsaValidator, validatorsData?.ecdsaValidator),
-        webAuthnValidator: getAddr(data.webAuthnValidator, validatorsData?.webAuthnValidator),
-        multiEcdsaValidator: getAddr(data.multiEcdsaValidator, validatorsData?.multiEcdsaValidator),
+        ecdsaValidator: getAddr(data.ecdsaValidator),
+        webAuthnValidator: getAddr(data.webAuthnValidator),
+        multiChainValidator: getAddr(data.multiChainValidator),
+        multiSigValidator: getAddr(data.multiSigValidator),
+        weightedEcdsaValidator: getAddr(data.weightedEcdsaValidator),
       },
       executors: {
-        ownableExecutor: getAddr(data.ownableExecutor, executorsData?.ownableExecutor),
+        sessionKeyExecutor: getAddr(data.sessionKeyExecutor),
       },
       hooks: {
-        spendingLimitHook: getAddr(data.spendingLimitHook, hooksData?.spendingLimitHook),
+        spendingLimitHook: getAddr(data.spendingLimitHook),
       },
       paymasters: {
-        verifyingPaymaster: getAddr(
-          data.verifyingPaymaster,
-          data.paymaster,
-          paymastersData?.verifyingPaymaster
-        ),
-        tokenPaymaster: getAddr(data.tokenPaymaster, paymastersData?.tokenPaymaster),
+        verifyingPaymaster: getAddr(data.verifyingPaymaster, data.paymaster),
+        erc20Paymaster: getAddr(data.erc20Paymaster),
+        permit2Paymaster: getAddr(data.permit2Paymaster),
+        sponsorPaymaster: getAddr(data.sponsorPaymaster),
       },
       privacy: {
-        stealthAnnouncer: getAddr(data.stealthAnnouncer, privacyData?.stealthAnnouncer),
-        stealthRegistry: getAddr(data.stealthRegistry, privacyData?.stealthRegistry),
+        stealthAnnouncer: getAddr(data.erc5564Announcer, data.stealthAnnouncer),
+        stealthRegistry: getAddr(data.erc6538Registry, data.stealthRegistry),
       },
       compliance: {
-        kycRegistry: getAddr(data.kycRegistry, complianceData?.kycRegistry),
-        complianceValidator: getAddr(data.complianceValidator, complianceData?.complianceValidator),
+        kycRegistry: getAddr(data.kycRegistry),
+        regulatoryRegistry: getAddr(data.regulatoryRegistry),
+        auditHook: getAddr(data.auditHook),
+        auditLogger: getAddr(data.auditLogger),
       },
       subscriptions: {
-        subscriptionManager: getAddr(
-          data.subscriptionManager,
-          subscriptionsData?.subscriptionManager
-        ),
-        recurringPaymentExecutor: getAddr(
-          data.recurringPaymentExecutor,
-          subscriptionsData?.recurringPaymentExecutor
-        ),
-        permissionManager: getAddr(
-          data.erc7715PermissionManager,
-          data.permissionManager,
-          subscriptionsData?.permissionManager
-        ),
+        subscriptionManager: getAddr(data.subscriptionManager),
+        recurringPaymentExecutor: getAddr(data.recurringPaymentExecutor),
+        permissionManager: getAddr(data.erc7715PermissionManager, data.permissionManager),
+      },
+      tokens: {
+        wkrc: getAddr(data.wkrc),
+        usdc: getAddr(data.usdc),
+      },
+      defi: {
+        lendingPool: getAddr(data.lendingPool),
+        stakingVault: getAddr(data.stakingVault),
+        priceOracle: getAddr(data.priceOracle),
+        proofOfReserve: getAddr(data.proofOfReserve),
+        privateBank: getAddr(data.privateBank),
+        permit2: getAddr(data.permit2),
+      },
+      uniswap: {
+        factory: getAddr(data.uniswapV3Factory),
+        swapRouter: getAddr(data.uniswapV3SwapRouter),
+        quoter: getAddr(data.uniswapV3Quoter),
+        nftPositionManager: getAddr(data.uniswapV3NftPositionManager),
+        wkrcUsdcPool: getAddr(data.uniswapV3WkrcUsdcPool),
+      },
+      fallbacks: {
+        flashLoanFallback: getAddr(data.flashLoanFallback),
+        tokenReceiverFallback: getAddr(data.tokenReceiverFallback),
       },
       delegatePresets: (data.delegatePresets as ChainAddresses['delegatePresets']) || [],
+      raw,
     }
   }
 
@@ -236,10 +251,13 @@ export class ContractAddressWatcher extends EventEmitter {
 }
 
 /**
- * Create a watcher instance for the default deployment output path
+ * Create a watcher instance for the default deployment output path.
+ * Reads DEPLOYMENT_DIR and CHAIN_ID from environment if available.
  */
 export function createAddressWatcher(options?: Partial<WatcherOptions>): ContractAddressWatcher {
-  const defaultPath = options?.watchPath ?? '../../poc-contract/deployments/31337/addresses.json'
+  const deploymentDir = process.env.DEPLOYMENT_DIR ?? '../../poc-contract/deployments'
+  const chainId = process.env.CHAIN_ID ?? '31337'
+  const defaultPath = options?.watchPath ?? `${deploymentDir}/${chainId}/addresses.json`
   return new ContractAddressWatcher({
     watchPath: defaultPath,
     ...options,
