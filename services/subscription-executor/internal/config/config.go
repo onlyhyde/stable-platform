@@ -64,7 +64,7 @@ func Load() *Config {
 		ChainID:                      getEnvInt("CHAIN_ID", 31337),
 		SubscriptionManagerAddress:   getEnv("SUBSCRIPTION_MANAGER_ADDRESS", ""),
 		RecurringPaymentExecutorAddr: getEnv("RECURRING_PAYMENT_EXECUTOR_ADDRESS", ""),
-		EntryPointAddress:            getEnv("ENTRYPOINT_ADDRESS", "0x0000000071727De22E5E9d8BAf0edAc6f37da032"),
+		EntryPointAddress:            getEnv("ENTRY_POINT_ADDRESS", "0x0000000071727De22E5E9d8BAf0edAc6f37da032"),
 		BundlerURL:                   getEnv("BUNDLER_URL", "http://localhost:4337"),
 		PaymasterURL:                 getEnv("PAYMASTER_URL", "http://localhost:3001"),
 		ExecutorPrivateKey:           getEnv("EXECUTOR_PRIVATE_KEY", ""),
