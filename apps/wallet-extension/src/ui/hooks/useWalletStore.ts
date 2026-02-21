@@ -231,10 +231,10 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
         const selectedChainId =
           state.networks?.selectedChainId ?? DEFAULT_NETWORKS[0]?.chainId ?? 31337
         const pendingTransactions = (state.transactions?.pendingTransactions ?? []).map(
-          (tx: Record<string, unknown>) => deserializeTransaction(tx)
+          (tx: unknown) => deserializeTransaction(tx as Record<string, unknown>)
         )
         const history = (state.transactions?.history ?? []).map(
-          (tx: Record<string, unknown>) => deserializeTransaction(tx)
+          (tx: unknown) => deserializeTransaction(tx as Record<string, unknown>)
         )
 
         set({
@@ -370,7 +370,7 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const response = await sendMessageWithTimeout<{
-        payload?: { address?: string }
+        payload?: { address?: string; error?: { message?: string } }
       }>(
         {
           type: 'IMPORT_PRIVATE_KEY',
@@ -384,7 +384,8 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
         await get().syncWithBackground()
         return response.payload.address as Address
       }
-      throw new Error('Failed to import account')
+      const bgError = response?.payload?.error?.message
+      throw new Error(bgError || 'Failed to import account')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to import account'
       set({ error: message })

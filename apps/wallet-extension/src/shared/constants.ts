@@ -22,7 +22,7 @@ export const DEFAULT_NETWORKS: Network[] = [
     rpcUrl: 'http://127.0.0.1:8501',
     bundlerUrl: 'http://127.0.0.1:4337',
     paymasterUrl: 'http://127.0.0.1:4338',
-    explorerUrl: 'http://127.0.0.1:3001',
+    explorerUrl: 'http://127.0.0.1:3000',
     indexerUrl: 'http://127.0.0.1:8080',
     currency: {
       name: 'WKRC Coin',

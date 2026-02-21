@@ -6,6 +6,7 @@ import { formatEther } from 'viem'
 import type { Account } from '../../../types/account'
 import type { Network } from '../../../types/network'
 import { usePaymasterClient } from '../../pages/Send/hooks/usePaymasterClient'
+import { useEntryPointBalance } from './hooks/useEntryPointBalance'
 import type { SmartAccountInfo } from './hooks/useSmartAccountInfo'
 import { useSpendingLimitStatus } from './hooks/useSpendingLimitStatus'
 
@@ -24,6 +25,7 @@ interface SmartAccountDashboardProps {
   onNavigateToGasSponsorship: () => void
   onNavigateToSessionKeys: () => void
   onNavigateToSpendingLimits: () => void
+  onNavigateToDeposit: () => void
   onRevokeDelegation: () => void
 }
 
@@ -42,6 +44,7 @@ export function SmartAccountDashboard({
   onNavigateToGasSponsorship,
   onNavigateToSessionKeys,
   onNavigateToSpendingLimits,
+  onNavigateToDeposit,
   onRevokeDelegation,
 }: SmartAccountDashboardProps) {
   const { t } = useTranslation('modules')
@@ -51,6 +54,9 @@ export function SmartAccountDashboard({
 
   // Spending limit data
   const { limits: spendingLimits } = useSpendingLimitStatus(account.address, installedModules)
+
+  // EntryPoint deposit balance
+  const { deposit: entryPointDeposit } = useEntryPointBalance(account.address)
 
   const sessionKeyCount = useMemo(() => {
     if (!installedModules) return 0
@@ -169,15 +175,32 @@ export function SmartAccountDashboard({
               Copy
             </button>
             {network?.explorerUrl && (
-              <a
-                href={`${network.explorerUrl}/address/${smartAccountInfo.delegationTarget}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs px-2 py-1 rounded"
+              <button
+                type="button"
+                className="p-1 rounded"
                 style={{ color: 'rgb(var(--primary))' }}
+                title={t('dashboard.viewExplorer')}
+                onClick={() =>
+                  chrome.tabs.create({
+                    url: `${network.explorerUrl}/address/${smartAccountInfo.delegationTarget}`,
+                  })
+                }
               >
-                {t('dashboard.viewExplorer')}
-              </a>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+              </button>
             )}
           </div>
 
@@ -225,6 +248,17 @@ export function SmartAccountDashboard({
           isActive={hasSpendingLimits}
           detail={spendingLimitDetail}
           onClick={onNavigateToSpendingLimits}
+        />
+        <FeatureCard
+          icon="💎"
+          label={t('dashboard.entryPointDeposit')}
+          status={
+            entryPointDeposit > 0n
+              ? t('dashboard.depositBalance', { amount: formatBigIntAmount(entryPointDeposit) })
+              : t('dashboard.noDeposit')
+          }
+          isActive={entryPointDeposit > 0n}
+          onClick={onNavigateToDeposit}
         />
         <FeatureCard
           icon="🧩"

@@ -432,5 +432,20 @@
   "customModuleWarning": "Custom modules are not verified. Only install modules from trusted sources.",
   "invalidModuleAddress": "Invalid contract address",
   "moduleTypeRequired": "Please select a module type",
-  "orInstallCustom": "Or install a custom module"
+  "orInstallCustom": "Or install a custom module",
+
+  "dashboard.entryPointDeposit": "EntryPoint Deposit",
+  "dashboard.depositBalance": "{{amount}} deposited",
+  "dashboard.noDeposit": "No deposit",
+
+  "entryPointDeposit.title": "EntryPoint Deposit",
+  "entryPointDeposit.description": "Deposit funds to the EntryPoint contract to pay gas for Smart Account transactions.",
+  "entryPointDeposit.currentBalance": "Current Deposit",
+  "entryPointDeposit.amount": "Deposit Amount",
+  "entryPointDeposit.amountPlaceholder": "0.0",
+  "entryPointDeposit.deposit": "Deposit",
+  "entryPointDeposit.depositing": "Depositing...",
+  "entryPointDeposit.success": "Deposit Successful!",
+  "entryPointDeposit.failed": "Deposit Failed",
+  "entryPointDeposit.info": "EntryPoint deposits are used to pay gas for UserOperations. Without sufficient deposit, self-pay transactions will fail."
 }

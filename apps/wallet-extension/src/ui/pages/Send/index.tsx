@@ -279,7 +279,7 @@ export function Send() {
       {/* Send Form */}
       {step === 'form' && (
         <>
-          <SendForm formData={formData} onFormChange={handleFormChange} isValid={isFormValid} />
+          <SendForm formData={formData} onFormChange={handleFormChange} isValid={isFormValid} currencySymbol={currencySymbol} />
 
           {/* Gas Payment Selector (Smart Account only) */}
           {transactionMode === TRANSACTION_MODE.SMART_ACCOUNT && (

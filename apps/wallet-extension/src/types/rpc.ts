@@ -89,6 +89,11 @@ export type SupportedMethod =
   | 'stablenet_setRootValidator'
   // Swap methods
   | 'stablenet_executeSwap'
+  // Gas estimation
+  | 'stablenet_estimateGas'
+  // EntryPoint deposit
+  | 'stablenet_getEntryPointBalance'
+  | 'stablenet_depositToEntryPoint'
   // Paymaster methods
   | 'pm_registerAccount'
   | 'pm_accountStatus'

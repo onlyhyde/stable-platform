@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Address, Hash } from 'viem'
-import { isAddress } from 'viem'
+import { getKernel } from '@stablenet/contracts'
 import { ZERO_ADDRESS } from '../../../shared/utils/eip7702'
 import { sendMessageWithTimeout, TX_TIMEOUT_MS } from '../../../shared/utils/messaging'
 import { useSelectedNetwork, useWalletStore } from '../../hooks'
@@ -32,7 +32,6 @@ export function DelegateSetup({
   const { t } = useTranslation('modules')
   const { t: tc } = useTranslation('common')
   const isRevokeMode = mode === 'revoke'
-  const [delegateAddress, setDelegateAddress] = useState(isRevokeMode ? ZERO_ADDRESS : '')
   const [step, setStep] = useState<SetupStep>(isRevokeMode ? 'confirm' : 'input')
   const [error, setError] = useState<string | null>(null)
   const [txHash, setTxHash] = useState<Hash | null>(null)
@@ -40,7 +39,13 @@ export function DelegateSetup({
   const currentNetwork = useSelectedNetwork()
   const { syncWithBackground } = useWalletStore()
 
-  const isValidDelegate = isRevokeMode || (delegateAddress !== '' && isAddress(delegateAddress))
+  const delegateAddress = useMemo(() => {
+    if (isRevokeMode) return ZERO_ADDRESS
+    if (!currentNetwork) return '' as Address
+    return getKernel(currentNetwork.chainId)
+  }, [isRevokeMode, currentNetwork])
+
+  const isValidDelegate = delegateAddress.length > 0
 
   const handleSubmit = useCallback(async () => {
     if (!isValidDelegate || !currentNetwork) return
@@ -157,34 +162,23 @@ export function DelegateSetup({
         {/* Delegate Address Input (setup mode only) */}
         {!isRevokeMode && (
           <div className="mb-4">
-            <label
-              htmlFor="delegate-contract-address"
+            <span
               className="block text-sm font-medium mb-1"
               style={{ color: 'rgb(var(--foreground-secondary))' }}
             >
               {t('delegateContractAddress')}
-            </label>
-            <input
-              id="delegate-contract-address"
-              type="text"
-              value={delegateAddress}
-              onChange={(e) => {
-                setDelegateAddress(e.target.value)
-                setError(null)
-              }}
-              placeholder="0x... (Kernel, Safe, etc.)"
-              className="w-full p-3 rounded-lg text-sm font-mono"
+            </span>
+            <div
+              className="w-full p-3 rounded-lg text-sm font-mono break-all"
               style={{
                 backgroundColor: 'rgb(var(--secondary))',
                 color: 'rgb(var(--foreground))',
                 border: '1px solid rgb(var(--border))',
+                opacity: 0.8,
               }}
-            />
-            {delegateAddress && !isValidDelegate && (
-              <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
-                {t('invalidAddressFormat')}
-              </p>
-            )}
+            >
+              {delegateAddress || '—'}
+            </div>
           </div>
         )}
 

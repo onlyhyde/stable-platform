@@ -1,6 +1,7 @@
 import { ACCOUNT_TYPE, type Account, TRANSACTION_MODE, type TransactionMode } from '@stablenet/core'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNetworkCurrency } from '../../hooks'
 
 // ============================================================================
 // Types
@@ -362,6 +363,7 @@ interface ModeComparisonProps {
 
 export function ModeComparison({ availableModes, gasEstimates }: ModeComparisonProps) {
   const { t } = useTranslation('send')
+  const { symbol: currencySymbol } = useNetworkCurrency()
   const modeInfo = useMemo(() => getModeInfo(t), [t])
   return (
     <div className="mode-comparison overflow-x-auto">
@@ -388,7 +390,7 @@ export function ModeComparison({ availableModes, gasEstimates }: ModeComparisonP
                   {info.name}
                 </td>
                 <td className="py-2 font-mono" style={{ color: 'rgb(var(--foreground))' }}>
-                  {estimate ? `${(Number(estimate) / 1e18).toFixed(4)} ETH` : '-'}
+                  {estimate ? `${(Number(estimate) / 1e18).toFixed(4)} ${currencySymbol}` : '-'}
                 </td>
                 <td className="py-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
                   {info.features[0]}

@@ -5,7 +5,7 @@ import type { KeyringType } from './keyring'
  * Account types
  */
 
-export type AccountType = 'smart' | 'eoa'
+export type AccountType = 'smart' | 'eoa' | 'delegated'
 
 export interface Account {
   address: Address
@@ -13,6 +13,8 @@ export interface Account {
   type: AccountType
   keyringType?: KeyringType
   index?: number
+  /** Delegate contract address (Kernel) for EIP-7702 delegated accounts */
+  delegateAddress?: Address
   isDeployed?: boolean
   createdAt?: number
 }

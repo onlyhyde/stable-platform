@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
 import type { TransactionStepperStatus } from '../components/common/TransactionStepper'
 import { TransactionStepper } from '../components/common/TransactionStepper'
-import { useSelectedNetwork } from '../hooks'
+import { useNetworkCurrency, useSelectedNetwork } from '../hooks'
 import { useWalletStore } from '../hooks/useWalletStore'
 
 /**
@@ -16,6 +16,7 @@ export function TransactionDetail() {
   const { setPage, selectedTxId, pendingTransactions, history, syncWithBackground } =
     useWalletStore()
   const currentNetwork = useSelectedNetwork()
+  const { symbol: currencySymbol } = useNetworkCurrency()
   const [isSpeedingUp, setIsSpeedingUp] = useState(false)
   const [isCancelling, setIsCancelling] = useState(false)
 
@@ -224,24 +225,24 @@ export function TransactionDetail() {
           </div>
         </div>
 
-        {/* From / To */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              {t('from')}
-            </p>
-            <p className="text-sm font-mono mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
-              {truncateHash(tx.from)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              {t('to')}
-            </p>
-            <p className="text-sm font-mono mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
-              {tx.to ? truncateHash(tx.to) : '-'}
-            </p>
-          </div>
+        {/* From */}
+        <div>
+          <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {t('from')}
+          </p>
+          <p className="text-sm font-mono mt-0.5 break-all" style={{ color: 'rgb(var(--foreground))' }}>
+            {tx.from}
+          </p>
+        </div>
+
+        {/* To */}
+        <div>
+          <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {t('to')}
+          </p>
+          <p className="text-sm font-mono mt-0.5 break-all" style={{ color: 'rgb(var(--foreground))' }}>
+            {tx.to || '-'}
+          </p>
         </div>
 
         {/* Value */}
@@ -250,7 +251,7 @@ export function TransactionDetail() {
             {t('value')}
           </p>
           <p className="text-sm font-semibold mt-0.5" style={{ color: 'rgb(var(--foreground))' }}>
-            {`${Number(formatEther(tx.value)).toFixed(6)} ETH`}
+            {`${Number(formatEther(tx.value)).toFixed(6)} ${currencySymbol}`}
           </p>
         </div>
 
@@ -369,18 +370,19 @@ export function TransactionDetail() {
 
       {/* View on Explorer */}
       {currentNetwork?.explorerUrl && tx.txHash && (
-        <a
-          href={`${currentNetwork.explorerUrl}/tx/${tx.txHash}`}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
           className="block w-full text-center py-2.5 rounded-xl text-sm font-medium transition-colors"
           style={{
             backgroundColor: 'rgb(var(--secondary))',
             color: 'rgb(var(--primary))',
           }}
+          onClick={() =>
+            chrome.tabs.create({ url: `${currentNetwork.explorerUrl}/tx/${tx.txHash}` })
+          }
         >
           {t('viewOnExplorer')}
-        </a>
+        </button>
       )}
     </div>
   )

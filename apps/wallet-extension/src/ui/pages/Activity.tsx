@@ -129,7 +129,7 @@ export function Activity() {
   const isEmpty = allTransactions.length === 0 && !isLoadingTransactions && !isRefreshing
 
   return (
-    <div className="p-4">
+    <div className="flex flex-col flex-1 p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
@@ -230,7 +230,7 @@ export function Activity() {
 
       {/* Transaction list */}
       {allTransactions.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1">
           {/* Pending section */}
           {pendingTxs.length > 0 && (
             <div>

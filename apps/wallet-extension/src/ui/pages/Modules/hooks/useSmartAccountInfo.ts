@@ -23,13 +23,16 @@ interface UseSmartAccountInfoReturn {
  */
 export function useSmartAccountInfo(accountAddress?: Address): UseSmartAccountInfoReturn {
   const [info, setInfo] = useState<SmartAccountInfo | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(!!accountAddress)
   const [error, setError] = useState<Error | null>(null)
 
   const currentNetwork = useSelectedNetwork()
 
   const fetchInfo = useCallback(async () => {
-    if (!accountAddress || !currentNetwork) return
+    if (!accountAddress || !currentNetwork) {
+      setIsLoading(false)
+      return
+    }
 
     setIsLoading(true)
     setError(null)

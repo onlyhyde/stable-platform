@@ -33,6 +33,7 @@ function getActiveStep(status: TransactionStepperStatus): number {
     case 'pending':
       return 1
     case 'confirmed':
+      return 3 // Past all steps — all show as completed
     case 'failed':
       return 2
   }
@@ -271,15 +272,16 @@ export function TransactionStepper({
             </button>
           </div>
           {explorerUrl && (
-            <a
-              href={`${explorerUrl}/tx/${txHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
               className="inline-block mt-2 text-xs font-medium"
               style={{ color: 'rgb(var(--primary))' }}
+              onClick={() =>
+                chrome.tabs.create({ url: `${explorerUrl}/tx/${txHash}` })
+              }
             >
               {t('viewOnExplorer')}
-            </a>
+            </button>
           )}
         </div>
       )}

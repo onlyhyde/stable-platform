@@ -459,7 +459,7 @@ export class Vault {
    */
   private async getStoredVault(): Promise<EncryptedVault | null> {
     const stored = await chrome.storage.local.get(STORAGE_KEYS.ENCRYPTED_VAULT)
-    return stored[STORAGE_KEYS.ENCRYPTED_VAULT] ?? null
+    return (stored[STORAGE_KEYS.ENCRYPTED_VAULT] as EncryptedVault | undefined) ?? null
   }
 
   /**

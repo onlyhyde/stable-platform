@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { LinkedBankAccount } from '../../types'
 import { BankAccountCard, TransferForm } from '../components/bank'
@@ -30,26 +30,26 @@ export function Bank({ onBack }: BankPageProps) {
   // Transfer state
   const [isTransferring, setIsTransferring] = useState(false)
 
-  useEffect(() => {
-    async function loadLinkedAccounts() {
-      setIsLoading(true)
-      setError('')
-      try {
-        const response = await chrome.runtime.sendMessage({
-          type: 'GET_LINKED_BANK_ACCOUNTS',
-        })
-        if (response?.accounts) {
-          setLinkedAccounts(response.accounts)
-        }
-      } catch (_err) {
-        setError(t('failedToLoadBankAccounts'))
-      } finally {
-        setIsLoading(false)
+  const loadLinkedAccounts = useCallback(async () => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_LINKED_BANK_ACCOUNTS',
+      })
+      if (response?.accounts) {
+        setLinkedAccounts(response.accounts)
       }
+    } catch (_err) {
+      setError(t('failedToLoadBankAccounts'))
+    } finally {
+      setIsLoading(false)
     }
-
-    loadLinkedAccounts()
   }, [t])
+
+  useEffect(() => {
+    loadLinkedAccounts()
+  }, [loadLinkedAccounts])
 
   async function handleLinkAccount() {
     if (!linkForm.accountNo || !linkForm.ownerName) {

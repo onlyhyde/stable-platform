@@ -11,9 +11,11 @@ import {
   InputValidator,
   type ModuleType,
   type UserOperation,
+  ENTRY_POINT_ABI,
+  KERNEL_ABI,
 } from '@stablenet/core'
 import type { Address, Hash, Hex } from 'viem'
-import { createPublicClient, http, isAddress } from 'viem'
+import { concat, createPublicClient, encodeFunctionData, getAddress, http, isAddress, pad, toHex } from 'viem'
 import {
   ENTRY_POINT_V07_ADDRESS,
   getEntryPoint,
@@ -106,6 +108,25 @@ function getPublicClient(rpcUrl: string): ReturnType<typeof createPublicClient> 
   const client = createPublicClient({ transport: http(rpcUrl) })
   publicClientCache.set(rpcUrl, { client, lastUsed: now })
   return client
+}
+
+/**
+ * Encode a Kernel v0.3.3 execute(bytes32 mode, bytes executionCalldata) call.
+ * ExecMode 0x00 = single call, padded to 32 bytes.
+ * executionCalldata = abi.encodePacked(target, value, callData)
+ */
+function encodeKernelExecute(to: Address, value: bigint = 0n, data: Hex = '0x'): Hex {
+  const execMode = pad('0x00' as Hex, { size: 32 })
+  const executionCalldata = concat([
+    to,
+    pad(toHex(value), { size: 32 }),
+    data,
+  ]) as Hex
+  return encodeFunctionData({
+    abi: KERNEL_ABI,
+    functionName: 'execute',
+    args: [execMode, executionCalldata],
+  })
 }
 
 type RpcHandler = (
@@ -1058,6 +1079,16 @@ const handlers: Record<string, RpcHandler> = {
         logger.warn('Failed to track delegation transaction (tx was broadcast successfully)')
       }
 
+      // Update account type to 'delegated' after successful broadcast
+      try {
+        await walletState.updateAccount(account, {
+          type: 'delegated',
+          delegateAddress: contractAddress,
+        })
+      } catch (_err) {
+        logger.warn('Failed to update account type after delegation (tx was broadcast successfully)')
+      }
+
       return { txHash }
     } catch (error) {
       throw createRpcError({
@@ -1086,6 +1117,20 @@ const handlers: Record<string, RpcHandler> = {
         message: 'Invalid entryPoint address',
       })
     }
+
+    // Encode callData from target/value/data if not already present (UI sends this format)
+    const raw = userOpParam as Record<string, unknown>
+    if (!raw.callData && raw.target) {
+      raw.callData = encodeKernelExecute(
+        raw.target as Address,
+        raw.value ? BigInt(raw.value as string) : 0n,
+        (raw.data as Hex) || '0x'
+      )
+    }
+
+    // Extract gasPayment before parsing (not part of UserOperation schema)
+    const gasPayment = raw.gasPayment as { type: string; tokenAddress?: string } | undefined
+    delete raw.gasPayment
 
     // Parse and validate UserOperation
     const userOp = parseUserOperation(userOpParam)
@@ -1157,8 +1202,9 @@ const handlers: Record<string, RpcHandler> = {
       }
     }
 
-    // Request paymaster sponsorship if userOp doesn't already have paymaster data
-    if (!userOp.paymaster && network.paymasterUrl) {
+    // Request paymaster sponsorship based on gasPayment type
+    const shouldSponsor = gasPayment?.type === 'sponsor' || (!gasPayment && !!network.paymasterUrl)
+    if (!userOp.paymaster && shouldSponsor && network.paymasterUrl) {
       const sponsorship = await requestPaymasterSponsorship(
         network.paymasterUrl,
         userOp,
@@ -1172,6 +1218,7 @@ const handlers: Record<string, RpcHandler> = {
         userOp.paymasterPostOpGasLimit = sponsorship.paymasterPostOpGasLimit
       }
     }
+    // Self-pay mode (native): no paymaster, EntryPoint deposit covers gas
 
     // Sign the UserOperation
     let signedUserOp: UserOperation
@@ -1276,7 +1323,11 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     try {
-      const bundlerClient = createBundlerClient({ url: network.bundlerUrl })
+      const bundlerClient = createBundlerClient({
+        url: network.bundlerUrl,
+        entryPoint: getEntryPointForChain(network.chainId),
+        chainId: BigInt(network.chainId),
+      })
       return await bundlerClient.getUserOperationByHash(userOpHash)
     } catch (error) {
       const err = error as Error & { code?: number; data?: unknown }
@@ -1300,7 +1351,11 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     try {
-      const bundlerClient = createBundlerClient({ url: network.bundlerUrl })
+      const bundlerClient = createBundlerClient({
+        url: network.bundlerUrl,
+        entryPoint: getEntryPointForChain(network.chainId),
+        chainId: BigInt(network.chainId),
+      })
       return await bundlerClient.getUserOperationReceipt(userOpHash)
     } catch (error) {
       const err = error as Error & { code?: number; data?: unknown }
@@ -1353,7 +1408,11 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     try {
-      const bundlerClient = createBundlerClient({ url: network.bundlerUrl })
+      const bundlerClient = createBundlerClient({
+        url: network.bundlerUrl,
+        entryPoint: getEntryPointForChain(network.chainId),
+        chainId: BigInt(network.chainId),
+      })
       return await bundlerClient.getSupportedEntryPoints()
     } catch {
       // Fallback to default entry points
@@ -2290,7 +2349,7 @@ const handlers: Record<string, RpcHandler> = {
 
     if (isDelegated) {
       accountType = 'delegated'
-      delegationTarget = `0x${code!.slice(8, 48)}`
+      delegationTarget = getAddress(`0x${code!.slice(8, 48)}`)
     } else if (hasCode) {
       accountType = 'smart'
     }
@@ -2320,6 +2379,19 @@ const handlers: Record<string, RpcHandler> = {
       } catch {
         // Contract may not support these methods
       }
+    }
+
+    // Sync stored account type if on-chain state differs
+    const storedAccount = walletState
+      .getState()
+      .accounts.accounts.find((a) => a.address.toLowerCase() === accountAddr.toLowerCase())
+    if (storedAccount && storedAccount.type !== accountType) {
+      walletState
+        .updateAccount(accountAddr, {
+          type: accountType,
+          ...(delegationTarget ? { delegateAddress: delegationTarget as Address } : {}),
+        })
+        .catch(() => {})
     }
 
     return {
@@ -2927,9 +2999,14 @@ const handlers: Record<string, RpcHandler> = {
         const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
 
         // Build a partial UserOperation for estimation
+        // Encode callData through Kernel execute() for proper Smart Account execution
         const partialUserOp: Partial<UserOperation> = {
           sender: estimateParams.from as Address,
-          callData: (estimateParams.data as `0x${string}`) || '0x',
+          callData: encodeKernelExecute(
+            estimateParams.to as Address,
+            parsedValue,
+            (estimateParams.data as Hex) || '0x'
+          ),
           // Dummy values for estimation - bundler will calculate actual gas
           nonce: 0n,
           signature: '0x' as Hex,
@@ -3545,6 +3622,117 @@ const handlers: Record<string, RpcHandler> = {
         resetTime: '0',
       }
     }
+  },
+
+  /**
+   * Get EntryPoint deposit balance for an account
+   */
+  stablenet_getEntryPointBalance: async (params) => {
+    const [account] = params as [Address]
+
+    if (!account || !isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid account address',
+      })
+    }
+
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const entryPoint = getEntryPointForChain(network.chainId)
+    const client = getPublicClient(network.rpcUrl)
+
+    const result = await client.readContract({
+      address: entryPoint,
+      abi: ENTRY_POINT_ABI,
+      functionName: 'getDepositInfo',
+      args: [account],
+    })
+
+    const info = result as { deposit: bigint; staked: boolean; stake: bigint; unstakeDelaySec: number; withdrawTime: number }
+    return {
+      deposit: info.deposit.toString(),
+      staked: info.staked,
+    }
+  },
+
+  /**
+   * Deposit funds to the EntryPoint contract for an account
+   */
+  stablenet_depositToEntryPoint: async (params, origin, isExtension) => {
+    const [depositParams] = params as [{ account: Address; amount: string }]
+
+    if (!depositParams?.account || !isAddress(depositParams.account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid account address',
+      })
+    }
+
+    if (!depositParams.amount || BigInt(depositParams.amount) <= 0n) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid deposit amount',
+      })
+    }
+
+    if (!keyringController.isUnlocked()) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: 'Wallet is locked',
+      })
+    }
+
+    const network = walletState.getCurrentNetwork()
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    const entryPoint = getEntryPointForChain(network.chainId)
+    const client = getPublicClient(network.rpcUrl)
+    const amount = BigInt(depositParams.amount)
+
+    // Encode depositTo(account) call
+    const data = encodeFunctionData({
+      abi: ENTRY_POINT_ABI,
+      functionName: 'depositTo',
+      args: [depositParams.account],
+    })
+
+    // Build and send transaction to EntryPoint
+    const from = depositParams.account
+    const nonce = await client.getTransactionCount({ address: from })
+    let gas: bigint
+    try {
+      gas = await client.estimateGas({
+        account: from,
+        to: entryPoint,
+        value: amount,
+        data,
+      })
+    } catch {
+      gas = DEFAULT_VALUES.GAS_LIMIT
+    }
+
+    const gasPrice = await client.getGasPrice()
+
+    const transaction = {
+      to: entryPoint,
+      value: amount,
+      data,
+      gas,
+      nonce,
+      chainId: network.chainId,
+      gasPrice,
+    }
+
+    const signedTx = await keyringController.signTransaction(from, transaction)
+    const txHash = await client.sendRawTransaction({ serializedTransaction: signedTx })
+
+    return txHash
   },
 }
 

@@ -432,5 +432,20 @@
   "customModuleWarning": "커스텀 모듈은 검증되지 않았습니다. 신뢰할 수 있는 소스의 모듈만 설치하세요.",
   "invalidModuleAddress": "유효하지 않은 컨트랙트 주소",
   "moduleTypeRequired": "모듈 유형을 선택해 주세요",
-  "orInstallCustom": "또는 커스텀 모듈 설치"
+  "orInstallCustom": "또는 커스텀 모듈 설치",
+
+  "dashboard.entryPointDeposit": "EntryPoint 예치",
+  "dashboard.depositBalance": "{{amount}} 예치됨",
+  "dashboard.noDeposit": "예치금 없음",
+
+  "entryPointDeposit.title": "EntryPoint 예치",
+  "entryPointDeposit.description": "스마트 계정 트랜잭션의 가스 비용을 지불하기 위해 EntryPoint 컨트랙트에 자금을 예치합니다.",
+  "entryPointDeposit.currentBalance": "현재 예치금",
+  "entryPointDeposit.amount": "예치 금액",
+  "entryPointDeposit.amountPlaceholder": "0.0",
+  "entryPointDeposit.deposit": "예치",
+  "entryPointDeposit.depositing": "예치 중...",
+  "entryPointDeposit.success": "예치 완료!",
+  "entryPointDeposit.failed": "예치 실패",
+  "entryPointDeposit.info": "EntryPoint 예치금은 UserOperation의 가스 비용으로 사용됩니다. 충분한 예치금이 없으면 자체 결제 트랜잭션이 실패합니다."
 }

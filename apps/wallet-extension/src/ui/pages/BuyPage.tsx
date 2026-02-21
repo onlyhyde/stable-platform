@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
   CryptoCurrency,
@@ -59,6 +59,22 @@ export function BuyPage({ onBack }: BuyPageProps) {
   const [supportedCrypto, setSupportedCrypto] = useState<CryptoCurrency[]>([])
   const [_isLoadingCurrencies, setIsLoadingCurrencies] = useState(true)
 
+  const loadOrders = useCallback(async () => {
+    setIsLoadingOrders(true)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_ONRAMP_ORDERS',
+      })
+      if (response?.orders) {
+        setOrders(response.orders)
+      }
+    } catch {
+      // Silent fail
+    } finally {
+      setIsLoadingOrders(false)
+    }
+  }, [])
+
   useEffect(() => {
     async function loadBankAccounts() {
       try {
@@ -70,22 +86,6 @@ export function BuyPage({ onBack }: BuyPageProps) {
         }
       } catch {
         // Silent fail for optional feature
-      }
-    }
-
-    async function loadOrders() {
-      setIsLoadingOrders(true)
-      try {
-        const response = await chrome.runtime.sendMessage({
-          type: 'GET_ONRAMP_ORDERS',
-        })
-        if (response?.orders) {
-          setOrders(response.orders)
-        }
-      } catch {
-        // Silent fail
-      } finally {
-        setIsLoadingOrders(false)
       }
     }
 
@@ -129,7 +129,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
     loadOrders()
     loadKycStatus()
     loadSupportedCurrencies()
-  }, [selectedAccount])
+  }, [selectedAccount, loadOrders])
 
   // Poll pending orders for status updates
   useEffect(() => {

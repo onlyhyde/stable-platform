@@ -130,7 +130,7 @@ export function TokenList({
   }
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 flex flex-col flex-1">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium" style={{ color: 'rgb(var(--foreground-secondary))' }}>

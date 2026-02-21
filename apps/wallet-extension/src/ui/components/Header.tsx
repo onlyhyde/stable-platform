@@ -92,16 +92,16 @@ export function Header() {
                 className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
                 style={{
                   backgroundColor:
-                    currentAccount.type === 'smart'
-                      ? 'rgb(var(--primary) / 0.1)'
-                      : 'rgb(var(--muted-foreground) / 0.1)',
+                    currentAccount.type === 'eoa'
+                      ? 'rgb(var(--muted-foreground) / 0.1)'
+                      : 'rgb(var(--primary) / 0.1)',
                   color:
-                    currentAccount.type === 'smart'
-                      ? 'rgb(var(--primary))'
-                      : 'rgb(var(--muted-foreground))',
+                    currentAccount.type === 'eoa'
+                      ? 'rgb(var(--muted-foreground))'
+                      : 'rgb(var(--primary))',
                 }}
               >
-                {currentAccount.type === 'smart' ? t('smartAccount') : t('eoa')}
+                {currentAccount.type === 'eoa' ? 'EOA' : 'CA'}
               </span>
             )}
           </div>

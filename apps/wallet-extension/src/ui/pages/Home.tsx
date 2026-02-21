@@ -130,7 +130,7 @@ export function Home() {
   }
 
   return (
-    <div className="p-4">
+    <div className="flex flex-col flex-1 p-4">
       {/* Balance Card */}
       <div
         className="rounded-2xl p-6 text-white mb-6"
@@ -159,7 +159,7 @@ export function Home() {
               color: 'white',
             }}
           >
-            {currentAccount.type === 'smart' ? tc('smartAccount') : tc('eoa')}
+            {currentAccount.type === 'eoa' ? tc('eoa') : tc('smartAccount')}
           </span>
           {currentAccount.isDeployed === false && (
             <span
@@ -237,7 +237,7 @@ export function Home() {
           </span>
         </button>
 
-        {currentAccount.type === 'smart' ? (
+        {currentAccount.type !== 'eoa' ? (
           <button
             type="button"
             onClick={() => setPage('dashboard')}
@@ -302,7 +302,7 @@ export function Home() {
           </button>
         )}
 
-        {currentAccount.type === 'smart' && (
+        {currentAccount.type !== 'eoa' && (
           <button
             type="button"
             onClick={() => setPage('swap')}
@@ -365,26 +365,28 @@ export function Home() {
         </button>
       </div>
 
-      {/* Token List */}
-      <TokenList
-        nativeBalance={balance}
-        tokenBalances={tokenBalances}
-        assetTokens={assetTokens}
-        isLoading={isLoadingTokens || isLoadingBalance || isLoadingAssets}
-        onRefresh={handleRefreshAll}
-        onTokenClick={handleTokenClick}
-        onAddToken={handleAddToken}
-        onToggleVisibility={handleToggleVisibility}
-        tokenPrices={tokenPrices}
-        nativePriceUsd={nativePriceUsd}
-      />
+      {/* Token List - expands to fill available space */}
+      <div className="flex-1 flex flex-col">
+        <TokenList
+          nativeBalance={balance}
+          tokenBalances={tokenBalances}
+          assetTokens={assetTokens}
+          isLoading={isLoadingTokens || isLoadingBalance || isLoadingAssets}
+          onRefresh={handleRefreshAll}
+          onTokenClick={handleTokenClick}
+          onAddToken={handleAddToken}
+          onToggleVisibility={handleToggleVisibility}
+          tokenPrices={tokenPrices}
+          nativePriceUsd={nativePriceUsd}
+        />
 
-      {/* Indexer Status */}
-      {!isIndexerAvailable && !isLoadingTokens && (
-        <p className="text-xs text-center mt-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          {t('tokenDiscoveryUnavailable')}
-        </p>
-      )}
+        {/* Indexer Status */}
+        {!isIndexerAvailable && !isLoadingTokens && (
+          <p className="text-xs text-center mt-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {t('tokenDiscoveryUnavailable')}
+          </p>
+        )}
+      </div>
 
       {/* Account Address */}
       <div className="rounded-xl p-4 mt-6" style={{ backgroundColor: 'rgb(var(--secondary))' }}>

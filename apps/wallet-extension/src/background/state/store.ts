@@ -68,7 +68,7 @@ class WalletStateManager {
     try {
       const stored = await chrome.storage.local.get(STORAGE_KEYS.WALLET_STATE)
       if (stored[STORAGE_KEYS.WALLET_STATE]) {
-        const rawState = stored[STORAGE_KEYS.WALLET_STATE]
+        const rawState = stored[STORAGE_KEYS.WALLET_STATE] as Record<string, unknown>
         const previousVersion = rawState._version ?? 0
 
         // Apply migrations to bring state up to current version
@@ -171,6 +171,18 @@ class WalletStateManager {
       accounts: {
         ...this.state.accounts,
         selectedAccount: address,
+      },
+    })
+  }
+
+  async updateAccount(address: Address, updates: Partial<Account>): Promise<void> {
+    const accounts = this.state.accounts.accounts.map((a) =>
+      a.address.toLowerCase() === address.toLowerCase() ? { ...a, ...updates } : a
+    )
+    await this.setState({
+      accounts: {
+        ...this.state.accounts,
+        accounts,
       },
     })
   }

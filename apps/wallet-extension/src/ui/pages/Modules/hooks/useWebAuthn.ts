@@ -297,7 +297,7 @@ export async function loadWebAuthnCredentials(
 ): Promise<WebAuthnCredential[]> {
   try {
     const result = await chrome.storage.local.get(WEBAUTHN_STORAGE_KEY)
-    const allCredentials = result[WEBAUTHN_STORAGE_KEY] || {}
+    const allCredentials = (result[WEBAUTHN_STORAGE_KEY] || {}) as Record<string, WebAuthnCredential[]>
     return allCredentials[accountAddress.toLowerCase()] || []
   } catch (error) {
     logger.error('Failed to load WebAuthn credentials:', error)

@@ -1,5 +1,5 @@
 import { getModuleTypeName, MODULE_TYPE, type ModuleType } from '@stablenet/core'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useSelectedNetwork, useWalletStore } from '../../hooks'
@@ -8,6 +8,7 @@ import { useModuleMarketplace } from './hooks/useModuleMarketplace'
 import { useModules } from './hooks/useModules'
 import { useSmartAccountInfo } from './hooks/useSmartAccountInfo'
 
+import { EntryPointDeposit } from './EntryPointDeposit'
 import { GasSponsorshipView } from './GasSponsorshipView'
 import { InstallModuleWizard } from './InstallModule'
 import { ModuleDetails } from './ModuleDetails'
@@ -20,7 +21,7 @@ import { SpendingLimitsView } from './SpendingLimitsView'
 // Types
 // ============================================================================
 
-type ModuleView = 'overview' | 'list' | 'details' | 'install' | 'delegate' | 'gas-sponsorship' | 'session-keys' | 'spending-limits'
+type ModuleView = 'overview' | 'list' | 'details' | 'install' | 'delegate' | 'gas-sponsorship' | 'session-keys' | 'spending-limits' | 'deposit'
 type ModuleTab = 'installed' | 'browse'
 
 // ============================================================================
@@ -29,7 +30,7 @@ type ModuleTab = 'installed' | 'browse'
 
 export function ModulesPage() {
   const { t } = useTranslation('modules')
-  const { accounts, selectedAccount: selectedAccountAddress } = useWalletStore()
+  const { accounts, selectedAccount: selectedAccountAddress, syncWithBackground } = useWalletStore()
   const [view, setView] = useState<ModuleView>('overview')
   const [activeTab, setActiveTab] = useState<ModuleTab>('installed')
   const [selectedModuleAddress, setSelectedModuleAddress] = useState<string | null>(null)
@@ -45,9 +46,18 @@ export function ModulesPage() {
   const currentNetwork = useSelectedNetwork()
   const { installedModules, isLoading, error, refetch } = useModules(selectedAccount?.address)
   const { registryModules, isLoading: isLoadingRegistry } = useModuleMarketplace()
-  const { info: smartAccountInfo, isLoading: isLoadingSmartInfo } = useSmartAccountInfo(
-    selectedAccount?.address
-  )
+  const {
+    info: smartAccountInfo,
+    isLoading: isLoadingSmartInfo,
+    refetch: refetchSmartAccountInfo,
+  } = useSmartAccountInfo(selectedAccount?.address)
+
+  // Sync UI store when background detects account type change (e.g. existing delegation)
+  useEffect(() => {
+    if (smartAccountInfo && selectedAccount && smartAccountInfo.accountType !== selectedAccount.type) {
+      syncWithBackground()
+    }
+  }, [smartAccountInfo, selectedAccount, syncWithBackground])
 
   // Determine which registry modules are already installed
   const installedAddresses = useMemo(() => {
@@ -64,7 +74,9 @@ export function ModulesPage() {
       <DelegateSetup
         account={selectedAccountAddress}
         mode={delegateMode}
-        onComplete={() => {
+        onComplete={async () => {
+          await refetchSmartAccountInfo()
+          await syncWithBackground()
           setView('overview')
           setDelegateMode('setup')
           refetch()
@@ -123,6 +135,7 @@ export function ModulesPage() {
         onNavigateToGasSponsorship={() => setView('gas-sponsorship')}
         onNavigateToSessionKeys={() => setView('session-keys')}
         onNavigateToSpendingLimits={() => setView('spending-limits')}
+        onNavigateToDeposit={() => setView('deposit')}
         onRevokeDelegation={() => {
           setDelegateMode('revoke')
           setView('delegate')
@@ -135,6 +148,17 @@ export function ModulesPage() {
   if (view === 'gas-sponsorship') {
     return (
       <GasSponsorshipView
+        account={selectedAccount}
+        network={currentNetwork}
+        onBack={() => setView('overview')}
+      />
+    )
+  }
+
+  // View: EntryPoint Deposit
+  if (view === 'deposit') {
+    return (
+      <EntryPointDeposit
         account={selectedAccount}
         network={currentNetwork}
         onBack={() => setView('overview')}

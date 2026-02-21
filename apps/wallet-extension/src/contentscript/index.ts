@@ -48,7 +48,7 @@ getMetaMaskMode()
 async function getMetaMaskMode(): Promise<boolean> {
   try {
     const result = await chrome.storage.local.get('stablenet_metamask_mode')
-    return result.stablenet_metamask_mode ?? false
+    return (result.stablenet_metamask_mode as boolean | undefined) ?? false
   } catch {
     return false
   }

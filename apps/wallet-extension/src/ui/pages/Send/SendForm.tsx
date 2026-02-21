@@ -10,12 +10,13 @@ interface SendFormProps {
   }
   onFormChange: (field: 'recipient' | 'amount' | 'data', value: string) => void
   isValid: boolean
+  currencySymbol?: string
 }
 
 /**
  * Send form component for entering transaction details
  */
-export function SendForm({ formData, onFormChange }: SendFormProps) {
+export function SendForm({ formData, onFormChange, currencySymbol = 'ETH' }: SendFormProps) {
   const { t } = useTranslation('send')
   const handleRecipientChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,7 +79,7 @@ export function SendForm({ formData, onFormChange }: SendFormProps) {
             className="absolute right-3 top-1/2 -translate-y-1/2 text-sm"
             style={{ color: 'rgb(var(--muted-foreground))' }}
           >
-            ETH
+            {currencySymbol}
           </span>
         </div>
       </div>

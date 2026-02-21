@@ -38,7 +38,7 @@ const STORAGE_KEY_BLOCKLIST_UPDATED = 'phishing_blocklist_updated_at'
 export async function loadBlocklist(): Promise<void> {
   try {
     const result = await chrome.storage.local.get(STORAGE_KEY_BLOCKLIST)
-    const domains: string[] = result[STORAGE_KEY_BLOCKLIST] ?? []
+    const domains: string[] = (result[STORAGE_KEY_BLOCKLIST] as string[] | undefined) ?? []
     if (Array.isArray(domains) && domains.length > 0) {
       blocklistedDomains = new Set(domains)
       logger.info('Loaded blocklist from storage', { count: domains.length })

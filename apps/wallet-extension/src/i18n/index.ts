@@ -66,7 +66,7 @@ async function getStoredLanguage(): Promise<string | null> {
   try {
     if (typeof chrome !== 'undefined' && chrome.storage?.local) {
       const result = await chrome.storage.local.get(STORAGE_KEY)
-      return result[STORAGE_KEY] ?? null
+      return (result[STORAGE_KEY] as string | undefined) ?? null
     }
   } catch {
     // Fallback to localStorage

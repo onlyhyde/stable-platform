@@ -269,7 +269,7 @@ async function setupAutoLockAlarm(): Promise<void> {
   try {
     const stored = await chrome.storage.local.get(STORAGE_KEYS.AUTO_LOCK_MINUTES)
     if (stored[STORAGE_KEYS.AUTO_LOCK_MINUTES]) {
-      autoLockMinutes = stored[STORAGE_KEYS.AUTO_LOCK_MINUTES]
+      autoLockMinutes = stored[STORAGE_KEYS.AUTO_LOCK_MINUTES] as number
     }
   } catch {
     // Use default
@@ -288,7 +288,7 @@ async function setupAutoLockAlarm(): Promise<void> {
 /**
  * Handle idle state change
  */
-async function handleIdleStateChange(newState: chrome.idle.IdleState): Promise<void> {
+async function handleIdleStateChange(newState: 'active' | 'idle' | 'locked'): Promise<void> {
   if (newState === 'active') {
     // User is active, reset activity time
     lastActivityTime = Date.now()
@@ -363,7 +363,7 @@ function handleTabRemoved(tabId: number): void {
 /**
  * Handle tab updated (URL change)
  */
-function handleTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo): void {
+function handleTabUpdated(tabId: number, changeInfo: { url?: string }): void {
   if (changeInfo.url) {
     const newOrigin = originFromUrl(changeInfo.url)
     const oldOrigin = tabOrigins.get(tabId)
@@ -379,7 +379,7 @@ function handleTabUpdated(tabId: number, changeInfo: chrome.tabs.TabChangeInfo):
 /**
  * Handle tab activated
  */
-async function handleTabActivated(activeInfo: chrome.tabs.TabActiveInfo): Promise<void> {
+async function handleTabActivated(activeInfo: { tabId: number; windowId: number }): Promise<void> {
   updateLastActivity()
 
   try {

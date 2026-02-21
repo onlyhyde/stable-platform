@@ -179,7 +179,9 @@ export function App() {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-16 relative z-10">{renderPage()}</main>
+      <main className="flex-1 min-h-0 overflow-y-auto relative z-10">
+        <div className="flex flex-col min-h-full pb-16">{renderPage()}</div>
+      </main>
 
       <Navigation />
     </div>

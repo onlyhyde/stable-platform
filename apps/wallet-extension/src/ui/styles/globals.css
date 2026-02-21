@@ -78,6 +78,12 @@
 /* ============================================
    Base Styles
    ============================================ */
+html,
+body,
+#root {
+  height: 100%;
+}
+
 html {
   background-color: rgb(var(--background));
 }
