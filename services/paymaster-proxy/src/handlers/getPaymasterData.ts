@@ -4,7 +4,10 @@ import type { PaymasterSigner } from '../signer/paymasterSigner'
 import type {
   GetPaymasterDataParams,
   PackedUserOperationRpc,
+  PaymasterAddresses,
+  PaymasterContext,
   PaymasterDataResponse,
+  PaymasterType,
   UserOperationRpc,
 } from '../types'
 
@@ -15,6 +18,7 @@ export type { GetPaymasterDataParams }
  */
 export interface GetPaymasterDataConfig {
   paymasterAddress: Address
+  paymasterAddresses: PaymasterAddresses
   signer: PaymasterSigner
   policyManager: SponsorPolicyManager
   supportedChainIds: number[]
@@ -31,16 +35,16 @@ export type GetPaymasterDataResult =
 /**
  * Handle pm_getPaymasterData request
  *
- * This method returns final paymaster data with actual signature
- * that can be used to submit the UserOperation.
+ * Routes to the appropriate paymaster type based on context.paymasterType.
+ * Returns final paymaster data with actual signature (for verifying/sponsor)
+ * or encoded token data (for erc20/permit2).
  */
 export async function handleGetPaymasterData(
   params: GetPaymasterDataParams,
   config: GetPaymasterDataConfig
 ): Promise<GetPaymasterDataResult> {
-  const { userOp, entryPoint, chainId, context } = params
-  const { paymasterAddress, signer, policyManager, supportedChainIds, supportedEntryPoints } =
-    config
+  const { entryPoint, chainId, context } = params
+  const { supportedChainIds, supportedEntryPoints } = config
 
   // Validate chain ID
   const chainIdNum = Number.parseInt(chainId, 16)
@@ -71,35 +75,122 @@ export async function handleGetPaymasterData(
     }
   }
 
-  // Get policy ID from context
-  const policyId = (context?.policyId as string) || 'default'
+  const paymasterType = resolvePaymasterType(context)
+  return routePaymasterData(paymasterType, params, config)
+}
 
-  // Estimate gas cost for policy check
-  const normalizedUserOp = normalizeUserOp(userOp)
-  const estimatedGasCost = estimateGasCost(normalizedUserOp)
+/**
+ * Resolve paymaster type from context, defaulting to 'verifying'
+ */
+function resolvePaymasterType(context?: PaymasterContext): PaymasterType {
+  return context?.paymasterType ?? 'verifying'
+}
 
-  // Check policy with gas cost
-  const policyResult = policyManager.checkPolicy(normalizedUserOp, policyId, estimatedGasCost)
-
-  if (!policyResult.allowed) {
+/**
+ * Route to appropriate paymaster data handler based on type
+ */
+async function routePaymasterData(
+  type: PaymasterType,
+  params: GetPaymasterDataParams,
+  config: GetPaymasterDataConfig
+): Promise<GetPaymasterDataResult> {
+  const address = config.paymasterAddresses[type]
+  if (!address) {
     return {
       success: false,
-      error: policyResult.rejection,
+      error: {
+        code: -32005,
+        message: `Paymaster type '${type}' not configured`,
+      },
     }
   }
 
-  // Generate signed paymaster data
-  const { paymasterData } = await signer.generateSignedData(userOp, entryPoint, BigInt(chainIdNum))
+  switch (type) {
+    case 'verifying':
+    case 'sponsor':
+      return handleVerifyingData(params, config, address)
+    case 'erc20':
+      return handleErc20Data(params, address)
+    case 'permit2':
+      return handlePermit2Data(address)
+  }
+}
 
-  // Record spending (gas cost will be finalized after execution)
-  // For now, we record the estimated cost
+/**
+ * Verifying/Sponsor paymaster data (signature-based)
+ */
+async function handleVerifyingData(
+  params: GetPaymasterDataParams,
+  config: GetPaymasterDataConfig,
+  paymasterAddress: Address
+): Promise<GetPaymasterDataResult> {
+  const { userOp, entryPoint, chainId, context } = params
+  const { signer, policyManager } = config
+
+  const policyId = (context?.policyId as string) || 'default'
+  const normalizedUserOp = normalizeUserOp(userOp)
+  const estimatedGasCost = estimateGasCost(normalizedUserOp)
+
+  const policyResult = policyManager.checkPolicy(normalizedUserOp, policyId, estimatedGasCost)
+  if (!policyResult.allowed) {
+    return { success: false, error: policyResult.rejection }
+  }
+
+  const chainIdNum = Number.parseInt(chainId, 16)
+  const { paymasterData } = await signer.generateSignedData(
+    userOp,
+    entryPoint,
+    BigInt(chainIdNum)
+  )
+
   policyManager.recordSpending(normalizedUserOp.sender, estimatedGasCost)
+
+  return {
+    success: true,
+    data: { paymaster: paymasterAddress, paymasterData },
+  }
+}
+
+/**
+ * ERC20 paymaster data
+ * paymasterData = tokenAddress (no signature needed, on-chain verification)
+ */
+function handleErc20Data(
+  params: GetPaymasterDataParams,
+  paymasterAddress: Address
+): GetPaymasterDataResult {
+  const { context } = params
+  const tokenAddress = context?.tokenAddress
+
+  if (!tokenAddress) {
+    return {
+      success: false,
+      error: {
+        code: -32602,
+        message: 'tokenAddress required in context for erc20 paymaster',
+      },
+    }
+  }
 
   return {
     success: true,
     data: {
       paymaster: paymasterAddress,
-      paymasterData,
+      paymasterData: tokenAddress.toLowerCase() as Hex,
+    },
+  }
+}
+
+/**
+ * Permit2 paymaster data
+ * Proxy only returns paymaster address. Actual permit data is generated client-side.
+ */
+function handlePermit2Data(paymasterAddress: Address): GetPaymasterDataResult {
+  return {
+    success: true,
+    data: {
+      paymaster: paymasterAddress,
+      paymasterData: '0x' as Hex,
     },
   }
 }

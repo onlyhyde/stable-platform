@@ -52,9 +52,16 @@ export const packedUserOperationSchema = z.object({
 export const anyUserOperationSchema = z.union([userOperationSchema, packedUserOperationSchema])
 
 /**
- * Context schema
+ * Context schema with paymaster type routing
  */
-export const contextSchema = z.record(z.unknown()).optional()
+export const contextSchema = z
+  .object({
+    paymasterType: z.enum(['verifying', 'erc20', 'permit2', 'sponsor']).optional(),
+    tokenAddress: addressSchema.optional(),
+    policyId: z.string().optional(),
+  })
+  .passthrough()
+  .optional()
 
 /**
  * JSON-RPC request schema
@@ -89,6 +96,31 @@ export const getPaymasterDataParamsSchema = z
     contextSchema, // Context (optional)
   ])
   .or(z.tuple([anyUserOperationSchema, addressSchema, hexSchema]))
+
+/**
+ * pm_supportedTokens params schema
+ * Params: [chainId (hex)]
+ */
+export const supportedTokensParamsSchema = z.tuple([hexSchema])
+
+/**
+ * pm_estimateTokenPayment params schema
+ * Params: [userOp, entryPoint, chainId, tokenAddress]
+ */
+export const estimateTokenPaymentParamsSchema = z.tuple([
+  anyUserOperationSchema,
+  addressSchema,
+  hexSchema,
+  addressSchema,
+])
+
+/**
+ * pm_getSponsorPolicy params schema
+ * Params: [senderAddress, operation (optional), chainId (hex)]
+ */
+export const getSponsorPolicyParamsSchema = z
+  .tuple([addressSchema, z.string(), hexSchema])
+  .or(z.tuple([addressSchema, hexSchema]))
 
 export type UserOperationInput = z.infer<typeof userOperationSchema>
 export type PackedUserOperationInput = z.infer<typeof packedUserOperationSchema>

@@ -1,6 +1,6 @@
 import type { Address, Hex } from 'viem'
-import type { PaymasterProxyConfig } from '../types'
-import { getServerConfig } from './constants'
+import type { PaymasterAddresses, PaymasterProxyConfig } from '../types'
+import { PAYMASTER_ENV_VARS, getEnvOptional, getServerConfig } from './constants'
 
 /**
  * Environment variable names
@@ -52,6 +52,42 @@ function isValidAddress(value: string): value is Address {
 }
 
 /**
+ * Parse optional address from env
+ */
+function parseOptionalAddress(envName: string): Address | undefined {
+  const value = getEnvOptional(envName)
+  if (!value) return undefined
+  if (!isValidAddress(value)) {
+    console.warn(`[paymaster-proxy] Invalid address for ${envName}: ${value}, ignoring`)
+    return undefined
+  }
+  return value as Address
+}
+
+/**
+ * Build paymaster addresses map from environment
+ */
+function buildPaymasterAddresses(defaultAddress: Address): PaymasterAddresses {
+  const addresses: PaymasterAddresses = {}
+
+  const verifying = parseOptionalAddress(PAYMASTER_ENV_VARS.VERIFYING_PAYMASTER_ADDRESS)
+  const erc20 = parseOptionalAddress(PAYMASTER_ENV_VARS.ERC20_PAYMASTER_ADDRESS)
+  const permit2 = parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_PAYMASTER_ADDRESS)
+  const sponsor = parseOptionalAddress(PAYMASTER_ENV_VARS.SPONSOR_PAYMASTER_ADDRESS)
+
+  // Backward compat: PAYMASTER_ADDRESS is the default verifying paymaster
+  addresses.verifying = verifying ?? defaultAddress
+
+  if (erc20) addresses.erc20 = erc20
+  if (permit2) addresses.permit2 = permit2
+
+  // Sponsor defaults to verifying address if not set separately
+  addresses.sponsor = sponsor ?? addresses.verifying
+
+  return addresses
+}
+
+/**
  * Load configuration from environment variables
  */
 export function loadConfig(): PaymasterProxyConfig {
@@ -76,13 +112,20 @@ export function loadConfig(): PaymasterProxyConfig {
   const supportedChainIds = parseChainIds(process.env[ENV_KEYS.SUPPORTED_CHAIN_IDS])
   const debug = process.env[ENV_KEYS.DEBUG] === 'true'
 
+  const paymasterAddresses = buildPaymasterAddresses(paymasterAddress as Address)
+  const oracleAddress = parseOptionalAddress(PAYMASTER_ENV_VARS.PRICE_ORACLE_ADDRESS)
+  const permit2Address = parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_CONTRACT_ADDRESS)
+
   return {
     port,
     paymasterAddress: paymasterAddress as Address,
+    paymasterAddresses,
     signerPrivateKey: signerPrivateKey as Hex,
     rpcUrl,
     supportedChainIds,
     debug,
+    oracleAddress,
+    permit2Address,
   }
 }
 
@@ -106,12 +149,20 @@ export function createConfig(options: {
   }
 
   const defaults = getDefaults()
+  const defaultAddress = options.paymasterAddress as Address
+  const paymasterAddresses = buildPaymasterAddresses(defaultAddress)
+  const oracleAddress = parseOptionalAddress(PAYMASTER_ENV_VARS.PRICE_ORACLE_ADDRESS)
+  const permit2Address = parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_CONTRACT_ADDRESS)
+
   return {
     port: options.port || defaults.port,
-    paymasterAddress: options.paymasterAddress as Address,
+    paymasterAddress: defaultAddress,
+    paymasterAddresses,
     signerPrivateKey: options.signerPrivateKey as Hex,
     rpcUrl: options.rpcUrl,
     supportedChainIds: parseChainIds(options.chainIds),
     debug: options.debug || defaults.debug,
+    oracleAddress,
+    permit2Address,
   }
 }

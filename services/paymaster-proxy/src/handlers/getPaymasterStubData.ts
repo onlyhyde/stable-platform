@@ -4,7 +4,10 @@ import type { PaymasterSigner } from '../signer/paymasterSigner'
 import type {
   GetPaymasterStubDataParams,
   PackedUserOperationRpc,
+  PaymasterAddresses,
+  PaymasterContext,
   PaymasterStubDataResponse,
+  PaymasterType,
   UserOperationRpc,
 } from '../types'
 
@@ -14,8 +17,10 @@ export type { GetPaymasterStubDataParams }
  * Default gas limits for paymaster operations
  */
 const DEFAULT_GAS_LIMITS = {
-  paymasterVerificationGasLimit: 100000n,
-  paymasterPostOpGasLimit: 50000n,
+  verifying: { verification: 100000n, postOp: 50000n },
+  sponsor: { verification: 100000n, postOp: 50000n },
+  erc20: { verification: 150000n, postOp: 100000n },
+  permit2: { verification: 200000n, postOp: 100000n },
 } as const
 
 /**
@@ -23,6 +28,7 @@ const DEFAULT_GAS_LIMITS = {
  */
 export interface GetPaymasterStubDataConfig {
   paymasterAddress: Address
+  paymasterAddresses: PaymasterAddresses
   signer: PaymasterSigner
   policyManager: SponsorPolicyManager
   supportedChainIds: number[]
@@ -41,24 +47,15 @@ export type GetPaymasterStubDataResult =
 /**
  * Handle pm_getPaymasterStubData request
  *
- * This method returns stub paymaster data that can be used for gas estimation.
- * The returned data includes placeholder signature that will be replaced
- * with actual signature in pm_getPaymasterData.
+ * Routes to the appropriate paymaster type based on context.paymasterType.
+ * Returns stub paymaster data for gas estimation.
  */
 export function handleGetPaymasterStubData(
   params: GetPaymasterStubDataParams,
   config: GetPaymasterStubDataConfig
 ): GetPaymasterStubDataResult {
-  const { userOp, entryPoint, chainId, context } = params
-  const {
-    paymasterAddress,
-    signer,
-    policyManager,
-    supportedChainIds,
-    supportedEntryPoints,
-    sponsorName,
-    sponsorIcon,
-  } = config
+  const { entryPoint, chainId, context } = params
+  const { supportedChainIds, supportedEntryPoints } = config
 
   // Validate chain ID
   const chainIdNum = Number.parseInt(chainId, 16)
@@ -89,42 +86,143 @@ export function handleGetPaymasterStubData(
     }
   }
 
-  // Get policy ID from context
-  const policyId = (context?.policyId as string) || 'default'
+  const paymasterType = resolvePaymasterType(context)
+  return routeStubData(paymasterType, params, config)
+}
 
-  // Check policy (without gas cost estimation for stub data)
+/**
+ * Resolve paymaster type from context, defaulting to 'verifying'
+ */
+function resolvePaymasterType(context?: PaymasterContext): PaymasterType {
+  return context?.paymasterType ?? 'verifying'
+}
+
+/**
+ * Route to appropriate stub data handler based on type
+ */
+function routeStubData(
+  type: PaymasterType,
+  params: GetPaymasterStubDataParams,
+  config: GetPaymasterStubDataConfig
+): GetPaymasterStubDataResult {
+  const address = config.paymasterAddresses[type]
+  if (!address) {
+    return {
+      success: false,
+      error: {
+        code: -32005,
+        message: `Paymaster type '${type}' not configured`,
+      },
+    }
+  }
+
+  switch (type) {
+    case 'verifying':
+    case 'sponsor':
+      return handleVerifyingStubData(params, config, address, type)
+    case 'erc20':
+      return handleErc20StubData(params, config, address)
+    case 'permit2':
+      return handlePermit2StubData(params, config, address)
+  }
+}
+
+/**
+ * Verifying/Sponsor paymaster stub data (signature-based)
+ */
+function handleVerifyingStubData(
+  params: GetPaymasterStubDataParams,
+  config: GetPaymasterStubDataConfig,
+  paymasterAddress: Address,
+  type: PaymasterType
+): GetPaymasterStubDataResult {
+  const { userOp, context } = params
+  const { signer, policyManager, sponsorName, sponsorIcon } = config
+
+  const policyId = (context?.policyId as string) || 'default'
   const normalizedUserOp = normalizeUserOp(userOp)
   const policyResult = policyManager.checkPolicy(normalizedUserOp, policyId)
 
   if (!policyResult.allowed) {
-    return {
-      success: false,
-      error: policyResult.rejection,
-    }
+    return { success: false, error: policyResult.rejection }
   }
 
-  // Generate stub paymaster data
   const { paymasterData } = signer.generateStubData()
+  const gasLimits = DEFAULT_GAS_LIMITS[type]
 
   const response: PaymasterStubDataResponse = {
     paymaster: paymasterAddress,
     paymasterData,
-    paymasterVerificationGasLimit: `0x${DEFAULT_GAS_LIMITS.paymasterVerificationGasLimit.toString(16)}`,
-    paymasterPostOpGasLimit: `0x${DEFAULT_GAS_LIMITS.paymasterPostOpGasLimit.toString(16)}`,
+    paymasterVerificationGasLimit: `0x${gasLimits.verification.toString(16)}`,
+    paymasterPostOpGasLimit: `0x${gasLimits.postOp.toString(16)}`,
     isFinal: false,
   }
 
-  // Add sponsor info if configured
   if (sponsorName) {
-    response.sponsor = {
-      name: sponsorName,
-      icon: sponsorIcon,
+    response.sponsor = { name: sponsorName, icon: sponsorIcon }
+  }
+
+  return { success: true, data: response }
+}
+
+/**
+ * ERC20 paymaster stub data
+ * encodes tokenAddress in paymasterData
+ */
+function handleErc20StubData(
+  params: GetPaymasterStubDataParams,
+  config: GetPaymasterStubDataConfig,
+  paymasterAddress: Address
+): GetPaymasterStubDataResult {
+  const { context } = params
+  const tokenAddress = context?.tokenAddress
+
+  if (!tokenAddress) {
+    return {
+      success: false,
+      error: {
+        code: -32602,
+        message: 'tokenAddress required in context for erc20 paymaster',
+      },
     }
   }
 
+  // paymasterData = token address (20 bytes, no 0x prefix padding needed)
+  const paymasterData = tokenAddress.toLowerCase() as Hex
+  const gasLimits = DEFAULT_GAS_LIMITS.erc20
+
   return {
     success: true,
-    data: response,
+    data: {
+      paymaster: paymasterAddress,
+      paymasterData,
+      paymasterVerificationGasLimit: `0x${gasLimits.verification.toString(16)}`,
+      paymasterPostOpGasLimit: `0x${gasLimits.postOp.toString(16)}`,
+      isFinal: false,
+    },
+  }
+}
+
+/**
+ * Permit2 paymaster stub data
+ * Returns paymaster address + high gas limits. Actual paymasterData is generated client-side.
+ */
+function handlePermit2StubData(
+  _params: GetPaymasterStubDataParams,
+  _config: GetPaymasterStubDataConfig,
+  paymasterAddress: Address
+): GetPaymasterStubDataResult {
+  const gasLimits = DEFAULT_GAS_LIMITS.permit2
+
+  return {
+    success: true,
+    data: {
+      paymaster: paymasterAddress,
+      paymasterData: '0x' as Hex,
+      paymasterVerificationGasLimit: `0x${gasLimits.verification.toString(16)}`,
+      paymasterPostOpGasLimit: `0x${gasLimits.postOp.toString(16)}`,
+      isFinal: false,
+    },
   }
 }
 

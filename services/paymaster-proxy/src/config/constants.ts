@@ -19,6 +19,16 @@ export const PAYMASTER_ENV_VARS = {
 
   // Chain Config
   SUPPORTED_CHAIN_IDS: 'PAYMASTER_SUPPORTED_CHAIN_IDS',
+
+  // Multi-Paymaster Addresses
+  VERIFYING_PAYMASTER_ADDRESS: 'VERIFYING_PAYMASTER_ADDRESS',
+  ERC20_PAYMASTER_ADDRESS: 'ERC20_PAYMASTER_ADDRESS',
+  PERMIT2_PAYMASTER_ADDRESS: 'PERMIT2_PAYMASTER_ADDRESS',
+  SPONSOR_PAYMASTER_ADDRESS: 'SPONSOR_PAYMASTER_ADDRESS',
+
+  // Contract Addresses
+  PRICE_ORACLE_ADDRESS: 'PRICE_ORACLE_ADDRESS',
+  PERMIT2_CONTRACT_ADDRESS: 'PERMIT2_CONTRACT_ADDRESS',
 } as const
 
 /**
@@ -75,6 +85,15 @@ function getEnvBool(name: string, defaultValue: boolean): boolean {
 function getEnvString(name: string, defaultValue: string): string {
   const value = process.env[name]
   if (value === undefined || value === '') return defaultValue
+  return value
+}
+
+/**
+ * Get optional environment variable as string
+ */
+export function getEnvOptional(name: string): string | undefined {
+  const value = process.env[name]
+  if (value === undefined || value === '') return undefined
   return value
 }
 
@@ -158,5 +177,15 @@ Policy Defaults:
   ${PAYMASTER_ENV_VARS.DEFAULT_MAX_GAS_COST}           Max gas cost in wei (default: 1000000000000000000 = 1 ETH)
   ${PAYMASTER_ENV_VARS.DEFAULT_DAILY_LIMIT_PER_SENDER} Daily limit per sender in wei (default: 100000000000000000 = 0.1 ETH)
   ${PAYMASTER_ENV_VARS.DEFAULT_GLOBAL_DAILY_LIMIT}     Global daily limit in wei (default: 10000000000000000000 = 10 ETH)
+
+Multi-Paymaster Addresses (optional, overrides PAYMASTER_ADDRESS for specific types):
+  ${PAYMASTER_ENV_VARS.VERIFYING_PAYMASTER_ADDRESS}    VerifyingPaymaster contract address
+  ${PAYMASTER_ENV_VARS.ERC20_PAYMASTER_ADDRESS}        ERC20Paymaster contract address
+  ${PAYMASTER_ENV_VARS.PERMIT2_PAYMASTER_ADDRESS}      Permit2Paymaster contract address
+  ${PAYMASTER_ENV_VARS.SPONSOR_PAYMASTER_ADDRESS}      SponsorPaymaster contract address
+
+Contract Addresses (for ERC-20 token support):
+  ${PAYMASTER_ENV_VARS.PRICE_ORACLE_ADDRESS}           PriceOracle contract address
+  ${PAYMASTER_ENV_VARS.PERMIT2_CONTRACT_ADDRESS}       Permit2 contract address (Uniswap Permit2)
 `.trim()
 }

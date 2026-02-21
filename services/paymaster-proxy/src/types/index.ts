@@ -1,13 +1,25 @@
 import type { Address, Hex } from 'viem'
 
 /**
+ * Supported paymaster types
+ */
+export type PaymasterType = 'verifying' | 'erc20' | 'permit2' | 'sponsor'
+
+/**
+ * Paymaster addresses by type
+ */
+export type PaymasterAddresses = Partial<Record<PaymasterType, Address>>
+
+/**
  * Paymaster Proxy configuration
  */
 export interface PaymasterProxyConfig {
   /** Server port */
   port: number
-  /** Paymaster contract address */
+  /** Paymaster contract address (backward compat: verifying paymaster) */
   paymasterAddress: Address
+  /** Paymaster addresses by type */
+  paymasterAddresses: PaymasterAddresses
   /** Signer private key for paymaster signatures */
   signerPrivateKey: Hex
   /** RPC URL for chain interaction */
@@ -16,6 +28,64 @@ export interface PaymasterProxyConfig {
   supportedChainIds: number[]
   /** Enable debug mode */
   debug: boolean
+  /** Price oracle contract address */
+  oracleAddress?: Address
+  /** Permit2 contract address */
+  permit2Address?: Address
+}
+
+/**
+ * Supported ERC-20 token info
+ */
+export interface SupportedToken {
+  /** Token contract address */
+  address: Address
+  /** Token symbol */
+  symbol: string
+  /** Token decimals */
+  decimals: number
+  /** Exchange rate (token per ETH, scaled by 1e18) */
+  exchangeRate: string
+}
+
+/**
+ * Token payment estimate
+ */
+export interface TokenPaymentEstimate {
+  /** Token address used for payment */
+  tokenAddress: Address
+  /** Estimated token amount needed */
+  estimatedAmount: string
+  /** Exchange rate used */
+  exchangeRate: string
+  /** Markup percentage (basis points) */
+  markup: number
+}
+
+/**
+ * Sponsor policy response
+ */
+export interface SponsorPolicyResponse {
+  /** Whether sponsoring is available for this sender */
+  isAvailable: boolean
+  /** Reason if not available */
+  reason?: string
+  /** Remaining daily limit in wei */
+  dailyLimitRemaining?: string
+  /** Per-transaction limit in wei */
+  perTxLimit?: string
+}
+
+/**
+ * Context parameter for paymaster type routing
+ */
+export interface PaymasterContext {
+  /** Paymaster type to use */
+  paymasterType?: PaymasterType
+  /** Token address (for erc20/permit2) */
+  tokenAddress?: Address
+  /** Policy ID */
+  policyId?: string
 }
 
 /**
@@ -94,7 +164,7 @@ export interface GetPaymasterStubDataParams {
   /** Chain ID (hex) */
   chainId: Hex
   /** Optional context */
-  context?: Record<string, unknown>
+  context?: PaymasterContext
 }
 
 /**
@@ -125,7 +195,7 @@ export interface GetPaymasterDataParams {
   /** Chain ID (hex) */
   chainId: Hex
   /** Optional context */
-  context?: Record<string, unknown>
+  context?: PaymasterContext
 }
 
 /**
@@ -196,4 +266,6 @@ export const RPC_ERROR_CODES = {
   UNSUPPORTED_CHAIN: -32002,
   UNSUPPORTED_ENTRY_POINT: -32003,
   RATE_LIMITED: -32004,
+  UNSUPPORTED_PAYMASTER_TYPE: -32005,
+  UNSUPPORTED_TOKEN: -32006,
 } as const

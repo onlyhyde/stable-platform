@@ -2,23 +2,51 @@ import { Hono } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
-import type { Address, Hex } from 'viem'
+import type { Address, Hex, PublicClient } from 'viem'
+import { getPublicClient } from './chain/client'
 import { getServerConfig } from './config/constants'
-import { handleGetPaymasterData, handleGetPaymasterStubData } from './handlers'
+import {
+  handleEstimateTokenPayment,
+  handleGetPaymasterData,
+  handleGetPaymasterStubData,
+  handleGetSponsorPolicy,
+  handleSupportedTokens,
+} from './handlers'
 import { SponsorPolicyManager } from './policy/sponsorPolicy'
 import {
+  estimateTokenPaymentParamsSchema,
   getPaymasterDataParamsSchema,
   getPaymasterStubDataParamsSchema,
+  getSponsorPolicyParamsSchema,
   jsonRpcRequestSchema,
+  supportedTokensParamsSchema,
 } from './schemas'
 import { PaymasterSigner } from './signer/paymasterSigner'
 import type {
   JsonRpcResponse,
   PackedUserOperationRpc,
+  PaymasterAddresses,
+  PaymasterContext,
   PaymasterProxyConfig,
+  PaymasterType,
   UserOperationRpc,
 } from './types'
 import { RPC_ERROR_CODES } from './types'
+
+/**
+ * Handler configuration used internally by callMethod
+ */
+interface HandlerConfig {
+  paymasterAddress: Address
+  paymasterAddresses: PaymasterAddresses
+  signer: PaymasterSigner
+  policyManager: SponsorPolicyManager
+  supportedChainIds: number[]
+  sponsorName?: string
+  client?: PublicClient
+  erc20PaymasterAddress?: Address
+  oracleAddress?: Address
+}
 
 /**
  * Create the Paymaster Proxy application
@@ -33,13 +61,20 @@ export function createApp(config: PaymasterProxyConfig): Hono {
   // Get sponsor name from environment (configurable via PAYMASTER_SPONSOR_NAME)
   const serverConfig = getServerConfig()
 
+  // Initialize chain client for on-chain reads
+  const client = getPublicClient(config.rpcUrl)
+
   // Handler configuration
-  const handlerConfig = {
+  const handlerConfig: HandlerConfig = {
     paymasterAddress: config.paymasterAddress,
+    paymasterAddresses: config.paymasterAddresses,
     signer,
     policyManager,
     supportedChainIds: config.supportedChainIds,
     sponsorName: serverConfig.sponsorName,
+    client,
+    erc20PaymasterAddress: config.paymasterAddresses.erc20,
+    oracleAddress: config.oracleAddress,
   }
 
   // Middleware
@@ -51,6 +86,9 @@ export function createApp(config: PaymasterProxyConfig): Hono {
   // Health check endpoints (Kubernetes probes compatible)
   const startTime = new Date()
   app.get('/health', (c) => {
+    const availableTypes = Object.keys(config.paymasterAddresses).filter(
+      (k) => config.paymasterAddresses[k as PaymasterType]
+    )
     return c.json({
       status: 'ok',
       service: 'paymaster-proxy',
@@ -58,6 +96,7 @@ export function createApp(config: PaymasterProxyConfig): Hono {
       timestamp: new Date().toISOString(),
       uptime: `${Math.floor((Date.now() - startTime.getTime()) / 1000)}s`,
       paymaster: config.paymasterAddress,
+      paymasterTypes: availableTypes,
       signer: signer.getSignerAddress(),
       supportedChainIds: config.supportedChainIds,
     })
@@ -197,13 +236,7 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
  */
 async function handleJsonRpcRequest(
   req: unknown,
-  config: {
-    paymasterAddress: Address
-    signer: PaymasterSigner
-    policyManager: SponsorPolicyManager
-    supportedChainIds: number[]
-    sponsorName?: string
-  }
+  config: HandlerConfig
 ): Promise<JsonRpcResponse> {
   // Parse request
   const parseResult = jsonRpcRequestSchema.safeParse(req)
@@ -268,13 +301,7 @@ class RpcError extends Error {
 async function callMethod(
   method: string,
   params: unknown[],
-  config: {
-    paymasterAddress: Address
-    signer: PaymasterSigner
-    policyManager: SponsorPolicyManager
-    supportedChainIds: number[]
-    sponsorName?: string
-  }
+  config: HandlerConfig
 ): Promise<unknown> {
   switch (method) {
     case 'pm_getPaymasterStubData':
@@ -290,25 +317,36 @@ async function callMethod(
       // Alias for pm_getPaymasterData (for compatibility)
       return handlePmGetPaymasterData(params, config)
 
+    case 'pm_supportedPaymasterTypes':
+      return handlePmSupportedPaymasterTypes(config)
+
+    case 'pm_supportedTokens':
+      return handlePmSupportedTokens(params, config)
+
+    case 'pm_estimateTokenPayment':
+      return handlePmEstimateTokenPayment(params, config)
+
+    case 'pm_getSponsorPolicy':
+      return handlePmGetSponsorPolicy(params, config)
+
     default:
       throw new RpcError(`Method ${method} not found`, RPC_ERROR_CODES.METHOD_NOT_FOUND)
   }
 }
 
 /**
+ * Handle pm_supportedPaymasterTypes
+ */
+function handlePmSupportedPaymasterTypes(config: HandlerConfig): string[] {
+  return (Object.keys(config.paymasterAddresses) as PaymasterType[]).filter(
+    (type) => config.paymasterAddresses[type]
+  )
+}
+
+/**
  * Handle pm_getPaymasterStubData
  */
-function handlePmGetPaymasterStubData(
-  params: unknown[],
-  config: {
-    paymasterAddress: Address
-    signer: PaymasterSigner
-    policyManager: SponsorPolicyManager
-    supportedChainIds: number[]
-    sponsorName?: string
-  }
-): unknown {
-  // Parse params
+function handlePmGetPaymasterStubData(params: unknown[], config: HandlerConfig): unknown {
   const parseResult = getPaymasterStubDataParamsSchema.safeParse(params)
   if (!parseResult.success) {
     throw new RpcError(
@@ -325,7 +363,7 @@ function handlePmGetPaymasterStubData(
       userOp: userOp as UserOperationRpc | PackedUserOperationRpc,
       entryPoint: entryPoint as Address,
       chainId: chainId as Hex,
-      context: context as Record<string, unknown> | undefined,
+      context: context as PaymasterContext | undefined,
     },
     {
       ...config,
@@ -342,17 +380,7 @@ function handlePmGetPaymasterStubData(
 /**
  * Handle pm_getPaymasterData
  */
-async function handlePmGetPaymasterData(
-  params: unknown[],
-  config: {
-    paymasterAddress: Address
-    signer: PaymasterSigner
-    policyManager: SponsorPolicyManager
-    supportedChainIds: number[]
-    sponsorName?: string
-  }
-): Promise<unknown> {
-  // Parse params
+async function handlePmGetPaymasterData(params: unknown[], config: HandlerConfig): Promise<unknown> {
   const parseResult = getPaymasterDataParamsSchema.safeParse(params)
   if (!parseResult.success) {
     throw new RpcError(
@@ -369,12 +397,130 @@ async function handlePmGetPaymasterData(
       userOp: userOp as UserOperationRpc | PackedUserOperationRpc,
       entryPoint: entryPoint as Address,
       chainId: chainId as Hex,
-      context: context as Record<string, unknown> | undefined,
+      context: context as PaymasterContext | undefined,
     },
     {
       ...config,
     }
   )
+
+  if (!result.success) {
+    throw new RpcError(result.error.message, result.error.code, result.error.data)
+  }
+
+  return result.data
+}
+
+/**
+ * Handle pm_supportedTokens
+ */
+async function handlePmSupportedTokens(params: unknown[], config: HandlerConfig): Promise<unknown> {
+  if (!config.erc20PaymasterAddress) {
+    throw new RpcError(
+      'ERC20 paymaster not configured',
+      RPC_ERROR_CODES.UNSUPPORTED_PAYMASTER_TYPE
+    )
+  }
+
+  if (!config.client) {
+    throw new RpcError('Chain client not available', RPC_ERROR_CODES.INTERNAL_ERROR)
+  }
+
+  const parseResult = supportedTokensParamsSchema.safeParse(params)
+  if (!parseResult.success) {
+    throw new RpcError(
+      'Invalid parameters',
+      RPC_ERROR_CODES.INVALID_PARAMS,
+      parseResult.error.issues
+    )
+  }
+
+  const [chainId] = parseResult.data
+
+  const result = await handleSupportedTokens(chainId, {
+    client: config.client,
+    erc20PaymasterAddress: config.erc20PaymasterAddress,
+    oracleAddress: config.oracleAddress,
+    supportedChainIds: config.supportedChainIds,
+  })
+
+  if (!result.success) {
+    throw new RpcError(result.error.message, result.error.code, result.error.data)
+  }
+
+  return result.data
+}
+
+/**
+ * Handle pm_estimateTokenPayment
+ */
+async function handlePmEstimateTokenPayment(
+  params: unknown[],
+  config: HandlerConfig
+): Promise<unknown> {
+  if (!config.erc20PaymasterAddress) {
+    throw new RpcError(
+      'ERC20 paymaster not configured',
+      RPC_ERROR_CODES.UNSUPPORTED_PAYMASTER_TYPE
+    )
+  }
+
+  if (!config.client) {
+    throw new RpcError('Chain client not available', RPC_ERROR_CODES.INTERNAL_ERROR)
+  }
+
+  const parseResult = estimateTokenPaymentParamsSchema.safeParse(params)
+  if (!parseResult.success) {
+    throw new RpcError(
+      'Invalid parameters',
+      RPC_ERROR_CODES.INVALID_PARAMS,
+      parseResult.error.issues
+    )
+  }
+
+  const [userOp, entryPoint, chainId, tokenAddress] = parseResult.data
+
+  const result = await handleEstimateTokenPayment(
+    userOp as UserOperationRpc | PackedUserOperationRpc,
+    entryPoint as Address,
+    chainId,
+    tokenAddress as Address,
+    {
+      client: config.client,
+      erc20PaymasterAddress: config.erc20PaymasterAddress,
+      supportedChainIds: config.supportedChainIds,
+    }
+  )
+
+  if (!result.success) {
+    throw new RpcError(result.error.message, result.error.code, result.error.data)
+  }
+
+  return result.data
+}
+
+/**
+ * Handle pm_getSponsorPolicy
+ */
+function handlePmGetSponsorPolicy(params: unknown[], config: HandlerConfig): unknown {
+  const parseResult = getSponsorPolicyParamsSchema.safeParse(params)
+  if (!parseResult.success) {
+    throw new RpcError(
+      'Invalid parameters',
+      RPC_ERROR_CODES.INVALID_PARAMS,
+      parseResult.error.issues
+    )
+  }
+
+  const parsed = parseResult.data
+  // Handle both [address, chainId] and [address, operation, chainId] forms
+  const senderAddress = parsed[0] as Address
+  const chainId = parsed.length === 3 ? (parsed[2] as string) : (parsed[1] as string)
+
+  const result = handleGetSponsorPolicy(senderAddress, chainId, {
+    policyManager: config.policyManager,
+    supportedChainIds: config.supportedChainIds,
+  })
 
   if (!result.success) {
     throw new RpcError(result.error.message, result.error.code, result.error.data)
