@@ -19,7 +19,7 @@
     "@stablenet/plugin-stealth": "workspace:*",
     "@stablenet/wallet-sdk": "workspace:*",
     "@tanstack/react-query": "^5.62.7",
-    "next": "^15.5.12",
+    "next": "^16.1.6",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
