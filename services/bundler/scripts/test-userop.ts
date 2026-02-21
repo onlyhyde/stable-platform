@@ -19,6 +19,7 @@ import {
   http,
   keccak256,
   pad,
+  stringToHex,
   toHex,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
@@ -153,15 +154,12 @@ function encodeKernelExecuteCallData(to: Address, value: bigint, data: Hex): Hex
   // Single call mode: callType=0x00, execMode=0x00
   const mode = `0x${'00'.repeat(32)}` as Hex
 
-  // Encode single call: (address, uint256, bytes)
-  const executionCalldata = encodeAbiParameters(
-    [
-      { type: 'address', name: 'target' },
-      { type: 'uint256', name: 'value' },
-      { type: 'bytes', name: 'callData' },
-    ],
-    [to, value, data]
-  )
+  // Kernel v3 expects abi.encodePacked(target[20], value[32], callData[variable])
+  const executionCalldata = concat([
+    to,                              // 20 bytes: target address
+    pad(toHex(value), { size: 32 }), // 32 bytes: value
+    data,                            // variable: raw calldata
+  ]) as Hex
 
   return encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
@@ -228,43 +226,59 @@ function packForRpc(userOp: {
   }
 }
 
-/** Compute UserOperation hash (ERC-4337 v0.7) */
+/** EIP-712 / ERC-4337 v0.9 Hash Constants */
+const PACKED_USEROP_TYPEHASH = keccak256(
+  stringToHex(
+    'PackedUserOperation(address sender,uint256 nonce,bytes initCode,bytes callData,bytes32 accountGasLimits,uint256 preVerificationGas,bytes32 gasFees,bytes paymasterAndData)'
+  )
+)
+const EIP712_DOMAIN_TYPEHASH = keccak256(
+  stringToHex('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
+)
+const EIP712_DOMAIN_NAME_HASH = keccak256(stringToHex('ERC4337'))
+const EIP712_DOMAIN_VERSION_HASH = keccak256(stringToHex('1'))
+
+/** Compute UserOperation hash (ERC-4337 v0.9 EIP-712) */
 function computeUserOpHash(
   packed: ReturnType<typeof packForRpc>,
   entryPoint: Address,
   chainId: bigint
 ): Hex {
-  const userOpEncoded = encodeAbiParameters(
-    [
-      { type: 'address' },
-      { type: 'uint256' },
-      { type: 'bytes32' },
-      { type: 'bytes32' },
-      { type: 'bytes32' },
-      { type: 'uint256' },
-      { type: 'bytes32' },
-      { type: 'bytes32' },
-    ],
-    [
-      packed.sender,
-      BigInt(packed.nonce),
-      keccak256(packed.initCode as Hex),
-      keccak256(packed.callData),
-      packed.accountGasLimits as Hex,
-      BigInt(packed.preVerificationGas),
-      packed.gasFees as Hex,
-      keccak256(packed.paymasterAndData as Hex),
-    ]
-  )
-
-  const innerHash = keccak256(userOpEncoded)
-
-  return keccak256(
+  const structHash = keccak256(
     encodeAbiParameters(
-      [{ type: 'bytes32' }, { type: 'address' }, { type: 'uint256' }],
-      [innerHash, entryPoint, chainId]
+      [
+        { type: 'bytes32' },
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+      ],
+      [
+        PACKED_USEROP_TYPEHASH,
+        packed.sender,
+        BigInt(packed.nonce),
+        keccak256(packed.initCode as Hex),
+        keccak256(packed.callData),
+        packed.accountGasLimits as Hex,
+        BigInt(packed.preVerificationGas),
+        packed.gasFees as Hex,
+        keccak256(packed.paymasterAndData as Hex),
+      ]
     )
   )
+
+  const domainSeparator = keccak256(
+    encodeAbiParameters(
+      [{ type: 'bytes32' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'uint256' }, { type: 'address' }],
+      [EIP712_DOMAIN_TYPEHASH, EIP712_DOMAIN_NAME_HASH, EIP712_DOMAIN_VERSION_HASH, chainId, entryPoint]
+    )
+  )
+
+  return keccak256(concat(['0x1901' as Hex, domainSeparator, structHash]))
 }
 
 /** Send JSON-RPC request to bundler */

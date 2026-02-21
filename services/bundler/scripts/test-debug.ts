@@ -121,10 +121,11 @@ async function main() {
   const initCode = concat([CONFIG.factory, factoryData]) as Hex
 
   const mode = `0x${'00'.repeat(32)}` as Hex
-  const executionCalldata = encodeAbiParameters(
-    [{ type: 'address' }, { type: 'uint256' }, { type: 'bytes' }],
-    [smartAccountAddress, 0n, '0x' as Hex]
-  )
+  // Kernel v3 expects abi.encodePacked(target[20], value[32], callData[variable])
+  const executionCalldata = concat([
+    smartAccountAddress,             // 20 bytes: target address
+    pad(toHex(0n), { size: 32 }),    // 32 bytes: value
+  ]) as Hex // no callData for no-op
   const callData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
     functionName: 'execute',

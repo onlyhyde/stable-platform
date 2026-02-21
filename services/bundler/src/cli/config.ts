@@ -1,3 +1,4 @@
+import { ENTRY_POINT_V07_ADDRESS, getEntryPoint, isChainSupported } from '@stablenet/contracts'
 import type { Address, Hex } from 'viem'
 import type { BundlerConfig } from '../types'
 
@@ -5,7 +6,7 @@ import type { BundlerConfig } from '../types'
  * Environment variable names
  */
 export const ENV_VARS = {
-  ENTRY_POINT: ['BUNDLER_ENTRY_POINT', 'ENTRY_POINT'],
+  ENTRY_POINT: ['BUNDLER_ENTRY_POINT', 'ENTRY_POINT', 'ENTRY_POINT_ADDRESS'],
   PRIVATE_KEY: ['BUNDLER_PRIVATE_KEY', 'PRIVATE_KEY'],
   BENEFICIARY: ['BUNDLER_BENEFICIARY', 'BENEFICIARY'],
   RPC_URL: ['BUNDLER_RPC_URL', 'RPC_URL'],
@@ -122,19 +123,19 @@ export const NETWORK_PRESETS: Record<
 > = {
   local: {
     rpcUrl: 'http://localhost:8501',
-    entryPoints: ['0x0000000071727De22E5E9d8BAf0edAc6f37da032'],
+    entryPoints: [isChainSupported(8283) ? getEntryPoint(8283) : ENTRY_POINT_V07_ADDRESS],
   },
   devnet: {
     rpcUrl: 'http://localhost:8545',
-    entryPoints: ['0x0000000071727De22E5E9d8BAf0edAc6f37da032'],
+    entryPoints: [ENTRY_POINT_V07_ADDRESS],
   },
   sepolia: {
     rpcUrl: 'https://rpc.sepolia.org',
-    entryPoints: ['0x0000000071727De22E5E9d8BAf0edAc6f37da032'],
+    entryPoints: [ENTRY_POINT_V07_ADDRESS],
   },
   mainnet: {
     rpcUrl: 'https://eth.llamarpc.com',
-    entryPoints: ['0x0000000071727De22E5E9d8BAf0edAc6f37da032'],
+    entryPoints: [ENTRY_POINT_V07_ADDRESS],
   },
 }
 

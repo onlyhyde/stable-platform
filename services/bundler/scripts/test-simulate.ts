@@ -8,6 +8,7 @@ import {
   http,
   keccak256,
   pad,
+  stringToHex,
   toHex,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
@@ -134,10 +135,11 @@ async function main() {
 
   // Simple no-op call
   const mode = `0x${'00'.repeat(32)}` as Hex
-  const executionCalldata = encodeAbiParameters(
-    [{ type: 'address' }, { type: 'uint256' }, { type: 'bytes' }],
-    [smartAccountAddress, 0n, '0x' as Hex]
-  )
+  // Kernel v3 expects abi.encodePacked(target[20], value[32], callData[variable])
+  const executionCalldata = concat([
+    smartAccountAddress,             // 20 bytes: target address
+    pad(toHex(0n), { size: 32 }),    // 32 bytes: value
+  ]) as Hex // no callData for no-op
   const callData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
     functionName: 'execute',
@@ -165,36 +167,36 @@ async function main() {
     '0x' as Hex,
   ]) as Hex
 
-  // Compute hash for signing
-  const userOpEncoded = encodeAbiParameters(
-    [
-      { type: 'address' },
-      { type: 'uint256' },
-      { type: 'bytes32' },
-      { type: 'bytes32' },
-      { type: 'bytes32' },
-      { type: 'uint256' },
-      { type: 'bytes32' },
-      { type: 'bytes32' },
-    ],
-    [
-      smartAccountAddress,
-      0n,
-      keccak256(initCode),
-      keccak256(callData),
-      accountGasLimits,
-      100000n,
-      gasFees,
-      keccak256(paymasterAndData),
-    ]
+  // Compute hash for signing using EIP-712 (v0.9 EntryPoint)
+  const PACKED_USEROP_TYPEHASH = keccak256(
+    stringToHex('PackedUserOperation(address sender,uint256 nonce,bytes initCode,bytes callData,bytes32 accountGasLimits,uint256 preVerificationGas,bytes32 gasFees,bytes paymasterAndData)')
   )
-  const innerHash = keccak256(userOpEncoded)
-  const userOpHash = keccak256(
+  const EIP712_DOMAIN_TYPEHASH = keccak256(
+    stringToHex('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
+  )
+  const structHash = keccak256(
     encodeAbiParameters(
-      [{ type: 'bytes32' }, { type: 'address' }, { type: 'uint256' }],
-      [innerHash, CONFIG.entryPoint, 8283n]
+      [{ type: 'bytes32' }, { type: 'address' }, { type: 'uint256' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'uint256' }, { type: 'bytes32' }, { type: 'bytes32' }],
+      [
+        PACKED_USEROP_TYPEHASH,
+        smartAccountAddress,
+        0n,
+        keccak256(initCode),
+        keccak256(callData),
+        accountGasLimits as Hex,
+        100000n,
+        gasFees as Hex,
+        keccak256(paymasterAndData),
+      ]
     )
   )
+  const domainSeparator = keccak256(
+    encodeAbiParameters(
+      [{ type: 'bytes32' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'uint256' }, { type: 'address' }],
+      [EIP712_DOMAIN_TYPEHASH, keccak256(stringToHex('ERC4337')), keccak256(stringToHex('1')), 8283n, CONFIG.entryPoint]
+    )
+  )
+  const userOpHash = keccak256(concat(['0x1901' as Hex, domainSeparator, structHash]))
 
   const rawSignature = await signer.signMessage({ message: { raw: userOpHash } })
   const signature = concat(['0x02' as Hex, rawSignature]) as Hex
