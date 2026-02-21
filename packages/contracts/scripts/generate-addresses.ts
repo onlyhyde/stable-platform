@@ -8,7 +8,7 @@
  *   pnpm generate --input ../../poc-contract/deployments
  */
 
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -183,6 +183,65 @@ const ENV_MAP: Record<string, string> = {
   uniswapV3WkrcUsdcPool: 'UNISWAP_V3_WKRC_USDC_POOL',
   flashLoanFallback: 'FLASH_LOAN_FALLBACK_ADDRESS',
   tokenReceiverFallback: 'TOKEN_RECEIVER_FALLBACK_ADDRESS',
+}
+
+// ─── .env merge helper ───────────────────────────────────────────────────────
+// Docker Compose auto-reads `.env` from the project root for YAML interpolation.
+// This function merges contract addresses from .env.contracts into .env so that
+// `docker compose up` picks up new addresses without extra flags.
+
+function mergeIntoEnv(envContractsPath: string): void {
+  const dotenvPath = resolve(MONOREPO_ROOT, '.env')
+  if (!existsSync(dotenvPath)) return
+
+  const contractsContent = readFileSync(envContractsPath, 'utf-8')
+  const dotenvContent = readFileSync(dotenvPath, 'utf-8')
+
+  // Parse contract env vars (skip comments and empty lines)
+  const contractVars = new Map<string, string>()
+  for (const line of contractsContent.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eqIdx = trimmed.indexOf('=')
+    if (eqIdx === -1) continue
+    contractVars.set(trimmed.slice(0, eqIdx).trim(), trimmed.slice(eqIdx + 1).trim())
+  }
+
+  // Update existing vars in .env, track which were updated
+  const updated = new Set<string>()
+  const lines = dotenvContent.split('\n')
+  const updatedLines = lines.map((line) => {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) return line
+    const eqIdx = trimmed.indexOf('=')
+    if (eqIdx === -1) return line
+    const key = trimmed.slice(0, eqIdx).trim()
+    if (contractVars.has(key)) {
+      updated.add(key)
+      return `${key}=${contractVars.get(key)}`
+    }
+    return line
+  })
+
+  // Append new vars that weren't already in .env
+  const newVars: string[] = []
+  for (const [key, value] of contractVars) {
+    if (!updated.has(key)) {
+      newVars.push(`${key}=${value}`)
+    }
+  }
+
+  let result = updatedLines.join('\n')
+  if (newVars.length > 0) {
+    // Ensure trailing newline before appending
+    if (!result.endsWith('\n')) result += '\n'
+    result += `\n# Contract addresses (auto-merged by pnpm generate)\n`
+    result += newVars.join('\n')
+    result += '\n'
+  }
+
+  writeFileSync(dotenvPath, result, 'utf-8')
+  console.log(`Merged ${contractVars.size} contract vars into: ${dotenvPath} (${updated.size} updated, ${newVars.length} added)`)
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -507,6 +566,12 @@ function generateEnvContracts(deployments: ChainDeployment[]): string {
       }
       lines.push('')
     }
+
+    // Append precompile addresses for supported chains
+    const precompileSection = generatePrecompileEnvSection(chainId)
+    if (precompileSection) {
+      lines.push(precompileSection)
+    }
   }
 
   return lines.join('\n')
@@ -586,6 +651,66 @@ function getDefaultTokens(
   }
 
   return tokens
+}
+
+// ─── Precompile ENV generation (chain 8283 only) ────────────────────────────
+
+const PRECOMPILE_ENV: Record<string, { envKey: string; address: string; comment: string }> = {
+  nativeCoinAdapter: {
+    envKey: 'NATIVE_COIN_ADAPTER_ADDRESS',
+    address: '0x0000000000000000000000000000000000001000',
+    comment: 'WKRC fiat token adapter',
+  },
+  govValidator: {
+    envKey: 'GOV_VALIDATOR_ADDRESS',
+    address: '0x0000000000000000000000000000000000001001',
+    comment: 'WBFT validator governance',
+  },
+  govMasterMinter: {
+    envKey: 'GOV_MASTER_MINTER_ADDRESS',
+    address: '0x0000000000000000000000000000000000001002',
+    comment: 'Master minter governance',
+  },
+  govMinter: {
+    envKey: 'GOV_MINTER_ADDRESS',
+    address: '0x0000000000000000000000000000000000001003',
+    comment: 'Minter governance',
+  },
+  govCouncil: {
+    envKey: 'GOV_COUNCIL_ADDRESS',
+    address: '0x0000000000000000000000000000000000001004',
+    comment: 'Council governance',
+  },
+  blsPopPrecompile: {
+    envKey: 'BLS_POP_PRECOMPILE_ADDRESS',
+    address: '0x0000000000000000000000000000000000B00001',
+    comment: 'BLS signature verification',
+  },
+  nativeCoinManager: {
+    envKey: 'NATIVE_COIN_MANAGER_ADDRESS',
+    address: '0x0000000000000000000000000000000000B00002',
+    comment: 'Native coin management',
+  },
+  accountManager: {
+    envKey: 'ACCOUNT_MANAGER_ADDRESS',
+    address: '0x0000000000000000000000000000000000B00003',
+    comment: 'Account management',
+  },
+}
+
+function generatePrecompileEnvSection(chainId: number): string {
+  if (chainId !== 8283) return ''
+
+  const lines: string[] = [
+    '# System Contracts (Precompiled)',
+  ]
+
+  for (const entry of Object.values(PRECOMPILE_ENV)) {
+    lines.push(`${entry.envKey}=${entry.address}`)
+  }
+
+  lines.push('')
+  return lines.join('\n')
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -670,6 +795,9 @@ async function main() {
   const envOutputPath = resolve(__dirname, '../../../.env.contracts')
   await writeFile(envOutputPath, envContent, 'utf-8')
   console.log(`Generated: ${envOutputPath}`)
+
+  // Merge contract addresses into .env for docker-compose auto-loading
+  mergeIntoEnv(envOutputPath)
 
   console.log(`\nDone! ${deployments.length} chain(s) processed.`)
 }

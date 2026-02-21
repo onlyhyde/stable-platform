@@ -4,10 +4,54 @@
 
 import type { Address } from 'viem'
 import { CHAIN_ADDRESSES, DEFAULT_TOKENS, SERVICE_URLS } from './generated/addresses'
-import type { ChainAddresses, ChainConfig, ServiceUrls, TokenDefinition } from './types'
+import {
+  CHAIN_PRECOMPILES,
+  PRECOMPILED_ADDRESSES,
+  SYSTEM_CONTRACTS,
+  SYSTEM_PRECOMPILES,
+  NATIVE_COIN_ADAPTER_ADDRESS,
+  GOV_VALIDATOR_ADDRESS,
+  GOV_MASTER_MINTER_ADDRESS,
+  GOV_MINTER_ADDRESS,
+  GOV_COUNCIL_ADDRESS,
+  BLS_POP_PRECOMPILE_ADDRESS,
+  NATIVE_COIN_MANAGER_ADDRESS,
+  ACCOUNT_MANAGER_ADDRESS,
+} from './precompiles'
+import type {
+  ChainAddresses,
+  ChainConfig,
+  PrecompiledAddresses,
+  ServiceUrls,
+  TokenDefinition,
+} from './types'
+
+// Merge precompiles into CHAIN_ADDRESSES for chains that have them
+for (const [chainId, precompiles] of Object.entries(CHAIN_PRECOMPILES)) {
+  const chain = CHAIN_ADDRESSES[Number(chainId)]
+  if (chain) {
+    chain.precompiles = precompiles
+  }
+}
 
 // Re-export generated data
 export { CHAIN_ADDRESSES, DEFAULT_TOKENS, SERVICE_URLS }
+
+// Re-export precompile constants
+export {
+  CHAIN_PRECOMPILES,
+  PRECOMPILED_ADDRESSES,
+  SYSTEM_CONTRACTS,
+  SYSTEM_PRECOMPILES,
+  NATIVE_COIN_ADAPTER_ADDRESS,
+  GOV_VALIDATOR_ADDRESS,
+  GOV_MASTER_MINTER_ADDRESS,
+  GOV_MINTER_ADDRESS,
+  GOV_COUNCIL_ADDRESS,
+  BLS_POP_PRECOMPILE_ADDRESS,
+  NATIVE_COIN_MANAGER_ADDRESS,
+  ACCOUNT_MANAGER_ADDRESS,
+}
 
 /**
  * Zero address constant for validation
@@ -238,6 +282,60 @@ export function getDelegatePresets(chainId: number) {
 export function getDefaultDelegatePreset(chainId: number) {
   const presets = getDelegatePresets(chainId)
   return presets[0] ?? null
+}
+
+// ─── Precompiles (chain 8283 only) ──────────────────────────────────────────
+
+export function getPrecompiles(chainId: number): PrecompiledAddresses | undefined {
+  return CHAIN_PRECOMPILES[chainId]
+}
+
+export function getNativeCoinAdapter(chainId: number): Address {
+  const p = getPrecompiles(chainId)
+  if (!p) throw new Error(`Chain ${chainId} has no precompiled contracts`)
+  return p.systemContracts.nativeCoinAdapter
+}
+
+export function getGovValidator(chainId: number): Address {
+  const p = getPrecompiles(chainId)
+  if (!p) throw new Error(`Chain ${chainId} has no precompiled contracts`)
+  return p.systemContracts.govValidator
+}
+
+export function getGovMasterMinter(chainId: number): Address {
+  const p = getPrecompiles(chainId)
+  if (!p) throw new Error(`Chain ${chainId} has no precompiled contracts`)
+  return p.systemContracts.govMasterMinter
+}
+
+export function getGovMinter(chainId: number): Address {
+  const p = getPrecompiles(chainId)
+  if (!p) throw new Error(`Chain ${chainId} has no precompiled contracts`)
+  return p.systemContracts.govMinter
+}
+
+export function getGovCouncil(chainId: number): Address {
+  const p = getPrecompiles(chainId)
+  if (!p) throw new Error(`Chain ${chainId} has no precompiled contracts`)
+  return p.systemContracts.govCouncil
+}
+
+export function getBlsPopPrecompile(chainId: number): Address {
+  const p = getPrecompiles(chainId)
+  if (!p) throw new Error(`Chain ${chainId} has no precompiled contracts`)
+  return p.systemPrecompiles.blsPopPrecompile
+}
+
+export function getNativeCoinManager(chainId: number): Address {
+  const p = getPrecompiles(chainId)
+  if (!p) throw new Error(`Chain ${chainId} has no precompiled contracts`)
+  return p.systemPrecompiles.nativeCoinManager
+}
+
+export function getAccountManager(chainId: number): Address {
+  const p = getPrecompiles(chainId)
+  if (!p) throw new Error(`Chain ${chainId} has no precompiled contracts`)
+  return p.systemPrecompiles.accountManager
 }
 
 // ─── Legacy compatibility ────────────────────────────────────────────────────

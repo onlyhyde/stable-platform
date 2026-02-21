@@ -112,6 +112,34 @@ export interface FallbackAddresses {
 }
 
 /**
+ * System contract addresses (chain 8283 precompiled contracts)
+ */
+export interface SystemContractAddresses {
+  nativeCoinAdapter: Address
+  govValidator: Address
+  govMasterMinter: Address
+  govMinter: Address
+  govCouncil: Address
+}
+
+/**
+ * System precompile addresses (chain 8283 low-level precompiles)
+ */
+export interface SystemPrecompileAddresses {
+  blsPopPrecompile: Address
+  nativeCoinManager: Address
+  accountManager: Address
+}
+
+/**
+ * All precompiled/system addresses for chain 8283
+ */
+export interface PrecompiledAddresses {
+  systemContracts: SystemContractAddresses
+  systemPrecompiles: SystemPrecompileAddresses
+}
+
+/**
  * EIP-7702 delegate presets
  */
 export interface DelegatePreset {
@@ -138,6 +166,7 @@ export interface ChainAddresses {
   defi: DefiAddresses
   uniswap: UniswapAddresses
   fallbacks: FallbackAddresses
+  precompiles?: PrecompiledAddresses
   delegatePresets: DelegatePreset[]
   /** All contract addresses as flat key-value pairs (for dynamic access) */
   raw: Record<string, Address>

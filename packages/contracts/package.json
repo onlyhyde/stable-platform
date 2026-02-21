@@ -27,6 +27,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "generate": "tsx scripts/generate-addresses.ts",
+    "generate:env": "tsx scripts/generate-addresses.ts && echo 'Precompile addresses included in .env.contracts'",
     "lint": "biome lint src/",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
