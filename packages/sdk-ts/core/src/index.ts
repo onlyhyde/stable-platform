@@ -543,7 +543,9 @@ export {
 } from './transaction'
 // Utils
 export {
+  computeDomainSeparator,
   getUserOperationHash,
   packUserOperation,
+  signUserOpForKernel,
   unpackUserOperation,
 } from './utils/userOperation'

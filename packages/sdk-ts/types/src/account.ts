@@ -114,8 +114,8 @@ export function getAvailableTransactionModes(account: Account): TransactionMode[
 
   switch (account.type) {
     case ACCOUNT_TYPE.EOA:
-      // EOA can send direct transactions or set up EIP-7702 delegation
-      return [MODES.EOA, MODES.EIP7702]
+      // Plain EOA can only send direct transactions
+      return [MODES.EOA]
 
     case ACCOUNT_TYPE.DELEGATED:
       // Delegated EOA can use direct EOA mode or Smart Account mode

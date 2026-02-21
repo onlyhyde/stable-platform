@@ -26,7 +26,11 @@ func EncodeExecutionMode(callType CallType, execMode ExecMode) [32]byte {
 }
 
 // EncodeSingleCall encodes a single call for Kernel execution.
-// Format: abi.encode(address target, uint256 value, bytes callData)
+// Format: abi.encodePacked(address target[20], uint256 value[32], bytes callData[variable])
+// This matches Solady LibERC7579.decodeSingle() which reads:
+//   target = executionData[0:20]
+//   value  = executionData[20:52]
+//   data   = executionData[52:]
 func EncodeSingleCall(call accounts.Call) ([]byte, error) {
 	value := call.Value.Int
 	if value == nil {
@@ -38,28 +42,17 @@ func EncodeSingleCall(call accounts.Call) ([]byte, error) {
 		data = []byte{}
 	}
 
-	// Manual ABI encoding for (address, uint256, bytes)
-	encoded := make([]byte, 0, 32+32+32+32+len(data))
+	// Packed encoding: address(20 bytes) + uint256(32 bytes) + raw calldata
+	encoded := make([]byte, 0, 20+32+len(data))
 
-	// address (padded to 32 bytes)
-	encoded = append(encoded, common.LeftPadBytes(call.To.Bytes(), 32)...)
+	// address (20 bytes, NOT padded to 32)
+	encoded = append(encoded, call.To.Bytes()...)
 
-	// uint256 value
+	// uint256 value (32 bytes)
 	encoded = append(encoded, common.LeftPadBytes(value.Bytes(), 32)...)
 
-	// bytes offset (points to data location)
-	offset := big.NewInt(96) // 32 * 3 = offset to bytes data
-	encoded = append(encoded, common.LeftPadBytes(offset.Bytes(), 32)...)
-
-	// bytes length
-	dataLen := big.NewInt(int64(len(data)))
-	encoded = append(encoded, common.LeftPadBytes(dataLen.Bytes(), 32)...)
-
-	// bytes data (padded to 32 bytes)
+	// raw calldata bytes (no offset/length prefix, no padding)
 	encoded = append(encoded, data...)
-	if padding := len(data) % 32; padding != 0 {
-		encoded = append(encoded, make([]byte, 32-padding)...)
-	}
 
 	return encoded, nil
 }

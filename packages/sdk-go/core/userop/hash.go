@@ -10,8 +10,55 @@ import (
 	"github.com/stablenet/sdk-go/types"
 )
 
-// GetUserOperationHash calculates the hash of a UserOperation.
-// This is the hash that should be signed by the account.
+// EIP-712 / ERC-4337 v0.9 hash constants
+var (
+	// PACKED_USEROP_TYPEHASH = keccak256("PackedUserOperation(address sender,uint256 nonce,bytes initCode,bytes callData,bytes32 accountGasLimits,uint256 preVerificationGas,bytes32 gasFees,bytes paymasterAndData)")
+	packedUserOpTypehash = ethcrypto.Keccak256Hash([]byte("PackedUserOperation(address sender,uint256 nonce,bytes initCode,bytes callData,bytes32 accountGasLimits,uint256 preVerificationGas,bytes32 gasFees,bytes paymasterAndData)"))
+
+	// EIP712_DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+	eip712DomainTypehash = ethcrypto.Keccak256Hash([]byte("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"))
+
+	// keccak256("ERC4337")
+	eip712DomainNameHash = ethcrypto.Keccak256Hash([]byte("ERC4337"))
+
+	// keccak256("1")
+	eip712DomainVersionHash = ethcrypto.Keccak256Hash([]byte("1"))
+)
+
+// ComputeDomainSeparator computes the EIP-712 domain separator for EntryPoint v0.9.
+// domain = { name: "ERC4337", version: "1", chainId, verifyingContract: entryPoint }
+func ComputeDomainSeparator(entryPoint common.Address, chainID *big.Int) common.Hash {
+	bytes32Type, _ := abi.NewType("bytes32", "", nil)
+	uint256Type, _ := abi.NewType("uint256", "", nil)
+	addressType, _ := abi.NewType("address", "", nil)
+
+	args := abi.Arguments{
+		{Type: bytes32Type},  // DOMAIN_TYPEHASH
+		{Type: bytes32Type},  // nameHash
+		{Type: bytes32Type},  // versionHash
+		{Type: uint256Type},  // chainId
+		{Type: addressType},  // verifyingContract
+	}
+
+	encoded, _ := args.Pack(
+		eip712DomainTypehash,
+		eip712DomainNameHash,
+		eip712DomainVersionHash,
+		chainID,
+		entryPoint,
+	)
+
+	return ethcrypto.Keccak256Hash(encoded)
+}
+
+// GetUserOperationHash calculates the EIP-712 hash of a UserOperation (EntryPoint v0.9).
+//
+// This matches the EntryPoint v0.9 contract's getUserOpHash():
+//
+//	MessageHashUtils.toTypedDataHash(domainSeparatorV4, userOp.hash())
+//
+// Where userOp.hash() = keccak256(abi.encode(PACKED_USEROP_TYPEHASH, fields...))
+// and toTypedDataHash = keccak256("\x19\x01" + domainSeparator + structHash)
 func GetUserOperationHash(userOp *types.UserOperation, entryPoint types.Address, chainID *big.Int) (types.Hash, error) {
 	packed := Pack(userOp)
 
@@ -37,12 +84,13 @@ func GetUserOperationHash(userOp *types.UserOperation, entryPoint types.Address,
 	var gasFees [32]byte
 	copy(gasFees[:], padLeft(gasFeesBytes.Bytes(), 32))
 
-	// Encode the UserOperation struct
+	// Encode the struct hash: keccak256(abi.encode(TYPEHASH, sender, nonce, ...))
+	bytes32Type, _ := abi.NewType("bytes32", "", nil)
 	addressType, _ := abi.NewType("address", "", nil)
 	uint256Type, _ := abi.NewType("uint256", "", nil)
-	bytes32Type, _ := abi.NewType("bytes32", "", nil)
 
-	args := abi.Arguments{
+	structArgs := abi.Arguments{
+		{Type: bytes32Type},  // PACKED_USEROP_TYPEHASH
 		{Type: addressType},  // sender
 		{Type: uint256Type},  // nonce
 		{Type: bytes32Type},  // hashInitCode
@@ -53,7 +101,8 @@ func GetUserOperationHash(userOp *types.UserOperation, entryPoint types.Address,
 		{Type: bytes32Type},  // hashPaymasterAndData
 	}
 
-	userOpEncoded, err := args.Pack(
+	structEncoded, err := structArgs.Pack(
+		packedUserOpTypehash,
 		userOp.Sender,
 		userOp.Nonce,
 		hashInitCode,
@@ -67,24 +116,22 @@ func GetUserOperationHash(userOp *types.UserOperation, entryPoint types.Address,
 		return types.Hash{}, err
 	}
 
-	// Hash the encoded UserOperation
-	userOpHash := ethcrypto.Keccak256Hash(userOpEncoded)
+	structHash := ethcrypto.Keccak256Hash(structEncoded)
 
-	// Encode final hash with entryPoint and chainId
-	finalArgs := abi.Arguments{
-		{Type: bytes32Type},  // userOpHash
-		{Type: addressType},  // entryPoint
-		{Type: uint256Type},  // chainId
-	}
+	// Compute domain separator
+	domainSeparator := ComputeDomainSeparator(common.Address(entryPoint), chainID)
 
-	finalEncoded, err := finalArgs.Pack(
-		userOpHash,
-		common.Address(entryPoint),
-		chainID,
-	)
-	if err != nil {
-		return types.Hash{}, err
-	}
+	// EIP-712: keccak256("\x19\x01" + domainSeparator + structHash)
+	var eip712Data []byte
+	eip712Data = append(eip712Data, 0x19, 0x01)
+	eip712Data = append(eip712Data, domainSeparator.Bytes()...)
+	eip712Data = append(eip712Data, structHash.Bytes()...)
 
-	return ethcrypto.Keccak256Hash(finalEncoded), nil
+	return ethcrypto.Keccak256Hash(eip712Data), nil
+}
+
+// SignUserOpForKernel wraps a raw ECDSA signature for Kernel v3 ECDSA validator.
+// Kernel v3 expects: 0x02 prefix + raw ECDSA signature (65 bytes)
+func SignUserOpForKernel(rawSignature []byte) []byte {
+	return append([]byte{0x02}, rawSignature...)
 }

@@ -1,6 +1,6 @@
 import type { PackedUserOperation, UserOperation } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import { concat, encodeAbiParameters, pad, toHex } from 'viem'
+import { concat, encodeAbiParameters, pad, stringToHex, toHex } from 'viem'
 
 /**
  * Pack a UserOperation into the format expected by the bundler RPC
@@ -114,8 +114,61 @@ export function unpackUserOperation(packed: Record<string, Hex>): UserOperation 
   }
 }
 
+// Import keccak256 from viem
+import { keccak256 } from 'viem'
+
+// ============================================================================
+// EIP-712 / ERC-4337 v0.9 Hash Constants
+// ============================================================================
+
+const PACKED_USEROP_TYPEHASH = keccak256(
+  stringToHex(
+    'PackedUserOperation(address sender,uint256 nonce,bytes initCode,bytes callData,bytes32 accountGasLimits,uint256 preVerificationGas,bytes32 gasFees,bytes paymasterAndData)'
+  )
+)
+
+const EIP712_DOMAIN_TYPEHASH = keccak256(
+  stringToHex(
+    'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
+  )
+)
+
+const EIP712_DOMAIN_NAME_HASH = keccak256(stringToHex('ERC4337'))
+const EIP712_DOMAIN_VERSION_HASH = keccak256(stringToHex('1'))
+
 /**
- * Calculate the hash of a UserOperation
+ * Compute the EIP-712 domain separator for the EntryPoint v0.9.
+ * domain = { name: "ERC4337", version: "1", chainId, verifyingContract: entryPoint }
+ */
+export function computeDomainSeparator(entryPoint: Address, chainId: bigint): Hex {
+  return keccak256(
+    encodeAbiParameters(
+      [
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'address' },
+      ],
+      [
+        EIP712_DOMAIN_TYPEHASH,
+        EIP712_DOMAIN_NAME_HASH,
+        EIP712_DOMAIN_VERSION_HASH,
+        chainId,
+        entryPoint,
+      ]
+    )
+  )
+}
+
+/**
+ * Calculate the hash of a UserOperation using EIP-712 (EntryPoint v0.9).
+ *
+ * This matches the EntryPoint v0.9 contract's getUserOpHash():
+ *   MessageHashUtils.toTypedDataHash(domainSeparatorV4, userOp.hash())
+ *
+ * Where userOp.hash() = keccak256(abi.encode(PACKED_USEROP_TYPEHASH, fields...))
+ * and toTypedDataHash = keccak256("\x19\x01" + domainSeparator + structHash)
  */
 export function getUserOperationHash(
   userOp: UserOperation,
@@ -124,40 +177,44 @@ export function getUserOperationHash(
 ): Hex {
   const packed = packUserOperation(userOp)
 
-  // Hash the packed user operation (excluding signature)
-  const userOpEncoded = encodeAbiParameters(
-    [
-      { type: 'address' }, // sender
-      { type: 'uint256' }, // nonce
-      { type: 'bytes32' }, // hashInitCode
-      { type: 'bytes32' }, // hashCallData
-      { type: 'bytes32' }, // accountGasLimits
-      { type: 'uint256' }, // preVerificationGas
-      { type: 'bytes32' }, // gasFees
-      { type: 'bytes32' }, // hashPaymasterAndData
-    ],
-    [
-      userOp.sender,
-      userOp.nonce,
-      keccak256(packed.initCode),
-      keccak256(packed.callData),
-      packed.accountGasLimits as `0x${string}`,
-      userOp.preVerificationGas,
-      packed.gasFees as `0x${string}`,
-      keccak256(packed.paymasterAndData),
-    ]
-  )
-
-  const userOpHash = keccak256(userOpEncoded)
-
-  // Final hash includes entryPoint and chainId
-  return keccak256(
+  // Struct hash: keccak256(abi.encode(TYPEHASH, sender, nonce, hash(initCode), ...))
+  const structHash = keccak256(
     encodeAbiParameters(
-      [{ type: 'bytes32' }, { type: 'address' }, { type: 'uint256' }],
-      [userOpHash, entryPoint, chainId]
+      [
+        { type: 'bytes32' }, // PACKED_USEROP_TYPEHASH
+        { type: 'address' }, // sender
+        { type: 'uint256' }, // nonce
+        { type: 'bytes32' }, // keccak256(initCode)
+        { type: 'bytes32' }, // keccak256(callData)
+        { type: 'bytes32' }, // accountGasLimits
+        { type: 'uint256' }, // preVerificationGas
+        { type: 'bytes32' }, // gasFees
+        { type: 'bytes32' }, // keccak256(paymasterAndData)
+      ],
+      [
+        PACKED_USEROP_TYPEHASH,
+        userOp.sender,
+        userOp.nonce,
+        keccak256(packed.initCode),
+        keccak256(packed.callData),
+        packed.accountGasLimits as `0x${string}`,
+        userOp.preVerificationGas,
+        packed.gasFees as `0x${string}`,
+        keccak256(packed.paymasterAndData),
+      ]
     )
   )
+
+  const domainSeparator = computeDomainSeparator(entryPoint, chainId)
+
+  // EIP-712: keccak256("\x19\x01" + domainSeparator + structHash)
+  return keccak256(concat(['0x1901' as Hex, domainSeparator, structHash]))
 }
 
-// Import keccak256 from viem
-import { keccak256 } from 'viem'
+/**
+ * Wrap a raw ECDSA signature for Kernel v3 ECDSA validator.
+ * Kernel v3 expects: 0x02 prefix + raw ECDSA signature (65 bytes)
+ */
+export function signUserOpForKernel(rawSignature: Hex): Hex {
+  return concat(['0x02', rawSignature]) as Hex
+}

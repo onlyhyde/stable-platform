@@ -11,7 +11,12 @@ import type {
   TransactionResult,
   UserOperation,
 } from '@stablenet/sdk-types'
-import { ACCOUNT_TYPE, GAS_PAYMENT_TYPE, TRANSACTION_MODE } from '@stablenet/sdk-types'
+import {
+  ACCOUNT_TYPE,
+  ENTRY_POINT_V07_ADDRESS,
+  GAS_PAYMENT_TYPE,
+  TRANSACTION_MODE,
+} from '@stablenet/sdk-types'
 import type { Address, Hash, Hex } from 'viem'
 import { concat, encodeFunctionData, pad, toHex } from 'viem'
 import { ENTRY_POINT_ABI } from '../../abis/entryPoint'
@@ -58,7 +63,7 @@ interface SmartAccountPreparedData {
 // ============================================================================
 
 /** Default entry point address (ERC-4337 v0.7) */
-const DEFAULT_ENTRY_POINT = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
+const DEFAULT_ENTRY_POINT = ENTRY_POINT_V07_ADDRESS as Address
 
 // ============================================================================
 // Strategy Implementation

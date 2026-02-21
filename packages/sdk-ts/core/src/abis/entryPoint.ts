@@ -95,6 +95,28 @@ export const ENTRY_POINT_ABI = [
     stateMutability: 'view',
   },
 
+  /**
+   * Deposit to account's balance in EntryPoint
+   */
+  {
+    type: 'function',
+    name: 'depositTo',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+
+  /**
+   * Get account balance in EntryPoint
+   */
+  {
+    type: 'function',
+    name: 'balanceOf',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+
   // Events
   {
     type: 'event',
