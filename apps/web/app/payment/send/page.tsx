@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import type { Address } from 'viem'
 import { isAddress, parseUnits } from 'viem'
 import {
   Button,
@@ -12,8 +13,10 @@ import {
   Input,
   useToast,
 } from '@/components/common'
+import { BatchRecipientList } from '@/components/payment/BatchRecipientList'
 import type { WalletToken } from '@/hooks'
 import { useUserOp, useWallet, useWalletAssets } from '@/hooks'
+import { useBatchTransaction } from '@/hooks/useBatchTransaction'
 import { formatTokenAmount } from '@/lib/utils'
 
 type SelectedAsset = 'native' | WalletToken
@@ -28,6 +31,21 @@ export default function SendPage() {
   const [recipient, setRecipient] = useState('')
   const [amount, setAmount] = useState('')
   const [selectedAsset, setSelectedAsset] = useState<SelectedAsset>('native')
+  const [isBatchMode, setIsBatchMode] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
+
+  // Batch transaction hook
+  const {
+    recipients: batchRecipients,
+    addRecipient,
+    removeRecipient,
+    updateRecipient,
+    clearRecipients,
+    executeBatch,
+    estimateGasSavings,
+    isExecuting: isBatchExecuting,
+    error: batchError,
+  } = useBatchTransaction()
 
   // Get balance info from selected asset
   const balance =
@@ -36,25 +54,48 @@ export default function SendPage() {
       : BigInt(selectedAsset.balance || '0')
   const decimals = selectedAsset === 'native' ? (native?.decimals ?? 18) : selectedAsset.decimals
   const symbol = selectedAsset === 'native' ? (native?.symbol ?? 'ETH') : selectedAsset.symbol
+  const isNativeAsset = selectedAsset === 'native'
 
+  // Single-mode validation
   const isValidRecipient = recipient === '' || isAddress(recipient)
   const isValidAmount = amount === '' || (!Number.isNaN(Number(amount)) && Number(amount) > 0)
 
-  // Check if amount exceeds available balance
   let exceedsBalance = false
-  if (amount && !Number.isNaN(Number(amount)) && Number(amount) > 0) {
+  if (!isBatchMode && amount && !Number.isNaN(Number(amount)) && Number(amount) > 0) {
     try {
       const parsedAmount = parseUnits(amount, decimals)
       exceedsBalance = parsedAmount > balance
     } catch {
-      // parseUnits may throw on invalid input — treat as not exceeding
+      // parseUnits may throw on invalid input
     }
   }
 
-  const canSend =
-    isAddress(recipient) && Number(amount) > 0 && !exceedsBalance && isConnected && address
+  // Batch-mode validation
+  let batchTotal = 0n
+  let batchExceedsBalance = false
+  if (isBatchMode) {
+    for (const r of batchRecipients) {
+      if (r.amount && Number(r.amount) > 0) {
+        try {
+          batchTotal += parseUnits(r.amount, decimals)
+        } catch {
+          // skip invalid
+        }
+      }
+    }
+    batchExceedsBalance = batchTotal > balance
+  }
 
-  const [sendError, setSendError] = useState<string | null>(null)
+  const batchValidCount = batchRecipients.filter(
+    (r) => isAddress(r.address) && r.amount && Number(r.amount) > 0
+  ).length
+
+  const canSend = isBatchMode
+    ? batchValidCount >= 2 && !batchExceedsBalance && isConnected && address
+    : isAddress(recipient) && Number(amount) > 0 && !exceedsBalance && isConnected && address
+
+  // Gas savings for batch mode
+  const gasSavings = estimateGasSavings(Math.max(batchValidCount, 2), isNativeAsset)
 
   async function handleSend() {
     if (!canSend || !address) return
@@ -67,7 +108,7 @@ export default function SendPage() {
       persistent: true,
     })
 
-    const result = await sendTransaction(address, recipient as `0x${string}`, amount)
+    const result = await sendTransaction(address, recipient as Address, amount)
     if (result?.success && result.status === 'confirmed') {
       updateToast(toastId, {
         type: 'success',
@@ -108,6 +149,46 @@ export default function SendPage() {
     }
   }
 
+  async function handleBatchSend() {
+    if (!canSend || !address) return
+    setSendError(null)
+
+    const toastId = addToast({
+      type: 'loading',
+      title: 'Sending Batch Transaction',
+      message: `Sending ${batchValidCount} transfers in one transaction...`,
+      persistent: true,
+    })
+
+    const result = await executeBatch({
+      isNative: isNativeAsset,
+      tokenAddress: !isNativeAsset ? ((selectedAsset as WalletToken).address as Address) : undefined,
+      decimals,
+    })
+
+    if (result.success) {
+      updateToast(toastId, {
+        type: 'success',
+        title: 'Batch Confirmed',
+        message: `${batchValidCount} transfers completed successfully`,
+        txHash: result.txHash,
+        persistent: false,
+      })
+      clearRecipients()
+      router.push('/payment/history')
+    } else {
+      const msg = result.error ?? 'Batch transaction failed'
+      updateToast(toastId, {
+        type: 'error',
+        title: 'Batch Failed',
+        message: msg,
+        txHash: result.txHash,
+        persistent: false,
+      })
+      setSendError(msg)
+    }
+  }
+
   if (!isConnected) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -127,9 +208,37 @@ export default function SendPage() {
         <p style={{ color: 'rgb(var(--muted-foreground))' }}>Transfer tokens to another address</p>
       </div>
 
+      {/* Mode Toggle */}
+      <div className="flex rounded-lg p-1" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+        <button
+          type="button"
+          onClick={() => setIsBatchMode(false)}
+          className="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all"
+          style={{
+            backgroundColor: !isBatchMode ? 'rgb(var(--background))' : 'transparent',
+            color: !isBatchMode ? 'rgb(var(--foreground))' : 'rgb(var(--muted-foreground))',
+            boxShadow: !isBatchMode ? '0 1px 2px rgb(0 0 0 / 0.05)' : 'none',
+          }}
+        >
+          Single Transfer
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsBatchMode(true)}
+          className="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all"
+          style={{
+            backgroundColor: isBatchMode ? 'rgb(var(--background))' : 'transparent',
+            color: isBatchMode ? 'rgb(var(--foreground))' : 'rgb(var(--muted-foreground))',
+            boxShadow: isBatchMode ? '0 1px 2px rgb(0 0 0 / 0.05)' : 'none',
+          }}
+        >
+          Batch Transfer
+        </button>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Transfer Details</CardTitle>
+          <CardTitle>{isBatchMode ? 'Batch Transfer' : 'Transfer Details'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Asset Selector (for StableNet wallet) */}
@@ -211,50 +320,100 @@ export default function SendPage() {
             </p>
           </div>
 
-          {/* Recipient */}
-          <Input
-            label="Recipient Address"
-            placeholder="0x..."
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            error={!isValidRecipient ? 'Invalid address' : undefined}
-          />
+          {/* --- Single Transfer Mode --- */}
+          {!isBatchMode && (
+            <>
+              {/* Recipient */}
+              <Input
+                label="Recipient Address"
+                placeholder="0x..."
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value)}
+                error={!isValidRecipient ? 'Invalid address' : undefined}
+              />
 
-          {/* Amount */}
-          <Input
-            label={`Amount (${symbol})`}
-            type="number"
-            placeholder="0.0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            error={
-              !isValidAmount
-                ? 'Invalid amount'
-                : exceedsBalance
-                  ? 'Amount exceeds available balance'
-                  : undefined
-            }
-            rightElement={
-              <button
-                type="button"
-                onClick={() => setAmount(formatTokenAmount(balance, decimals))}
-                className="text-sm font-medium transition-colors"
-                style={{ color: 'rgb(var(--primary))' }}
-              >
-                MAX
-              </button>
-            }
-          />
+              {/* Amount */}
+              <Input
+                label={`Amount (${symbol})`}
+                type="number"
+                placeholder="0.0"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                error={
+                  !isValidAmount
+                    ? 'Invalid amount'
+                    : exceedsBalance
+                      ? 'Amount exceeds available balance'
+                      : undefined
+                }
+                rightElement={
+                  <button
+                    type="button"
+                    onClick={() => setAmount(formatTokenAmount(balance, decimals))}
+                    className="text-sm font-medium transition-colors"
+                    style={{ color: 'rgb(var(--primary))' }}
+                  >
+                    MAX
+                  </button>
+                }
+              />
+            </>
+          )}
+
+          {/* --- Batch Transfer Mode --- */}
+          {isBatchMode && (
+            <BatchRecipientList
+              recipients={batchRecipients}
+              onUpdate={updateRecipient}
+              onRemove={removeRecipient}
+              onAdd={addRecipient}
+              symbol={symbol}
+              decimals={decimals}
+              balance={balance}
+            />
+          )}
 
           {/* Gas Info */}
           <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-            <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Gas fees will be sponsored by the Paymaster
-            </p>
+            {isBatchMode && batchValidCount >= 2 ? (
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: 'rgb(var(--muted-foreground))' }}>
+                    Individual ({batchValidCount} txns)
+                  </span>
+                  <span style={{ color: 'rgb(var(--muted-foreground))' }}>
+                    ~{Number(gasSavings.individual).toLocaleString()} gas
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: 'rgb(var(--foreground))' }} className="font-medium">
+                    Batch (1 txn)
+                  </span>
+                  <span style={{ color: 'rgb(var(--foreground))' }} className="font-medium">
+                    ~{Number(gasSavings.batch).toLocaleString()} gas
+                  </span>
+                </div>
+                <div
+                  className="flex justify-between text-sm pt-1 border-t"
+                  style={{ borderColor: 'rgb(var(--border))' }}
+                >
+                  <span style={{ color: 'rgb(var(--success))' }} className="font-medium">
+                    Estimated Savings
+                  </span>
+                  <span style={{ color: 'rgb(var(--success))' }} className="font-medium">
+                    ~{gasSavings.savingsPercent}%
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Gas fees will be sponsored by the Paymaster
+              </p>
+            )}
           </div>
 
           {/* Error */}
-          {(error || sendError) && (
+          {(error || sendError || batchError) && (
             <div
               className="p-3 rounded-lg border"
               style={{
@@ -263,7 +422,7 @@ export default function SendPage() {
               }}
             >
               <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
-                {sendError ?? error?.message}
+                {sendError ?? batchError ?? error?.message}
               </p>
             </div>
           )}
@@ -274,12 +433,12 @@ export default function SendPage() {
               Cancel
             </Button>
             <Button
-              onClick={handleSend}
+              onClick={isBatchMode ? handleBatchSend : handleSend}
               disabled={!canSend}
-              isLoading={isLoading}
+              isLoading={isBatchMode ? isBatchExecuting : isLoading}
               className="flex-1"
             >
-              Send
+              {isBatchMode ? `Send Batch (${batchValidCount})` : 'Send'}
             </Button>
           </div>
         </CardContent>

@@ -14,7 +14,6 @@ vi.mock('wagmi', () => ({
 
 vi.mock('wagmi/connectors', () => ({
   injected: vi.fn(() => ({ type: 'injected' })),
-  walletConnect: vi.fn(() => ({ type: 'walletConnect' })),
 }))
 
 // Mock config functions to return known URLs

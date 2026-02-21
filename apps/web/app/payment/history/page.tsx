@@ -14,6 +14,7 @@ import {
 } from '@/components/common'
 import { useWallet } from '@/hooks'
 import { useTransactionHistory } from '@/hooks/useTransactionHistory'
+import { useTransactionManager } from '@/hooks/useTransactionManager'
 import type { PendingUserOp } from '@/hooks/useUserOp'
 import { useUserOp } from '@/hooks/useUserOp'
 import { formatAddress, formatRelativeTime } from '@/lib/utils'
@@ -29,8 +30,11 @@ export default function HistoryPage() {
   const { recheckUserOp, getPendingUserOps, removePendingUserOp } = useUserOp()
   const { addToast } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
+  const { speedUpTransaction, cancelTransaction, isSpeedingUp, isCancelling } =
+    useTransactionManager()
   const [pendingOps, setPendingOps] = useState<PendingUserOp[]>([])
   const [recheckingHash, setRecheckingHash] = useState<Hex | null>(null)
+  const [actionHash, setActionHash] = useState<Hex | null>(null)
 
   // Load pending ops on mount and when showPending changes
   useEffect(() => {
@@ -74,6 +78,57 @@ export default function HistoryPage() {
       setPendingOps((prev) => prev.filter((op) => op.userOpHash !== userOpHash))
     },
     [removePendingUserOp]
+  )
+
+  const handleSpeedUp = useCallback(
+    async (txHash: Hex) => {
+      setActionHash(txHash)
+      try {
+        const newHash = await speedUpTransaction(txHash)
+        addToast({
+          type: 'success',
+          title: 'Transaction Speed Up',
+          message: `Replacement submitted: ${newHash.slice(0, 10)}...`,
+          txHash: newHash,
+        })
+      } catch (err) {
+        addToast({
+          type: 'error',
+          title: 'Speed Up Failed',
+          message: err instanceof Error ? err.message : 'Failed to speed up',
+        })
+      } finally {
+        setActionHash(null)
+      }
+    },
+    [speedUpTransaction, addToast]
+  )
+
+  const handleCancel = useCallback(
+    async (txHash: Hex) => {
+      setActionHash(txHash)
+      try {
+        const cancelHash = await cancelTransaction(txHash)
+        addToast({
+          type: 'success',
+          title: 'Transaction Cancelled',
+          message: `Cancel submitted: ${cancelHash.slice(0, 10)}...`,
+          txHash: cancelHash,
+        })
+        // Remove from pending ops since we replaced it
+        removePendingUserOp(txHash)
+        setPendingOps((prev) => prev.filter((op) => op.userOpHash !== txHash))
+      } catch (err) {
+        addToast({
+          type: 'error',
+          title: 'Cancel Failed',
+          message: err instanceof Error ? err.message : 'Failed to cancel',
+        })
+      } finally {
+        setActionHash(null)
+      }
+    },
+    [cancelTransaction, addToast, removePendingUserOp]
   )
 
   if (!isConnected) {
@@ -146,8 +201,28 @@ export default function HistoryPage() {
                   <div className="flex gap-2">
                     <Button
                       variant="secondary"
+                      onClick={() => handleSpeedUp(op.userOpHash)}
+                      isLoading={actionHash === op.userOpHash && isSpeedingUp}
+                      disabled={actionHash !== null}
+                      className="text-xs px-3 py-1"
+                    >
+                      Speed Up
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleCancel(op.userOpHash)}
+                      isLoading={actionHash === op.userOpHash && isCancelling}
+                      disabled={actionHash !== null}
+                      className="text-xs px-3 py-1"
+                      style={{ color: 'rgb(var(--destructive))' }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="secondary"
                       onClick={() => handleRecheck(op.userOpHash)}
                       isLoading={recheckingHash === op.userOpHash}
+                      disabled={actionHash !== null}
                       className="text-xs px-3 py-1"
                     >
                       Recheck

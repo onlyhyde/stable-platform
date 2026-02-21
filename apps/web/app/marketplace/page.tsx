@@ -19,140 +19,7 @@ import {
   ModuleDetailModal,
 } from '@/components/marketplace'
 import { useModuleInstall, useSmartAccount, useWallet } from '@/hooks'
-
-/**
- * Default module catalog (PoC - served inline; production would fetch from module-registry API)
- */
-const MODULE_CATALOG: ModuleCardData[] = [
-  {
-    id: 'ecdsa-validator',
-    name: 'ECDSA Validator',
-    description:
-      'Standard ECDSA signature validation for smart accounts. Essential security module for transaction signing.',
-    version: '1.0.0',
-    moduleType: 'validator',
-    category: 'security',
-    author: 'StableNet',
-    installCount: 1250,
-    rating: 4.8,
-    ratingCount: 89,
-    auditStatus: 'verified',
-    featured: true,
-    tags: ['ecdsa', 'signature', 'security', 'core'],
-  },
-  {
-    id: 'session-key-validator',
-    name: 'Session Key Validator',
-    description:
-      'Temporary session keys with permission scoping. Enables gasless dApp interactions without repeated signing.',
-    version: '1.0.0',
-    moduleType: 'validator',
-    category: 'security',
-    author: 'StableNet',
-    installCount: 830,
-    rating: 4.6,
-    ratingCount: 52,
-    auditStatus: 'audited',
-    featured: true,
-    tags: ['session', 'temporary', 'gasless', 'permissions'],
-  },
-  {
-    id: 'subscription-executor',
-    name: 'Subscription Executor',
-    description:
-      'Automated recurring payments executor. Schedule DCA, subscriptions, and periodic transfers.',
-    version: '1.0.0',
-    moduleType: 'executor',
-    category: 'automation',
-    author: 'StableNet',
-    installCount: 620,
-    rating: 4.5,
-    ratingCount: 41,
-    auditStatus: 'audited',
-    featured: true,
-    tags: ['subscription', 'recurring', 'dca', 'automation'],
-  },
-  {
-    id: 'spending-limit-hook',
-    name: 'Spending Limit Hook',
-    description:
-      'Enforce per-transaction and daily spending limits. Protect against unauthorized large transfers.',
-    version: '1.0.0',
-    moduleType: 'hook',
-    category: 'security',
-    author: 'StableNet',
-    installCount: 510,
-    rating: 4.7,
-    ratingCount: 38,
-    auditStatus: 'audited',
-    featured: false,
-    tags: ['spending', 'limit', 'security', 'protection'],
-  },
-  {
-    id: 'social-recovery',
-    name: 'Social Recovery',
-    description:
-      'Recover account access using trusted guardians. Set threshold-based recovery with timelock protection.',
-    version: '1.0.0',
-    moduleType: 'validator',
-    category: 'social-recovery',
-    author: 'StableNet',
-    installCount: 470,
-    rating: 4.4,
-    ratingCount: 35,
-    auditStatus: 'community-reviewed',
-    featured: true,
-    tags: ['recovery', 'guardian', 'social', 'backup'],
-  },
-  {
-    id: 'dex-swap-executor',
-    name: 'DEX Swap Executor',
-    description:
-      'Execute token swaps through Uniswap V3 directly from your smart account with built-in slippage protection.',
-    version: '1.0.0',
-    moduleType: 'executor',
-    category: 'defi',
-    author: 'StableNet',
-    installCount: 390,
-    rating: 4.3,
-    ratingCount: 28,
-    auditStatus: 'community-reviewed',
-    featured: false,
-    tags: ['dex', 'swap', 'uniswap', 'defi'],
-  },
-  {
-    id: 'stealth-address-fallback',
-    name: 'Stealth Address Fallback',
-    description: 'Privacy-preserving receive addresses using stealth address protocol (ERC-5564).',
-    version: '1.0.0',
-    moduleType: 'fallback',
-    category: 'privacy',
-    author: 'StableNet',
-    installCount: 280,
-    rating: 4.2,
-    ratingCount: 19,
-    auditStatus: 'community-reviewed',
-    featured: false,
-    tags: ['stealth', 'privacy', 'erc5564', 'anonymous'],
-  },
-  {
-    id: 'multisig-validator',
-    name: 'Multisig Validator',
-    description: 'Multi-signature validation requiring M-of-N signatures for transaction approval.',
-    version: '1.0.0',
-    moduleType: 'validator',
-    category: 'governance',
-    author: 'StableNet',
-    installCount: 340,
-    rating: 4.5,
-    ratingCount: 24,
-    auditStatus: 'audited',
-    featured: false,
-    tags: ['multisig', 'governance', 'threshold', 'team'],
-  },
-]
-
-const ALL_MODULE_IDS = MODULE_CATALOG.map((m) => m.id)
+import { useModuleRegistry } from '@/hooks/useModuleRegistry'
 
 export default function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -167,15 +34,22 @@ export default function MarketplacePage() {
   const { isConnected, isConnecting, address, connect, connectors } = useWallet()
   const { status } = useSmartAccount()
   const { addToast, updateToast } = useToast()
-  const { installModule, installedModules, installingModuleId, loadInstalledModules } =
-    useModuleInstall()
+  const {
+    installModule,
+    uninstallModule,
+    installedModules,
+    installingModuleId,
+    uninstallingModuleId,
+    loadInstalledModules,
+  } = useModuleInstall()
+  const { modules: MODULE_CATALOG, isLoading: isLoadingRegistry } = useModuleRegistry()
 
   // Load on-chain installed status when smart account is ready
   useEffect(() => {
-    if (isConnected && status.isSmartAccount) {
-      loadInstalledModules(ALL_MODULE_IDS)
+    if (isConnected && status.isSmartAccount && MODULE_CATALOG.length > 0) {
+      loadInstalledModules(MODULE_CATALOG.map((m) => m.id))
     }
-  }, [isConnected, status.isSmartAccount, loadInstalledModules])
+  }, [isConnected, status.isSmartAccount, loadInstalledModules, MODULE_CATALOG])
 
   // ============================================================================
   // Handlers
@@ -252,16 +126,38 @@ export default function MarketplacePage() {
     }
   }, [detailModalModule, handleInstallClick])
 
-  const handleDetailUninstallClick = useCallback(() => {
-    if (detailModalModule) {
-      addToast({
-        type: 'info',
-        title: 'Uninstall Module',
-        message: `Uninstalling "${detailModalModule.name}" is not yet supported on-chain.`,
+  const handleDetailUninstallClick = useCallback(async () => {
+    if (!detailModalModule) return
+
+    const mod = detailModalModule
+    setDetailModalModule(null)
+
+    const toastId = addToast({
+      type: 'loading',
+      title: `Uninstalling ${mod.name}...`,
+      message: 'Please confirm the transaction in your wallet.',
+      persistent: true,
+    })
+
+    const result = await uninstallModule({ moduleId: mod.id })
+
+    if (result.success) {
+      updateToast(toastId, {
+        type: 'success',
+        title: `${mod.name} uninstalled`,
+        message: 'Module has been removed from your smart account.',
+        txHash: result.txHash,
+        persistent: false,
       })
-      setDetailModalModule(null)
+    } else {
+      updateToast(toastId, {
+        type: 'error',
+        title: 'Uninstall failed',
+        message: result.error,
+        persistent: false,
+      })
     }
-  }, [detailModalModule, addToast])
+  }, [detailModalModule, addToast, updateToast, uninstallModule])
 
   // ============================================================================
   // Filtering

@@ -6,6 +6,7 @@ import { type Address, formatUnits, parseUnits } from 'viem'
 import { PageHeader } from '@/components/common/PageHeader'
 import { useToast } from '@/components/common/Toast'
 import { useSubscription } from '@/hooks/useSubscription'
+import { useSubscriptionEvents } from '@/hooks/useSubscriptionEvents'
 import { useWallet } from '@/hooks/useWallet'
 import type { PlanDisplayInfo } from '@/types/subscription'
 import { INTERVAL_PRESETS } from '@/types/subscription'
@@ -174,6 +175,15 @@ export function MerchantDashboard() {
   const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([])
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
 
+  // On-chain event data for analytics
+  const {
+    paymentData: eventPaymentData,
+    transactions: eventTransactions,
+    stats: eventStats,
+    isLoading: isLoadingEvents,
+    refetch: refetchEvents,
+  } = useSubscriptionEvents(timeRange)
+
   // Load merchant plans on mount
   useEffect(() => {
     if (isConnected && address) {
@@ -192,40 +202,23 @@ export function MerchantDashboard() {
   // Map contract data to card-compatible types
   const plans: SubscriptionPlan[] = merchantPlans.map(toCardPlan)
 
-  // Estimate stats from on-chain plan data
-  const activePlans = plans.filter((p) => p.isActive)
+  // Merge on-chain plan data with event-based stats
   const totalSubscribers = plans.reduce((sum, p) => sum + p.activeSubscribers, 0)
-  const estimatedMonthlyRevenue = activePlans.reduce((sum, p) => {
-    // Normalize to monthly: daily×30, weekly×4, yearly÷12
-    const multiplier =
-      p.interval === 'daily'
-        ? 30
-        : p.interval === 'weekly'
-          ? 4
-          : p.interval === 'yearly'
-            ? 1 / 12
-            : 1
-    return sum + p.price * p.activeSubscribers * multiplier
-  }, 0)
-  const avgTxValue =
-    activePlans.length > 0
-      ? activePlans.reduce((sum, p) => sum + p.price, 0) / activePlans.length
-      : 0
 
   const stats: MerchantStats = {
-    totalRevenue: estimatedMonthlyRevenue,
-    revenueChange: 0, // Historical comparison requires event indexer
+    totalRevenue: eventStats.totalRevenue,
+    revenueChange: eventStats.revenueChange,
     activeSubscriptions: merchantStats?.activeSubscribers ?? totalSubscribers,
-    subscriptionChange: 0, // Historical comparison requires event indexer
-    successfulPayments: totalSubscribers, // Each active subscriber = at least 1 payment
-    paymentSuccessRate: totalSubscribers > 0 ? 100 : 0,
-    avgTransactionValue: avgTxValue,
-    avgValueChange: 0, // Historical comparison requires event indexer
+    subscriptionChange: eventStats.subscriptionChange,
+    successfulPayments: eventStats.totalPayments,
+    paymentSuccessRate: eventStats.paymentSuccessRate,
+    avgTransactionValue: eventStats.avgTransactionValue,
+    avgValueChange: eventStats.avgValueChange,
   }
 
-  // Transaction history and chart data require an event indexer to populate
-  const transactions: Transaction[] = []
-  const paymentData: PaymentData[] = []
+  // Use event-based data for analytics and transaction history
+  const transactions: Transaction[] = eventTransactions
+  const paymentData: PaymentData[] = eventPaymentData
 
   // ---------- Plan Handlers ----------
 

@@ -248,20 +248,24 @@ export function SubscriptionPlansCard({
                     <button
                       type="button"
                       onClick={() => onTogglePlan(plan.id, !plan.isActive)}
-                      className="text-sm"
+                      className="text-sm opacity-50 cursor-not-allowed"
                       style={{
-                        color: plan.isActive ? 'rgb(var(--destructive))' : 'rgb(var(--success))',
+                        color: 'rgb(var(--muted-foreground))',
                       }}
+                      title="Requires contract upgrade"
                     >
                       {plan.isActive ? 'Deactivate' : 'Activate'}
+                      <span className="ml-1 text-xs">(Soon)</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleEditClick(plan)}
-                      className="text-sm"
-                      style={{ color: 'rgb(var(--primary))' }}
+                      className="text-sm opacity-50 cursor-not-allowed"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                      title="Requires contract upgrade"
                     >
                       Edit
+                      <span className="ml-1 text-xs">(Soon)</span>
                     </button>
                   </div>
                 </div>

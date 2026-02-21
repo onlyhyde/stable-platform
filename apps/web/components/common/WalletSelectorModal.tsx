@@ -44,13 +44,6 @@ const walletIcons: Record<
     gradientTo: 'to-blue-700',
     label: 'Coinbase',
   },
-  // WalletConnect
-  walletConnect: {
-    icon: '🔗',
-    gradientFrom: 'from-accent-400',
-    gradientTo: 'to-accent-600',
-    label: 'WalletConnect',
-  },
   // Generic
   injected: {
     icon: '🌐',

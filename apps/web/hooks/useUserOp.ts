@@ -2,8 +2,15 @@
 
 import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
-import { encodeFunctionData, parseEther, toHex } from 'viem'
+import { concat, encodeFunctionData, pad, parseEther, toHex } from 'viem'
+import { useWalletClient } from 'wagmi'
 import { useStableNetContext } from '@/providers'
+import {
+  getUserOperationHash,
+  packUserOperation,
+  signUserOpForKernel,
+} from '@stablenet/core'
+import type { UserOperation } from '@stablenet/core'
 
 interface SendUserOpParams {
   to: Address
@@ -38,21 +45,30 @@ interface UseUserOpConfig {
   signUserOp?: (userOp: unknown, entryPoint: Address, chainId: number) => Promise<Hex>
 }
 
-// Execute ABI for simple account
-const EXECUTE_ABI = [
+// ============================================================================
+// Kernel v3 Execute ABI (ERC-7579)
+// ============================================================================
+
+const KERNEL_EXECUTE_ABI = [
   {
-    name: 'execute',
     type: 'function',
+    name: 'execute',
     inputs: [
-      { name: 'dest', type: 'address' },
-      { name: 'value', type: 'uint256' },
-      { name: 'func', type: 'bytes' },
+      { name: 'mode', type: 'bytes32' },
+      { name: 'executionCalldata', type: 'bytes' },
     ],
     outputs: [],
+    stateMutability: 'payable',
   },
 ] as const
 
-// Pending UserOp localStorage key
+/** Single call mode: callType=0x00, execMode=0x00 */
+const SINGLE_EXEC_MODE = `0x${'00'.repeat(32)}` as Hex
+
+// ============================================================================
+// Pending UserOp localStorage
+// ============================================================================
+
 const PENDING_OPS_KEY = 'stablenet:pending-user-ops'
 
 export interface PendingUserOp {
@@ -66,7 +82,6 @@ function loadPendingOps(): PendingUserOp[] {
     const stored = localStorage.getItem(PENDING_OPS_KEY)
     if (!stored) return []
     const ops = JSON.parse(stored) as PendingUserOp[]
-    // Prune ops older than 24 hours
     const cutoff = Date.now() - 24 * 60 * 60 * 1000
     return ops.filter((op) => op.timestamp > cutoff)
   } catch {
@@ -93,20 +108,28 @@ function removePendingOp(userOpHash: Hex): void {
   }
 }
 
+// ============================================================================
 // Default gas values (fallback if estimation not provided)
+// ============================================================================
+
 const DEFAULT_GAS = {
-  callGasLimit: BigInt(100000),
-  verificationGasLimit: BigInt(150000),
-  preVerificationGas: BigInt(50000),
+  callGasLimit: 200000n,
+  verificationGasLimit: 200000n,
+  preVerificationGas: 100000n,
 }
 
 const DEFAULT_GAS_PRICE = {
-  maxFeePerGas: BigInt(1000000000), // 1 gwei
-  maxPriorityFeePerGas: BigInt(1000000000), // 1 gwei
+  maxFeePerGas: 1000000000n, // 1 gwei
+  maxPriorityFeePerGas: 1000000000n, // 1 gwei
 }
+
+// ============================================================================
+// Hook
+// ============================================================================
 
 export function useUserOp(config: UseUserOpConfig = {}) {
   const { bundlerUrl, entryPoint, chainId } = useStableNetContext()
+  const { data: walletClient } = useWalletClient()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
@@ -152,18 +175,28 @@ export function useUserOp(config: UseUserOpConfig = {}) {
   )
 
   /**
-   * Build execute calldata for account
+   * Build Kernel v3 execute calldata for a single call.
+   * Uses execute(bytes32 mode, bytes executionCalldata) with mode=0x00...00 (single call).
+   *
+   * executionCalldata uses ERC-7579 packed encoding (NOT abi.encode):
+   *   abi.encodePacked(address target, uint256 value, bytes callData)
+   *   = 20 bytes (address) + 32 bytes (uint256) + raw bytes
    */
   const buildExecuteCalldata = useCallback((to: Address, value: bigint, data: Hex): Hex => {
+    const executionCalldata = concat([
+      to,                              // 20 bytes: address (packed, no padding)
+      pad(toHex(value), { size: 32 }), // 32 bytes: uint256
+      data,                            // variable: raw calldata bytes
+    ]) as Hex
     return encodeFunctionData({
-      abi: EXECUTE_ABI,
+      abi: KERNEL_EXECUTE_ABI,
       functionName: 'execute',
-      args: [to, value, data],
+      args: [SINGLE_EXEC_MODE, executionCalldata],
     })
   }, [])
 
   /**
-   * Send UserOperation to bundler
+   * Send UserOperation to bundler using packed v0.7 RPC format.
    */
   const sendUserOp = useCallback(
     async (sender: Address, params: SendUserOpParams): Promise<UserOpResult | null> => {
@@ -172,15 +205,15 @@ export function useUserOp(config: UseUserOpConfig = {}) {
 
       try {
         // 1. Fetch nonce from chain
-        let nonce = BigInt(0)
+        let nonce = 0n
         if (getNonce) {
           nonce = await getNonce(sender)
         }
 
-        // 2. Build calldata
+        // 2. Build Kernel execute calldata
         const callData = buildExecuteCalldata(
           params.to,
-          params.value ?? BigInt(0),
+          params.value ?? 0n,
           params.data ?? '0x'
         )
 
@@ -200,29 +233,37 @@ export function useUserOp(config: UseUserOpConfig = {}) {
           gasPrices = await getGasPrice()
         }
 
-        // 5. Build UserOperation
-        const userOp = {
+        // 5. Build UserOperation and pack using SDK
+        const userOp: UserOperation = {
           sender,
-          nonce: toHex(nonce),
-          initCode: '0x' as Hex,
+          nonce,
           callData,
-          callGasLimit: toHex(gasLimits.callGasLimit),
-          verificationGasLimit: toHex(gasLimits.verificationGasLimit),
-          preVerificationGas: toHex(gasLimits.preVerificationGas),
-          maxFeePerGas: toHex(gasPrices.maxFeePerGas),
-          maxPriorityFeePerGas: toHex(gasPrices.maxPriorityFeePerGas),
-          paymasterAndData: '0x' as Hex,
+          callGasLimit: gasLimits.callGasLimit,
+          verificationGasLimit: gasLimits.verificationGasLimit,
+          preVerificationGas: gasLimits.preVerificationGas,
+          maxFeePerGas: gasPrices.maxFeePerGas,
+          maxPriorityFeePerGas: gasPrices.maxPriorityFeePerGas,
           signature: '0x' as Hex,
         }
 
-        // 6. Sign UserOperation
+        const packed = packUserOperation(userOp)
+
+        // 6. Compute EIP-712 hash and sign
         if (signUserOp) {
-          userOp.signature = await signUserOp(userOp, entryPoint, chainId)
+          packed.signature = await signUserOp(packed, entryPoint, chainId)
+        } else if (walletClient) {
+          const opHash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
+          const rawSignature = await walletClient.signMessage({
+            message: { raw: opHash },
+          })
+          packed.signature = signUserOpForKernel(rawSignature)
         } else {
-          throw new Error('signUserOp callback is required to sign the UserOperation')
+          throw new Error(
+            'No wallet connected. Please connect your wallet to sign transactions.'
+          )
         }
 
-        // 7. Send to bundler
+        // 7. Send packed UserOp to bundler
         const response = await fetch(bundlerUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -230,7 +271,7 @@ export function useUserOp(config: UseUserOpConfig = {}) {
             jsonrpc: '2.0',
             id: 1,
             method: 'eth_sendUserOperation',
-            params: [userOp, entryPoint],
+            params: [packed, entryPoint],
           }),
         })
 
@@ -272,6 +313,7 @@ export function useUserOp(config: UseUserOpConfig = {}) {
       bundlerUrl,
       entryPoint,
       chainId,
+      walletClient,
       getNonce,
       estimateGas,
       getGasPrice,
@@ -297,13 +339,10 @@ export function useUserOp(config: UseUserOpConfig = {}) {
 
   /**
    * Re-check a previously submitted UserOp that timed out.
-   * Useful when the initial polling reached maxAttempts but
-   * the operation may still be pending on-chain.
    */
   const recheckUserOp = useCallback(
     async (userOpHash: Hex): Promise<UserOpResult> => {
       const receipt = await waitForUserOpReceipt(userOpHash, 10, 3000)
-      // Remove from pending if resolved
       if (receipt) {
         removePendingOp(userOpHash)
       }

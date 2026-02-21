@@ -96,9 +96,22 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/hooks/usePools', () => ({
   usePools: vi.fn(() => ({
     pools: [],
+    positions: [],
     isLoading: false,
+    isLoadingPositions: false,
     error: null,
     refresh: vi.fn(),
+  })),
+}))
+
+vi.mock('@/hooks/usePoolLiquidity', () => ({
+  usePoolLiquidity: vi.fn(() => ({
+    addLiquidity: vi.fn(),
+    removeLiquidity: vi.fn(),
+    step: 'idle',
+    isLoading: false,
+    error: null,
+    clearError: vi.fn(),
   })),
 }))
 
@@ -156,7 +169,9 @@ describe('Page Integration — DeFi', () => {
     it('should display loading state when fetching pools', async () => {
       vi.mocked(usePools).mockReturnValue({
         pools: [],
+        positions: [],
         isLoading: true,
+        isLoadingPositions: false,
         error: null,
         refresh: vi.fn(),
       })
@@ -193,7 +208,9 @@ describe('Page Integration — DeFi', () => {
 
       vi.mocked(usePools).mockReturnValue({
         pools: mockPools,
+        positions: [],
         isLoading: false,
+        isLoadingPositions: false,
         error: null,
         refresh: vi.fn(),
       })

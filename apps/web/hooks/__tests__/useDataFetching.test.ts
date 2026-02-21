@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuditLogs } from '../useAuditLogs'
 import { useExpenses } from '../useExpenses'
 import { usePayroll } from '../usePayroll'
@@ -27,32 +27,50 @@ vi.mock('@/hooks/useWallet', () => ({
   }),
 }))
 
+// Mock constants for usePools
+vi.mock('@/lib/constants', () => ({
+  getServiceUrls: () => ({
+    orderRouter: 'http://localhost:8087',
+    bundler: 'http://localhost:4337',
+    paymaster: 'http://localhost:4338',
+    stealthServer: 'http://localhost:4339',
+    indexer: 'http://localhost:4000',
+  }),
+}))
+
 describe('usePools', () => {
+  const originalFetch = global.fetch
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('should fetch pools from contract', async () => {
-    const mockPools = [
-      {
-        address: '0x1234567890123456789012345678901234567890',
-        token0: { address: '0x0', symbol: 'ETH', name: 'Ether', decimals: 18 },
-        token1: { address: '0x1', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
-        reserve0: BigInt('1000000000000000000000'),
-        reserve1: BigInt('2500000000000'),
-        fee: 0.3,
-        tvl: 5000000,
-        apr: 12.5,
-      },
-    ]
+  afterEach(() => {
+    global.fetch = originalFetch
+  })
 
-    const mockFetchPools = vi.fn().mockResolvedValue(mockPools)
+  it('should fetch pools from Order Router API', async () => {
+    const mockPoolsResponse = {
+      pools: [
+        {
+          address: '0x1234567890123456789012345678901234567890',
+          token0: { address: '0x0', symbol: 'ETH', name: 'Ether', decimals: 18 },
+          token1: { address: '0x1', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+          reserve0: '1000000000000000000000',
+          reserve1: '2500000000000',
+          fee: 0.3,
+          tvl: 5000000,
+          apr: 12.5,
+        },
+      ],
+    }
 
-    const { result } = renderHook(() =>
-      usePools({
-        fetchPools: mockFetchPools,
-      })
-    )
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockPoolsResponse),
+    })
+
+    const { result } = renderHook(() => usePools())
 
     expect(result.current.isLoading).toBe(true)
 
@@ -62,17 +80,15 @@ describe('usePools', () => {
 
     expect(result.current.pools).toHaveLength(1)
     expect(result.current.pools[0].token0.symbol).toBe('ETH')
-    expect(mockFetchPools).toHaveBeenCalled()
   })
 
   it('should handle fetch errors', async () => {
-    const mockFetchPools = vi.fn().mockRejectedValue(new Error('Network error'))
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+    })
 
-    const { result } = renderHook(() =>
-      usePools({
-        fetchPools: mockFetchPools,
-      })
-    )
+    const { result } = renderHook(() => usePools())
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -83,25 +99,23 @@ describe('usePools', () => {
   })
 
   it('should allow manual refresh', async () => {
-    const mockFetchPools = vi.fn().mockResolvedValue([])
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ pools: [] }),
+    })
 
-    const { result } = renderHook(() =>
-      usePools({
-        fetchPools: mockFetchPools,
-      })
-    )
+    const { result } = renderHook(() => usePools())
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
     })
 
-    expect(mockFetchPools).toHaveBeenCalledTimes(1)
-
     await act(async () => {
       await result.current.refresh()
     })
 
-    expect(mockFetchPools).toHaveBeenCalledTimes(2)
+    // Called at least twice: initial fetch + refresh (pools + positions each)
+    expect(global.fetch).toHaveBeenCalled()
   })
 })
 

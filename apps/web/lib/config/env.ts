@@ -15,6 +15,18 @@
  * - Override via Settings > Network > RPC Configuration
  */
 
+import {
+  getEntryPoint,
+  getKernelFactory,
+  getPermissionManager,
+  getRecurringPaymentExecutor,
+  getStealthAnnouncer,
+  getStealthRegistry,
+  getSubscriptionManager,
+  getVerifyingPaymaster,
+  getContractAddress,
+} from '@stablenet/contracts'
+
 import { getRpcSettings } from '../utils'
 
 /**
@@ -90,16 +102,16 @@ const DEFAULTS = {
   TESTNET_INDEXER_URL: 'https://indexer.testnet.stablenet.dev/api',
   TESTNET_ORDER_ROUTER_URL: 'http://localhost:8087',
 
-  // Contract Addresses (Local - StableNet chain 8283)
-  LOCAL_ENTRY_POINT: '0xef6817fe73741a8f10088f9511c64b666a338a14',
-  LOCAL_ACCOUNT_FACTORY: '0xbebb0338503f9e28ffdc84c3548f8454f12dd1d3',
-  LOCAL_PAYMASTER: '0xfed3fc34af59a30c5a19ff8caf260604ddf39fc0',
-  LOCAL_STEALTH_ANNOUNCER: '0x7706eeaacd036c8c981147991913419e3fc33abc',
-  LOCAL_STEALTH_REGISTRY: '0xfb8b3fce6fd358b6f13a05a216bdc1deb46c7cd9',
-  LOCAL_SESSION_KEY_MANAGER: '0x621b0872c00f6328bd9001a121af09dd18b193e0',
-  LOCAL_SUBSCRIPTION_MANAGER: '0x3157c4a86d07a223e3b46f20633f5486e96b8f3c',
-  LOCAL_RECURRING_PAYMENT_MANAGER: '0x3157c4a86d07a223e3b46f20633f5486e96b8f3c',
-  LOCAL_PERMISSION_MANAGER: '0x38fb544beee122a2ea593e7d9c8f019751273287',
+  // Contract Addresses (Local - StableNet chain 8283, sourced from @stablenet/contracts)
+  LOCAL_ENTRY_POINT: getEntryPoint(8283),
+  LOCAL_ACCOUNT_FACTORY: getKernelFactory(8283),
+  LOCAL_PAYMASTER: getVerifyingPaymaster(8283),
+  LOCAL_STEALTH_ANNOUNCER: getStealthAnnouncer(8283),
+  LOCAL_STEALTH_REGISTRY: getStealthRegistry(8283),
+  LOCAL_SESSION_KEY_MANAGER: getContractAddress(8283, 'sessionKeyExecutor'),
+  LOCAL_SUBSCRIPTION_MANAGER: getSubscriptionManager(8283),
+  LOCAL_RECURRING_PAYMENT_MANAGER: getRecurringPaymentExecutor(8283),
+  LOCAL_PERMISSION_MANAGER: getPermissionManager(8283),
 
   // Contract Addresses (Testnet - ERC-4337 v0.7)
   TESTNET_ENTRY_POINT: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
@@ -117,7 +129,7 @@ const DEFAULTS = {
   MAX_SLIPPAGE: 50, // 50%
   TX_TIMEOUT: 60000, // 60 seconds
   DEFAULT_CHAIN_ID: 8283, // StableNet Local
-} as const
+}
 
 /**
  * Get environment variable with fallback (browser-safe)
