@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@noble/hashes": "^1.6.1",
-    "viem": "^2.21.0"
+    "viem": "^2.46.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",
@@ -40,6 +40,6 @@
     "typescript": "^5.7.2"
   },
   "peerDependencies": {
-    "viem": "^2.21.0"
+    "viem": "^2.46.2"
   }
 }
