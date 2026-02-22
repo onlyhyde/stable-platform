@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { formatEther } from 'viem'
+import { formatEther, formatUnits } from 'viem'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import type { WalletToken } from '@/hooks'
 import { useWallet, useWalletAssets } from '@/hooks'
@@ -312,7 +312,9 @@ export default function DashboardPage() {
                         }}
                       >
                         {isSent ? '-' : '+'}
-                        {formatEther(tx.value)} ETH
+                        {tx.tokenTransfer
+                          ? `${formatUnits(tx.tokenTransfer.value, tx.tokenTransfer.decimals ?? 18)} ${tx.tokenTransfer.symbol ?? formatAddress(tx.tokenTransfer.contractAddress, 3)}`
+                          : `${formatEther(tx.value)} ${symbol}`}
                       </p>
                       <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                         {tx.status}

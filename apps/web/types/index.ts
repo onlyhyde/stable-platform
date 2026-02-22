@@ -40,6 +40,13 @@ export interface Transaction {
   status: 'pending' | 'confirmed' | 'failed'
   timestamp: number
   userOpHash?: Hex
+  /** ERC-20 token transfer info (absent for native-only transfers) */
+  tokenTransfer?: {
+    contractAddress: Address
+    symbol?: string
+    decimals?: number
+    value: bigint
+  }
 }
 
 /**

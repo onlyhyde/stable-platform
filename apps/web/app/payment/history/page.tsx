@@ -1,8 +1,10 @@
 'use client'
 
+import { getNativeCurrencySymbol } from '@stablenet/wallet-sdk'
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import type { Hex } from 'viem'
+import { formatEther, formatUnits } from 'viem'
 import {
   Button,
   Card,
@@ -298,6 +300,8 @@ interface TransactionItemProps {
 }
 
 function TransactionItem({ transaction }: TransactionItemProps) {
+  const nativeSymbol = getNativeCurrencySymbol(transaction.chainId)
+
   const statusStyles: Record<string, { bg: string; color: string }> = {
     pending: { bg: 'rgb(var(--warning) / 0.1)', color: 'rgb(var(--warning))' },
     confirmed: { bg: 'rgb(var(--success) / 0.1)', color: 'rgb(var(--success))' },
@@ -305,6 +309,10 @@ function TransactionItem({ transaction }: TransactionItemProps) {
   }
 
   const currentStatus = statusStyles[transaction.status] || statusStyles.pending
+
+  const displayAmount = transaction.tokenTransfer
+    ? `${formatUnits(transaction.tokenTransfer.value, transaction.tokenTransfer.decimals ?? 18)} ${transaction.tokenTransfer.symbol ?? formatAddress(transaction.tokenTransfer.contractAddress, 3)}`
+    : `${formatEther(transaction.value)} ${nativeSymbol}`
 
   return (
     <div className="py-4 flex items-center justify-between">
@@ -340,7 +348,7 @@ function TransactionItem({ transaction }: TransactionItemProps) {
       </div>
       <div className="text-right">
         <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-          -{(Number(transaction.value) / 1e18).toFixed(4)} ETH
+          -{displayAmount}
         </p>
         <span
           className="text-xs px-2 py-0.5 rounded"

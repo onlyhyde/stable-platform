@@ -56,17 +56,70 @@ export function useTransactionHistory(
     setError(null)
     try {
       const client = createIndexerClient(indexerUrl)
-      const result = await client.getTransactionsByAddress(address, 50)
-      const mapped: Transaction[] = result.nodes.map((tx) => ({
-        hash: tx.hash as Hex,
-        from: tx.from as Address,
-        to: tx.to as Address,
-        value: BigInt(tx.value),
-        chainId,
-        status: tx.status === 1 ? ('confirmed' as const) : ('failed' as const),
-        timestamp: tx.timestamp,
-      }))
-      setTransactions(mapped)
+
+      // Fetch native transactions and ERC-20 transfers in parallel
+      const [nativeResult, erc20Transfers] = await Promise.all([
+        client.getTransactionsByAddress(address, 50),
+        client.getAllERC20Transfers(address, 50).catch(() => []),
+      ])
+
+      // Build a map of txHash → ERC-20 transfer for enrichment
+      const erc20ByHash = new Map<string, (typeof erc20Transfers)[number]>()
+      const unmatchedErc20: typeof erc20Transfers = []
+      for (const transfer of erc20Transfers) {
+        erc20ByHash.set(transfer.transactionHash, transfer)
+      }
+
+      // Map native transactions, enriching with ERC-20 info when matched
+      const mapped: Transaction[] = nativeResult.nodes.map((tx) => {
+        const base: Transaction = {
+          hash: tx.hash as Hex,
+          from: tx.from as Address,
+          to: tx.to as Address,
+          value: BigInt(tx.value),
+          chainId,
+          status: tx.status === 1 ? ('confirmed' as const) : ('failed' as const),
+          timestamp: tx.timestamp,
+        }
+        const erc20 = erc20ByHash.get(tx.hash)
+        if (erc20) {
+          base.tokenTransfer = {
+            contractAddress: erc20.contractAddress as Address,
+            symbol: undefined, // Symbol not available from indexer transfer data
+            decimals: undefined,
+            value: BigInt(erc20.value),
+          }
+          erc20ByHash.delete(tx.hash)
+        }
+        return base
+      })
+
+      // Add ERC-20 transfers that don't have a matching native tx
+      const nativeHashes = new Set(nativeResult.nodes.map((n) => n.hash))
+      for (const transfer of erc20Transfers) {
+        if (!nativeHashes.has(transfer.transactionHash)) {
+          mapped.push({
+            hash: transfer.transactionHash as Hex,
+            from: transfer.from as Address,
+            to: transfer.to as Address,
+            value: 0n,
+            chainId,
+            status: 'confirmed',
+            timestamp: transfer.timestamp,
+            tokenTransfer: {
+              contractAddress: transfer.contractAddress as Address,
+              symbol: undefined,
+              decimals: undefined,
+              value: BigInt(transfer.value),
+            },
+          })
+        }
+      }
+
+      // Sort by timestamp descending (newest first)
+      mapped.sort((a, b) => b.timestamp - a.timestamp)
+
+      setTransactions(mapped.slice(0, 50))
     } catch (err) {
       const fetchError = err instanceof Error ? err : new Error('Failed to fetch transactions')
       setError(fetchError)

@@ -70,6 +70,14 @@ vi.mock('@/lib/utils', () => ({
 
 vi.mock('wagmi', () => ({
   useChainId: vi.fn(() => 31337),
+  useAccount: vi.fn(() => ({ address: '0x1234567890123456789012345678901234567890' })),
+  useWalletClient: vi.fn(() => ({ data: null })),
+  usePublicClient: vi.fn(() => ({ readContract: vi.fn(), waitForTransactionReceipt: vi.fn() })),
+}))
+
+vi.mock('@stablenet/wallet-sdk', () => ({
+  getNativeCurrencySymbol: (chainId: number) => chainId === 8283 ? 'WKRC' : 'ETH',
+  detectProvider: vi.fn(() => Promise.resolve(null)),
 }))
 
 // Stable searchParams to avoid infinite re-render
@@ -103,6 +111,15 @@ vi.mock('@/hooks/useTransactionHistory', () => ({
     isLoading: false,
     error: null,
     refresh: vi.fn(),
+  })),
+}))
+
+vi.mock('@/hooks/useTransactionManager', () => ({
+  useTransactionManager: vi.fn(() => ({
+    speedUpTransaction: vi.fn(),
+    cancelTransaction: vi.fn(),
+    isSpeedingUp: false,
+    isCancelling: false,
   })),
 }))
 
