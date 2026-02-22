@@ -97,168 +97,121 @@ function getProvider(): {
   return ethereum as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
 }
 
-/**
- * Check if wallet supports wallet_getAssets
- */
-async function checkWalletAssetsSupport(): Promise<boolean> {
-  const provider = getProvider()
-  if (!provider) return false
-
-  try {
-    // Try calling wallet_getAssets - if it works, the wallet supports it
-    await provider.request({ method: 'wallet_getAssets', params: [] })
-    return true
-  } catch (error) {
-    // Check if it's a "method not found" error
-    const err = error as { code?: number; message?: string }
-    if (err.code === 4200 || err.code === -32601 || err.message?.includes('not supported')) {
-      return false
-    }
-    // Other errors (like "not connected") still mean the method exists
-    return true
-  }
-}
-
-/**
- * Hook for wallet asset management
- *
- * Uses wallet_getAssets RPC for StableNet wallet, falls back to direct
- * eth_getBalance calls for other wallets.
- *
- * @example
- * ```tsx
- * function AssetList() {
- *   const { native, tokens, isLoading, addToken } = useWalletAssets()
- *
- *   if (isLoading) return <Spinner />
- *
- *   return (
- *     <div>
- *       <div>{native?.symbol}: {native?.formattedBalance}</div>
- *       {tokens.map(token => (
- *         <div key={token.address}>
- *           {token.symbol}: {token.formattedBalance}
- *         </div>
- *       ))}
- *       <button onClick={() => addToken({ address: '0x...' })}>
- *         Add Token
- *       </button>
- *     </div>
- *   )
- * }
- * ```
- */
 export function useWalletAssets(): UseWalletAssetsResult {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
 
   const [isSupported, setIsSupported] = useState(false)
   const [assets, setAssets] = useState<WalletAssetsResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  // Start true when we expect data to load — prevents "0 ETH" flash
+  const [isLoading, setIsLoading] = useState(true)
   const [isError, setIsError] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Track previous values
-  const prevChainId = useRef(chainId)
-  const prevAddress = useRef(address)
+  // Monotonically increasing fetch ID to discard stale responses
+  const fetchIdRef = useRef(0)
 
   /**
-   * Fetch assets using wallet_getAssets RPC
+   * Core fetch — tries wallet_getAssets first, falls back to eth_getBalance.
+   * Returns { assets, supported } so callers can update both in one pass.
    */
-  const fetchWalletAssets = useCallback(async (): Promise<WalletAssetsResponse | null> => {
-    const provider = getProvider()
-    if (!provider) return null
+  const doFetch = useCallback(
+    async (
+      targetAddress: Address
+    ): Promise<{ result: WalletAssetsResponse | null; supported: boolean }> => {
+      const provider = getProvider()
+      if (!provider) return { result: null, supported: false }
 
-    try {
-      const result = (await provider.request({
-        method: 'wallet_getAssets',
-        params: [],
-      })) as WalletAssetsResponse
+      // Try wallet_getAssets (StableNet wallet)
+      try {
+        const result = (await provider.request({
+          method: 'wallet_getAssets',
+          params: [],
+        })) as WalletAssetsResponse
 
-      return result
-    } catch (err) {
-      console.error('[useWalletAssets] wallet_getAssets error:', err)
-      return null
-    }
-  }, [])
+        return { result, supported: true }
+      } catch (err) {
+        const error = err as { code?: number; message?: string }
+        const isUnsupported =
+          error.code === 4200 ||
+          error.code === -32601 ||
+          error.message?.includes('not supported')
 
-  /**
-   * Fetch assets using eth_getBalance (fallback)
-   */
-  const fetchFallbackAssets = useCallback(async (): Promise<WalletAssetsResponse | null> => {
-    if (!address) return null
+        if (!isUnsupported) {
+          // Method exists but failed for another reason (e.g. not connected) —
+          // still mark as supported, fall through to eth_getBalance
+        }
 
-    const provider = getProvider()
-    if (!provider) return null
+        // Fallback: eth_getBalance
+        try {
+          const chainIdHex = (await provider.request({ method: 'eth_chainId' })) as string
+          const currentChainId = Number.parseInt(chainIdHex, 16)
 
-    try {
-      // Get chain ID
-      const chainIdHex = (await provider.request({ method: 'eth_chainId' })) as string
-      const currentChainId = Number.parseInt(chainIdHex, 16)
+          const balanceHex = (await provider.request({
+            method: 'eth_getBalance',
+            params: [targetAddress, 'latest'],
+          })) as string
+          const balance = BigInt(balanceHex || '0')
 
-      // Get native balance
-      const balanceHex = (await provider.request({
-        method: 'eth_getBalance',
-        params: [address, 'latest'],
-      })) as string
-      const balance = BigInt(balanceHex || '0')
+          const symbol = getNativeCurrencySymbol(currentChainId)
+          const decimals = 18
 
-      const symbol = getNativeCurrencySymbol(currentChainId)
-      const decimals = 18
-      const formattedBalance = formatUnits(balance, decimals)
-
-      return {
-        chainId: currentChainId,
-        account: address,
-        native: {
-          symbol,
-          name: symbol,
-          decimals,
-          balance: balance.toString(),
-          formattedBalance,
-        },
-        tokens: [], // Fallback doesn't support token discovery
+          return {
+            result: {
+              chainId: currentChainId,
+              account: targetAddress,
+              native: {
+                symbol,
+                name: symbol,
+                decimals,
+                balance: balance.toString(),
+                formattedBalance: formatUnits(balance, decimals),
+              },
+              tokens: [],
+            },
+            supported: !isUnsupported,
+          }
+        } catch {
+          return { result: null, supported: !isUnsupported }
+        }
       }
-    } catch (err) {
-      console.error('[useWalletAssets] Fallback fetch error:', err)
-      return null
-    }
-  }, [address])
+    },
+    []
+  )
 
   /**
-   * Fetch assets (auto-selects method based on support)
+   * Public refetch — guarded by fetchId to drop stale results.
    */
   const fetchAssets = useCallback(async () => {
     if (!isConnected || !address) {
       setAssets(null)
+      setIsLoading(false)
       return
     }
 
+    const id = ++fetchIdRef.current
     setIsLoading(true)
     setIsError(false)
     setError(null)
 
     try {
-      let result: WalletAssetsResponse | null = null
+      const { result, supported } = await doFetch(address)
 
-      if (isSupported) {
-        result = await fetchWalletAssets()
-      }
+      // Drop if a newer fetch was started while we were awaiting
+      if (id !== fetchIdRef.current) return
 
-      // Fallback if wallet_getAssets failed or not supported
-      if (!result) {
-        result = await fetchFallbackAssets()
-      }
-
+      setIsSupported(supported)
       setAssets(result)
     } catch (err) {
-      console.error('[useWalletAssets] Error fetching assets:', err)
+      if (id !== fetchIdRef.current) return
       setIsError(true)
       setError((err as Error).message || 'Failed to fetch assets')
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
-  }, [isConnected, address, isSupported, fetchWalletAssets, fetchFallbackAssets])
+  }, [isConnected, address, doFetch])
 
   /**
    * Add a custom token
@@ -281,13 +234,11 @@ export function useWalletAssets(): UseWalletAssetsResult {
         })) as { success: boolean; token?: WalletToken; error?: string }
 
         if (result.success) {
-          // Refresh assets to include the new token
           await fetchAssets()
         }
 
         return result
       } catch (err) {
-        console.error('[useWalletAssets] wallet_addToken error:', err)
         return {
           success: false,
           error: (err as Error).message || 'Failed to add token',
@@ -297,86 +248,40 @@ export function useWalletAssets(): UseWalletAssetsResult {
     [isSupported, fetchAssets]
   )
 
-  // Check wallet support on mount
+  // Single effect: fetch whenever connection state, address, or chainId changes.
   useEffect(() => {
-    if (!isConnected) {
-      setIsSupported(false)
-      return
-    }
-
-    checkWalletAssetsSupport().then(setIsSupported)
-  }, [isConnected])
-
-  // Fetch assets when connected or support status changes
-  useEffect(() => {
-    if (isConnected) {
+    if (isConnected && address) {
       fetchAssets()
     } else {
       setAssets(null)
+      setIsLoading(false)
     }
-  }, [isConnected, fetchAssets])
+  }, [isConnected, address, chainId, fetchAssets])
 
-  // Re-fetch when chain or account changes
-  useEffect(() => {
-    if (prevChainId.current !== chainId || prevAddress.current !== address) {
-      prevChainId.current = chainId
-      prevAddress.current = address
-      fetchAssets()
-    }
-  }, [chainId, address, fetchAssets])
-
-  // Listen for assetsChanged events
-  useEffect(() => {
-    if (typeof window === 'undefined' || !isSupported) return
-
-    const provider = getProvider()
-    if (!provider) return
-
-    const ethereum = window as {
-      ethereum?: {
-        on?: (...args: unknown[]) => void
-        removeListener?: (...args: unknown[]) => void
-      }
-    }
-    if (!ethereum.ethereum?.on) return
-
-    const handleAssetsChanged = () => {
-      fetchAssets()
-    }
-
-    ethereum.ethereum.on('assetsChanged', handleAssetsChanged)
-
-    return () => {
-      ethereum.ethereum?.removeListener?.('assetsChanged', handleAssetsChanged)
-    }
-  }, [isSupported, fetchAssets])
-
-  // Listen for chain/account changes
+  // Listen for wallet events (chain/account/assets changes)
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const ethereum = window as {
       ethereum?: {
-        on?: (...args: unknown[]) => void
-        removeListener?: (...args: unknown[]) => void
+        on?: (event: string, handler: () => void) => void
+        removeListener?: (event: string, handler: () => void) => void
       }
     }
     if (!ethereum.ethereum?.on) return
 
-    const handleChainChanged = () => {
+    const handleChange = () => {
       fetchAssets()
     }
 
-    const handleAccountsChanged = () => {
-      fetchAssets()
-    }
-
-    ethereum.ethereum.on('chainChanged', handleChainChanged)
-    ethereum.ethereum.on('accountsChanged', handleAccountsChanged)
+    ethereum.ethereum.on('chainChanged', handleChange)
+    ethereum.ethereum.on('accountsChanged', handleChange)
+    ethereum.ethereum.on('assetsChanged', handleChange)
 
     return () => {
-      ethereum.ethereum?.removeListener?.('chainChanged', handleChainChanged)
-      ethereum.ethereum?.removeListener?.('accountsChanged', handleAccountsChanged)
+      ethereum.ethereum?.removeListener?.('chainChanged', handleChange)
+      ethereum.ethereum?.removeListener?.('accountsChanged', handleChange)
+      ethereum.ethereum?.removeListener?.('assetsChanged', handleChange)
     }
   }, [fetchAssets])
 
