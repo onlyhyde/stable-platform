@@ -1178,6 +1178,65 @@ const handlers: Record<string, RpcHandler> = {
       })
     }
 
+    // Fetch current nonce from EntryPoint if not provided by the caller
+    if (userOp.nonce === 0n) {
+      const publicClient = getPublicClient(network.rpcUrl)
+      const onChainNonce = await publicClient
+        .readContract({
+          address: entryPoint,
+          abi: [
+            {
+              inputs: [
+                { name: 'sender', type: 'address' },
+                { name: 'key', type: 'uint192' },
+              ],
+              name: 'getNonce',
+              outputs: [{ name: '', type: 'uint256' }],
+              stateMutability: 'view',
+              type: 'function',
+            },
+          ],
+          functionName: 'getNonce',
+          args: [userOp.sender, 0n],
+        })
+        .catch(() => 0n)
+      userOp.nonce = onChainNonce
+    }
+
+    // Estimate gas prices and limits if not provided by the caller
+    if (userOp.maxFeePerGas === 0n) {
+      const publicClient = getPublicClient(network.rpcUrl)
+      try {
+        const fees = await publicClient.estimateFeesPerGas()
+        // Add 25% buffer for price fluctuation between estimation and inclusion
+        const buffer = (fees.maxFeePerGas ?? 0n) / 4n
+        userOp.maxFeePerGas = (fees.maxFeePerGas ?? 0n) + buffer
+        userOp.maxPriorityFeePerGas = fees.maxPriorityFeePerGas ?? 0n
+      } catch {
+        // Fallback to legacy gas price for non-EIP-1559 chains
+        const gasPrice = await publicClient.getGasPrice()
+        const buffer = gasPrice / 4n
+        userOp.maxFeePerGas = gasPrice + buffer
+        userOp.maxPriorityFeePerGas = gasPrice
+      }
+
+      // Estimate gas limits from bundler for accurate cost display
+      try {
+        const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+        const gasEstimate = await bundlerClient.estimateUserOperationGas(userOp)
+        // Add 50% buffer to verification gas (smart account validation can vary)
+        userOp.preVerificationGas = gasEstimate.preVerificationGas
+        userOp.verificationGasLimit = gasEstimate.verificationGasLimit + gasEstimate.verificationGasLimit / 2n
+        userOp.callGasLimit = gasEstimate.callGasLimit + gasEstimate.callGasLimit / 5n
+      } catch (error) {
+        logger.warn(`UserOp gas limit estimation failed, using smart account defaults: ${(error as Error).message}`)
+        // Smart account verification typically needs 300k-500k gas
+        userOp.verificationGasLimit = BigInt(500000)
+        userOp.callGasLimit = BigInt(200000)
+        userOp.preVerificationGas = BigInt(50000)
+      }
+    }
+
     // Calculate estimated gas cost for approval display
     const estimatedGasCost =
       (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
@@ -1237,6 +1296,29 @@ const handlers: Record<string, RpcHandler> = {
     try {
       const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
       const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
+
+      // Track as pending transaction with userOpHash (txHash comes later from bundler polling)
+      try {
+        const txId = `userop-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+        const target = raw.target as Address | undefined
+        await walletState.addPendingTransaction({
+          id: txId,
+          from: userOp.sender,
+          to: target ?? userOp.sender,
+          value: raw.value ? BigInt(raw.value as string) : 0n,
+          data: userOp.callData,
+          chainId: network.chainId,
+          status: 'submitted',
+          type: 'userOp',
+          userOpHash,
+          timestamp: Date.now(),
+          maxFeePerGas: userOp.maxFeePerGas,
+          maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
+        })
+      } catch {
+        // Non-blocking: pending tx tracking failure should not fail the UserOp submission
+      }
+
       return userOpHash
     } catch (error) {
       const err = error as Error & { code?: number; data?: unknown }

@@ -270,19 +270,33 @@ export function TransactionStepper({
                 />
               </svg>
             </button>
+            {explorerUrl && (
+              <button
+                type="button"
+                onClick={() =>
+                  chrome.tabs.create({ url: `${explorerUrl}/tx/${txHash}` })
+                }
+                className="p-1"
+                style={{ color: 'rgb(var(--primary))' }}
+                title="View on Explorer"
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+                  />
+                </svg>
+              </button>
+            )}
           </div>
-          {explorerUrl && (
-            <button
-              type="button"
-              className="inline-block mt-2 text-xs font-medium"
-              style={{ color: 'rgb(var(--primary))' }}
-              onClick={() =>
-                chrome.tabs.create({ url: `${explorerUrl}/tx/${txHash}` })
-              }
-            >
-              {t('viewOnExplorer')}
-            </button>
-          )}
         </div>
       )}
 

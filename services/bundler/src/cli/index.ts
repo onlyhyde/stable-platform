@@ -35,8 +35,7 @@ async function main() {
           .option('network', {
             alias: 'n',
             type: 'string',
-            description: 'Network name (devnet, sepolia, mainnet)',
-            default: 'devnet',
+            description: 'Network name (local, devnet, sepolia, mainnet)',
           })
           .option('chain-id', {
             alias: 'c',

@@ -188,11 +188,20 @@ export function parseConfig(options: CliOptions): BundlerConfig {
     )
   }
 
-  // Entry Points: CLI > env > preset
+  // Chain ID: CLI > env (optional, overrides RPC-reported chainId)
+  // Resolved early so it can be used for chain-aware EntryPoint lookup
+  const chainId = options.chainId ?? getEnvNumber(ENV_VARS.CHAIN_ID)
+
+  // Entry Points: CLI > env > chain-aware (contracts pkg) > preset
   const entryPoints =
     options.entryPoint?.length && options.entryPoint.length > 0
       ? (options.entryPoint as Address[])
-      : parseEntryPointsFromEnv() || preset?.entryPoints || []
+      : parseEntryPointsFromEnv() ||
+        (chainId && isChainSupported(chainId)
+          ? [getEntryPoint(chainId) as Address]
+          : null) ||
+        preset?.entryPoints ||
+        []
 
   if (entryPoints.length === 0) {
     throw new Error(
@@ -217,9 +226,6 @@ export function parseConfig(options: CliOptions): BundlerConfig {
       `Private key is required. Set --private-key or ${ENV_VARS.PRIVATE_KEY.join('/')} environment variable.`
     )
   }
-
-  // Chain ID: CLI > env (optional, overrides RPC-reported chainId)
-  const chainId = options.chainId ?? getEnvNumber(ENV_VARS.CHAIN_ID)
 
   // Native currency symbol: CLI > env > default (ETH)
   const nativeCurrencySymbol =

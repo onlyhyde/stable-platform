@@ -146,7 +146,8 @@ export function TransactionDetail() {
   }
 
   const isPending = tx.status === 'pending' || tx.status === 'submitted'
-  const displayHash = tx.txHash ?? tx.id
+  const isUserOp = tx.type === 'userOp'
+  const displayHash = tx.txHash ?? (isUserOp ? undefined : tx.id)
 
   return (
     <div className="p-4 space-y-4">
@@ -196,33 +197,65 @@ export function TransactionDetail() {
           <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {t('transactionHash')}
           </p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <p className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
-              {truncateHash(displayHash)}
-            </p>
-            <button
-              type="button"
-              onClick={() => copyToClipboard(displayHash)}
-              className="p-1"
-              style={{ color: 'rgb(var(--primary))' }}
-              title={t('copyHash')}
-            >
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
+          {displayHash ? (
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-sm font-mono" style={{ color: 'rgb(var(--foreground))' }}>
+                {truncateHash(displayHash)}
+              </p>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(displayHash)}
+                className="p-1"
+                style={{ color: 'rgb(var(--primary))' }}
+                title={t('copyHash')}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
-            </button>
-          </div>
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+              </button>
+              {currentNetwork?.explorerUrl && tx.txHash && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    chrome.tabs.create({ url: `${currentNetwork.explorerUrl}/tx/${tx.txHash}` })
+                  }
+                  className="p-1"
+                  style={{ color: 'rgb(var(--primary))' }}
+                  title={t('viewOnExplorer')}
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm mt-0.5 italic" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              {t('waitingForBundler', { defaultValue: 'Waiting for bundler...' })}
+            </p>
+          )}
         </div>
 
         {/* From */}
@@ -368,22 +401,6 @@ export function TransactionDetail() {
         </div>
       )}
 
-      {/* View on Explorer */}
-      {currentNetwork?.explorerUrl && tx.txHash && (
-        <button
-          type="button"
-          className="block w-full text-center py-2.5 rounded-xl text-sm font-medium transition-colors"
-          style={{
-            backgroundColor: 'rgb(var(--secondary))',
-            color: 'rgb(var(--primary))',
-          }}
-          onClick={() =>
-            chrome.tabs.create({ url: `${currentNetwork.explorerUrl}/tx/${tx.txHash}` })
-          }
-        >
-          {t('viewOnExplorer')}
-        </button>
-      )}
     </div>
   )
 }

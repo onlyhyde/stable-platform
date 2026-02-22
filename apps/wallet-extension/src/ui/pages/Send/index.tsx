@@ -190,8 +190,8 @@ export function Send() {
   const trackedTx = useMemo(() => {
     if (!txResult?.hash) return null
     return (
-      pendingTransactions.find((tx) => tx.txHash === txResult.hash) ??
-      history.find((tx) => tx.txHash === txResult.hash) ??
+      pendingTransactions.find((tx) => tx.txHash === txResult.hash || tx.userOpHash === txResult.hash) ??
+      history.find((tx) => tx.txHash === txResult.hash || tx.userOpHash === txResult.hash) ??
       null
     )
   }, [txResult?.hash, pendingTransactions, history])
@@ -443,7 +443,7 @@ export function Send() {
       {(step === 'pending' || step === 'confirming') && (
         <TransactionStepper
           status={stepperStatus}
-          txHash={txResult?.hash}
+          txHash={trackedTx?.txHash ?? txResult?.hash}
           blockNumber={confirmedBlockNumber}
           explorerUrl={_currentNetwork?.explorerUrl}
           onSendAnother={handleReset}
