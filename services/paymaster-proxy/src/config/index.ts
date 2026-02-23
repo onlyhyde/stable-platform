@@ -1,6 +1,7 @@
 import type { Address, Hex } from 'viem'
 import type { PaymasterAddresses, PaymasterProxyConfig } from '../types'
 import { PAYMASTER_ENV_VARS, getEnvOptional, getServerConfig } from './constants'
+import { resolveContractAddresses } from './contracts'
 
 /**
  * Environment variable names
@@ -65,24 +66,39 @@ function parseOptionalAddress(envName: string): Address | undefined {
 }
 
 /**
- * Build paymaster addresses map from environment
+ * Build paymaster addresses map.
+ * Priority: ENV override > @stablenet/contracts > PAYMASTER_ADDRESS fallback
  */
-function buildPaymasterAddresses(defaultAddress: Address): PaymasterAddresses {
+function buildPaymasterAddresses(
+  supportedChainIds: number[],
+  fallbackAddress: Address | undefined
+): PaymasterAddresses {
+  // Resolve from @stablenet/contracts using first supported chain
+  const firstChainId = supportedChainIds[0]
+  const resolved = firstChainId !== undefined
+    ? resolveContractAddresses(firstChainId)
+    : null
+
+  const envVerifying = parseOptionalAddress(PAYMASTER_ENV_VARS.VERIFYING_PAYMASTER_ADDRESS)
+  const envErc20 = parseOptionalAddress(PAYMASTER_ENV_VARS.ERC20_PAYMASTER_ADDRESS)
+  const envPermit2 = parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_PAYMASTER_ADDRESS)
+  const envSponsor = parseOptionalAddress(PAYMASTER_ENV_VARS.SPONSOR_PAYMASTER_ADDRESS)
+
   const addresses: PaymasterAddresses = {}
 
-  const verifying = parseOptionalAddress(PAYMASTER_ENV_VARS.VERIFYING_PAYMASTER_ADDRESS)
-  const erc20 = parseOptionalAddress(PAYMASTER_ENV_VARS.ERC20_PAYMASTER_ADDRESS)
-  const permit2 = parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_PAYMASTER_ADDRESS)
-  const sponsor = parseOptionalAddress(PAYMASTER_ENV_VARS.SPONSOR_PAYMASTER_ADDRESS)
+  // verifying: ENV > contracts > PAYMASTER_ADDRESS fallback
+  addresses.verifying = envVerifying ?? resolved?.verifying ?? fallbackAddress
 
-  // Backward compat: PAYMASTER_ADDRESS is the default verifying paymaster
-  addresses.verifying = verifying ?? defaultAddress
-
+  // erc20: ENV > contracts
+  const erc20 = envErc20 ?? resolved?.erc20
   if (erc20) addresses.erc20 = erc20
+
+  // permit2: ENV > contracts
+  const permit2 = envPermit2 ?? resolved?.permit2
   if (permit2) addresses.permit2 = permit2
 
-  // Sponsor defaults to verifying address if not set separately
-  addresses.sponsor = sponsor ?? addresses.verifying
+  // sponsor: ENV > contracts > verifying fallback
+  addresses.sponsor = envSponsor ?? resolved?.sponsor ?? addresses.verifying
 
   return addresses
 }
@@ -93,10 +109,26 @@ function buildPaymasterAddresses(defaultAddress: Address): PaymasterAddresses {
 export function loadConfig(): PaymasterProxyConfig {
   const defaults = getDefaults()
   const port = Number.parseInt(process.env[ENV_KEYS.PORT] || '', 10) || defaults.port
+  const supportedChainIds = parseChainIds(process.env[ENV_KEYS.SUPPORTED_CHAIN_IDS])
 
-  const paymasterAddress = process.env[ENV_KEYS.PAYMASTER_ADDRESS]
-  if (!paymasterAddress || !isValidAddress(paymasterAddress)) {
-    throw new Error(`Invalid or missing ${ENV_KEYS.PAYMASTER_ADDRESS}`)
+  // Resolve from @stablenet/contracts for first supported chain
+  const firstChain = supportedChainIds[0]
+  const resolved = firstChain !== undefined
+    ? resolveContractAddresses(firstChain)
+    : null
+
+  // PAYMASTER_ADDRESS is now optional if @stablenet/contracts can resolve
+  const paymasterAddressEnv = process.env[ENV_KEYS.PAYMASTER_ADDRESS]
+  const fallbackAddress = paymasterAddressEnv && isValidAddress(paymasterAddressEnv)
+    ? (paymasterAddressEnv as Address)
+    : undefined
+
+  // Determine the canonical paymaster address (verifying)
+  const paymasterAddress = fallbackAddress ?? resolved?.verifying
+  if (!paymasterAddress) {
+    throw new Error(
+      `Missing paymaster address: set ${ENV_KEYS.PAYMASTER_ADDRESS} or ensure chain is supported by @stablenet/contracts`
+    )
   }
 
   const signerPrivateKey = process.env[ENV_KEYS.SIGNER_PRIVATE_KEY]
@@ -109,16 +141,21 @@ export function loadConfig(): PaymasterProxyConfig {
     throw new Error(`Missing ${ENV_KEYS.RPC_URL}`)
   }
 
-  const supportedChainIds = parseChainIds(process.env[ENV_KEYS.SUPPORTED_CHAIN_IDS])
   const debug = process.env[ENV_KEYS.DEBUG] === 'true'
 
-  const paymasterAddresses = buildPaymasterAddresses(paymasterAddress as Address)
+  const paymasterAddresses = buildPaymasterAddresses(supportedChainIds, fallbackAddress)
+
+  // oracle: ENV > contracts
   const oracleAddress = parseOptionalAddress(PAYMASTER_ENV_VARS.PRICE_ORACLE_ADDRESS)
+    ?? resolved?.oracle
+
+  // permit2 contract: ENV > contracts
   const permit2Address = parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_CONTRACT_ADDRESS)
+    ?? resolved?.permit2Contract
 
   return {
     port,
-    paymasterAddress: paymasterAddress as Address,
+    paymasterAddress,
     paymasterAddresses,
     signerPrivateKey: signerPrivateKey as Hex,
     rpcUrl,
@@ -149,10 +186,20 @@ export function createConfig(options: {
   }
 
   const defaults = getDefaults()
+  const supportedChainIds = parseChainIds(options.chainIds)
   const defaultAddress = options.paymasterAddress as Address
-  const paymasterAddresses = buildPaymasterAddresses(defaultAddress)
+  const paymasterAddresses = buildPaymasterAddresses(supportedChainIds, defaultAddress)
+
+  // Resolve from @stablenet/contracts for first supported chain
+  const firstChain = supportedChainIds[0]
+  const resolved = firstChain !== undefined
+    ? resolveContractAddresses(firstChain)
+    : null
+
   const oracleAddress = parseOptionalAddress(PAYMASTER_ENV_VARS.PRICE_ORACLE_ADDRESS)
+    ?? resolved?.oracle
   const permit2Address = parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_CONTRACT_ADDRESS)
+    ?? resolved?.permit2Contract
 
   return {
     port: options.port || defaults.port,
@@ -160,7 +207,7 @@ export function createConfig(options: {
     paymasterAddresses,
     signerPrivateKey: options.signerPrivateKey as Hex,
     rpcUrl: options.rpcUrl,
-    supportedChainIds: parseChainIds(options.chainIds),
+    supportedChainIds,
     debug: options.debug || defaults.debug,
     oracleAddress,
     permit2Address,

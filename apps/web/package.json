@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:deps": "turbo build --filter=@stablenet/web",
     "start": "next start",
     "lint": "biome lint app/ components/ hooks/ lib/",
     "lint:fix": "biome lint --write app/ components/ hooks/ lib/",

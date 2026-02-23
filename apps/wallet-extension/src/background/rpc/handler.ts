@@ -2424,18 +2424,11 @@ const handlers: Record<string, RpcHandler> = {
       // Non-network errors (e.g. unsupported method) — treat as no code
       code = undefined
     }
-    const hasCode = !!code && code !== '0x'
-    const isDelegated = hasCode && code!.toLowerCase().startsWith('0xef0100')
-
-    let accountType: 'eoa' | 'delegated' | 'smart' = 'eoa'
-    let delegationTarget: string | null = null
-
-    if (isDelegated) {
-      accountType = 'delegated'
-      delegationTarget = getAddress(`0x${code!.slice(8, 48)}`)
-    } else if (hasCode) {
-      accountType = 'smart'
-    }
+    const { classifyAccountByCode, extractDelegateAddress } = await import('@stablenet/core')
+    const accountType = classifyAccountByCode(code as Hex | undefined)
+    const delegationTarget = accountType === 'delegated'
+      ? getAddress(extractDelegateAddress(code as Hex)!)
+      : null
 
     let rootValidator: string | null = null
     let accountId: string | null = null

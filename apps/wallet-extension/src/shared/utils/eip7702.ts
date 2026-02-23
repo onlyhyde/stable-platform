@@ -13,6 +13,7 @@ import type { Address } from 'viem'
 export {
   // Types
   type Authorization,
+  classifyAccountByCode,
   createAuthorization,
   createAuthorizationHash,
   createRevocationAuthorization,

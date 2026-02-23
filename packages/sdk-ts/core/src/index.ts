@@ -180,6 +180,7 @@ export {
 export {
   // Types
   type Authorization,
+  classifyAccountByCode,
   createAuthorization,
   // Functions
   createAuthorizationHash,

@@ -185,6 +185,23 @@ export function isRevocationAuthorization(authorization: Authorization): boolean
 }
 
 /**
+ * Classify account type from on-chain bytecode (pure, synchronous).
+ * - No code / '0x' → 'eoa'
+ * - Starts with 0xef0100 → 'delegated'
+ * - Any other code → 'smart'
+ *
+ * @param code - Account bytecode from eth_getCode
+ * @returns Account type classification
+ */
+export function classifyAccountByCode(
+  code: Hex | undefined | null
+): 'eoa' | 'delegated' | 'smart' {
+  if (!code || code === '0x') return 'eoa'
+  if (isDelegatedAccount(code)) return 'delegated'
+  return 'smart'
+}
+
+/**
  * Format authorization for display
  *
  * @param authorization - Authorization structure

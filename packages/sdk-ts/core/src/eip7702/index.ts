@@ -6,6 +6,7 @@
 
 // Authorization functions
 export {
+  classifyAccountByCode,
   createAuthorization,
   createAuthorizationHash,
   createRevocationAuthorization,

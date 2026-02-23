@@ -1,11 +1,12 @@
 {
   "name": "@stablenet/wallet-extension",
-  "version": "0.1.36",
+  "version": "0.1.19",
   "private": true,
   "description": "StableNet Wallet Chrome Extension",
   "scripts": {
     "dev": "vite build --watch",
     "build": "vite build",
+    "build:all": "turbo build --filter=@stablenet/wallet-extension...",
     "lint": "biome lint src/",
     "lint:fix": "biome lint --write src/",
     "typecheck": "tsc --noEmit",

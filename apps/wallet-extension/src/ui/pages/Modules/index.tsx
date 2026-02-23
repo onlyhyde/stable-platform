@@ -55,19 +55,17 @@ export function ModulesPage() {
 
   // Sync UI store when background detects account type change (e.g. existing delegation)
   useEffect(() => {
-    if (smartAccountInfo && selectedAccount && smartAccountInfo.accountType !== selectedAccount.type) {
-      // Optimistic update — prevents activation screen flash
-      useWalletStore.setState({
-        accounts: accounts.map((a) =>
-          a.address === selectedAccount.address
-            ? { ...a, type: smartAccountInfo.accountType as AccountType }
-            : a
-        ),
-      })
-      // Background sync for full reconciliation
-      syncWithBackground()
-    }
-  }, [smartAccountInfo, selectedAccount, accounts, syncWithBackground])
+    if (!smartAccountInfo || !selectedAccount ||
+        smartAccountInfo.accountType === selectedAccount.type) return
+
+    useWalletStore.setState((state) => ({
+      accounts: state.accounts.map((a) =>
+        a.address === selectedAccount.address
+          ? { ...a, type: smartAccountInfo.accountType as AccountType }
+          : a
+      ),
+    }))
+  }, [smartAccountInfo, selectedAccount])
 
   // Determine which registry modules are already installed
   const installedAddresses = useMemo(() => {
@@ -102,6 +100,7 @@ export function ModulesPage() {
   // Determine if account is smart/delegated (store type OR on-chain info)
   const isSmartAccount =
     selectedAccount?.type === 'smart' ||
+    selectedAccount?.type === 'delegated' ||
     smartAccountInfo?.isDelegated ||
     smartAccountInfo?.accountType === 'smart' ||
     smartAccountInfo?.accountType === 'delegated'
