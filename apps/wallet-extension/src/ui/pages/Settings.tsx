@@ -717,7 +717,7 @@ export function Settings() {
 
   return (
     <div
-      className="p-4 overflow-y-auto max-h-[500px]"
+      className="p-4"
       style={{ backgroundColor: 'rgb(var(--background))' }}
     >
       <h2 className="text-xl font-bold mb-6" style={{ color: 'rgb(var(--foreground))' }}>

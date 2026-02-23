@@ -21,7 +21,7 @@ import { Onboarding } from './pages/Onboarding'
 import './styles/globals.css'
 
 const isSidePanel = document.body.dataset.sidepanel === 'true'
-const sizeClass = isSidePanel ? 'w-full h-screen' : 'w-[360px] h-[600px]'
+const sizeClass = isSidePanel ? 'w-full h-full' : 'w-[360px] h-full'
 
 export function App() {
   const {
