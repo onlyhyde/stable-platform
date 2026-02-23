@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Address, Hash, Hex } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { useAccount, useChainId, usePublicClient, useWalletClient } from 'wagmi'
@@ -218,13 +218,15 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
 
   // State
   const [sessionKeys, setSessionKeys] = useState<SessionKeyInfo[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Loading states for operations
   const [isCreating, setIsCreating] = useState(false)
   const [isRevoking, setIsRevoking] = useState(false)
   const [isGranting, setIsGranting] = useState(false)
+
+  const fetchIdRef = useRef(0)
 
   // Clear error helper
   const clearError = useCallback(() => setError(null), [])
@@ -322,6 +324,7 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
       return
     }
 
+    const id = ++fetchIdRef.current
     setIsLoading(true)
     setError(null)
 
@@ -345,13 +348,17 @@ export function useSessionKey(account?: Address): UseSessionKeyReturn {
         }
       }
 
+      if (id !== fetchIdRef.current) return
       setSessionKeys(keys)
     } catch (err) {
+      if (id !== fetchIdRef.current) return
       const message = err instanceof Error ? err.message : 'Failed to fetch session keys'
       setError(message)
       setSessionKeys([])
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [targetAccount, publicClient, getSessionKeyState, sessionKeyManager])
 

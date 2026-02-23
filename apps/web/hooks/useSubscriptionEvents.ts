@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { type Address, formatUnits, type Hex } from 'viem'
 import { useChainId } from 'wagmi'
 import { getContractAddresses } from '../lib/config'
@@ -141,8 +141,10 @@ export function useSubscriptionEvents(
 
   const [payments, setPayments] = useState<PaymentEvent[]>([])
   const [subscriptionEvents, setSubscriptionEvents] = useState<SubscriptionEvent[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const fetchIdRef = useRef(0)
 
   const subscriptionManager = (() => {
     const contracts = getContractAddresses(chainId)
@@ -152,6 +154,7 @@ export function useSubscriptionEvents(
   const fetchEvents = useCallback(async () => {
     if (!publicClient || !address) return
 
+    const id = ++fetchIdRef.current
     setIsLoading(true)
     setError(null)
 
@@ -218,13 +221,17 @@ export function useSubscriptionEvents(
         })),
       ]
 
+      if (id !== fetchIdRef.current) return
       setPayments(paymentEvents)
       setSubscriptionEvents(subEvents)
     } catch (err) {
+      if (id !== fetchIdRef.current) return
       const message = err instanceof Error ? err.message : 'Failed to fetch subscription events'
       setError(message)
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [publicClient, address, subscriptionManager, timeRange])
 

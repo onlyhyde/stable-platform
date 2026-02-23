@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Chain } from 'viem'
 import { useAccount, useChainId, useChains, useSwitchChain } from 'wagmi'
 
@@ -78,9 +78,10 @@ export function useWalletNetworks(): UseWalletNetworksReturn {
   const { switchChainAsync, isPending: isSwitching } = useSwitchChain()
 
   const [walletNetworks, setWalletNetworks] = useState<WalletNetwork[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [supportsWalletNetworks, setSupportsWalletNetworks] = useState<boolean | null>(null)
+  const fetchIdRef = useRef(0)
 
   // Fetch networks from wallet via wallet_getNetworks RPC
   const fetchWalletNetworks = useCallback(async () => {
@@ -101,6 +102,7 @@ export function useWalletNetworks(): UseWalletNetworksReturn {
       return
     }
 
+    const id = ++fetchIdRef.current
     setIsLoading(true)
     setError(null)
 
@@ -109,6 +111,8 @@ export function useWalletNetworks(): UseWalletNetworksReturn {
       const result = await provider.request({
         method: 'wallet_getNetworks',
       })
+
+      if (id !== fetchIdRef.current) return
 
       if (Array.isArray(result) && result.length > 0) {
         // Wallet supports wallet_getNetworks - use wallet data as primary source
@@ -120,12 +124,15 @@ export function useWalletNetworks(): UseWalletNetworksReturn {
         setSupportsWalletNetworks(true)
       }
     } catch {
+      if (id !== fetchIdRef.current) return
       // wallet_getNetworks not supported (e.g., MetaMask)
       // Fall back to wagmi config
       setWalletNetworks([])
       setSupportsWalletNetworks(false)
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [isConnected])
 

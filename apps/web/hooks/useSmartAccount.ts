@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address, Hex, SignedAuthorization as ViemSignedAuthorization } from 'viem'
 import { type Chain, createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
@@ -135,6 +135,8 @@ export function useSmartAccount() {
   const [lastAuthorization, setLastAuthorization] = useState<AuthorizationInfo | null>(null)
   const [lastTxHash, setLastTxHash] = useState<Hex | null>(null)
 
+  const fetchIdRef = useRef(0)
+
   // Get wagmi wallet client for MetaMask/StableNet signing
   const { data: wagmiWalletClient } = useWalletClient()
 
@@ -164,6 +166,8 @@ export function useSmartAccount() {
       return
     }
 
+    const id = ++fetchIdRef.current
+
     try {
       setStatus((prev) => ({ ...prev, isLoading: true }))
 
@@ -175,6 +179,8 @@ export function useSmartAccount() {
 
       const code = await publicClient.getCode({ address })
 
+      if (id !== fetchIdRef.current) return
+
       const hasCode = isDelegatedAccount(code)
       const implementation = extractDelegateAddress(code)
 
@@ -185,6 +191,7 @@ export function useSmartAccount() {
         isLoading: false,
       })
     } catch {
+      if (id !== fetchIdRef.current) return
       setStatus({
         isSmartAccount: false,
         implementation: null,

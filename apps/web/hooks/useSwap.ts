@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData } from 'viem'
 import { getServiceUrls } from '@/lib/constants'
@@ -109,6 +109,8 @@ export function useSwap(config: UseSwapConfig = {}) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
+  const fetchIdRef = useRef(0)
+
   /**
    * Calculate minimum amount out with slippage
    */
@@ -147,6 +149,7 @@ export function useSwap(config: UseSwapConfig = {}) {
    */
   const getQuote = useCallback(
     async (params: SwapParams): Promise<SwapQuote | null> => {
+      const id = ++fetchIdRef.current
       setIsLoading(true)
       setError(null)
 
@@ -170,6 +173,8 @@ export function useSwap(config: UseSwapConfig = {}) {
 
         const result = await response.json()
 
+        if (id !== fetchIdRef.current) return null
+
         const swapQuote: SwapQuote = {
           tokenIn,
           tokenOut,
@@ -183,11 +188,14 @@ export function useSwap(config: UseSwapConfig = {}) {
         setQuote(swapQuote)
         return swapQuote
       } catch (err) {
+        if (id !== fetchIdRef.current) return null
         const swapError = err instanceof Error ? err : new Error('Failed to get quote')
         setError(swapError)
         return null
       } finally {
-        setIsLoading(false)
+        if (id === fetchIdRef.current) {
+          setIsLoading(false)
+        }
       }
     },
     [orderRouterUrl]

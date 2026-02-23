@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData } from 'viem'
 import { useAccount } from 'wagmi'
@@ -93,14 +93,16 @@ export function useStaking(): UseStakingReturn {
   const [pools, setPools] = useState<StakingPool[]>(DEFAULT_POOLS)
   const [positions, setPositions] = useState<StakingPosition[]>([])
   const [accountConfig, setAccountConfig] = useState<StakingAccountConfig | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [isExecuting, setIsExecuting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [executorInstalled, setExecutorInstalled] = useState(false)
+  const fetchIdRef = useRef(0)
 
   // Fetch account config and positions
   const fetchAccountData = useCallback(async () => {
     if (!address || !publicClient) return
+    const id = ++fetchIdRef.current
 
     setIsLoading(true)
     setError(null)
@@ -112,6 +114,8 @@ export function useStaking(): UseStakingReturn {
         functionName: 'getAccountConfig',
         args: [address],
       }) as [bigint, bigint, bigint, boolean, boolean]
+
+      if (id !== fetchIdRef.current) return
 
       const [maxStakePerPool, dailyStakeLimit, dailyUsed, isActive, isPaused] = config
       setExecutorInstalled(isActive)
@@ -162,14 +166,18 @@ export function useStaking(): UseStakingReturn {
       })
 
       const results = await Promise.all(positionPromises)
+      if (id !== fetchIdRef.current) return
       setPositions(results.filter((p): p is StakingPosition => p !== null))
     } catch {
+      if (id !== fetchIdRef.current) return
       // If the read fails, the executor is likely not installed
       setExecutorInstalled(false)
       setAccountConfig(null)
       setPositions([])
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [address, publicClient, pools])
 

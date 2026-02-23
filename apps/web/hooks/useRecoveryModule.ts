@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData } from 'viem'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
@@ -132,9 +132,11 @@ export function useRecoveryModule(): UseRecoveryModuleReturn {
     threshold: 0,
     isInstalled: false,
   })
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [isInstalling, setIsInstalling] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const fetchIdRef = useRef(0)
 
   // Load guardian labels from localStorage
   const loadLabels = useCallback((): Record<string, string> => {
@@ -204,17 +206,22 @@ export function useRecoveryModule(): UseRecoveryModuleReturn {
   const refresh = useCallback(async () => {
     setIsLoading(true)
     setError(null)
+    const id = ++fetchIdRef.current
     try {
       const installed = await checkInstalled()
       if (installed) {
         await fetchGuardians()
       } else {
+        if (id !== fetchIdRef.current) return
         setConfig({ guardians: [], threshold: 0, isInstalled: false })
       }
     } catch (err) {
+      if (id !== fetchIdRef.current) return
       setError(err instanceof Error ? err.message : 'Failed to refresh')
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [checkInstalled, fetchGuardians])
 

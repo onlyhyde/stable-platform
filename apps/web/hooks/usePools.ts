@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Address } from 'viem'
 import { useWallet } from '@/hooks/useWallet'
 import { getServiceUrls } from '@/lib/constants'
@@ -27,6 +27,8 @@ export function usePools(): UsePoolsReturn {
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingPositions, setIsLoadingPositions] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+  const poolFetchIdRef = useRef(0)
+  const positionFetchIdRef = useRef(0)
 
   const fetchPools = useCallback(async () => {
     if (!orderRouterUrl) {
@@ -34,6 +36,7 @@ export function usePools(): UsePoolsReturn {
       return
     }
 
+    const id = ++poolFetchIdRef.current
     setIsLoading(true)
     setError(null)
 
@@ -51,6 +54,9 @@ export function usePools(): UsePoolsReturn {
       }
 
       const data = await response.json()
+
+      if (id !== poolFetchIdRef.current) return
+
       const mapped: Pool[] = (data.pools ?? data ?? []).map((p: Record<string, unknown>) => ({
         address: p.address as Address,
         token0: {
@@ -74,6 +80,7 @@ export function usePools(): UsePoolsReturn {
 
       setPools(mapped)
     } catch (err) {
+      if (id !== poolFetchIdRef.current) return
       if (err instanceof DOMException && err.name === 'AbortError') {
         setError(new Error('Request timed out fetching pools'))
       } else {
@@ -81,7 +88,9 @@ export function usePools(): UsePoolsReturn {
       }
       setPools([])
     } finally {
-      setIsLoading(false)
+      if (id === poolFetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [orderRouterUrl])
 
@@ -91,6 +100,7 @@ export function usePools(): UsePoolsReturn {
       return
     }
 
+    const id = ++positionFetchIdRef.current
     setIsLoadingPositions(true)
 
     try {
@@ -104,6 +114,7 @@ export function usePools(): UsePoolsReturn {
 
       if (!response.ok) {
         if (response.status === 404) {
+          if (id !== positionFetchIdRef.current) return
           setPositions([])
           return
         }
@@ -111,6 +122,9 @@ export function usePools(): UsePoolsReturn {
       }
 
       const data = await response.json()
+
+      if (id !== positionFetchIdRef.current) return
+
       const mapped: LiquidityPosition[] = (data.positions ?? data ?? []).map(
         (p: Record<string, unknown>) => ({
           poolAddress: p.poolAddress as Address,
@@ -139,12 +153,15 @@ export function usePools(): UsePoolsReturn {
 
       setPositions(mapped)
     } catch (err) {
+      if (id !== positionFetchIdRef.current) return
       if (!(err instanceof DOMException && err.name === 'AbortError')) {
         console.error('Failed to fetch positions:', err)
       }
       setPositions([])
     } finally {
-      setIsLoadingPositions(false)
+      if (id === positionFetchIdRef.current) {
+        setIsLoadingPositions(false)
+      }
     }
   }, [orderRouterUrl, address])
 

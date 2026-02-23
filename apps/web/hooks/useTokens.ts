@@ -1,7 +1,7 @@
 'use client'
 
 import { createIndexerClient } from '@stablenet/core'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
 import { useWallet } from '@/hooks/useWallet'
 import { useStableNetContext } from '@/providers/StableNetProvider'
@@ -26,21 +26,27 @@ export function useTokens(config: UseTokensConfig = {}): UseTokensReturn {
   const [tokens, setTokens] = useState<Token[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const fetchIdRef = useRef(0)
 
   const refresh = useCallback(async () => {
     // Use external fetch if provided (DI override)
     if (externalFetch) {
+      const id = ++fetchIdRef.current
       setIsLoading(true)
       setError(null)
       try {
         const result = await externalFetch()
+        if (id !== fetchIdRef.current) return
         setTokens(result)
       } catch (err) {
+        if (id !== fetchIdRef.current) return
         const fetchError = err instanceof Error ? err : new Error('Failed to fetch tokens')
         setError(fetchError)
         setTokens([])
       } finally {
-        setIsLoading(false)
+        if (id === fetchIdRef.current) {
+          setIsLoading(false)
+        }
       }
       return
     }
@@ -52,11 +58,13 @@ export function useTokens(config: UseTokensConfig = {}): UseTokensReturn {
     }
 
     // Default: use IndexerClient
+    const id = ++fetchIdRef.current
     setIsLoading(true)
     setError(null)
     try {
       const client = createIndexerClient(indexerUrl)
       const balances = await client.getTokenBalances(address, 'ERC20')
+      if (id !== fetchIdRef.current) return
       const mapped: Token[] = balances.map((tb) => ({
         address: tb.address as Address,
         name: tb.name ?? 'Unknown',
@@ -66,11 +74,14 @@ export function useTokens(config: UseTokensConfig = {}): UseTokensReturn {
       }))
       setTokens(mapped)
     } catch (err) {
+      if (id !== fetchIdRef.current) return
       const fetchError = err instanceof Error ? err : new Error('Failed to fetch tokens')
       setError(fetchError)
       setTokens([])
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [externalFetch, address, indexerUrl])
 

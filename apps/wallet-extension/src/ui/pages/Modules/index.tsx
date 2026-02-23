@@ -2,6 +2,7 @@ import { getModuleTypeName, MODULE_TYPE, type ModuleType } from '@stablenet/core
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import type { AccountType } from '../../../types/account'
 import { useSelectedNetwork, useWalletStore } from '../../hooks'
 import { DelegateSetup } from './DelegateSetup'
 import { useModuleMarketplace } from './hooks/useModuleMarketplace'
@@ -55,9 +56,18 @@ export function ModulesPage() {
   // Sync UI store when background detects account type change (e.g. existing delegation)
   useEffect(() => {
     if (smartAccountInfo && selectedAccount && smartAccountInfo.accountType !== selectedAccount.type) {
+      // Optimistic update — prevents activation screen flash
+      useWalletStore.setState({
+        accounts: accounts.map((a) =>
+          a.address === selectedAccount.address
+            ? { ...a, type: smartAccountInfo.accountType as AccountType }
+            : a
+        ),
+      })
+      // Background sync for full reconciliation
       syncWithBackground()
     }
-  }, [smartAccountInfo, selectedAccount, syncWithBackground])
+  }, [smartAccountInfo, selectedAccount, accounts, syncWithBackground])
 
   // Determine which registry modules are already installed
   const installedAddresses = useMemo(() => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { BankAccountType, BankTransfer, LinkedBankAccount } from '@/types/bank'
 
 // ============================================================================
@@ -83,6 +83,8 @@ export function useBankAccounts(): UseBankAccountsReturn {
   const [isTransferring, setIsTransferring] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const fetchIdRef = useRef(0)
+
   // Load linked accounts from localStorage on mount
   useEffect(() => {
     setAccounts(loadAccounts())
@@ -94,6 +96,7 @@ export function useBankAccounts(): UseBankAccountsReturn {
       type: BankAccountType,
       ownerName: string
     ): Promise<LinkedBankAccount | null> => {
+      const id = ++fetchIdRef.current
       setIsLoading(true)
       setError(null)
       try {
@@ -101,6 +104,8 @@ export function useBankAccounts(): UseBankAccountsReturn {
         const bankData = await apiCall<{ accountNo: string; balance?: number }>(
           `/accounts/${accountNo}`
         )
+
+        if (id !== fetchIdRef.current) return null
 
         const account: LinkedBankAccount = {
           id: `bank-${Date.now()}`,
@@ -124,11 +129,14 @@ export function useBankAccounts(): UseBankAccountsReturn {
 
         return account
       } catch (err) {
+        if (id !== fetchIdRef.current) return null
         const msg = err instanceof Error ? err.message : 'Failed to link account'
         setError(msg)
         return null
       } finally {
-        setIsLoading(false)
+        if (id === fetchIdRef.current) {
+          setIsLoading(false)
+        }
       }
     },
     []
@@ -205,6 +213,7 @@ export function useBankAccounts(): UseBankAccountsReturn {
   )
 
   const refresh = useCallback(async () => {
+    const id = ++fetchIdRef.current
     setIsLoading(true)
     try {
       const current = loadAccounts()
@@ -219,12 +228,15 @@ export function useBankAccounts(): UseBankAccountsReturn {
           }
         })
       )
+      if (id !== fetchIdRef.current) return
       saveAccounts(updated)
       setAccounts(updated)
     } catch {
       // Keep existing data
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [])
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AuditLog } from '@/types'
 
 const STORAGE_KEY = 'stablenet:audit-logs'
@@ -68,27 +68,35 @@ export function useAuditLogs(config: UseAuditLogsConfig = {}): UseAuditLogsRetur
   const [allLogs, setAllLogs] = useState<AuditLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const fetchIdRef = useRef(0)
 
   const refresh = useCallback(async () => {
+    const id = ++fetchIdRef.current
+
     // Use external fetch if provided (DI override)
     if (fetchLogs) {
       setIsLoading(true)
       setError(null)
       try {
         const result = await fetchLogs()
+        if (id !== fetchIdRef.current) return
         setAllLogs(result)
       } catch (err) {
+        if (id !== fetchIdRef.current) return
         const fetchError = err instanceof Error ? err : new Error('Failed to fetch audit logs')
         setError(fetchError)
         setAllLogs([])
       } finally {
-        setIsLoading(false)
+        if (id === fetchIdRef.current) {
+          setIsLoading(false)
+        }
       }
       return
     }
 
     // Default: load from localStorage
     const logs = loadFromStorage()
+    if (id !== fetchIdRef.current) return
     setAllLogs(logs)
     setIsLoading(false)
   }, [fetchLogs])

@@ -41,15 +41,21 @@ export function App() {
   }, [syncWithBackground])
 
   useEffect(() => {
-    // Listen for state updates from background
-    const handleMessage = (message: { type: string }) => {
-      if (message.type === 'STATE_UPDATE') {
-        syncWithBackground()
+    let isSyncing = false
+
+    const handleMessage = async (message: { type: string; id?: string }) => {
+      // Only react to background-originated pushes (bg-push- prefix)
+      if (message.type === 'STATE_UPDATE' && message.id?.startsWith('bg-push-') && !isSyncing) {
+        isSyncing = true
+        try {
+          await syncWithBackground()
+        } finally {
+          isSyncing = false
+        }
       }
     }
 
     chrome.runtime?.onMessage?.addListener(handleMessage)
-
     return () => {
       chrome.runtime?.onMessage?.removeListener(handleMessage)
     }

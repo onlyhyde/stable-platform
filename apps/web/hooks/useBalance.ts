@@ -1,7 +1,7 @@
 'use client'
 
 import { getNativeCurrencySymbol } from '@stablenet/wallet-sdk'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
 import { formatUnits } from 'viem'
 import { useAccount, useChainId } from 'wagmi'
@@ -37,12 +37,14 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
   const [symbol, setSymbol] = useState<string>('ETH')
   const [decimals, setDecimals] = useState<number>(18)
   const [chainId, setChainId] = useState<number | undefined>(wagmiChainId)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [isError, setIsError] = useState(false)
+  const fetchIdRef = useRef(0)
 
   const fetchBalance = useCallback(async () => {
     if (!address) return
 
+    const id = ++fetchIdRef.current
     setIsLoading(true)
     setIsError(false)
 
@@ -63,6 +65,9 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
         // Get chain ID from provider
         const chainIdHex = (await windowProvider.request({ method: 'eth_chainId' })) as string
         const currentChainId = Number.parseInt(chainIdHex, 16)
+
+        if (id !== fetchIdRef.current) return
+
         setChainId(currentChainId)
 
         if (token) {
@@ -77,7 +82,6 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
               'latest',
             ],
           })) as string
-          setBalance(BigInt(balanceResult || '0'))
 
           // Get token symbol and decimals
           const symbolResult = (await windowProvider.request({
@@ -88,6 +92,10 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
             method: 'eth_call',
             params: [{ to: token, data: '0x313ce567' }, 'latest'], // decimals()
           })) as string
+
+          if (id !== fetchIdRef.current) return
+
+          setBalance(BigInt(balanceResult || '0'))
 
           if (symbolResult && symbolResult !== '0x') {
             // Decode string from ABI
@@ -103,6 +111,9 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
             method: 'eth_getBalance',
             params: [address, 'latest'],
           })) as string
+
+          if (id !== fetchIdRef.current) return
+
           setBalance(BigInt(balanceHex || '0'))
 
           // Get native currency symbol from chain info
@@ -114,6 +125,9 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
         // Use connector's provider
         const chainIdHex = (await provider.request({ method: 'eth_chainId' })) as string
         const currentChainId = Number.parseInt(chainIdHex, 16)
+
+        if (id !== fetchIdRef.current) return
+
         setChainId(currentChainId)
 
         if (token) {
@@ -128,6 +142,9 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
               'latest',
             ],
           })) as string
+
+          if (id !== fetchIdRef.current) return
+
           setBalance(BigInt(balanceResult || '0'))
         } else {
           // Native balance
@@ -135,6 +152,9 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
             method: 'eth_getBalance',
             params: [address, 'latest'],
           })) as string
+
+          if (id !== fetchIdRef.current) return
+
           setBalance(BigInt(balanceHex || '0'))
 
           const networkSymbol = getNativeCurrencySymbol(currentChainId)
@@ -143,10 +163,13 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
         }
       }
     } catch (error) {
+      if (id !== fetchIdRef.current) return
       console.error('[useBalance] Error fetching balance:', error)
       setIsError(true)
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [address, token, connector])
 

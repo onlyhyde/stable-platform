@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Address, Hash } from 'viem'
 import { decodeEventLog } from 'viem'
 import { useAccount, useChainId, usePublicClient, useWalletClient } from 'wagmi'
@@ -250,13 +250,15 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
 
   // State
   const [schedules, setSchedules] = useState<PaymentScheduleInfo[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Loading states for operations
   const [isCreating, setIsCreating] = useState(false)
   const [isCancelling, setIsCancelling] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+
+  const fetchIdRef = useRef(0)
 
   // Clear error helper
   const clearError = useCallback(() => setError(null), [])
@@ -423,6 +425,7 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
       return
     }
 
+    const id = ++fetchIdRef.current
     setIsLoading(true)
     setError(null)
 
@@ -446,13 +449,17 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
         }
       }
 
+      if (id !== fetchIdRef.current) return
       setSchedules(scheduleInfos)
     } catch (err) {
+      if (id !== fetchIdRef.current) return
       const message = err instanceof Error ? err.message : 'Failed to fetch schedules'
       setError(message)
       setSchedules([])
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [targetAccount, publicClient, getSchedule, recurringPaymentManager])
 

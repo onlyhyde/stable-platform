@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type Address,
   encodePacked,
@@ -285,11 +285,13 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
   const [merchantPlans, setMerchantPlans] = useState<PlanDisplayInfo[]>([])
   const [merchantStats, setMerchantStats] = useState<MerchantStats | null>(null)
 
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [isSubscribing, setIsSubscribing] = useState(false)
   const [isCancelling, setIsCancelling] = useState(false)
   const [isCreatingPlan, setIsCreatingPlan] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+
+  const fetchIdRef = useRef(0)
 
   // Helper: Convert raw plan data to display info
   const toPlanDisplayInfo = useCallback(
@@ -348,6 +350,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
   const loadPlans = useCallback(async () => {
     if (!publicClient) return
 
+    const id = ++fetchIdRef.current
     setIsLoading(true)
     setError(null)
 
@@ -373,11 +376,15 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
       }
 
       const loadedPlans = await Promise.all(planPromises)
+      if (id !== fetchIdRef.current) return
       setPlans(loadedPlans.filter((p) => p.isActive))
     } catch (err) {
+      if (id !== fetchIdRef.current) return
       setError(err instanceof Error ? err : new Error('Failed to load plans'))
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [publicClient, toPlanDisplayInfo, subscriptionManager])
 
@@ -385,6 +392,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
   const loadMySubscriptions = useCallback(async () => {
     if (!publicClient || !address) return
 
+    const id = ++fetchIdRef.current
     setIsLoading(true)
     setError(null)
 
@@ -435,11 +443,15 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
       })
 
       const subscriptions = await Promise.all(subscriptionPromises)
+      if (id !== fetchIdRef.current) return
       setMySubscriptions(subscriptions)
     } catch (err) {
+      if (id !== fetchIdRef.current) return
       setError(err instanceof Error ? err : new Error('Failed to load subscriptions'))
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [publicClient, address, toPlanDisplayInfo, subscriptionManager])
 
@@ -447,6 +459,7 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
   const loadMerchantPlans = useCallback(async () => {
     if (!publicClient || !address) return
 
+    const id = ++fetchIdRef.current
     setIsLoading(true)
     setError(null)
 
@@ -469,6 +482,8 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
       })
 
       const loadedPlans = await Promise.all(planPromises)
+      if (id !== fetchIdRef.current) return
+
       setMerchantPlans(loadedPlans)
 
       // Calculate stats
@@ -504,9 +519,12 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
         monthlyRevenue,
       })
     } catch (err) {
+      if (id !== fetchIdRef.current) return
       setError(err instanceof Error ? err : new Error('Failed to load merchant plans'))
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [publicClient, address, toPlanDisplayInfo, subscriptionManager])
 

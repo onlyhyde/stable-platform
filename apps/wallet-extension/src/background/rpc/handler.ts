@@ -1224,9 +1224,10 @@ const handlers: Record<string, RpcHandler> = {
       try {
         const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
         const gasEstimate = await bundlerClient.estimateUserOperationGas(userOp)
-        // Add 50% buffer to verification gas (smart account validation can vary)
+        // Bundler estimate already includes 10% buffer from binary search.
+        // Add a small 20% safety margin on top for execution variance.
         userOp.preVerificationGas = gasEstimate.preVerificationGas
-        userOp.verificationGasLimit = gasEstimate.verificationGasLimit + gasEstimate.verificationGasLimit / 2n
+        userOp.verificationGasLimit = gasEstimate.verificationGasLimit + gasEstimate.verificationGasLimit / 5n
         userOp.callGasLimit = gasEstimate.callGasLimit + gasEstimate.callGasLimit / 5n
       } catch (error) {
         logger.warn(`UserOp gas limit estimation failed, using smart account defaults: ${(error as Error).message}`)

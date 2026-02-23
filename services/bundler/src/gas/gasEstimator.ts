@@ -336,7 +336,14 @@ export class GasEstimator {
    */
   private async trySimulateValidation(userOp: UserOperation, gasLimit: bigint): Promise<boolean> {
     try {
-      const packedOp = this.packUserOpForSimulation(userOp)
+      // Override verificationGasLimit with the binary search value so the EntryPoint
+      // allocates this amount of gas to the inner validateUserOp call.
+      // Without this, a 0n verificationGasLimit in the packed UserOp causes the
+      // EntryPoint to give 0 gas to validateUserOp, making the binary search always fail.
+      const packedOp = this.packUserOpForSimulation({
+        ...userOp,
+        verificationGasLimit: gasLimit,
+      })
 
       await this.client.simulateContract({
         address: this.entryPoint,
@@ -475,7 +482,9 @@ export class GasEstimator {
    * Fallback verification gas estimation (when simulation fails)
    */
   private fallbackVerificationGasEstimate(userOp: UserOperation): bigint {
-    let baseGas = 100000n
+    // Smart account validateUserOp typically needs 200k-400k gas
+    // (ECDSA verification + storage reads + ERC-7579 validation hooks)
+    let baseGas = 300000n
 
     if (userOp.factory) {
       // Add deployment gas (configurable)
@@ -544,14 +553,21 @@ export class GasEstimator {
    */
   private async trySimulateHandleOp(userOp: UserOperation, gasLimit: bigint): Promise<boolean> {
     try {
-      const packedOp = this.packUserOpForSimulation(userOp)
+      // Override callGasLimit with the binary search value so the EntryPoint
+      // allocates this amount of gas to the inner execution call.
+      const packedOp = this.packUserOpForSimulation({
+        ...userOp,
+        callGasLimit: gasLimit,
+        // Ensure verification passes by providing a generous verificationGasLimit
+        verificationGasLimit: userOp.verificationGasLimit || this.config.initialGasUpperBound,
+      })
 
       await this.client.simulateContract({
         address: this.entryPoint,
         abi: ENTRY_POINT_V07_ABI,
         functionName: 'simulateHandleOp',
         args: [packedOp, userOp.sender, '0x'],
-        gas: gasLimit,
+        gas: gasLimit + (userOp.verificationGasLimit || this.config.initialGasUpperBound),
       })
 
       // simulateHandleOp always reverts with ExecutionResult

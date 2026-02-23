@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Hex } from 'viem'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { getModuleEntry } from '@/lib/moduleAddresses'
@@ -62,6 +62,8 @@ export function useModuleInstall(): UseModuleInstallReturn {
   const [uninstallingModuleId, setUninstallingModuleId] = useState<string | null>(null)
   const [isCheckingInstalled, setIsCheckingInstalled] = useState(false)
 
+  const fetchIdRef = useRef(0)
+
   // ============================================================================
   // Check single module
   // ============================================================================
@@ -89,21 +91,26 @@ export function useModuleInstall(): UseModuleInstallReturn {
         return
       }
 
+      const id = ++fetchIdRef.current
       setIsCheckingInstalled(true)
       try {
         const results = await Promise.all(
-          moduleIds.map(async (id) => {
-            const installed = await checkInstalled(id)
-            return { id, installed }
+          moduleIds.map(async (mid) => {
+            const installed = await checkInstalled(mid)
+            return { id: mid, installed }
           })
         )
+
+        if (id !== fetchIdRef.current) return
 
         const installed = new Set(results.filter((r) => r.installed).map((r) => r.id))
         setInstalledModules(installed)
       } catch {
         // Keep existing state on error
       } finally {
-        setIsCheckingInstalled(false)
+        if (id === fetchIdRef.current) {
+          setIsCheckingInstalled(false)
+        }
       }
     },
     [address, status.isSmartAccount, checkInstalled]

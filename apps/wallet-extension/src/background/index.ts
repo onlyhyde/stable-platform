@@ -1558,9 +1558,25 @@ chrome.action.onClicked.addListener(() => {
 // State Change Subscriptions
 // =============================================================================
 
+let uiNotifyTimer: ReturnType<typeof setTimeout> | undefined
+
 walletState.subscribe(async () => {
   await updateIconState()
   await broadcastStateUpdate()
+
+  // Push state change to extension UI (popup / side panel)
+  clearTimeout(uiNotifyTimer)
+  uiNotifyTimer = setTimeout(async () => {
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'STATE_UPDATE',
+        id: `bg-push-${Date.now()}`,
+        payload: {},
+      })
+    } catch {
+      // No extension views open — expected when popup is closed
+    }
+  }, 100)
 })
 
 // =============================================================================

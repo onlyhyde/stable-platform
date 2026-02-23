@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData } from 'viem'
 import { useAccount } from 'wagmi'
@@ -101,13 +101,15 @@ export function useLending(): UseLendingReturn {
   const [accountConfig, setAccountConfig] = useState<LendingAccountConfig | null>(null)
   const [healthFactor, setHealthFactor] = useState<bigint | null>(null)
   const [healthFactorInfo, setHealthFactorInfo] = useState<HealthFactorInfo | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [isExecuting, setIsExecuting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [executorInstalled, setExecutorInstalled] = useState(false)
+  const fetchIdRef = useRef(0)
 
   const fetchAccountData = useCallback(async () => {
     if (!address || !publicClient) return
+    const id = ++fetchIdRef.current
 
     setIsLoading(true)
     setError(null)
@@ -119,6 +121,8 @@ export function useLending(): UseLendingReturn {
         functionName: 'getAccountConfig',
         args: [address],
       }) as [bigint, bigint, bigint, boolean]
+
+      if (id !== fetchIdRef.current) return
 
       const [minHealthFactor, maxBorrowLimit, totalBorrowed, isActive] = config
       setExecutorInstalled(isActive)
@@ -144,6 +148,8 @@ export function useLending(): UseLendingReturn {
           args: [address],
         }) as [bigint, boolean, boolean]
 
+        if (id !== fetchIdRef.current) return
+
         setHealthFactorInfo({
           value: hfConfig[0],
           isEnabled: hfConfig[1],
@@ -158,9 +164,12 @@ export function useLending(): UseLendingReturn {
             args: [address],
           }) as bigint
 
+          if (id !== fetchIdRef.current) return
+
           setHealthFactor(currentHf)
         }
       } catch {
+        if (id !== fetchIdRef.current) return
         // Health factor hook may not be installed
         setHealthFactorInfo(null)
       }
@@ -190,12 +199,15 @@ export function useLending(): UseLendingReturn {
       await Promise.all(positionPromises)
       // Positions would be populated from events/indexer in production
     } catch {
+      if (id !== fetchIdRef.current) return
       setExecutorInstalled(false)
       setAccountConfig(null)
       setPositions([])
       setHealthFactor(null)
     } finally {
-      setIsLoading(false)
+      if (id === fetchIdRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [address, publicClient, markets])
 

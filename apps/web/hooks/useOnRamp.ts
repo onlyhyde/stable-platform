@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
 import type {
   CreateOrderParams,
@@ -77,6 +77,8 @@ export function useOnRamp(): UseOnRampReturn {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const fetchIdRef = useRef(0)
+
   // Load supported assets on mount
   useEffect(() => {
     apiCall<SupportedAssets>('/supported-assets')
@@ -92,6 +94,7 @@ export function useOnRamp(): UseOnRampReturn {
       crypto: CryptoCurrency,
       amount: number
     ): Promise<OnRampQuote | null> => {
+      const id = ++fetchIdRef.current
       setIsLoadingQuote(true)
       setError(null)
       try {
@@ -99,14 +102,18 @@ export function useOnRamp(): UseOnRampReturn {
           method: 'POST',
           body: JSON.stringify({ fiatCurrency: fiat, cryptoCurrency: crypto, fiatAmount: amount }),
         })
+        if (id !== fetchIdRef.current) return null
         setQuote(result)
         return result
       } catch (err) {
+        if (id !== fetchIdRef.current) return null
         const msg = err instanceof Error ? err.message : 'Failed to get quote'
         setError(msg)
         return null
       } finally {
-        setIsLoadingQuote(false)
+        if (id === fetchIdRef.current) {
+          setIsLoadingQuote(false)
+        }
       }
     },
     []
@@ -151,14 +158,18 @@ export function useOnRamp(): UseOnRampReturn {
   }, [])
 
   const refreshOrders = useCallback(async () => {
+    const id = ++fetchIdRef.current
     setIsLoadingOrders(true)
     try {
       const result = await apiCall<OnRampOrder[]>('/orders')
+      if (id !== fetchIdRef.current) return
       setOrders(Array.isArray(result) ? result : [])
     } catch {
       // Keep existing orders on error
     } finally {
-      setIsLoadingOrders(false)
+      if (id === fetchIdRef.current) {
+        setIsLoadingOrders(false)
+      }
     }
   }, [])
 
