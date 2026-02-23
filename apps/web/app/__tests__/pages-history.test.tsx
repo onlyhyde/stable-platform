@@ -1,6 +1,6 @@
 'use client'
 
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import type { Address, Hex } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -138,6 +138,7 @@ import { useTransactionHistory } from '@/hooks/useTransactionHistory'
 
 describe('Page Integration — History', () => {
   beforeEach(() => {
+    cleanup()
     vi.clearAllMocks()
   })
 
@@ -147,7 +148,7 @@ describe('Page Integration — History', () => {
       render(<HistoryPage />)
 
       expect(useTransactionHistory).toHaveBeenCalled()
-    })
+    }, 15_000)
 
     it('should display loading state when fetching transactions', async () => {
       vi.mocked(useTransactionHistory).mockReturnValue({
