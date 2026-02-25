@@ -1,3 +1,5 @@
+import type { Address } from 'viem'
+
 /**
  * Environment variable names for paymaster-proxy constants
  */
@@ -26,9 +28,17 @@ export const PAYMASTER_ENV_VARS = {
   PERMIT2_PAYMASTER_ADDRESS: 'PERMIT2_PAYMASTER_ADDRESS',
   SPONSOR_PAYMASTER_ADDRESS: 'SPONSOR_PAYMASTER_ADDRESS',
 
+  // EntryPoint Allowlist
+  SUPPORTED_ENTRY_POINTS: 'SUPPORTED_ENTRY_POINTS',
+
   // Contract Addresses
   PRICE_ORACLE_ADDRESS: 'PRICE_ORACLE_ADDRESS',
   PERMIT2_CONTRACT_ADDRESS: 'PERMIT2_CONTRACT_ADDRESS',
+
+  // Settlement (Phase 2)
+  BUNDLER_RPC_URL: 'BUNDLER_RPC_URL',
+  SETTLEMENT_POLL_MS: 'SETTLEMENT_POLL_MS',
+  SETTLEMENT_ENABLED: 'SETTLEMENT_ENABLED',
 } as const
 
 /**
@@ -110,6 +120,22 @@ function parseChainIds(name: string, defaultValue: readonly number[]): number[] 
 }
 
 /**
+ * Parse comma-separated EntryPoint addresses
+ * Defaults to ERC-4337 v0.7 EntryPoint
+ */
+export function parseEntryPoints(): Address[] {
+  const DEFAULT_ENTRY_POINT = '0x0000000071727De22E5E9d8BAf0edAc6f37da032'
+  const value = process.env[PAYMASTER_ENV_VARS.SUPPORTED_ENTRY_POINTS]
+  if (value === undefined || value === '') {
+    return [DEFAULT_ENTRY_POINT as Address]
+  }
+  return value
+    .split(',')
+    .map((addr) => addr.trim() as Address)
+    .filter((addr) => /^0x[0-9a-fA-F]{40}$/.test(addr))
+}
+
+/**
  * Server configuration
  */
 export function getServerConfig() {
@@ -156,6 +182,21 @@ export function getDefaultPolicyConfig() {
 }
 
 /**
+ * Settlement configuration
+ */
+export function getSettlementConfig() {
+  const bundlerRpcUrl = getEnvOptional(PAYMASTER_ENV_VARS.BUNDLER_RPC_URL)
+  const settlementEnabled = getEnvOptional(PAYMASTER_ENV_VARS.SETTLEMENT_ENABLED)
+  return {
+    bundlerRpcUrl,
+    settlementPollMs: getEnvNumber(PAYMASTER_ENV_VARS.SETTLEMENT_POLL_MS, 15_000),
+    settlementEnabled: settlementEnabled !== undefined
+      ? getEnvBool(PAYMASTER_ENV_VARS.SETTLEMENT_ENABLED, true)
+      : !!bundlerRpcUrl,
+  }
+}
+
+/**
  * Print environment variable usage help
  */
 export function getPaymasterEnvHelp(): string {
@@ -167,6 +208,7 @@ Server:
   ${PAYMASTER_ENV_VARS.DEBUG}                          Enable debug mode (default: false)
   ${PAYMASTER_ENV_VARS.SPONSOR_NAME}                   Sponsor name in responses (default: StableNet Paymaster)
   ${PAYMASTER_ENV_VARS.SUPPORTED_CHAIN_IDS}            Supported chain IDs, comma-separated (default: 8283,1,11155111,84532)
+  ${PAYMASTER_ENV_VARS.SUPPORTED_ENTRY_POINTS}         Supported EntryPoint addresses, comma-separated (default: 0x0000000071727De22E5E9d8BAf0edAc6f37da032)
 
 Signer:
   ${PAYMASTER_ENV_VARS.VALIDITY_SECONDS}               Signature validity in seconds (default: 3600 = 1 hour)
@@ -187,5 +229,10 @@ Multi-Paymaster Addresses (optional, overrides PAYMASTER_ADDRESS for specific ty
 Contract Addresses (for ERC-20 token support):
   ${PAYMASTER_ENV_VARS.PRICE_ORACLE_ADDRESS}           PriceOracle contract address
   ${PAYMASTER_ENV_VARS.PERMIT2_CONTRACT_ADDRESS}       Permit2 contract address (Uniswap Permit2)
+
+Settlement (receipt-based, Phase 2):
+  ${PAYMASTER_ENV_VARS.BUNDLER_RPC_URL}                Bundler RPC URL (enables settlement when set)
+  ${PAYMASTER_ENV_VARS.SETTLEMENT_POLL_MS}             Polling interval in ms (default: 15000)
+  ${PAYMASTER_ENV_VARS.SETTLEMENT_ENABLED}             Explicitly enable/disable settlement (default: true when BUNDLER_RPC_URL is set)
 `.trim()
 }

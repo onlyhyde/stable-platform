@@ -5,7 +5,16 @@ import type {
   UserOperation,
 } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import { concat, encodeAbiParameters, keccak256, pad, toHex } from 'viem'
+import { concat, pad, toHex } from 'viem'
+import {
+  encodePaymasterData,
+  encodePaymasterDataWithSignature,
+  PaymasterType,
+  computePaymasterDomainSeparator,
+  computeUserOpCoreHash,
+  computePaymasterHash,
+  encodeVerifyingPayload,
+} from '@stablenet/core'
 import type { VerifyingPaymasterConfig } from './types'
 import { DEFAULT_VALIDITY_SECONDS } from './types'
 
@@ -17,10 +26,51 @@ const DEFAULT_PAYMASTER_POST_OP_GAS_LIMIT = 50_000n
 const STUB_SIGNATURE: Hex = `0x${'00'.repeat(65)}`
 
 /**
+ * Pack a UserOperation's fields into the format needed by computeUserOpCoreHash.
+ * Converts unpacked v0.7 UserOperation fields into packed Hex fields.
+ */
+function packUserOpForHash(userOp: UserOperation): {
+  sender: Address
+  nonce: bigint
+  initCode: Hex
+  callData: Hex
+  accountGasLimits: Hex
+  preVerificationGas: bigint
+  gasFees: Hex
+} {
+  const initCode =
+    userOp.factory && userOp.factoryData
+      ? concat([userOp.factory, userOp.factoryData])
+      : ('0x' as Hex)
+
+  const accountGasLimits = concat([
+    pad(toHex(userOp.verificationGasLimit), { size: 16 }),
+    pad(toHex(userOp.callGasLimit), { size: 16 }),
+  ]) as Hex
+
+  const gasFees = concat([
+    pad(toHex(userOp.maxPriorityFeePerGas), { size: 16 }),
+    pad(toHex(userOp.maxFeePerGas), { size: 16 }),
+  ]) as Hex
+
+  return {
+    sender: userOp.sender,
+    nonce: userOp.nonce,
+    initCode,
+    callData: userOp.callData,
+    accountGasLimits,
+    preVerificationGas: userOp.preVerificationGas,
+    gasFees,
+  }
+}
+
+/**
  * Create a Verifying Paymaster client
  *
  * The VerifyingPaymaster uses an off-chain signature to approve gas sponsorship.
  * The signer signs a hash of the user operation data to determine which operations to sponsor.
+ *
+ * Data is encoded in envelope format (version byte 0x01) with type-specific payloads.
  *
  * @example
  * ```ts
@@ -44,14 +94,32 @@ export function createVerifyingPaymaster(config: VerifyingPaymasterConfig): Paym
    */
   const getPaymasterStubData = async (
     _userOperation: UserOperation,
-    _entryPoint: Address,
+    entryPoint: Address,
     _chainId: bigint
   ): Promise<PaymasterStubData> => {
-    // Create stub paymaster data with placeholder timestamps and signature
     const validUntil = BigInt(Math.floor(Date.now() / 1000) + validitySeconds)
     const validAfter = 0n
 
-    const paymasterData = encodePaymasterData(validUntil, validAfter, STUB_SIGNATURE)
+    // Build an empty verifying payload (no policy for stub)
+    const payload = encodeVerifyingPayload({
+      policyId: '0x0000000000000000000000000000000000000000000000000000000000000000' as Hex,
+      sponsor: '0x0000000000000000000000000000000000000000' as Address,
+      maxCost: 0n,
+      verifierExtra: '0x',
+    })
+
+    // Encode the envelope
+    const envelope = encodePaymasterData({
+      paymasterType: PaymasterType.VERIFYING,
+      flags: 0,
+      validUntil,
+      validAfter,
+      nonce: 0n,
+      payload,
+    })
+
+    // Concatenate envelope with stub signature
+    const paymasterData = encodePaymasterDataWithSignature(envelope, STUB_SIGNATURE)
 
     return {
       paymaster: paymasterAddress,
@@ -66,29 +134,48 @@ export function createVerifyingPaymaster(config: VerifyingPaymasterConfig): Paym
    */
   const getPaymasterData = async (
     userOperation: UserOperation,
-    _entryPoint: Address,
+    entryPoint: Address,
     _chainId: bigint
   ): Promise<PaymasterData> => {
     // Set validity window (configurable, default: 1 hour)
     const validUntil = BigInt(Math.floor(Date.now() / 1000) + validitySeconds)
     const validAfter = 0n
 
-    // Compute the hash that needs to be signed
-    const hash = computePaymasterHash(
-      userOperation,
-      paymasterAddress,
-      chainId,
+    // Build verifying payload
+    const payload = encodeVerifyingPayload({
+      policyId: '0x0000000000000000000000000000000000000000000000000000000000000000' as Hex,
+      sponsor: '0x0000000000000000000000000000000000000000' as Address,
+      maxCost: 0n,
+      verifierExtra: '0x',
+    })
+
+    // Encode the envelope (without signature)
+    const envelope = encodePaymasterData({
+      paymasterType: PaymasterType.VERIFYING,
+      flags: 0,
       validUntil,
-      validAfter
+      validAfter,
+      nonce: 0n,
+      payload,
+    })
+
+    // Compute the hash using the 3-step core approach
+    const domainSeparator = computePaymasterDomainSeparator(
+      chainId,
+      entryPoint,
+      paymasterAddress
     )
+    const packedOp = packUserOpForHash(userOperation)
+    const userOpCoreHash = computeUserOpCoreHash(packedOp)
+    const hash = computePaymasterHash(domainSeparator, userOpCoreHash, envelope)
 
     // Sign the hash
     const signature = await signer.signMessage({
       message: { raw: hash },
     })
 
-    // Encode paymaster data
-    const paymasterData = encodePaymasterData(validUntil, validAfter, signature)
+    // Encode paymaster data with real signature
+    const paymasterData = encodePaymasterDataWithSignature(envelope, signature)
 
     return {
       paymaster: paymasterAddress,
@@ -103,91 +190,13 @@ export function createVerifyingPaymaster(config: VerifyingPaymasterConfig): Paym
 }
 
 /**
- * Encode paymaster data in the format expected by VerifyingPaymaster
- * Format: [validUntil (6 bytes)][validAfter (6 bytes)][signature (65 bytes)]
- */
-function encodePaymasterData(validUntil: bigint, validAfter: bigint, signature: Hex): Hex {
-  // Convert timestamps to 6 bytes each (uint48)
-  const validUntilBytes = pad(toHex(validUntil), { size: 6 })
-  const validAfterBytes = pad(toHex(validAfter), { size: 6 })
-
-  return concat([validUntilBytes, validAfterBytes, signature])
-}
-
-/**
- * Compute the hash that needs to be signed by the paymaster
- * This matches the getHash function in VerifyingPaymaster.sol
- * Includes senderNonce for replay prevention
- */
-function computePaymasterHash(
-  userOp: UserOperation,
-  paymasterAddress: Address,
-  chainId: bigint,
-  validUntil: bigint,
-  validAfter: bigint,
-  senderNonce: bigint = 0n
-): Hex {
-  // Pack initCode from factory + factoryData
-  const initCode =
-    userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
-
-  // Pack accountGasLimits (verificationGasLimit + callGasLimit)
-  const accountGasLimits = packGasLimits(userOp.verificationGasLimit, userOp.callGasLimit)
-
-  // Pack gasFees (maxPriorityFeePerGas + maxFeePerGas)
-  const gasFees = packGasLimits(userOp.maxPriorityFeePerGas, userOp.maxFeePerGas)
-
-  return keccak256(
-    encodeAbiParameters(
-      [
-        { type: 'address' },
-        { type: 'uint256' },
-        { type: 'bytes32' },
-        { type: 'bytes32' },
-        { type: 'bytes32' },
-        { type: 'uint256' },
-        { type: 'bytes32' },
-        { type: 'uint256' },
-        { type: 'address' },
-        { type: 'uint48' },
-        { type: 'uint48' },
-        { type: 'uint256' },
-      ],
-      [
-        userOp.sender,
-        userOp.nonce,
-        keccak256(initCode),
-        keccak256(userOp.callData),
-        accountGasLimits,
-        userOp.preVerificationGas,
-        gasFees,
-        chainId,
-        paymasterAddress,
-        Number(validUntil),
-        Number(validAfter),
-        senderNonce,
-      ]
-    )
-  )
-}
-
-/**
- * Pack two gas values into a single bytes32
- */
-function packGasLimits(a: bigint, b: bigint): Hex {
-  // Pack as uint128 + uint128
-  const aHex = pad(toHex(a), { size: 16 })
-  const bHex = pad(toHex(b), { size: 16 })
-  return concat([aHex, bHex])
-}
-
-/**
  * Create a verifying paymaster from a private key
  */
 export async function createVerifyingPaymasterFromPrivateKey(config: {
   paymasterAddress: Address
   privateKey: Hex
   chainId: bigint
+  entryPoint?: Address
 }): Promise<PaymasterClient> {
   const { privateKeyToAccount } = await import('viem/accounts')
   const signer = privateKeyToAccount(config.privateKey)
@@ -196,5 +205,6 @@ export async function createVerifyingPaymasterFromPrivateKey(config: {
     paymasterAddress: config.paymasterAddress,
     signer,
     chainId: config.chainId,
+    entryPoint: config.entryPoint,
   })
 }

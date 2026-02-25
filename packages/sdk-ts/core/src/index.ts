@@ -542,6 +542,36 @@ export {
   // Strategies (for advanced usage)
   type TransactionStrategy,
 } from './transaction'
+// Paymaster Codec & Hasher
+export {
+  PAYMASTER_DATA_VERSION,
+  HEADER_SIZE,
+  PaymasterType,
+  encodePaymasterData,
+  decodePaymasterData,
+  isPaymasterDataSupported,
+  envelopeLength,
+  encodePaymasterDataWithSignature,
+  splitEnvelopeAndSignature,
+  computePaymasterDomainSeparator,
+  computeUserOpCoreHash,
+  computePaymasterHash,
+  PAYMASTER_DOMAIN_NAME,
+  PAYMASTER_DOMAIN_VERSION,
+  encodeVerifyingPayload,
+  decodeVerifyingPayload,
+  encodeSponsorPayload,
+  decodeSponsorPayload,
+  encodeErc20Payload,
+  decodeErc20Payload,
+  encodePermit2Payload,
+  decodePermit2Payload,
+  type PaymasterDataEnvelope,
+  type VerifyingPayloadData,
+  type SponsorPayloadData,
+  type Erc20PayloadData,
+  type Permit2PayloadData,
+} from './paymaster'
 // Utils
 export {
   computeDomainSeparator,

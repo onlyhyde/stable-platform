@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stablenet/sdk-go/core"
+	corepaymaster "github.com/stablenet/sdk-go/core/paymaster"
 	"github.com/stablenet/sdk-go/types"
 )
 
@@ -401,4 +402,28 @@ func NewSponsorPaymasterWithPolicy(cfg SponsorPaymasterConfig, policy SponsorPol
 		cfg.Metadata[k] = v
 	}
 	return NewSponsorPaymaster(cfg)
+}
+
+// ValidateSponsorPaymasterData validates that paymaster data from the API uses the v2 envelope format.
+// Returns the decoded envelope and signature, or an error if the format is invalid.
+func ValidateSponsorPaymasterData(data types.Hex) (*corepaymaster.Envelope, types.Hex, error) {
+	if !corepaymaster.IsSupported(data.Bytes()) {
+		return nil, nil, fmt.Errorf("paymaster data does not use supported envelope format")
+	}
+
+	envelopeBytes, sig, err := corepaymaster.SplitEnvelopeAndSignature(data.Bytes(), 65)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to split envelope and signature: %w", err)
+	}
+
+	env, err := corepaymaster.DecodePaymasterData(envelopeBytes)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to decode envelope: %w", err)
+	}
+
+	if env.PaymasterType != corepaymaster.PaymasterTypeSponsor {
+		return nil, nil, fmt.Errorf("expected Sponsor type (1), got %d", env.PaymasterType)
+	}
+
+	return env, types.Hex(sig), nil
 }

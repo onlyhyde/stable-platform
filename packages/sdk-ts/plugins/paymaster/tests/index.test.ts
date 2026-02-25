@@ -3,6 +3,13 @@ import type { Address, Hex, LocalAccount } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  decodePaymasterData,
+  isPaymasterDataSupported,
+  splitEnvelopeAndSignature,
+  PaymasterType as CorePaymasterType,
+  HEADER_SIZE,
+} from '@stablenet/core'
+import {
   createVerifyingPaymaster,
   createVerifyingPaymasterFromPrivateKey,
 } from '../src/verifyingPaymaster'
@@ -101,7 +108,7 @@ describe('paymaster plugin', () => {
       expect(stubData.paymasterData).toMatch(/^0x/)
     })
 
-    it('should use stub signature (all zeros) for gas estimation', async () => {
+    it('should produce v2 envelope format with stub signature', async () => {
       const paymaster = createVerifyingPaymaster({
         paymasterAddress: testPaymasterAddress,
         signer: testSigner,
@@ -110,10 +117,19 @@ describe('paymaster plugin', () => {
 
       const stubData = await paymaster.getPaymasterStubData(mockUserOp, testEntryPoint, testChainId)
 
-      // Stub signature is 65 bytes of zeros
-      // paymasterData format: [validUntil (6 bytes)][validAfter (6 bytes)][signature (65 bytes)]
-      // Total: 77 bytes = 154 hex chars + 0x prefix
-      expect(stubData.paymasterData.length).toBe(156) // 0x + 154
+      // Verify the data uses v2 envelope format (starts with version 0x01)
+      expect(isPaymasterDataSupported(stubData.paymasterData)).toBe(true)
+
+      // Should be decodable by the core codec (just the envelope part)
+      const { envelope, signature } = splitEnvelopeAndSignature(stubData.paymasterData)
+      const decoded = decodePaymasterData(envelope)
+
+      expect(decoded.version).toBe(1)
+      expect(decoded.paymasterType).toBe(CorePaymasterType.VERIFYING)
+      expect(decoded.flags).toBe(0)
+
+      // Stub signature should be 65 bytes of zeros
+      expect(signature).toBe(`0x${'00'.repeat(65)}`)
     })
   })
 
@@ -130,7 +146,7 @@ describe('paymaster plugin', () => {
       expect(data.paymaster).toBe(testPaymasterAddress)
     })
 
-    it('should return paymaster data with actual signature', async () => {
+    it('should return paymaster data with actual signature in v2 format', async () => {
       const paymaster = createVerifyingPaymaster({
         paymasterAddress: testPaymasterAddress,
         signer: testSigner,
@@ -141,8 +157,13 @@ describe('paymaster plugin', () => {
 
       expect(data.paymasterData).toBeDefined()
       expect(data.paymasterData).toMatch(/^0x/)
+
+      // Verify v2 envelope format
+      expect(isPaymasterDataSupported(data.paymasterData)).toBe(true)
+
       // Signature should not be all zeros
-      expect(data.paymasterData).not.toContain('00'.repeat(65))
+      const { signature } = splitEnvelopeAndSignature(data.paymasterData)
+      expect(signature).not.toBe(`0x${'00'.repeat(65)}`)
     })
 
     it('should produce different signatures for different user operations', async () => {
@@ -186,14 +207,14 @@ describe('paymaster plugin', () => {
 
       const stubData = await paymaster.getPaymasterStubData(mockUserOp, testEntryPoint, testChainId)
 
-      // paymasterData includes validUntil in first 6 bytes
-      const validUntilHex = stubData.paymasterData.slice(2, 14)
-      const validUntil = Number.parseInt(validUntilHex, 16)
+      // Decode the v2 envelope to inspect validity
+      const { envelope } = splitEnvelopeAndSignature(stubData.paymasterData)
+      const decoded = decodePaymasterData(envelope)
       const now = Math.floor(Date.now() / 1000)
 
       // Default validity is 3600 seconds (1 hour)
-      expect(validUntil).toBeGreaterThan(now)
-      expect(validUntil).toBeLessThanOrEqual(now + 3600)
+      expect(Number(decoded.validUntil)).toBeGreaterThan(now)
+      expect(Number(decoded.validUntil)).toBeLessThanOrEqual(now + 3600)
     })
 
     it('should use custom validity seconds', async () => {
@@ -207,12 +228,13 @@ describe('paymaster plugin', () => {
 
       const stubData = await paymaster.getPaymasterStubData(mockUserOp, testEntryPoint, testChainId)
 
-      const validUntilHex = stubData.paymasterData.slice(2, 14)
-      const validUntil = Number.parseInt(validUntilHex, 16)
+      // Decode the v2 envelope to inspect validity
+      const { envelope } = splitEnvelopeAndSignature(stubData.paymasterData)
+      const decoded = decodePaymasterData(envelope)
       const now = Math.floor(Date.now() / 1000)
 
-      expect(validUntil).toBeGreaterThan(now + 3600) // More than default 1 hour
-      expect(validUntil).toBeLessThanOrEqual(now + customValidity)
+      expect(Number(decoded.validUntil)).toBeGreaterThan(now + 3600) // More than default 1 hour
+      expect(Number(decoded.validUntil)).toBeLessThanOrEqual(now + customValidity)
     })
   })
 
@@ -304,6 +326,27 @@ describe('paymaster plugin', () => {
       const data = await paymaster.getPaymasterData(largeGasUserOp, testEntryPoint, testChainId)
 
       expect(data.paymasterData).toBeDefined()
+    })
+
+    it('should produce data in v2 envelope format', async () => {
+      const paymaster = createVerifyingPaymaster({
+        paymasterAddress: testPaymasterAddress,
+        signer: testSigner,
+        chainId: testChainId,
+      })
+
+      const data = await paymaster.getPaymasterData(mockUserOp, testEntryPoint, testChainId)
+
+      // The data must be longer than just the header
+      const hexLength = (data.paymasterData.length - 2) / 2  // bytes
+      expect(hexLength).toBeGreaterThan(HEADER_SIZE)
+
+      // Must be decodable as v2 envelope
+      const { envelope } = splitEnvelopeAndSignature(data.paymasterData)
+      const decoded = decodePaymasterData(envelope)
+
+      expect(decoded.version).toBe(1)
+      expect(decoded.paymasterType).toBe(CorePaymasterType.VERIFYING)
     })
   })
 })

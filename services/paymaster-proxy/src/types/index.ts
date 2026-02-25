@@ -28,10 +28,18 @@ export interface PaymasterProxyConfig {
   supportedChainIds: number[]
   /** Enable debug mode */
   debug: boolean
+  /** Supported EntryPoint addresses */
+  supportedEntryPoints: Address[]
   /** Price oracle contract address */
   oracleAddress?: Address
   /** Permit2 contract address */
   permit2Address?: Address
+  /** Bundler RPC URL (enables receipt-based settlement when set) */
+  bundlerRpcUrl?: string
+  /** Settlement polling interval in ms (default: 15000) */
+  settlementPollMs?: number
+  /** Explicitly enable/disable settlement (default: true when bundlerRpcUrl is set) */
+  settlementEnabled?: boolean
 }
 
 /**
@@ -82,10 +90,37 @@ export interface SponsorPolicyResponse {
 export interface PaymasterContext {
   /** Paymaster type to use */
   paymasterType?: PaymasterType
-  /** Token address (for erc20/permit2) */
-  tokenAddress?: Address
-  /** Policy ID */
+
+  /** Policy ID (verifying/sponsor) */
   policyId?: string
+
+  // --- Sponsor-specific fields (type 1) ---
+  /** Campaign ID (bytes32 hex) */
+  campaignId?: Hex
+  /** Per-user gas limit (wei, string for bigint) */
+  perUserLimit?: string
+  /** Allowed target contract address */
+  targetContract?: Address
+  /** Allowed function selector (bytes4 hex) */
+  targetSelector?: Hex
+
+  // --- ERC20-specific fields (type 2) ---
+  /** Token address for payment */
+  tokenAddress?: Address
+  /** Maximum token cost (string for bigint) */
+  maxTokenCost?: string
+  /** Oracle quote ID (string for bigint) */
+  quoteId?: string
+
+  // --- Permit2-specific fields (type 3) ---
+  /** Permit amount (uint160, string for bigint) */
+  permitAmount?: string
+  /** Permit expiration (uint48 timestamp) */
+  permitExpiration?: number
+  /** Permit nonce (uint48) */
+  permitNonce?: number
+  /** Permit2 signature (hex) */
+  permitSig?: Hex
 }
 
 /**
@@ -204,6 +239,8 @@ export interface GetPaymasterDataParams {
 export interface PaymasterDataResponse {
   paymaster: Address
   paymasterData: Hex
+  /** Reservation ID for accounting settlement (internal tracking) */
+  reservationId?: string
 }
 
 /**
@@ -239,17 +276,31 @@ export interface SponsorPolicy {
 }
 
 /**
+ * Pending spending reservation
+ */
+export interface SpendingReservation {
+  /** Unique reservation ID */
+  id: string
+  /** Estimated gas cost */
+  amount: bigint
+  /** Creation timestamp (ms) */
+  createdAt: number
+}
+
+/**
  * Sponsor tracking data
  */
 export interface SponsorTracker {
   /** Sender address */
   sender: Address
-  /** Total gas spent today */
+  /** Total gas spent today (confirmed) */
   dailyGasSpent: bigint
   /** Number of operations today */
   dailyOpCount: number
   /** Last reset date (YYYY-MM-DD) */
   lastResetDate: string
+  /** Pending spending reservations */
+  pendingReservations: SpendingReservation[]
 }
 
 /**

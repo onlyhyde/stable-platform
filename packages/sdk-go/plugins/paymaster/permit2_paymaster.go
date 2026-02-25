@@ -11,6 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/stablenet/sdk-go/core"
+	corepaymaster "github.com/stablenet/sdk-go/core/paymaster"
 	"github.com/stablenet/sdk-go/types"
 )
 
@@ -22,6 +24,8 @@ import (
 type Permit2PaymasterConfig struct {
 	// PaymasterAddress is the Permit2Paymaster contract address.
 	PaymasterAddress types.Address
+	// EntryPointAddress is the EntryPoint contract address (default: ERC-4337 v0.7).
+	EntryPointAddress *types.Address
 	// Permit2Address is the Permit2 contract address.
 	Permit2Address types.Address
 	// PrivateKey is the signer's private key for signing permits.
@@ -53,11 +57,13 @@ const (
 
 // Permit2Paymaster uses Uniswap Permit2 for gasless token approvals.
 type Permit2Paymaster struct {
-	config       Permit2PaymasterConfig
-	privateKey   *ecdsa.PrivateKey
-	signerPubKey types.Address
-	nonce        uint64
-	nonceMu      sync.Mutex
+	config          Permit2PaymasterConfig
+	privateKey      *ecdsa.PrivateKey
+	signerPubKey    types.Address
+	entryPoint      types.Address
+	domainSeparator types.Hash
+	nonce           uint64
+	nonceMu         sync.Mutex
 }
 
 // NewPermit2Paymaster creates a new Permit2 paymaster.
@@ -80,34 +86,67 @@ func NewPermit2Paymaster(cfg Permit2PaymasterConfig) (*Permit2Paymaster, error) 
 		cfg.ValiditySeconds = DefaultValiditySeconds
 	}
 
+	entryPoint := core.EntryPointV07Address
+	if cfg.EntryPointAddress != nil {
+		entryPoint = *cfg.EntryPointAddress
+	}
+
+	// Pre-compute domain separator
+	chainID := new(big.Int).SetUint64(uint64(cfg.ChainID))
+	domainSeparator := corepaymaster.ComputeDomainSeparator(chainID, entryPoint, cfg.PaymasterAddress)
+
 	return &Permit2Paymaster{
-		config:       cfg,
-		privateKey:   privateKey,
-		signerPubKey: signerPubKey,
-		nonce:        cfg.InitialNonce,
+		config:          cfg,
+		privateKey:      privateKey,
+		signerPubKey:    signerPubKey,
+		entryPoint:      entryPoint,
+		domainSeparator: domainSeparator,
+		nonce:           cfg.InitialNonce,
 	}, nil
 }
 
 // GetPaymasterStubData returns stub data for gas estimation.
 func (p *Permit2Paymaster) GetPaymasterStubData(ctx context.Context, userOp *types.PartialUserOperation, cfg PaymentConfig) (*StubData, error) {
 	expiration := uint64(time.Now().Unix()) + uint64(p.config.ValiditySeconds)
-	amount := maxUint128() // Max uint128
+	amount := maxUint128()
 
 	p.nonceMu.Lock()
 	nonce := p.nonce
 	p.nonceMu.Unlock()
 
-	paymasterData := encodePermit2PaymasterData(
-		p.config.TokenAddress,
-		amount,
-		expiration,
-		nonce,
-		stubSignature(),
-	)
+	// Encode Permit2 payload using core encoder
+	permit2Payload, err := corepaymaster.EncodePermit2Payload(&corepaymaster.Permit2Payload{
+		Token:            p.config.TokenAddress,
+		PermitAmount:     amount,
+		PermitExpiration: expiration,
+		PermitNonce:      nonce,
+		PermitSig:        make([]byte, 65), // stub signature
+		Permit2Extra:     nil,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode permit2 payload: %w", err)
+	}
+
+	// Build envelope
+	envelope, err := corepaymaster.EncodePaymasterData(&corepaymaster.Envelope{
+		PaymasterType: corepaymaster.PaymasterTypePermit2,
+		Flags:         0,
+		ValidUntil:    expiration,
+		ValidAfter:    0,
+		Nonce:         nonce,
+		Payload:       permit2Payload,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode stub envelope: %w", err)
+	}
+
+	// Append a 65-byte stub signature
+	stubSig := make([]byte, 65)
+	paymasterData := corepaymaster.ConcatWithSignature(envelope, stubSig)
 
 	return &StubData{
 		Paymaster:                     p.config.PaymasterAddress,
-		PaymasterData:                 paymasterData,
+		PaymasterData:                 types.Hex(paymasterData),
 		PaymasterVerificationGasLimit: big.NewInt(DefaultPermit2VerificationGas),
 		PaymasterPostOpGasLimit:       big.NewInt(DefaultPermit2PostOpGas),
 	}, nil
@@ -116,31 +155,88 @@ func (p *Permit2Paymaster) GetPaymasterStubData(ctx context.Context, userOp *typ
 // GetPaymasterData returns the final paymaster data with Permit2 signature.
 func (p *Permit2Paymaster) GetPaymasterData(ctx context.Context, userOp *types.PartialUserOperation, cfg PaymentConfig) (*PaymasterData, error) {
 	expiration := uint64(time.Now().Unix()) + uint64(p.config.ValiditySeconds)
-	amount := maxUint128() // Max uint128
+	amount := maxUint128()
 
 	p.nonceMu.Lock()
 	nonce := p.nonce
 	p.nonce++ // Increment nonce for next operation
 	p.nonceMu.Unlock()
 
-	// Create Permit2 permit data and sign it
-	signature, err := p.signPermit2(amount, expiration, nonce)
+	// Create Permit2 permit signature
+	permitSig, err := p.signPermit2(amount, expiration, nonce)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign Permit2 permit: %w", err)
 	}
 
-	// Encode paymaster data
-	paymasterData := encodePermit2PaymasterData(
-		p.config.TokenAddress,
-		amount,
-		expiration,
-		nonce,
-		signature,
-	)
+	// Encode Permit2 payload using core encoder
+	permit2Payload, err := corepaymaster.EncodePermit2Payload(&corepaymaster.Permit2Payload{
+		Token:            p.config.TokenAddress,
+		PermitAmount:     amount,
+		PermitExpiration: expiration,
+		PermitNonce:      nonce,
+		PermitSig:        permitSig,
+		Permit2Extra:     nil,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode permit2 payload: %w", err)
+	}
+
+	// Build v2 envelope (without paymaster signature)
+	envelope, err := corepaymaster.EncodePaymasterData(&corepaymaster.Envelope{
+		PaymasterType: corepaymaster.PaymasterTypePermit2,
+		Flags:         0,
+		ValidUntil:    expiration,
+		ValidAfter:    0,
+		Nonce:         nonce,
+		Payload:       permit2Payload,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode envelope: %w", err)
+	}
+
+	// Compute user op core hash
+	nonceBig := big.NewInt(0)
+	if userOp.Nonce != nil {
+		nonceBig = userOp.Nonce
+	}
+	preVerificationGas := big.NewInt(0)
+	if userOp.PreVerificationGas != nil {
+		preVerificationGas = userOp.PreVerificationGas
+	}
+
+	var initCode []byte
+	if userOp.Factory != nil {
+		initCode = append(initCode, userOp.Factory.Bytes()...)
+		initCode = append(initCode, userOp.FactoryData.Bytes()...)
+	}
+
+	accountGasLimits := corepaymaster.PackGasLimits(userOp.VerificationGasLimit, userOp.CallGasLimit)
+	gasFees := corepaymaster.PackGasLimits(userOp.MaxPriorityFeePerGas, userOp.MaxFeePerGas)
+
+	userOpCoreHash := corepaymaster.ComputeUserOpCoreHash(&corepaymaster.UserOpCoreFields{
+		Sender:             userOp.Sender,
+		Nonce:              nonceBig,
+		InitCode:           initCode,
+		CallData:           userOp.CallData.Bytes(),
+		AccountGasLimits:   accountGasLimits,
+		PreVerificationGas: preVerificationGas,
+		GasFees:            gasFees,
+	})
+
+	// Compute paymaster hash and sign
+	paymasterHash := corepaymaster.ComputePaymasterHash(p.domainSeparator, userOpCoreHash, envelope)
+
+	signature, err := crypto.Sign(paymasterHash.Bytes(), p.privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign paymaster hash: %w", err)
+	}
+
+	// Concatenate envelope + paymaster signature
+	paymasterData := corepaymaster.ConcatWithSignature(envelope, signature)
 
 	return &PaymasterData{
 		Paymaster:                     p.config.PaymasterAddress,
-		PaymasterData:                 paymasterData,
+		PaymasterData:                 types.Hex(paymasterData),
 		PaymasterVerificationGasLimit: big.NewInt(DefaultPermit2VerificationGas),
 		PaymasterPostOpGasLimit:       big.NewInt(DefaultPermit2PostOpGas),
 	}, nil
@@ -163,7 +259,7 @@ func (p *Permit2Paymaster) EstimateTokenPayment(ctx context.Context, userOp *typ
 		return nil, fmt.Errorf("token not supported: %s", token.Hex())
 	}
 
-	// Basic gas estimation - in production this would use actual gas prices and token exchange rates
+	// Basic gas estimation
 	gasUsed := big.NewInt(0)
 	if userOp.CallGasLimit != nil {
 		gasUsed.Add(gasUsed, userOp.CallGasLimit)
@@ -175,7 +271,6 @@ func (p *Permit2Paymaster) EstimateTokenPayment(ctx context.Context, userOp *typ
 		gasUsed.Add(gasUsed, userOp.PreVerificationGas)
 	}
 
-	// Multiply by gas price
 	gasPrice := big.NewInt(0)
 	if userOp.MaxFeePerGas != nil {
 		gasPrice = userOp.MaxFeePerGas
@@ -234,37 +329,8 @@ func maxUint128() *big.Int {
 	return max
 }
 
-// encodePermit2PaymasterData encodes paymaster data for Permit2Paymaster.
-// Format: [token (20 bytes)][amount (20 bytes)][expiration (6 bytes)][nonce (6 bytes)][signature (65 bytes)]
-func encodePermit2PaymasterData(token types.Address, amount *big.Int, expiration, nonce uint64, signature types.Hex) types.Hex {
-	data := make([]byte, 117) // 20 + 20 + 6 + 6 + 65
-
-	// Token address (20 bytes)
-	copy(data[0:20], token.Bytes())
-
-	// Amount as uint160 (20 bytes)
-	amountBytes := make([]byte, 20)
-	amount.FillBytes(amountBytes)
-	copy(data[20:40], amountBytes)
-
-	// Expiration as uint48 (6 bytes, big-endian)
-	for i := 0; i < 6; i++ {
-		data[45-i] = byte(expiration >> (8 * i))
-	}
-
-	// Nonce as uint48 (6 bytes, big-endian)
-	for i := 0; i < 6; i++ {
-		data[51-i] = byte(nonce >> (8 * i))
-	}
-
-	// Signature (65 bytes)
-	copy(data[52:], signature.Bytes())
-
-	return types.Hex(data)
-}
-
 // signPermit2 signs a Permit2 permit using EIP-712 typed data.
-func (p *Permit2Paymaster) signPermit2(amount *big.Int, expiration, nonce uint64) (types.Hex, error) {
+func (p *Permit2Paymaster) signPermit2(amount *big.Int, expiration, nonce uint64) ([]byte, error) {
 	// Build the EIP-712 domain separator
 	domainSeparator := buildPermit2DomainSeparator(p.config.Permit2Address, uint64(p.config.ChainID))
 
@@ -299,7 +365,7 @@ func (p *Permit2Paymaster) signPermit2(amount *big.Int, expiration, nonce uint64
 		signature[64] += 27
 	}
 
-	return types.Hex(signature), nil
+	return signature, nil
 }
 
 // buildPermit2DomainSeparator builds the EIP-712 domain separator for Permit2.
@@ -360,30 +426,30 @@ func buildPermitSingleStructHash(token types.Address, amount *big.Int, expiratio
 	return crypto.Keccak256(permitData)
 }
 
-// DecodePermit2PaymasterData decodes Permit2 paymaster data.
-func DecodePermit2PaymasterData(data types.Hex) (token types.Address, amount *big.Int, expiration, nonce uint64, signature types.Hex, err error) {
-	if len(data) < 117 {
-		return types.Address{}, nil, 0, 0, nil, fmt.Errorf("invalid paymaster data length: expected at least 117 bytes")
+// DecodePermit2PaymasterData decodes Permit2 paymaster data using the v2 envelope format.
+// Returns the decoded envelope, the Permit2 payload, and the trailing paymaster signature.
+func DecodePermit2PaymasterData(data types.Hex) (*corepaymaster.Envelope, *corepaymaster.Permit2Payload, types.Hex, error) {
+	envelopeBytes, sig, err := corepaymaster.SplitEnvelopeAndSignature(data.Bytes(), 65)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to split envelope and signature: %w", err)
 	}
 
-	// Token (20 bytes)
-	token = common.BytesToAddress(data[0:20])
-
-	// Amount (20 bytes)
-	amount = new(big.Int).SetBytes(data[20:40])
-
-	// Expiration (6 bytes, big-endian)
-	for i := 0; i < 6; i++ {
-		expiration |= uint64(data[45-i]) << (8 * i)
+	env, err := corepaymaster.DecodePaymasterData(envelopeBytes)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to decode envelope: %w", err)
 	}
 
-	// Nonce (6 bytes, big-endian)
-	for i := 0; i < 6; i++ {
-		nonce |= uint64(data[51-i]) << (8 * i)
+	if env.PaymasterType != corepaymaster.PaymasterTypePermit2 {
+		return nil, nil, nil, fmt.Errorf("expected Permit2 type, got %d", env.PaymasterType)
 	}
 
-	// Signature (remaining bytes)
-	signature = types.Hex(data[52:])
+	var permit2Payload *corepaymaster.Permit2Payload
+	if len(env.Payload) > 0 {
+		permit2Payload, err = corepaymaster.DecodePermit2Payload(env.Payload)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to decode permit2 payload: %w", err)
+		}
+	}
 
-	return token, amount, expiration, nonce, signature, nil
+	return env, permit2Payload, types.Hex(sig), nil
 }

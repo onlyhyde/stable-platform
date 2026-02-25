@@ -48,8 +48,24 @@ export {
 // Schemas
 export * from './schemas'
 
+// Settlement
+export {
+  ReservationTracker,
+  type TrackedReservation,
+  computeUserOpHash,
+  BundlerClient,
+  type UserOperationReceipt,
+  SettlementWorker,
+  type SettlementStats,
+} from './settlement'
+
 // Signer
-export { PAYMASTER_MODE, type PaymasterData, PaymasterSigner } from './signer/paymasterSigner'
+export { PaymasterSigner } from './signer/paymasterSigner'
+
+// Utils
+export { normalizeUserOp, toPackedForCoreHash } from './utils/userOpNormalizer'
+export { estimateGasCost } from './utils/gasEstimator'
+export { toPolicyIdBytes32, validateChainId, validateEntryPoint, type ValidationError } from './utils/validation'
 
 // Types
 export type {
@@ -65,6 +81,7 @@ export type {
   PaymasterType,
   SponsorPolicy,
   SponsorPolicyResponse,
+  SpendingReservation,
   SponsorTracker,
   SupportedToken,
   TokenPaymentEstimate,

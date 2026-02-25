@@ -1,11 +1,15 @@
 import type { Address, PublicClient } from 'viem'
 import { calculateTokenAmount, getTokenConfig, isTokenSupported } from '../chain/contracts'
 import type { PackedUserOperationRpc, TokenPaymentEstimate, UserOperationRpc } from '../types'
+import { estimateGasCost } from '../utils/gasEstimator'
+import { normalizeUserOp } from '../utils/userOpNormalizer'
+import { validateEntryPoint } from '../utils/validation'
 
 export interface EstimateTokenPaymentConfig {
   client: PublicClient
   erc20PaymasterAddress: Address
   supportedChainIds: number[]
+  supportedEntryPoints: Address[]
 }
 
 export type EstimateTokenPaymentResult =
@@ -19,7 +23,7 @@ export type EstimateTokenPaymentResult =
  */
 export async function handleEstimateTokenPayment(
   userOp: UserOperationRpc | PackedUserOperationRpc,
-  _entryPoint: Address,
+  entryPoint: Address,
   chainId: string,
   tokenAddress: Address,
   config: EstimateTokenPaymentConfig
@@ -34,6 +38,11 @@ export async function handleEstimateTokenPayment(
         data: { supportedChainIds: config.supportedChainIds },
       },
     }
+  }
+
+  const entryPointError = validateEntryPoint(entryPoint, config.supportedEntryPoints)
+  if (entryPointError) {
+    return { success: false, error: entryPointError }
   }
 
   try {
@@ -80,30 +89,3 @@ export async function handleEstimateTokenPayment(
   }
 }
 
-function normalizeUserOp(userOp: UserOperationRpc | PackedUserOperationRpc): UserOperationRpc {
-  if ('callGasLimit' in userOp) return userOp
-
-  const packed = userOp as PackedUserOperationRpc
-  const accountGasLimitsHex = packed.accountGasLimits.slice(2)
-  const gasFeesHex = packed.gasFees.slice(2)
-
-  return {
-    sender: packed.sender,
-    nonce: packed.nonce,
-    callData: packed.callData,
-    callGasLimit: `0x${accountGasLimitsHex.slice(32, 64)}` as `0x${string}`,
-    verificationGasLimit: `0x${accountGasLimitsHex.slice(0, 32)}` as `0x${string}`,
-    preVerificationGas: packed.preVerificationGas,
-    maxFeePerGas: `0x${gasFeesHex.slice(32, 64)}` as `0x${string}`,
-    maxPriorityFeePerGas: `0x${gasFeesHex.slice(0, 32)}` as `0x${string}`,
-    signature: packed.signature,
-  }
-}
-
-function estimateGasCost(userOp: UserOperationRpc): bigint {
-  const totalGas =
-    BigInt(userOp.callGasLimit) +
-    BigInt(userOp.verificationGasLimit) +
-    BigInt(userOp.preVerificationGas)
-  return totalGas * BigInt(userOp.maxFeePerGas)
-}

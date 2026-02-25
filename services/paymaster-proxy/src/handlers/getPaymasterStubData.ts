@@ -1,17 +1,30 @@
 import type { Address, Hex } from 'viem'
+import {
+  PaymasterType as PaymasterTypeEnum,
+  encodePaymasterData,
+  encodeSponsorPayload,
+  encodeErc20Payload,
+  encodeVerifyingPayload,
+  // encodePermit2Payload intentionally not imported: Permit2 stub returns
+  // empty paymasterData; user builds the full envelope client-side via SDK.
+} from '@stablenet/core'
 import type { SponsorPolicyManager } from '../policy/sponsorPolicy'
 import type { PaymasterSigner } from '../signer/paymasterSigner'
 import type {
   GetPaymasterStubDataParams,
-  PackedUserOperationRpc,
   PaymasterAddresses,
   PaymasterContext,
   PaymasterStubDataResponse,
   PaymasterType,
-  UserOperationRpc,
 } from '../types'
+import { normalizeUserOp } from '../utils/userOpNormalizer'
+import { toPolicyIdBytes32, validateChainId, validateEntryPoint } from '../utils/validation'
 
 export type { GetPaymasterStubDataParams }
+
+/** Default validity window for non-signed envelope types (ERC20) */
+const DEFAULT_VALID_UNTIL_SECONDS = 300
+const DEFAULT_CLOCK_SKEW_SECONDS = 60
 
 /**
  * Default gas limits for paymaster operations
@@ -32,7 +45,7 @@ export interface GetPaymasterStubDataConfig {
   signer: PaymasterSigner
   policyManager: SponsorPolicyManager
   supportedChainIds: number[]
-  supportedEntryPoints?: Address[]
+  supportedEntryPoints: Address[]
   sponsorName?: string
   sponsorIcon?: string
 }
@@ -57,33 +70,14 @@ export function handleGetPaymasterStubData(
   const { entryPoint, chainId, context } = params
   const { supportedChainIds, supportedEntryPoints } = config
 
-  // Validate chain ID
-  const chainIdNum = Number.parseInt(chainId, 16)
-  if (!supportedChainIds.includes(chainIdNum)) {
-    return {
-      success: false,
-      error: {
-        code: -32002,
-        message: `Chain ${chainIdNum} not supported`,
-        data: { supportedChainIds },
-      },
-    }
+  const chainError = validateChainId(chainId, supportedChainIds)
+  if (chainError) {
+    return { success: false, error: chainError }
   }
 
-  // Validate entry point (if configured)
-  if (supportedEntryPoints && supportedEntryPoints.length > 0) {
-    const entryPointLower = entryPoint.toLowerCase()
-    const isSupported = supportedEntryPoints.some((ep) => ep.toLowerCase() === entryPointLower)
-    if (!isSupported) {
-      return {
-        success: false,
-        error: {
-          code: -32003,
-          message: 'EntryPoint not supported',
-          data: { supportedEntryPoints },
-        },
-      }
-    }
+  const entryPointError = validateEntryPoint(entryPoint, supportedEntryPoints)
+  if (entryPointError) {
+    return { success: false, error: entryPointError }
   }
 
   const paymasterType = resolvePaymasterType(context)
@@ -118,8 +112,9 @@ function routeStubData(
 
   switch (type) {
     case 'verifying':
+      return handleVerifyingStubData(params, config, address)
     case 'sponsor':
-      return handleVerifyingStubData(params, config, address, type)
+      return handleSponsorStubData(params, config, address)
     case 'erc20':
       return handleErc20StubData(params, config, address)
     case 'permit2':
@@ -128,18 +123,17 @@ function routeStubData(
 }
 
 /**
- * Verifying/Sponsor paymaster stub data (signature-based)
+ * Verifying paymaster stub data (type 0)
  */
 function handleVerifyingStubData(
   params: GetPaymasterStubDataParams,
   config: GetPaymasterStubDataConfig,
-  paymasterAddress: Address,
-  type: PaymasterType
+  paymasterAddress: Address
 ): GetPaymasterStubDataResult {
   const { userOp, context } = params
   const { signer, policyManager, sponsorName, sponsorIcon } = config
 
-  const policyId = (context?.policyId as string) || 'default'
+  const policyId = context?.policyId ?? 'default'
   const normalizedUserOp = normalizeUserOp(userOp)
   const policyResult = policyManager.checkPolicy(normalizedUserOp, policyId)
 
@@ -147,8 +141,18 @@ function handleVerifyingStubData(
     return { success: false, error: policyResult.rejection }
   }
 
-  const { paymasterData } = signer.generateStubData()
-  const gasLimits = DEFAULT_GAS_LIMITS[type]
+  const payload = encodeVerifyingPayload({
+    policyId: toPolicyIdBytes32(context?.policyId),
+    sponsor: paymasterAddress,
+    maxCost: 0n,
+    verifierExtra: '0x' as Hex,
+  })
+
+  const { paymasterData } = signer.generateStubData(
+    PaymasterTypeEnum.VERIFYING,
+    payload
+  )
+  const gasLimits = DEFAULT_GAS_LIMITS.verifying
 
   const response: PaymasterStubDataResponse = {
     paymaster: paymasterAddress,
@@ -166,12 +170,59 @@ function handleVerifyingStubData(
 }
 
 /**
- * ERC20 paymaster stub data
- * encodes tokenAddress in paymasterData
+ * Sponsor paymaster stub data (type 1)
+ */
+function handleSponsorStubData(
+  params: GetPaymasterStubDataParams,
+  config: GetPaymasterStubDataConfig,
+  paymasterAddress: Address
+): GetPaymasterStubDataResult {
+  const { userOp, context } = params
+  const { signer, policyManager, sponsorName, sponsorIcon } = config
+
+  const policyId = context?.policyId ?? 'default'
+  const normalizedUserOp = normalizeUserOp(userOp)
+  const policyResult = policyManager.checkPolicy(normalizedUserOp, policyId)
+
+  if (!policyResult.allowed) {
+    return { success: false, error: policyResult.rejection }
+  }
+
+  const payload = encodeSponsorPayload({
+    campaignId: context?.campaignId ?? ('0x' + '00'.repeat(32)) as Hex,
+    perUserLimit: BigInt(context?.perUserLimit ?? 0),
+    targetContract: context?.targetContract ?? ('0x' + '00'.repeat(20)) as Address,
+    targetSelector: context?.targetSelector ?? '0x00000000' as Hex,
+    sponsorExtra: '0x' as Hex,
+  })
+
+  const { paymasterData } = signer.generateStubData(
+    PaymasterTypeEnum.SPONSOR,
+    payload
+  )
+  const gasLimits = DEFAULT_GAS_LIMITS.sponsor
+
+  const response: PaymasterStubDataResponse = {
+    paymaster: paymasterAddress,
+    paymasterData,
+    paymasterVerificationGasLimit: `0x${gasLimits.verification.toString(16)}`,
+    paymasterPostOpGasLimit: `0x${gasLimits.postOp.toString(16)}`,
+    isFinal: false,
+  }
+
+  if (sponsorName) {
+    response.sponsor = { name: sponsorName, icon: sponsorIcon }
+  }
+
+  return { success: true, data: response }
+}
+
+/**
+ * ERC20 paymaster stub data (type 2, envelope-based)
  */
 function handleErc20StubData(
   params: GetPaymasterStubDataParams,
-  config: GetPaymasterStubDataConfig,
+  _config: GetPaymasterStubDataConfig,
   paymasterAddress: Address
 ): GetPaymasterStubDataResult {
   const { context } = params
@@ -187,8 +238,23 @@ function handleErc20StubData(
     }
   }
 
-  // paymasterData = token address (20 bytes, no 0x prefix padding needed)
-  const paymasterData = tokenAddress.toLowerCase() as Hex
+  const payload = encodeErc20Payload({
+    token: tokenAddress,
+    maxTokenCost: BigInt(context?.maxTokenCost ?? 0),
+    quoteId: BigInt(context?.quoteId ?? 0),
+    erc20Extra: '0x' as Hex,
+  })
+
+  const now = Math.floor(Date.now() / 1000)
+  const paymasterData = encodePaymasterData({
+    paymasterType: PaymasterTypeEnum.ERC20,
+    flags: 0,
+    validUntil: BigInt(now + DEFAULT_VALID_UNTIL_SECONDS),
+    validAfter: BigInt(now - DEFAULT_CLOCK_SKEW_SECONDS),
+    nonce: 0n,
+    payload,
+  })
+
   const gasLimits = DEFAULT_GAS_LIMITS.erc20
 
   return {
@@ -204,8 +270,8 @@ function handleErc20StubData(
 }
 
 /**
- * Permit2 paymaster stub data
- * Returns paymaster address + high gas limits. Actual paymasterData is generated client-side.
+ * Permit2 paymaster stub data (type 3)
+ * Returns paymaster address + gas limits. Actual paymasterData is generated client-side.
  */
 function handlePermit2StubData(
   _params: GetPaymasterStubDataParams,
@@ -223,49 +289,5 @@ function handlePermit2StubData(
       paymasterPostOpGasLimit: `0x${gasLimits.postOp.toString(16)}`,
       isFinal: false,
     },
-  }
-}
-
-/**
- * Normalize UserOperation to unpacked format for policy checking
- */
-function normalizeUserOp(userOp: UserOperationRpc | PackedUserOperationRpc): UserOperationRpc {
-  if ('callGasLimit' in userOp) {
-    return userOp
-  }
-
-  // Convert packed to unpacked format
-  const packed = userOp as PackedUserOperationRpc
-
-  // Extract gas limits from accountGasLimits
-  const accountGasLimitsHex = packed.accountGasLimits.slice(2)
-  const verificationGasLimit = `0x${accountGasLimitsHex.slice(0, 32)}`
-  const callGasLimit = `0x${accountGasLimitsHex.slice(32, 64)}`
-
-  // Extract gas fees
-  const gasFeesHex = packed.gasFees.slice(2)
-  const maxPriorityFeePerGas = `0x${gasFeesHex.slice(0, 32)}`
-  const maxFeePerGas = `0x${gasFeesHex.slice(32, 64)}`
-
-  // Extract factory from initCode
-  let factory: Address | undefined
-  let factoryData: Hex | undefined
-  if (packed.initCode && packed.initCode !== '0x' && packed.initCode.length > 2) {
-    factory = `0x${packed.initCode.slice(2, 42)}` as Address
-    factoryData = `0x${packed.initCode.slice(42)}` as Hex
-  }
-
-  return {
-    sender: packed.sender,
-    nonce: packed.nonce,
-    factory,
-    factoryData,
-    callData: packed.callData,
-    callGasLimit: callGasLimit as Hex,
-    verificationGasLimit: verificationGasLimit as Hex,
-    preVerificationGas: packed.preVerificationGas,
-    maxFeePerGas: maxFeePerGas as Hex,
-    maxPriorityFeePerGas: maxPriorityFeePerGas as Hex,
-    signature: packed.signature,
   }
 }

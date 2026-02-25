@@ -1,6 +1,6 @@
 import type { Address, Hex } from 'viem'
 import type { PaymasterAddresses, PaymasterProxyConfig } from '../types'
-import { PAYMASTER_ENV_VARS, getEnvOptional, getServerConfig } from './constants'
+import { PAYMASTER_ENV_VARS, getEnvOptional, getServerConfig, getSettlementConfig, parseEntryPoints } from './constants'
 import { resolveContractAddresses } from './contracts'
 
 /**
@@ -153,6 +153,8 @@ export function loadConfig(): PaymasterProxyConfig {
   const permit2Address = parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_CONTRACT_ADDRESS)
     ?? resolved?.permit2Contract
 
+  const settlement = getSettlementConfig()
+
   return {
     port,
     paymasterAddress,
@@ -161,9 +163,25 @@ export function loadConfig(): PaymasterProxyConfig {
     rpcUrl,
     supportedChainIds,
     debug,
+    supportedEntryPoints: validateEntryPoints(parseEntryPoints()),
     oracleAddress,
     permit2Address,
+    bundlerRpcUrl: settlement.bundlerRpcUrl,
+    settlementPollMs: settlement.settlementPollMs,
+    settlementEnabled: settlement.settlementEnabled,
   }
+}
+
+/**
+ * Validate that at least one EntryPoint is configured (boot-time check)
+ */
+function validateEntryPoints(entryPoints: Address[]): Address[] {
+  if (entryPoints.length === 0) {
+    throw new Error(
+      `No valid EntryPoint addresses configured. Set ${PAYMASTER_ENV_VARS.SUPPORTED_ENTRY_POINTS} with comma-separated addresses.`
+    )
+  }
+  return entryPoints
 }
 
 /**
@@ -209,6 +227,7 @@ export function createConfig(options: {
     rpcUrl: options.rpcUrl,
     supportedChainIds,
     debug: options.debug || defaults.debug,
+    supportedEntryPoints: validateEntryPoints(parseEntryPoints()),
     oracleAddress,
     permit2Address,
   }

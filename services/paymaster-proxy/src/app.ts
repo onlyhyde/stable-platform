@@ -13,6 +13,9 @@ import {
   handleSupportedTokens,
 } from './handlers'
 import { SponsorPolicyManager } from './policy/sponsorPolicy'
+import { BundlerClient } from './settlement/bundlerClient'
+import { ReservationTracker } from './settlement/reservationTracker'
+import { SettlementWorker } from './settlement/settlementWorker'
 import {
   estimateTokenPaymentParamsSchema,
   getPaymasterDataParamsSchema,
@@ -42,10 +45,12 @@ interface HandlerConfig {
   signer: PaymasterSigner
   policyManager: SponsorPolicyManager
   supportedChainIds: number[]
+  supportedEntryPoints: Address[]
   sponsorName?: string
   client?: PublicClient
   erc20PaymasterAddress?: Address
   oracleAddress?: Address
+  reservationTracker?: ReservationTracker
 }
 
 /**
@@ -57,6 +62,20 @@ export function createApp(config: PaymasterProxyConfig): Hono {
   // Initialize components
   const signer = new PaymasterSigner(config.signerPrivateKey, config.paymasterAddress)
   const policyManager = new SponsorPolicyManager()
+  const reservationTracker = new ReservationTracker()
+
+  // Phase 2: Settlement worker — graceful degradation when BUNDLER_RPC_URL not set
+  let settlementWorker: SettlementWorker | undefined
+  if (config.bundlerRpcUrl && config.settlementEnabled !== false) {
+    const bundlerClient = new BundlerClient(config.bundlerRpcUrl)
+    settlementWorker = new SettlementWorker(
+      reservationTracker,
+      policyManager,
+      bundlerClient,
+      { pollIntervalMs: config.settlementPollMs }
+    )
+    settlementWorker.start()
+  }
 
   // Get sponsor name from environment (configurable via PAYMASTER_SPONSOR_NAME)
   const serverConfig = getServerConfig()
@@ -71,10 +90,12 @@ export function createApp(config: PaymasterProxyConfig): Hono {
     signer,
     policyManager,
     supportedChainIds: config.supportedChainIds,
+    supportedEntryPoints: config.supportedEntryPoints,
     sponsorName: serverConfig.sponsorName,
     client,
     erc20PaymasterAddress: config.paymasterAddresses.erc20,
     oracleAddress: config.oracleAddress,
+    reservationTracker,
   }
 
   // Middleware
@@ -89,6 +110,8 @@ export function createApp(config: PaymasterProxyConfig): Hono {
     const availableTypes = Object.keys(config.paymasterAddresses).filter(
       (k) => config.paymasterAddresses[k as PaymasterType]
     )
+    const trackerStats = reservationTracker.getStats()
+    const workerStats = settlementWorker?.getStats()
     return c.json({
       status: 'ok',
       service: 'paymaster-proxy',
@@ -99,6 +122,20 @@ export function createApp(config: PaymasterProxyConfig): Hono {
       paymasterTypes: availableTypes,
       signer: signer.getSignerAddress(),
       supportedChainIds: config.supportedChainIds,
+      settlement: {
+        enabled: !!settlementWorker,
+        pendingReservations: trackerStats.total,
+        ...(workerStats
+          ? {
+              settled: workerStats.settled,
+              cancelled: workerStats.cancelled,
+              errors: workerStats.errors,
+              lastPollAt: workerStats.lastPollAt
+                ? new Date(workerStats.lastPollAt).toISOString()
+                : null,
+            }
+          : {}),
+      },
     })
   })
 
@@ -213,6 +250,18 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
     const result = await handleJsonRpcRequest(body, handlerConfig)
     return c.json(result)
   })
+
+  // Periodic cleanup of expired spending reservations (every 60s)
+  // Reservation TTL: 5 minutes (matches SponsorPolicyManager.RESERVATION_TTL_MS)
+  const RESERVATION_TTL_MS = 5 * 60 * 1000
+  const cleanupInterval = setInterval(() => {
+    policyManager.expireReservations()
+    reservationTracker.expireOlderThan(RESERVATION_TTL_MS)
+  }, 60_000)
+  // Allow process to exit without waiting for the interval
+  if (cleanupInterval.unref) {
+    cleanupInterval.unref()
+  }
 
   // Also support /rpc path
   app.post('/rpc', async (c) => {
@@ -489,6 +538,7 @@ async function handlePmEstimateTokenPayment(
       client: config.client,
       erc20PaymasterAddress: config.erc20PaymasterAddress,
       supportedChainIds: config.supportedChainIds,
+      supportedEntryPoints: config.supportedEntryPoints,
     }
   )
 

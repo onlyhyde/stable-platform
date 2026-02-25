@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@stablenet/contracts": "workspace:*",
+    "@stablenet/core": "workspace:*",
     "@hono/node-server": "^1.13.7",
     "@hono/zod-validator": "^0.4.2",
     "hono": "^4.11.10",

@@ -832,6 +832,9 @@ importers:
       '@stablenet/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@stablenet/core':
+        specifier: workspace:*
+        version: link:../../packages/sdk-ts/core
       hono:
         specifier: ^4.11.10
         version: 4.12.0

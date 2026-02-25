@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
 import { getDefaultPolicyConfig } from '../config/constants'
-import type { SponsorPolicy, SponsorTracker, UserOperationRpc } from '../types'
+import type { SpendingReservation, SponsorPolicy, SponsorTracker, UserOperationRpc } from '../types'
 
 /**
  * Get default policy configuration from environment
@@ -198,10 +198,14 @@ export class SponsorPolicyManager {
     // Reset daily trackers if needed
     this.resetDailyTrackersIfNeeded()
 
-    // Check daily limit per sender
+    // Expire stale reservations before checking limits
+    this.expireReservations()
+
+    // Check daily limit per sender (confirmed + pending)
     if (policy.dailyLimitPerSender && estimatedGasCost) {
       const tracker = this.getOrCreateTracker(userOp.sender)
-      if (tracker.dailyGasSpent + estimatedGasCost > policy.dailyLimitPerSender) {
+      const pendingAmount = tracker.pendingReservations.reduce((sum, r) => sum + r.amount, 0n)
+      if (tracker.dailyGasSpent + pendingAmount + estimatedGasCost > policy.dailyLimitPerSender) {
         return {
           allowed: false,
           rejection: {
@@ -209,6 +213,7 @@ export class SponsorPolicyManager {
             message: 'Daily spending limit exceeded for sender',
             data: {
               spent: tracker.dailyGasSpent.toString(),
+              pending: pendingAmount.toString(),
               limit: policy.dailyLimitPerSender.toString(),
             },
           },
@@ -216,9 +221,10 @@ export class SponsorPolicyManager {
       }
     }
 
-    // Check global daily limit
+    // Check global daily limit (confirmed + pending)
     if (policy.globalDailyLimit && estimatedGasCost) {
-      if (this.globalDailySpent + estimatedGasCost > policy.globalDailyLimit) {
+      const globalPending = this.getGlobalPendingAmount()
+      if (this.globalDailySpent + globalPending + estimatedGasCost > policy.globalDailyLimit) {
         return {
           allowed: false,
           rejection: {
@@ -232,8 +238,11 @@ export class SponsorPolicyManager {
     return { allowed: true }
   }
 
+  /** Reservation TTL (5 minutes) */
+  private static readonly RESERVATION_TTL_MS = 5 * 60 * 1000
+
   /**
-   * Record gas spending for a sender
+   * Record gas spending for a sender (immediate confirmation, no reservation)
    */
   recordSpending(sender: Address, gasCost: bigint): void {
     this.resetDailyTrackersIfNeeded()
@@ -243,6 +252,69 @@ export class SponsorPolicyManager {
     tracker.dailyOpCount += 1
 
     this.globalDailySpent += gasCost
+  }
+
+  /**
+   * Reserve spending (call at sign time).
+   * Returns reservation ID for later settlement/cancellation.
+   */
+  reserveSpending(sender: Address, gasCost: bigint): string {
+    this.resetDailyTrackersIfNeeded()
+    const tracker = this.getOrCreateTracker(sender)
+    const id = `${sender}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    tracker.pendingReservations.push({
+      id,
+      amount: gasCost,
+      createdAt: Date.now(),
+    })
+    return id
+  }
+
+  /**
+   * Settle a reservation (mark as confirmed spending).
+   * If actualAmount is provided, uses that instead of the estimated amount.
+   */
+  settleReservation(sender: Address, reservationId: string, actualAmount?: bigint): boolean {
+    const tracker = this.trackers.get(sender)
+    if (!tracker) return false
+    const idx = tracker.pendingReservations.findIndex((r) => r.id === reservationId)
+    if (idx === -1) return false
+    const removed = tracker.pendingReservations.splice(idx, 1)
+    const reservation = removed[0]!
+    const amount = actualAmount ?? reservation.amount
+    tracker.dailyGasSpent += amount
+    tracker.dailyOpCount += 1
+    this.globalDailySpent += amount
+    return true
+  }
+
+  /**
+   * Cancel a reservation (remove from pending without confirming spending).
+   * Used when a UserOperation fails or is dropped.
+   */
+  cancelReservation(sender: Address, reservationId: string): boolean {
+    const tracker = this.trackers.get(sender)
+    if (!tracker) return false
+    const idx = tracker.pendingReservations.findIndex((r) => r.id === reservationId)
+    if (idx === -1) return false
+    tracker.pendingReservations.splice(idx, 1)
+    return true
+  }
+
+  /**
+   * Expire old reservations that exceeded TTL
+   */
+  expireReservations(): number {
+    const now = Date.now()
+    let expired = 0
+    for (const tracker of this.trackers.values()) {
+      const before = tracker.pendingReservations.length
+      tracker.pendingReservations = tracker.pendingReservations.filter(
+        (r) => now - r.createdAt < SponsorPolicyManager.RESERVATION_TTL_MS
+      )
+      expired += before - tracker.pendingReservations.length
+    }
+    return expired
   }
 
   /**
@@ -263,10 +335,24 @@ export class SponsorPolicyManager {
         dailyGasSpent: 0n,
         dailyOpCount: 0,
         lastResetDate: this.getTodayDate(),
+        pendingReservations: [],
       }
       this.trackers.set(sender, tracker)
     }
     return tracker
+  }
+
+  /**
+   * Sum all pending reservation amounts across all trackers
+   */
+  private getGlobalPendingAmount(): bigint {
+    let total = 0n
+    for (const tracker of this.trackers.values()) {
+      for (const r of tracker.pendingReservations) {
+        total += r.amount
+      }
+    }
+    return total
   }
 
   /**
@@ -279,6 +365,7 @@ export class SponsorPolicyManager {
         tracker.dailyGasSpent = 0n
         tracker.dailyOpCount = 0
         tracker.lastResetDate = today
+        tracker.pendingReservations = []
       }
       this.globalDailySpent = 0n
       this.lastResetDate = today

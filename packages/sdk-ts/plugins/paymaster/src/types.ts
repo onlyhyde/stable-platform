@@ -1,9 +1,15 @@
-import type { Address, Hex, LocalAccount } from 'viem'
+import type { Address, LocalAccount } from 'viem'
 
 /**
  * Default validity window for paymaster signatures (1 hour)
  */
 export const DEFAULT_VALIDITY_SECONDS = 3600
+
+/**
+ * Paymaster type string union (backward-compatible alias)
+ * @deprecated Use PaymasterType enum (CorePaymasterType) from @stablenet/core instead
+ */
+export type PaymasterType = 'verifying' | 'erc20' | 'sponsor' | 'permit2'
 
 /**
  * Verifying Paymaster configuration
@@ -15,6 +21,8 @@ export interface VerifyingPaymasterConfig {
   signer: LocalAccount
   /** Chain ID */
   chainId: bigint
+  /** EntryPoint address (required for domain separator computation) */
+  entryPoint?: Address
   /** Validity window in seconds (default: 3600 = 1 hour) */
   validitySeconds?: number
 }
@@ -64,33 +72,9 @@ export interface Permit2PaymasterConfig {
 }
 
 /**
- * Paymaster type enum
- */
-export type PaymasterType = 'verifying' | 'erc20' | 'sponsor' | 'permit2'
-
-/**
  * Gas estimation response
  */
 export interface PaymasterGasEstimation {
   paymasterVerificationGasLimit: bigint
   paymasterPostOpGasLimit: bigint
-}
-
-/**
- * Verifying Paymaster data structure
- * [validUntil (6 bytes)][validAfter (6 bytes)][signature (65 bytes)]
- */
-export interface VerifyingPaymasterData {
-  validUntil: bigint
-  validAfter: bigint
-  signature: Hex
-}
-
-/**
- * ERC20 Paymaster data structure
- */
-export interface ERC20PaymasterData {
-  token: Address
-  maxTokenCost: bigint
-  priceMarkup: bigint
 }

@@ -8,6 +8,9 @@
  * - SponsorPaymaster: API-based gas sponsorship
  * - Permit2Paymaster: Token-based gas payment using Uniswap Permit2
  *
+ * All paymaster data is encoded in envelope format (version byte 0x01)
+ * using the core paymaster module from @stablenet/core.
+ *
  * @example
  * ```ts
  * import {
@@ -62,16 +65,14 @@ export {
   createSponsorPaymasterWithPolicy,
   type SponsorshipPolicy,
 } from './sponsorPaymaster'
-// Types
+// Plugin types
 export type {
   ERC20PaymasterConfig,
-  ERC20PaymasterData,
   PaymasterGasEstimation,
   PaymasterType,
   Permit2PaymasterConfig,
   SponsorPaymasterConfig,
   VerifyingPaymasterConfig,
-  VerifyingPaymasterData,
 } from './types'
 // Constants
 export { DEFAULT_VALIDITY_SECONDS } from './types'
@@ -80,3 +81,16 @@ export {
   createVerifyingPaymaster,
   createVerifyingPaymasterFromPrivateKey,
 } from './verifyingPaymaster'
+
+// Re-export core paymaster types and utilities for convenience
+export {
+  type PaymasterDataEnvelope,
+  PaymasterType as CorePaymasterType,
+  encodePaymasterData,
+  decodePaymasterData,
+  encodePaymasterDataWithSignature,
+  splitEnvelopeAndSignature,
+  isPaymasterDataSupported,
+  PAYMASTER_DATA_VERSION,
+  HEADER_SIZE,
+} from '@stablenet/core'
