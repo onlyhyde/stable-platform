@@ -35,17 +35,110 @@ Paymaster를 실제로 구현/운영해야 하는 개발자를 위해, EIP-4337 
 - `paymasterPostOpGasLimit(16)`
 - `paymasterData(variable)`
 
+v0.9 옵션 suffix (스펙표준 line 999-1001):
+- `[optional] paymasterSignature(variable)`
+- `[optional] uint16(paymasterSignature.length)`
+- `[optional] PAYMASTER_SIG_MAGIC (0x22e325a297439656)`
+
+옵션 suffix는 **병렬 서명**을 위한 설계이다. Paymaster 서명이 `userOpHash`에 포함되지 않으므로, Account 서명과 Paymaster 서명을 독립적으로(병렬로) 생성할 수 있다. 이는 서명 서버와 사용자 지갑 간의 round-trip을 줄여 UX를 개선한다.
+
 ### 3.2 Paymaster 훅
-- `validatePaymasterUserOp(userOp, userOpHash, maxCost)`
-  - 스폰서 승인 여부 결정
-  - `context`, `validationData` 반환
-- `postOp(mode, context, actualGasCost, actualUserOpFeePerGas)`
-  - 실행 후 실제 비용 기준 정산/후처리
+
+**`validatePaymasterUserOp`**:
+```solidity
+function validatePaymasterUserOp(
+    PackedUserOperation calldata userOp,
+    bytes32 userOpHash,
+    uint256 maxCost
+) external returns (bytes memory context, uint256 validationData);
+```
+- 스폰서 승인 여부 결정
+- `context`와 `validationData` 반환
+- **`context` 빈값 반환 시 `postOp`이 호출되지 않음** (스펙표준 line 358). 가스 최적화 기회로 활용 가능.
+
+**`postOp`**:
+```solidity
+function postOp(
+    PostOpMode mode,
+    bytes calldata context,
+    uint256 actualGasCost,
+    uint256 actualUserOpFeePerGas
+) external;
+```
+- 실행 후 실제 비용 기준 정산/후처리
+
+**PostOpMode enum (v0.9)**:
+```solidity
+enum PostOpMode {
+    opSucceeded,  // UserOp 실행 성공
+    opReverted    // UserOp 실행 revert (Paymaster는 여전히 가스비 부담)
+}
+```
+- v0.9에서 paymaster에 전달되는 유효 값은 `opSucceeded`(0)와 `opReverted`(1) **2개뿐**이다.
+- 참조 구현의 enum에는 `postOpReverted`가 포함되어 있으나, 이는 EntryPoint 내부 제어용이며 `paymaster.postOp()`에 전달되지 않는다.
+- 그러나 `IPaymaster.postOp()`은 public external이므로 EntryPoint 외부에서 직접 호출될 수 있다. 따라서 `postOpReverted` 분기를 포함하는 것은 **방어적 코딩(defensive coding)**으로 유효하다.
+- 참조: 스펙표준 line 342-348
+
+**v0.9 postOp 정산 메커니즘 변경**:
+- v0.9에서는 `postOp` revert 시 EntryPoint가 `PostOpReverted` 모드로 재호출하지 않고, 실행을 revert하고 prefund에서 직접 가스비를 정산한다 (이중 호출 제거).
+- 참조: 스펙표준 line 342-348 (PostOpMode 정의), 기술가이드 §6.3 (line 714)
+
+### 3.2.1 validationData 패킹 형식
+
+`validationData`는 `uint256`으로 반환되며, 아래와 같이 패킹된다:
+
+```
+| authorizer (20 bytes) | validUntil (6 bytes) | validAfter (6 bytes) |
+```
+
+- **authorizer**: 0 = 유효, 1 = SIG_VALIDATION_FAILED, 기타 = aggregator 주소
+- **validUntil**: 유효 만료 시간 (0 = 무한)
+- **validAfter**: 유효 시작 시간
+
+코드 예시:
+```solidity
+// validationData 패킹
+uint256 validationData = uint256(uint160(authorizer))
+    | (uint256(validUntil) << 160)
+    | (uint256(validAfter) << (160 + 48));
+
+// validUntil/validAfter만 패킹 (authorizer = 0, 성공)
+uint256 validationData = (uint256(validUntil) << 160)
+    | (uint256(validAfter) << (160 + 48));
+```
+
+**Block Number Mode (bit 47)**: `validUntil`과 `validAfter`의 최상위 비트(bit 47)를 1로 설정하면 timestamp 대신 block number 기준으로 동작한다. 동일 UserOperation 내에서 timestamp과 block number를 혼용할 수 없다.
+- 참조: 스펙표준 line 211-228
 
 ### 3.3 Deposit / Stake 책임
 - Paymaster: EntryPoint deposit 필수(실제 차감 원천)
 - Stake: 운영 안정성/DoS 완화 측면
 - Bundler: deposit/stake 주체가 아니라 시뮬레이션/선별 주체
+
+- **스테이킹 필수 조건** (스펙표준 §7.3 line 497-502):
+  - `postOp`이 있는 Paymaster(즉 `context`가 비어있지 않은 경우)는 반드시 스테이킹해야 함
+  - 자체 스토리지(sender-associated가 아닌)에 접근하는 Paymaster도 스테이킹 필요
+  - 미스테이킹 시 번들러가 해당 Paymaster를 사용하는 UserOp을 거부할 수 있음
+
+### 3.4 검증 단계 제한 사항 (Bundler Spec)
+
+검증 코드(`validateUserOp`, `validatePaymasterUserOp`, factory 호출)에서의 제한:
+
+| 주체 상태 | 허용 스토리지 범위 |
+|-----------|-------------------|
+| Unstaked entity | sender 자체 storage만 접근 가능 |
+| Staked entity | 제한적 확장 허용 (충돌 패턴 제외) |
+| 모든 entity | 같은 번들 내 다른 sender 주소 접근 금지 |
+
+금지 opcode (검증 단계):
+- `BLOCK_*` 계열 opcode (staked entity 예외 가능)
+- delegation call
+- sender 자체 storage 외 접근 (unstaked entity의 경우)
+
+**실무 영향**:
+- validation 단계에서 외부 상태변경(예: Permit2 `permit()`)은 BUNDLER COMPAT 리스크 발생
+- 외부 스토리지 접근이 필요한 경우 스테이킹을 통해 완화 가능
+- 참조: 스펙표준 line 483-502
 
 ## 4. 구현 권장 아키텍처 (현재 최종 기준)
 
@@ -90,7 +183,7 @@ Paymaster를 실제로 구현/운영해야 하는 개발자를 위해, EIP-4337 
 3. 가스 추정 반영 후 최종 데이터 요청(`pm_getPaymasterData`)
 4. Proxy 정책 검증 + paymasterData 생성 + reservation 기록
 5. Wallet이 UserOp 서명 후 Bundler 제출
-6. Bundler가 simulateValidation 수행
+6. Bundler가 `handleOps()` view/trace call로 시뮬레이션 수행 (스펙표준 line 119-121)
 7. EntryPoint가 `validateUserOp` + `validatePaymasterUserOp` 실행
 8. 실행 후 EntryPoint가 `postOp` 호출
 9. Off-chain settlement worker가 receipt로 reservation settle/cancel
@@ -100,7 +193,9 @@ Paymaster를 실제로 구현/운영해야 하는 개발자를 위해, EIP-4337 
 ### 7.1 Contract
 - `validatePaymasterUserOp`에서 입력 길이/타입/유효기간 검증
 - `validationData`를 명확히 설정(실패/성공/시간 범위)
-- `postOp`에서 mode 분기 처리
+- `postOp`에서 mode 분기 처리 (v0.9: `opSucceeded`/`opReverted` 2개 값. `postOpReverted`는 방어적 코딩용으로만 유지)
+- `context` 빈값 반환 시 postOp 미호출 규칙 인지 (가스 최적화 기회)
+- `validationData` 패킹 형식 확인 (authorizer + validUntil + validAfter)
 - 재진입/예외/과금 상한 방어
 
 ### 7.2 Proxy
@@ -146,6 +241,7 @@ Paymaster를 실제로 구현/운영해야 하는 개발자를 위해, EIP-4337 
 - request 시점 선차감(정산 일관성 깨짐)
 - paymaster type별 포맷 분기 남발로 유지보수 복잡도 증가
 - Permit2/ERC20 payload 파싱과 validationData 시간 처리 누락
+- 10% 미사용 가스 페널티 미인지: `callGasLimit` 및 `paymasterPostOpGasLimit`에 **각각** 개별 적용됨. 각 가스 한도에서 미사용분이 40,000 gas 이상이면 해당 미사용분의 10%가 페널티로 부과됨 (스펙표준 line 578-581, `EntryPoint.sol:842,866`)
 
 ## 11. 결론
 
