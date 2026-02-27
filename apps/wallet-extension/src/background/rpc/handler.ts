@@ -2473,11 +2473,11 @@ const handlers: Record<string, RpcHandler> = {
 
     return {
       accountType,
-      isDeployed: hasCode,
+      isDeployed: !!code && code !== '0x',
       rootValidator,
       accountId,
       delegationTarget,
-      isDelegated,
+      isDelegated: accountType === 'delegated',
     }
   },
 
