@@ -76,7 +76,7 @@ function buildStandaloneScripts() {
               inlineDynamicImports: true,
             },
           },
-          chunkSizeWarningLimit: 1024,
+          chunkSizeWarningLimit: 1200,
           minify: true,
           sourcemap: false,
         },

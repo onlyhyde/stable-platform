@@ -1,5 +1,6 @@
 import type { Address, Hex } from 'viem'
-import { createPublicClient, encodePacked, getAddress, http, keccak256 } from 'viem'
+import { createPublicClient, http } from 'viem'
+import { encodePacked, getAddress, keccak256 } from 'viem/utils'
 import type { Account } from '../../types'
 import { walletState } from '../state/store'
 

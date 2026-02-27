@@ -1,6 +1,8 @@
 import type { Address, Hex } from 'viem'
-import { bytesToHex } from 'viem'
-import { english, generateMnemonic, mnemonicToAccount } from 'viem/accounts'
+import { mnemonicToAccount } from 'viem/accounts'
+import { bytesToHex } from 'viem/utils'
+import { generateMnemonic } from '@scure/bip39'
+import { wordlist as english } from '@scure/bip39/wordlists/english'
 import { clearString } from '../../shared/security/memorySanitizer'
 import type { HDKeyringData, KeyringAccount } from '../../types'
 

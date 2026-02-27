@@ -15,7 +15,8 @@ import {
   KERNEL_ABI,
 } from '@stablenet/core'
 import type { Address, Hash, Hex } from 'viem'
-import { concat, createPublicClient, encodeFunctionData, getAddress, http, isAddress, pad, toHex } from 'viem'
+import { createPublicClient, http } from 'viem'
+import { concat, encodeFunctionData, getAddress, isAddress, pad, toHex } from 'viem/utils'
 import {
   ENTRY_POINT_V07_ADDRESS,
   getEntryPoint,

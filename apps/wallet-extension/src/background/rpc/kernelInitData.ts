@@ -12,7 +12,7 @@
  */
 
 import type { Hex } from 'viem'
-import { concat, encodeAbiParameters, pad } from 'viem'
+import { concat, encodeAbiParameters, pad } from 'viem/utils'
 
 /**
  * Sentinel hook address meaning "no actual hook, just install the module".

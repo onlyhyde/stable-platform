@@ -6,7 +6,8 @@
  */
 
 import type { Address, Hex } from 'viem'
-import { hashDomain, hashStruct, serializeTransaction, toHex } from 'viem'
+import { hashDomain } from 'viem'
+import { hashStruct, serializeTransaction, toHex } from 'viem/utils'
 import type {
   HardwareAccountInfo,
   HardwareDeviceType,
