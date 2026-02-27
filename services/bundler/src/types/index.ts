@@ -52,6 +52,8 @@ export interface BundlerConfig {
   enableProfitabilityCheck?: boolean
   /** Minimum net profit in wei to submit a bundle (default: 0) */
   minBundleProfit?: bigint
+  /** Enable aggregator support for signature aggregation (EIP-4337 Section 15, default: false) */
+  enableAggregation?: boolean
 }
 
 /**

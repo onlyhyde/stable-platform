@@ -3,14 +3,16 @@ import rateLimit from '@fastify/rate-limit'
 import Fastify, { type FastifyInstance } from 'fastify'
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
 import { DEFAULT_CORS_ORIGINS } from '../cli/config'
-import { getServerConfig } from '../config/constants'
+import { getReputationPersistenceConfig, getServerConfig } from '../config/constants'
 import { BundleExecutor } from '../executor/bundleExecutor'
 import { GasEstimator } from '../gas/gasEstimator'
+import { DependencyTracker } from '../mempool/dependencyTracker'
 import { Mempool } from '../mempool/mempool'
 import type { BundlerConfig, UserOperation, UserOperationReceipt } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
-import { UserOperationValidator } from '../validation'
+import { AggregatorValidator, UserOperationValidator } from '../validation'
+import { ReputationPersistence } from '../validation/reputationPersistence'
 import { getUserOperationHash, unpackUserOperation } from './utils'
 
 /**
@@ -49,6 +51,7 @@ export class RpcServer {
   private config: BundlerConfig
   private publicClient: PublicClient
   private logger: Logger
+  private reputationPersistence: ReputationPersistence | null = null
 
   constructor(
     publicClient: PublicClient,
@@ -81,6 +84,7 @@ export class RpcServer {
         skipOpcodeValidation: config.enableOpcodeValidation === false || config.debug,
         maxNonceGap: config.maxNonceGap,
         minValidUntilBuffer: config.minValidUntilBuffer,
+        enableAggregation: config.enableAggregation,
       },
       logger
     )
@@ -99,6 +103,19 @@ export class RpcServer {
       },
       logger
     )
+
+    // Wire storage conflict detection when opcode validation is enabled
+    // (traces are available only when opcode validation runs)
+    if (config.enableOpcodeValidation !== false && !config.debug) {
+      const dependencyTracker = new DependencyTracker(logger)
+      this.executor.setDependencyTracker(dependencyTracker)
+    }
+
+    // Wire aggregator validator when aggregation is enabled
+    if (config.enableAggregation) {
+      const aggregatorValidator = new AggregatorValidator(publicClient, primaryEntryPoint, logger)
+      this.executor.setAggregatorValidator(aggregatorValidator)
+    }
 
     // Warn when debug mode is enabled — it bypasses critical security checks
     if (config.debug) {
@@ -352,10 +369,15 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
     const userOpHash = getUserOperationHash(userOp, matchedEntryPoint, chainId)
 
     // Validate UserOperation (format, reputation, state, simulation)
-    await this.validator.validate(userOp)
+    const validationResult = await this.validator.validate(userOp)
 
     // Add to mempool (uses canonical entryPoint from config for consistent lookups)
     this.mempool.add(userOp, userOpHash, matchedEntryPoint)
+
+    // If aggregator detected during validation, record it on the mempool entry
+    if (validationResult.aggregator) {
+      this.mempool.setAggregator(userOpHash, validationResult.aggregator)
+    }
 
     this.logger.info({ userOpHash, sender: userOp.sender }, 'UserOperation received and validated')
 
@@ -653,6 +675,15 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
     // Initialize plugins and routes
     await this.initialize()
 
+    // Load and start reputation persistence if enabled
+    const persistenceConfig = getReputationPersistenceConfig()
+    if (persistenceConfig.enabled) {
+      const reputationManager = this.validator.getReputationManager()
+      this.reputationPersistence = new ReputationPersistence(persistenceConfig, this.logger)
+      this.reputationPersistence.load(reputationManager)
+      this.reputationPersistence.startPeriodicSave(reputationManager)
+    }
+
     // Start bundle executor
     this.executor.start()
 
@@ -665,6 +696,12 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
    * Stop the server
    */
   async stop(): Promise<void> {
+    // Flush reputation to disk before shutdown
+    if (this.reputationPersistence) {
+      const reputationManager = this.validator.getReputationManager()
+      this.reputationPersistence.stop(reputationManager)
+    }
+
     this.executor.stop()
     await this.app.close()
     this.logger.info('Bundler RPC server stopped')

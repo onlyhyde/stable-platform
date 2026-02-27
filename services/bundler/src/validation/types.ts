@@ -32,6 +32,8 @@ export interface ValidationResult {
   senderInfo: StakeInfo
   factoryInfo: StakeInfo
   paymasterInfo: StakeInfo
+  /** Aggregator address if detected during validation (EIP-4337 Section 15) */
+  aggregator?: Address
 }
 
 /**

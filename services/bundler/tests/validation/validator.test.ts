@@ -555,4 +555,158 @@ describe('UserOperationValidator', () => {
       expect(validator.getSimulationValidator()).toBeDefined()
     })
   })
+
+  describe('Aggregator Integration (EIP-4337 Section 15)', () => {
+    const TEST_AGGREGATOR = '0x4567890123456789012345678901234567890123' as Address
+
+    it('should reject aggregator when enableAggregation is false (default)', async () => {
+      vi.mocked(mockSimulationValidator.validateAggregator).mockReturnValue(TEST_AGGREGATOR)
+
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+      }
+
+      const validator = new UserOperationValidator(
+        {
+          entryPoint: TEST_ENTRY_POINT,
+          skipSimulation: true,
+          skipOpcodeValidation: true,
+        },
+        mockLogger,
+        dependencies
+      )
+
+      await expect(validator.validate(createTestUserOp())).rejects.toThrow(
+        `aggregator ${TEST_AGGREGATOR} not supported`
+      )
+    })
+
+    it('should accept aggregator when enableAggregation is true', async () => {
+      vi.mocked(mockSimulationValidator.validateAggregator).mockReturnValue(TEST_AGGREGATOR)
+
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+      }
+
+      const validator = new UserOperationValidator(
+        {
+          entryPoint: TEST_ENTRY_POINT,
+          skipSimulation: true,
+          skipOpcodeValidation: true,
+          enableAggregation: true,
+        },
+        mockLogger,
+        dependencies
+      )
+
+      const result = await validator.validate(createTestUserOp())
+
+      expect(result.aggregator).toBe(TEST_AGGREGATOR)
+      // Should validate aggregator stake
+      expect(mockSimulationValidator.validateStakeInfo).toHaveBeenCalled()
+    })
+
+    it('should include aggregator in ValidationResult when accepted', async () => {
+      vi.mocked(mockSimulationValidator.validateAggregator).mockReturnValue(TEST_AGGREGATOR)
+
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+      }
+
+      const validator = new UserOperationValidator(
+        {
+          entryPoint: TEST_ENTRY_POINT,
+          skipSimulation: true,
+          skipOpcodeValidation: true,
+          enableAggregation: true,
+        },
+        mockLogger,
+        dependencies
+      )
+
+      const result = await validator.validate(createTestUserOp())
+
+      expect(result.aggregator).toBe(TEST_AGGREGATOR)
+    })
+
+    it('should not include aggregator when none detected', async () => {
+      vi.mocked(mockSimulationValidator.validateAggregator).mockReturnValue(null)
+
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+      }
+
+      const validator = new UserOperationValidator(
+        {
+          entryPoint: TEST_ENTRY_POINT,
+          skipSimulation: true,
+          skipOpcodeValidation: true,
+          enableAggregation: true,
+        },
+        mockLogger,
+        dependencies
+      )
+
+      const result = await validator.validate(createTestUserOp())
+
+      expect(result.aggregator).toBeUndefined()
+    })
+
+    it('should update reputation for aggregator when seen', async () => {
+      vi.mocked(mockSimulationValidator.validateAggregator).mockReturnValue(TEST_AGGREGATOR)
+
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+      }
+
+      const validator = new UserOperationValidator(
+        {
+          entryPoint: TEST_ENTRY_POINT,
+          skipSimulation: true,
+          skipOpcodeValidation: true,
+          enableAggregation: true,
+        },
+        mockLogger,
+        dependencies
+      )
+
+      await validator.validate(createTestUserOp())
+
+      // Should have called updateSeen for sender + aggregator
+      expect(mockReputationManager.updateSeen).toHaveBeenCalledWith(TEST_SENDER)
+      expect(mockReputationManager.updateSeen).toHaveBeenCalledWith(TEST_AGGREGATOR)
+    })
+
+    it('should update reputation for aggregator when included', () => {
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+      }
+
+      const validator = new UserOperationValidator(
+        {
+          entryPoint: TEST_ENTRY_POINT,
+          enableAggregation: true,
+        },
+        mockLogger,
+        dependencies
+      )
+
+      validator.updateReputationIncluded(createTestUserOp(), TEST_AGGREGATOR)
+
+      expect(mockReputationManager.updateIncluded).toHaveBeenCalledWith(TEST_SENDER)
+      expect(mockReputationManager.updateIncluded).toHaveBeenCalledWith(TEST_AGGREGATOR)
+    })
+  })
 })

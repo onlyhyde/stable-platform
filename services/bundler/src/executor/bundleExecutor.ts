@@ -1,10 +1,12 @@
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
 import { concat, decodeEventLog, encodeFunctionData, pad, toHex } from 'viem'
 import { ENTRY_POINT_V07_ABI, EVENT_SIGNATURES, HANDLE_AGGREGATED_OPS_ABI } from '../abi'
+import type { DependencyTracker, StorageAccessRecord } from '../mempool/dependencyTracker'
 import type { Mempool } from '../mempool/mempool'
 import type { MempoolEntry, UserOperation } from '../types'
 import type { Logger } from '../utils/logger'
-import type { AggregatorValidator, UserOperationValidator } from '../validation'
+import type { AggregatorValidator, OpcodeValidator, UserOperationValidator } from '../validation'
+import type { TraceCall } from '../validation/opcodeValidator'
 import type { UserOperationEventData, UserOpsPerAggregator } from '../validation/types'
 import { VALIDATION_CONSTANTS } from '../validation/types'
 
@@ -27,6 +29,7 @@ export class BundleExecutor {
   private mempool: Mempool
   private validator: UserOperationValidator
   private aggregatorValidator: AggregatorValidator | null = null
+  private dependencyTracker: DependencyTracker | null = null
   private config: BundleExecutorConfig
   private logger: Logger
   private bundleTimer: ReturnType<typeof setInterval> | null = null
@@ -85,6 +88,14 @@ export class BundleExecutor {
   }
 
   /**
+   * Set the dependency tracker for storage conflict detection
+   */
+  setDependencyTracker(tracker: DependencyTracker): void {
+    this.dependencyTracker = tracker
+    this.logger.info('Dependency tracker configured for storage conflict detection')
+  }
+
+  /**
    * Try to create and submit a bundle
    */
   async tryBundle(): Promise<Hex | null> {
@@ -112,8 +123,16 @@ export class BundleExecutor {
       return null
     }
 
+    // EIP-4337 Section 7.3: Order by storage dependencies to prevent conflicts
+    const orderedEntries = this.applyStorageConflictOrdering(dedupedEntries)
+
+    if (orderedEntries.length === 0) {
+      this.logger.debug('No valid operations after storage conflict resolution')
+      return null
+    }
+
     // EIP-4337 Section 7.1: Validate paymaster deposits cover total gas in bundle
-    const depositValidEntries = await this.validatePaymasterDeposits(dedupedEntries)
+    const depositValidEntries = await this.validatePaymasterDeposits(orderedEntries)
 
     if (depositValidEntries.length === 0) {
       this.logger.debug('No valid operations after paymaster deposit validation')
@@ -130,12 +149,28 @@ export class BundleExecutor {
   private async preflightValidation(entries: MempoolEntry[]): Promise<MempoolEntry[]> {
     const valid: MempoolEntry[] = []
     const simulationValidator = this.validator.getSimulationValidator()
+    const opcodeValidator = this.validator.getOpcodeValidator() as OpcodeValidator | undefined
 
     for (const entry of entries) {
       try {
         // Re-simulate before bundling
         await simulationValidator.simulate(entry.userOp)
         valid.push(entry)
+
+        // Capture trace results for dependency tracking
+        if (this.dependencyTracker && opcodeValidator) {
+          const traceResult = opcodeValidator.getLastTraceResult()
+          if (traceResult) {
+            const accessRecord = this.extractStorageAccess(
+              entry.userOpHash,
+              entry.userOp.sender,
+              traceResult.calls
+            )
+            if (accessRecord.accessedSlots.size > 0) {
+              this.dependencyTracker.recordAccess(accessRecord)
+            }
+          }
+        }
       } catch (error) {
         // Remove invalid operation from mempool
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -503,6 +538,63 @@ export class BundleExecutor {
     }
 
     return events
+  }
+
+  /**
+   * EIP-4337 Section 7.3: Apply storage conflict ordering using DependencyTracker.
+   * Orders entries by topological sort of storage dependencies.
+   * Removes entries with circular dependencies.
+   */
+  private applyStorageConflictOrdering(entries: MempoolEntry[]): MempoolEntry[] {
+    if (!this.dependencyTracker || entries.length <= 1) {
+      return entries
+    }
+
+    const { ordered, conflicting } = this.dependencyTracker.orderByDependencies(entries)
+
+    if (conflicting.length > 0) {
+      this.logger.warn(
+        { conflictCount: conflicting.length },
+        'Removed operations with circular storage dependencies from bundle'
+      )
+    }
+
+    return ordered
+  }
+
+  /**
+   * Extract storage access records from trace calls for dependency tracking
+   */
+  private extractStorageAccess(
+    userOpHash: Hex,
+    sender: Address,
+    calls: TraceCall[]
+  ): StorageAccessRecord {
+    const accessedSlots = new Map<Address, Set<string>>()
+
+    const collectSlots = (traceCalls: TraceCall[]) => {
+      for (const call of traceCalls) {
+        if (call.storage) {
+          for (const [contractAddr, slots] of Object.entries(call.storage)) {
+            const addr = contractAddr as Address
+            if (!accessedSlots.has(addr)) {
+              accessedSlots.set(addr, new Set())
+            }
+            const slotSet = accessedSlots.get(addr)!
+            for (const slot of slots) {
+              slotSet.add(slot)
+            }
+          }
+        }
+        if (call.calls) {
+          collectSlots(call.calls)
+        }
+      }
+    }
+
+    collectSlots(calls)
+
+    return { userOpHash, sender, accessedSlots }
   }
 
   /**

@@ -42,6 +42,9 @@ export {
 // Reputation manager
 export { ReputationManager } from './reputationManager'
 
+// Reputation persistence
+export { ReputationPersistence } from './reputationPersistence'
+
 // Simulation validator
 export { SimulationValidator } from './simulationValidator'
 // Tracer

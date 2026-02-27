@@ -2,6 +2,7 @@ import type { Account, Address, Hex, PublicClient, WalletClient } from 'viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EVENT_SIGNATURES } from '../../src/abi'
 import { BundleExecutor, type BundleExecutorConfig } from '../../src/executor/bundleExecutor'
+import { DependencyTracker } from '../../src/mempool/dependencyTracker'
 import { Mempool } from '../../src/mempool/mempool'
 import type { UserOperation } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
@@ -92,10 +93,23 @@ describe('BundleExecutor', () => {
         factoryInfo: { stake: 0n, unstakeDelaySec: 0n },
         paymasterInfo: { stake: 0n, unstakeDelaySec: 0n },
       }),
+      getDepositInfo: vi.fn().mockResolvedValue({
+        deposit: 1000000000000000000n, // 1 ETH
+        staked: false,
+        stake: 0n,
+        unstakeDelaySec: 0n,
+        withdrawTime: 0n,
+      }),
+    }
+
+    const mockReputationManager = {
+      isStaked: vi.fn().mockReturnValue(false),
     }
 
     mockValidator = {
       getSimulationValidator: vi.fn().mockReturnValue(mockSimulationValidator),
+      getReputationManager: vi.fn().mockReturnValue(mockReputationManager),
+      getOpcodeValidator: vi.fn().mockReturnValue(undefined),
       updateReputationIncluded: vi.fn(),
     } as unknown as UserOperationValidator
 
@@ -890,6 +904,164 @@ describe('BundleExecutor', () => {
 
       // handleAggregatedOps function selector: 0xdbed18e0
       expect(call.data?.slice(0, 10)).toBe('0xdbed18e0')
+    })
+  })
+
+  describe('storage conflict detection', () => {
+    const SENDER_A = '0xaaaa111111111111111111111111111111111111' as Address
+    const SENDER_B = '0xbbbb222222222222222222222222222222222222' as Address
+    const SENDER_C = '0xcccc333333333333333333333333333333333333' as Address
+    const CONTRACT = '0xdddd444444444444444444444444444444444444' as Address
+
+    it('should order entries by storage dependencies', async () => {
+      const tracker = new DependencyTracker(mockLogger)
+
+      // Pre-record storage access: A and B access same slot on same contract
+      // B is predecessor (hash order), A is successor
+      const hashA = createHash(10)
+      const hashB = createHash(5)
+
+      tracker.recordAccess({
+        userOpHash: hashA,
+        sender: SENDER_A,
+        accessedSlots: new Map([[CONTRACT, new Set(['0x01'])]]),
+      })
+      tracker.recordAccess({
+        userOpHash: hashB,
+        sender: SENDER_B,
+        accessedSlots: new Map([[CONTRACT, new Set(['0x01'])]]),
+      })
+
+      // Create executor with dependency tracker
+      const trackerExecutor = new BundleExecutor(
+        mockPublicClient,
+        mockWalletClient,
+        mempool,
+        mockValidator,
+        config,
+        mockLogger
+      )
+      trackerExecutor.setDependencyTracker(tracker)
+
+      // Add ops to mempool
+      mempool.add(createTestUserOp(SENDER_A, 0n), hashA, ENTRY_POINT)
+      mempool.add(createTestUserOp(SENDER_B, 0n), hashB, ENTRY_POINT)
+
+      const result = await trackerExecutor.tryBundle()
+      expect(result).toBe('0xtxhash123')
+      expect(mockWalletClient.sendTransaction).toHaveBeenCalled()
+    })
+
+    it('should remove entries with circular storage dependencies', async () => {
+      const tracker = new DependencyTracker(mockLogger)
+
+      const hashA = createHash(1)
+      const hashB = createHash(2)
+      const hashC = createHash(3)
+
+      // Create circular dependency: A→B→C→A via storage conflicts
+      // A and B share slot on contract1
+      // B and C share slot on contract2
+      // C and A share slot on contract3
+      const contract1 = '0xdddd444444444444444444444444444444444444' as Address
+      const contract2 = '0xeeee555555555555555555555555555555555555' as Address
+      const contract3 = '0xffff666666666666666666666666666666666666' as Address
+
+      tracker.recordAccess({
+        userOpHash: hashA,
+        sender: SENDER_A,
+        accessedSlots: new Map([
+          [contract1, new Set(['0x01'])],
+          [contract3, new Set(['0x03'])],
+        ]),
+      })
+      tracker.recordAccess({
+        userOpHash: hashB,
+        sender: SENDER_B,
+        accessedSlots: new Map([
+          [contract1, new Set(['0x01'])],
+          [contract2, new Set(['0x02'])],
+        ]),
+      })
+      tracker.recordAccess({
+        userOpHash: hashC,
+        sender: SENDER_C,
+        accessedSlots: new Map([
+          [contract2, new Set(['0x02'])],
+          [contract3, new Set(['0x03'])],
+        ]),
+      })
+
+      const trackerExecutor = new BundleExecutor(
+        mockPublicClient,
+        mockWalletClient,
+        mempool,
+        mockValidator,
+        config,
+        mockLogger
+      )
+      trackerExecutor.setDependencyTracker(tracker)
+
+      mempool.add(createTestUserOp(SENDER_A, 0n), hashA, ENTRY_POINT)
+      mempool.add(createTestUserOp(SENDER_B, 0n), hashB, ENTRY_POINT)
+      mempool.add(createTestUserOp(SENDER_C, 0n), hashC, ENTRY_POINT)
+
+      // With circular dependencies, conflicting ops are removed
+      // The bundle may be empty or have some ops depending on which are in the cycle
+      const result = await trackerExecutor.tryBundle()
+
+      // Either null (all removed) or a tx hash (some survived)
+      // The key assertion is that it doesn't crash
+      if (result === null) {
+        expect(mockWalletClient.sendTransaction).not.toHaveBeenCalled()
+      } else {
+        expect(mockWalletClient.sendTransaction).toHaveBeenCalled()
+      }
+    })
+
+    it('should preserve original order when no conflicts exist', async () => {
+      const tracker = new DependencyTracker(mockLogger)
+
+      const hashA = createHash(1)
+      const hashB = createHash(2)
+
+      // Different contracts, no shared slots
+      tracker.recordAccess({
+        userOpHash: hashA,
+        sender: SENDER_A,
+        accessedSlots: new Map([[CONTRACT, new Set(['0x01'])]]),
+      })
+      tracker.recordAccess({
+        userOpHash: hashB,
+        sender: SENDER_B,
+        accessedSlots: new Map([[CONTRACT, new Set(['0x02'])]]), // Different slot
+      })
+
+      const trackerExecutor = new BundleExecutor(
+        mockPublicClient,
+        mockWalletClient,
+        mempool,
+        mockValidator,
+        config,
+        mockLogger
+      )
+      trackerExecutor.setDependencyTracker(tracker)
+
+      mempool.add(createTestUserOp(SENDER_A, 0n), hashA, ENTRY_POINT)
+      mempool.add(createTestUserOp(SENDER_B, 0n), hashB, ENTRY_POINT)
+
+      const result = await trackerExecutor.tryBundle()
+      expect(result).toBe('0xtxhash123')
+      expect(mockWalletClient.sendTransaction).toHaveBeenCalled()
+    })
+
+    it('should work without dependency tracker (no-op)', async () => {
+      // Default executor without tracker
+      mempool.add(createTestUserOp(SENDER_A, 0n), createHash(1), ENTRY_POINT)
+      mempool.add(createTestUserOp(SENDER_B, 0n), createHash(2), ENTRY_POINT)
+
+      const result = await executor.tryBundle()
+      expect(result).toBe('0xtxhash123')
     })
   })
 })

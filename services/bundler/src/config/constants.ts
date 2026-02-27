@@ -43,6 +43,14 @@ export const CONSTANTS_ENV_VARS = {
   MEMPOOL_AGE_WEIGHT_FACTOR: 'BUNDLER_MEMPOOL_AGE_WEIGHT_FACTOR',
   MEMPOOL_MAX_AGE_BOOST_MS: 'BUNDLER_MEMPOOL_MAX_AGE_BOOST_MS',
 
+  // Aggregation
+  ENABLE_AGGREGATION: 'BUNDLER_ENABLE_AGGREGATION',
+
+  // Reputation Persistence
+  REP_PERSISTENCE_ENABLED: 'BUNDLER_REP_PERSISTENCE_ENABLED',
+  REP_PERSISTENCE_PATH: 'BUNDLER_REP_PERSISTENCE_PATH',
+  REP_PERSISTENCE_INTERVAL_MS: 'BUNDLER_REP_PERSISTENCE_INTERVAL_MS',
+
   // Server Config
   BODY_LIMIT: 'BUNDLER_BODY_LIMIT',
   RATE_LIMIT_MAX: 'BUNDLER_RATE_LIMIT_MAX',
@@ -288,6 +296,38 @@ export function getMempoolConfig(): Required<MempoolConfig> {
 }
 
 /**
+ * Reputation persistence configuration
+ */
+export interface ReputationPersistenceConfig {
+  enabled: boolean
+  filePath: string
+  saveIntervalMs: number
+}
+
+/**
+ * Default values for reputation persistence
+ */
+const PERSISTENCE_DEFAULTS = {
+  enabled: false,
+  filePath: './data/reputation.json',
+  saveIntervalMs: 60_000, // 60 seconds
+} as const
+
+/**
+ * Get reputation persistence config from environment or defaults
+ */
+export function getReputationPersistenceConfig(): ReputationPersistenceConfig {
+  return {
+    enabled: getEnvBool(CONSTANTS_ENV_VARS.REP_PERSISTENCE_ENABLED, PERSISTENCE_DEFAULTS.enabled),
+    filePath: getEnvString(CONSTANTS_ENV_VARS.REP_PERSISTENCE_PATH, PERSISTENCE_DEFAULTS.filePath),
+    saveIntervalMs: getEnvNumber(
+      CONSTANTS_ENV_VARS.REP_PERSISTENCE_INTERVAL_MS,
+      PERSISTENCE_DEFAULTS.saveIntervalMs
+    ),
+  }
+}
+
+/**
  * Get server config from environment or defaults
  */
 export function getServerConfig() {
@@ -333,6 +373,11 @@ Reputation System:
   ${CONSTANTS_ENV_VARS.REP_DECAY_INTERVAL_MS}          Decay interval in ms (default: 0 = disabled)
   ${CONSTANTS_ENV_VARS.REP_DECAY_AMOUNT}               Decay amount per interval (default: 0)
   ${CONSTANTS_ENV_VARS.REP_THROTTLE_AUTO_RELEASE_MS}   Throttle auto-release duration in ms (default: 0 = disabled)
+
+Reputation Persistence:
+  ${CONSTANTS_ENV_VARS.REP_PERSISTENCE_ENABLED}           Enable reputation persistence (default: false)
+  ${CONSTANTS_ENV_VARS.REP_PERSISTENCE_PATH}              File path for reputation data (default: ./data/reputation.json)
+  ${CONSTANTS_ENV_VARS.REP_PERSISTENCE_INTERVAL_MS}       Save interval in ms (default: 60000)
 
 Mempool:
   ${CONSTANTS_ENV_VARS.MEMPOOL_MAX_SIZE}               Max UserOps in mempool (default: 10000)

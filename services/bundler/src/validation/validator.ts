@@ -38,6 +38,8 @@ export interface ValidatorConfig {
   maxNonceGap?: bigint
   /** Minimum seconds before validUntil for a valid operation (default: 30) */
   minValidUntilBuffer?: bigint
+  /** Enable aggregator support (EIP-4337 Section 15, default: false) */
+  enableAggregation?: boolean
 }
 
 /**
@@ -158,7 +160,7 @@ export class UserOperationValidator {
       result = await this.simulationValidator.simulate(userOp)
     }
 
-    // Phase 5: Validate simulation result
+    // Phase 5: Validate simulation result (may set aggregator on result)
     this.validateSimulationResult(result, userOp)
 
     // Phase 6: Opcode validation (ERC-7562)
@@ -166,8 +168,8 @@ export class UserOperationValidator {
       await this.validateOpcodes(userOp)
     }
 
-    // Update reputation (seen)
-    this.updateReputationSeen(userOp)
+    // Update reputation (seen) — includes aggregator if present
+    this.updateReputationSeen(userOp, result.aggregator)
 
     this.logger.debug(
       { sender: userOp.sender, preOpGas: result.returnInfo.preOpGas.toString() },
@@ -378,15 +380,31 @@ export class UserOperationValidator {
       userOp.paymaster ? result.returnInfo.paymasterValidationData : undefined
     )
 
-    // Check for aggregator (currently not supported)
+    // Check for aggregator
     const aggregator = this.simulationValidator.validateAggregator(
       result.returnInfo.accountValidationData
     )
     if (aggregator) {
-      throw new RpcError(
-        `aggregator ${aggregator} not supported`,
-        RPC_ERROR_CODES.UNSUPPORTED_AGGREGATOR
+      if (!this.config.enableAggregation) {
+        throw new RpcError(
+          `aggregator ${aggregator} not supported`,
+          RPC_ERROR_CODES.UNSUPPORTED_AGGREGATOR
+        )
+      }
+
+      // EIP-4337 Section 15: Aggregator must be staked
+      const { minStake, minUnstakeDelay } = this.reputationManager.getConfig()
+      this.simulationValidator.validateStakeInfo(
+        result.senderInfo, // aggregator stake info comes from simulation
+        'sender', // entityType for error message (the aggregator)
+        minStake,
+        minUnstakeDelay
       )
+
+      // Store aggregator address in result for upstream consumption
+      result.aggregator = aggregator
+
+      this.logger.debug({ aggregator }, 'Aggregator accepted for UserOperation')
     }
 
     // Validate stake info if required
@@ -418,7 +436,7 @@ export class UserOperationValidator {
   /**
    * Update reputation for all entities (called when UserOp is seen)
    */
-  private updateReputationSeen(userOp: UserOperation): void {
+  private updateReputationSeen(userOp: UserOperation, aggregator?: Address): void {
     this.reputationManager.updateSeen(userOp.sender)
 
     if (userOp.factory) {
@@ -428,12 +446,16 @@ export class UserOperationValidator {
     if (userOp.paymaster) {
       this.reputationManager.updateSeen(userOp.paymaster)
     }
+
+    if (aggregator) {
+      this.reputationManager.updateSeen(aggregator)
+    }
   }
 
   /**
    * Update reputation for all entities (called when UserOp is included)
    */
-  updateReputationIncluded(userOp: UserOperation): void {
+  updateReputationIncluded(userOp: UserOperation, aggregator?: Address): void {
     this.reputationManager.updateIncluded(userOp.sender)
 
     if (userOp.factory) {
@@ -442,6 +464,10 @@ export class UserOperationValidator {
 
     if (userOp.paymaster) {
       this.reputationManager.updateIncluded(userOp.paymaster)
+    }
+
+    if (aggregator) {
+      this.reputationManager.updateIncluded(aggregator)
     }
   }
 
