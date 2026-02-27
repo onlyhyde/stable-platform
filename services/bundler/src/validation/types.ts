@@ -180,7 +180,7 @@ import { getValidationConstants } from '../config/constants'
  * - BUNDLER_MAX_CALLDATA_LENGTH: Max callData length in hex chars (default: 102402)
  * - BUNDLER_MAX_FACTORY_DATA_LENGTH: Max factoryData length in hex chars (default: 102402)
  * - BUNDLER_MAX_PAYMASTER_DATA_LENGTH: Max paymasterData length in hex chars (default: 20482)
- * - BUNDLER_MAX_VERIFICATION_GAS: Max verification gas per op (default: 10000000)
+ * - BUNDLER_MAX_VERIFICATION_GAS: Max verification gas per op (default: 500000)
  * - BUNDLER_MAX_BUNDLE_GAS: Max gas per bundle (default: 30000000)
  * - BUNDLER_MIN_VALID_UNTIL_BUFFER: Min seconds before validUntil (default: 30)
  */

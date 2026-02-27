@@ -21,6 +21,11 @@ type AccountConfig struct {
 	// Validator is the validator module to use for signing.
 	Validator accounts.Validator
 
+	// SignatureFormatter formats raw validator signatures into Kernel's on-chain format.
+	// Defaults to KernelSignatureFormatter with validation mode (0x02).
+	// Override for enable-mode or custom signature wrapping.
+	SignatureFormatter accounts.SignatureFormatter
+
 	// EntryPoint is the EntryPoint address (defaults to v0.7).
 	EntryPoint types.Address
 
@@ -33,14 +38,15 @@ type AccountConfig struct {
 
 // Account is a Kernel v3 smart account implementation.
 type Account struct {
-	address        types.Address
-	entryPoint     types.Address
-	factoryAddress types.Address
-	validator      accounts.Validator
-	initData       types.Hex
-	salt           [32]byte
-	client         *ethclient.Client
-	isDeployedCache *bool
+	address            types.Address
+	entryPoint         types.Address
+	factoryAddress     types.Address
+	validator          accounts.Validator
+	signatureFormatter accounts.SignatureFormatter
+	initData           types.Hex
+	salt               [32]byte
+	client             *ethclient.Client
+	isDeployedCache    *bool
 }
 
 // NewAccount creates a new Kernel smart account instance.
@@ -76,14 +82,20 @@ func NewAccount(ctx context.Context, config AccountConfig) (*Account, error) {
 		return nil, fmt.Errorf("failed to calculate address: %w", err)
 	}
 
+	sigFormatter := config.SignatureFormatter
+	if sigFormatter == nil {
+		sigFormatter = NewKernelSignatureFormatter()
+	}
+
 	return &Account{
-		address:        address,
-		entryPoint:     entryPoint,
-		factoryAddress: factoryAddress,
-		validator:      config.Validator,
-		initData:       initData,
-		salt:           salt,
-		client:         config.Client,
+		address:            address,
+		entryPoint:         entryPoint,
+		factoryAddress:     factoryAddress,
+		validator:          config.Validator,
+		signatureFormatter: sigFormatter,
+		initData:           initData,
+		salt:               salt,
+		client:             config.Client,
 	}, nil
 }
 
@@ -97,11 +109,25 @@ func (a *Account) EntryPoint() types.Address {
 	return a.entryPoint
 }
 
-// GetNonce returns the current nonce from EntryPoint.
+// GetNonce returns the current nonce from EntryPoint using the default key (0).
 func (a *Account) GetNonce(ctx context.Context) (uint64, error) {
+	return a.GetNonceWithKey(ctx, big.NewInt(0))
+}
+
+// GetNonceWithKey returns the nonce for a specific key from EntryPoint.
+// EIP-4337 nonces use uint192 key + uint64 sequence for parallel execution.
+// Different keys allow independent nonce sequences, enabling concurrent UserOps.
+//
+// Example keys:
+//   - key=0: Default validator nonce
+//   - key=1+: Custom keys for parallel execution lanes
+func (a *Account) GetNonceWithKey(ctx context.Context, key *big.Int) (uint64, error) {
+	if key == nil {
+		key = big.NewInt(0)
+	}
+
 	// Call EntryPoint.getNonce(address sender, uint192 key)
-	// For default validator, key is 0
-	data, err := EntryPointABI.Pack("getNonce", a.address, big.NewInt(0))
+	data, err := EntryPointABI.Pack("getNonce", a.address, key)
 	if err != nil {
 		return 0, fmt.Errorf("failed to pack getNonce: %w", err)
 	}
@@ -164,6 +190,8 @@ func (a *Account) EncodeCallData(calls []accounts.Call) (types.Hex, error) {
 }
 
 // SignUserOperation signs a UserOperation hash.
+// The raw validator signature is wrapped by the account's SignatureFormatter
+// (default: Kernel v3 validation mode 0x02 prefix).
 func (a *Account) SignUserOperation(ctx context.Context, userOpHash types.Hash) (types.Hex, error) {
 	// Sign with the validator
 	signature, err := a.validator.SignHash(ctx, userOpHash)
@@ -171,15 +199,13 @@ func (a *Account) SignUserOperation(ctx context.Context, userOpHash types.Hash) 
 		return nil, fmt.Errorf("failed to sign: %w", err)
 	}
 
-	// For Kernel v3, the signature format is:
-	// - 1 byte: mode (0x00 for enable mode, 0x01 for enable with signature, 0x02 for validation mode)
-	// - signature data
-	// For a simple validator signature, we use mode 0x02 (validation mode)
-	result := make([]byte, 1+len(signature))
-	result[0] = SignatureModeValidation
-	copy(result[1:], signature.Bytes())
+	// Format signature using the pluggable formatter
+	formatted, err := a.signatureFormatter.FormatSignature(signature)
+	if err != nil {
+		return nil, fmt.Errorf("failed to format signature: %w", err)
+	}
 
-	return types.Hex(result), nil
+	return formatted, nil
 }
 
 // GetFactory returns the factory address (nil if deployed).

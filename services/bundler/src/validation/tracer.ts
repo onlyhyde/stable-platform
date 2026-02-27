@@ -11,8 +11,12 @@ import type { ITracer, TraceCall, TraceResult } from './opcodeValidator'
 export interface TracerConfig {
   /** Gas limit for trace call (default: 10_000_000n) */
   gasLimit?: bigint
-  /** Timeout for trace call (default: '10s') */
+  /** Timeout string passed to the RPC node's tracer (default: '10s') */
   timeout?: string
+  /** Client-side timeout in milliseconds (default: 15000).
+   *  Must be >= RPC timeout to allow the node to respond first.
+   *  If the RPC node hangs, this ensures the bundler doesn't block indefinitely. */
+  clientTimeoutMs?: number
 }
 
 /**
@@ -21,6 +25,7 @@ export interface TracerConfig {
 const DEFAULT_TRACER_CONFIG: Required<TracerConfig> = {
   gasLimit: 10_000_000n,
   timeout: '10s',
+  clientTimeoutMs: 15_000,
 }
 
 /**
@@ -78,14 +83,14 @@ export class DebugTraceCallTracer implements ITracer {
 
     let response: unknown
     try {
-      response = await this.client.request({
-        method: 'debug_traceCall' as never,
-        params: [txObject, 'latest', tracerOptions] as never,
-      })
+      response = await this.requestWithTimeout(txObject, tracerOptions)
     } catch (error) {
       this.logger.error({ error }, 'debug_traceCall failed')
+      const isTimeout = error instanceof Error && error.message.includes('timed out')
       throw new RpcError(
-        `debug_traceCall failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+        isTimeout
+          ? `debug_traceCall timed out after ${this.config.clientTimeoutMs}ms`
+          : `debug_traceCall failed: ${error instanceof Error ? error.message : 'unknown error'}`,
         RPC_ERROR_CODES.INTERNAL_ERROR
       )
     }
@@ -99,6 +104,34 @@ export class DebugTraceCallTracer implements ITracer {
     }
 
     return this.parseTraceResponse(response)
+  }
+
+  /**
+   * Execute debug_traceCall with a client-side timeout.
+   * If the RPC node doesn't respond within clientTimeoutMs, the promise rejects.
+   */
+  private async requestWithTimeout(
+    txObject: Record<string, unknown>,
+    tracerOptions: Record<string, unknown>
+  ): Promise<unknown> {
+    const timeoutMs = this.config.clientTimeoutMs
+
+    const rpcPromise = this.client.request({
+      method: 'debug_traceCall' as never,
+      params: [txObject, 'latest', tracerOptions] as never,
+    })
+
+    const timeoutPromise = new Promise<never>((_resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`debug_traceCall timed out after ${timeoutMs}ms`))
+      }, timeoutMs)
+      // Allow the process to exit without waiting for the timer
+      if (typeof timer === 'object' && 'unref' in timer) {
+        timer.unref()
+      }
+    })
+
+    return Promise.race([rpcPromise, timeoutPromise])
   }
 
   /**

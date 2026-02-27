@@ -27,14 +27,76 @@ const DEFAULT_VALID_UNTIL_SECONDS = 300
 const DEFAULT_CLOCK_SKEW_SECONDS = 60
 
 /**
- * Default gas limits for paymaster operations
+ * Base gas limits for paymaster operations.
+ * These serve as minimum floors; actual limits are adjusted dynamically
+ * based on paymaster type complexity and UserOperation characteristics.
  */
-const DEFAULT_GAS_LIMITS = {
-  verifying: { verification: 100000n, postOp: 50000n },
-  sponsor: { verification: 100000n, postOp: 50000n },
-  erc20: { verification: 150000n, postOp: 100000n },
-  permit2: { verification: 200000n, postOp: 100000n },
+const BASE_GAS_LIMITS = {
+  verifying: { verification: 100_000n, postOp: 50_000n },
+  sponsor: { verification: 100_000n, postOp: 50_000n },
+  erc20: { verification: 150_000n, postOp: 100_000n },
+  permit2: { verification: 200_000n, postOp: 100_000n },
 } as const
+
+/**
+ * Gas overhead per complexity factor (additive to base)
+ */
+const GAS_OVERHEAD = {
+  /** Extra verification gas when factory (account deployment) is present */
+  factoryDeployment: 50_000n,
+  /** Extra verification gas for large paymasterData (>256 bytes) */
+  largePaymasterData: 30_000n,
+  /** Extra postOp gas for token transfer operations (ERC20/Permit2) */
+  tokenPostOp: 50_000n,
+  /** Extra verification gas for large callData (>1KB) */
+  largeCallData: 20_000n,
+} as const
+
+/**
+ * Estimate gas limits dynamically based on paymaster type and UserOperation context.
+ *
+ * Adjusts base limits upward when the operation involves:
+ * - Account deployment (factory present → higher verification gas)
+ * - Large callData (>1KB → higher verification gas for hashing)
+ * - Token operations (ERC20/Permit2 → higher postOp for transfers)
+ */
+function estimateGasLimits(
+  type: PaymasterType,
+  userOp?: { factory?: string; callData?: string; paymasterData?: string }
+): { verification: bigint; postOp: bigint } {
+  const base = BASE_GAS_LIMITS[type]
+  let verification = base.verification
+  let postOp = base.postOp
+
+  if (!userOp) {
+    return { verification, postOp }
+  }
+
+  // Account deployment requires extra verification gas for initCode execution
+  const hasFactory = userOp.factory && userOp.factory !== '0x' && userOp.factory !== undefined
+  if (hasFactory) {
+    verification += GAS_OVERHEAD.factoryDeployment
+  }
+
+  // Large callData increases hashing cost in verification
+  const callDataBytes = userOp.callData ? (userOp.callData.length - 2) / 2 : 0
+  if (callDataBytes > 1024) {
+    verification += GAS_OVERHEAD.largeCallData
+  }
+
+  // Token-based paymasters need extra postOp for token transfer/accounting
+  if (type === 'erc20' || type === 'permit2') {
+    postOp += GAS_OVERHEAD.tokenPostOp
+  }
+
+  // Large paymasterData (>256 bytes) adds verification overhead
+  const paymasterDataBytes = userOp.paymasterData ? (userOp.paymasterData.length - 2) / 2 : 0
+  if (paymasterDataBytes > 256) {
+    verification += GAS_OVERHEAD.largePaymasterData
+  }
+
+  return { verification, postOp }
+}
 
 /**
  * Handler configuration
@@ -152,7 +214,7 @@ function handleVerifyingStubData(
     PaymasterTypeEnum.VERIFYING,
     payload
   )
-  const gasLimits = DEFAULT_GAS_LIMITS.verifying
+  const gasLimits = estimateGasLimits('verifying', userOp)
 
   const response: PaymasterStubDataResponse = {
     paymaster: paymasterAddress,
@@ -200,7 +262,7 @@ function handleSponsorStubData(
     PaymasterTypeEnum.SPONSOR,
     payload
   )
-  const gasLimits = DEFAULT_GAS_LIMITS.sponsor
+  const gasLimits = estimateGasLimits('sponsor', userOp)
 
   const response: PaymasterStubDataResponse = {
     paymaster: paymasterAddress,
@@ -255,7 +317,7 @@ function handleErc20StubData(
     payload,
   })
 
-  const gasLimits = DEFAULT_GAS_LIMITS.erc20
+  const gasLimits = estimateGasLimits('erc20', params.userOp)
 
   return {
     success: true,
@@ -274,11 +336,11 @@ function handleErc20StubData(
  * Returns paymaster address + gas limits. Actual paymasterData is generated client-side.
  */
 function handlePermit2StubData(
-  _params: GetPaymasterStubDataParams,
+  params: GetPaymasterStubDataParams,
   _config: GetPaymasterStubDataConfig,
   paymasterAddress: Address
 ): GetPaymasterStubDataResult {
-  const gasLimits = DEFAULT_GAS_LIMITS.permit2
+  const gasLimits = estimateGasLimits('permit2', params.userOp)
 
   return {
     success: true,

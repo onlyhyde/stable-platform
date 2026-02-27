@@ -112,6 +112,53 @@ export interface UserOperationGasEstimate {
 }
 
 // ============================================================================
+// EIP-4337 AA Error Codes
+// ============================================================================
+
+/**
+ * Account Abstraction error codes from ERC-4337.
+ * These are returned by the bundler in JSON-RPC error responses.
+ *
+ * AA1x: Account validation errors
+ * AA2x: Account execution errors
+ * AA3x: Paymaster validation errors
+ * AA4x: Paymaster execution errors
+ * AA5x: Stake/deposit errors
+ */
+export const AA_ERROR_CODES = {
+  // AA1x: Account validation
+  AA10_SENDER_ALREADY_CONSTRUCTED: 'AA10',
+  AA13_INIT_CODE_FAILED: 'AA13',
+  AA14_INIT_CODE_LENGTH: 'AA14',
+  AA15_INIT_CODE_CREATE_ADDR: 'AA15',
+
+  // AA2x: Account execution
+  AA20_ACCOUNT_NOT_DEPLOYED: 'AA20',
+  AA21_DIDNT_PAY_PREFUND: 'AA21',
+  AA22_EXPIRED_OR_NOT_DUE: 'AA22',
+  AA23_REVERTED: 'AA23',
+  AA24_SIGNATURE_ERROR: 'AA24',
+  AA25_INVALID_NONCE: 'AA25',
+
+  // AA3x: Paymaster validation
+  AA30_PAYMASTER_NOT_DEPLOYED: 'AA30',
+  AA31_PAYMASTER_DEPOSIT_LOW: 'AA31',
+  AA32_PAYMASTER_EXPIRED: 'AA32',
+  AA33_REVERTED: 'AA33',
+  AA34_SIGNATURE_ERROR: 'AA34',
+
+  // AA4x: Paymaster execution
+  AA40_OVER_VERIFICATION_GAS: 'AA40',
+  AA41_TOO_LITTLE_GAS: 'AA41',
+
+  // AA5x: Stake/deposit
+  AA50_FACTORY_NOT_STAKED: 'AA50',
+  AA51_FACTORY_NOT_DEPLOYED: 'AA51',
+} as const
+
+export type AAErrorCode = (typeof AA_ERROR_CODES)[keyof typeof AA_ERROR_CODES]
+
+// ============================================================================
 // EIP-7702 Authorization Types
 // ============================================================================
 

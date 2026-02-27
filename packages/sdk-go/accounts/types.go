@@ -3,6 +3,7 @@ package accounts
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/stablenet/sdk-go/types"
 )
@@ -43,6 +44,19 @@ type Validator interface {
 	GetSignerAddress() types.Address
 }
 
+// SignatureFormatter wraps a raw validator signature into the account-specific
+// on-chain format. Different smart account implementations use different
+// envelope formats (e.g., Kernel v3 prepends a mode byte).
+//
+// Implementations:
+//   - KernelSignatureFormatter: prepends 0x02 (validation mode) for Kernel v3
+//   - Custom formatters can prepend enable-mode bytes, multi-sig wrappers, etc.
+type SignatureFormatter interface {
+	// FormatSignature wraps the raw validator signature into the account's
+	// expected on-chain format.
+	FormatSignature(rawSignature types.Hex) (types.Hex, error)
+}
+
 // SmartAccount represents an ERC-4337 smart account.
 type SmartAccount interface {
 	// Address returns the account address.
@@ -51,8 +65,13 @@ type SmartAccount interface {
 	// EntryPoint returns the EntryPoint address.
 	EntryPoint() types.Address
 
-	// GetNonce returns the current nonce from EntryPoint.
+	// GetNonce returns the current nonce from EntryPoint (key=0).
 	GetNonce(ctx context.Context) (uint64, error)
+
+	// GetNonceWithKey returns the nonce for a specific key from EntryPoint.
+	// EIP-4337 nonces use uint192 key + uint64 sequence for parallel execution.
+	// Key 0 is the default; different keys allow independent nonce sequences.
+	GetNonceWithKey(ctx context.Context, key *big.Int) (uint64, error)
 
 	// GetInitCode returns the init code for account deployment.
 	// Returns empty if already deployed.

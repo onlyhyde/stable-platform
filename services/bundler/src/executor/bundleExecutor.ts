@@ -104,7 +104,23 @@ export class BundleExecutor {
       return null
     }
 
-    return this.submitBundle(validEntries)
+    // EIP-4337 Section 7.1: Deduplicate senders (unstaked senders get max 1 op per bundle)
+    const dedupedEntries = await this.deduplicateSenders(validEntries)
+
+    if (dedupedEntries.length === 0) {
+      this.logger.debug('No valid operations after sender deduplication')
+      return null
+    }
+
+    // EIP-4337 Section 7.1: Validate paymaster deposits cover total gas in bundle
+    const depositValidEntries = await this.validatePaymasterDeposits(dedupedEntries)
+
+    if (depositValidEntries.length === 0) {
+      this.logger.debug('No valid operations after paymaster deposit validation')
+      return null
+    }
+
+    return this.submitBundle(depositValidEntries)
   }
 
   /**
@@ -133,6 +149,142 @@ export class BundleExecutor {
     }
 
     return valid
+  }
+
+  /**
+   * EIP-4337 Section 7.1: Deduplicate senders in bundle
+   * A bundle MUST NOT include multiple UserOperations from the same sender,
+   * unless that sender is staked (has sufficient stake and unstake delay).
+   */
+  private async deduplicateSenders(entries: MempoolEntry[]): Promise<MempoolEntry[]> {
+    const simulationValidator = this.validator.getSimulationValidator()
+    const reputationManager = this.validator.getReputationManager()
+    const senderSeen = new Map<string, MempoolEntry>()
+    const result: MempoolEntry[] = []
+
+    for (const entry of entries) {
+      const senderKey = entry.userOp.sender.toLowerCase()
+
+      if (!senderSeen.has(senderKey)) {
+        senderSeen.set(senderKey, entry)
+        result.push(entry)
+        continue
+      }
+
+      // Duplicate sender — check if staked
+      try {
+        const depositInfo = await simulationValidator.getDepositInfo(entry.userOp.sender)
+        const isStaked = reputationManager.isStaked({
+          stake: depositInfo.stake,
+          unstakeDelaySec: BigInt(depositInfo.unstakeDelaySec),
+        })
+
+        if (isStaked) {
+          result.push(entry)
+          this.logger.debug(
+            { sender: entry.userOp.sender, userOpHash: entry.userOpHash },
+            'Allowing duplicate sender in bundle (sender is staked)'
+          )
+        } else {
+          this.logger.debug(
+            { sender: entry.userOp.sender, userOpHash: entry.userOpHash },
+            'Skipping duplicate sender in bundle (sender is not staked)'
+          )
+        }
+      } catch (error) {
+        // On error, skip the duplicate (conservative approach)
+        this.logger.warn(
+          { sender: entry.userOp.sender, error },
+          'Failed to check sender stake, skipping duplicate'
+        )
+      }
+    }
+
+    return result
+  }
+
+  /**
+   * EIP-4337 Section 7.1: Validate paymaster deposits across bundle
+   * The total gas required by all UserOperations using a given paymaster
+   * must not exceed that paymaster's deposit in the EntryPoint.
+   */
+  private async validatePaymasterDeposits(entries: MempoolEntry[]): Promise<MempoolEntry[]> {
+    const simulationValidator = this.validator.getSimulationValidator()
+
+    // Aggregate gas requirements per paymaster
+    const paymasterGas = new Map<string, { totalGas: bigint; entries: MempoolEntry[] }>()
+
+    for (const entry of entries) {
+      if (!entry.userOp.paymaster) continue
+
+      const paymasterKey = entry.userOp.paymaster.toLowerCase()
+      const existing = paymasterGas.get(paymasterKey) || { totalGas: 0n, entries: [] }
+
+      // Calculate max gas cost for this UserOp:
+      // verificationGasLimit + callGasLimit + paymasterVerificationGasLimit + paymasterPostOpGasLimit + preVerificationGas
+      const opMaxGas =
+        entry.userOp.verificationGasLimit +
+        entry.userOp.callGasLimit +
+        (entry.userOp.paymasterVerificationGasLimit ?? 0n) +
+        (entry.userOp.paymasterPostOpGasLimit ?? 0n) +
+        entry.userOp.preVerificationGas
+
+      // Gas cost in wei = opMaxGas * maxFeePerGas
+      const opMaxCost = opMaxGas * entry.userOp.maxFeePerGas
+
+      existing.totalGas += opMaxCost
+      existing.entries.push(entry)
+      paymasterGas.set(paymasterKey, existing)
+    }
+
+    // Check each paymaster's deposit covers the total gas
+    const excludedEntries = new Set<string>()
+
+    for (const [paymasterKey, { totalGas, entries: paymasterEntries }] of paymasterGas) {
+      try {
+        const depositInfo = await simulationValidator.getDepositInfo(paymasterKey as Address)
+
+        if (depositInfo.deposit < totalGas) {
+          this.logger.warn(
+            {
+              paymaster: paymasterKey,
+              deposit: depositInfo.deposit.toString(),
+              requiredGas: totalGas.toString(),
+              opCount: paymasterEntries.length,
+            },
+            'Paymaster deposit insufficient for bundle total gas, removing excess ops'
+          )
+
+          // Keep ops until deposit is exhausted, exclude the rest
+          let runningCost = 0n
+          for (const entry of paymasterEntries) {
+            const opMaxGas =
+              entry.userOp.verificationGasLimit +
+              entry.userOp.callGasLimit +
+              (entry.userOp.paymasterVerificationGasLimit ?? 0n) +
+              (entry.userOp.paymasterPostOpGasLimit ?? 0n) +
+              entry.userOp.preVerificationGas
+            const opMaxCost = opMaxGas * entry.userOp.maxFeePerGas
+
+            if (runningCost + opMaxCost <= depositInfo.deposit) {
+              runningCost += opMaxCost
+            } else {
+              excludedEntries.add(entry.userOpHash)
+            }
+          }
+        }
+      } catch (error) {
+        this.logger.warn(
+          { paymaster: paymasterKey, error },
+          'Failed to check paymaster deposit, excluding all ops for this paymaster'
+        )
+        for (const entry of paymasterEntries) {
+          excludedEntries.add(entry.userOpHash)
+        }
+      }
+    }
+
+    return entries.filter((e) => !excludedEntries.has(e.userOpHash))
   }
 
   /**

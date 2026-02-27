@@ -204,7 +204,7 @@ export class FormatValidator implements IFormatValidator {
   }
 
   /**
-   * Validate gas fee relationships
+   * Validate gas fee relationships and minimum gas price policy (EIP-4337 Section 7.1)
    */
   private validateGasRelationships(userOp: UserOperation): void {
     // maxPriorityFeePerGas cannot exceed maxFeePerGas
@@ -213,6 +213,26 @@ export class FormatValidator implements IFormatValidator {
         `maxPriorityFeePerGas (${userOp.maxPriorityFeePerGas}) cannot exceed maxFeePerGas (${userOp.maxFeePerGas})`,
         RPC_ERROR_CODES.INVALID_PARAMS
       )
+    }
+
+    // Configurable minimum maxFeePerGas (EIP-4337 Section 7.1)
+    if (VALIDATION_CONSTANTS.MIN_MAX_FEE_PER_GAS > 0n) {
+      if (userOp.maxFeePerGas < VALIDATION_CONSTANTS.MIN_MAX_FEE_PER_GAS) {
+        throw new RpcError(
+          `maxFeePerGas (${userOp.maxFeePerGas}) below minimum (${VALIDATION_CONSTANTS.MIN_MAX_FEE_PER_GAS})`,
+          RPC_ERROR_CODES.INVALID_PARAMS
+        )
+      }
+    }
+
+    // Configurable minimum maxPriorityFeePerGas
+    if (VALIDATION_CONSTANTS.MIN_MAX_PRIORITY_FEE_PER_GAS > 0n) {
+      if (userOp.maxPriorityFeePerGas < VALIDATION_CONSTANTS.MIN_MAX_PRIORITY_FEE_PER_GAS) {
+        throw new RpcError(
+          `maxPriorityFeePerGas (${userOp.maxPriorityFeePerGas}) below minimum (${VALIDATION_CONSTANTS.MIN_MAX_PRIORITY_FEE_PER_GAS})`,
+          RPC_ERROR_CODES.INVALID_PARAMS
+        )
+      }
     }
   }
 
@@ -286,10 +306,27 @@ export class FormatValidator implements IFormatValidator {
   }
 
   /**
-   * Validate total gas limits are within bounds
+   * Validate gas limits per EIP-4337 Section 7.1:
+   * - Each entity's verificationGasLimit must be < MAX_VERIFICATION_GAS (500,000)
+   * - Total gas for the operation must be < MAX_BUNDLE_GAS
    */
   private validateGasLimits(userOp: UserOperation): void {
-    // Calculate total verification gas
+    // Per-entity verification gas checks (EIP-4337 Section 7.1)
+    if (userOp.verificationGasLimit > VALIDATION_CONSTANTS.MAX_VERIFICATION_GAS) {
+      throw new RpcError(
+        `verificationGasLimit (${userOp.verificationGasLimit}) exceeds maximum (${VALIDATION_CONSTANTS.MAX_VERIFICATION_GAS})`,
+        RPC_ERROR_CODES.INVALID_PARAMS
+      )
+    }
+
+    if (userOp.paymasterVerificationGasLimit && userOp.paymasterVerificationGasLimit > VALIDATION_CONSTANTS.MAX_VERIFICATION_GAS) {
+      throw new RpcError(
+        `paymasterVerificationGasLimit (${userOp.paymasterVerificationGasLimit}) exceeds maximum (${VALIDATION_CONSTANTS.MAX_VERIFICATION_GAS})`,
+        RPC_ERROR_CODES.INVALID_PARAMS
+      )
+    }
+
+    // Calculate total verification gas for bundle gas check
     let totalVerificationGas = userOp.verificationGasLimit
 
     if (userOp.paymasterVerificationGasLimit) {
@@ -297,14 +334,6 @@ export class FormatValidator implements IFormatValidator {
     }
     if (userOp.paymasterPostOpGasLimit) {
       totalVerificationGas += userOp.paymasterPostOpGasLimit
-    }
-
-    // Check total verification gas is within bounds
-    if (totalVerificationGas > VALIDATION_CONSTANTS.MAX_VERIFICATION_GAS) {
-      throw new RpcError(
-        `total verification gas (${totalVerificationGas}) exceeds maximum (${VALIDATION_CONSTANTS.MAX_VERIFICATION_GAS})`,
-        RPC_ERROR_CODES.INVALID_PARAMS
-      )
     }
 
     // Calculate total gas for the operation

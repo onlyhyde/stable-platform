@@ -60,3 +60,30 @@ const (
 	// SignatureModeValidation is for normal validation.
 	SignatureModeValidation byte = 0x02
 )
+
+// KernelSignatureFormatter implements accounts.SignatureFormatter for Kernel v3.
+// It prepends a mode byte to the raw validator signature.
+type KernelSignatureFormatter struct {
+	// Mode is the signature mode byte (default: SignatureModeValidation = 0x02).
+	Mode byte
+}
+
+// NewKernelSignatureFormatter creates a formatter with the default validation mode.
+func NewKernelSignatureFormatter() *KernelSignatureFormatter {
+	return &KernelSignatureFormatter{Mode: SignatureModeValidation}
+}
+
+// NewKernelSignatureFormatterWithMode creates a formatter with a custom mode byte.
+// Use this for enable-mode signatures (0x00) or enable-with-sig (0x01).
+func NewKernelSignatureFormatterWithMode(mode byte) *KernelSignatureFormatter {
+	return &KernelSignatureFormatter{Mode: mode}
+}
+
+// FormatSignature prepends the Kernel v3 mode byte to the raw signature.
+// Output format: [mode(1 byte)] || [rawSignature]
+func (f *KernelSignatureFormatter) FormatSignature(rawSignature types.Hex) (types.Hex, error) {
+	result := make([]byte, 1+len(rawSignature))
+	result[0] = f.Mode
+	copy(result[1:], rawSignature.Bytes())
+	return types.Hex(result), nil
+}

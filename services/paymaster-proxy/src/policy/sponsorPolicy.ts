@@ -1,6 +1,7 @@
 import type { Address } from 'viem'
 import { getDefaultPolicyConfig } from '../config/constants'
 import type { SpendingReservation, SponsorPolicy, SponsorTracker, UserOperationRpc } from '../types'
+import { RiskScorer, type RiskAssessment, type RiskScorerConfig } from './riskScorer'
 
 /**
  * Get default policy configuration from environment
@@ -45,8 +46,10 @@ export class SponsorPolicyManager {
   private trackers: Map<Address, SponsorTracker> = new Map()
   private globalDailySpent = 0n
   private lastResetDate = ''
+  private readonly riskScorer: RiskScorer
 
-  constructor(policies?: SponsorPolicy[]) {
+  constructor(policies?: SponsorPolicy[], riskScorerConfig?: Partial<RiskScorerConfig>) {
+    this.riskScorer = new RiskScorer(riskScorerConfig)
     const initialPolicies = policies ?? [createDefaultPolicy()]
     for (const policy of initialPolicies) {
       this.policies.set(policy.id, policy)
@@ -235,6 +238,27 @@ export class SponsorPolicyManager {
       }
     }
 
+    // Risk scoring assessment
+    const riskAssessment = this.riskScorer.assess(userOp)
+    if (riskAssessment.shouldReject) {
+      return {
+        allowed: false,
+        rejection: {
+          code: -32001,
+          message: `Operation rejected by risk assessment (score: ${riskAssessment.score.toFixed(2)}, level: ${riskAssessment.level})`,
+          data: {
+            riskScore: riskAssessment.score,
+            riskLevel: riskAssessment.level,
+            factors: riskAssessment.factors.map((f) => ({
+              name: f.name,
+              score: f.score,
+              reason: f.reason,
+            })),
+          },
+        },
+      }
+    }
+
     return { allowed: true }
   }
 
@@ -380,11 +404,33 @@ export class SponsorPolicyManager {
   }
 
   /**
+   * Assess risk for a UserOperation without applying policy checks
+   */
+  assessRisk(userOp: UserOperationRpc): RiskAssessment {
+    return this.riskScorer.assess(userOp)
+  }
+
+  /**
+   * Record operation outcome for sender reputation tracking
+   */
+  recordRiskOutcome(sender: Address, success: boolean): void {
+    this.riskScorer.recordOutcome(sender, success)
+  }
+
+  /**
+   * Get risk scorer for advanced operations
+   */
+  getRiskScorer(): RiskScorer {
+    return this.riskScorer
+  }
+
+  /**
    * Clear all trackers (for testing)
    */
   clearTrackers(): void {
     this.trackers.clear()
     this.globalDailySpent = 0n
     this.lastResetDate = ''
+    this.riskScorer.clearHistory()
   }
 }

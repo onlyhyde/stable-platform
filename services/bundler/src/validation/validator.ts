@@ -237,6 +237,58 @@ export class UserOperationValidator {
 
     // Validate account exists or factory is specified
     await this.validateAccountExists(userOp)
+
+    // EIP-4337 Section 7.1: Validate paymaster on-chain state
+    if (userOp.paymaster) {
+      await this.validatePaymasterOnChain(userOp)
+    }
+  }
+
+  /**
+   * EIP-4337 Section 7.1: Validate paymaster on-chain state
+   * - paymaster must have deployed code
+   * - paymaster must have sufficient deposit to cover the UserOp gas
+   */
+  private async validatePaymasterOnChain(userOp: UserOperation): Promise<void> {
+    const paymaster = userOp.paymaster!
+
+    // Check paymaster has deployed code
+    try {
+      const hasCode = await this.simulationValidator.hasCode(paymaster)
+      if (!hasCode) {
+        throw new RpcError(
+          `paymaster ${paymaster} has no deployed code`,
+          RPC_ERROR_CODES.INVALID_PARAMS
+        )
+      }
+    } catch (error) {
+      if (error instanceof RpcError) throw error
+      this.logger.error({ error, paymaster }, 'Failed to check paymaster code')
+      throw new RpcError('Failed to check paymaster code', RPC_ERROR_CODES.INTERNAL_ERROR)
+    }
+
+    // Check paymaster has sufficient deposit
+    try {
+      const depositInfo = await this.simulationValidator.getDepositInfo(paymaster)
+      const maxGasCost =
+        (userOp.verificationGasLimit +
+          userOp.callGasLimit +
+          (userOp.paymasterVerificationGasLimit ?? 0n) +
+          (userOp.paymasterPostOpGasLimit ?? 0n) +
+          userOp.preVerificationGas) *
+        userOp.maxFeePerGas
+
+      if (depositInfo.deposit < maxGasCost) {
+        throw new RpcError(
+          `paymaster ${paymaster} deposit (${depositInfo.deposit}) insufficient for UserOp max cost (${maxGasCost})`,
+          RPC_ERROR_CODES.REJECTED_BY_PAYMASTER
+        )
+      }
+    } catch (error) {
+      if (error instanceof RpcError) throw error
+      this.logger.error({ error, paymaster }, 'Failed to check paymaster deposit')
+      throw new RpcError('Failed to check paymaster deposit', RPC_ERROR_CODES.INTERNAL_ERROR)
+    }
   }
 
   /**

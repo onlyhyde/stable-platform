@@ -39,6 +39,12 @@ export const PAYMASTER_ENV_VARS = {
   BUNDLER_RPC_URL: 'BUNDLER_RPC_URL',
   SETTLEMENT_POLL_MS: 'SETTLEMENT_POLL_MS',
   SETTLEMENT_ENABLED: 'SETTLEMENT_ENABLED',
+
+  // Deposit Monitoring
+  DEPOSIT_MONITOR_ENABLED: 'PAYMASTER_DEPOSIT_MONITOR_ENABLED',
+  DEPOSIT_MONITOR_POLL_MS: 'PAYMASTER_DEPOSIT_MONITOR_POLL_MS',
+  DEPOSIT_MIN_THRESHOLD: 'PAYMASTER_DEPOSIT_MIN_THRESHOLD',
+  DEPOSIT_REJECT_ON_LOW: 'PAYMASTER_DEPOSIT_REJECT_ON_LOW',
 } as const
 
 /**
@@ -197,6 +203,18 @@ export function getSettlementConfig() {
 }
 
 /**
+ * Deposit monitoring configuration
+ */
+export function getDepositMonitorConfig() {
+  return {
+    depositMonitorEnabled: getEnvBool(PAYMASTER_ENV_VARS.DEPOSIT_MONITOR_ENABLED, true),
+    depositMonitorPollMs: getEnvNumber(PAYMASTER_ENV_VARS.DEPOSIT_MONITOR_POLL_MS, 30_000),
+    depositMinThreshold: getEnvBigInt(PAYMASTER_ENV_VARS.DEPOSIT_MIN_THRESHOLD, 10n ** 16n), // 0.01 ETH
+    depositRejectOnLow: getEnvBool(PAYMASTER_ENV_VARS.DEPOSIT_REJECT_ON_LOW, false),
+  }
+}
+
+/**
  * Print environment variable usage help
  */
 export function getPaymasterEnvHelp(): string {
@@ -234,5 +252,11 @@ Settlement (receipt-based, Phase 2):
   ${PAYMASTER_ENV_VARS.BUNDLER_RPC_URL}                Bundler RPC URL (enables settlement when set)
   ${PAYMASTER_ENV_VARS.SETTLEMENT_POLL_MS}             Polling interval in ms (default: 15000)
   ${PAYMASTER_ENV_VARS.SETTLEMENT_ENABLED}             Explicitly enable/disable settlement (default: true when BUNDLER_RPC_URL is set)
+
+Deposit Monitoring:
+  ${PAYMASTER_ENV_VARS.DEPOSIT_MONITOR_ENABLED}        Enable deposit monitoring (default: true)
+  ${PAYMASTER_ENV_VARS.DEPOSIT_MONITOR_POLL_MS}        Polling interval in ms (default: 30000)
+  ${PAYMASTER_ENV_VARS.DEPOSIT_MIN_THRESHOLD}          Min deposit threshold in wei (default: 10000000000000000 = 0.01 ETH)
+  ${PAYMASTER_ENV_VARS.DEPOSIT_REJECT_ON_LOW}          Reject signing when deposit is low (default: false)
 `.trim()
 }

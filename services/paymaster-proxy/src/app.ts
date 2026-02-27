@@ -4,7 +4,8 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import type { Address, Hex, PublicClient } from 'viem'
 import { getPublicClient } from './chain/client'
-import { getServerConfig } from './config/constants'
+import { getDepositMonitorConfig, getServerConfig } from './config/constants'
+import { DepositMonitor } from './deposit/depositMonitor'
 import {
   handleEstimateTokenPayment,
   handleGetPaymasterData,
@@ -51,6 +52,7 @@ interface HandlerConfig {
   erc20PaymasterAddress?: Address
   oracleAddress?: Address
   reservationTracker?: ReservationTracker
+  depositMonitor?: DepositMonitor
 }
 
 /**
@@ -83,6 +85,20 @@ export function createApp(config: PaymasterProxyConfig): Hono {
   // Initialize chain client for on-chain reads
   const client = getPublicClient(config.rpcUrl)
 
+  // Deposit monitoring — periodically check paymaster deposits on EntryPoint
+  const depositConfig = getDepositMonitorConfig()
+  let depositMonitor: DepositMonitor | undefined
+  if (depositConfig.depositMonitorEnabled && config.supportedEntryPoints.length > 0) {
+    depositMonitor = new DepositMonitor(client, {
+      entryPoint: config.supportedEntryPoints[0]!,
+      paymasterAddresses: config.paymasterAddresses,
+      minDepositThreshold: depositConfig.depositMinThreshold,
+      pollIntervalMs: depositConfig.depositMonitorPollMs,
+      rejectOnLowDeposit: depositConfig.depositRejectOnLow,
+    })
+    depositMonitor.start()
+  }
+
   // Handler configuration
   const handlerConfig: HandlerConfig = {
     paymasterAddress: config.paymasterAddress,
@@ -96,6 +112,7 @@ export function createApp(config: PaymasterProxyConfig): Hono {
     erc20PaymasterAddress: config.paymasterAddresses.erc20,
     oracleAddress: config.oracleAddress,
     reservationTracker,
+    depositMonitor,
   }
 
   // Middleware
@@ -136,6 +153,9 @@ export function createApp(config: PaymasterProxyConfig): Hono {
             }
           : {}),
       },
+      deposit: depositMonitor
+        ? depositMonitor.getStats()
+        : { enabled: false },
     })
   })
 
@@ -216,26 +236,25 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
     })
   }
 
-  const adminToken = process.env.PAYMASTER_ADMIN_TOKEN
-  if (adminToken) {
-    const auth = bearerAuth({ token: adminToken })
-    app.use('/admin/*', auth)
-    registerAdminRoutes(app)
-  } else if (process.env.NODE_ENV === 'production') {
-    // Block admin endpoints in production without token
-    app.all('/admin/*', (c) => {
-      return c.json(
-        { error: 'Admin endpoints disabled: PAYMASTER_ADMIN_TOKEN not configured' },
-        503
-      )
-    })
+  // Admin endpoints always require bearer token authentication.
+  // If PAYMASTER_ADMIN_TOKEN is not set, a random token is generated and logged
+  // so the operator can use it during development.
+  const configuredToken = process.env.PAYMASTER_ADMIN_TOKEN
+  let adminToken: string
+  if (configuredToken) {
+    adminToken = configuredToken
   } else {
-    // Development: allow without auth but log warning
+    adminToken = crypto.randomUUID()
     console.warn(
-      '[paymaster-proxy] WARNING: Admin endpoints are unauthenticated (set PAYMASTER_ADMIN_TOKEN)'
+      `[paymaster-proxy] No PAYMASTER_ADMIN_TOKEN configured. Generated ephemeral token: ${adminToken}`
     )
-    registerAdminRoutes(app)
+    console.warn(
+      '[paymaster-proxy] Set PAYMASTER_ADMIN_TOKEN env var for persistent admin access.'
+    )
   }
+  const auth = bearerAuth({ token: adminToken })
+  app.use('/admin/*', auth)
+  registerAdminRoutes(app)
 
   // JSON-RPC endpoint
   app.post('/', async (c) => {
@@ -440,6 +459,16 @@ async function handlePmGetPaymasterData(params: unknown[], config: HandlerConfig
   }
 
   const [userOp, entryPoint, chainId, context] = parseResult.data
+
+  // Check deposit sufficiency before signing (when rejectOnLowDeposit is enabled)
+  const paymasterType = (context as PaymasterContext | undefined)?.paymasterType ?? 'verifying'
+  const targetPaymaster = config.paymasterAddresses[paymasterType as PaymasterType]
+  if (targetPaymaster && config.depositMonitor?.shouldRejectSigning(targetPaymaster)) {
+    throw new RpcError(
+      `Paymaster ${paymasterType} deposit is below minimum threshold. Please try again later.`,
+      RPC_ERROR_CODES.INTERNAL_ERROR
+    )
+  }
 
   const result = await handleGetPaymasterData(
     {

@@ -1,6 +1,6 @@
-import type { Address, Hash, EIP1193Provider, ProviderConnectInfo, ProviderRpcError } from 'viem'
+import type { Address, Hash, Hex, EIP1193Provider, ProviderConnectInfo, ProviderRpcError } from 'viem'
 import { walletSdkLogger } from '../logger'
-import type { StableNetRpcSchema } from '../rpc'
+import type { StableNetRpcSchema, UserOperationGasEstimate, UserOperationReceipt, UserOperationRequest } from '../rpc'
 import type { TransactionRequest } from '../types'
 import { filterValidAddresses, parseChainIdHex } from '../validation'
 
@@ -705,5 +705,77 @@ export class StableNetProvider {
       viewingPubKey: Hash
       metaAddress: Address
     }
+  }
+
+  // ============================================================================
+  // EIP-4337 Account Abstraction Methods
+  // ============================================================================
+
+  /**
+   * Submit a UserOperation to the bundler via the wallet
+   */
+  async sendUserOperation(
+    userOp: UserOperationRequest,
+    entryPoint: Address
+  ): Promise<Hash> {
+    const result = await this.rpc({
+      method: 'wallet_sendUserOperation',
+      params: [userOp, entryPoint],
+    })
+    return result as Hash
+  }
+
+  /**
+   * Estimate gas for a UserOperation
+   */
+  async estimateUserOperationGas(
+    userOp: UserOperationRequest,
+    entryPoint: Address
+  ): Promise<UserOperationGasEstimate> {
+    const result = await this.rpc({
+      method: 'wallet_estimateUserOperationGas',
+      params: [userOp, entryPoint],
+    })
+    return result as UserOperationGasEstimate
+  }
+
+  /**
+   * Get the receipt for a UserOperation by its hash
+   */
+  async getUserOperationReceipt(
+    userOpHash: Hash
+  ): Promise<UserOperationReceipt | null> {
+    const result = await this.rpc({
+      method: 'wallet_getUserOperationReceipt',
+      params: [userOpHash],
+    })
+    return result as UserOperationReceipt | null
+  }
+
+  /**
+   * Wait for a UserOperation to be included in a block
+   * Polls getUserOperationReceipt with exponential backoff
+   */
+  async waitForUserOperation(
+    userOpHash: Hash,
+    options?: { timeout?: number; pollingInterval?: number }
+  ): Promise<UserOperationReceipt> {
+    const timeout = options?.timeout ?? 300_000 // 5 minutes
+    const baseInterval = options?.pollingInterval ?? 2_000
+    const startTime = Date.now()
+    let attempts = 0
+
+    while (Date.now() - startTime < timeout) {
+      const receipt = await this.getUserOperationReceipt(userOpHash)
+      if (receipt) return receipt
+
+      attempts++
+      const delay = Math.min(baseInterval * 2 ** Math.min(attempts - 1, 4), 15_000)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+
+    throw new Error(
+      `Timeout waiting for UserOperation ${userOpHash} after ${timeout}ms`
+    )
   }
 }

@@ -460,6 +460,7 @@ func (s *SmartAccountStrategy) Estimate(ctx context.Context, request *types.Mult
 	callGasLimit := new(big.Int).Set(config.GasConfig.DefaultCallGasLimit)
 
 	// Try bundler estimation if available
+	bundlerEstimated := false
 	if s.bundlerClient != nil {
 		partialOp := &types.PartialUserOperation{
 			Sender:   request.From,
@@ -471,14 +472,22 @@ func (s *SmartAccountStrategy) Estimate(ctx context.Context, request *types.Mult
 			preVerificationGas = estimation.PreVerificationGas
 			verificationGasLimit = estimation.VerificationGasLimit
 			callGasLimit = estimation.CallGasLimit
+			bundlerEstimated = true
 		}
-		// On error, fall through to defaults
+		// On error, fall through to local calculation
 	}
 
-	// Add calldata gas to call gas limit (only for default path)
-	if s.bundlerClient == nil && len(request.Data) > 0 {
-		calldataGas := config.CalculateCalldataGas(request.Data)
-		callGasLimit.Add(callGasLimit, calldataGas)
+	// Local calculation fallback (EIP-4337 Section 13)
+	if !bundlerEstimated {
+		// Calculate preVerificationGas from calldata
+		hasEIP7702 := request.Mode == types.TransactionModeEIP7702
+		preVerificationGas = config.CalculatePreVerificationGas(request.Data, 1, hasEIP7702)
+
+		// Add calldata gas to call gas limit
+		if len(request.Data) > 0 {
+			calldataGas := config.CalculateCalldataGas(request.Data)
+			callGasLimit.Add(callGasLimit, calldataGas)
+		}
 	}
 
 	// Total gas

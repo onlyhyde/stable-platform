@@ -205,6 +205,45 @@ func ValidateGasLimits(verificationGas, callGas, preVerificationGas *big.Int) er
 	return nil
 }
 
+// CalculatePreVerificationGas computes preVerificationGas per EIP-4337 Section 13.
+//
+// Formula: calldataGas + perOpOverhead + (baseBundleCost / bundleSize)
+//
+// Where:
+//   - calldataGas = sum of (4 gas per zero byte + 16 gas per non-zero byte) per EIP-2028
+//   - perOpOverhead = 18,300 (fixed per-UserOp overhead)
+//   - baseBundleCost = 21,000 (base transaction cost shared among bundle)
+//   - bundleSize = assumed number of ops in bundle (default: 1)
+//   - eip7702AuthCost = 25,000 if EIP-7702 authorization is present
+//
+// The userOpBytes should be the serialized UserOperation (all fields concatenated).
+// If bundleSize is 0 or negative, defaults to 1.
+func CalculatePreVerificationGas(userOpBytes []byte, bundleSize int, hasEIP7702Auth bool) *big.Int {
+	if bundleSize <= 0 {
+		bundleSize = 1
+	}
+
+	// 1. Calldata gas (EIP-2028)
+	calldataGas := CalculateCalldataGas(userOpBytes)
+
+	// 2. Per-operation overhead (18,300)
+	perOpOverhead := big.NewInt(18300)
+
+	// 3. Base bundle cost shared among operations (21,000 / bundleSize)
+	baseBundleCost := new(big.Int).Div(big.NewInt(21000), big.NewInt(int64(bundleSize)))
+
+	// 4. Total = calldataGas + perOpOverhead + baseBundleCost
+	total := new(big.Int).Add(calldataGas, perOpOverhead)
+	total.Add(total, baseBundleCost)
+
+	// 5. EIP-7702 authorization cost (25,000 if applicable)
+	if hasEIP7702Auth {
+		total.Add(total, big.NewInt(25000))
+	}
+
+	return total
+}
+
 // GasError represents a gas validation error.
 type GasError struct {
 	Field   string

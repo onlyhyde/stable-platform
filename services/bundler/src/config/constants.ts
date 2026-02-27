@@ -18,6 +18,8 @@ export const CONSTANTS_ENV_VARS = {
   MAX_VERIFICATION_GAS: 'BUNDLER_MAX_VERIFICATION_GAS',
   MAX_BUNDLE_GAS: 'BUNDLER_MAX_BUNDLE_GAS',
   MIN_VALID_UNTIL_BUFFER: 'BUNDLER_MIN_VALID_UNTIL_BUFFER',
+  MIN_MAX_FEE_PER_GAS: 'BUNDLER_MIN_MAX_FEE_PER_GAS',
+  MIN_MAX_PRIORITY_FEE_PER_GAS: 'BUNDLER_MIN_MAX_PRIORITY_FEE_PER_GAS',
 
   // Reputation Config
   REP_MIN_INCLUSION_DENOMINATOR: 'BUNDLER_REP_MIN_INCLUSION_DENOMINATOR',
@@ -101,9 +103,11 @@ const VALIDATION_DEFAULTS = {
   MAX_CALLDATA_LENGTH: 102402, // 50KB = 0x + 102400 chars
   MAX_FACTORY_DATA_LENGTH: 102402, // 50KB
   MAX_PAYMASTER_DATA_LENGTH: 20482, // 10KB = 0x + 20480 chars
-  MAX_VERIFICATION_GAS: 10_000_000n,
+  MAX_VERIFICATION_GAS: 500_000n,
   MAX_BUNDLE_GAS: 30_000_000n,
   MIN_VALID_UNTIL_BUFFER: 30n, // 30 seconds
+  MIN_MAX_FEE_PER_GAS: 1_000_000_000n, // 1 gwei — configurable minimum gas price
+  MIN_MAX_PRIORITY_FEE_PER_GAS: 0n, // no minimum by default
 } as const
 
 /**
@@ -194,6 +198,14 @@ export function getValidationConstants() {
     MIN_VALID_UNTIL_BUFFER: getEnvBigInt(
       CONSTANTS_ENV_VARS.MIN_VALID_UNTIL_BUFFER,
       VALIDATION_DEFAULTS.MIN_VALID_UNTIL_BUFFER
+    ),
+    MIN_MAX_FEE_PER_GAS: getEnvBigInt(
+      CONSTANTS_ENV_VARS.MIN_MAX_FEE_PER_GAS,
+      VALIDATION_DEFAULTS.MIN_MAX_FEE_PER_GAS
+    ),
+    MIN_MAX_PRIORITY_FEE_PER_GAS: getEnvBigInt(
+      CONSTANTS_ENV_VARS.MIN_MAX_PRIORITY_FEE_PER_GAS,
+      VALIDATION_DEFAULTS.MIN_MAX_PRIORITY_FEE_PER_GAS
     ),
     // Static constants (not configurable)
     SIG_VALIDATION_SUCCESS: '0x0000000000000000000000000000000000000000' as Address,
@@ -306,9 +318,11 @@ Validation Limits:
   ${CONSTANTS_ENV_VARS.MAX_CALLDATA_LENGTH}            Max callData length in hex chars (default: 102402)
   ${CONSTANTS_ENV_VARS.MAX_FACTORY_DATA_LENGTH}        Max factoryData length in hex chars (default: 102402)
   ${CONSTANTS_ENV_VARS.MAX_PAYMASTER_DATA_LENGTH}      Max paymasterData length in hex chars (default: 20482)
-  ${CONSTANTS_ENV_VARS.MAX_VERIFICATION_GAS}           Max verification gas per op (default: 10000000)
+  ${CONSTANTS_ENV_VARS.MAX_VERIFICATION_GAS}           Max verification gas per op (default: 500000)
   ${CONSTANTS_ENV_VARS.MAX_BUNDLE_GAS}                 Max gas per bundle (default: 30000000)
   ${CONSTANTS_ENV_VARS.MIN_VALID_UNTIL_BUFFER}         Min seconds before validUntil (default: 30)
+  ${CONSTANTS_ENV_VARS.MIN_MAX_FEE_PER_GAS}            Min maxFeePerGas in wei (default: 1000000000 = 1 gwei)
+  ${CONSTANTS_ENV_VARS.MIN_MAX_PRIORITY_FEE_PER_GAS}   Min maxPriorityFeePerGas in wei (default: 0 = no minimum)
 
 Reputation System:
   ${CONSTANTS_ENV_VARS.REP_MIN_INCLUSION_DENOMINATOR}  Min inclusion ratio denominator (default: 10)

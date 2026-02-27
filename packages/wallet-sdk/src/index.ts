@@ -15,6 +15,16 @@
  * ```
  */
 
+// EIP-4337 AA Error Framework
+export {
+  AAError,
+  extractAAErrorCode,
+  extractRevertReason,
+  getAAErrorInfo,
+  parseAAError,
+  type AAErrorInfo,
+  type AAErrorSeverity,
+} from './errors'
 // Config
 export {
   DEFAULT_NETWORKS,
@@ -69,6 +79,9 @@ export {
 } from './provider'
 // StableNet Custom RPC Methods
 export {
+  // EIP-4337 AA Error Codes
+  AA_ERROR_CODES,
+  type AAErrorCode,
   // EIP-7702 Types
   type Authorization,
   type DelegationStatus,
@@ -140,3 +153,17 @@ export type {
 } from './types'
 // Constants
 export { RPC_ERROR_CODES } from './types'
+// EIP-4337 UserOperation utilities
+export {
+  computeUserOpHash,
+  packUserOperation,
+  unpackUserOperation,
+  UserOperationBuilder,
+  UserOperationValidationError,
+  type FactoryConfig,
+  type GasFeesConfig,
+  type GasLimitsConfig,
+  type PackedUserOperation,
+  type PaymasterConfig,
+  type UserOperation,
+} from './userOp'
