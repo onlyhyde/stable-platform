@@ -20,7 +20,7 @@ import type {
 } from '../types'
 import { estimateGasCost } from '../utils/gasEstimator'
 import { normalizeUserOp } from '../utils/userOpNormalizer'
-import { toPolicyIdBytes32, validateChainId, validateEntryPoint } from '../utils/validation'
+import { toPolicyIdBytes32, validateChainId, validateEntryPoint, validateTimeRange } from '../utils/validation'
 
 /** Default validity window for non-signed envelope types (ERC20, Permit2) */
 const DEFAULT_VALID_UNTIL_SECONDS = 300
@@ -261,11 +261,19 @@ function handleErc20Data(
   })
 
   const now = Math.floor(Date.now() / 1000)
+  const validUntil = now + DEFAULT_VALID_UNTIL_SECONDS
+  const validAfter = now - DEFAULT_CLOCK_SKEW_SECONDS
+
+  const timeError = validateTimeRange(validUntil, validAfter, now)
+  if (timeError) {
+    return { success: false, error: timeError }
+  }
+
   const paymasterData = encodePaymasterData({
     paymasterType: PaymasterTypeEnum.ERC20,
     flags: 0,
-    validUntil: BigInt(now + DEFAULT_VALID_UNTIL_SECONDS),
-    validAfter: BigInt(now - DEFAULT_CLOCK_SKEW_SECONDS),
+    validUntil: BigInt(validUntil),
+    validAfter: BigInt(validAfter),
     nonce: 0n,
     payload,
   })
@@ -300,11 +308,19 @@ function handlePermit2Data(
     })
 
     const now = Math.floor(Date.now() / 1000)
+    const validUntil = now + 300
+    const validAfter = now - 60
+
+    const timeError = validateTimeRange(validUntil, validAfter, now)
+    if (timeError) {
+      return { success: false, error: timeError }
+    }
+
     const paymasterData = encodePaymasterData({
       paymasterType: PaymasterTypeEnum.PERMIT2,
       flags: 0,
-      validUntil: BigInt(now + 300),
-      validAfter: BigInt(now - 60),
+      validUntil: BigInt(validUntil),
+      validAfter: BigInt(validAfter),
       nonce: 0n,
       payload,
     })

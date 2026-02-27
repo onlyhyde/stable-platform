@@ -1778,6 +1778,8 @@ curl -X DELETE \
 |--------|--------|------|
 | `PAYMASTER_VALIDITY_SECONDS` | `3600` (1시간) | 서명 유효 기간 (초) |
 | `PAYMASTER_CLOCK_SKEW_SECONDS` | `60` (1분) | 허용 시계 오차 (초). validAfter = now - skew |
+| `PAYMASTER_MAX_VALIDITY_SECONDS` | `86400` (24시간) | 최대 허용 validity 윈도우 (초) |
+| `PAYMASTER_MIN_VALIDITY_SECONDS` | `30` | 최소 허용 validity 윈도우 (초) |
 
 #### 정책 기본값
 
@@ -1803,6 +1805,24 @@ curl -X DELETE \
 |--------|------|
 | `PRICE_ORACLE_ADDRESS` | PriceOracle 주소 (ERC20 토큰 가격 조회용) |
 | `PERMIT2_CONTRACT_ADDRESS` | Permit2 컨트랙트 주소 |
+
+#### Deposit 모니터링 및 자동 충전
+
+| 변수명 | 기본값 | 설명 |
+|--------|--------|------|
+| `PAYMASTER_DEPOSIT_MONITOR_ENABLED` | `true` | Deposit 잔액 모니터링 활성화 |
+| `PAYMASTER_DEPOSIT_MONITOR_POLL_MS` | `30000` (30초) | 잔액 확인 주기 (ms) |
+| `PAYMASTER_DEPOSIT_MIN_THRESHOLD` | `0.01 ETH (10^16 wei)` | 최소 잔액 임계값 |
+| `PAYMASTER_DEPOSIT_REJECT_ON_LOW` | `false` | 잔액 부족 시 서명 거부 여부 |
+| `PAYMASTER_DEPOSIT_AUTO_ENABLED` | `false` | 자동 depositTo 활성화 |
+| `PAYMASTER_DEPOSIT_AUTO_AMOUNT` | `0.1 ETH (10^17 wei)` | 자동 충전 금액 |
+| `PAYMASTER_DEPOSIT_AUTO_COOLDOWN_MS` | `300000` (5분) | 자동 충전 쿨다운 (ms) |
+
+#### Reservation 영속성
+
+| 변수명 | 기본값 | 설명 |
+|--------|--------|------|
+| `PAYMASTER_RESERVATION_DATA_DIR` | (미설정 = 비활성화) | JSON 파일 기반 reservation 저장 디렉토리 |
 
 #### 보안
 

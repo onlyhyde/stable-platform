@@ -1,4 +1,12 @@
-import { createPublicClient, http, type PublicClient } from 'viem'
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  type Hex,
+  type PublicClient,
+  type WalletClient,
+} from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 
 let cachedClient: PublicClient | null = null
 let cachedRpcUrl: string | null = null
@@ -17,4 +25,16 @@ export function getPublicClient(rpcUrl: string): PublicClient {
   cachedRpcUrl = rpcUrl
 
   return cachedClient
+}
+
+/**
+ * Create a viem WalletClient for on-chain writes (e.g. auto-deposit).
+ * PoC reuses the signer private key; production should use a separate funding key.
+ */
+export function getWalletClient(rpcUrl: string, privateKey: Hex): WalletClient {
+  const account = privateKeyToAccount(privateKey)
+  return createWalletClient({
+    account,
+    transport: http(rpcUrl),
+  })
 }

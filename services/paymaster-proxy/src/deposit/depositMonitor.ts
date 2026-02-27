@@ -1,4 +1,4 @@
-import type { Address, PublicClient } from 'viem'
+import type { Address, PublicClient, WalletClient } from 'viem'
 import type { PaymasterAddresses, PaymasterType } from '../types'
 
 /**
@@ -39,6 +39,12 @@ export interface DepositMonitorConfig {
   pollIntervalMs: number
   /** Reject signing when deposit is below threshold (default: false) */
   rejectOnLowDeposit: boolean
+  /** Enable automatic deposit when balance is low (default: false) */
+  autoDepositEnabled?: boolean
+  /** Amount to deposit in wei (default: 0.1 ETH) */
+  autoDepositAmount?: bigint
+  /** Cooldown between auto-deposits in ms (default: 300000 = 5 min) */
+  autoDepositCooldownMs?: number
 }
 
 /**
@@ -59,16 +65,35 @@ export interface DepositMonitorStats {
  * Monitors EntryPoint deposits for all configured paymasters.
  * Periodically queries balanceOf() and warns when deposit is below threshold.
  */
+/**
+ * EntryPoint ABI — depositTo (IStakeManager)
+ */
+const ENTRY_POINT_DEPOSIT_ABI = [
+  {
+    type: 'function',
+    name: 'depositTo',
+    inputs: [{ type: 'address', name: 'account' }],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+] as const
+
 export class DepositMonitor {
   private client: PublicClient
   private config: DepositMonitorConfig
   private deposits = new Map<string, PaymasterDepositInfo>()
   private timer: ReturnType<typeof setInterval> | null = null
   private lastPollAt: number | null = null
+  private walletClient?: WalletClient
+  /** Timestamp of last auto-deposit per address (for cooldown) */
+  private lastAutoDepositAt = new Map<string, number>()
+  /** Addresses currently in-flight for auto-deposit (single-flight guard) */
+  private autoDepositInFlight = new Set<string>()
 
-  constructor(client: PublicClient, config: DepositMonitorConfig) {
+  constructor(client: PublicClient, config: DepositMonitorConfig, walletClient?: WalletClient) {
     this.client = client
     this.config = config
+    this.walletClient = walletClient
   }
 
   /**
@@ -126,6 +151,7 @@ export class DepositMonitor {
             console.warn(
               `[deposit-monitor] LOW DEPOSIT: ${type} paymaster ${address} has ${deposit} wei (threshold: ${this.config.minDepositThreshold} wei)`
             )
+            this.tryAutoDeposit(address)
           }
 
           this.deposits.set(address.toLowerCase(), {
@@ -166,6 +192,54 @@ export class DepositMonitor {
    */
   getDepositInfo(paymasterAddress: Address): PaymasterDepositInfo | undefined {
     return this.deposits.get(paymasterAddress.toLowerCase())
+  }
+
+  /**
+   * Attempt automatic deposit for a low-balance paymaster.
+   * Guards: enabled + walletClient + cooldown elapsed + not in-flight.
+   */
+  private tryAutoDeposit(address: Address): void {
+    if (!this.config.autoDepositEnabled) return
+    if (!this.walletClient) return
+
+    const key = address.toLowerCase()
+    const cooldown = this.config.autoDepositCooldownMs ?? 300_000
+    const lastDeposit = this.lastAutoDepositAt.get(key)
+    if (lastDeposit && Date.now() - lastDeposit < cooldown) return
+    if (this.autoDepositInFlight.has(key)) return
+
+    const amount = this.config.autoDepositAmount ?? 10n ** 17n // 0.1 ETH
+
+    this.autoDepositInFlight.add(key)
+    console.log(`[deposit-monitor] Auto-depositing ${amount} wei to ${address}`)
+
+    const account = this.walletClient.account
+    if (!account) {
+      console.error('[deposit-monitor] WalletClient has no account configured')
+      this.autoDepositInFlight.delete(key)
+      return
+    }
+
+    this.walletClient
+      .writeContract({
+        address: this.config.entryPoint,
+        abi: ENTRY_POINT_DEPOSIT_ABI,
+        functionName: 'depositTo',
+        args: [address],
+        value: amount,
+        chain: null,
+        account,
+      })
+      .then((txHash) => {
+        console.log(`[deposit-monitor] Auto-deposit tx sent: ${txHash} for ${address}`)
+        this.lastAutoDepositAt.set(key, Date.now())
+      })
+      .catch((err) => {
+        console.error(`[deposit-monitor] Auto-deposit failed for ${address}:`, err)
+      })
+      .finally(() => {
+        this.autoDepositInFlight.delete(key)
+      })
   }
 
   /**

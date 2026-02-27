@@ -192,8 +192,13 @@ cast send 0xD318D80033a53D23dfd93e1D005F56163FC41603 \
 ### 하지 않는 것
 
 - ERC-20 토큰 관련 처리 (ERC20Paymaster, Permit2Paymaster의 paymasterData 생성은 SDK에서 처리)
-- EntryPoint에 직접 deposit 실행
-- 온체인 컨트랙트 호출
+- 온체인 컨트랙트 호출 (단, auto-deposit 활성화 시 `depositTo` 호출은 예외)
+
+### 추가 기능 (Phase 2)
+
+- **Time Range Validation**: 서명 생성 시 validUntil/validAfter 유효성 강제 검증 (미래 시간, 순서, 최대 24h/최소 30s 윈도우)
+- **Reservation Persistence**: JSON 파일 기반 reservation 영속 저장소 (`PAYMASTER_RESERVATION_DATA_DIR` 설정 시 활성화). 서비스 재시작 시 pending reservation 복원
+- **Auto-Deposit**: `PAYMASTER_DEPOSIT_AUTO_ENABLED=true` 설정 시 EntryPoint 잔액이 임계값 이하일 때 자동 `depositTo` 실행 (쿨다운 5분, 기본 0.1 ETH)
 
 ---
 

@@ -1,4 +1,5 @@
 import type { Address, Hex } from 'viem'
+import type { ReservationPersistence } from './reservationPersistence'
 
 /**
  * A tracked reservation mapping userOpHash to reservation details
@@ -21,10 +22,44 @@ export interface TrackedReservation {
  *
  * Phase 1: Records reservations with their userOpHash for later lookup.
  * Phase 2: Provides pending hashes for SettlementWorker polling.
+ *
+ * Optional persistence: when a ReservationPersistence instance is provided,
+ * mutations are debounce-saved to disk so data survives restarts.
  */
 export class ReservationTracker {
   private readonly reservations = new Map<Hex, TrackedReservation>()
   private readonly reservationIdIndex = new Map<string, Hex>()
+  private readonly persistence?: ReservationPersistence
+
+  constructor(persistence?: ReservationPersistence) {
+    this.persistence = persistence
+  }
+
+  /**
+   * Load reservations from disk (startup only).
+   * No-op if persistence is not configured.
+   */
+  loadFromDisk(): void {
+    if (!this.persistence) return
+
+    const loaded = this.persistence.load()
+    for (const reservation of loaded) {
+      this.reservations.set(reservation.userOpHash, reservation)
+      this.reservationIdIndex.set(reservation.reservationId, reservation.userOpHash)
+    }
+
+    if (loaded.length > 0) {
+      console.log(`[reservation-tracker] Loaded ${loaded.length} reservations from disk`)
+    }
+  }
+
+  /**
+   * Flush pending data to disk (for graceful shutdown).
+   */
+  flushToDisk(): void {
+    if (!this.persistence) return
+    this.persistence.flush(Array.from(this.reservations.values()))
+  }
 
   /**
    * Track a new reservation with its userOpHash
@@ -44,6 +79,7 @@ export class ReservationTracker {
     }
     this.reservations.set(userOpHash, reservation)
     this.reservationIdIndex.set(reservationId, userOpHash)
+    this.scheduleSave()
   }
 
   /**
@@ -70,6 +106,7 @@ export class ReservationTracker {
     if (!reservation) return false
     this.reservations.delete(userOpHash)
     this.reservationIdIndex.delete(reservation.reservationId)
+    this.scheduleSave()
     return true
   }
 
@@ -110,6 +147,9 @@ export class ReservationTracker {
         expired++
       }
     }
+    if (expired > 0) {
+      this.scheduleSave()
+    }
     return expired
   }
 
@@ -119,5 +159,10 @@ export class ReservationTracker {
   clear(): void {
     this.reservations.clear()
     this.reservationIdIndex.clear()
+  }
+
+  private scheduleSave(): void {
+    if (!this.persistence) return
+    this.persistence.scheduleSave(Array.from(this.reservations.values()))
   }
 }

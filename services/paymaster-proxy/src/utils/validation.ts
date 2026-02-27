@@ -1,10 +1,62 @@
 import type { Address, Hex } from 'viem'
 import { keccak256, stringToHex } from 'viem'
+import { getTimeRangeConfig } from '../config/constants'
 
 export interface ValidationError {
   code: number
   message: string
   data?: unknown
+}
+
+/**
+ * Validate that validUntil / validAfter form a sane time range.
+ *
+ * Rules (EIP-4337 Section 6):
+ *  - validUntil must be in the future (> now)
+ *  - validUntil must be after validAfter
+ *  - validity window must not exceed MAX (default 24h)
+ *  - validity window must be at least MIN (default 30s)
+ *
+ * All values are unix-epoch seconds.
+ */
+export function validateTimeRange(
+  validUntil: number,
+  validAfter: number,
+  now?: number
+): ValidationError | null {
+  const currentTime = now ?? Math.floor(Date.now() / 1000)
+  const { maxValiditySeconds, minValiditySeconds } = getTimeRangeConfig()
+
+  if (validUntil <= currentTime) {
+    return {
+      code: -32602,
+      message: `validUntil (${validUntil}) must be in the future (now: ${currentTime})`,
+    }
+  }
+
+  if (validUntil <= validAfter) {
+    return {
+      code: -32602,
+      message: `validUntil (${validUntil}) must be greater than validAfter (${validAfter})`,
+    }
+  }
+
+  const window = validUntil - validAfter
+  if (window > maxValiditySeconds) {
+    return {
+      code: -32602,
+      message: `Validity window ${window}s exceeds maximum ${maxValiditySeconds}s`,
+    }
+  }
+
+  if (window < minValiditySeconds) {
+    return {
+      code: -32602,
+      message: `Validity window ${window}s is below minimum ${minValiditySeconds}s`,
+    }
+  }
+
+  return null
 }
 
 /**

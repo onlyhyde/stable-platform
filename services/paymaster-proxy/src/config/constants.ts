@@ -45,6 +45,18 @@ export const PAYMASTER_ENV_VARS = {
   DEPOSIT_MONITOR_POLL_MS: 'PAYMASTER_DEPOSIT_MONITOR_POLL_MS',
   DEPOSIT_MIN_THRESHOLD: 'PAYMASTER_DEPOSIT_MIN_THRESHOLD',
   DEPOSIT_REJECT_ON_LOW: 'PAYMASTER_DEPOSIT_REJECT_ON_LOW',
+
+  // Auto-Deposit (Phase 2)
+  DEPOSIT_AUTO_ENABLED: 'PAYMASTER_DEPOSIT_AUTO_ENABLED',
+  DEPOSIT_AUTO_AMOUNT: 'PAYMASTER_DEPOSIT_AUTO_AMOUNT',
+  DEPOSIT_AUTO_COOLDOWN_MS: 'PAYMASTER_DEPOSIT_AUTO_COOLDOWN_MS',
+
+  // Time Range Validation
+  MAX_VALIDITY_SECONDS: 'PAYMASTER_MAX_VALIDITY_SECONDS',
+  MIN_VALIDITY_SECONDS: 'PAYMASTER_MIN_VALIDITY_SECONDS',
+
+  // Reservation Persistence
+  RESERVATION_DATA_DIR: 'PAYMASTER_RESERVATION_DATA_DIR',
 } as const
 
 /**
@@ -215,6 +227,44 @@ export function getDepositMonitorConfig() {
 }
 
 /**
+ * Time range validation configuration
+ */
+export function getTimeRangeConfig() {
+  return {
+    maxValiditySeconds: getEnvNumber(PAYMASTER_ENV_VARS.MAX_VALIDITY_SECONDS, 86_400), // 24 hours
+    minValiditySeconds: getEnvNumber(PAYMASTER_ENV_VARS.MIN_VALIDITY_SECONDS, 30), // 30 seconds
+  }
+}
+
+/**
+ * Auto-deposit configuration
+ */
+export function getAutoDepositConfig() {
+  return {
+    autoDepositEnabled: getEnvBool(PAYMASTER_ENV_VARS.DEPOSIT_AUTO_ENABLED, false),
+    autoDepositAmount: getEnvBigInt(PAYMASTER_ENV_VARS.DEPOSIT_AUTO_AMOUNT, 10n ** 17n), // 0.1 ETH
+    autoDepositCooldownMs: getEnvNumber(PAYMASTER_ENV_VARS.DEPOSIT_AUTO_COOLDOWN_MS, 300_000), // 5 minutes
+  }
+}
+
+/**
+ * Reservation persistence configuration
+ */
+export function getReservationPersistenceConfig() {
+  return {
+    dataDir: getEnvOptional(PAYMASTER_ENV_VARS.RESERVATION_DATA_DIR),
+  }
+}
+
+/**
+ * Block Number Mode — EIP-4337 flags bit 47.
+ * When set, validUntil/validAfter are interpreted as block numbers instead of timestamps.
+ * TODO: PoC does not implement block number mode; requires PublicClient.getBlockNumber()
+ *       at validation time. Add support when on-chain validation is needed.
+ */
+export const FLAGS_BLOCK_NUMBER_MODE = 1 << 47
+
+/**
  * Print environment variable usage help
  */
 export function getPaymasterEnvHelp(): string {
@@ -258,5 +308,17 @@ Deposit Monitoring:
   ${PAYMASTER_ENV_VARS.DEPOSIT_MONITOR_POLL_MS}        Polling interval in ms (default: 30000)
   ${PAYMASTER_ENV_VARS.DEPOSIT_MIN_THRESHOLD}          Min deposit threshold in wei (default: 10000000000000000 = 0.01 ETH)
   ${PAYMASTER_ENV_VARS.DEPOSIT_REJECT_ON_LOW}          Reject signing when deposit is low (default: false)
+
+Auto-Deposit:
+  ${PAYMASTER_ENV_VARS.DEPOSIT_AUTO_ENABLED}           Enable auto-deposit when balance is low (default: false)
+  ${PAYMASTER_ENV_VARS.DEPOSIT_AUTO_AMOUNT}            Auto-deposit amount in wei (default: 100000000000000000 = 0.1 ETH)
+  ${PAYMASTER_ENV_VARS.DEPOSIT_AUTO_COOLDOWN_MS}       Cooldown between auto-deposits in ms (default: 300000 = 5 min)
+
+Time Range Validation:
+  ${PAYMASTER_ENV_VARS.MAX_VALIDITY_SECONDS}           Max validity window in seconds (default: 86400 = 24h)
+  ${PAYMASTER_ENV_VARS.MIN_VALIDITY_SECONDS}           Min validity window in seconds (default: 30)
+
+Reservation Persistence:
+  ${PAYMASTER_ENV_VARS.RESERVATION_DATA_DIR}           Directory for reservation JSON persistence (disabled if not set)
 `.trim()
 }

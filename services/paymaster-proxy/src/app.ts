@@ -2,9 +2,9 @@ import { Hono } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
-import type { Address, Hex, PublicClient } from 'viem'
-import { getPublicClient } from './chain/client'
-import { getDepositMonitorConfig, getServerConfig } from './config/constants'
+import type { Address, Hex, PublicClient, WalletClient } from 'viem'
+import { getPublicClient, getWalletClient } from './chain/client'
+import { getAutoDepositConfig, getDepositMonitorConfig, getReservationPersistenceConfig, getServerConfig } from './config/constants'
 import { DepositMonitor } from './deposit/depositMonitor'
 import {
   handleEstimateTokenPayment,
@@ -15,6 +15,7 @@ import {
 } from './handlers'
 import { SponsorPolicyManager } from './policy/sponsorPolicy'
 import { BundlerClient } from './settlement/bundlerClient'
+import { ReservationPersistence } from './settlement/reservationPersistence'
 import { ReservationTracker } from './settlement/reservationTracker'
 import { SettlementWorker } from './settlement/settlementWorker'
 import {
@@ -64,7 +65,14 @@ export function createApp(config: PaymasterProxyConfig): Hono {
   // Initialize components
   const signer = new PaymasterSigner(config.signerPrivateKey, config.paymasterAddress)
   const policyManager = new SponsorPolicyManager()
-  const reservationTracker = new ReservationTracker()
+
+  // Reservation persistence — load from disk on startup if configured
+  const persistenceConfig = getReservationPersistenceConfig()
+  const reservationPersistence = persistenceConfig.dataDir
+    ? new ReservationPersistence(persistenceConfig.dataDir)
+    : undefined
+  const reservationTracker = new ReservationTracker(reservationPersistence)
+  reservationTracker.loadFromDisk()
 
   // Phase 2: Settlement worker — graceful degradation when BUNDLER_RPC_URL not set
   let settlementWorker: SettlementWorker | undefined
@@ -87,15 +95,29 @@ export function createApp(config: PaymasterProxyConfig): Hono {
 
   // Deposit monitoring — periodically check paymaster deposits on EntryPoint
   const depositConfig = getDepositMonitorConfig()
+  const autoDepositConfig = getAutoDepositConfig()
   let depositMonitor: DepositMonitor | undefined
   if (depositConfig.depositMonitorEnabled && config.supportedEntryPoints.length > 0) {
-    depositMonitor = new DepositMonitor(client, {
-      entryPoint: config.supportedEntryPoints[0]!,
-      paymasterAddresses: config.paymasterAddresses,
-      minDepositThreshold: depositConfig.depositMinThreshold,
-      pollIntervalMs: depositConfig.depositMonitorPollMs,
-      rejectOnLowDeposit: depositConfig.depositRejectOnLow,
-    })
+    // Create WalletClient for auto-deposit if enabled
+    // PoC reuses signerPrivateKey; production should use a separate funding key
+    const walletClient: WalletClient | undefined = autoDepositConfig.autoDepositEnabled
+      ? getWalletClient(config.rpcUrl, config.signerPrivateKey)
+      : undefined
+
+    depositMonitor = new DepositMonitor(
+      client,
+      {
+        entryPoint: config.supportedEntryPoints[0]!,
+        paymasterAddresses: config.paymasterAddresses,
+        minDepositThreshold: depositConfig.depositMinThreshold,
+        pollIntervalMs: depositConfig.depositMonitorPollMs,
+        rejectOnLowDeposit: depositConfig.depositRejectOnLow,
+        autoDepositEnabled: autoDepositConfig.autoDepositEnabled,
+        autoDepositAmount: autoDepositConfig.autoDepositAmount,
+        autoDepositCooldownMs: autoDepositConfig.autoDepositCooldownMs,
+      },
+      walletClient
+    )
     depositMonitor.start()
   }
 

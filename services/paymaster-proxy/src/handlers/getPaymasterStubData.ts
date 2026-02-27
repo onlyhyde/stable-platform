@@ -18,7 +18,7 @@ import type {
   PaymasterType,
 } from '../types'
 import { normalizeUserOp } from '../utils/userOpNormalizer'
-import { toPolicyIdBytes32, validateChainId, validateEntryPoint } from '../utils/validation'
+import { toPolicyIdBytes32, validateChainId, validateEntryPoint, validateTimeRange } from '../utils/validation'
 
 export type { GetPaymasterStubDataParams }
 
@@ -308,11 +308,19 @@ function handleErc20StubData(
   })
 
   const now = Math.floor(Date.now() / 1000)
+  const validUntil = now + DEFAULT_VALID_UNTIL_SECONDS
+  const validAfter = now - DEFAULT_CLOCK_SKEW_SECONDS
+
+  const timeError = validateTimeRange(validUntil, validAfter, now)
+  if (timeError) {
+    return { success: false, error: timeError }
+  }
+
   const paymasterData = encodePaymasterData({
     paymasterType: PaymasterTypeEnum.ERC20,
     flags: 0,
-    validUntil: BigInt(now + DEFAULT_VALID_UNTIL_SECONDS),
-    validAfter: BigInt(now - DEFAULT_CLOCK_SKEW_SECONDS),
+    validUntil: BigInt(validUntil),
+    validAfter: BigInt(validAfter),
     nonce: 0n,
     payload,
   })

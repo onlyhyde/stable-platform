@@ -11,6 +11,7 @@ import {
 import { getSignerConfig } from '../config/constants'
 import type { PackedUserOperationRpc, UserOperationRpc } from '../types'
 import { toPackedForCoreHash } from '../utils/userOpNormalizer'
+import { validateTimeRange } from '../utils/validation'
 
 const STUB_SIGNATURE = `0x${'00'.repeat(65)}` as Hex
 
@@ -129,6 +130,11 @@ export class PaymasterSigner {
     const validUntil = now + validity
     const validAfter = now - signerConfig.clockSkewSeconds
 
+    const timeError = validateTimeRange(validUntil, validAfter, now)
+    if (timeError) {
+      throw new Error(`Invalid time range: ${timeError.message}`)
+    }
+
     const envelope = encodePaymasterData({
       paymasterType,
       flags: 0,
@@ -170,6 +176,11 @@ export class PaymasterSigner {
     const now = Math.floor(Date.now() / 1000)
     const validUntil = now + validity
     const validAfter = now - signerConfig.clockSkewSeconds
+
+    const timeError = validateTimeRange(validUntil, validAfter, now)
+    if (timeError) {
+      throw new Error(`Invalid time range: ${timeError.message}`)
+    }
 
     // Build envelope
     const envelope = encodePaymasterData({
