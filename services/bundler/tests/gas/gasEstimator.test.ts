@@ -196,13 +196,17 @@ describe('GasEstimator', () => {
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
 
       // Mock simulateContract for binary search
-      const minGasRequired = 50000n
+      // The gas parameter passed to simulateContract is callGasLimit + verificationGasLimit,
+      // so the threshold must account for the verification gas overhead (100000n default).
+      const minCallGasRequired = 50000n
+      const verificationGas = userOp.verificationGasLimit || 100000n
+      const minTotalGasRequired = minCallGasRequired + verificationGas
       mockClient.simulateContract = vi
         .fn()
         .mockImplementation(async (params: { functionName: string; gas?: bigint }) => {
           if (params.functionName === 'simulateHandleOp') {
-            // Simulate gas requirements
-            if (params.gas && params.gas < minGasRequired) {
+            // Simulate gas requirements (gas = callGasLimit + verificationGasLimit)
+            if (params.gas && params.gas < minTotalGasRequired) {
               throw new Error('out of gas')
             }
             // Return ExecutionResult (success)
@@ -214,8 +218,8 @@ describe('GasEstimator', () => {
 
       const result = await gasEstimator.estimate(userOp)
 
-      // Should be based on binary search result (minGasRequired + 10% buffer)
-      expect(result.callGasLimit).toBeGreaterThanOrEqual(minGasRequired)
+      // Should be based on binary search result (minCallGasRequired + 10% buffer)
+      expect(result.callGasLimit).toBeGreaterThanOrEqual(minCallGasRequired)
       // Allow some margin for binary search approximation
       expect(result.callGasLimit).toBeLessThanOrEqual(70000n)
     })
@@ -299,14 +303,25 @@ describe('GasEstimator', () => {
       // Simulate actual gas requirements
       const actualVerificationGas = 85000n
       const actualCallGas = 45000n
+      const verificationGas = userOp.verificationGasLimit || 100000n
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
-      mockClient.simulateContract = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
-        if (params.gas && params.gas < actualVerificationGas) {
-          throw new Error('out of gas')
-        }
-        throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
-      })
+      mockClient.simulateContract = vi
+        .fn()
+        .mockImplementation(async (params: { functionName?: string; gas?: bigint }) => {
+          if (params.functionName === 'simulateHandleOp') {
+            // For simulateHandleOp, gas = callGasLimit + verificationGasLimit
+            if (params.gas && params.gas < actualCallGas + verificationGas) {
+              throw new Error('out of gas')
+            }
+            throw { name: 'ContractFunctionExecutionError', data: '0x8b7ac980' }
+          }
+          // For simulateValidation
+          if (params.gas && params.gas < actualVerificationGas) {
+            throw new Error('out of gas')
+          }
+          throw { name: 'ContractFunctionExecutionError', data: '0x5eb2984f' }
+        })
       mockClient.estimateGas = vi.fn().mockResolvedValue(actualCallGas)
 
       const result = await gasEstimator.estimate(userOp)
@@ -427,13 +442,16 @@ describe('GasEstimator', () => {
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
 
       // Simulate ExecutionResult with specific gas values
+      // The gas parameter passed to simulateHandleOp is callGasLimit + verificationGasLimit,
+      // so the threshold must account for the verification gas overhead.
       const actualCallGasUsed = 75000n
+      const verificationGas = userOp.verificationGasLimit || 100000n
       mockClient.simulateContract = vi
         .fn()
         .mockImplementation(async (params: { functionName: string; gas?: bigint }) => {
           if (params.functionName === 'simulateHandleOp') {
-            // Binary search - return success or failure based on gas
-            if (params.gas && params.gas < actualCallGasUsed) {
+            // Binary search - return success or failure based on total gas
+            if (params.gas && params.gas < actualCallGasUsed + verificationGas) {
               throw new Error('out of gas')
             }
             throw {

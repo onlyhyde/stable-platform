@@ -75,6 +75,13 @@ export class RpcServer {
     // Initialize gas estimator (using first entry point)
     this.gasEstimator = new GasEstimator(publicClient, primaryEntryPoint, logger)
 
+    // Create aggregator validator when aggregation is enabled
+    // (shared between validator pipeline and bundle executor)
+    let aggregatorValidator: AggregatorValidator | null = null
+    if (config.enableAggregation) {
+      aggregatorValidator = new AggregatorValidator(publicClient, primaryEntryPoint, logger)
+    }
+
     // Initialize validator using factory method (DI pattern)
     this.validator = UserOperationValidator.create(
       publicClient,
@@ -86,7 +93,8 @@ export class RpcServer {
         minValidUntilBuffer: config.minValidUntilBuffer,
         enableAggregation: config.enableAggregation,
       },
-      logger
+      logger,
+      aggregatorValidator ?? undefined
     )
 
     // Initialize bundle executor
@@ -111,9 +119,8 @@ export class RpcServer {
       this.executor.setDependencyTracker(dependencyTracker)
     }
 
-    // Wire aggregator validator when aggregation is enabled
-    if (config.enableAggregation) {
-      const aggregatorValidator = new AggregatorValidator(publicClient, primaryEntryPoint, logger)
+    // Wire aggregator validator to executor for bundle submission
+    if (aggregatorValidator) {
       this.executor.setAggregatorValidator(aggregatorValidator)
     }
 
@@ -367,6 +374,14 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
     // Calculate hash (uses canonical entryPoint from config for consistency)
     const chainId = BigInt(await this.publicClient.getChainId())
     const userOpHash = getUserOperationHash(userOp, matchedEntryPoint, chainId)
+
+    // Check for duplicate in mempool before validation (avoid unnecessary work)
+    if (this.mempool.get(userOpHash)) {
+      throw new RpcError(
+        `UserOperation ${userOpHash} already in mempool`,
+        RPC_ERROR_CODES.INVALID_PARAMS
+      )
+    }
 
     // Validate UserOperation (format, reputation, state, simulation)
     const validationResult = await this.validator.validate(userOp)
@@ -690,6 +705,17 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
     // Start HTTP server
     await this.app.listen({ port: this.config.port, host: '0.0.0.0' })
     this.logger.info({ port: this.config.port }, 'Bundler RPC server started')
+  }
+
+  /**
+   * Get the actual bound port (useful when started with port 0)
+   */
+  getPort(): number {
+    const addresses = this.app.addresses()
+    if (addresses.length > 0) {
+      return addresses[0]!.port
+    }
+    return this.config.port
   }
 
   /**

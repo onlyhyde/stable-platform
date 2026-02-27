@@ -1,4 +1,5 @@
-import type { Address, PublicClient } from 'viem'
+import type { Address, Hex, PublicClient } from 'viem'
+import { concat, pad, toHex } from 'viem'
 import type { UserOperation } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
@@ -8,10 +9,12 @@ import { ReputationManager } from './reputationManager'
 import { SimulationValidator } from './simulationValidator'
 import { DebugTraceCallTracer } from './tracer'
 import type {
+  IAggregatorValidator,
   IFormatValidator,
   IOpcodeValidator,
   IReputationManager,
   ISimulationValidator,
+  PackedUserOperation,
   ReputationConfig,
   StakeInfo,
   ValidationResult,
@@ -59,6 +62,8 @@ export interface ValidatorDependencies {
   reputationManager: IReputationManager
   /** Optional opcode validator for ERC-7562 compliance */
   opcodeValidator?: IOpcodeValidator
+  /** Optional aggregator validator for EIP-4337 Section 15 signature aggregation */
+  aggregatorValidator?: IAggregatorValidator
 }
 
 /**
@@ -70,6 +75,7 @@ export class UserOperationValidator {
   private readonly simulationValidator: ISimulationValidator
   private readonly reputationManager: IReputationManager
   private readonly opcodeValidator?: IOpcodeValidator
+  private readonly aggregatorValidator?: IAggregatorValidator
   private readonly config: ValidatorConfig
   private readonly logger: Logger
 
@@ -83,6 +89,7 @@ export class UserOperationValidator {
     this.simulationValidator = dependencies.simulationValidator
     this.reputationManager = dependencies.reputationManager
     this.opcodeValidator = dependencies.opcodeValidator
+    this.aggregatorValidator = dependencies.aggregatorValidator
   }
 
   /**
@@ -92,7 +99,8 @@ export class UserOperationValidator {
   static create(
     publicClient: PublicClient,
     config: ValidatorConfig,
-    logger: Logger
+    logger: Logger,
+    aggregatorValidator?: IAggregatorValidator
   ): UserOperationValidator {
     // Warn if skip flags are used in production — these bypass critical security checks
     if (process.env.NODE_ENV === 'production') {
@@ -124,6 +132,7 @@ export class UserOperationValidator {
         config.reputation ?? DEFAULT_REPUTATION_CONFIG
       ),
       opcodeValidator,
+      aggregatorValidator,
     }
 
     return new UserOperationValidator(config, logger, dependencies)
@@ -161,7 +170,7 @@ export class UserOperationValidator {
     }
 
     // Phase 5: Validate simulation result (may set aggregator on result)
-    this.validateSimulationResult(result, userOp)
+    await this.validateSimulationResult(result, userOp)
 
     // Phase 6: Opcode validation (ERC-7562)
     if (!this.config.skipOpcodeValidation && this.opcodeValidator) {
@@ -367,7 +376,10 @@ export class UserOperationValidator {
   /**
    * Phase 5: Validate simulation result
    */
-  private validateSimulationResult(result: ValidationResult, userOp: UserOperation): void {
+  private async validateSimulationResult(
+    result: ValidationResult,
+    userOp: UserOperation
+  ): Promise<void> {
     // Validate signatures
     this.simulationValidator.validateSignature(
       result.returnInfo.accountValidationData,
@@ -400,6 +412,16 @@ export class UserOperationValidator {
         minStake,
         minUnstakeDelay
       )
+
+      // EIP-4337 Section 15: Validate individual signature through aggregator contract
+      if (this.aggregatorValidator) {
+        const packedOp = this.packUserOp(userOp)
+        await this.aggregatorValidator.validateUserOpSignature(aggregator, packedOp)
+        this.logger.debug(
+          { aggregator, sender: userOp.sender },
+          'Aggregator individual signature validation passed'
+        )
+      }
 
       // Store aggregator address in result for upstream consumption
       result.aggregator = aggregator
@@ -525,6 +547,53 @@ export class UserOperationValidator {
    */
   getOpcodeValidator(): IOpcodeValidator | undefined {
     return this.opcodeValidator
+  }
+
+  /**
+   * Get aggregator validator for advanced operations
+   */
+  getAggregatorValidator(): IAggregatorValidator | undefined {
+    return this.aggregatorValidator
+  }
+
+  /**
+   * Pack a UserOperation into the packed format required by aggregator contracts
+   */
+  private packUserOp(userOp: UserOperation): PackedUserOperation {
+    const initCode =
+      userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
+
+    const accountGasLimits = concat([
+      pad(toHex(userOp.verificationGasLimit), { size: 16 }),
+      pad(toHex(userOp.callGasLimit), { size: 16 }),
+    ]) as Hex
+
+    const gasFees = concat([
+      pad(toHex(userOp.maxPriorityFeePerGas), { size: 16 }),
+      pad(toHex(userOp.maxFeePerGas), { size: 16 }),
+    ]) as Hex
+
+    let paymasterAndData: Hex = '0x'
+    if (userOp.paymaster) {
+      paymasterAndData = concat([
+        userOp.paymaster,
+        pad(toHex(userOp.paymasterVerificationGasLimit ?? 0n), { size: 16 }),
+        pad(toHex(userOp.paymasterPostOpGasLimit ?? 0n), { size: 16 }),
+        userOp.paymasterData ?? '0x',
+      ]) as Hex
+    }
+
+    return {
+      sender: userOp.sender,
+      nonce: userOp.nonce,
+      initCode,
+      callData: userOp.callData,
+      accountGasLimits,
+      preVerificationGas: userOp.preVerificationGas,
+      gasFees,
+      paymasterAndData,
+      signature: userOp.signature,
+    }
   }
 
   /**

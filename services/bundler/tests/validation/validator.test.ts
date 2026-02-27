@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RPC_ERROR_CODES, RpcError } from '../../src/types'
 import { createLogger } from '../../src/utils/logger'
 import type {
+  IAggregatorValidator,
   IFormatValidator,
   IOpcodeValidator,
   IReputationManager,
@@ -707,6 +708,241 @@ describe('UserOperationValidator', () => {
 
       expect(mockReputationManager.updateIncluded).toHaveBeenCalledWith(TEST_SENDER)
       expect(mockReputationManager.updateIncluded).toHaveBeenCalledWith(TEST_AGGREGATOR)
+    })
+  })
+
+  describe('Aggregator Signature Validation in Pipeline (Section 15)', () => {
+    const TEST_AGGREGATOR = '0x4567890123456789012345678901234567890123' as Address
+    let mockAggregatorValidator: IAggregatorValidator
+
+    beforeEach(() => {
+      mockAggregatorValidator = {
+        validateUserOpSignature: vi.fn().mockResolvedValue('0xvalidated' as Hex),
+        aggregateSignatures: vi.fn().mockResolvedValue('0xaggregated' as Hex),
+        validateSignatures: vi.fn().mockResolvedValue(undefined),
+      }
+    })
+
+    it('should call validateUserOpSignature when aggregator detected and validator provided', async () => {
+      vi.mocked(mockSimulationValidator.validateAggregator).mockReturnValue(TEST_AGGREGATOR)
+
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+        aggregatorValidator: mockAggregatorValidator,
+      }
+
+      const validator = new UserOperationValidator(
+        {
+          entryPoint: TEST_ENTRY_POINT,
+          skipSimulation: true,
+          skipOpcodeValidation: true,
+          enableAggregation: true,
+        },
+        mockLogger,
+        dependencies
+      )
+
+      await validator.validate(createTestUserOp())
+
+      expect(mockAggregatorValidator.validateUserOpSignature).toHaveBeenCalledTimes(1)
+      expect(mockAggregatorValidator.validateUserOpSignature).toHaveBeenCalledWith(
+        TEST_AGGREGATOR,
+        expect.objectContaining({
+          sender: TEST_SENDER,
+          nonce: 0n,
+        })
+      )
+    })
+
+    it('should not call validateUserOpSignature when no aggregator detected', async () => {
+      vi.mocked(mockSimulationValidator.validateAggregator).mockReturnValue(null)
+
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+        aggregatorValidator: mockAggregatorValidator,
+      }
+
+      const validator = new UserOperationValidator(
+        {
+          entryPoint: TEST_ENTRY_POINT,
+          skipSimulation: true,
+          skipOpcodeValidation: true,
+          enableAggregation: true,
+        },
+        mockLogger,
+        dependencies
+      )
+
+      await validator.validate(createTestUserOp())
+
+      expect(mockAggregatorValidator.validateUserOpSignature).not.toHaveBeenCalled()
+    })
+
+    it('should not call validateUserOpSignature when aggregatorValidator not provided', async () => {
+      vi.mocked(mockSimulationValidator.validateAggregator).mockReturnValue(TEST_AGGREGATOR)
+
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+        // No aggregatorValidator
+      }
+
+      const validator = new UserOperationValidator(
+        {
+          entryPoint: TEST_ENTRY_POINT,
+          skipSimulation: true,
+          skipOpcodeValidation: true,
+          enableAggregation: true,
+        },
+        mockLogger,
+        dependencies
+      )
+
+      // Should not throw even without aggregatorValidator
+      const result = await validator.validate(createTestUserOp())
+      expect(result.aggregator).toBe(TEST_AGGREGATOR)
+    })
+
+    it('should throw when aggregator signature validation fails', async () => {
+      vi.mocked(mockSimulationValidator.validateAggregator).mockReturnValue(TEST_AGGREGATOR)
+      mockAggregatorValidator.validateUserOpSignature = vi
+        .fn()
+        .mockRejectedValue(new Error('Invalid signature for aggregator'))
+
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+        aggregatorValidator: mockAggregatorValidator,
+      }
+
+      const validator = new UserOperationValidator(
+        {
+          entryPoint: TEST_ENTRY_POINT,
+          skipSimulation: true,
+          skipOpcodeValidation: true,
+          enableAggregation: true,
+        },
+        mockLogger,
+        dependencies
+      )
+
+      await expect(validator.validate(createTestUserOp())).rejects.toThrow(
+        'Invalid signature for aggregator'
+      )
+    })
+
+    it('should expose aggregatorValidator through getter', () => {
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+        aggregatorValidator: mockAggregatorValidator,
+      }
+
+      const validator = new UserOperationValidator(
+        { entryPoint: TEST_ENTRY_POINT },
+        mockLogger,
+        dependencies
+      )
+
+      expect(validator.getAggregatorValidator()).toBe(mockAggregatorValidator)
+    })
+
+    it('should return undefined when aggregatorValidator is not provided', () => {
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+      }
+
+      const validator = new UserOperationValidator(
+        { entryPoint: TEST_ENTRY_POINT },
+        mockLogger,
+        dependencies
+      )
+
+      expect(validator.getAggregatorValidator()).toBeUndefined()
+    })
+
+    it('should pack UserOp correctly for aggregator validation', async () => {
+      vi.mocked(mockSimulationValidator.validateAggregator).mockReturnValue(TEST_AGGREGATOR)
+
+      const dependencies: ValidatorDependencies = {
+        formatValidator: mockFormatValidator,
+        simulationValidator: mockSimulationValidator,
+        reputationManager: mockReputationManager,
+        aggregatorValidator: mockAggregatorValidator,
+      }
+
+      const validator = new UserOperationValidator(
+        {
+          entryPoint: TEST_ENTRY_POINT,
+          skipSimulation: true,
+          skipOpcodeValidation: true,
+          enableAggregation: true,
+        },
+        mockLogger,
+        dependencies
+      )
+
+      const userOp = createTestUserOp({
+        factory: TEST_FACTORY,
+        factoryData: '0x1234' as Hex,
+        paymaster: TEST_PAYMASTER,
+        paymasterVerificationGasLimit: 50000n,
+        paymasterPostOpGasLimit: 50000n,
+        paymasterData: '0xabcd' as Hex,
+      })
+
+      await validator.validate(userOp)
+
+      const packedOp = vi.mocked(mockAggregatorValidator.validateUserOpSignature).mock.calls[0]![1]
+
+      // Verify packed format
+      expect(packedOp.sender).toBe(TEST_SENDER)
+      expect(packedOp.nonce).toBe(0n)
+      // initCode should contain factory + factoryData
+      expect(packedOp.initCode).toContain(TEST_FACTORY.slice(2).toLowerCase())
+      // paymasterAndData should contain paymaster address
+      expect(packedOp.paymasterAndData).toContain(TEST_PAYMASTER.slice(2).toLowerCase())
+      expect(packedOp.signature).toBeDefined()
+    })
+  })
+
+  describe('create() factory with AggregatorValidator', () => {
+    const mockPublicClient = {
+      request: vi.fn(),
+      readContract: vi.fn(),
+      getCode: vi.fn(),
+      simulateContract: vi.fn(),
+      getBalance: vi.fn(),
+    } as unknown as PublicClient
+
+    it('should accept optional aggregatorValidator in create()', () => {
+      const validator = UserOperationValidator.create(
+        mockPublicClient,
+        { entryPoint: TEST_ENTRY_POINT, skipOpcodeValidation: true },
+        mockLogger,
+        { validateUserOpSignature: vi.fn(), aggregateSignatures: vi.fn(), validateSignatures: vi.fn() } as unknown as IAggregatorValidator
+      )
+
+      expect(validator.getAggregatorValidator()).toBeDefined()
+    })
+
+    it('should work without aggregatorValidator in create()', () => {
+      const validator = UserOperationValidator.create(
+        mockPublicClient,
+        { entryPoint: TEST_ENTRY_POINT, skipOpcodeValidation: true },
+        mockLogger
+      )
+
+      expect(validator.getAggregatorValidator()).toBeUndefined()
     })
   })
 })

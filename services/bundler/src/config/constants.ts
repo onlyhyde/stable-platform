@@ -308,7 +308,7 @@ export interface ReputationPersistenceConfig {
  * Default values for reputation persistence
  */
 const PERSISTENCE_DEFAULTS = {
-  enabled: false,
+  enabled: true,
   filePath: './data/reputation.json',
   saveIntervalMs: 60_000, // 60 seconds
 } as const
@@ -375,7 +375,7 @@ Reputation System:
   ${CONSTANTS_ENV_VARS.REP_THROTTLE_AUTO_RELEASE_MS}   Throttle auto-release duration in ms (default: 0 = disabled)
 
 Reputation Persistence:
-  ${CONSTANTS_ENV_VARS.REP_PERSISTENCE_ENABLED}           Enable reputation persistence (default: false)
+  ${CONSTANTS_ENV_VARS.REP_PERSISTENCE_ENABLED}           Enable reputation persistence (default: true)
   ${CONSTANTS_ENV_VARS.REP_PERSISTENCE_PATH}              File path for reputation data (default: ./data/reputation.json)
   ${CONSTANTS_ENV_VARS.REP_PERSISTENCE_INTERVAL_MS}       Save interval in ms (default: 60000)
 

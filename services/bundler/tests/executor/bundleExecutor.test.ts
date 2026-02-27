@@ -1064,4 +1064,146 @@ describe('BundleExecutor', () => {
       expect(result).toBe('0xtxhash123')
     })
   })
+
+  describe('factory CREATE2 collision detection', () => {
+    const SENDER_A = '0xaaaa111111111111111111111111111111111111' as Address
+    const SENDER_B = '0xbbbb222222222222222222222222222222222222' as Address
+    const SENDER_C = '0xcccc333333333333333333333333333333333333' as Address
+    const CREATED_ADDR = '0xdddd444444444444444444444444444444444444' as Address
+
+    it('should exclude ops with CREATE2 address collisions', async () => {
+      const tracker = new DependencyTracker(mockLogger)
+
+      const hashA = createHash(1)
+      const hashB = createHash(2)
+
+      // Both ops CREATE2 the same address
+      tracker.recordAccess({
+        userOpHash: hashA,
+        sender: SENDER_A,
+        accessedSlots: new Map(),
+        createdAddresses: new Set([CREATED_ADDR]),
+      })
+      tracker.recordAccess({
+        userOpHash: hashB,
+        sender: SENDER_B,
+        accessedSlots: new Map(),
+        createdAddresses: new Set([CREATED_ADDR]),
+      })
+
+      const trackerExecutor = new BundleExecutor(
+        mockPublicClient,
+        mockWalletClient,
+        mempool,
+        mockValidator,
+        config,
+        mockLogger
+      )
+      trackerExecutor.setDependencyTracker(tracker)
+
+      mempool.add(createTestUserOp(SENDER_A, 0n), hashA, ENTRY_POINT)
+      mempool.add(createTestUserOp(SENDER_B, 0n), hashB, ENTRY_POINT)
+
+      const result = await trackerExecutor.tryBundle()
+
+      // Bundle should succeed with only the first op (keeper)
+      expect(result).toBe('0xtxhash123')
+      expect(mockWalletClient.sendTransaction).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not exclude ops when CREATE2 addresses are different', async () => {
+      const tracker = new DependencyTracker(mockLogger)
+      const CREATED_ADDR_2 = '0xeeee555555555555555555555555555555555555' as Address
+
+      const hashA = createHash(1)
+      const hashB = createHash(2)
+
+      // Ops CREATE2 different addresses — no collision
+      tracker.recordAccess({
+        userOpHash: hashA,
+        sender: SENDER_A,
+        accessedSlots: new Map(),
+        createdAddresses: new Set([CREATED_ADDR]),
+      })
+      tracker.recordAccess({
+        userOpHash: hashB,
+        sender: SENDER_B,
+        accessedSlots: new Map(),
+        createdAddresses: new Set([CREATED_ADDR_2]),
+      })
+
+      const trackerExecutor = new BundleExecutor(
+        mockPublicClient,
+        mockWalletClient,
+        mempool,
+        mockValidator,
+        config,
+        mockLogger
+      )
+      trackerExecutor.setDependencyTracker(tracker)
+
+      mempool.add(createTestUserOp(SENDER_A, 0n), hashA, ENTRY_POINT)
+      mempool.add(createTestUserOp(SENDER_B, 0n), hashB, ENTRY_POINT)
+
+      const result = await trackerExecutor.tryBundle()
+      expect(result).toBe('0xtxhash123')
+    })
+
+    it('should pass through when no dependency tracker is set', async () => {
+      // No tracker on default executor — factory collision detection is a no-op
+      mempool.add(createTestUserOp(SENDER_A, 0n), createHash(1), ENTRY_POINT)
+      mempool.add(createTestUserOp(SENDER_B, 0n), createHash(2), ENTRY_POINT)
+
+      const result = await executor.tryBundle()
+      expect(result).toBe('0xtxhash123')
+    })
+
+    it('should exclude multiple colliders but keep the first-seen op', async () => {
+      const tracker = new DependencyTracker(mockLogger)
+
+      const hashA = createHash(1)
+      const hashB = createHash(2)
+      const hashC = createHash(3)
+
+      // All three ops CREATE2 the same address
+      tracker.recordAccess({
+        userOpHash: hashA,
+        sender: SENDER_A,
+        accessedSlots: new Map(),
+        createdAddresses: new Set([CREATED_ADDR]),
+      })
+      tracker.recordAccess({
+        userOpHash: hashB,
+        sender: SENDER_B,
+        accessedSlots: new Map(),
+        createdAddresses: new Set([CREATED_ADDR]),
+      })
+      tracker.recordAccess({
+        userOpHash: hashC,
+        sender: SENDER_C,
+        accessedSlots: new Map(),
+        createdAddresses: new Set([CREATED_ADDR]),
+      })
+
+      const trackerExecutor = new BundleExecutor(
+        mockPublicClient,
+        mockWalletClient,
+        mempool,
+        mockValidator,
+        config,
+        mockLogger
+      )
+      trackerExecutor.setDependencyTracker(tracker)
+
+      mempool.add(createTestUserOp(SENDER_A, 0n), hashA, ENTRY_POINT)
+      mempool.add(createTestUserOp(SENDER_B, 0n), hashB, ENTRY_POINT)
+      mempool.add(createTestUserOp(SENDER_C, 0n), hashC, ENTRY_POINT)
+
+      const result = await trackerExecutor.tryBundle()
+
+      // Bundle should succeed — only hashA survives
+      expect(result).toBe('0xtxhash123')
+      expect(mockWalletClient.sendTransaction).toHaveBeenCalledTimes(1)
+    })
+  })
 })

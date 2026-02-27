@@ -14,7 +14,7 @@ const ENTRY_POINT = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
 const BENEFICIARY = '0x1234567890123456789012345678901234567890' as Address
 const TEST_SENDER = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address
 const TEST_ACCOUNT = '0x9999999999999999999999999999999999999999' as Address
-const TEST_PORT = 4337
+const TEST_PORT = 0 // Use dynamic port to avoid EADDRINUSE
 
 function buildV09ValidationResultData(): Hex {
   const encoded = encodeAbiParameters(
@@ -137,6 +137,7 @@ describe('RPC Server E2E', () => {
   let mockWalletClient: WalletClient
   let server: RpcServer
   let config: BundlerConfig
+  let testPort: number
 
   beforeAll(async () => {
     // Setup mock clients
@@ -184,6 +185,7 @@ describe('RPC Server E2E', () => {
 
     server = new RpcServer(mockPublicClient, mockWalletClient, config, mockLogger)
     await server.start()
+    testPort = server.getPort()
   })
 
   afterAll(async () => {
@@ -196,7 +198,7 @@ describe('RPC Server E2E', () => {
 
   describe('Server Lifecycle', () => {
     it('should respond to health check', async () => {
-      const response = await fetch(`http://127.0.0.1:${TEST_PORT}/health`)
+      const response = await fetch(`http://127.0.0.1:${testPort}/health`)
       const data = await response.json()
 
       expect(response.status).toBe(200)
@@ -208,7 +210,7 @@ describe('RPC Server E2E', () => {
 
   describe('eth_chainId', () => {
     it('should return chain ID in hex format', async () => {
-      const { result, error } = await rpcCall(TEST_PORT, 'eth_chainId')
+      const { result, error } = await rpcCall(testPort, 'eth_chainId')
 
       expect(error).toBeUndefined()
       expect(result).toBe('0x1') // Chain ID 1
@@ -217,7 +219,7 @@ describe('RPC Server E2E', () => {
 
   describe('eth_supportedEntryPoints', () => {
     it('should return configured entry points', async () => {
-      const { result, error } = await rpcCall(TEST_PORT, 'eth_supportedEntryPoints')
+      const { result, error } = await rpcCall(testPort, 'eth_supportedEntryPoints')
 
       expect(error).toBeUndefined()
       expect(result).toEqual([ENTRY_POINT])
@@ -228,7 +230,7 @@ describe('RPC Server E2E', () => {
     it('should return gas estimates for valid UserOperation', async () => {
       const packedOp = createPackedUserOp()
 
-      const { result, error } = await rpcCall(TEST_PORT, 'eth_estimateUserOperationGas', [
+      const { result, error } = await rpcCall(testPort, 'eth_estimateUserOperationGas', [
         packedOp,
         ENTRY_POINT,
       ])
@@ -257,7 +259,7 @@ describe('RPC Server E2E', () => {
       const packedOp = createPackedUserOp()
       const unsupportedEntryPoint = '0x0000000000000000000000000000000000000001' as Address
 
-      const { result, error } = await rpcCall(TEST_PORT, 'eth_estimateUserOperationGas', [
+      const { result, error } = await rpcCall(testPort, 'eth_estimateUserOperationGas', [
         packedOp,
         unsupportedEntryPoint,
       ])
@@ -272,13 +274,13 @@ describe('RPC Server E2E', () => {
   describe('eth_sendUserOperation', () => {
     beforeEach(async () => {
       // Clear mempool before each test
-      await rpcCall(TEST_PORT, 'debug_bundler_clearState')
+      await rpcCall(testPort, 'debug_bundler_clearState')
     })
 
     it('should accept valid UserOperation and return hash', async () => {
       const packedOp = createPackedUserOp()
 
-      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+      const { result, error } = await rpcCall(testPort, 'eth_sendUserOperation', [
         packedOp,
         ENTRY_POINT,
       ])
@@ -294,13 +296,13 @@ describe('RPC Server E2E', () => {
       const packedOp = createPackedUserOp()
 
       // Send UserOperation
-      const { result: userOpHash } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+      const { result: userOpHash } = await rpcCall(testPort, 'eth_sendUserOperation', [
         packedOp,
         ENTRY_POINT,
       ])
 
       // Check mempool
-      const { result: mempool } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [
+      const { result: mempool } = await rpcCall(testPort, 'debug_bundler_dumpMempool', [
         ENTRY_POINT,
       ])
 
@@ -315,14 +317,14 @@ describe('RPC Server E2E', () => {
       const packedOp = createPackedUserOp()
 
       // Send first time - should succeed
-      const { error: error1 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+      const { error: error1 } = await rpcCall(testPort, 'eth_sendUserOperation', [
         packedOp,
         ENTRY_POINT,
       ])
       expect(error1).toBeUndefined()
 
       // Send second time - should fail
-      const { result, error: error2 } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+      const { result, error: error2 } = await rpcCall(testPort, 'eth_sendUserOperation', [
         packedOp,
         ENTRY_POINT,
       ])
@@ -336,7 +338,7 @@ describe('RPC Server E2E', () => {
       const packedOp = createPackedUserOp()
       const unsupportedEntryPoint = '0x0000000000000000000000000000000000000001' as Address
 
-      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+      const { result, error } = await rpcCall(testPort, 'eth_sendUserOperation', [
         packedOp,
         unsupportedEntryPoint,
       ])
@@ -351,7 +353,7 @@ describe('RPC Server E2E', () => {
         sender: '0xinvalid' as Hex,
       })
 
-      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+      const { result, error } = await rpcCall(testPort, 'eth_sendUserOperation', [
         packedOp,
         ENTRY_POINT,
       ])
@@ -362,13 +364,13 @@ describe('RPC Server E2E', () => {
 
     it('should reject UserOperation when sender is banned', async () => {
       // First, set sender as banned
-      await rpcCall(TEST_PORT, 'debug_bundler_setReputation', [
+      await rpcCall(testPort, 'debug_bundler_setReputation', [
         [{ address: TEST_SENDER, opsSeen: 100, opsIncluded: 0, status: 'banned' }],
       ])
 
       const packedOp = createPackedUserOp()
 
-      const { result, error } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+      const { result, error } = await rpcCall(testPort, 'eth_sendUserOperation', [
         packedOp,
         ENTRY_POINT,
       ])
@@ -378,7 +380,7 @@ describe('RPC Server E2E', () => {
       expect(error?.code).toBe(-32504) // BANNED_OR_THROTTLED
 
       // Clean up
-      await rpcCall(TEST_PORT, 'debug_bundler_clearReputation')
+      await rpcCall(testPort, 'debug_bundler_clearReputation')
     })
   })
 
@@ -386,7 +388,7 @@ describe('RPC Server E2E', () => {
     it('should return null for unknown hash', async () => {
       const unknownHash = '0x' + '00'.repeat(32)
 
-      const { result, error } = await rpcCall(TEST_PORT, 'eth_getUserOperationByHash', [
+      const { result, error } = await rpcCall(testPort, 'eth_getUserOperationByHash', [
         unknownHash,
       ])
 
@@ -399,7 +401,7 @@ describe('RPC Server E2E', () => {
     it('should return null for unknown hash', async () => {
       const unknownHash = '0x' + '00'.repeat(32)
 
-      const { result, error } = await rpcCall(TEST_PORT, 'eth_getUserOperationReceipt', [
+      const { result, error } = await rpcCall(testPort, 'eth_getUserOperationReceipt', [
         unknownHash,
       ])
 
@@ -409,17 +411,17 @@ describe('RPC Server E2E', () => {
 
     it('should return null for pending UserOperation', async () => {
       // Clear state
-      await rpcCall(TEST_PORT, 'debug_bundler_clearState')
+      await rpcCall(testPort, 'debug_bundler_clearState')
 
       // Send UserOperation
       const packedOp = createPackedUserOp()
-      const { result: userOpHash } = await rpcCall(TEST_PORT, 'eth_sendUserOperation', [
+      const { result: userOpHash } = await rpcCall(testPort, 'eth_sendUserOperation', [
         packedOp,
         ENTRY_POINT,
       ])
 
       // Try to get receipt (should be null since not yet included)
-      const { result, error } = await rpcCall(TEST_PORT, 'eth_getUserOperationReceipt', [
+      const { result, error } = await rpcCall(testPort, 'eth_getUserOperationReceipt', [
         userOpHash,
       ])
 
@@ -430,28 +432,28 @@ describe('RPC Server E2E', () => {
 
   describe('Debug Methods', () => {
     beforeEach(async () => {
-      await rpcCall(TEST_PORT, 'debug_bundler_clearState')
-      await rpcCall(TEST_PORT, 'debug_bundler_clearReputation')
+      await rpcCall(testPort, 'debug_bundler_clearState')
+      await rpcCall(testPort, 'debug_bundler_clearReputation')
     })
 
     describe('debug_bundler_clearState', () => {
       it('should clear mempool', async () => {
         // Add an operation
         const packedOp = createPackedUserOp()
-        await rpcCall(TEST_PORT, 'eth_sendUserOperation', [packedOp, ENTRY_POINT])
+        await rpcCall(testPort, 'eth_sendUserOperation', [packedOp, ENTRY_POINT])
 
         // Verify it's in mempool
-        const { result: mempoolBefore } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [
+        const { result: mempoolBefore } = await rpcCall(testPort, 'debug_bundler_dumpMempool', [
           ENTRY_POINT,
         ])
         expect((mempoolBefore as unknown[]).length).toBe(1)
 
         // Clear state
-        const { result } = await rpcCall(TEST_PORT, 'debug_bundler_clearState')
+        const { result } = await rpcCall(testPort, 'debug_bundler_clearState')
         expect(result).toEqual({ success: true })
 
         // Verify mempool is empty
-        const { result: mempoolAfter } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [
+        const { result: mempoolAfter } = await rpcCall(testPort, 'debug_bundler_dumpMempool', [
           ENTRY_POINT,
         ])
         expect((mempoolAfter as unknown[]).length).toBe(0)
@@ -460,7 +462,7 @@ describe('RPC Server E2E', () => {
 
     describe('debug_bundler_dumpMempool', () => {
       it('should return empty array when mempool is empty', async () => {
-        const { result, error } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [
+        const { result, error } = await rpcCall(testPort, 'debug_bundler_dumpMempool', [
           ENTRY_POINT,
         ])
 
@@ -476,10 +478,10 @@ describe('RPC Server E2E', () => {
           sender: '0x1111111111111111111111111111111111111111' as Address,
         })
 
-        await rpcCall(TEST_PORT, 'eth_sendUserOperation', [op1, ENTRY_POINT])
-        await rpcCall(TEST_PORT, 'eth_sendUserOperation', [op2, ENTRY_POINT])
+        await rpcCall(testPort, 'eth_sendUserOperation', [op1, ENTRY_POINT])
+        await rpcCall(testPort, 'eth_sendUserOperation', [op2, ENTRY_POINT])
 
-        const { result } = await rpcCall(TEST_PORT, 'debug_bundler_dumpMempool', [ENTRY_POINT])
+        const { result } = await rpcCall(testPort, 'debug_bundler_dumpMempool', [ENTRY_POINT])
 
         expect(result).toBeDefined()
         expect((result as unknown[]).length).toBe(2)
@@ -490,14 +492,14 @@ describe('RPC Server E2E', () => {
       it('should set reputation entries', async () => {
         const testAddress = '0x1234567890123456789012345678901234567890' as Address
 
-        const { result } = await rpcCall(TEST_PORT, 'debug_bundler_setReputation', [
+        const { result } = await rpcCall(testPort, 'debug_bundler_setReputation', [
           [{ address: testAddress, opsSeen: 50, opsIncluded: 10, status: 'throttled' }],
         ])
 
         expect(result).toEqual({ success: true })
 
         // Verify reputation was set
-        const { result: dump } = await rpcCall(TEST_PORT, 'debug_bundler_dumpReputation', [
+        const { result: dump } = await rpcCall(testPort, 'debug_bundler_dumpReputation', [
           ENTRY_POINT,
         ])
 
@@ -515,14 +517,14 @@ describe('RPC Server E2E', () => {
         const address1 = '0x1111111111111111111111111111111111111111' as Address
         const address2 = '0x2222222222222222222222222222222222222222' as Address
 
-        await rpcCall(TEST_PORT, 'debug_bundler_setReputation', [
+        await rpcCall(testPort, 'debug_bundler_setReputation', [
           [
             { address: address1, opsSeen: 10, opsIncluded: 5 },
             { address: address2, opsSeen: 20, opsIncluded: 15 },
           ],
         ])
 
-        const { result } = await rpcCall(TEST_PORT, 'debug_bundler_dumpReputation', [ENTRY_POINT])
+        const { result } = await rpcCall(testPort, 'debug_bundler_dumpReputation', [ENTRY_POINT])
 
         expect(result).toBeDefined()
         expect((result as unknown[]).length).toBeGreaterThanOrEqual(2)
@@ -532,16 +534,16 @@ describe('RPC Server E2E', () => {
     describe('debug_bundler_clearReputation', () => {
       it('should clear all reputation entries', async () => {
         // Set reputation
-        await rpcCall(TEST_PORT, 'debug_bundler_setReputation', [
+        await rpcCall(testPort, 'debug_bundler_setReputation', [
           [{ address: TEST_SENDER, opsSeen: 10, opsIncluded: 5 }],
         ])
 
         // Clear reputation
-        const { result } = await rpcCall(TEST_PORT, 'debug_bundler_clearReputation')
+        const { result } = await rpcCall(testPort, 'debug_bundler_clearReputation')
         expect(result).toEqual({ success: true })
 
         // Verify cleared
-        const { result: dump } = await rpcCall(TEST_PORT, 'debug_bundler_dumpReputation', [
+        const { result: dump } = await rpcCall(testPort, 'debug_bundler_dumpReputation', [
           ENTRY_POINT,
         ])
         expect((dump as unknown[]).length).toBe(0)
@@ -551,7 +553,7 @@ describe('RPC Server E2E', () => {
 
   describe('Error Handling', () => {
     it('should return error for unknown method', async () => {
-      const { result, error } = await rpcCall(TEST_PORT, 'unknown_method')
+      const { result, error } = await rpcCall(testPort, 'unknown_method')
 
       expect(result).toBeUndefined()
       expect(error).toBeDefined()
@@ -560,7 +562,7 @@ describe('RPC Server E2E', () => {
     })
 
     it('should handle batch requests', async () => {
-      const response = await fetch(`http://127.0.0.1:${TEST_PORT}/`, {
+      const response = await fetch(`http://127.0.0.1:${testPort}/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([
