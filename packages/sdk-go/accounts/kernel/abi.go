@@ -180,5 +180,17 @@ const entryPointABIJSON = `[
     ],
     "outputs": [{"name": "", "type": "bytes32"}],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSenderAddress",
+    "inputs": [{"name": "initCode", "type": "bytes"}],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "error",
+    "name": "SenderAddressResult",
+    "inputs": [{"name": "sender", "type": "address"}]
   }
 ]`

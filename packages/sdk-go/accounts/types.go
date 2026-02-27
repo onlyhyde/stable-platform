@@ -83,6 +83,11 @@ type SmartAccount interface {
 	// SignUserOperation signs a UserOperation hash.
 	SignUserOperation(ctx context.Context, userOpHash types.Hash) (types.Hex, error)
 
+	// VerifySignature verifies a UserOperation signature on-chain.
+	// For EOA signers, uses ecrecover. For contract signers, uses ERC-1271.
+	// Returns true if the signature is valid for this account's signer.
+	VerifySignature(ctx context.Context, userOpHash types.Hash, signature types.Hex) (bool, error)
+
 	// GetFactory returns the factory address (nil if deployed).
 	GetFactory(ctx context.Context) (*types.Address, error)
 

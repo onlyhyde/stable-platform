@@ -1,10 +1,14 @@
 package kernel
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/stablenet/sdk-go/accounts"
 	"github.com/stablenet/sdk-go/types"
@@ -214,4 +218,63 @@ func EncodeFactoryData(initData types.Hex, salt [32]byte) (types.Hex, error) {
 	}
 
 	return types.Hex(packed), nil
+}
+
+// GetSenderAddress computes the counterfactual address by calling
+// EntryPoint.getSenderAddress(initCode). Per EIP-4337 Section 4.2,
+// this always reverts with SenderAddressResult(address sender).
+func GetSenderAddress(
+	ctx context.Context,
+	client *ethclient.Client,
+	entryPoint types.Address,
+	initCode types.Hex,
+) (types.Address, error) {
+	data, err := EntryPointABI.Pack("getSenderAddress", initCode.Bytes())
+	if err != nil {
+		return types.Address{}, fmt.Errorf("failed to pack getSenderAddress: %w", err)
+	}
+
+	// getSenderAddress always reverts — the address is in the revert data
+	_, err = client.CallContract(ctx, ethereum.CallMsg{
+		To:   (*common.Address)(&entryPoint),
+		Data: data,
+	}, nil)
+
+	if err == nil {
+		return types.Address{}, fmt.Errorf("getSenderAddress: expected revert but call succeeded")
+	}
+
+	// Extract revert data from the RPC error
+	revertData, extractErr := extractRevertData(err)
+	if extractErr != nil {
+		return types.Address{}, fmt.Errorf("getSenderAddress: %w (rpc error: %v)", extractErr, err)
+	}
+
+	// SenderAddressResult(address): 4-byte selector + 32-byte ABI-encoded address
+	if len(revertData) < 36 {
+		return types.Address{}, fmt.Errorf("getSenderAddress: revert data too short (%d bytes)", len(revertData))
+	}
+
+	return common.BytesToAddress(revertData[4:36]), nil
+}
+
+// extractRevertData extracts revert data from an eth_call error.
+// go-ethereum returns revert data via the rpc.DataError interface.
+func extractRevertData(err error) ([]byte, error) {
+	// rpc.DataError interface — defined locally to avoid rpc package import
+	type dataError interface {
+		ErrorData() interface{}
+	}
+
+	var de dataError
+	if errors.As(err, &de) {
+		switch v := de.ErrorData().(type) {
+		case string:
+			return common.FromHex(v), nil
+		case []byte:
+			return v, nil
+		}
+	}
+
+	return nil, fmt.Errorf("could not extract revert data from error")
 }

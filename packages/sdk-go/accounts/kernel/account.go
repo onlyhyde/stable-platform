@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/stablenet/sdk-go/accounts"
+	"github.com/stablenet/sdk-go/security"
 	"github.com/stablenet/sdk-go/types"
 )
 
@@ -206,6 +207,29 @@ func (a *Account) SignUserOperation(ctx context.Context, userOpHash types.Hash) 
 	}
 
 	return formatted, nil
+}
+
+// VerifySignature verifies a UserOperation signature on-chain.
+// For EOA signers, uses ecrecover. For contract signers, uses ERC-1271
+// (isValidSignature(bytes32,bytes) returning 0x1626ba7e).
+func (a *Account) VerifySignature(ctx context.Context, userOpHash types.Hash, signature types.Hex) (bool, error) {
+	signerAddr := a.validator.GetSignerAddress()
+
+	verifier, err := security.NewSignatureVerifier(a.client)
+	if err != nil {
+		return false, fmt.Errorf("failed to create signature verifier: %w", err)
+	}
+
+	result, err := verifier.VerifyHash(ctx, security.VerifyHashParams{
+		Hash:      types.Hex(userOpHash.Bytes()),
+		Signature: signature,
+		Signer:    signerAddr,
+	})
+	if err != nil {
+		return false, fmt.Errorf("signature verification failed: %w", err)
+	}
+
+	return result.IsValid, nil
 }
 
 // GetFactory returns the factory address (nil if deployed).
