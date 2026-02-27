@@ -1,7 +1,11 @@
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
 import { concat, decodeEventLog, encodeFunctionData, pad, toHex } from 'viem'
 import { ENTRY_POINT_V07_ABI, EVENT_SIGNATURES, HANDLE_AGGREGATED_OPS_ABI } from '../abi'
-import type { DependencyTracker, StorageAccessRecord } from '../mempool/dependencyTracker'
+import type {
+  DependencyTracker,
+  StorageAccessRecord,
+  WriteConflict,
+} from '../mempool/dependencyTracker'
 import type { Mempool } from '../mempool/mempool'
 import type { MempoolEntry, UserOperation } from '../types'
 import type { Logger } from '../utils/logger'
@@ -123,8 +127,24 @@ export class BundleExecutor {
       return null
     }
 
+    // EIP-4337 Section 7.3: Detect factory CREATE2 address collisions
+    const collisionFreeEntries = this.detectFactoryCollisions(dedupedEntries)
+
+    if (collisionFreeEntries.length === 0) {
+      this.logger.debug('No valid operations after factory collision detection')
+      return null
+    }
+
+    // EIP-4337 Section 7.3: Detect and exclude write-write storage conflicts
+    const writeConflictFreeEntries = this.detectStorageWriteConflicts(collisionFreeEntries)
+
+    if (writeConflictFreeEntries.length === 0) {
+      this.logger.debug('No valid operations after storage write conflict detection')
+      return null
+    }
+
     // EIP-4337 Section 7.3: Order by storage dependencies to prevent conflicts
-    const orderedEntries = this.applyStorageConflictOrdering(dedupedEntries)
+    const orderedEntries = this.applyStorageConflictOrdering(writeConflictFreeEntries)
 
     if (orderedEntries.length === 0) {
       this.logger.debug('No valid operations after storage conflict resolution')
@@ -541,6 +561,39 @@ export class BundleExecutor {
   }
 
   /**
+   * EIP-4337 Section 7.3: Detect factory CREATE2 address collisions.
+   * Two UserOps that would CREATE2 the same address cannot both succeed.
+   * Keeps the first-seen op and excludes later duplicates.
+   */
+  private detectFactoryCollisions(entries: MempoolEntry[]): MempoolEntry[] {
+    if (!this.dependencyTracker || entries.length <= 1) {
+      return entries
+    }
+
+    const hashes = entries.map((e) => e.userOpHash)
+    const collisions = this.dependencyTracker.findFactoryCollisions(hashes)
+
+    if (collisions.length === 0) {
+      return entries
+    }
+
+    const excluded = new Set(collisions.map((c) => c.excluded))
+
+    for (const collision of collisions) {
+      this.logger.warn(
+        {
+          keeper: collision.keeper,
+          excluded: collision.excluded,
+          address: collision.address,
+        },
+        'Factory CREATE2 address collision detected, excluding later operation'
+      )
+    }
+
+    return entries.filter((e) => !excluded.has(e.userOpHash))
+  }
+
+  /**
    * EIP-4337 Section 7.3: Apply storage conflict ordering using DependencyTracker.
    * Orders entries by topological sort of storage dependencies.
    * Removes entries with circular dependencies.
@@ -563,7 +616,42 @@ export class BundleExecutor {
   }
 
   /**
-   * Extract storage access records from trace calls for dependency tracking
+   * EIP-4337 Section 7.3: Detect write-write storage conflicts.
+   * Two ops from different senders that both SSTORE to the same slot cannot
+   * safely coexist in a bundle. Excludes the later op (keeps first-seen).
+   */
+  private detectStorageWriteConflicts(entries: MempoolEntry[]): MempoolEntry[] {
+    if (!this.dependencyTracker || entries.length <= 1) {
+      return entries
+    }
+
+    const hashes = entries.map((e) => e.userOpHash)
+    const conflicts = this.dependencyTracker.findWriteConflicts(hashes)
+
+    if (conflicts.length === 0) {
+      return entries
+    }
+
+    const excluded = new Set(conflicts.map((c) => c.excluded))
+
+    for (const conflict of conflicts) {
+      this.logger.warn(
+        {
+          keeper: conflict.keeper,
+          excluded: conflict.excluded,
+          contract: conflict.contract,
+          slot: conflict.slot,
+        },
+        'Storage write-write conflict detected, excluding later operation'
+      )
+    }
+
+    return entries.filter((e) => !excluded.has(e.userOpHash))
+  }
+
+  /**
+   * Extract storage access records and CREATE2 addresses from trace calls
+   * for dependency tracking and factory collision detection
    */
   private extractStorageAccess(
     userOpHash: Hex,
@@ -571,10 +659,18 @@ export class BundleExecutor {
     calls: TraceCall[]
   ): StorageAccessRecord {
     const accessedSlots = new Map<Address, Set<string>>()
+    const writtenSlots = new Map<Address, Set<string>>()
+    const createdAddresses = new Set<Address>()
 
-    const collectSlots = (traceCalls: TraceCall[]) => {
+    const collectData = (traceCalls: TraceCall[]) => {
       for (const call of traceCalls) {
+        // Collect storage access
         if (call.storage) {
+          // Geth callTracer constraint: opcode↔slot 1:1 mapping not available.
+          // Use call-frame-level heuristic: if SSTORE appears in the frame's opcodes,
+          // treat ALL storage entries in that frame as writes (conservative but correct).
+          const hasStore = call.opcodes.some((op) => op.toUpperCase() === 'SSTORE')
+
           for (const [contractAddr, slots] of Object.entries(call.storage)) {
             const addr = contractAddr as Address
             if (!accessedSlots.has(addr)) {
@@ -584,17 +680,40 @@ export class BundleExecutor {
             for (const slot of slots) {
               slotSet.add(slot)
             }
+
+            // Record write slots when SSTORE is present in this call frame
+            if (hasStore) {
+              if (!writtenSlots.has(addr)) {
+                writtenSlots.set(addr, new Set())
+              }
+              const writeSet = writtenSlots.get(addr)!
+              for (const slot of slots) {
+                writeSet.add(slot)
+              }
+            }
           }
         }
+
+        // EIP-4337 Section 7.3: Collect CREATE2 addresses for factory collision detection
+        if (call.type === 'CREATE2' && call.to) {
+          createdAddresses.add(call.to)
+        }
+
         if (call.calls) {
-          collectSlots(call.calls)
+          collectData(call.calls)
         }
       }
     }
 
-    collectSlots(calls)
+    collectData(calls)
 
-    return { userOpHash, sender, accessedSlots }
+    return {
+      userOpHash,
+      sender,
+      accessedSlots,
+      writtenSlots: writtenSlots.size > 0 ? writtenSlots : new Map(),
+      createdAddresses: createdAddresses.size > 0 ? createdAddresses : undefined,
+    }
   }
 
   /**
