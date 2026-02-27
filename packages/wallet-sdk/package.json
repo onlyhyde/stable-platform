@@ -32,6 +32,8 @@
     "clean": "rm -rf dist"
   },
   "peerDependencies": {
+    "@stablenet/core": ">=0.1.0",
+    "@stablenet/sdk-types": ">=0.1.0",
     "react": ">=18.0.0",
     "viem": ">=2.0.0",
     "@wagmi/core": ">=2.0.0"
@@ -45,6 +47,8 @@
     }
   },
   "devDependencies": {
+    "@stablenet/core": "workspace:*",
+    "@stablenet/sdk-types": "workspace:*",
     "@tanstack/react-query": "^5.90.21",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^18.2.0",

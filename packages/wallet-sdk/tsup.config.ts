@@ -10,6 +10,6 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  external: ['react', 'viem', '@wagmi/core'],
+  external: ['react', 'viem', '@wagmi/core', '@stablenet/core', '@stablenet/sdk-types'],
   treeshake: true,
 })

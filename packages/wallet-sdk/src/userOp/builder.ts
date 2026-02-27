@@ -17,8 +17,8 @@
  * ```
  */
 
+import type { UserOperation } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import type { UserOperation } from './pack'
 
 /**
  * Gas limits configuration

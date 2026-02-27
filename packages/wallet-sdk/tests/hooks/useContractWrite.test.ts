@@ -7,6 +7,7 @@
 import { act, renderHook } from '@testing-library/react'
 import type { Abi, Address, Hash } from 'viem'
 import { useContractWrite } from '../../src/hooks/useContractWrite'
+import { StableNetProvider } from '../../src/provider/StableNetProvider'
 import { createMockProvider } from '../setup'
 
 const TEST_CONTRACT = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as Address
@@ -26,24 +27,31 @@ const erc20Abi: Abi = [
   },
 ] as const
 
+function createProvider(overrides?: Partial<Record<string, unknown>>) {
+  const mock = createMockProvider(overrides)
+  const prov = new StableNetProvider(mock)
+  return { mock, prov }
+}
+
 function withAccount(
-  provider: ReturnType<typeof createMockProvider>,
+  prov: StableNetProvider,
   account = '0x1234567890abcdef1234567890abcdef12345678'
 ) {
-  ;(provider as unknown).account = account
-  return provider
+  // Set internal account for testing (private field access via cast)
+  ;(prov as unknown as Record<string, unknown>)._account = account
+  return prov
 }
 
 describe('useContractWrite', () => {
   it('should initialize with idle state', () => {
-    const provider = createMockProvider()
+    const { prov } = createProvider()
 
     const { result } = renderHook(() =>
       useContractWrite({
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as unknown,
+        provider: prov,
       })
     )
 
@@ -55,14 +63,15 @@ describe('useContractWrite', () => {
   })
 
   it('should send transaction and return hash', async () => {
-    const provider = withAccount(createMockProvider())
+    const { prov } = createProvider()
+    withAccount(prov)
 
     const { result } = renderHook(() =>
       useContractWrite({
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as unknown,
+        provider: prov,
       })
     )
 
@@ -101,16 +110,15 @@ describe('useContractWrite', () => {
   })
 
   it('should throw if no account connected', async () => {
-    const provider = createMockProvider()
-    // Explicitly ensure no account
-    ;(provider as unknown).account = undefined
+    const { prov } = createProvider()
+    // Do NOT set account — _account stays null
 
     const { result } = renderHook(() =>
       useContractWrite({
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as unknown,
+        provider: prov,
       })
     )
 
@@ -128,21 +136,20 @@ describe('useContractWrite', () => {
   })
 
   it('should handle transaction failure and set error state', async () => {
-    const provider = withAccount(
-      createMockProvider({
-        eth_sendTransaction: () => {
-          throw new Error('User rejected')
-        },
-        eth_estimateGas: '0x5208',
-      })
-    )
+    const { prov } = createProvider({
+      eth_sendTransaction: () => {
+        throw new Error('User rejected')
+      },
+      eth_estimateGas: '0x5208',
+    })
+    withAccount(prov)
 
     const { result } = renderHook(() =>
       useContractWrite({
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as unknown,
+        provider: prov,
       })
     )
 
@@ -161,14 +168,15 @@ describe('useContractWrite', () => {
   })
 
   it('should reset state', async () => {
-    const provider = withAccount(createMockProvider())
+    const { prov } = createProvider()
+    withAccount(prov)
 
     const { result } = renderHook(() =>
       useContractWrite({
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as unknown,
+        provider: prov,
       })
     )
 
@@ -189,22 +197,21 @@ describe('useContractWrite', () => {
 
   it('should include value in transaction when specified', async () => {
     let sentTx: Record<string, unknown> | undefined
-    const provider = withAccount(
-      createMockProvider({
-        eth_sendTransaction: (params: unknown) => {
-          sentTx = (params as unknown[])[0] as Record<string, unknown>
-          return MOCK_TX_HASH
-        },
-        eth_estimateGas: '0x5208',
-      })
-    )
+    const { prov } = createProvider({
+      eth_sendTransaction: (params: unknown) => {
+        sentTx = (params as unknown[])[0] as Record<string, unknown>
+        return MOCK_TX_HASH
+      },
+      eth_estimateGas: '0x5208',
+    })
+    withAccount(prov)
 
     const { result } = renderHook(() =>
       useContractWrite({
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as unknown,
+        provider: prov,
         value: BigInt('1000000000000000000'), // 1 ETH
       })
     )
@@ -219,21 +226,20 @@ describe('useContractWrite', () => {
 
   it('should apply gas overrides when provided', async () => {
     let sentTx: Record<string, unknown> | undefined
-    const provider = withAccount(
-      createMockProvider({
-        eth_sendTransaction: (params: unknown) => {
-          sentTx = (params as unknown[])[0] as Record<string, unknown>
-          return MOCK_TX_HASH
-        },
-      })
-    )
+    const { prov } = createProvider({
+      eth_sendTransaction: (params: unknown) => {
+        sentTx = (params as unknown[])[0] as Record<string, unknown>
+        return MOCK_TX_HASH
+      },
+    })
+    withAccount(prov)
 
     const { result } = renderHook(() =>
       useContractWrite({
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as unknown,
+        provider: prov,
         gas: BigInt(100000),
         maxFeePerGas: BigInt(30000000000),
         maxPriorityFeePerGas: BigInt(2000000000),
@@ -250,25 +256,22 @@ describe('useContractWrite', () => {
     expect(sentTx!.maxPriorityFeePerGas).toBe(`0x${BigInt(2000000000).toString(16)}`)
   })
 
-  it('should estimate gas with 20% buffer when no gas override', async () => {
+  it('should send without gas field when no gas override', async () => {
     let sentTx: Record<string, unknown> | undefined
-    const estimatedGas = '0x10000' // 65536
-    const provider = withAccount(
-      createMockProvider({
-        eth_estimateGas: estimatedGas,
-        eth_sendTransaction: (params: unknown) => {
-          sentTx = (params as unknown[])[0] as Record<string, unknown>
-          return MOCK_TX_HASH
-        },
-      })
-    )
+    const { prov } = createProvider({
+      eth_sendTransaction: (params: unknown) => {
+        sentTx = (params as unknown[])[0] as Record<string, unknown>
+        return MOCK_TX_HASH
+      },
+    })
+    withAccount(prov)
 
     const { result } = renderHook(() =>
       useContractWrite({
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as unknown,
+        provider: prov,
       })
     )
 
@@ -276,27 +279,23 @@ describe('useContractWrite', () => {
       await result.current.write([TEST_RECIPIENT, BigInt(1000000)])
     })
 
-    // 65536 * 120 / 100 = 78643
-    const expectedGas = (BigInt(0x10000) * 120n) / 100n
-    expect(sentTx!.gas).toBe(`0x${expectedGas.toString(16)}`)
+    // Gas field is undefined when not explicitly provided
+    expect(sentTx).toBeDefined()
+    expect(sentTx!.gas).toBeUndefined()
   })
 
-  it('should continue even if gas estimation fails', async () => {
-    const provider = withAccount(
-      createMockProvider({
-        eth_estimateGas: () => {
-          throw new Error('Estimation failed')
-        },
-        eth_sendTransaction: MOCK_TX_HASH,
-      })
-    )
+  it('should succeed without gas estimation', async () => {
+    const { prov } = createProvider({
+      eth_sendTransaction: MOCK_TX_HASH,
+    })
+    withAccount(prov)
 
     const { result } = renderHook(() =>
       useContractWrite({
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as unknown,
+        provider: prov,
       })
     )
 
@@ -310,21 +309,20 @@ describe('useContractWrite', () => {
   })
 
   it('should wrap non-Error throws', async () => {
-    const provider = withAccount(
-      createMockProvider({
-        eth_sendTransaction: () => {
-          throw 'string error'
-        },
-        eth_estimateGas: '0x5208',
-      })
-    )
+    const { prov } = createProvider({
+      eth_sendTransaction: () => {
+        throw 'string error'
+      },
+      eth_estimateGas: '0x5208',
+    })
+    withAccount(prov)
 
     const { result } = renderHook(() =>
       useContractWrite({
         address: TEST_CONTRACT,
         abi: erc20Abi,
         functionName: 'transfer',
-        provider: provider as unknown,
+        provider: prov,
       })
     )
 

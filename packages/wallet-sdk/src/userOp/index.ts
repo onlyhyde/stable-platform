@@ -6,7 +6,7 @@ export {
   type GasLimitsConfig,
   type PaymasterConfig,
 } from './builder'
-export { computeUserOpHash } from './hash'
+export { computeUserOpHash, getUserOperationHash } from './hash'
 export {
   packUserOperation,
   unpackUserOperation,

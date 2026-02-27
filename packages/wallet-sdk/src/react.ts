@@ -31,11 +31,16 @@ export type { WalletContextValue, WalletProviderProps } from './context/WalletPr
 // React Context Provider
 export { useOptionalProvider, useWalletContext, WalletProvider } from './context/WalletProvider'
 export { useBalance } from './hooks/useBalance'
+export { useBundler } from './hooks/useBundler'
 export { useChainId } from './hooks/useChainId'
 export { useContractRead } from './hooks/useContractRead'
 export { useContractWrite } from './hooks/useContractWrite'
+export { useGasEstimation } from './hooks/useGasEstimation'
 export { useNetwork } from './hooks/useNetwork'
+export { useNonce } from './hooks/useNonce'
+export { usePaymaster } from './hooks/usePaymaster'
 export { useToken } from './hooks/useToken'
+export { useUserOpReceipt } from './hooks/useUserOpReceipt'
 // React hooks
 export { useWallet } from './hooks/useWallet'
 // Re-export everything from main entry

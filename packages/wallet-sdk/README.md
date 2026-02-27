@@ -9,11 +9,13 @@ TypeScript SDK for integrating dApps with StableNet Wallet.
 - EIP-1193 compliant Provider
 - EIP-6963 automatic provider discovery (multi-wallet)
 - React hooks: `useWallet`, `useBalance`, `useNetwork`, `useToken`, `useChainId`, `useContractRead`, `useContractWrite`
+- **ERC-4337 hooks**: `useBundler`, `usePaymaster`, `useNonce`, `useGasEstimation`, `useUserOpReceipt`
 - `WalletProvider` React Context with auto-injection
 - wagmi v2 Connector (`stableNetWallet`)
 - EIP-2255 permission management with fluent builder
 - StableNet custom RPC methods (EIP-7702, ERC-7579, EIP-4337, session keys, stealth addresses)
-- Full TypeScript support
+- **ERC-4337 utilities**: Bundler client, Paymaster client (ERC-7677), Nonce management, Gas estimation, Factory/counterfactual addresses, EntryPoint abstraction, ERC-1271 signature verification, UserOp simulation
+- Full TypeScript support (integrated with `@stablenet/core`)
 
 ## Installation
 
@@ -347,6 +349,118 @@ const modules = await provider.stableNetRequest(
 )
 ```
 
+## ERC-4337 Account Abstraction
+
+The SDK provides comprehensive ERC-4337 support via `@stablenet/core` integration.
+
+### Bundler Client
+
+```typescript
+import { createBundlerClient } from '@stablenet/wallet-sdk'
+
+const bundler = createBundlerClient({
+  url: 'https://bundler.example.com',
+  entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+})
+
+const hash = await bundler.sendUserOperation(userOp)
+const receipt = await bundler.waitForUserOperationReceipt(hash)
+const gas = await bundler.estimateUserOperationGas(userOp)
+```
+
+### Paymaster Client (ERC-7677)
+
+```typescript
+import { createPaymasterClient, getPaymasterStubData, getPaymasterData } from '@stablenet/wallet-sdk'
+
+// Full paymaster client
+const paymaster = createPaymasterClient({ url: 'https://paymaster.example.com' })
+
+// ERC-7677 stub data (for gas estimation)
+const stub = await getPaymasterStubData(paymasterUrl, userOp, entryPoint, chainId)
+
+// ERC-7677 final data (after gas estimation)
+const data = await getPaymasterData(paymasterUrl, userOp, entryPoint, chainId)
+```
+
+### Nonce Management
+
+```typescript
+import { getNonce, parseNonce, encodeNonceKey } from '@stablenet/wallet-sdk'
+
+const nonce = await getNonce(publicClient, sender, entryPoint)
+const { key, sequence } = parseNonce(nonce)
+const encoded = encodeNonceKey(key, sequence)
+```
+
+### Gas Estimation
+
+```typescript
+import { estimateUserOperationGas, DEFAULT_CALL_GAS_LIMIT } from '@stablenet/wallet-sdk'
+
+const gas = await estimateUserOperationGas(bundlerClient, userOp)
+```
+
+### Factory / Counterfactual Addresses
+
+```typescript
+import { getSenderAddress, predictCounterfactualAddress } from '@stablenet/wallet-sdk'
+
+const address = predictCounterfactualAddress(factory, initCodeHash, salt)
+const sender = await getSenderAddress(publicClient, factory, factoryData, entryPoint)
+```
+
+### ERC-1271 Signature Verification
+
+```typescript
+import { verifySignature, isSmartContractAccount } from '@stablenet/wallet-sdk'
+
+const isContract = await isSmartContractAccount(publicClient, address)
+const result = await verifySignature(publicClient, account, hash, signature)
+// result: { isValid: boolean, signerType: 'eoa' | 'contract' }
+```
+
+### UserOp Simulation
+
+```typescript
+import { simulateValidation, simulateHandleOp } from '@stablenet/wallet-sdk'
+
+const validation = await simulateValidation(publicClient, userOp, entryPoint)
+const execution = await simulateHandleOp(publicClient, userOp, target, callData, entryPoint)
+```
+
+### ERC-4337 React Hooks
+
+```typescript
+import {
+  useBundler,
+  usePaymaster,
+  useNonce,
+  useGasEstimation,
+  useUserOpReceipt,
+} from '@stablenet/wallet-sdk/react'
+
+// Bundler hook
+const { sendUserOp, estimateGas, getReceipt, isLoading } = useBundler({
+  bundlerUrl: 'https://bundler.example.com',
+  entryPoint: '0x...',
+})
+
+// Paymaster hook
+const { getStubData, getData, isLoading } = usePaymaster({
+  paymasterUrl: 'https://paymaster.example.com',
+})
+
+// Nonce hook
+const { nonce, key, sequence, refetch } = useNonce({ publicClient, sender })
+
+// Gas estimation hook
+const { gasEstimate, estimate, isLoading } = useGasEstimation({ bundlerClient })
+
+// Receipt tracking hook
+const { receipt, waitForReceipt, pendingOps } = useUserOpReceipt({ bundlerClient })
+```
+
 ---
 
 # 한국어
@@ -358,11 +472,13 @@ StableNet 지갑과 dApp을 연결하기 위한 TypeScript SDK입니다.
 - EIP-1193 표준 Provider
 - EIP-6963 자동 Provider 탐지 (멀티 지갑)
 - React hooks: `useWallet`, `useBalance`, `useNetwork`, `useToken`, `useChainId`, `useContractRead`, `useContractWrite`
+- **ERC-4337 hooks**: `useBundler`, `usePaymaster`, `useNonce`, `useGasEstimation`, `useUserOpReceipt`
 - `WalletProvider` React Context (자동 주입)
 - wagmi v2 Connector (`stableNetWallet`)
 - EIP-2255 권한 관리 (fluent builder 지원)
 - StableNet 커스텀 RPC 메서드 (EIP-7702, ERC-7579, EIP-4337, 세션 키, 스텔스 주소)
-- TypeScript 완전 지원
+- **ERC-4337 유틸리티**: Bundler 클라이언트, Paymaster 클라이언트 (ERC-7677), Nonce 관리, Gas 추정, Factory/counterfactual 주소, EntryPoint 추상화, ERC-1271 서명 검증, UserOp 시뮬레이션
+- TypeScript 완전 지원 (`@stablenet/core` 통합)
 
 ## 설치
 
@@ -694,4 +810,71 @@ const modules = await provider.stableNetRequest(
   'wallet_getInstalledModules',
   { account: accountAddress }
 )
+```
+
+## ERC-4337 계정 추상화
+
+SDK는 `@stablenet/core` 통합을 통해 포괄적인 ERC-4337 지원을 제공합니다.
+
+### Bundler 클라이언트
+
+```typescript
+import { createBundlerClient } from '@stablenet/wallet-sdk'
+
+const bundler = createBundlerClient({
+  url: 'https://bundler.example.com',
+  entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+})
+
+const hash = await bundler.sendUserOperation(userOp)
+const receipt = await bundler.waitForUserOperationReceipt(hash)
+const gas = await bundler.estimateUserOperationGas(userOp)
+```
+
+### Paymaster 클라이언트 (ERC-7677)
+
+```typescript
+import { createPaymasterClient, getPaymasterStubData, getPaymasterData } from '@stablenet/wallet-sdk'
+
+const paymaster = createPaymasterClient({ url: 'https://paymaster.example.com' })
+const stub = await getPaymasterStubData(paymasterUrl, userOp, entryPoint, chainId)
+const data = await getPaymasterData(paymasterUrl, userOp, entryPoint, chainId)
+```
+
+### Nonce 관리
+
+```typescript
+import { getNonce, parseNonce, encodeNonceKey } from '@stablenet/wallet-sdk'
+
+const nonce = await getNonce(publicClient, sender, entryPoint)
+const { key, sequence } = parseNonce(nonce)
+```
+
+### ERC-1271 서명 검증
+
+```typescript
+import { verifySignature, isSmartContractAccount } from '@stablenet/wallet-sdk'
+
+const result = await verifySignature(publicClient, account, hash, signature)
+// result: { isValid: boolean, signerType: 'eoa' | 'contract' }
+```
+
+### UserOp 시뮬레이션
+
+```typescript
+import { simulateValidation, simulateHandleOp } from '@stablenet/wallet-sdk'
+
+const validation = await simulateValidation(publicClient, userOp, entryPoint)
+```
+
+### ERC-4337 React Hooks
+
+```typescript
+import { useBundler, usePaymaster, useNonce, useGasEstimation, useUserOpReceipt } from '@stablenet/wallet-sdk/react'
+
+const { sendUserOp, estimateGas, isLoading } = useBundler({ bundlerUrl, entryPoint })
+const { getStubData, getData } = usePaymaster({ paymasterUrl })
+const { nonce, key, sequence, refetch } = useNonce({ publicClient, sender })
+const { gasEstimate, estimate } = useGasEstimation({ bundlerClient })
+const { receipt, waitForReceipt, pendingOps } = useUserOpReceipt({ bundlerClient })
 ```

@@ -3,6 +3,10 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { useStableNetContext } from '@/providers'
+import {
+  getPaymasterStubData as sdkGetPaymasterStubData,
+  getPaymasterData as sdkGetPaymasterData,
+} from '@stablenet/wallet-sdk'
 
 // ============================================================================
 // Types
@@ -76,6 +80,7 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
 
   /**
    * Get paymaster stub data (for gas estimation)
+   * Delegates to wallet-sdk's ERC-7677 implementation.
    */
   const getPaymasterStubData = useCallback(
     async (
@@ -86,30 +91,18 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
       setError(null)
 
       try {
-        const response = await fetch(paymasterUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 1,
-            method: 'pm_getPaymasterStubData',
-            params: [userOp, entryPoint, `0x${chainId.toString(16)}`],
-          }),
-        })
-
-        const result = await response.json()
-
-        if (result.error) {
-          throw new Error(result.error.message)
-        }
+        const result = await sdkGetPaymasterStubData(
+          paymasterUrl,
+          userOp as unknown as Parameters<typeof sdkGetPaymasterStubData>[1],
+          entryPoint,
+          `0x${chainId.toString(16)}` as Hex
+        )
 
         return {
-          paymaster: result.result.paymaster,
-          paymasterData: result.result.paymasterData,
-          paymasterVerificationGasLimit: BigInt(
-            result.result.paymasterVerificationGasLimit ?? '0x30000'
-          ),
-          paymasterPostOpGasLimit: BigInt(result.result.paymasterPostOpGasLimit ?? '0x10000'),
+          paymaster: result.paymaster,
+          paymasterData: result.paymasterData,
+          paymasterVerificationGasLimit: result.paymasterVerificationGasLimit,
+          paymasterPostOpGasLimit: result.paymasterPostOpGasLimit,
         }
       } catch (err) {
         const paymasterError =
@@ -125,6 +118,7 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
 
   /**
    * Get final paymaster data (after gas estimation)
+   * Delegates to wallet-sdk's ERC-7677 implementation.
    */
   const getPaymasterData = useCallback(
     async (userOp: Record<string, unknown>, entryPoint: Address): Promise<PaymasterData | null> => {
@@ -132,26 +126,16 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
       setError(null)
 
       try {
-        const response = await fetch(paymasterUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 1,
-            method: 'pm_getPaymasterData',
-            params: [userOp, entryPoint, `0x${chainId.toString(16)}`],
-          }),
-        })
-
-        const result = await response.json()
-
-        if (result.error) {
-          throw new Error(result.error.message)
-        }
+        const result = await sdkGetPaymasterData(
+          paymasterUrl,
+          userOp as unknown as Parameters<typeof sdkGetPaymasterData>[1],
+          entryPoint,
+          `0x${chainId.toString(16)}` as Hex
+        )
 
         return {
-          paymaster: result.result.paymaster,
-          paymasterData: result.result.paymasterData,
+          paymaster: result.paymaster,
+          paymasterData: result.paymasterData,
         }
       } catch (err) {
         const paymasterError =

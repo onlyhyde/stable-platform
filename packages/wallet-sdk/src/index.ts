@@ -24,6 +24,14 @@ export {
   parseAAError,
   type AAErrorInfo,
   type AAErrorSeverity,
+  // Core SDK error types
+  BundlerError,
+  PaymasterError,
+  SdkError,
+  UserOperationError,
+  type BundlerErrorCode,
+  type ErrorContext,
+  type SdkErrorCode,
 } from './errors'
 // Config
 export {
@@ -156,6 +164,7 @@ export { RPC_ERROR_CODES } from './types'
 // EIP-4337 UserOperation utilities
 export {
   computeUserOpHash,
+  getUserOperationHash,
   packUserOperation,
   unpackUserOperation,
   UserOperationBuilder,
@@ -167,3 +176,86 @@ export {
   type PaymasterConfig,
   type UserOperation,
 } from './userOp'
+
+// ============================================================================
+// New ERC-4337 Modules (from @stablenet/core integration)
+// ============================================================================
+
+// Bundler Client
+export {
+  createBundlerClient,
+  ENTRY_POINT_V07_ADDRESS,
+  type BundlerClient,
+  type BundlerClientConfig,
+  type UserOperationGasEstimation,
+  type WaitForUserOperationReceiptOptions,
+} from './bundler'
+
+// Paymaster Client
+export {
+  createPaymasterClient,
+  getPaymasterStubData,
+  getPaymasterData,
+  type ERC20PaymentEstimate,
+  type PartialUserOperationForPaymaster,
+  type PaymasterClientInstance,
+  type PaymasterResponse,
+  type PaymasterClientConfig,
+  type SponsorPolicy,
+  type SupportedToken,
+  type PaymasterStubDataResponse,
+  type PaymasterDataResponse,
+  type PaymasterUserOpContext,
+} from './paymaster'
+
+// Nonce Management
+export { getNonce, parseNonce, encodeNonceKey } from './nonce'
+
+// Gas Estimation
+export {
+  createGasEstimator,
+  createSmartAccountGasStrategy,
+  estimateUserOperationGas,
+  DEFAULT_CALL_GAS_LIMIT,
+  DEFAULT_VERIFICATION_GAS_LIMIT,
+  DEFAULT_PRE_VERIFICATION_GAS,
+  PAYMASTER_VERIFICATION_GAS,
+  PAYMASTER_POST_OP_GAS,
+  type GasEstimator,
+  type GasEstimatorConfig,
+  type GasPriceInfo,
+  type ERC20GasEstimate,
+} from './gas'
+
+// Factory / Counterfactual
+export {
+  getSenderAddress,
+  predictCounterfactualAddress,
+  KERNEL_V3_1_FACTORY_ADDRESS,
+} from './factory'
+
+// EntryPoint
+export {
+  ENTRY_POINT_ABI,
+  getEntryPointVersion,
+  isEntryPointV07,
+  isEntryPointV06,
+} from './entrypoint'
+
+// ERC-1271 Signature Verification
+export {
+  isValidSignature,
+  verifySignature,
+  isSmartContractAccount,
+  type SignatureVerificationResult,
+} from './signature'
+
+// Simulation
+export {
+  simulateValidation,
+  simulateHandleOp,
+  type SimulationResult,
+  type HandleOpSimulationResult,
+  type ReturnInfo,
+  type StakeInfo,
+} from './simulation'

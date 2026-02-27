@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { concat, encodeFunctionData, pad, parseEther, toHex } from 'viem'
 import { useWalletClient } from 'wagmi'
@@ -11,6 +11,7 @@ import {
   signUserOpForKernel,
 } from '@stablenet/core'
 import type { UserOperation } from '@stablenet/core'
+import { createBundlerClient } from '@stablenet/wallet-sdk'
 
 interface SendUserOpParams {
   to: Address
@@ -135,9 +136,15 @@ export function useUserOp(config: UseUserOpConfig = {}) {
 
   const { getNonce, estimateGas, getGasPrice, signUserOp } = config
 
+  // Use wallet-sdk bundler client for RPC calls
+  const bundlerClient = useMemo(
+    () => createBundlerClient({ url: bundlerUrl, entryPoint }),
+    [bundlerUrl, entryPoint]
+  )
+
   /**
    * Poll bundler for UserOp receipt until confirmed or timeout.
-   * Returns null if polling times out (tx may still be pending).
+   * Uses wallet-sdk's bundler client instead of raw fetch.
    */
   const waitForUserOpReceipt = useCallback(
     async (
@@ -145,33 +152,21 @@ export function useUserOp(config: UseUserOpConfig = {}) {
       maxAttempts = 15,
       intervalMs = 2000
     ): Promise<{ transactionHash: Hex; success: boolean } | null> => {
-      for (let i = 0; i < maxAttempts; i++) {
-        try {
-          const res = await fetch(bundlerUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              id: 1,
-              method: 'eth_getUserOperationReceipt',
-              params: [userOpHash],
-            }),
-          })
-          const json = await res.json()
-          if (json.result) {
-            return {
-              transactionHash: json.result.receipt?.transactionHash ?? json.result.transactionHash,
-              success: json.result.success ?? json.result.receipt?.status === '0x1',
-            }
-          }
-        } catch {
-          // Bundler may not support this method or is temporarily unreachable
+      try {
+        const receipt = await bundlerClient.waitForUserOperationReceipt(userOpHash, {
+          timeout: maxAttempts * intervalMs,
+          pollingInterval: intervalMs,
+        })
+        return {
+          transactionHash: receipt.receipt?.transactionHash ?? (receipt as unknown as Record<string, unknown>).transactionHash as Hex,
+          success: receipt.success ?? true,
         }
-        await new Promise((r) => setTimeout(r, intervalMs))
+      } catch {
+        // Timeout or bundler unreachable
+        return null
       }
-      return null
     },
-    [bundlerUrl]
+    [bundlerClient]
   )
 
   /**
@@ -246,42 +241,24 @@ export function useUserOp(config: UseUserOpConfig = {}) {
           signature: '0x' as Hex,
         }
 
-        const packed = packUserOperation(userOp)
-
         // 6. Compute EIP-712 hash and sign
         if (signUserOp) {
-          packed.signature = await signUserOp(packed, entryPoint, chainId)
+          const packed = packUserOperation(userOp)
+          userOp.signature = await signUserOp(packed, entryPoint, chainId)
         } else if (walletClient) {
           const opHash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
           const rawSignature = await walletClient.signMessage({
             message: { raw: opHash },
           })
-          packed.signature = signUserOpForKernel(rawSignature)
+          userOp.signature = signUserOpForKernel(rawSignature)
         } else {
           throw new Error(
             'No wallet connected. Please connect your wallet to sign transactions.'
           )
         }
 
-        // 7. Send packed UserOp to bundler
-        const response = await fetch(bundlerUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 1,
-            method: 'eth_sendUserOperation',
-            params: [packed, entryPoint],
-          }),
-        })
-
-        const result = await response.json()
-
-        if (result.error) {
-          throw new Error(result.error.message)
-        }
-
-        const userOpHash: Hex = result.result
+        // 7. Send UserOp to bundler via wallet-sdk client
+        const userOpHash: Hex = await bundlerClient.sendUserOperation(userOp)
 
         // 8. Poll for UserOp receipt to confirm on-chain inclusion
         const receipt = await waitForUserOpReceipt(userOpHash)
@@ -310,7 +287,7 @@ export function useUserOp(config: UseUserOpConfig = {}) {
       }
     },
     [
-      bundlerUrl,
+      bundlerClient,
       entryPoint,
       chainId,
       walletClient,

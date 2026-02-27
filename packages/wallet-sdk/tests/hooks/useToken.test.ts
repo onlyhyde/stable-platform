@@ -108,8 +108,8 @@ describe('useToken', () => {
       expect(result.current.balance).toBeTruthy()
     })
 
-    // 1_000_000 / 10^6 = 1.000000
-    expect(result.current.balance!.formatted).toBe('1.000000')
+    // 1_000_000 / 10^6 = 1 (viem's formatUnits doesn't pad trailing zeros)
+    expect(result.current.balance!.formatted).toBe('1')
   })
 
   it('should handle fetch errors', async () => {

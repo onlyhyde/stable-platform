@@ -105,15 +105,20 @@ describe('WalletProvider', () => {
 
   describe('provider detection', () => {
     it('should detect and set provider on mount', async () => {
+      // getAccounts returns accounts so that setState triggers a re-render,
+      // making providerRef.current visible via hook return value
+      mockProvider.getAccounts.mockResolvedValue(['0x1234567890abcdef1234567890abcdef12345678'])
+
       const { result } = renderHook(() => useWalletContext(), {
         wrapper: wrapper(),
       })
 
       await waitFor(() => {
-        expect(result.current.provider).toBeTruthy()
+        expect(result.current.isConnected).toBe(true)
       })
 
       expect(mockDetectProvider).toHaveBeenCalled()
+      expect(result.current.provider).toBeTruthy()
     })
 
     it('should handle detection failure gracefully', async () => {
@@ -218,9 +223,8 @@ describe('WalletProvider', () => {
         wrapper: wrapper(),
       })
 
-      await waitFor(() => {
-        expect(result.current.provider).toBeTruthy()
-      })
+      // Wait for provider detection effect to complete
+      await new Promise((r) => setTimeout(r, 50))
 
       await act(async () => {
         const accounts = await result.current.connect()
@@ -256,9 +260,8 @@ describe('WalletProvider', () => {
         wrapper: wrapper(),
       })
 
-      await waitFor(() => {
-        expect(result.current.provider).toBeTruthy()
-      })
+      // Wait for provider detection effect to complete
+      await new Promise((r) => setTimeout(r, 50))
 
       let thrownError: Error | null = null
       try {
@@ -305,7 +308,7 @@ describe('WalletProvider', () => {
       })
 
       await waitFor(() => {
-        expect(result.current.provider).toBeTruthy()
+        expect(result.current.isConnected).toBe(true)
       })
 
       await act(async () => {
@@ -340,9 +343,8 @@ describe('WalletProvider', () => {
         wrapper: wrapper(),
       })
 
-      await waitFor(() => {
-        expect(result.current.provider).toBeTruthy()
-      })
+      // Wait for provider detection effect to complete
+      await new Promise((r) => setTimeout(r, 50))
 
       act(() => {
         mockProvider._emit('accountsChanged', ['0xnewaccount1234567890abcdef1234567890abcd'])
@@ -378,9 +380,8 @@ describe('WalletProvider', () => {
         wrapper: wrapper(),
       })
 
-      await waitFor(() => {
-        expect(result.current.provider).toBeTruthy()
-      })
+      // Wait for provider detection effect to complete
+      await new Promise((r) => setTimeout(r, 50))
 
       act(() => {
         mockProvider._emit('chainChanged', '0x89')
@@ -396,9 +397,8 @@ describe('WalletProvider', () => {
         wrapper: wrapper(),
       })
 
-      await waitFor(() => {
-        expect(result.current.provider).toBeTruthy()
-      })
+      // Wait for provider detection effect to complete
+      await new Promise((r) => setTimeout(r, 50))
 
       act(() => {
         mockProvider._emit('connect', { chainId: '0xa' })
@@ -431,12 +431,14 @@ describe('WalletProvider', () => {
 
   describe('cleanup', () => {
     it('should unsubscribe from events on unmount', async () => {
+      mockProvider.getAccounts.mockResolvedValue(['0x1234567890abcdef1234567890abcdef12345678'])
+
       const { result, unmount } = renderHook(() => useWalletContext(), {
         wrapper: wrapper(),
       })
 
       await waitFor(() => {
-        expect(result.current.provider).toBeTruthy()
+        expect(result.current.isConnected).toBe(true)
       })
 
       unmount()

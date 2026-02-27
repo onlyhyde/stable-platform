@@ -1,4 +1,4 @@
-import type { Address, Hash, Hex, EIP1193Provider, ProviderConnectInfo, ProviderRpcError } from 'viem'
+import type { Address, Hash, EIP1193Provider, ProviderConnectInfo, ProviderRpcError } from 'viem'
 import { walletSdkLogger } from '../logger'
 import type { StableNetRpcSchema, UserOperationGasEstimate, UserOperationReceipt, UserOperationRequest } from '../rpc'
 import type { TransactionRequest } from '../types'
