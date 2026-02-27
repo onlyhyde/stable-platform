@@ -19,14 +19,14 @@ importers:
   .:
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@changesets/cli':
         specifier: ^2.27.10
         version: 2.29.8(@types/node@25.3.2)
       turbo:
-        specifier: ^2.8.6
-        version: 2.8.6
+        specifier: ^2.8.11
+        version: 2.8.11
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -89,8 +89,8 @@ importers:
         version: 5.0.11(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@crxjs/vite-plugin':
         specifier: ^2.0.0-beta.28
         version: 2.3.0
@@ -189,8 +189,8 @@ importers:
         version: 2.19.5(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.21(react@19.2.3))(@types/react@19.2.9)(bufferutil@4.1.0)(immer@11.1.4)(react@19.2.3)(typescript@5.9.3)(utf-8-validate@5.0.10)(viem@2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@testing-library/jest-dom':
         specifier: ^6.4.2
         version: 6.9.1
@@ -244,8 +244,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -260,8 +260,8 @@ importers:
         version: 3.6.0
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@types/node':
         specifier: ^25.3.2
         version: 25.3.2
@@ -285,8 +285,8 @@ importers:
         version: 5.0.4
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@types/node':
         specifier: ^25.3.2
         version: 25.3.2
@@ -319,8 +319,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@types/node':
         specifier: ^25.3.2
         version: 25.3.2
@@ -344,8 +344,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -363,8 +363,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@types/node':
         specifier: ^25.3.2
         version: 25.3.2
@@ -388,8 +388,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -410,8 +410,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -435,8 +435,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@types/node':
         specifier: ^25.3.2
         version: 25.3.2
@@ -463,8 +463,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -488,8 +488,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -513,8 +513,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -541,8 +541,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -566,8 +566,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -588,8 +588,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -607,8 +607,8 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -690,8 +690,8 @@ importers:
         version: 3.25.76
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@types/node':
         specifier: ^25.3.2
         version: 25.3.2
@@ -751,8 +751,8 @@ importers:
         version: 3.25.76
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@types/node':
         specifier: ^25.3.2
         version: 25.3.2
@@ -800,8 +800,8 @@ importers:
         version: 3.25.76
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@types/node':
         specifier: ^25.3.2
         version: 25.3.2
@@ -856,8 +856,8 @@ importers:
         version: 3.25.76
     devDependencies:
       '@biomejs/biome':
-        specifier: ^2.3.14
-        version: 2.3.14
+        specifier: ^2.4.4
+        version: 2.4.4
       '@types/node':
         specifier: ^25.3.2
         version: 25.3.2
@@ -1117,59 +1117,59 @@ packages:
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
 
-  '@biomejs/biome@2.3.14':
-    resolution: {integrity: sha512-QMT6QviX0WqXJCaiqVMiBUCr5WRQ1iFSjvOLoTk6auKukJMvnMzWucXpwZB0e8F00/1/BsS9DzcKgWH+CLqVuA==}
+  '@biomejs/biome@2.4.4':
+    resolution: {integrity: sha512-tigwWS5KfJf0cABVd52NVaXyAVv4qpUXOWJ1rxFL8xF1RVoeS2q/LK+FHgYoKMclJCuRoCWAPy1IXaN9/mS61Q==}
     engines: {node: '>=14.21.3'}
     hasBin: true
 
-  '@biomejs/cli-darwin-arm64@2.3.14':
-    resolution: {integrity: sha512-UJGPpvWJMkLxSRtpCAKfKh41Q4JJXisvxZL8ChN1eNW3m/WlPFJ6EFDCE7YfUb4XS8ZFi3C1dFpxUJ0Ety5n+A==}
+  '@biomejs/cli-darwin-arm64@2.4.4':
+    resolution: {integrity: sha512-jZ+Xc6qvD6tTH5jM6eKX44dcbyNqJHssfl2nnwT6vma6B1sj7ZLTGIk6N5QwVBs5xGN52r3trk5fgd3sQ9We9A==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [darwin]
 
-  '@biomejs/cli-darwin-x64@2.3.14':
-    resolution: {integrity: sha512-PNkLNQG6RLo8lG7QoWe/hhnMxJIt1tEimoXpGQjwS/dkdNiKBLPv4RpeQl8o3s1OKI3ZOR5XPiYtmbGGHAOnLA==}
+  '@biomejs/cli-darwin-x64@2.4.4':
+    resolution: {integrity: sha512-Dh1a/+W+SUCXhEdL7TiX3ArPTFCQKJTI1mGncZNWfO+6suk+gYA4lNyJcBB+pwvF49uw0pEbUS49BgYOY4hzUg==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [darwin]
 
-  '@biomejs/cli-linux-arm64-musl@2.3.14':
-    resolution: {integrity: sha512-LInRbXhYujtL3sH2TMCH/UBwJZsoGwfQjBrMfl84CD4hL/41C/EU5mldqf1yoFpsI0iPWuU83U+nB2TUUypWeg==}
+  '@biomejs/cli-linux-arm64-musl@2.4.4':
+    resolution: {integrity: sha512-+sPAXq3bxmFwhVFJnSwkSF5Rw2ZAJMH3MF6C9IveAEOdSpgajPhoQhbbAK12SehN9j2QrHpk4J/cHsa/HqWaYQ==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@biomejs/cli-linux-arm64@2.3.14':
-    resolution: {integrity: sha512-KT67FKfzIw6DNnUNdYlBg+eU24Go3n75GWK6NwU4+yJmDYFe9i/MjiI+U/iEzKvo0g7G7MZqoyrhIYuND2w8QQ==}
+  '@biomejs/cli-linux-arm64@2.4.4':
+    resolution: {integrity: sha512-V/NFfbWhsUU6w+m5WYbBenlEAz8eYnSqRMDMAW3K+3v0tYVkNyZn8VU0XPxk/lOqNXLSCCrV7FmV/u3SjCBShg==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@biomejs/cli-linux-x64-musl@2.3.14':
-    resolution: {integrity: sha512-KQU7EkbBBuHPW3/rAcoiVmhlPtDSGOGRPv9js7qJVpYTzjQmVR+C9Rfcz+ti8YCH+zT1J52tuBybtP4IodjxZQ==}
+  '@biomejs/cli-linux-x64-musl@2.4.4':
+    resolution: {integrity: sha512-gGvFTGpOIQDb5CQ2VC0n9Z2UEqlP46c4aNgHmAMytYieTGEcfqhfCFnhs6xjt0S3igE6q5GLuIXtdQt3Izok+g==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@biomejs/cli-linux-x64@2.3.14':
-    resolution: {integrity: sha512-ZsZzQsl9U+wxFrGGS4f6UxREUlgHwmEfu1IrXlgNFrNnd5Th6lIJr8KmSzu/+meSa9f4rzFrbEW9LBBA6ScoMA==}
+  '@biomejs/cli-linux-x64@2.4.4':
+    resolution: {integrity: sha512-R4+ZCDtG9kHArasyBO+UBD6jr/FcFCTH8QkNTOCu0pRJzCWyWC4EtZa2AmUZB5h3e0jD7bRV2KvrENcf8rndBg==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@biomejs/cli-win32-arm64@2.3.14':
-    resolution: {integrity: sha512-+IKYkj/pUBbnRf1G1+RlyA3LWiDgra1xpS7H2g4BuOzzRbRB+hmlw0yFsLprHhbbt7jUzbzAbAjK/Pn0FDnh1A==}
+  '@biomejs/cli-win32-arm64@2.4.4':
+    resolution: {integrity: sha512-trzCqM7x+Gn832zZHgr28JoYagQNX4CZkUZhMUac2YxvvyDRLJDrb5m9IA7CaZLlX6lTQmADVfLEKP1et1Ma4Q==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [win32]
 
-  '@biomejs/cli-win32-x64@2.3.14':
-    resolution: {integrity: sha512-oizCjdyQ3WJEswpb3Chdngeat56rIdSYK12JI3iI11Mt5T5EXcZ7WLuowzEaFPNJ3zmOQFliMN8QY1Pi+qsfdQ==}
+  '@biomejs/cli-win32-x64@2.4.4':
+    resolution: {integrity: sha512-gnOHKVPFAAPrpoPt2t+Q6FZ7RPry/FDV3GcpU53P3PtLNnQjBmKyN2Vh/JtqXet+H4pme8CC76rScwdjDcT1/A==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [win32]
@@ -6651,38 +6651,38 @@ packages:
   tty-browserify@0.0.1:
     resolution: {integrity: sha512-C3TaO7K81YvjCgQH9Q1S3R3P3BtN3RIM8n+OvX4il1K1zgE8ZhI0op7kClgkxtutIE8hQrcrHBXvIheqKUUCxw==}
 
-  turbo-darwin-64@2.8.6:
-    resolution: {integrity: sha512-6QeZ/aLZizekiI6tKZN0IGP1a1WYZ9c/qDKPa0rSmj2X0O0Iw/ES4rKZV40S5n8SUJdiU01EFLygHJ2oWaYKXg==}
+  turbo-darwin-64@2.8.11:
+    resolution: {integrity: sha512-XKaCWaz4OCt77oYYvGCIRpvYD4c/aNaKjRkUpv+e8rN3RZb+5Xsyew4yRO+gaHdMIUhQznXNXfHlhs+/p7lIhA==}
     cpu: [x64]
     os: [darwin]
 
-  turbo-darwin-arm64@2.8.6:
-    resolution: {integrity: sha512-RS4Z902vB93cQD3PJS/1IMmS0HefrB5ZXuw4ECOrxhOGz5jJVmYFJ6weDzedjoTDeYHHXGo1NoiCSHg69ngWKA==}
+  turbo-darwin-arm64@2.8.11:
+    resolution: {integrity: sha512-VvynLHGUNvQ9k7GZjRPSsRcK4VkioTfFb7O7liAk4nHKjEcMdls7GqxzjVWgJiKz3hWmQGaP9hRa9UUnhVWCxA==}
     cpu: [arm64]
     os: [darwin]
 
-  turbo-linux-64@2.8.6:
-    resolution: {integrity: sha512-hCWDnDepYbrSJdByuryKFoHAGFkvgBYXr6qdaGsYhX1Wgq8isqXCQBKOo99Y/9tXDwKGEeQ7xnkdFvSL7AQ4iQ==}
+  turbo-linux-64@2.8.11:
+    resolution: {integrity: sha512-cbSn37dcm+EmkQ7DD0euy7xV7o2el4GAOr1XujvkAyKjjNvQ+6QIUeDgQcwAx3D17zPpDvfDMJY2dLQadWnkmQ==}
     cpu: [x64]
     os: [linux]
 
-  turbo-linux-arm64@2.8.6:
-    resolution: {integrity: sha512-oS15aCYEpynG/l69xs/ZnQ0dnz0pHhfHg70Zf5J+j5Cam0/RA0MpcryjneN/9G0PmP8a/6ZxnL5nZahX+wOBPA==}
+  turbo-linux-arm64@2.8.11:
+    resolution: {integrity: sha512-+trymp2s2aBrhS04l6qFxcExzZ8ffndevuUB9c5RCeqsVpZeiWuGQlWNm5XjOmzoMayxRARZ5ma7yiWbGMiLqQ==}
     cpu: [arm64]
     os: [linux]
 
-  turbo-windows-64@2.8.6:
-    resolution: {integrity: sha512-eqBxqJD7H/uk9V0QO10VgwY9J2BUXejsGuzChln72Yl+o8GZwsvhOekndRxccR90J8ZO+LKO24+3VzHFh4Cu/g==}
+  turbo-windows-64@2.8.11:
+    resolution: {integrity: sha512-3kJjFSM4yw1n9Uzmi+XkAUgCae19l/bH6RJ442xo7mnZm0tpOjo33F+FYHoSVpIWVMd0HG0LDccyafPSdylQbA==}
     cpu: [x64]
     os: [win32]
 
-  turbo-windows-arm64@2.8.6:
-    resolution: {integrity: sha512-I3VEQyxIlNZ6XTg4fLKAkuhcwzIs/GD7Vs1yhelH2aUTjf08wprjBWknDqP7mjAHMpsosRrq4DtfSZEQm83Hxg==}
+  turbo-windows-arm64@2.8.11:
+    resolution: {integrity: sha512-JOM4uF2vuLsJUvibdR6X9QqdZr6BhC6Nhlrw4LKFPsXZZI/9HHLoqAiYRpE4MuzIwldCH/jVySnWXrI1SKto0g==}
     cpu: [arm64]
     os: [win32]
 
-  turbo@2.8.6:
-    resolution: {integrity: sha512-QMj1SQwUYehc+xJ9SxXn56UO43hfKN64/NFetVW1BwzysRqn+q0FSgrmk+IbJ+djfd8j8zXGKGeqsnUcXwQSUQ==}
+  turbo@2.8.11:
+    resolution: {integrity: sha512-H+rwSHHPLoyPOSoHdmI1zY0zy0GGj1Dmr7SeJW+nZiWLz2nex8EJ+fkdVabxXFMNEux+aywI4Sae8EqhmnOv4A==}
     hasBin: true
 
   type-detect@4.0.8:
@@ -7680,39 +7680,39 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@biomejs/biome@2.3.14':
+  '@biomejs/biome@2.4.4':
     optionalDependencies:
-      '@biomejs/cli-darwin-arm64': 2.3.14
-      '@biomejs/cli-darwin-x64': 2.3.14
-      '@biomejs/cli-linux-arm64': 2.3.14
-      '@biomejs/cli-linux-arm64-musl': 2.3.14
-      '@biomejs/cli-linux-x64': 2.3.14
-      '@biomejs/cli-linux-x64-musl': 2.3.14
-      '@biomejs/cli-win32-arm64': 2.3.14
-      '@biomejs/cli-win32-x64': 2.3.14
+      '@biomejs/cli-darwin-arm64': 2.4.4
+      '@biomejs/cli-darwin-x64': 2.4.4
+      '@biomejs/cli-linux-arm64': 2.4.4
+      '@biomejs/cli-linux-arm64-musl': 2.4.4
+      '@biomejs/cli-linux-x64': 2.4.4
+      '@biomejs/cli-linux-x64-musl': 2.4.4
+      '@biomejs/cli-win32-arm64': 2.4.4
+      '@biomejs/cli-win32-x64': 2.4.4
 
-  '@biomejs/cli-darwin-arm64@2.3.14':
+  '@biomejs/cli-darwin-arm64@2.4.4':
     optional: true
 
-  '@biomejs/cli-darwin-x64@2.3.14':
+  '@biomejs/cli-darwin-x64@2.4.4':
     optional: true
 
-  '@biomejs/cli-linux-arm64-musl@2.3.14':
+  '@biomejs/cli-linux-arm64-musl@2.4.4':
     optional: true
 
-  '@biomejs/cli-linux-arm64@2.3.14':
+  '@biomejs/cli-linux-arm64@2.4.4':
     optional: true
 
-  '@biomejs/cli-linux-x64-musl@2.3.14':
+  '@biomejs/cli-linux-x64-musl@2.4.4':
     optional: true
 
-  '@biomejs/cli-linux-x64@2.3.14':
+  '@biomejs/cli-linux-x64@2.4.4':
     optional: true
 
-  '@biomejs/cli-win32-arm64@2.3.14':
+  '@biomejs/cli-win32-arm64@2.4.4':
     optional: true
 
-  '@biomejs/cli-win32-x64@2.3.14':
+  '@biomejs/cli-win32-x64@2.4.4':
     optional: true
 
   '@changesets/apply-release-plan@7.0.14':
@@ -9023,7 +9023,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.12
-      debug: 4.4.3
+      debug: 4.3.4
       pony-cause: 2.1.11
       semver: 7.7.4
       uuid: 9.0.1
@@ -14686,7 +14686,7 @@ snapshots:
       '@types/uuid': 8.3.4
       '@types/ws': 8.18.1
       buffer: 6.0.3
-      eventemitter3: 5.0.4
+      eventemitter3: 5.0.1
       uuid: 8.3.2
       ws: 8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
     optionalDependencies:
@@ -15225,32 +15225,32 @@ snapshots:
 
   tty-browserify@0.0.1: {}
 
-  turbo-darwin-64@2.8.6:
+  turbo-darwin-64@2.8.11:
     optional: true
 
-  turbo-darwin-arm64@2.8.6:
+  turbo-darwin-arm64@2.8.11:
     optional: true
 
-  turbo-linux-64@2.8.6:
+  turbo-linux-64@2.8.11:
     optional: true
 
-  turbo-linux-arm64@2.8.6:
+  turbo-linux-arm64@2.8.11:
     optional: true
 
-  turbo-windows-64@2.8.6:
+  turbo-windows-64@2.8.11:
     optional: true
 
-  turbo-windows-arm64@2.8.6:
+  turbo-windows-arm64@2.8.11:
     optional: true
 
-  turbo@2.8.6:
+  turbo@2.8.11:
     optionalDependencies:
-      turbo-darwin-64: 2.8.6
-      turbo-darwin-arm64: 2.8.6
-      turbo-linux-64: 2.8.6
-      turbo-linux-arm64: 2.8.6
-      turbo-windows-64: 2.8.6
-      turbo-windows-arm64: 2.8.6
+      turbo-darwin-64: 2.8.11
+      turbo-darwin-arm64: 2.8.11
+      turbo-linux-64: 2.8.11
+      turbo-linux-arm64: 2.8.11
+      turbo-windows-64: 2.8.11
+      turbo-windows-arm64: 2.8.11
 
   type-detect@4.0.8: {}
 
