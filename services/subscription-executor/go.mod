@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.12
 
 require (
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1
 	github.com/gin-gonic/gin v1.11.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/joho/godotenv v1.5.1
