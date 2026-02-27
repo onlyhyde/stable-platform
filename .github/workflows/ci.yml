@@ -159,7 +159,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download wallet extension build
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: wallet-extension-${{ github.sha }}
           path: apps/wallet-extension/dist/
