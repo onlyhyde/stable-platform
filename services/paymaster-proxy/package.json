@@ -21,11 +21,11 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@stablenet/contracts": "workspace:*",
-    "@stablenet/core": "workspace:*",
     "@hono/node-server": "^1.13.7",
     "@hono/zod-validator": "^0.4.2",
-    "hono": "^4.11.10",
+    "@stablenet/contracts": "workspace:*",
+    "@stablenet/core": "workspace:*",
+    "hono": "^4.12.3",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
     "viem": "^2.21.0",
