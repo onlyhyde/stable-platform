@@ -281,8 +281,8 @@ importers:
   packages/registry-client:
     dependencies:
       eventemitter3:
-        specifier: ^5.0.1
-        version: 5.0.1
+        specifier: ^5.0.4
+        version: 5.0.4
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.3.14
