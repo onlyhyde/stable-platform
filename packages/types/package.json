@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@stablenet/contracts": "workspace:*",
-    "viem": "^2.21.0"
+    "viem": "^2.46.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",
