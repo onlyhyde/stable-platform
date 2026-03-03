@@ -79,11 +79,15 @@ export function Home() {
     }
   }, [selectedAccount, updateBalance])
 
+  // Fetch balance on mount and periodically while popup is open
   useEffect(() => {
-    if (selectedAccount && balance === undefined) {
-      loadBalance()
-    }
-  }, [selectedAccount, balance, loadBalance])
+    if (!selectedAccount) return
+
+    loadBalance()
+
+    const interval = setInterval(loadBalance, 15_000)
+    return () => clearInterval(interval)
+  }, [selectedAccount, loadBalance])
 
   function handleRefreshAll() {
     loadBalance()
