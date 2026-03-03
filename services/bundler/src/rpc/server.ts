@@ -63,6 +63,12 @@ export class RpcServer {
     this.config = config
     this.logger = logger.child({ module: 'rpc' })
 
+    // Block debug mode in production environment
+    if (config.debug && process.env.NODE_ENV === 'production') {
+      config.debug = false
+      this.logger.warn('Debug mode requested but blocked in production environment (NODE_ENV=production)')
+    }
+
     // Initialize mempool with optional nonce continuity validation
     this.mempool = new Mempool(logger, {
       validateNonceContinuity: config.validateNonceContinuity,
@@ -448,22 +454,68 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
   } | null> {
     const [hash] = params as [Hex]
 
+    // First check in-memory mempool
     const entry = this.mempool.get(hash)
-    if (!entry || !entry.transactionHash) {
-      return null
+    if (entry?.transactionHash) {
+      const receipt = await this.publicClient.getTransactionReceipt({
+        hash: entry.transactionHash,
+      })
+
+      return {
+        userOperation: this.packUserOpForResponse(entry.userOp),
+        entryPoint: entry.entryPoint,
+        transactionHash: entry.transactionHash,
+        blockHash: receipt.blockHash,
+        blockNumber: `0x${receipt.blockNumber.toString(16)}`,
+      }
     }
 
-    // Get transaction receipt
-    const receipt = await this.publicClient.getTransactionReceipt({
-      hash: entry.transactionHash,
-    })
+    // Fallback: search on-chain UserOperationEvent logs by userOpHash.
+    // This covers operations that have left the in-memory mempool.
+    try {
+      for (const entryPoint of this.config.entryPoints) {
+        const logs = await this.publicClient.getLogs({
+          address: entryPoint,
+          event: {
+            type: 'event',
+            name: 'UserOperationEvent',
+            inputs: [
+              { name: 'userOpHash', type: 'bytes32', indexed: true },
+              { name: 'sender', type: 'address', indexed: true },
+              { name: 'paymaster', type: 'address', indexed: true },
+              { name: 'nonce', type: 'uint256', indexed: false },
+              { name: 'success', type: 'bool', indexed: false },
+              { name: 'actualGasCost', type: 'uint256', indexed: false },
+              { name: 'actualGasUsed', type: 'uint256', indexed: false },
+            ],
+          },
+          args: { userOpHash: hash },
+          fromBlock: 'earliest',
+          toBlock: 'latest',
+        })
 
-    return {
-      userOperation: this.packUserOpForResponse(entry.userOp),
-      entryPoint: entry.entryPoint,
-      transactionHash: entry.transactionHash,
-      blockHash: receipt.blockHash,
-      blockNumber: `0x${receipt.blockNumber.toString(16)}`,
+        if (logs.length === 0) {
+          continue
+        }
+
+        const log = logs[logs.length - 1]!
+        const receipt = await this.publicClient.getTransactionReceipt({
+          hash: log.transactionHash,
+        })
+
+        return {
+          userOperation: {} as Record<string, Hex>,
+          entryPoint,
+          transactionHash: log.transactionHash,
+          blockHash: receipt.blockHash,
+          blockNumber: `0x${receipt.blockNumber.toString(16)}`,
+        }
+      }
+
+      return null
+    } catch {
+      // Log search failed — not critical, return null
+      return null
     }
   }
 
@@ -475,29 +527,108 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
   ): Promise<UserOperationReceipt | null> {
     const [hash] = params as [Hex]
 
-    const entry = this.mempool.get(hash)
-    if (!entry || !entry.transactionHash || entry.status !== 'included') {
-      return null
-    }
-
-    // Get transaction receipt
-    const txReceipt = await this.publicClient.getTransactionReceipt({
-      hash: entry.transactionHash,
-    })
-
     const toHexStr = (v: bigint | number): Hex => `0x${BigInt(v).toString(16)}` as Hex
 
-    return {
-      userOpHash: hash,
-      entryPoint: entry.entryPoint,
-      sender: entry.userOp.sender,
-      nonce: toHexStr(entry.userOp.nonce),
-      paymaster: entry.userOp.paymaster,
-      actualGasCost: toHexStr(txReceipt.gasUsed * txReceipt.effectiveGasPrice),
-      actualGasUsed: toHexStr(txReceipt.gasUsed),
-      success: txReceipt.status === 'success',
-      reason: entry.error,
-      logs: txReceipt.logs.map((log) => ({
+    const entry = this.mempool.get(hash)
+    if (entry?.transactionHash && entry.status === 'included') {
+      // Build receipt from mempool entry
+      const txReceipt = await this.publicClient.getTransactionReceipt({
+        hash: entry.transactionHash,
+      })
+
+      return this.formatUserOpReceipt(hash, entry.entryPoint, txReceipt, {
+        sender: entry.userOp.sender,
+        nonce: toHexStr(entry.userOp.nonce),
+        paymaster: entry.userOp.paymaster,
+        actualGasCost: toHexStr(txReceipt.gasUsed * txReceipt.effectiveGasPrice),
+        actualGasUsed: toHexStr(txReceipt.gasUsed),
+        success: txReceipt.status === 'success',
+        reason: entry.error,
+      })
+    }
+
+    // Fallback: search on-chain UserOperationEvent logs by userOpHash.
+    // This covers operations that have left the in-memory mempool (e.g., after restart).
+    try {
+      for (const entryPoint of this.config.entryPoints) {
+        const logs = await this.publicClient.getLogs({
+          address: entryPoint,
+          event: {
+            type: 'event',
+            name: 'UserOperationEvent',
+            inputs: [
+              { name: 'userOpHash', type: 'bytes32', indexed: true },
+              { name: 'sender', type: 'address', indexed: true },
+              { name: 'paymaster', type: 'address', indexed: true },
+              { name: 'nonce', type: 'uint256', indexed: false },
+              { name: 'success', type: 'bool', indexed: false },
+              { name: 'actualGasCost', type: 'uint256', indexed: false },
+              { name: 'actualGasUsed', type: 'uint256', indexed: false },
+            ],
+          },
+          args: { userOpHash: hash },
+          fromBlock: 'earliest',
+          toBlock: 'latest',
+        })
+
+        if (logs.length === 0) {
+          continue
+        }
+
+        const log = logs[logs.length - 1]!
+        const txReceipt = await this.publicClient.getTransactionReceipt({
+          hash: log.transactionHash,
+        })
+
+        const args = log.args as {
+          sender?: Address
+          paymaster?: Address
+          nonce?: bigint
+          success?: boolean
+          actualGasCost?: bigint
+          actualGasUsed?: bigint
+        }
+
+        const zeroAddr = '0x0000000000000000000000000000000000000000'
+        return this.formatUserOpReceipt(hash, entryPoint, txReceipt, {
+          sender: args.sender ?? ('0x' as Address),
+          nonce: toHexStr(args.nonce ?? 0n),
+          paymaster: args.paymaster === zeroAddr ? undefined : args.paymaster,
+          actualGasCost: toHexStr(args.actualGasCost ?? 0n),
+          actualGasUsed: toHexStr(args.actualGasUsed ?? 0n),
+          success: args.success ?? false,
+        })
+      }
+
+      return null
+    } catch {
+      // Log search failed — not critical, return null
+      return null
+    }
+  }
+
+  /**
+   * Format a UserOperationReceipt from transaction receipt and UserOp metadata
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: viem log types are complex
+  private formatUserOpReceipt(
+    userOpHash: Hex,
+    entryPoint: Address,
+    txReceipt: any,
+    meta: {
+      sender: Address
+      nonce: Hex
+      paymaster?: Address
+      actualGasCost: Hex
+      actualGasUsed: Hex
+      success: boolean
+      reason?: string
+    }
+  ): UserOperationReceipt {
+    const toHexStr = (v: bigint | number): Hex => `0x${BigInt(v).toString(16)}` as Hex
+    // biome-ignore lint/suspicious/noExplicitAny: viem log types are complex
+    const mapLogs = (logs: any[]) =>
+      logs.map((log: any) => ({
         logIndex: toHexStr(log.logIndex ?? 0),
         transactionIndex: toHexStr(log.transactionIndex ?? 0),
         transactionHash: log.transactionHash,
@@ -506,7 +637,19 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
         address: log.address,
         data: log.data,
         topics: log.topics as Hex[],
-      })),
+      }))
+
+    return {
+      userOpHash,
+      entryPoint,
+      sender: meta.sender,
+      nonce: meta.nonce,
+      paymaster: meta.paymaster,
+      actualGasCost: meta.actualGasCost,
+      actualGasUsed: meta.actualGasUsed,
+      success: meta.success,
+      reason: meta.reason,
+      logs: mapLogs(txReceipt.logs),
       receipt: {
         transactionHash: txReceipt.transactionHash,
         transactionIndex: toHexStr(txReceipt.transactionIndex),
@@ -517,16 +660,7 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
         cumulativeGasUsed: toHexStr(txReceipt.cumulativeGasUsed),
         gasUsed: toHexStr(txReceipt.gasUsed),
         contractAddress: txReceipt.contractAddress ?? undefined,
-        logs: txReceipt.logs.map((log) => ({
-          logIndex: toHexStr(log.logIndex ?? 0),
-          transactionIndex: toHexStr(log.transactionIndex ?? 0),
-          transactionHash: log.transactionHash,
-          blockHash: log.blockHash ?? ('0x' as Hex),
-          blockNumber: toHexStr(log.blockNumber ?? 0n),
-          address: log.address,
-          data: log.data,
-          topics: log.topics as Hex[],
-        })),
+        logs: mapLogs(txReceipt.logs),
         status: txReceipt.status === 'success' ? '0x1' : '0x0',
         effectiveGasPrice: toHexStr(txReceipt.effectiveGasPrice),
       },
@@ -638,11 +772,14 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
   /**
    * debug_bundler_getUserOperationStatus
    * Returns the current status of a UserOperation in the mempool.
-   * Available without debug flag so wallets can track UserOp lifecycle.
    */
   private debugGetUserOperationStatus(
     params: unknown[]
   ): { status: string; error?: string } | null {
+    if (!this.config.debug) {
+      throw new RpcError('Debug methods disabled', RPC_ERROR_CODES.METHOD_NOT_FOUND)
+    }
+
     const [hash] = params as [Hex]
 
     const entry = this.mempool.get(hash)

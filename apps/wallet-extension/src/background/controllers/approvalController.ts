@@ -295,6 +295,7 @@ export class ApprovalController {
         data: data as `0x${string}` | undefined,
         methodName,
         estimatedGasCost,
+        estimatedTotalCost: (value ?? 0n) + (estimatedGasCost ?? 0n),
         riskLevel,
         warnings,
         simulation: simulationData,
@@ -647,18 +648,17 @@ export class ApprovalController {
    * Format message for display
    */
   private formatMessageForDisplay(message: string, method: string): string {
-    if (method === 'personal_sign') {
-      // Try to decode hex message
+    if (method === 'personal_sign' && message.startsWith('0x')) {
       try {
-        if (message.startsWith('0x')) {
-          const hex = message.slice(2)
-          const bytes = new Uint8Array(
-            hex.match(/.{1,2}/g)!.map((byte) => Number.parseInt(byte, 16))
-          )
-          return new TextDecoder().decode(bytes)
-        }
+        const hex = message.slice(2)
+        const bytes = new Uint8Array(
+          hex.match(/.{1,2}/g)!.map((byte) => Number.parseInt(byte, 16))
+        )
+        // fatal: true → non-UTF-8 bytes throw instead of producing \uFFFD
+        return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
       } catch {
-        // Return as-is if decoding fails
+        // non-UTF-8 binary data → return hex as-is
+        return message
       }
     }
     return message

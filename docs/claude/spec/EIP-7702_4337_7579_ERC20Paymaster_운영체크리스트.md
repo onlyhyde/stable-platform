@@ -38,7 +38,7 @@
 ## 2. 실행 체크 (요청 처리 중)
 
 ## 2.1 클라이언트(UserOp 생성)
-- [ ] `callData`가 Kernel `execute(bytes32,bytes)` ABI로 인코딩되었는가
+- [ ] `callData`가 Kernel `execute(ExecMode,bytes)` ABI로 인코딩되었는가
 - [ ] mode가 계정 지원 모드인지 확인 (`supportsExecutionMode`)
 - [ ] nonce/gas/fee 값이 0 또는 비정상 값이 아닌가
 
@@ -84,11 +84,11 @@
 ## 4. 장애 대응 체크리스트
 
 ## 4.1 자주 나는 실패 원인
-- [ ] `AA23/AA24/AA25/AA26` 계정 검증/nonce/gas 문제
-- [ ] `AA31/AA32/AA33/AA34/AA36/AA37` paymaster deposit/validation/time-range 문제
+- [ ] `AA20~AA24/AA26/AA27` 계정 검증/nonce/gas/서명/시간 문제
+- [ ] `AA31~AA37` paymaster deposit/validation/time-range/data 문제
 - [ ] paymaster 토큰 allowance/balance 부족
 - [ ] `supportsExecutionMode`와 실제 mode 분기 불일치
-- [ ] fallback sender-context 불일치(20B vs 40B) 관련 revert
+- [x] ~~fallback sender-context 불일치(20B vs 40B) 관련 revert~~ → 해결 완료 (context 40B 통일)
 
 ## 4.2 즉시 점검 순서
 1. `userOpHash` 기준 bundler 상태 조회
@@ -110,8 +110,8 @@
 ---
 
 ## 6. 현재 코드 기준 특별 주의사항
-- [ ] fallback sender-context 20B/40B 불일치 이슈 추적 필요
-- [ ] wallet-extension의 paymaster context 필드와 paymaster-proxy 스키마 필드 정합성(`token` vs `tokenAddress`) 점검 필요
+- [x] ~~fallback sender-context 20B/40B 불일치 이슈~~ → 해결 완료 (context 40B 통일)
+- [x] ~~wallet-extension의 paymaster context 필드와 paymaster-proxy 스키마 필드 정합성(`token` vs `tokenAddress`)~~ → 해결 완료 (`tokenAddress`로 통일)
 
 ---
 

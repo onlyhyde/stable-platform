@@ -9,7 +9,13 @@
 
 import type { Address, Hex } from 'viem'
 import { concat, keccak256, numberToHex, toHex, toRlp } from 'viem'
-import { DELEGATE_PRESETS, DELEGATION_PREFIX, EIP7702_MAGIC, ZERO_ADDRESS } from './constants'
+import {
+  DELEGATE_PRESETS,
+  DELEGATION_PREFIX,
+  EIP7702_INIT_CODE_ADDRESS,
+  EIP7702_MAGIC,
+  ZERO_ADDRESS,
+} from './constants'
 import type { Authorization, DelegatePreset, DelegationStatus, SignedAuthorization } from './types'
 
 /**
@@ -117,7 +123,8 @@ export function createSignedAuthorization(
  * @returns Whether the account is delegated
  */
 export function isDelegatedAccount(code: Hex | undefined | null): boolean {
-  if (!code || code === '0x' || code.length < 46) {
+  // EIP-7702 delegation: 0xef0100 (3 bytes) + address (20 bytes) = 23 bytes = 46 hex + "0x" = 48 chars
+  if (!code || code === '0x' || code.length < 48) {
     return false
   }
   return code.toLowerCase().startsWith(DELEGATION_PREFIX.toLowerCase())
@@ -209,4 +216,44 @@ export function classifyAccountByCode(
  */
 export function formatAuthorization(authorization: Authorization): string {
   return `chainId: ${authorization.chainId}, delegate: ${authorization.address}, nonce: ${authorization.nonce}`
+}
+
+// ============================================================================
+// EIP-4337 v0.9 initCode 0x7702 Detection
+// ============================================================================
+
+/**
+ * Check if initCode uses the EIP-7702 path.
+ *
+ * Per EIP-4337 v0.9, when initCode starts with address 0x...7702
+ * (right-padded to 20 bytes), the EntryPoint skips factory deployment
+ * and uses EIP-7702 authorization verification instead.
+ *
+ * @param initCode - The initCode field from a UserOperation
+ * @returns true if initCode indicates EIP-7702 path
+ */
+export function isEIP7702InitCode(initCode: Hex): boolean {
+  if (!initCode || initCode === '0x' || initCode.length < 42) return false
+  const factoryAddress = initCode.slice(0, 42).toLowerCase()
+  return factoryAddress === EIP7702_INIT_CODE_ADDRESS.toLowerCase()
+}
+
+/**
+ * Parse EIP-7702 initCode into its components.
+ *
+ * If initCode > 20 bytes, the remaining bytes are initialization data
+ * to be called via senderCreator.
+ *
+ * @param initCode - The initCode field from a UserOperation
+ * @returns Parsed initCode components, or null if not EIP-7702 format
+ */
+export function parseEIP7702InitCode(
+  initCode: Hex
+): { isEIP7702: true; initData: Hex } | null {
+  if (!isEIP7702InitCode(initCode)) return null
+
+  const initData =
+    initCode.length > 42 ? (`0x${initCode.slice(42)}` as Hex) : ('0x' as Hex)
+
+  return { isEIP7702: true, initData }
 }

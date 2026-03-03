@@ -279,6 +279,24 @@ export class SponsorPolicyManager {
   }
 
   /**
+   * Atomically check policy and reserve spending.
+   * Eliminates the TOCTOU race between checkPolicy() and reserveSpending()
+   * that could allow concurrent requests to exceed spending limits.
+   */
+  checkAndReserve(
+    userOp: UserOperationRpc,
+    policyId: string,
+    estimatedGasCost: bigint
+  ): { allowed: true; reservationId: string } | { allowed: false; rejection: PolicyRejection } {
+    const result = this.checkPolicy(userOp, policyId, estimatedGasCost)
+    if (!result.allowed) {
+      return result
+    }
+    const reservationId = this.reserveSpending(userOp.sender, estimatedGasCost)
+    return { allowed: true, reservationId }
+  }
+
+  /**
    * Reserve spending (call at sign time).
    * Returns reservation ID for later settlement/cancellation.
    */

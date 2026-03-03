@@ -1,7 +1,7 @@
 // Types
 
 // ABI
-export { ENTRY_POINT_V07_ABI, ERROR_SELECTORS, EVENT_SIGNATURES } from './abi'
+export { ENTRY_POINT_ABI, ERROR_SELECTORS, EVENT_SIGNATURES } from './abi'
 export { DEFAULT_CONFIG, NETWORK_PRESETS, parseConfig } from './cli/config'
 export { BundleExecutor, type BundleExecutorConfig } from './executor/bundleExecutor'
 export { GasEstimator } from './gas/gasEstimator'

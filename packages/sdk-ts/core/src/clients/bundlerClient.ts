@@ -15,7 +15,7 @@ import type {
   UserOperationWithTransactionHash,
   WaitForUserOperationReceiptOptions,
 } from '@stablenet/sdk-types'
-import { ENTRY_POINT_V07_ADDRESS } from '@stablenet/sdk-types'
+import { ENTRY_POINT_ADDRESS } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { DEFAULT_CONFIRMATION_TIMEOUT, USER_OP_POLLING_INTERVAL } from '../config'
 import { SDK_ERROR_CODES, SdkError } from '../errors'
@@ -96,7 +96,7 @@ interface RawUserOperationWithHash {
  * ```typescript
  * const bundler = createBundlerClient({
  *   url: 'https://bundler.example.com',
- *   entryPoint: ENTRY_POINT_V07_ADDRESS,
+ *   entryPoint: ENTRY_POINT_ADDRESS,
  * })
  *
  * const hash = await bundler.sendUserOperation(userOp)
@@ -104,7 +104,7 @@ interface RawUserOperationWithHash {
  * ```
  */
 export function createBundlerClient(config: BundlerClientConfig): BundlerClient {
-  const { url, entryPoint = ENTRY_POINT_V07_ADDRESS } = config
+  const { url, entryPoint = ENTRY_POINT_ADDRESS } = config
 
   // Use shared RPC client
   const rpcClient: JsonRpcClient = createBundlerRpcClient(url)

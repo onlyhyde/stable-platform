@@ -18,4 +18,4 @@ export type {
 } from '@stablenet/sdk-types'
 
 // EntryPoint address constant
-export { ENTRY_POINT_V07_ADDRESS } from '@stablenet/sdk-types'
+export { ENTRY_POINT_ADDRESS, ENTRY_POINT_V07_ADDRESS } from '@stablenet/sdk-types'

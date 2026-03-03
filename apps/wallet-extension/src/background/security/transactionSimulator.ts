@@ -117,7 +117,15 @@ export async function simulateTransaction(
   } catch (error) {
     const revertReason = extractRevertReason(error)
 
-    warnings.push('Transaction simulation failed - this transaction may revert')
+    // Detect Kernel Reentrancy error (selector 0xab143c06)
+    const errorMessage = error instanceof Error ? error.message : ''
+    if (errorMessage.includes('0xab143c06') || revertReason.includes('0xab143c06')) {
+      warnings.push(
+        'Reentrancy detected in module operation. Module install/uninstall must be executed sequentially.'
+      )
+    } else {
+      warnings.push('Transaction simulation failed - this transaction may revert')
+    }
 
     return {
       success: false,

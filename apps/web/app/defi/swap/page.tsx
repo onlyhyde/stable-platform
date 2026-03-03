@@ -1,8 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ConnectWalletCard, PageHeader, useToast } from '@/components/common'
+import { ConnectWalletCard, PageHeader, PaymasterSelector, useToast } from '@/components/common'
 import { SwapCard } from '@/components/defi'
+import type { SupportedToken } from '@/hooks'
 import { usePaymaster, useSwap, useUserOp, useWallet } from '@/hooks'
 import { useTokens } from '@/hooks/useTokens'
 import { formatTokenAmount } from '@/lib/utils'
@@ -15,7 +16,16 @@ export default function SwapPage() {
   const { quote, isLoading, error, getQuote, executeSwap } = useSwap({
     sendUserOp,
   })
-  const { checkSponsorshipEligibility } = usePaymaster()
+  const {
+    selectedType: paymasterType,
+    setSelectedType: setPaymasterType,
+    selectedTokenAddress: paymasterTokenAddress,
+    setSelectedTokenAddress: setPaymasterTokenAddress,
+    getSupportedTokens,
+    checkSponsorshipEligibility,
+    isLoading: paymasterLoading,
+    error: paymasterError,
+  } = usePaymaster()
   const { addToast, updateToast } = useToast()
 
   const [tokenIn, setTokenIn] = useState<Token | null>(null)
@@ -23,6 +33,8 @@ export default function SwapPage() {
   const [amountIn, setAmountIn] = useState('')
   const [slippage, setSlippage] = useState(0.5)
   const [gasSponsored, setGasSponsored] = useState<boolean | null>(null)
+  const [supportedTokens, setSupportedTokens] = useState<SupportedToken[] | null>(null)
+  const [isLoadingTokens, setIsLoadingTokens] = useState(false)
 
   // Initialize default tokens when loaded
   useEffect(() => {
@@ -39,6 +51,16 @@ export default function SwapPage() {
       setGasSponsored(result?.eligible ?? null)
     })
   }, [address, checkSponsorshipEligibility])
+
+  // Fetch tokens when erc20/permit2 selected
+  useEffect(() => {
+    if (paymasterType === 'erc20' || paymasterType === 'permit2') {
+      setIsLoadingTokens(true)
+      getSupportedTokens()
+        .then(setSupportedTokens)
+        .finally(() => setIsLoadingTokens(false))
+    }
+  }, [paymasterType, getSupportedTokens])
 
   // Compute formatted balances from token data
   const balanceIn = useMemo(() => {
@@ -124,6 +146,18 @@ export default function SwapPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <PageHeader title="Swap" description="Exchange tokens at the best rates" />
+
+      <PaymasterSelector
+        selectedType={paymasterType}
+        onTypeChange={setPaymasterType}
+        supportedTokens={supportedTokens}
+        selectedTokenAddress={paymasterTokenAddress}
+        onTokenSelect={setPaymasterTokenAddress}
+        isLoadingTokens={isLoadingTokens}
+        sponsorEligible={gasSponsored}
+        isLoading={paymasterLoading}
+        error={paymasterError?.message}
+      />
 
       <SwapCard
         tokens={tokens}

@@ -1,6 +1,38 @@
 # ERC-4337 + EIP-7702 Sequence Diagrams
 
-## 1. Complete End-to-End Flow (Overview)
+## 0. Seminar Reading Guide: 2-Track
+
+이 문서는 세미나 전달력을 위해 아래 2개 트랙을 구분해 읽는다.
+
+| Track | 의미 | 이 문서에서의 처리 |
+|---|---|---|
+| **Track A: Current Implementation** | 현재 코드/PoC와 1:1로 일치하는 플로우 | 메인 다이어그램 기준 |
+| **Track B: Target/Expansion Architecture** | 향후 확장 가능한 운영/제품 아키텍처 | 보조 설명용(현재 미구현) |
+
+Track A 핵심 해석 규칙:
+- EIP-7702 delegation(type-4)은 UserOp 이전 별도 단계
+- Bundler 실행은 `handleOps` 제출 중심
+- 본 POC의 실행 기본 경로는 `Kernel.execute(...)` direct path
+
+Track B는 세미나에서 "비전/확장"으로 소개하되, 구현 여부를 명확히 표시한다.
+
+## 0.1 Implementation Sync (2026-03-02)
+
+이 다이어그램은 **v0.9 목표 정합 플로우**를 기준으로 한다.  
+현재 저장소 오프체인 인프라 상태는 아래 항목이 PARTIAL이다.
+
+| Area | Status | Note |
+|---|---|---|
+| Bundler `userOpHash` path | **PARTIAL** | legacy hash path remains in bundler RPC utility |
+| `eth_getUserOperationReceipt` | **PARTIAL** | mempool-dependent path, on-chain fallback 보강 필요 |
+| EntryPoint defaults | **PARTIAL** | mixed defaults across SDK/config/env |
+| Gas estimation parity | **PARTIAL** | 10% penalty / EIP-7702 +25k reflection needs convergence |
+
+Reference:
+- `docs/claude/spec/EIP-4337_7579_통합_스펙준수_보고서.md` (§11.2.4, §11.3)
+- `docs/claude/spec/EIP-4337_7579_코드정합성_검토결과_2026-03-02.md`
+
+## 1. Complete End-to-End Flow (Overview, Track A)
 
 ```mermaid
 sequenceDiagram
@@ -23,8 +55,8 @@ sequenceDiagram
     W->>W: createAuthorizationHash(chainId, Kernel, nonce)
     W->>W: ECDSA sign(authHash, privateKey)
     W-->>D: {chainId, address, nonce, v, r, s}
-    D->>EP: sendTransaction({authorizationList: [signedAuth]})
-    Note over EP: EVM sets EOA.code = 0xef0100||Kernel
+    D->>D: Relayer sends type-4 tx ({authorizationList: [signedAuth]})
+    Note over D: EVM sets EOA.code = 0xef0100||Kernel
 
     Note over U,T: Phase 1: Construct UserOp
     U->>D: Send 100 USDC to recipient
@@ -37,8 +69,8 @@ sequenceDiagram
     D->>PP: pm_getPaymasterData(userOp_with_gas)
     PP->>PP: Encode Erc20Payload + Envelope
     PP-->>D: {paymaster, paymasterData: envelope}
-    D->>D: Pack UserOp v0.7 format
-    D->>D: Compute userOpHash
+    D->>D: Pack UserOp (v0.9-compatible packed format)
+    D->>D: Compute userOpHash (target: v0.9 EIP-712)
     D->>W: signMessage(userOpHash)
     W->>W: ECDSA sign(hash, privateKey)
     W-->>D: signature (r||s||v)
@@ -63,11 +95,8 @@ sequenceDiagram
 
     Note over EP,T: Phase 3a: Validation
     EP->>K: validateUserOp(userOp, hash, 0)
-    K->>K: decodeNonce → VALIDATOR mode
-    K->>V: validateUserOp(userOp, hash)
-    V->>V: ecrecover(hash, sig) == owner?
-    V-->>K: validationData (0 = success)
-    K->>K: Store hook in executionHook[hash]
+    K->>K: decodeNonce → ROOT/7702 mode
+    K->>K: _verify7702Signature(ethSigned(hash), signature)
     K-->>EP: validationData
 
     EP->>EP: Deduct prefund from Paymaster deposit
@@ -84,14 +113,7 @@ sequenceDiagram
 
     Note over EP,T: Phase 3b: Execution
     EP->>EP: emit BeforeExecution()
-    EP->>K: executeUserOp(userOp, userOpHash)
-    K->>K: hook = executionHook[hash]
-
-    opt Hook Installed
-        K->>K: hook.preCheck(sender, value, callData)
-    end
-
-    K->>K: delegatecall → execute(ExecMode, data)
+    EP->>K: execute(ExecMode, executionCalldata) [this POC]
     K->>K: ExecLib: decode SINGLE mode
     K->>T: call: transfer(recipient, 100_000_000)
     T->>T: Check: !paused, !blacklisted
@@ -100,13 +122,11 @@ sequenceDiagram
     T->>T: emit Transfer(sender, recipient, 100e6)
     T-->>K: true
 
-    opt Hook Installed
-        K->>K: hook.postCheck(hookContext)
-    end
     K-->>EP: success
 
     Note over EP,T: Phase 4: PostOp Settlement
     EP->>EP: Calculate actualGasCost + penalties
+    Note over EP: postOp is invoked only when context.length > 0<br/>(ERC20 flow returns non-empty context)
     EP->>PM: postOp(opSucceeded, context, actualGasCost, gasPrice)
     PM->>PM: Decode context (sender, token, maxTokenCost, maxCost)
     PM->>PM: actualTokenCost = maxTokenCost × actualGasCost / maxCost
@@ -126,10 +146,40 @@ sequenceDiagram
     EP->>B: compensate(beneficiary, collected ETH)
 
     Note over U,T: Phase 6: Receipt
-    D->>B: eth_getUserOperationReceipt(userOpHash) [polling]
+    D->>B: eth_getUserOperationReceipt(userOpHash) [polling, target behavior]
     B-->>D: {success: true, actualGasCost, txHash}
     D->>U: Transfer complete ✓
 ```
+
+> Sync note (2026-03-02): In current code, `eth_getUserOperationReceipt` may depend on in-memory mempool state.  
+> For operations, verify with on-chain `UserOperationEvent` lookup until receipt fallback convergence is completed.
+
+### 1.1 Target/Expansion Overlay (Track B, Concept)
+
+```mermaid
+flowchart LR
+    A["Type-4 Delegation Automation"] --> B["Policy/Template-driven UserOp Builder"]
+    B --> C["Bundler Multi-Scenario Orchestration"]
+    C --> D["EntryPoint handleOps Execution"]
+    D --> E["Unified Monitoring & Settlement"]
+```
+
+Track B는 세미나용 확장 비전이며, 현재 저장소의 구현 범위는 Track A다.
+
+### 1.2 Track B Roadmap Mapping (Seminar Script)
+
+| Milestone | 세미나에서 설명할 다이어그램 포인트 | 핵심 메시지 |
+|---|---|---|
+| **M1. Protocol Correctness Lock** | Section 1/3/4 | hash, nonce, selector 규칙을 먼저 고정해야 확장이 가능 |
+| **M2. Delegation Orchestration Layer** | Section 2 | delegation은 UserOp 이전 별도 단계이며 운영 자동화가 필요 |
+| **M3. Policy/Template UserOp Builder** | Section 1/3 | UserOp 조립을 템플릿화해 시나리오 확장 비용을 낮춤 |
+| **M4. Bundler Multi-Scenario Orchestration** | Section 1/5/6 | bundler는 단순 제출기가 아니라 정책 기반 오케스트레이터가 되어야 함 |
+| **M5. Security/Operations Guardrails** | Section 5/6 | postOp 정산/지출 제어/모니터링이 운영 안정성의 핵심 |
+| **M6. Seminar-to-Production Package** | 전체 | 교육 자료와 운영 절차를 같은 번호 체계로 연결해야 온보딩이 빨라짐 |
+
+세미나 진행 팁:
+- Track A 다이어그램을 먼저 설명하고,
+- 같은 번호의 M1~M6를 오버레이로 붙여 “현재 상태 -> 확장 경로”를 연결한다.
 
 ---
 
@@ -146,12 +196,12 @@ sequenceDiagram
     participant EVM as EVM / Blockchain
 
     U->>D: Click "Upgrade to Smart Account"
-    D->>W: wallet_signAuthorization({<br/>account: EOA,<br/>contractAddress: Kernel,<br/>chainId: 1,<br/>nonce: auto})
+    D->>W: wallet_signAuthorization({<br/>account: EOA,<br/>contractAddress: Kernel,<br/>chainId: 8283,<br/>nonce: auto})
 
     W->>EVM: getTransactionCount(EOA)
     EVM-->>W: currentNonce
 
-    W->>W: authorization = {<br/>chainId: 1,<br/>address: Kernel,<br/>nonce: currentNonce}
+    W->>W: authorization = {<br/>chainId: 8283,<br/>address: Kernel,<br/>nonce: currentNonce}
 
     W->>W: authHash = keccak256(<br/>0x05 || rlp([chainId, Kernel, nonce]))
 
@@ -174,10 +224,11 @@ sequenceDiagram
 
     R->>EVM: sendTransaction({<br/>to: EOA,<br/>data: 0x,<br/>authorizationList: [{<br/>chainId, address: Kernel,<br/>nonce, v, r, s<br/>}]})
 
+    EVM->>EVM: Increment sender nonce (tx sender)
     EVM->>EVM: Verify ECDSA signature
-    EVM->>EVM: Verify nonce == EOA.nonce
-    EVM->>EVM: Set EOA.code = 0xef0100 || Kernel
-    EVM->>EVM: Increment EOA.nonce
+    EVM->>EVM: Verify authority.nonce == auth.nonce
+    EVM->>EVM: Increment authority.nonce
+    EVM->>EVM: Set authority.code = 0xef0100 || Kernel
     EVM-->>R: Transaction receipt
 
     R-->>D: txHash
@@ -242,22 +293,29 @@ sequenceDiagram
 
     else validationType == 7702 (0x00)
         VM->>VM: ECDSA recovery against address(this)
-        VM->>VM: Chain-agnostic domain separator (chainId=0)
+        VM->>VM: verify ethSigned(userOpHash)
     end
 
     VM-->>K: validationData
 
     K->>K: Lookup validationConfig[vId].hook
 
-    alt hook != address(1) (Hook installed)
-        K->>K: executionHook[userOpHash] = hook
-        K->>K: Require callData selector == executeUserOp
-        Note over K: Hook will be called during execution
-    else hook == address(1) (No hook)
-        Note over K: Direct execute() call allowed
+    alt validationType == ROOT/7702 (0x00)
+        K->>K: executionHook[userOpHash] = hook (often address(0))
+        Note over K: installed-validator and selector checks are skipped
+    else validationType == VALIDATOR/PERMISSION
+        alt hook != address(1) (Hook installed)
+            K->>K: executionHook[userOpHash] = hook
+            K->>K: Require callData selector == executeUserOp
+            Note over K: Hook will be called during execution
+        else hook == address(1) (No hook)
+            Note over K: Direct execute() call allowed
+        end
     end
 
-    K->>K: Check allowedSelectors[vId][targetSelector]
+    opt validationType != ROOT/7702
+        K->>K: Check allowedSelectors[vId][targetSelector]
+    end
 
     opt missingAccountFunds > 0
         K->>EP: call{value: missingFunds}("")
@@ -285,58 +343,50 @@ sequenceDiagram
 
     EP->>EP: Verify gas: gasleft()*63/64 >= callGas + postOpGas + 10k
 
-    EP->>EP: Detect executeUserOp selector (0x8dd7712f)
-    EP->>EP: Rewrite: executeUserOp(userOp, userOpHash)
+    EP->>EP: Check selector and optional rewrite
 
-    EP->>K: call{gas: callGasLimit} executeUserOp(userOp, userOpHash)
-    Note over K: modifier: onlyEntryPoint
+    alt callData selector == executeUserOp (0x8dd7712f)
+        EP->>EP: Rewrite to executeUserOp(userOp, userOpHash)
+        EP->>K: call{gas: callGasLimit} executeUserOp(userOp, userOpHash)
+        K->>K: hook = executionHook[userOpHash]
+        K->>K: delete executionHook[userOpHash]
 
-    K->>K: hook = executionHook[userOpHash]
-    K->>K: delete executionHook[userOpHash]
-
-    rect rgb(240, 255, 240)
-        Note over K,H: Pre-Hook Phase
         opt hook != address(0) && hook != address(1)
             K->>H: preCheck(msg.sender, msg.value, userOp.callData[4:])
-            Note over H: Validate pre-conditions:<br/>- Spending limits<br/>- Time restrictions<br/>- Target whitelist
-            H-->>K: hookContext (opaque bytes)
+            H-->>K: hookContext
         end
-    end
-
-    rect rgb(240, 240, 255)
-        Note over K,USDC: Execution Phase
-        K->>K: delegatecall to self: execute(ExecMode, executionCalldata)
-        Note over K: modifier: onlyEntryPointOrSelfOrRoot (self-call OK)
 
         K->>EL: execute(execMode, executionCalldata)
         EL->>EL: Decode ExecMode: CALLTYPE_SINGLE, EXECTYPE_DEFAULT
         EL->>EL: decodeSingle(executionCalldata)
         Note over EL: target = USDC<br/>value = 0<br/>data = transfer(recipient, 100e6)
-
         EL->>USDC: call(gas, USDC, 0, transferData)
-        Note over EL: msg.sender = Smart Account (EOA)
+        USDC-->>EL: true
+        EL-->>K: success + returnData
 
-        USDC->>USDC: require(!paused)
-        USDC->>USDC: require(!blacklisted[sender])
-        USDC->>USDC: require(!blacklisted[recipient])
-        USDC->>USDC: require(balances[sender] >= 100e6)
-        USDC->>USDC: balances[sender] -= 100,000,000
-        USDC->>USDC: balances[recipient] += 100,000,000
-        USDC->>USDC: emit Transfer(sender, recipient, 100e6)
+        opt hook != address(0) && hook != address(1)
+            K->>H: postCheck(hookContext)
+            H-->>K: (reverts if invalid)
+        end
+    else direct execute path (this POC)
+        EP->>K: call{gas: callGasLimit} execute(ExecMode, executionCalldata)
+        K->>EL: execute(execMode, executionCalldata)
+        EL->>EL: Decode ExecMode: CALLTYPE_SINGLE, EXECTYPE_DEFAULT
+        EL->>EL: decodeSingle(executionCalldata)
+        Note over EL: target = USDC<br/>value = 0<br/>data = transfer(recipient, 100e6)
+        EL->>USDC: call(gas, USDC, 0, transferData)
         USDC-->>EL: true
         EL-->>K: success + returnData
     end
 
-    K->>K: require(success)
-
-    rect rgb(255, 255, 240)
-        Note over K,H: Post-Hook Phase
-        opt hook != address(0) && hook != address(1)
-            K->>H: postCheck(hookContext)
-            Note over H: Validate post-conditions:<br/>- Balance changes OK<br/>- State transitions valid
-            H-->>K: (reverts if invalid)
-        end
-    end
+    Note over EL: msg.sender = Smart Account (EOA)
+    USDC->>USDC: require(!paused)
+    USDC->>USDC: require(!blacklisted[sender])
+    USDC->>USDC: require(!blacklisted[recipient])
+    USDC->>USDC: require(balances[sender] >= 100e6)
+    USDC->>USDC: balances[sender] -= 100,000,000
+    USDC->>USDC: balances[recipient] += 100,000,000
+    USDC->>USDC: emit Transfer(sender, recipient, 100e6)
 
     K-->>EP: execution complete
 ```
@@ -371,6 +421,7 @@ sequenceDiagram
 
     rect rgb(240, 248, 255)
         Note over EP,T: Paymaster PostOp
+        Note over EP: Conditional call: only if context.length > 0
         EP->>PM: postOp{gas: postOpGasLimit}(<br/>opSucceeded,<br/>context,<br/>actualGasCost,<br/>gasPrice)
         Note over PM: modifier: onlyEntryPoint
 
@@ -616,8 +667,10 @@ sequenceDiagram
 ### Key Addresses (Local Development)
 
 ```
-EntryPoint:        0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
-Kernel:            0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
-ECDSA Validator:   0x5FC8d32690cc91D4c39d9d3abcBD16989F875707
-Kernel Factory:    0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9
+EntryPoint:        0xEf6817fe73741A8F10088f9511c64b666a338A14
+Kernel:            0xA61b944dd427A85495B685D93237CB73087E0035
+ECDSA Validator:   0xA61b944dd427A85495B685D93237CB73087E0035
+Kernel Factory:    0xbEbb0338503F9E28FFDC84C3548F8454F12Dd1D3
 ```
+
+Source: `stable-platform/packages/contracts/src/generated/addresses.ts` (chainId `8283`)

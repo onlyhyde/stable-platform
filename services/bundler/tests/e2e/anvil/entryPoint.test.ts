@@ -1,7 +1,7 @@
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData, parseAbi, parseEther } from 'viem'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { ENTRY_POINT_V07_ABI } from '../../../src/abi'
+import { ENTRY_POINT_ABI } from '../../../src/abi'
 import {
   createTestUserOp,
   fundAddress,
@@ -116,7 +116,7 @@ describe.skipIf(shouldSkipAnvilTests())('Anvil EntryPoint E2E', () => {
 
       const packed = packUserOp(userOp)
       const callData = encodeFunctionData({
-        abi: ENTRY_POINT_V07_ABI,
+        abi: ENTRY_POINT_ABI,
         functionName: 'handleOps',
         args: [[packed], beneficiary],
       })
@@ -228,7 +228,7 @@ describe.skipIf(shouldSkipAnvilTests())('Anvil EntryPoint E2E', () => {
       await expect(
         fixture.publicClient.simulateContract({
           address: fixture.entryPoint,
-          abi: ENTRY_POINT_V07_ABI,
+          abi: ENTRY_POINT_ABI,
           functionName: 'simulateValidation',
           args: [packed],
         })
@@ -252,7 +252,7 @@ describe.skipIf(shouldSkipAnvilTests())('Anvil EntryPoint E2E', () => {
       await expect(
         fixture.publicClient.simulateContract({
           address: fixture.entryPoint,
-          abi: ENTRY_POINT_V07_ABI,
+          abi: ENTRY_POINT_ABI,
           functionName: 'simulateValidation',
           args: [packed],
         })
@@ -290,7 +290,7 @@ describe.skipIf(shouldSkipAnvilTests())('Anvil EntryPoint E2E', () => {
   describe('handleOps Revert Behavior', () => {
     it('should revert handleOps with empty ops array', async () => {
       const callData = encodeFunctionData({
-        abi: ENTRY_POINT_V07_ABI,
+        abi: ENTRY_POINT_ABI,
         functionName: 'handleOps',
         args: [[], beneficiary],
       })
@@ -322,7 +322,7 @@ describe.skipIf(shouldSkipAnvilTests())('Anvil EntryPoint E2E', () => {
 
       const packed = packUserOp(userOp)
       const callData = encodeFunctionData({
-        abi: ENTRY_POINT_V07_ABI,
+        abi: ENTRY_POINT_ABI,
         functionName: 'handleOps',
         args: [[packed], beneficiary],
       })

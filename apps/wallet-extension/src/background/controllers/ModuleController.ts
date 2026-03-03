@@ -9,8 +9,8 @@
 export const MODULE_TYPE = {
   VALIDATOR: 1,
   EXECUTOR: 2,
-  HOOK: 3,
-  FALLBACK: 4,
+  FALLBACK: 3,
+  HOOK: 4,
 } as const
 
 export type ModuleTypeValue = (typeof MODULE_TYPE)[keyof typeof MODULE_TYPE]
@@ -88,6 +88,8 @@ const MODULE_SELECTORS = {
   installModule: '0x9517e29f', // installModule(uint256,address,bytes)
   uninstallModule: '0xa4d0a17e', // uninstallModule(uint256,address,bytes)
   isModuleInstalled: '0x112c5bc2', // isModuleInstalled(uint256,address,bytes)
+  forceUninstallModule: '0x856b02ec', // forceUninstallModule(uint256,address,bytes)
+  replaceModule: '0x166add9c', // replaceModule(uint256,address,bytes,address,bytes)
 } as const
 
 /**
@@ -160,6 +162,46 @@ export class ModuleController {
     // Mark as inactive
     this.deactivateModule(accountAddress, moduleAddress)
 
+    return { txHash }
+  }
+
+  /**
+   * Force uninstall a module from a smart account.
+   * Uses ExcessivelySafeCall so module onUninstall() revert is ignored.
+   */
+  async forceUninstallModule(
+    accountAddress: string,
+    moduleAddress: string,
+    moduleType: ModuleTypeValue,
+    deInitData = '0x'
+  ): Promise<{ txHash: string }> {
+    const callData = this.encodeForceUninstallModule(moduleType, moduleAddress, deInitData)
+    const txHash = await this.sendModuleTransaction(accountAddress, callData)
+    this.deactivateModule(accountAddress, moduleAddress)
+    return { txHash }
+  }
+
+  /**
+   * Atomically replace one module with another.
+   * If newModule install fails, the old module is NOT removed.
+   */
+  async replaceModule(
+    accountAddress: string,
+    moduleType: ModuleTypeValue,
+    oldModuleAddress: string,
+    deInitData: string,
+    newModuleAddress: string,
+    initData: string
+  ): Promise<{ txHash: string }> {
+    const callData = this.encodeReplaceModule(
+      moduleType,
+      oldModuleAddress,
+      deInitData,
+      newModuleAddress,
+      initData
+    )
+    const txHash = await this.sendModuleTransaction(accountAddress, callData)
+    this.deactivateModule(accountAddress, oldModuleAddress)
     return { txHash }
   }
 
@@ -314,6 +356,50 @@ export class ModuleController {
     const paddedData = cleanData.padEnd(Math.ceil(cleanData.length / 64) * 64, '0')
 
     return `${MODULE_SELECTORS.uninstallModule}${typeHex}${addrHex}${dataOffset}${dataLen}${paddedData}`
+  }
+
+  private encodeForceUninstallModule(
+    moduleType: ModuleTypeValue,
+    moduleAddress: string,
+    deInitData: string
+  ): string {
+    const typeHex = moduleType.toString(16).padStart(64, '0')
+    const addrHex = moduleAddress.slice(2).toLowerCase().padStart(64, '0')
+    const dataOffset = `${'0'.repeat(62)}60`
+    const cleanData = deInitData.startsWith('0x') ? deInitData.slice(2) : deInitData
+    const dataLen = (cleanData.length / 2).toString(16).padStart(64, '0')
+    const paddedData = cleanData.padEnd(Math.ceil(cleanData.length / 64) * 64, '0')
+
+    return `${MODULE_SELECTORS.forceUninstallModule}${typeHex}${addrHex}${dataOffset}${dataLen}${paddedData}`
+  }
+
+  private encodeReplaceModule(
+    moduleType: ModuleTypeValue,
+    oldModuleAddress: string,
+    deInitData: string,
+    newModuleAddress: string,
+    initData: string
+  ): string {
+    const typeHex = moduleType.toString(16).padStart(64, '0')
+    const oldAddrHex = oldModuleAddress.slice(2).toLowerCase().padStart(64, '0')
+
+    const cleanDeInit = deInitData.startsWith('0x') ? deInitData.slice(2) : deInitData
+    const newAddrHex = newModuleAddress.slice(2).toLowerCase().padStart(64, '0')
+    const cleanInit = initData.startsWith('0x') ? initData.slice(2) : initData
+
+    // ABI encoding for replaceModule(uint256,address,bytes,address,bytes)
+    // 5 static slots: type, oldAddr, deInitOffset, newAddr, initOffset
+    const deInitOffset = (5 * 32).toString(16).padStart(64, '0') // 0xa0
+    const deInitLen = (cleanDeInit.length / 2).toString(16).padStart(64, '0')
+    const paddedDeInit = cleanDeInit.padEnd(Math.ceil(cleanDeInit.length / 64) * 64, '0')
+    const deInitWords = Math.max(Math.ceil(cleanDeInit.length / 64), 1)
+
+    const initOffsetValue = 5 * 32 + 32 + deInitWords * 32
+    const initOffset = initOffsetValue.toString(16).padStart(64, '0')
+    const initLen = (cleanInit.length / 2).toString(16).padStart(64, '0')
+    const paddedInit = cleanInit.padEnd(Math.ceil(cleanInit.length / 64) * 64, '0')
+
+    return `${MODULE_SELECTORS.replaceModule}${typeHex}${oldAddrHex}${deInitOffset}${newAddrHex}${initOffset}${deInitLen}${paddedDeInit}${initLen}${paddedInit}`
   }
 
   private async sendModuleTransaction(accountAddress: string, callData: string): Promise<string> {

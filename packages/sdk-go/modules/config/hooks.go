@@ -201,6 +201,19 @@ var TimelockHook = CreateModuleEntry(
 )
 
 // ============================================================================
+// Hook Gas Limit Configuration
+// ============================================================================
+
+// HookGasLimitConfig represents a per-hook gas limit setting.
+// GasLimit of 0 means unlimited (backward compatible default).
+type HookGasLimitConfig struct {
+	// Hook is the hook module address.
+	Hook types.Address `json:"hook"`
+	// GasLimit is the maximum gas the hook can consume (0 = unlimited).
+	GasLimit uint64 `json:"gasLimit"`
+}
+
+// ============================================================================
 // All Hooks
 // ============================================================================
 

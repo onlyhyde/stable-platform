@@ -8,6 +8,13 @@
 import type { Account, MultiModeTransactionRequest, TransactionResult } from '@stablenet/sdk-types'
 import { ACCOUNT_TYPE, TRANSACTION_MODE } from '@stablenet/sdk-types'
 import type { Hash } from 'viem'
+import {
+  BASE_TRANSFER_GAS,
+  EIP7702_AUTH_GAS,
+  GAS_BUFFER_DIVISOR,
+  GAS_BUFFER_MULTIPLIER,
+  GAS_PER_AUTHORIZATION,
+} from '../../config'
 import { createTransactionError } from '../../errors'
 import { createEIP7702TransactionBuilder } from '../eip7702Transaction'
 import type {
@@ -82,8 +89,11 @@ export function createEIP7702Strategy(config: BaseStrategyConfig): TransactionSt
       // Get gas prices for estimation
       const { maxFeePerGas, maxPriorityFeePerGas } = await builder.getGasPrices()
 
-      // Base gas estimation for EIP-7702
-      const gasLimit = 58_500n // Base + auth verification + per auth
+      // Gas estimation aligned with eip7702GasStrategy:
+      // base transfer (21K) + auth overhead (25K) + per-auth cost (12.5K × count) + 10% buffer
+      const authCount = BigInt(request.authorizationList?.length ?? 1)
+      const baseGas = BASE_TRANSFER_GAS + EIP7702_AUTH_GAS + GAS_PER_AUTHORIZATION * authCount
+      const gasLimit = (baseGas * GAS_BUFFER_MULTIPLIER) / GAS_BUFFER_DIVISOR
 
       const gasEstimate = {
         gasLimit,

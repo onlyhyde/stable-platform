@@ -40,10 +40,10 @@ export const DEFAULT_MAX_FEE_PER_GAS = parseGwei('1')
 export const BASE_TRANSFER_GAS = 21_000n
 
 /**
- * Maximum gas limit (30M)
- * Block gas limit ceiling for transactions
+ * Maximum gas limit (105M)
+ * Aligned with StableNet genesis block gas limit (0x6422C40)
  */
-export const MAX_GAS_LIMIT = 30_000_000n
+export const MAX_GAS_LIMIT = 105_000_000n
 
 // ============================================================================
 // Gas Buffer Settings
@@ -96,18 +96,66 @@ export const DEFAULT_PRE_VERIFICATION_GAS = 50_000n
 
 /**
  * Default call gas limit for UserOperations
+ * Covers DeFi operations (swap/stake) in addition to simple transfers
  */
-export const DEFAULT_CALL_GAS_LIMIT = 100_000n
+export const DEFAULT_CALL_GAS_LIMIT = 200_000n
 
 /**
  * Paymaster verification gas (typical overhead)
+ * Includes ERC20 oracle query, approval check, and signature verification
  */
-export const PAYMASTER_VERIFICATION_GAS = 30_000n
+export const PAYMASTER_VERIFICATION_GAS = 75_000n
 
 /**
  * Paymaster post-operation gas (typical overhead)
  */
 export const PAYMASTER_POST_OP_GAS = 50_000n
+
+// ============================================================================
+// EIP-4337 v0.9 Unused Gas Penalty
+// ============================================================================
+
+/**
+ * Unused gas penalty threshold (40,000 gas)
+ * Per EIP-4337 v0.9: if unused callGasLimit + paymasterPostOpGasLimit exceeds
+ * this threshold, 10% of unused gas is charged as penalty to prevent griefing.
+ */
+export const UNUSED_GAS_PENALTY_THRESHOLD = 40_000n
+
+/**
+ * Unused gas penalty divisor (10 = 10%)
+ */
+export const UNUSED_GAS_PENALTY_DIVISOR = 10n
+
+/**
+ * Calculate the 10% unused gas penalty per EIP-4337 v0.9.
+ *
+ * If unused (callGasLimit + paymasterPostOpGasLimit) exceeds 40,000 gas,
+ * 10% of the unused amount is charged as penalty to prevent bundler griefing.
+ *
+ * @param allocatedCallGas - callGasLimit set in the UserOp
+ * @param estimatedCallGas - estimated actual call gas usage
+ * @param allocatedPostOpGas - paymasterPostOpGasLimit set in the UserOp (0 if no paymaster)
+ * @param estimatedPostOpGas - estimated actual postOp gas usage (0 if no paymaster)
+ * @returns penalty gas amount (0 if unused gas is below threshold)
+ */
+export function calculateUnusedGasPenalty(
+  allocatedCallGas: bigint,
+  estimatedCallGas: bigint,
+  allocatedPostOpGas: bigint,
+  estimatedPostOpGas: bigint
+): bigint {
+  const unusedCallGas =
+    allocatedCallGas > estimatedCallGas ? allocatedCallGas - estimatedCallGas : 0n
+  const unusedPostOpGas =
+    allocatedPostOpGas > estimatedPostOpGas ? allocatedPostOpGas - estimatedPostOpGas : 0n
+  const totalUnused = unusedCallGas + unusedPostOpGas
+
+  if (totalUnused > UNUSED_GAS_PENALTY_THRESHOLD) {
+    return totalUnused / UNUSED_GAS_PENALTY_DIVISOR
+  }
+  return 0n
+}
 
 // ============================================================================
 // Gas Config Object (for structured access)

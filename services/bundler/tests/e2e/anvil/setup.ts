@@ -18,9 +18,9 @@ export interface AnvilFixture {
 }
 
 /**
- * ERC-4337 v0.7 EntryPoint deployed address (deterministic CREATE2)
+ * ERC-4337 EntryPoint v0.9 deployed address (deterministic CREATE2, ABI-compatible with v0.7/v0.8)
  */
-export const ENTRY_POINT_V07_ADDRESS = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
+export const ENTRY_POINT_ADDRESS = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
 
 /**
  * Check if Anvil tests should be skipped
@@ -140,7 +140,7 @@ export async function startAnvil(): Promise<AnvilFixture> {
     publicClient,
     walletClient,
     testClient,
-    entryPoint: ENTRY_POINT_V07_ADDRESS,
+    entryPoint: ENTRY_POINT_ADDRESS,
     accounts,
     rpcUrl,
     stop: async () => {

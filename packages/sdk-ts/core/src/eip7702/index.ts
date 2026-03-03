@@ -16,8 +16,10 @@ export {
   getDelegatePresets,
   getDelegationStatus,
   isDelegatedAccount,
+  isEIP7702InitCode,
   isRevocationAuthorization,
   isValidAddress,
+  parseEIP7702InitCode,
   parseSignature,
 } from './authorization'
 
@@ -25,6 +27,7 @@ export {
 export {
   DELEGATE_PRESETS,
   DELEGATION_PREFIX,
+  EIP7702_INIT_CODE_ADDRESS,
   EIP7702_MAGIC,
   SETCODE_TX_TYPE,
   ZERO_ADDRESS,

@@ -11,12 +11,12 @@ import "math/big"
 var GasConfig = struct {
 	// Base costs
 	BaseTransferGas     *big.Int // 21000 - Base gas for ETH transfer
-	EIP7702AuthGas      *big.Int // Additional gas per EIP-7702 authorization
-	GasPerAuthorization *big.Int // 3200 - Gas per authorization in list
+	EIP7702AuthGas      *big.Int // 25000 - PER_EMPTY_ACCOUNT_COST per EIP-7702
+	GasPerAuthorization *big.Int // 12500 - PER_AUTH_BASE_COST per EIP-7702
 
-	// Smart Account defaults
-	DefaultVerificationGasLimit *big.Int // 100000
-	DefaultPreVerificationGas   *big.Int // 75000
+	// Smart Account defaults (aligned with sdk-ts)
+	DefaultVerificationGasLimit *big.Int // 150000
+	DefaultPreVerificationGas   *big.Int // 50000
 	DefaultCallGasLimit         *big.Int // 200000
 
 	// Paymaster defaults
@@ -24,8 +24,8 @@ var GasConfig = struct {
 	PaymasterPostOpGas       *big.Int // 50000
 
 	// Buffer settings
-	GasBufferMultiplier *big.Int // 12 (1.2x)
-	GasBufferDivisor    *big.Int // 10
+	GasBufferMultiplier *big.Int // 110 (1.1x = 10% buffer)
+	GasBufferDivisor    *big.Int // 100
 
 	// UserOperation overhead
 	UserOpFixedGas           *big.Int // Fixed overhead for UserOp processing
@@ -38,21 +38,21 @@ var GasConfig = struct {
 }{
 	// Base costs
 	BaseTransferGas:     big.NewInt(21000),
-	EIP7702AuthGas:      big.NewInt(4),
-	GasPerAuthorization: big.NewInt(3200),
+	EIP7702AuthGas:      big.NewInt(25000), // PER_EMPTY_ACCOUNT_COST per EIP-7702
+	GasPerAuthorization: big.NewInt(12500), // PER_AUTH_BASE_COST per EIP-7702
 
-	// Smart Account defaults
-	DefaultVerificationGasLimit: big.NewInt(100000),
-	DefaultPreVerificationGas:   big.NewInt(75000),
+	// Smart Account defaults (aligned with sdk-ts)
+	DefaultVerificationGasLimit: big.NewInt(150000), // Kernel module dispatch + ECDSA
+	DefaultPreVerificationGas:   big.NewInt(50000),  // Spec formula ~44K for typical op
 	DefaultCallGasLimit:         big.NewInt(200000),
 
 	// Paymaster defaults
 	PaymasterVerificationGas: big.NewInt(75000),
 	PaymasterPostOpGas:       big.NewInt(50000),
 
-	// Buffer settings (1.2x = 12/10)
-	GasBufferMultiplier: big.NewInt(12),
-	GasBufferDivisor:    big.NewInt(10),
+	// Buffer settings (1.1x = 110/100, industry standard 10%)
+	GasBufferMultiplier: big.NewInt(110),
+	GasBufferDivisor:    big.NewInt(100),
 
 	// UserOperation overhead
 	UserOpFixedGas:          big.NewInt(21000),
@@ -81,11 +81,11 @@ var GasLimits = struct {
 	MinCallGasLimit         *big.Int
 	MinPreVerificationGas   *big.Int
 }{
-	// Maximum limits
-	MaxVerificationGasLimit: big.NewInt(10_000_000),  // 10M
-	MaxCallGasLimit:         big.NewInt(30_000_000),  // 30M
-	MaxPreVerificationGas:   big.NewInt(1_000_000),   // 1M
-	MaxTotalGas:             big.NewInt(50_000_000),  // 50M
+	// Maximum limits (aligned with StableNet genesis block gas limit 105M)
+	MaxVerificationGasLimit: big.NewInt(10_000_000),   // 10M
+	MaxCallGasLimit:         big.NewInt(105_000_000),  // 105M
+	MaxPreVerificationGas:   big.NewInt(1_000_000),    // 1M
+	MaxTotalGas:             big.NewInt(105_000_000),  // 105M
 
 	// Minimum limits
 	MinVerificationGasLimit: big.NewInt(10_000),
@@ -162,6 +162,36 @@ func CalculateEIP7702Gas(numAuthorizations int) *big.Int {
 		big.NewInt(int64(numAuthorizations)),
 		GasConfig.GasPerAuthorization,
 	)
+}
+
+// UnusedGasPenaltyThreshold is the threshold (40,000 gas) above which
+// the 10% unused gas penalty applies per EIP-4337 v0.9.
+var UnusedGasPenaltyThreshold = big.NewInt(40_000)
+
+// UnusedGasPenaltyDivisor represents the 10% penalty (divide by 10).
+var UnusedGasPenaltyDivisor = big.NewInt(10)
+
+// CalculateUnusedGasPenalty computes the 10% unused gas penalty per EIP-4337 v0.9.
+//
+// If unused (callGasLimit + paymasterPostOpGasLimit) exceeds 40,000 gas,
+// 10% of the unused amount is charged as penalty to prevent bundler griefing.
+func CalculateUnusedGasPenalty(allocatedCallGas, estimatedCallGas, allocatedPostOpGas, estimatedPostOpGas *big.Int) *big.Int {
+	unusedCallGas := new(big.Int)
+	if allocatedCallGas != nil && estimatedCallGas != nil && allocatedCallGas.Cmp(estimatedCallGas) > 0 {
+		unusedCallGas.Sub(allocatedCallGas, estimatedCallGas)
+	}
+
+	unusedPostOpGas := new(big.Int)
+	if allocatedPostOpGas != nil && estimatedPostOpGas != nil && allocatedPostOpGas.Cmp(estimatedPostOpGas) > 0 {
+		unusedPostOpGas.Sub(allocatedPostOpGas, estimatedPostOpGas)
+	}
+
+	totalUnused := new(big.Int).Add(unusedCallGas, unusedPostOpGas)
+
+	if totalUnused.Cmp(UnusedGasPenaltyThreshold) > 0 {
+		return new(big.Int).Div(totalUnused, UnusedGasPenaltyDivisor)
+	}
+	return big.NewInt(0)
 }
 
 // ValidateGasLimits validates that gas limits are within acceptable range.

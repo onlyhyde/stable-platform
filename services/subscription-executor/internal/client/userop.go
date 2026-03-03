@@ -40,10 +40,10 @@ func (b *UserOpBuilder) BuildERC20Transfer(to string, amount *big.Int) string {
 // BuildExecuteCalldata builds calldata for smart account execute function
 // execute(address dest, uint256 value, bytes calldata func)
 func (b *UserOpBuilder) BuildExecuteCalldata(dest string, value *big.Int, data string) string {
-	// Kernel execute selector: 0x51945447
-	// execute(ExecMode mode, bytes calldata executionCalldata)
+	// Kernel v3 ERC-7579 execute selector: 0xe9ae5c53
+	// execute(bytes32 mode, bytes calldata executionCalldata)
 	// For single execution: mode = 0x00, calldata = abi.encodePacked(target, value, data)
-	selector := "51945447"
+	selector := "e9ae5c53"
 
 	// ExecMode for single execution (32 bytes of zeros = default mode)
 	execMode := strings.Repeat("0", 64)

@@ -13,7 +13,7 @@ import type {
 } from '@stablenet/sdk-types'
 import {
   ACCOUNT_TYPE,
-  ENTRY_POINT_V07_ADDRESS,
+  ENTRY_POINT_ADDRESS,
   GAS_PAYMENT_TYPE,
   TRANSACTION_MODE,
 } from '@stablenet/sdk-types'
@@ -62,8 +62,8 @@ interface SmartAccountPreparedData {
 // Constants
 // ============================================================================
 
-/** Default entry point address (ERC-4337 v0.7) */
-const DEFAULT_ENTRY_POINT = ENTRY_POINT_V07_ADDRESS as Address
+/** Default entry point address (ERC-4337) */
+const DEFAULT_ENTRY_POINT = ENTRY_POINT_ADDRESS as Address
 
 // ============================================================================
 // Strategy Implementation

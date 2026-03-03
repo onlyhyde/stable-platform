@@ -17,6 +17,7 @@
   "dependencies": {
     "@stablenet/contracts": "workspace:*",
     "@stablenet/core": "workspace:*",
+    "@stablenet/plugin-ecdsa": "workspace:*",
     "@stablenet/plugin-stealth": "workspace:*",
     "@stablenet/wallet-sdk": "workspace:*",
     "@tanstack/react-query": "^5.90.21",

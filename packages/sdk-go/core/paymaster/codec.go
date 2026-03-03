@@ -19,6 +19,17 @@ const (
 	HeaderSize           = 25
 )
 
+// PaymasterSigMagic is the EIP-4337 v0.9 parallel signing magic (8 bytes).
+// When present at the end of paymasterData, indicates v0.9 format:
+//
+//	envelope + signature + uint16(sigLen) + MAGIC(8 bytes)
+var PaymasterSigMagic = []byte{0x22, 0xe3, 0x25, 0xa2, 0x97, 0x43, 0x96, 0x56}
+
+const (
+	PaymasterSigMagicSize = 8
+	PaymasterSigLenSize   = 2 // uint16 for signature length
+)
+
 // PaymasterType represents the type of paymaster.
 type PaymasterType uint8
 
@@ -133,7 +144,7 @@ func EnvelopeLength(data []byte) (int, error) {
 	return PayloadOffset + payloadLen, nil
 }
 
-// ConcatWithSignature appends a signature to envelope bytes.
+// ConcatWithSignature appends a signature to envelope bytes (legacy format).
 func ConcatWithSignature(envelope, signature []byte) []byte {
 	result := make([]byte, len(envelope)+len(signature))
 	copy(result, envelope)
@@ -141,12 +152,64 @@ func ConcatWithSignature(envelope, signature []byte) []byte {
 	return result
 }
 
+// ConcatWithSignatureV09 appends a signature using v0.9 parallel signing format.
+// Layout: envelope + signature + uint16(sigLen) + PAYMASTER_SIG_MAGIC(8 bytes)
+func ConcatWithSignatureV09(envelope, signature []byte) []byte {
+	sigLen := len(signature)
+	totalLen := len(envelope) + sigLen + PaymasterSigLenSize + PaymasterSigMagicSize
+	result := make([]byte, totalLen)
+
+	offset := 0
+	copy(result[offset:], envelope)
+	offset += len(envelope)
+	copy(result[offset:], signature)
+	offset += sigLen
+	// uint16 signature length (big-endian)
+	result[offset] = byte(sigLen >> 8)
+	result[offset+1] = byte(sigLen)
+	offset += PaymasterSigLenSize
+	copy(result[offset:], PaymasterSigMagic)
+
+	return result
+}
+
+// HasSignatureMagic checks if data ends with the v0.9 signature magic.
+func HasSignatureMagic(data []byte) bool {
+	if len(data) < PaymasterSigMagicSize {
+		return false
+	}
+	tail := data[len(data)-PaymasterSigMagicSize:]
+	for i := 0; i < PaymasterSigMagicSize; i++ {
+		if tail[i] != PaymasterSigMagic[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // SplitEnvelopeAndSignature splits data into envelope and signature parts.
+// Auto-detects v0.9 format (magic suffix) vs legacy format.
 func SplitEnvelopeAndSignature(data []byte, sigLen int) (envelope, signature []byte, err error) {
 	envLen, err := EnvelopeLength(data)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// v0.9 detection: check for magic suffix
+	if HasSignatureMagic(data) {
+		dataLen := len(data)
+		sigLenOffset := dataLen - PaymasterSigMagicSize - PaymasterSigLenSize
+		actualSigLen := int(data[sigLenOffset])<<8 | int(data[sigLenOffset+1])
+		sigStart := sigLenOffset - actualSigLen
+
+		if sigStart < envLen {
+			return nil, nil, fmt.Errorf("%w: v0.9 signature overlaps envelope", ErrInvalidLength)
+		}
+
+		return data[:envLen], data[sigStart : sigStart+actualSigLen], nil
+	}
+
+	// Legacy format
 	if len(data) < envLen+sigLen {
 		return nil, nil, fmt.Errorf("%w: data too short for envelope + sig", ErrInvalidLength)
 	}

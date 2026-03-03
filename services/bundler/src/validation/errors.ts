@@ -66,6 +66,90 @@ export function isExecutionResultError(error: unknown): boolean {
   return matchesErrorSelector(data, 'ExecutionResult')
 }
 
+// ============================================================================
+// Kernel v0.3.3 Module Operation Error Checkers & Decoders
+// ============================================================================
+
+/**
+ * Check if error is a ModuleOnUninstallFailed error
+ * Emitted when uninstallModule's onUninstall callback reverts (direct call mode).
+ */
+export function isModuleOnUninstallFailedError(error: unknown): boolean {
+  const data = extractErrorData(error)
+  if (!data) return false
+  return matchesErrorSelector(data, 'ModuleOnUninstallFailed')
+}
+
+/**
+ * Check if error is a Reentrancy error
+ * Triggered by nonReentrantModuleOp modifier (EIP-1153 transient storage).
+ */
+export function isReentrancyError(error: unknown): boolean {
+  const data = extractErrorData(error)
+  if (!data) return false
+  return matchesErrorSelector(data, 'Reentrancy')
+}
+
+/**
+ * Check if error is a DelegatecallTargetNotWhitelisted error
+ * Triggered when delegatecall whitelist enforcement is active and target is not whitelisted.
+ */
+export function isDelegatecallNotWhitelistedError(error: unknown): boolean {
+  const data = extractErrorData(error)
+  if (!data) return false
+  return matchesErrorSelector(data, 'DelegatecallTargetNotWhitelisted')
+}
+
+/**
+ * Decode ModuleOnUninstallFailed error data
+ * Error signature: ModuleOnUninstallFailed(uint256 moduleType, address module)
+ */
+export function decodeModuleOnUninstallFailed(data: Hex): {
+  moduleType: bigint
+  module: Address
+} {
+  const params = slice(data, 4)
+  const decoded = decodeAbiParameters(
+    [
+      { name: 'moduleType', type: 'uint256' },
+      { name: 'module', type: 'address' },
+    ],
+    params
+  )
+  return {
+    moduleType: decoded[0] as bigint,
+    module: decoded[1] as Address,
+  }
+}
+
+/**
+ * Decode Reentrancy error
+ * Error signature: Reentrancy() — no parameters
+ */
+export function decodeReentrancy(): { name: string; message: string } {
+  return {
+    name: 'Reentrancy',
+    message: 'Reentrancy detected in module operation.',
+  }
+}
+
+/**
+ * Decode DelegatecallTargetNotWhitelisted error data
+ * Error signature: DelegatecallTargetNotWhitelisted(address target)
+ */
+export function decodeDelegatecallTargetNotWhitelisted(data: Hex): {
+  target: Address
+} {
+  const params = slice(data, 4)
+  const decoded = decodeAbiParameters(
+    [{ name: 'target', type: 'address' }],
+    params
+  )
+  return {
+    target: decoded[0] as Address,
+  }
+}
+
 /**
  * Extract error data from various error formats
  */
@@ -313,6 +397,132 @@ export function decodeExecutionResult(data: Hex): ExecutionResult {
   }
 }
 
+// ============================================================================
+// Normal Return Decoders (for EntryPointSimulations state override approach)
+// These decode return data directly (no 4-byte selector skip).
+// ============================================================================
+
+/**
+ * Decode ValidationResult from normal return data (EntryPointSimulations).
+ * Unlike decodeValidationResult() which skips the 4-byte error selector,
+ * this decodes the full ABI-encoded return data from a successful eth_call.
+ */
+export function decodeValidationResultReturn(data: Hex): ValidationResultWithAggregation {
+  const decoded = decodeAbiParameters(
+    [
+      {
+        name: 'result',
+        type: 'tuple',
+        components: [
+          {
+            name: 'returnInfo',
+            type: 'tuple',
+            components: [
+              { name: 'preOpGas', type: 'uint256' },
+              { name: 'prefund', type: 'uint256' },
+              { name: 'accountValidationData', type: 'uint256' },
+              { name: 'paymasterValidationData', type: 'uint256' },
+              { name: 'paymasterContext', type: 'bytes' },
+            ],
+          },
+          {
+            name: 'senderInfo',
+            type: 'tuple',
+            components: [
+              { name: 'stake', type: 'uint256' },
+              { name: 'unstakeDelaySec', type: 'uint256' },
+            ],
+          },
+          {
+            name: 'factoryInfo',
+            type: 'tuple',
+            components: [
+              { name: 'stake', type: 'uint256' },
+              { name: 'unstakeDelaySec', type: 'uint256' },
+            ],
+          },
+          {
+            name: 'paymasterInfo',
+            type: 'tuple',
+            components: [
+              { name: 'stake', type: 'uint256' },
+              { name: 'unstakeDelaySec', type: 'uint256' },
+            ],
+          },
+          {
+            name: 'aggregatorInfo',
+            type: 'tuple',
+            components: [
+              { name: 'aggregator', type: 'address' },
+              {
+                name: 'stakeInfo',
+                type: 'tuple',
+                components: [
+                  { name: 'stake', type: 'uint256' },
+                  { name: 'unstakeDelaySec', type: 'uint256' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    data
+  )
+
+  const result = decoded[0] as unknown as {
+    returnInfo: ReturnInfo
+    senderInfo: StakeInfo
+    factoryInfo: StakeInfo
+    paymasterInfo: StakeInfo
+    aggregatorInfo: AggregatorInfo
+  }
+
+  return {
+    returnInfo: result.returnInfo,
+    senderInfo: result.senderInfo,
+    factoryInfo: result.factoryInfo,
+    paymasterInfo: result.paymasterInfo,
+    aggregatorInfo: result.aggregatorInfo,
+  }
+}
+
+/**
+ * Decode ExecutionResult from normal return data (EntryPointSimulations).
+ * Unlike decodeExecutionResult() which skips the 4-byte error selector,
+ * this decodes the full ABI-encoded return data from a successful eth_call.
+ */
+export function decodeExecutionResultReturn(data: Hex): ExecutionResult {
+  const decoded = decodeAbiParameters(
+    [
+      {
+        name: 'result',
+        type: 'tuple',
+        components: [
+          { name: 'preOpGas', type: 'uint256' },
+          { name: 'paid', type: 'uint256' },
+          { name: 'accountValidationData', type: 'uint256' },
+          { name: 'paymasterValidationData', type: 'uint256' },
+          { name: 'targetSuccess', type: 'bool' },
+          { name: 'targetResult', type: 'bytes' },
+        ],
+      },
+    ],
+    data
+  )
+
+  const result = decoded[0] as unknown as ExecutionResult
+
+  return {
+    preOpGas: result.preOpGas,
+    paid: result.paid,
+    accountValidationData: result.accountValidationData,
+    paymasterValidationData: result.paymasterValidationData,
+    targetSuccess: result.targetSuccess,
+    targetResult: result.targetResult,
+  }
+}
+
 /**
  * Parse validation data (packed uint256 with aggregator, validAfter, validUntil)
  * Format: [aggregator (20 bytes)][validUntil (6 bytes)][validAfter (6 bytes)]
@@ -427,11 +637,12 @@ export function formatRevertReason(reason: string): string {
 }
 
 /**
- * Parse error from simulation call and return appropriate error details
+ * Parse error from simulation call and return appropriate error details.
+ * With v0.9 EntryPointSimulations + state override, ValidationResult/ExecutionResult
+ * are returned normally (not as errors). This function only handles error paths:
+ * FailedOp, FailedOpWithRevert, and Kernel module errors.
  */
 export function parseSimulationError(error: unknown): {
-  isValidationResult: boolean
-  result?: ValidationResult | ValidationResultWithAggregation
   failedOp?: { opIndex: bigint; reason: string; inner?: Hex }
   rawError?: string
 } {
@@ -439,55 +650,48 @@ export function parseSimulationError(error: unknown): {
 
   if (!data) {
     return {
-      isValidationResult: false,
       rawError: error instanceof Error ? error.message : String(error),
     }
   }
 
-  // Success case - ValidationResult (v0.7)
-  if (matchesErrorSelector(data, 'ValidationResult')) {
-    return {
-      isValidationResult: true,
-      result: decodeValidationResult(data),
-    }
-  }
-
-  // Success case - ValidationResult (v0.9, includes aggregatorInfo)
-  if (matchesErrorSelector(data, 'ValidationResultV09')) {
-    return {
-      isValidationResult: true,
-      result: decodeValidationResultWithAggregation(data),
-    }
-  }
-
-  // Success case with aggregation (v0.7)
-  if (matchesErrorSelector(data, 'ValidationResultWithAggregation')) {
-    return {
-      isValidationResult: true,
-      result: decodeValidationResultWithAggregation(data),
-    }
-  }
-
-  // Failure case - FailedOp
+  // FailedOp
   if (matchesErrorSelector(data, 'FailedOp')) {
     const { opIndex, reason } = decodeFailedOp(data)
     return {
-      isValidationResult: false,
       failedOp: { opIndex, reason },
     }
   }
 
-  // Failure case - FailedOpWithRevert
+  // FailedOpWithRevert
   if (matchesErrorSelector(data, 'FailedOpWithRevert')) {
     const { opIndex, reason, inner } = decodeFailedOpWithRevert(data)
     return {
-      isValidationResult: false,
       failedOp: { opIndex, reason, inner },
     }
   }
 
+  // Kernel v0.3.3 module operation errors (may appear as direct revert data)
+  if (matchesErrorSelector(data, 'ModuleOnUninstallFailed')) {
+    const { moduleType, module } = decodeModuleOnUninstallFailed(data)
+    return {
+      rawError: `ModuleOnUninstallFailed: type=${moduleType}, module=${module}`,
+    }
+  }
+
+  if (matchesErrorSelector(data, 'Reentrancy')) {
+    return {
+      rawError: 'Reentrancy detected in module operation',
+    }
+  }
+
+  if (matchesErrorSelector(data, 'DelegatecallTargetNotWhitelisted')) {
+    const { target } = decodeDelegatecallTargetNotWhitelisted(data)
+    return {
+      rawError: `DelegatecallTargetNotWhitelisted: target=${target}`,
+    }
+  }
+
   return {
-    isValidationResult: false,
     rawError: `Unknown error: ${data}`,
   }
 }

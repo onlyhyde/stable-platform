@@ -374,5 +374,53 @@ const erc7579AccountABI = `[
 			{"name": "array", "type": "address[]"},
 			{"name": "next", "type": "address"}
 		]
+	},
+	{
+		"name": "forceUninstallModule",
+		"type": "function",
+		"inputs": [
+			{"name": "moduleType", "type": "uint256"},
+			{"name": "module", "type": "address"},
+			{"name": "deInitData", "type": "bytes"}
+		],
+		"outputs": []
+	},
+	{
+		"name": "replaceModule",
+		"type": "function",
+		"inputs": [
+			{"name": "moduleType", "type": "uint256"},
+			{"name": "oldModule", "type": "address"},
+			{"name": "deInitData", "type": "bytes"},
+			{"name": "newModule", "type": "address"},
+			{"name": "initData", "type": "bytes"}
+		],
+		"outputs": []
+	},
+	{
+		"name": "setHookGasLimit",
+		"type": "function",
+		"inputs": [
+			{"name": "hook", "type": "address"},
+			{"name": "gasLimit", "type": "uint256"}
+		],
+		"outputs": []
+	},
+	{
+		"name": "setDelegatecallWhitelist",
+		"type": "function",
+		"inputs": [
+			{"name": "target", "type": "address"},
+			{"name": "allowed", "type": "bool"}
+		],
+		"outputs": []
+	},
+	{
+		"name": "setEnforceDelegatecallWhitelist",
+		"type": "function",
+		"inputs": [
+			{"name": "enforce", "type": "bool"}
+		],
+		"outputs": []
 	}
 ]`

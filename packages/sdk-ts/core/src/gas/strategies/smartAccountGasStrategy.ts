@@ -15,6 +15,7 @@ import {
   GAS_BUFFER_MULTIPLIER,
   PAYMASTER_POST_OP_GAS,
   PAYMASTER_VERIFICATION_GAS,
+  calculateUnusedGasPenalty,
 } from '../../config'
 import { GasEstimationError } from '../../errors'
 import type { GasEstimationStrategy, GasPrices, GasStrategyConfig } from './types'
@@ -47,22 +48,21 @@ export function createSmartAccountGasStrategy(config: GasStrategyConfig): GasEst
         })
       }
 
-      // For now, use simplified estimation
-      // Real implementation would call bundler's eth_estimateUserOperationGas
-      let callGasLimit: bigint
+      // Estimate actual call gas via provider or bundler
+      let estimatedCallGas: bigint
       try {
-        callGasLimit = await provider.estimateGas({
+        estimatedCallGas = await provider.estimateGas({
           from: request.from,
           to: request.to,
           value: request.value,
           data: request.data,
         })
       } catch {
-        callGasLimit = BASE_TRANSFER_GAS * 2n
+        estimatedCallGas = BASE_TRANSFER_GAS * 2n
       }
 
-      // Apply buffer
-      callGasLimit = (callGasLimit * GAS_BUFFER_MULTIPLIER) / GAS_BUFFER_DIVISOR
+      // Apply buffer to get the allocated callGasLimit
+      const callGasLimit = (estimatedCallGas * GAS_BUFFER_MULTIPLIER) / GAS_BUFFER_DIVISOR
 
       // Standard verification gas limits
       const verificationGasLimit = DEFAULT_VERIFICATION_GAS_LIMIT
@@ -71,19 +71,31 @@ export function createSmartAccountGasStrategy(config: GasStrategyConfig): GasEst
       // Add paymaster gas if needed
       let paymasterVerificationGasLimit = 0n
       let paymasterPostOpGasLimit = 0n
+      // Estimated actual postOp usage (~80% of allocated is typical for ERC20Paymaster)
+      let estimatedPostOpGas = 0n
 
       if (request.gasPayment?.type !== GAS_PAYMENT_TYPE.NATIVE) {
         paymasterVerificationGasLimit = PAYMASTER_VERIFICATION_GAS
         paymasterPostOpGasLimit = PAYMASTER_POST_OP_GAS
+        estimatedPostOpGas = (PAYMASTER_POST_OP_GAS * 80n) / 100n
       }
 
-      // Total gas
+      // EIP-4337 v0.9: Calculate 10% unused gas penalty
+      const unusedGasPenalty = calculateUnusedGasPenalty(
+        callGasLimit,
+        estimatedCallGas,
+        paymasterPostOpGasLimit,
+        estimatedPostOpGas
+      )
+
+      // Total gas including penalty
       const totalGas =
         preVerificationGas +
         verificationGasLimit +
         callGasLimit +
         paymasterVerificationGasLimit +
-        paymasterPostOpGasLimit
+        paymasterPostOpGasLimit +
+        unusedGasPenalty
 
       // For sponsored transactions, user cost is 0
       const isSponsoredOrERC20 =
@@ -102,6 +114,7 @@ export function createSmartAccountGasStrategy(config: GasStrategyConfig): GasEst
         paymasterVerificationGasLimit:
           paymasterVerificationGasLimit > 0n ? paymasterVerificationGasLimit : undefined,
         paymasterPostOpGasLimit: paymasterPostOpGasLimit > 0n ? paymasterPostOpGasLimit : undefined,
+        unusedGasPenalty: unusedGasPenalty > 0n ? unusedGasPenalty : undefined,
       }
     },
   }

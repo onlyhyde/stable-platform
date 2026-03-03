@@ -161,6 +161,9 @@ export interface GasEstimate {
 
   /** Paymaster post-op gas limit */
   paymasterPostOpGasLimit?: bigint
+
+  /** EIP-4337 v0.9 unused gas penalty (10% of unused callGas + postOpGas above 40K threshold) */
+  unusedGasPenalty?: bigint
 }
 
 /**

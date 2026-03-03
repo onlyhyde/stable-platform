@@ -3,7 +3,8 @@ import { encodeAbiParameters } from 'viem'
 import { describe, expect, it } from 'vitest'
 import { ERROR_SELECTORS } from '../../src/abi'
 import {
-  type decodeValidationResultWithAggregation,
+  decodeValidationResultReturn,
+  decodeExecutionResultReturn,
   extractErrorData,
   formatRevertReason,
   isSignatureFailure,
@@ -14,55 +15,66 @@ import {
 } from '../../src/validation/errors'
 import { VALIDATION_CONSTANTS } from '../../src/validation/types'
 
-function buildV09ValidationResultData(): Hex {
-  const encoded = encodeAbiParameters(
+/**
+ * Build ABI-encoded ValidationResult return data (no selector prefix).
+ * Used for testing decodeValidationResultReturn (v0.9 normal return).
+ * Must be encoded as a single outer tuple to match the decoder.
+ */
+function buildValidationResultReturnData(): Hex {
+  return encodeAbiParameters(
     [
       {
-        name: 'returnInfo',
+        name: 'result',
         type: 'tuple',
         components: [
-          { name: 'preOpGas', type: 'uint256' },
-          { name: 'prefund', type: 'uint256' },
-          { name: 'accountValidationData', type: 'uint256' },
-          { name: 'paymasterValidationData', type: 'uint256' },
-          { name: 'paymasterContext', type: 'bytes' },
-        ],
-      },
-      {
-        name: 'senderInfo',
-        type: 'tuple',
-        components: [
-          { name: 'stake', type: 'uint256' },
-          { name: 'unstakeDelaySec', type: 'uint256' },
-        ],
-      },
-      {
-        name: 'factoryInfo',
-        type: 'tuple',
-        components: [
-          { name: 'stake', type: 'uint256' },
-          { name: 'unstakeDelaySec', type: 'uint256' },
-        ],
-      },
-      {
-        name: 'paymasterInfo',
-        type: 'tuple',
-        components: [
-          { name: 'stake', type: 'uint256' },
-          { name: 'unstakeDelaySec', type: 'uint256' },
-        ],
-      },
-      {
-        name: 'aggregatorInfo',
-        type: 'tuple',
-        components: [
-          { name: 'aggregator', type: 'address' },
           {
-            name: 'stakeInfo',
+            name: 'returnInfo',
+            type: 'tuple',
+            components: [
+              { name: 'preOpGas', type: 'uint256' },
+              { name: 'prefund', type: 'uint256' },
+              { name: 'accountValidationData', type: 'uint256' },
+              { name: 'paymasterValidationData', type: 'uint256' },
+              { name: 'paymasterContext', type: 'bytes' },
+            ],
+          },
+          {
+            name: 'senderInfo',
             type: 'tuple',
             components: [
               { name: 'stake', type: 'uint256' },
               { name: 'unstakeDelaySec', type: 'uint256' },
+            ],
+          },
+          {
+            name: 'factoryInfo',
+            type: 'tuple',
+            components: [
+              { name: 'stake', type: 'uint256' },
+              { name: 'unstakeDelaySec', type: 'uint256' },
+            ],
+          },
+          {
+            name: 'paymasterInfo',
+            type: 'tuple',
+            components: [
+              { name: 'stake', type: 'uint256' },
+              { name: 'unstakeDelaySec', type: 'uint256' },
+            ],
+          },
+          {
+            name: 'aggregatorInfo',
+            type: 'tuple',
+            components: [
+              { name: 'aggregator', type: 'address' },
+              {
+                name: 'stakeInfo',
+                type: 'tuple',
+                components: [
+                  { name: 'stake', type: 'uint256' },
+                  { name: 'unstakeDelaySec', type: 'uint256' },
+                ],
+              },
             ],
           },
         ],
@@ -70,23 +82,37 @@ function buildV09ValidationResultData(): Hex {
     ],
     [
       {
-        preOpGas: 100n,
-        prefund: 200n,
-        accountValidationData: 0n,
-        paymasterValidationData: 0n,
-        paymasterContext: '0x',
-      },
-      { stake: 1n, unstakeDelaySec: 2n },
-      { stake: 3n, unstakeDelaySec: 4n },
-      { stake: 5n, unstakeDelaySec: 6n },
-      {
-        aggregator: '0x1111111111111111111111111111111111111111',
-        stakeInfo: { stake: 7n, unstakeDelaySec: 8n },
+        returnInfo: {
+          preOpGas: 100n,
+          prefund: 200n,
+          accountValidationData: 0n,
+          paymasterValidationData: 0n,
+          paymasterContext: '0x',
+        },
+        senderInfo: { stake: 1n, unstakeDelaySec: 2n },
+        factoryInfo: { stake: 3n, unstakeDelaySec: 4n },
+        paymasterInfo: { stake: 5n, unstakeDelaySec: 6n },
+        aggregatorInfo: {
+          aggregator: '0x1111111111111111111111111111111111111111',
+          stakeInfo: { stake: 7n, unstakeDelaySec: 8n },
+        },
       },
     ]
   )
+}
 
-  return (ERROR_SELECTORS.ValidationResultV09 + encoded.slice(2)) as Hex
+/**
+ * Build FailedOp error data with selector prefix for parseSimulationError tests.
+ */
+function buildFailedOpData(opIndex: bigint, reason: string): Hex {
+  const encoded = encodeAbiParameters(
+    [
+      { name: 'opIndex', type: 'uint256' },
+      { name: 'reason', type: 'string' },
+    ],
+    [opIndex, reason]
+  )
+  return (ERROR_SELECTORS.FailedOp + encoded.slice(2)) as Hex
 }
 
 describe('Error utilities', () => {
@@ -171,19 +197,84 @@ describe('Error utilities', () => {
     })
   })
 
-  describe('parseSimulationError', () => {
-    it('should parse v0.9 ValidationResult and include aggregator info', () => {
-      const data = buildV09ValidationResultData()
-      const parsed = parseSimulationError({ data })
+  describe('decodeValidationResultReturn', () => {
+    it('should decode v0.9 ValidationResult normal return data', () => {
+      const data = buildValidationResultReturnData()
+      const decoded = decodeValidationResultReturn(data)
 
-      expect(parsed.isValidationResult).toBe(true)
-      expect(parsed.result).toBeDefined()
-
-      const decoded = parsed.result as ReturnType<typeof decodeValidationResultWithAggregation>
       expect(decoded.returnInfo.preOpGas).toBe(100n)
+      expect(decoded.returnInfo.prefund).toBe(200n)
+      expect(decoded.senderInfo.stake).toBe(1n)
+      expect(decoded.factoryInfo.stake).toBe(3n)
+      expect(decoded.paymasterInfo.stake).toBe(5n)
       expect(decoded.aggregatorInfo.aggregator.toLowerCase()).toBe(
         '0x1111111111111111111111111111111111111111'
       )
+      expect(decoded.aggregatorInfo.stakeInfo.stake).toBe(7n)
+    })
+  })
+
+  describe('decodeExecutionResultReturn', () => {
+    it('should decode ExecutionResult normal return data', () => {
+      const data = encodeAbiParameters(
+        [
+          {
+            name: 'result',
+            type: 'tuple',
+            components: [
+              { name: 'preOpGas', type: 'uint256' },
+              { name: 'paid', type: 'uint256' },
+              { name: 'accountValidationData', type: 'uint256' },
+              { name: 'paymasterValidationData', type: 'uint256' },
+              { name: 'targetSuccess', type: 'bool' },
+              { name: 'targetResult', type: 'bytes' },
+            ],
+          },
+        ],
+        [
+          {
+            preOpGas: 50000n,
+            paid: 100000n,
+            accountValidationData: 0n,
+            paymasterValidationData: 0n,
+            targetSuccess: true,
+            targetResult: '0xabcd',
+          },
+        ]
+      )
+
+      const decoded = decodeExecutionResultReturn(data)
+
+      expect(decoded.preOpGas).toBe(50000n)
+      expect(decoded.paid).toBe(100000n)
+      expect(decoded.targetSuccess).toBe(true)
+      expect(decoded.targetResult).toBe('0xabcd')
+    })
+  })
+
+  describe('parseSimulationError', () => {
+    it('should parse FailedOp error correctly', () => {
+      const data = buildFailedOpData(0n, "AA21 didn't pay prefund")
+      const parsed = parseSimulationError({ data })
+
+      expect(parsed.failedOp).toBeDefined()
+      expect(parsed.failedOp?.opIndex).toBe(0n)
+      expect(parsed.failedOp?.reason).toBe("AA21 didn't pay prefund")
+    })
+
+    it('should return rawError for unknown error data', () => {
+      const parsed = parseSimulationError({ data: '0xdeadbeef' })
+
+      expect(parsed.failedOp).toBeUndefined()
+      expect(parsed.rawError).toBeDefined()
+      expect(parsed.rawError).toContain('Unknown error')
+    })
+
+    it('should return rawError for non-hex error', () => {
+      const parsed = parseSimulationError(new Error('some error'))
+
+      expect(parsed.failedOp).toBeUndefined()
+      expect(parsed.rawError).toBe('some error')
     })
   })
 

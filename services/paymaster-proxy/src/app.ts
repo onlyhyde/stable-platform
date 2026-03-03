@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
+import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
@@ -96,29 +97,34 @@ export function createApp(config: PaymasterProxyConfig): Hono {
   // Deposit monitoring — periodically check paymaster deposits on EntryPoint
   const depositConfig = getDepositMonitorConfig()
   const autoDepositConfig = getAutoDepositConfig()
+  // Monitor deposits on all supported EntryPoints (not just the first one)
   let depositMonitor: DepositMonitor | undefined
+  const depositMonitors: DepositMonitor[] = []
   if (depositConfig.depositMonitorEnabled && config.supportedEntryPoints.length > 0) {
-    // Create WalletClient for auto-deposit if enabled
-    // PoC reuses signerPrivateKey; production should use a separate funding key
     const walletClient: WalletClient | undefined = autoDepositConfig.autoDepositEnabled
       ? getWalletClient(config.rpcUrl, config.signerPrivateKey)
       : undefined
 
-    depositMonitor = new DepositMonitor(
-      client,
-      {
-        entryPoint: config.supportedEntryPoints[0]!,
-        paymasterAddresses: config.paymasterAddresses,
-        minDepositThreshold: depositConfig.depositMinThreshold,
-        pollIntervalMs: depositConfig.depositMonitorPollMs,
-        rejectOnLowDeposit: depositConfig.depositRejectOnLow,
-        autoDepositEnabled: autoDepositConfig.autoDepositEnabled,
-        autoDepositAmount: autoDepositConfig.autoDepositAmount,
-        autoDepositCooldownMs: autoDepositConfig.autoDepositCooldownMs,
-      },
-      walletClient
-    )
-    depositMonitor.start()
+    for (const ep of config.supportedEntryPoints) {
+      const monitor = new DepositMonitor(
+        client,
+        {
+          entryPoint: ep,
+          paymasterAddresses: config.paymasterAddresses,
+          minDepositThreshold: depositConfig.depositMinThreshold,
+          pollIntervalMs: depositConfig.depositMonitorPollMs,
+          rejectOnLowDeposit: depositConfig.depositRejectOnLow,
+          autoDepositEnabled: autoDepositConfig.autoDepositEnabled,
+          autoDepositAmount: autoDepositConfig.autoDepositAmount,
+          autoDepositCooldownMs: autoDepositConfig.autoDepositCooldownMs,
+        },
+        walletClient
+      )
+      monitor.start()
+      depositMonitors.push(monitor)
+    }
+    // Primary monitor (first EntryPoint) used for handler config
+    depositMonitor = depositMonitors[0]
   }
 
   // Handler configuration
@@ -139,6 +145,8 @@ export function createApp(config: PaymasterProxyConfig): Hono {
 
   // Middleware
   app.use('*', cors())
+  // Limit request body size to 1 MB to prevent abuse
+  app.use('*', bodyLimit({ maxSize: 1024 * 1024 }))
   if (config.debug) {
     app.use('*', logger())
   }
@@ -267,12 +275,18 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
     adminToken = configuredToken
   } else {
     adminToken = crypto.randomUUID()
+    // Mask token in logs: show only first 8 chars to aid debugging without full exposure
+    const masked = `${adminToken.slice(0, 8)}...`
     console.warn(
-      `[paymaster-proxy] No PAYMASTER_ADMIN_TOKEN configured. Generated ephemeral token: ${adminToken}`
+      `[paymaster-proxy] No PAYMASTER_ADMIN_TOKEN configured. Generated ephemeral token: ${masked}`
     )
     console.warn(
       '[paymaster-proxy] Set PAYMASTER_ADMIN_TOKEN env var for persistent admin access.'
     )
+    // In development, log the full token to stderr so operator can use it
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[paymaster-proxy] Full ephemeral admin token: ${adminToken}`)
+    }
   }
   const auth = bearerAuth({ token: adminToken })
   app.use('/admin/*', auth)
@@ -360,12 +374,16 @@ async function handleJsonRpcRequest(
       }
     }
 
+    // In production, hide internal error details to prevent information leakage.
+    const isProduction = process.env.NODE_ENV === 'production'
     return {
       jsonrpc: '2.0',
       id,
       error: {
         code: RPC_ERROR_CODES.INTERNAL_ERROR,
-        message: error instanceof Error ? error.message : 'Internal error',
+        message: isProduction
+          ? 'Internal error'
+          : (error instanceof Error ? error.message : 'Internal error'),
       },
     }
   }
@@ -447,6 +465,16 @@ function handlePmGetPaymasterStubData(params: unknown[], config: HandlerConfig):
   }
 
   const [userOp, entryPoint, chainId, context] = parseResult.data
+
+  // Check deposit sufficiency early at stub stage to fail fast
+  const stubPaymasterType = (context as PaymasterContext | undefined)?.paymasterType ?? 'verifying'
+  const stubTargetPaymaster = config.paymasterAddresses[stubPaymasterType as PaymasterType]
+  if (stubTargetPaymaster && config.depositMonitor?.shouldRejectSigning(stubTargetPaymaster)) {
+    throw new RpcError(
+      `Paymaster ${stubPaymasterType} deposit is below minimum threshold. Please try again later.`,
+      RPC_ERROR_CODES.INTERNAL_ERROR
+    )
+  }
 
   const result = handleGetPaymasterStubData(
     {

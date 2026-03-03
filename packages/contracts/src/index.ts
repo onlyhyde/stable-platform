@@ -15,6 +15,7 @@ export {
   DEFAULT_TOKENS,
   // Canonical addresses (same on all production EVM chains)
   ECDSA_VALIDATOR_ADDRESS,
+  ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   // Chain-aware getters
   getChainAddresses,

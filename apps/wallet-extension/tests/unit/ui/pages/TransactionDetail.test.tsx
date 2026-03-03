@@ -17,6 +17,7 @@ jest.mock('../../../../src/ui/hooks/useWalletStore', () => ({
 
 jest.mock('../../../../src/ui/hooks', () => ({
   useSelectedNetwork: () => mockSelectedNetwork(),
+  useNetworkCurrency: () => ({ symbol: 'ETH', decimals: 18 }),
 }))
 
 const MOCK_TX: PendingTransaction = {
@@ -173,13 +174,9 @@ describe('TransactionDetail', () => {
     setupWalletStore({ selectedTxId: MOCK_TX.id, history: [MOCK_TX] })
 
     render(<TransactionDetail />)
-    // View on Explorer appears in both stepper and details card
-    const links = screen.getAllByText('View on Explorer')
-    expect(links.length).toBeGreaterThanOrEqual(1)
-    expect(links[0].closest('a')).toHaveAttribute(
-      'href',
-      `https://etherscan.io/tx/${MOCK_TX.txHash}`
-    )
+    // View on Explorer appears as title attribute on buttons in stepper and details card
+    const buttons = screen.getAllByTitle('View on Explorer')
+    expect(buttons.length).toBeGreaterThanOrEqual(1)
   })
 
   it('should not show explorer link when no explorerUrl', () => {
@@ -192,7 +189,7 @@ describe('TransactionDetail', () => {
     })
 
     render(<TransactionDetail />)
-    expect(screen.queryByText('View on Explorer')).toBeNull()
+    expect(screen.queryByTitle('View on Explorer')).toBeNull()
   })
 
   it('should navigate to activity when back button is clicked', () => {

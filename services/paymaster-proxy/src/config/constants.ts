@@ -66,7 +66,7 @@ const DEFAULTS = {
   port: 4338,
   debug: false,
   sponsorName: 'StableNet Paymaster',
-  validitySeconds: 3600, // 1 hour
+  validitySeconds: 300, // 5 minutes — shorter window reduces signature replay risk
   clockSkewSeconds: 60, // 1 minute
   maxGasLimit: 5_000_000n,
   maxGasCost: 10n ** 18n, // 1 ETH
@@ -139,10 +139,10 @@ function parseChainIds(name: string, defaultValue: readonly number[]): number[] 
 
 /**
  * Parse comma-separated EntryPoint addresses
- * Defaults to ERC-4337 v0.7 EntryPoint
+ * Defaults to ERC-4337 v0.9 EntryPoint
  */
 export function parseEntryPoints(): Address[] {
-  const DEFAULT_ENTRY_POINT = '0x0000000071727De22E5E9d8BAf0edAc6f37da032'
+  const DEFAULT_ENTRY_POINT = '0xEf6817fe73741A8F10088f9511c64b666a338A14'
   const value = process.env[PAYMASTER_ENV_VARS.SUPPORTED_ENTRY_POINTS]
   if (value === undefined || value === '') {
     return [DEFAULT_ENTRY_POINT as Address]
@@ -276,10 +276,10 @@ Server:
   ${PAYMASTER_ENV_VARS.DEBUG}                          Enable debug mode (default: false)
   ${PAYMASTER_ENV_VARS.SPONSOR_NAME}                   Sponsor name in responses (default: StableNet Paymaster)
   ${PAYMASTER_ENV_VARS.SUPPORTED_CHAIN_IDS}            Supported chain IDs, comma-separated (default: 8283,1,11155111,84532)
-  ${PAYMASTER_ENV_VARS.SUPPORTED_ENTRY_POINTS}         Supported EntryPoint addresses, comma-separated (default: 0x0000000071727De22E5E9d8BAf0edAc6f37da032)
+  ${PAYMASTER_ENV_VARS.SUPPORTED_ENTRY_POINTS}         Supported EntryPoint addresses, comma-separated (default: 0xEf6817fe73741A8F10088f9511c64b666a338A14)
 
 Signer:
-  ${PAYMASTER_ENV_VARS.VALIDITY_SECONDS}               Signature validity in seconds (default: 3600 = 1 hour)
+  ${PAYMASTER_ENV_VARS.VALIDITY_SECONDS}               Signature validity in seconds (default: 300 = 5 minutes)
   ${PAYMASTER_ENV_VARS.CLOCK_SKEW_SECONDS}             Allowed clock skew in seconds (default: 60)
 
 Policy Defaults:

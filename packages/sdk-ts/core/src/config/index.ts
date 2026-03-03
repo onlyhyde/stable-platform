@@ -48,4 +48,8 @@ export {
   PAYMASTER_POST_OP_GAS,
   PAYMASTER_VERIFICATION_GAS,
   SETCODE_BASE_GAS,
+  // EIP-4337 v0.9 unused gas penalty
+  UNUSED_GAS_PENALTY_DIVISOR,
+  UNUSED_GAS_PENALTY_THRESHOLD,
+  calculateUnusedGasPenalty,
 } from './gas'

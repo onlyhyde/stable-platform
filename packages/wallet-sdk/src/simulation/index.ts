@@ -8,7 +8,7 @@
  * ValidationResult revert, failure by FailedOp revert.
  */
 
-import { ENTRY_POINT_V07_ADDRESS } from '@stablenet/core'
+import { ENTRY_POINT_ADDRESS } from '@stablenet/core'
 import { packUserOperation } from '@stablenet/core'
 import type { UserOperation } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
@@ -137,7 +137,7 @@ const EXECUTION_RESULT_SELECTOR = '0x8b7ac980'
 export async function simulateValidation(
   publicClient: PublicClient,
   userOp: UserOperation,
-  entryPoint: Address = ENTRY_POINT_V07_ADDRESS
+  entryPoint: Address = ENTRY_POINT_ADDRESS
 ): Promise<SimulationResult> {
   const packed = packUserOperation(userOp)
 
@@ -177,7 +177,7 @@ export async function simulateHandleOp(
   userOp: UserOperation,
   target: Address,
   targetCallData: Hex,
-  entryPoint: Address = ENTRY_POINT_V07_ADDRESS
+  entryPoint: Address = ENTRY_POINT_ADDRESS
 ): Promise<HandleOpSimulationResult> {
   const packed = packUserOperation(userOp)
 

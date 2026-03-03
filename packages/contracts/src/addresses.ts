@@ -60,8 +60,15 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Addr
 
 // ─── Canonical Addresses (same on all production EVM chains via CREATE2) ─────
 // These are used as SDK defaults for chains without local deployment data.
+// Per-chain deployed addresses live in `generated/addresses.ts` (CHAIN_ADDRESSES).
+// Use `getEntryPoint(chainId)` to get the correct address for a given chain —
+// it returns the chain-specific address when available, or falls back to the
+// canonical address below.
 
-/** Canonical EntryPoint v0.7 (ERC-4337) */
+/** Canonical EntryPoint address (ERC-4337 v0.9) */
+export const ENTRY_POINT_ADDRESS: Address = '0xEf6817fe73741A8F10088f9511c64b666a338A14'
+
+/** @deprecated Use ENTRY_POINT_ADDRESS instead. */
 export const ENTRY_POINT_V07_ADDRESS: Address = '0x0000000071727De22E5E9d8BAf0edAc6f37da032'
 
 /** Canonical Kernel v3.1 Factory (ZeroDev) */

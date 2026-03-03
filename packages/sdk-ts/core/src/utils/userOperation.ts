@@ -212,6 +212,60 @@ export function getUserOperationHash(
 }
 
 /**
+ * Build an EIP-712 TypedData object for a UserOperation.
+ *
+ * The returned object can be passed directly to viem's `signTypedData`,
+ * producing a signature over the raw EIP-712 hash (no EIP-191 prefix).
+ * The on-chain ECDSAValidator accepts both raw EIP-712 and EIP-191 wrapped
+ * signatures via its dual-recovery pattern.
+ *
+ * hashTypedData(buildUserOpTypedData(...)) === getUserOperationHash(...)
+ */
+export function buildUserOpTypedData(
+  userOp: UserOperation,
+  entryPoint: Address,
+  chainId: bigint
+): {
+  domain: { name: string; version: string; chainId: bigint; verifyingContract: Address }
+  types: { PackedUserOperation: Array<{ name: string; type: string }> }
+  primaryType: 'PackedUserOperation'
+  message: Record<string, unknown>
+} {
+  const packed = packUserOperation(userOp)
+  return {
+    types: {
+      PackedUserOperation: [
+        { name: 'sender', type: 'address' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'initCode', type: 'bytes' },
+        { name: 'callData', type: 'bytes' },
+        { name: 'accountGasLimits', type: 'bytes32' },
+        { name: 'preVerificationGas', type: 'uint256' },
+        { name: 'gasFees', type: 'bytes32' },
+        { name: 'paymasterAndData', type: 'bytes' },
+      ],
+    },
+    primaryType: 'PackedUserOperation' as const,
+    domain: {
+      name: 'ERC4337',
+      version: '1',
+      chainId,
+      verifyingContract: entryPoint,
+    },
+    message: {
+      sender: userOp.sender,
+      nonce: userOp.nonce,
+      initCode: packed.initCode,
+      callData: packed.callData,
+      accountGasLimits: packed.accountGasLimits,
+      preVerificationGas: userOp.preVerificationGas,
+      gasFees: packed.gasFees,
+      paymasterAndData: packed.paymasterAndData,
+    },
+  }
+}
+
+/**
  * Wrap a raw ECDSA signature for Kernel v3 ECDSA validator.
  * Kernel v3 expects: 0x02 prefix + raw ECDSA signature (65 bytes)
  */

@@ -1,4 +1,4 @@
-import { ENTRY_POINT_V07_ADDRESS, getEntryPoint, isChainSupported } from '@stablenet/contracts'
+import { ENTRY_POINT_ADDRESS, getEntryPoint, isChainSupported } from '@stablenet/contracts'
 import type { Address, Hex } from 'viem'
 import type { BundlerConfig } from '../types'
 
@@ -123,19 +123,19 @@ export const NETWORK_PRESETS: Record<
 > = {
   local: {
     rpcUrl: 'http://localhost:8501',
-    entryPoints: [isChainSupported(8283) ? getEntryPoint(8283) : ENTRY_POINT_V07_ADDRESS],
+    entryPoints: [isChainSupported(8283) ? getEntryPoint(8283) : ENTRY_POINT_ADDRESS],
   },
   devnet: {
     rpcUrl: 'http://localhost:8545',
-    entryPoints: [ENTRY_POINT_V07_ADDRESS],
+    entryPoints: [ENTRY_POINT_ADDRESS],
   },
   sepolia: {
     rpcUrl: 'https://rpc.sepolia.org',
-    entryPoints: [ENTRY_POINT_V07_ADDRESS],
+    entryPoints: [ENTRY_POINT_ADDRESS],
   },
   mainnet: {
     rpcUrl: 'https://eth.llamarpc.com',
-    entryPoints: [ENTRY_POINT_V07_ADDRESS],
+    entryPoints: [ENTRY_POINT_ADDRESS],
   },
 }
 

@@ -43,6 +43,7 @@ export { BUNDLER_ERROR_CODES, BUNDLER_ERROR_CODES as RPC_BUNDLER_ERROR_CODES } f
 export {
   CALL_TYPE,
   ECDSA_VALIDATOR_ADDRESS,
+  ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   // MODULE_TYPE is exported from ./module with complete 6 types
   EXEC_MODE,
@@ -75,12 +76,17 @@ export {
   type ModuleABI,
   type ModuleConfigField,
   type ModuleConfigSchema,
+  type ModuleForceUninstallRequest,
   type ModuleInstallRequest,
   type ModuleMetadata,
+  type ModuleReplaceRequest,
   type ModuleStatus,
   // Types
   type ModuleType,
   type ModuleUninstallRequest,
+  type HookGasLimitRequest,
+  type DelegatecallWhitelistRequest,
+  type DelegatecallWhitelistEnforceRequest,
   type MultiSigValidatorConfig,
   type RecurringPaymentConfig,
   // Executor configs

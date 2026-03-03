@@ -1,26 +1,18 @@
-# EIP-7702 + ERC-4337 + ERC-7579 세미나 문서 세트
+# EIP-7702 + ERC-4337 + ERC-7579 세미나 문서 세트 (Legacy)
 
-## 문서 순서
-1. `00-overview.md`
-2. `01-background-eip-7702-4337.md`
-3. `02-7702-kernel-7579-pros-cons.md`
-4. `03-how-to-use-7702-kernel-smart-account.md`
-5. `04-7702-7579-with-4337.md`
-6. `05-policy-control-contracts.md`
-7. `06-7579-module-catalog.md`
-8. `07-install-and-use-7579-modules.md`
-9. `08-delegation-validator-executor-and-alt-key.md`
-10. `09-compatibility-with-existing-contracts.md`
-11. `10-seminar-playbook.md`
-12. `11-code-study-master-guide.md`
-13. `12-phase1-line-by-line-guide.md`
-14. `13-seminar-script-90min.md`
-15. `14-json-rpc-packet-cookbook.md`
-16. `15-seminar-script-slide-map.md`
+이 디렉터리는 **기존 세미나 v1 자료 보관용**입니다.
 
-## 코드 근거
-- `poc-contract/docs/KERNEL_ARCHITECTURE.md`
-- `poc-contract/src/erc4337-entrypoint/interfaces/PackedUserOperation.sol`
-- `poc-contract/src/erc7579-smartaccount/Kernel.sol`
-- `stable-platform/services/bundler/src/validation/validator.ts`
-- `stable-platform/services/paymaster-proxy/src/policy/sponsorPolicy.ts`
+신규 수정/발표 준비는 아래 canonical 경로를 사용하세요.
+
+## Canonical 경로
+
+1. 세미나 본문(최신): `docs/claude/seminar/`
+2. 표준/플로우 정본: `docs/claude/spec/`
+3. 발표 슬라이드 정본: `docs/seminar-deck/*.marp.md`
+4. 세미나 준비 실행계획: `docs/seminar-deck/SEMINAR_PREP_PLAN_2026-03-02.md`
+
+## 이 디렉터리 사용 원칙
+
+1. 역사적 참고/비교 용도로만 사용
+2. 코드 정합성 판단의 기준으로 사용하지 않음
+3. 내용 인용 시 canonical 문서와 대조 검증 필수

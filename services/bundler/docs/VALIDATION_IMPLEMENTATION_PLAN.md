@@ -21,7 +21,7 @@ This document outlines the implementation plan for adding missing ERC-4337 valid
 src/
 ├── abi/                           # NEW
 │   ├── index.ts
-│   └── entryPointV07.ts           # EntryPoint v0.7 ABI
+│   └── entryPoint.ts           # EntryPoint v0.9 ABI
 ├── validation/                    # NEW
 │   ├── index.ts
 │   ├── types.ts                   # ValidationResult, StakeInfo, etc.
@@ -84,7 +84,7 @@ eth_sendUserOperation
 
 **New Files**:
 - `src/abi/index.ts` - ABI exports
-- `src/abi/entryPointV07.ts` - Complete EntryPoint v0.7 ABI
+- `src/abi/entryPoint.ts` - Complete EntryPoint v0.9 ABI
 - `src/validation/types.ts` - Validation types
 
 **Key Types**:
@@ -249,7 +249,7 @@ class UserOperationValidator {
 | File | Purpose | Est. LOC |
 |------|---------|----------|
 | `src/abi/index.ts` | ABI exports | 10 |
-| `src/abi/entryPointV07.ts` | EntryPoint v0.7 ABI | 200 |
+| `src/abi/entryPoint.ts` | EntryPoint v0.9 ABI | 200 |
 | `src/validation/index.ts` | Module exports | 20 |
 | `src/validation/types.ts` | Validation types | 100 |
 | `src/validation/errors.ts` | Revert parsing | 150 |

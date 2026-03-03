@@ -118,7 +118,8 @@ export class PaymasterSigner {
   generateStubData(
     paymasterType: PaymasterType,
     payload: Hex,
-    validitySeconds?: number
+    validitySeconds?: number,
+    nonce?: bigint
   ): {
     paymasterData: Hex
     validUntil: number
@@ -140,7 +141,7 @@ export class PaymasterSigner {
       flags: 0,
       validUntil: BigInt(validUntil),
       validAfter: BigInt(validAfter),
-      nonce: 0n,
+      nonce: nonce ?? 0n,
       payload,
     })
 
@@ -165,7 +166,8 @@ export class PaymasterSigner {
     chainId: bigint,
     paymasterType: PaymasterType,
     payload: Hex,
-    validitySeconds?: number
+    validitySeconds?: number,
+    nonce?: bigint
   ): Promise<{
     paymasterData: Hex
     validUntil: number
@@ -182,13 +184,14 @@ export class PaymasterSigner {
       throw new Error(`Invalid time range: ${timeError.message}`)
     }
 
-    // Build envelope
+    // Build envelope — nonce must match the on-chain senderNonce for
+    // VerifyingPaymaster/SponsorPaymaster to accept the signature.
     const envelope = encodePaymasterData({
       paymasterType,
       flags: 0,
       validUntil: BigInt(validUntil),
       validAfter: BigInt(validAfter),
-      nonce: 0n,
+      nonce: nonce ?? 0n,
       payload,
     })
 

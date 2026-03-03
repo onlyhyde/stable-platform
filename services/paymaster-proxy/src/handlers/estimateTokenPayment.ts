@@ -28,7 +28,7 @@ export async function handleEstimateTokenPayment(
   tokenAddress: Address,
   config: EstimateTokenPaymentConfig
 ): Promise<EstimateTokenPaymentResult> {
-  const chainIdNum = Number.parseInt(chainId, 16)
+  const chainIdNum = Number(chainId)
   if (!config.supportedChainIds.includes(chainIdNum)) {
     return {
       success: false,

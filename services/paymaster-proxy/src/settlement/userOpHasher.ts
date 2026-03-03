@@ -43,10 +43,10 @@ function toUserOperation(
       paymaster: paymasterAndData.paymaster,
       paymasterVerificationGasLimit: userOp.paymasterVerificationGasLimit
         ? BigInt(userOp.paymasterVerificationGasLimit)
-        : undefined,
+        : 0n,
       paymasterPostOpGasLimit: userOp.paymasterPostOpGasLimit
         ? BigInt(userOp.paymasterPostOpGasLimit)
-        : undefined,
+        : 0n,
       paymasterData: paymasterAndData.paymasterData,
       signature: userOp.signature,
     }
@@ -81,6 +81,8 @@ function toUserOperation(
     maxFeePerGas,
     maxPriorityFeePerGas,
     paymaster: paymasterAndData.paymaster,
+    paymasterVerificationGasLimit: 0n,
+    paymasterPostOpGasLimit: 0n,
     paymasterData: paymasterAndData.paymasterData,
     signature: packed.signature,
   }

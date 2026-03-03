@@ -35,6 +35,8 @@ export const STABLENET_RPC_METHODS = {
   GET_INSTALLED_MODULES: 'wallet_getInstalledModules',
   INSTALL_MODULE: 'wallet_installModule',
   UNINSTALL_MODULE: 'wallet_uninstallModule',
+  FORCE_UNINSTALL_MODULE: 'wallet_forceUninstallModule',
+  REPLACE_MODULE: 'wallet_replaceModule',
   IS_MODULE_INSTALLED: 'wallet_isModuleInstalled',
 
   // Session Keys
@@ -139,6 +141,7 @@ export const AA_ERROR_CODES = {
   AA23_REVERTED: 'AA23',
   AA24_SIGNATURE_ERROR: 'AA24',
   AA25_INVALID_NONCE: 'AA25',
+  AA26_OVER_VERIFICATION_GAS: 'AA26',
 
   // AA3x: Paymaster validation
   AA30_PAYMASTER_NOT_DEPLOYED: 'AA30',
@@ -146,6 +149,7 @@ export const AA_ERROR_CODES = {
   AA32_PAYMASTER_EXPIRED: 'AA32',
   AA33_REVERTED: 'AA33',
   AA34_SIGNATURE_ERROR: 'AA34',
+  AA36_OVER_PAYMASTER_VERIFICATION_GAS: 'AA36',
 
   // AA4x: Paymaster execution
   AA40_OVER_VERIFICATION_GAS: 'AA40',
@@ -236,6 +240,28 @@ export interface ModuleUninstallRequest {
   address: Address
   type: ModuleType
   deInitData: Hex
+}
+
+/**
+ * Module force-uninstallation request (Kernel v0.3.3)
+ * Uses excessivelySafeCall — module revert is ignored
+ */
+export interface ModuleForceUninstallRequest {
+  address: Address
+  type: ModuleType
+  deInitData: Hex
+}
+
+/**
+ * Module replacement request (Kernel v0.3.3)
+ * Atomically uninstalls old module and installs new module
+ */
+export interface ModuleReplaceRequest {
+  oldAddress: Address
+  newAddress: Address
+  type: ModuleType
+  deInitData: Hex
+  initData: Hex
 }
 
 // ============================================================================
@@ -407,6 +433,14 @@ export interface StableNetRpcSchema {
   }
   wallet_uninstallModule: {
     params: ModuleUninstallRequest
+    result: Hash
+  }
+  wallet_forceUninstallModule: {
+    params: ModuleForceUninstallRequest
+    result: Hash
+  }
+  wallet_replaceModule: {
+    params: ModuleReplaceRequest
     result: Hash
   }
   wallet_isModuleInstalled: {

@@ -1,6 +1,16 @@
+import type { Hex } from 'viem'
 import type { BundlerClient } from './bundlerClient'
 import type { ReservationTracker } from './reservationTracker'
 import type { SponsorPolicyManager } from '../policy/sponsorPolicy'
+
+/** Kernel v0.3.3 error selectors for settlement classification */
+const MODULE_ERROR_SELECTORS = {
+  ModuleOnUninstallFailed: '0x45b4a14f',
+  Reentrancy: '0xab143c06',
+  DelegatecallTargetNotWhitelisted: '0x7eb83a8a',
+} as const
+
+type FailureReason = 'module_deinit_failed' | 'reentrancy' | 'delegatecall_not_whitelisted' | 'unknown'
 
 /**
  * Settlement worker statistics
@@ -124,6 +134,14 @@ export class SettlementWorker {
           )
           this.stats.settled++
         } else {
+          // Classify failure reason for module-specific errors
+          const failureReason = this.classifyFailureReason(receipt.reason)
+          if (failureReason === 'module_deinit_failed') {
+            console.warn(
+              `[settlement-worker] Module onUninstall failed for ${hash} — module deInit reverted`
+            )
+          }
+
           // UserOp failed — cancel the reservation (release budget)
           this.policyManager.cancelReservation(
             reservation.sender,
@@ -152,5 +170,26 @@ export class SettlementWorker {
         }
       }
     }
+  }
+
+  /**
+   * Classify UserOp failure reason by matching revert data against known error selectors
+   */
+  private classifyFailureReason(reason?: Hex): FailureReason {
+    if (!reason || reason.length < 10) return 'unknown'
+
+    const selector = reason.slice(0, 10).toLowerCase()
+
+    if (selector === MODULE_ERROR_SELECTORS.ModuleOnUninstallFailed) {
+      return 'module_deinit_failed'
+    }
+    if (selector === MODULE_ERROR_SELECTORS.Reentrancy) {
+      return 'reentrancy'
+    }
+    if (selector === MODULE_ERROR_SELECTORS.DelegatecallTargetNotWhitelisted) {
+      return 'delegatecall_not_whitelisted'
+    }
+
+    return 'unknown'
   }
 }

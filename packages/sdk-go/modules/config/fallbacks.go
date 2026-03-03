@@ -11,15 +11,18 @@ import (
 // ============================================================================
 
 // TokenReceiverFallback is the token receiver fallback module definition.
+// Handles ERC-777 tokensReceived callbacks via fallback routing.
+// ERC-721/ERC-1155 are handled natively by Kernel's built-in pure functions
+// and do not require a fallback module.
 var TokenReceiverFallback = CreateModuleEntry(
 	ModuleMetadataExtended{
 		Type:        types.ModuleTypeFallback,
-		Name:        "Token Receiver",
-		Description: "Handle ERC-721 and ERC-1155 token transfers (safeTransferFrom callbacks)",
-		Version:     "1.0.0",
+		Name:        "Token Receiver (ERC-777)",
+		Description: "Handle ERC-777 tokensReceived callbacks. ERC-721/ERC-1155 are handled natively by Kernel.",
+		Version:     "1.1.0",
 		Author:      "StableNet",
 		IsVerified:  true,
-		Tags:        []string{"fallback", "nft", "erc721", "erc1155"},
+		Tags:        []string{"fallback", "token", "erc777"},
 		DocsURL:     "https://docs.stablenet.io/modules/token-receiver",
 	},
 	ModuleConfigSchema{

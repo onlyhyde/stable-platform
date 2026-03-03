@@ -37,6 +37,20 @@ export interface UninstallModuleParams {
   deInitData: Hex
 }
 
+export interface ReplaceModuleParams {
+  moduleType: ModuleType
+  oldModule: Address
+  deInitData: Hex
+  newModule: Address
+  initData: Hex
+}
+
+export interface ForceUninstallModuleParams {
+  moduleType: ModuleType
+  module: Address
+  deInitData: Hex
+}
+
 export interface ModuleCallData {
   to: Address
   data: Hex
@@ -77,6 +91,30 @@ const KERNEL_MODULE_ABI = [
     ],
     outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'forceUninstallModule',
+    inputs: [
+      { name: 'moduleTypeId', type: 'uint256' },
+      { name: 'module', type: 'address' },
+      { name: 'deInitData', type: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'replaceModule',
+    inputs: [
+      { name: 'moduleTypeId', type: 'uint256' },
+      { name: 'oldModule', type: 'address' },
+      { name: 'deInitData', type: 'bytes' },
+      { name: 'newModule', type: 'address' },
+      { name: 'initData', type: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
   },
 ] as const
 
@@ -138,6 +176,62 @@ export function useModule() {
       }
     },
     [encodeUninstallModule]
+  )
+
+  /**
+   * Encode force uninstall module call data
+   */
+  const encodeForceUninstallModule = useCallback((params: ForceUninstallModuleParams): Hex => {
+    return encodeFunctionData({
+      abi: KERNEL_MODULE_ABI,
+      functionName: 'forceUninstallModule',
+      args: [params.moduleType, params.module, params.deInitData],
+    })
+  }, [])
+
+  /**
+   * Encode replace module call data
+   */
+  const encodeReplaceModule = useCallback((params: ReplaceModuleParams): Hex => {
+    return encodeFunctionData({
+      abi: KERNEL_MODULE_ABI,
+      functionName: 'replaceModule',
+      args: [
+        params.moduleType,
+        params.oldModule,
+        params.deInitData,
+        params.newModule,
+        params.initData,
+      ],
+    })
+  }, [])
+
+  /**
+   * Build force uninstall module call for smart account
+   */
+  const buildForceUninstallModuleCall = useCallback(
+    (smartAccount: Address, params: ForceUninstallModuleParams): ModuleCallData => {
+      return {
+        to: smartAccount,
+        data: encodeForceUninstallModule(params),
+        value: 0n,
+      }
+    },
+    [encodeForceUninstallModule]
+  )
+
+  /**
+   * Build replace module call for smart account
+   */
+  const buildReplaceModuleCall = useCallback(
+    (smartAccount: Address, params: ReplaceModuleParams): ModuleCallData => {
+      return {
+        to: smartAccount,
+        data: encodeReplaceModule(params),
+        value: 0n,
+      }
+    },
+    [encodeReplaceModule]
   )
 
   /**
@@ -302,8 +396,12 @@ export function useModule() {
     // Core functions
     encodeInstallModule,
     encodeUninstallModule,
+    encodeForceUninstallModule,
+    encodeReplaceModule,
     buildInstallModuleCall,
     buildUninstallModuleCall,
+    buildForceUninstallModuleCall,
+    buildReplaceModuleCall,
     isModuleInstalled,
 
     // Validator init data encoders

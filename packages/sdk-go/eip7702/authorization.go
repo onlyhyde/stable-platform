@@ -311,3 +311,49 @@ func RecoverSigner(signedAuth *SignedAuthorization) (types.Address, error) {
 
 	return types.Address(address), nil
 }
+
+// ============================================================================
+// EIP-4337 v0.9 initCode 0x7702 Detection
+// ============================================================================
+
+// IsEIP7702InitCode checks if initCode uses the EIP-7702 path.
+//
+// Per EIP-4337 v0.9, when initCode starts with address 0x...7702
+// (right-padded to 20 bytes), the EntryPoint skips factory deployment
+// and uses EIP-7702 authorization verification instead.
+func IsEIP7702InitCode(initCode []byte) bool {
+	if len(initCode) < 20 {
+		return false
+	}
+	return bytes.Equal(initCode[:20], EIP7702InitCodeAddress.Bytes())
+}
+
+// EIP7702InitCodeResult contains parsed EIP-7702 initCode components.
+type EIP7702InitCodeResult struct {
+	// IsEIP7702 indicates the initCode uses EIP-7702 path.
+	IsEIP7702 bool
+	// InitData contains initialization data (bytes after the 20-byte address).
+	// Empty if initCode is exactly 20 bytes.
+	InitData []byte
+}
+
+// ParseEIP7702InitCode parses EIP-7702 initCode into its components.
+//
+// If initCode > 20 bytes, the remaining bytes are initialization data
+// to be called via senderCreator.
+func ParseEIP7702InitCode(initCode []byte) *EIP7702InitCodeResult {
+	if !IsEIP7702InitCode(initCode) {
+		return nil
+	}
+
+	var initData []byte
+	if len(initCode) > 20 {
+		initData = make([]byte, len(initCode)-20)
+		copy(initData, initCode[20:])
+	}
+
+	return &EIP7702InitCodeResult{
+		IsEIP7702: true,
+		InitData:  initData,
+	}
+}

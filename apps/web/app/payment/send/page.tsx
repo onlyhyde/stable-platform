@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Address } from 'viem'
 import { isAddress, parseUnits } from 'viem'
 import {
@@ -11,12 +11,14 @@ import {
   CardHeader,
   CardTitle,
   Input,
+  PaymasterSelector,
   useToast,
 } from '@/components/common'
 import { BatchRecipientList } from '@/components/payment/BatchRecipientList'
-import type { WalletToken } from '@/hooks'
-import { useUserOp, useWallet, useWalletAssets } from '@/hooks'
+import type { SponsorshipPolicy, SupportedToken, WalletToken } from '@/hooks'
+import { usePaymaster, useUserOp, useWallet, useWalletAssets } from '@/hooks'
 import { useBatchTransaction } from '@/hooks/useBatchTransaction'
+import { useEntryPointDeposit } from '@/hooks/useEntryPointDeposit'
 import { formatTokenAmount } from '@/lib/utils'
 
 type SelectedAsset = 'native' | WalletToken
@@ -28,11 +30,64 @@ export default function SendPage() {
   const { sendTransaction, isLoading, error } = useUserOp()
   const { addToast, updateToast } = useToast()
 
+  // Paymaster
+  const {
+    selectedType: paymasterType,
+    setSelectedType: setPaymasterType,
+    selectedTokenAddress: paymasterTokenAddress,
+    setSelectedTokenAddress: setPaymasterTokenAddress,
+    selectedPolicyId: paymasterPolicyId,
+    setSelectedPolicyId: setPaymasterPolicyId,
+    getSupportedTokens,
+    getSponsorshipPolicies,
+    checkSponsorshipEligibility,
+    isLoading: paymasterLoading,
+    error: paymasterError,
+  } = usePaymaster()
+
+  // EntryPoint deposit (for self-pay mode)
+  const { formattedDeposit, fetchDeposit } = useEntryPointDeposit(address)
+
   const [recipient, setRecipient] = useState('')
   const [amount, setAmount] = useState('')
   const [selectedAsset, setSelectedAsset] = useState<SelectedAsset>('native')
   const [isBatchMode, setIsBatchMode] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+
+  // Paymaster sub-selector state
+  const [supportedTokens, setSupportedTokens] = useState<SupportedToken[] | null>(null)
+  const [sponsorPolicies, setSponsorPolicies] = useState<SponsorshipPolicy[] | null>(null)
+  const [sponsorEligible, setSponsorEligible] = useState<boolean | null>(null)
+  const [isLoadingTokens, setIsLoadingTokens] = useState(false)
+  const [isLoadingPolicies, setIsLoadingPolicies] = useState(false)
+
+  // Fetch EntryPoint deposit when self-pay ('none') mode selected
+  useEffect(() => {
+    if (paymasterType === ('none' as string) && address) {
+      fetchDeposit()
+    }
+  }, [paymasterType, address, fetchDeposit])
+
+  // Fetch tokens when erc20/permit2 selected
+  useEffect(() => {
+    if (paymasterType === 'erc20' || paymasterType === 'permit2') {
+      setIsLoadingTokens(true)
+      getSupportedTokens()
+        .then(setSupportedTokens)
+        .finally(() => setIsLoadingTokens(false))
+    }
+  }, [paymasterType, getSupportedTokens])
+
+  // Check eligibility & fetch policies when sponsor selected
+  useEffect(() => {
+    if (paymasterType === 'sponsor' && address) {
+      checkSponsorshipEligibility(address).then((r) => setSponsorEligible(r?.eligible ?? false))
+      setIsLoadingPolicies(true)
+      getSponsorshipPolicies()
+        .then(setSponsorPolicies)
+        .finally(() => setIsLoadingPolicies(false))
+    }
+  }, [paymasterType, address, checkSponsorshipEligibility, getSponsorshipPolicies])
 
   // Batch transaction hook
   const {
@@ -406,9 +461,22 @@ export default function SendPage() {
                 </div>
               </div>
             ) : (
-              <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Gas fees will be sponsored by the Paymaster
-              </p>
+              <PaymasterSelector
+                selectedType={paymasterType}
+                onTypeChange={setPaymasterType}
+                supportedTokens={supportedTokens}
+                selectedTokenAddress={paymasterTokenAddress}
+                onTokenSelect={setPaymasterTokenAddress}
+                isLoadingTokens={isLoadingTokens}
+                sponsorshipPolicies={sponsorPolicies}
+                selectedPolicyId={paymasterPolicyId}
+                onPolicySelect={setPaymasterPolicyId}
+                isLoadingPolicies={isLoadingPolicies}
+                sponsorEligible={sponsorEligible}
+                depositBalance={formattedDeposit}
+                isLoading={paymasterLoading}
+                error={paymasterError?.message}
+              />
             )}
           </div>
 

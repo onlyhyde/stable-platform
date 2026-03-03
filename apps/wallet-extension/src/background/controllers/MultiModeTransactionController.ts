@@ -15,7 +15,7 @@ import {
   DEFAULT_CALL_GAS_LIMIT,
   DEFAULT_PRE_VERIFICATION_GAS,
   DEFAULT_VERIFICATION_GAS_LIMIT,
-  ENTRY_POINT_V07_ADDRESS,
+  ENTRY_POINT_ADDRESS,
   type GasEstimate,
   getAvailableTransactionModes,
   getDefaultTransactionMode,
@@ -44,7 +44,7 @@ const logger = createLogger('MultiModeTransactionController')
 function resolveEntryPoint(chainId: number, explicit?: Address): Address {
   if (explicit) return explicit
   if (isChainSupported(chainId)) return getEntryPoint(chainId) as Address
-  return ENTRY_POINT_V07_ADDRESS as Address
+  return ENTRY_POINT_ADDRESS as Address
 }
 
 type TransactionEventType =

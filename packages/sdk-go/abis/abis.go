@@ -211,6 +211,23 @@ const KernelABIJSON = `[
 	},
 	{
 		"type": "function",
+		"name": "executeFromExecutor",
+		"inputs": [
+			{"name": "execMode", "type": "bytes32"},
+			{"name": "executionCalldata", "type": "bytes"}
+		],
+		"outputs": [{"name": "returnData", "type": "bytes[]"}],
+		"stateMutability": "payable"
+	},
+	{
+		"type": "function",
+		"name": "supportsExecutionMode",
+		"inputs": [{"name": "mode", "type": "bytes32"}],
+		"outputs": [{"name": "", "type": "bool"}],
+		"stateMutability": "view"
+	},
+	{
+		"type": "function",
 		"name": "accountId",
 		"inputs": [],
 		"outputs": [{"name": "", "type": "string"}],
@@ -222,6 +239,92 @@ const KernelABIJSON = `[
 		"inputs": [],
 		"outputs": [{"name": "", "type": "uint32"}],
 		"stateMutability": "view"
+	},
+	{
+		"type": "function",
+		"name": "forceUninstallModule",
+		"inputs": [
+			{"name": "moduleType", "type": "uint256"},
+			{"name": "module", "type": "address"},
+			{"name": "deInitData", "type": "bytes"}
+		],
+		"outputs": [],
+		"stateMutability": "payable"
+	},
+	{
+		"type": "function",
+		"name": "replaceModule",
+		"inputs": [
+			{"name": "moduleType", "type": "uint256"},
+			{"name": "oldModule", "type": "address"},
+			{"name": "deInitData", "type": "bytes"},
+			{"name": "newModule", "type": "address"},
+			{"name": "initData", "type": "bytes"}
+		],
+		"outputs": [],
+		"stateMutability": "payable"
+	},
+	{
+		"type": "function",
+		"name": "setHookGasLimit",
+		"inputs": [
+			{"name": "hook", "type": "address"},
+			{"name": "gasLimit", "type": "uint256"}
+		],
+		"outputs": [],
+		"stateMutability": "payable"
+	},
+	{
+		"type": "function",
+		"name": "setDelegatecallWhitelist",
+		"inputs": [
+			{"name": "target", "type": "address"},
+			{"name": "allowed", "type": "bool"}
+		],
+		"outputs": [],
+		"stateMutability": "payable"
+	},
+	{
+		"type": "function",
+		"name": "setEnforceDelegatecallWhitelist",
+		"inputs": [
+			{"name": "enforce", "type": "bool"}
+		],
+		"outputs": [],
+		"stateMutability": "payable"
+	},
+	{
+		"type": "event",
+		"name": "HookGasLimitSet",
+		"inputs": [
+			{"name": "hook", "type": "address", "indexed": true},
+			{"name": "gasLimit", "type": "uint256", "indexed": false}
+		]
+	},
+	{
+		"type": "event",
+		"name": "DelegatecallWhitelistUpdated",
+		"inputs": [
+			{"name": "target", "type": "address", "indexed": true},
+			{"name": "allowed", "type": "bool", "indexed": false}
+		]
+	},
+	{
+		"type": "event",
+		"name": "DelegatecallWhitelistEnforced",
+		"inputs": [
+			{"name": "enforce", "type": "bool", "indexed": false}
+		]
+	},
+	{
+		"type": "error",
+		"name": "DelegatecallTargetNotWhitelisted",
+		"inputs": [{"name": "target", "type": "address"}]
+	},
+	{
+		"type": "error",
+		"name": "Reentrancy",
+		"inputs": []
 	}
 ]`
 

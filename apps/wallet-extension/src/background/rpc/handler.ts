@@ -1,24 +1,36 @@
 // Use SDK for bundler client, UserOperation utilities, and security modules
 import {
+  buildUserOpTypedData,
   createBundlerClient,
+  getUserOperationHash,
+  packUserOperation,
   // Module operations
   createModuleOperationClient,
   createRateLimiter,
   createTypedDataValidator,
   getModuleTypeName,
-  getUserOperationHash,
   // Security utilities
   InputValidator,
   type ModuleType,
   type UserOperation,
   ENTRY_POINT_ABI,
   KERNEL_ABI,
+  // Gas constants
+  BASE_TRANSFER_GAS,
+  DEFAULT_CALL_GAS_LIMIT,
+  DEFAULT_PRE_VERIFICATION_GAS,
+  DEFAULT_VERIFICATION_GAS_LIMIT,
+  EIP7702_AUTH_GAS,
+  GAS_PER_AUTHORIZATION,
+  GAS_BUFFER_MULTIPLIER,
+  GAS_BUFFER_DIVISOR,
 } from '@stablenet/core'
 import type { Address, Hash, Hex } from 'viem'
 import { createPublicClient, http } from 'viem'
 import { concat, encodeFunctionData, getAddress, isAddress, pad, toHex } from 'viem/utils'
 import {
-  ENTRY_POINT_V07_ADDRESS,
+  ENTRY_POINT_ADDRESS,
+  getEcdsaValidator,
   getEntryPoint,
   isChainSupported,
 } from '@stablenet/contracts'
@@ -32,7 +44,7 @@ import { keyringController } from '../keyring'
 import { checkOrigin } from '../security/phishingGuard'
 import { walletState } from '../state/store'
 import { eventBroadcaster } from '../utils/eventBroadcaster'
-import { fetchFromPaymaster, requestPaymasterSponsorship } from './paymaster'
+import { fetchFromPaymaster, sponsorAndSign } from './paymaster'
 import {
   createRpcError,
   decodeStringResult,
@@ -43,6 +55,11 @@ import {
 } from './utils'
 import { buildKernelInstallData } from './kernelInitData'
 import { validateRpcParams } from './validation'
+import {
+  createValidatorRegistry,
+  type ValidatorRegistry,
+} from '../validators/validatorRegistry'
+import { encodeValidatorNonceKey, VALIDATION_TYPE } from '@stablenet/core'
 
 const logger = createLogger('RpcHandler')
 
@@ -59,16 +76,105 @@ import {
 // Singleton validator instance
 const inputValidator = new InputValidator()
 
+// Singleton validator registry for multi-validator support
+const validatorRegistry: ValidatorRegistry = createValidatorRegistry()
+// Load persisted state — store the promise to await before first use
+const registryReady = validatorRegistry.load().catch(() => {})
+
+/**
+ * Get the nonce key for the active validator of an account.
+ * Returns 0n for ECDSA (root), encoded key for WebAuthn/MultiSig.
+ */
+async function getNonceKeyForAccount(account: Address, chainId?: number): Promise<bigint> {
+  await registryReady
+  const id = chainId ?? walletState.getCurrentNetwork()?.chainId ?? 8283
+  const activeConfig = validatorRegistry.getActiveValidator(id, account)
+  if (activeConfig.validatorType === 'ecdsa') {
+    return 0n
+  }
+  return encodeValidatorNonceKey(activeConfig.validatorAddress, {
+    type: VALIDATION_TYPE.VALIDATOR,
+  })
+}
+
 /**
  * Get EntryPoint address for the current chain.
- * Uses deployment data for known chains, falls back to canonical v0.7 address.
+ * Uses deployment data for known chains, falls back to canonical address.
  */
 function getEntryPointForChain(chainId?: number): Address {
   const id = chainId ?? walletState.getCurrentNetwork()?.chainId
   if (id && isChainSupported(id)) {
     return getEntryPoint(id) as Address
   }
-  return ENTRY_POINT_V07_ADDRESS as Address
+  return ENTRY_POINT_ADDRESS as Address
+}
+
+/**
+ * Resolve factory/factoryData for a UserOperation sender.
+ * Returns factory info if the account is not yet deployed (ERC-4337 initCode).
+ */
+async function resolveFactory(
+  sender: Address,
+  rpcUrl: string
+): Promise<{ factory: Address; factoryData: `0x${string}` } | null> {
+  const account = walletState
+    .getState()
+    .accounts.accounts.find((a) => a.address.toLowerCase() === sender.toLowerCase())
+
+  if (!account || account.isDeployed) return null
+
+  // Double-check on-chain deployment status
+  const client = getPublicClient(rpcUrl)
+  const code = await client.getCode({ address: sender }).catch(() => undefined)
+  if (code && code !== '0x') {
+    // Account is deployed, update cached status
+    const accounts = walletState
+      .getState()
+      .accounts.accounts.map((a) =>
+        a.address.toLowerCase() === sender.toLowerCase() ? { ...a, isDeployed: true } : a
+      )
+    await walletState.setState({
+      accounts: { ...walletState.getState().accounts, accounts },
+    })
+    return null
+  }
+
+  if (!account.factoryAddress || !account.factoryData) {
+    logger.warn(`[resolveFactory] Account ${sender} is not deployed but has no factory info stored`)
+    return null
+  }
+
+  return { factory: account.factoryAddress, factoryData: account.factoryData }
+}
+
+/**
+ * Resolve the signing EOA address for a UserOp sender.
+ *
+ * For smart accounts (CREATE2-derived), the sender address is NOT in the keyring.
+ * We need the ownerAddress (EOA) to sign with the correct key.
+ * For delegated/EOA accounts, the sender IS the EOA — return as-is.
+ */
+function resolveSignerAddress(sender: Address): Address {
+  const account = walletState
+    .getState()
+    .accounts.accounts.find((a) => a.address.toLowerCase() === sender.toLowerCase())
+
+  if (account?.ownerAddress) {
+    logger.info(`[resolveSignerAddress] ${sender.slice(0, 10)}... → owner=${account.ownerAddress.slice(0, 10)}... (type=${account.type})`)
+    return account.ownerAddress
+  }
+
+  // No ownerAddress: either delegated/EOA (sender IS the signer) or unknown
+  return sender
+}
+
+/**
+ * Normalize accountId to a canonical form.
+ * Handles both "kernel.advanced.v0.3.3" (old) and "kernel.advanced.0.3.3" (new) formats.
+ */
+function normalizeAccountId(accountId: string): string {
+  // Match pattern like "kernel.advanced.v0.3.3" → extract without the "v" prefix
+  return accountId.replace(/\.v(\d+\.\d+\.\d+)$/, '.$1')
 }
 
 // Cache createPublicClient instances by rpcUrl with TTL-based eviction
@@ -127,6 +233,32 @@ function encodeKernelExecute(to: Address, value: bigint = 0n, data: Hex = '0x'):
     abi: KERNEL_ABI,
     functionName: 'execute',
     args: [execMode, executionCalldata],
+  })
+}
+
+/**
+ * Encode Kernel.initialize() calldata for EIP-7702 delegation.
+ * Sets the root validator (ECDSA) and registers the EOA as its owner.
+ *
+ * @param validatorAddress - ECDSA validator contract address
+ * @param ownerAddress - EOA address to register as the signer/owner
+ */
+function encodeKernelInitialize(validatorAddress: Address, ownerAddress: Address): Hex {
+  // rootValidator is bytes21: 0x01 (MODULE_TYPE.VALIDATOR) + 20-byte validator address
+  const rootValidator = concat([
+    pad(toHex(1), { size: 1 }),
+    validatorAddress,
+  ]) as Hex
+  const hook = '0x0000000000000000000000000000000000000000' as Address
+  // validatorData = the owner address (ECDSA validator stores this as the signer)
+  const validatorData = ownerAddress as Hex
+  const hookData = '0x' as Hex
+  const initConfig: Hex[] = []
+
+  return encodeFunctionData({
+    abi: KERNEL_ABI,
+    functionName: 'initialize',
+    args: [rootValidator, hook, validatorData, hookData, initConfig],
   })
 }
 
@@ -1025,15 +1157,29 @@ const handlers: Record<string, RpcHandler> = {
         authorizationHash
       )
 
-      // Step 4: Get gas prices
-      const gasPrice = await client.getGasPrice()
-      const gas = 100_000n // EIP-7702 SetCode transaction base gas
+      // Step 4: Encode Kernel.initialize() calldata
+      // After EIP-7702 delegation sets the code, this call initializes the Kernel
+      // with the ECDSA validator as root validator and the EOA as its owner.
+      const ecdsaValidatorAddress = getEcdsaValidator(chainId)
+      const initData = encodeKernelInitialize(ecdsaValidatorAddress, account)
 
-      // Step 5: Build the EIP-7702 transaction with proper viem field names
+      // Step 5: Get gas prices and calculate gas
+      // NOTE: estimateGas cannot be used here — it doesn't see the authorizationList,
+      // so it returns ~21K (plain self-transfer) which is below intrinsic gas minimum.
+      // Formula: base(21K) + authOverhead(25K) + perAuth(12.5K) per auth + initGas(100K), with 10% buffer
+      const gasPrice = await client.getGasPrice()
+      const numAuths = 1n
+      const KERNEL_INIT_GAS = 100_000n
+      const baseGas = BASE_TRANSFER_GAS + EIP7702_AUTH_GAS + GAS_PER_AUTHORIZATION * numAuths + KERNEL_INIT_GAS
+      const gas = (baseGas * GAS_BUFFER_MULTIPLIER) / GAS_BUFFER_DIVISOR
+
+      // Step 6: Build the EIP-7702 transaction with proper viem field names
+      // The tx calls account.initialize() via self-referencing to, setting up the
+      // Kernel root validator in the same transaction as the delegation.
       const transaction = {
-        to: account, // Self-referencing for delegation
+        to: account, // Self-referencing: calls initialize() on the delegated account
         value: 0n,
-        data: '0x' as Hex,
+        data: initData,
         gas,
         nonce: txNonce,
         chainId: network.chainId,
@@ -1053,10 +1199,10 @@ const handlers: Record<string, RpcHandler> = {
         ],
       }
 
-      // Step 6: Sign the transaction
+      // Step 7: Sign the transaction
       const signedTx = await keyringController.signTransaction(account, transaction)
 
-      // Step 7: Broadcast
+      // Step 8: Broadcast
       const txHash = await client.sendRawTransaction({
         serializedTransaction: signedTx,
       })
@@ -1178,6 +1324,7 @@ const handlers: Record<string, RpcHandler> = {
         message: 'Bundler not configured for this network',
       })
     }
+    const bundlerUrl = network.bundlerUrl
 
     // Fetch current nonce from EntryPoint if not provided by the caller
     if (userOp.nonce === 0n) {
@@ -1198,13 +1345,23 @@ const handlers: Record<string, RpcHandler> = {
             },
           ],
           functionName: 'getNonce',
-          args: [userOp.sender, 0n],
+          args: [userOp.sender, await getNonceKeyForAccount(userOp.sender, network.chainId)],
         })
         .catch(() => 0n)
       userOp.nonce = onChainNonce
     }
 
-    // Estimate gas prices and limits if not provided by the caller
+    // Resolve factory/initCode for undeployed accounts (ERC-4337)
+    if (!userOp.factory) {
+      const factoryInfo = await resolveFactory(userOp.sender, network.rpcUrl)
+      if (factoryInfo) {
+        userOp.factory = factoryInfo.factory
+        userOp.factoryData = factoryInfo.factoryData
+        logger.info(`[eth_sendUserOperation] Account not deployed, attaching factory: ${factoryInfo.factory}`)
+      }
+    }
+
+    // Estimate gas prices if not provided by the caller
     if (userOp.maxFeePerGas === 0n) {
       const publicClient = getPublicClient(network.rpcUrl)
       try {
@@ -1212,7 +1369,9 @@ const handlers: Record<string, RpcHandler> = {
         // Add 25% buffer for price fluctuation between estimation and inclusion
         const buffer = (fees.maxFeePerGas ?? 0n) / 4n
         userOp.maxFeePerGas = (fees.maxFeePerGas ?? 0n) + buffer
-        userOp.maxPriorityFeePerGas = fees.maxPriorityFeePerGas ?? 0n
+        // ERC-4337: maxPriorityFeePerGas must not exceed maxFeePerGas
+        const rawPriority = fees.maxPriorityFeePerGas ?? 0n
+        userOp.maxPriorityFeePerGas = rawPriority > userOp.maxFeePerGas ? userOp.maxFeePerGas : rawPriority
       } catch {
         // Fallback to legacy gas price for non-EIP-1559 chains
         const gasPrice = await publicClient.getGasPrice()
@@ -1220,26 +1379,9 @@ const handlers: Record<string, RpcHandler> = {
         userOp.maxFeePerGas = gasPrice + buffer
         userOp.maxPriorityFeePerGas = gasPrice
       }
-
-      // Estimate gas limits from bundler for accurate cost display
-      try {
-        const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
-        const gasEstimate = await bundlerClient.estimateUserOperationGas(userOp)
-        // Bundler estimate already includes 10% buffer from binary search.
-        // Add a small 20% safety margin on top for execution variance.
-        userOp.preVerificationGas = gasEstimate.preVerificationGas
-        userOp.verificationGasLimit = gasEstimate.verificationGasLimit + gasEstimate.verificationGasLimit / 5n
-        userOp.callGasLimit = gasEstimate.callGasLimit + gasEstimate.callGasLimit / 5n
-      } catch (error) {
-        logger.warn(`UserOp gas limit estimation failed, using smart account defaults: ${(error as Error).message}`)
-        // Smart account verification typically needs 300k-500k gas
-        userOp.verificationGasLimit = BigInt(500000)
-        userOp.callGasLimit = BigInt(200000)
-        userOp.preVerificationGas = BigInt(50000)
-      }
     }
 
-    // Calculate estimated gas cost for approval display
+    // Calculate estimated gas cost for approval display (pre-estimation defaults)
     const estimatedGasCost =
       (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
       userOp.maxFeePerGas
@@ -1263,41 +1405,10 @@ const handlers: Record<string, RpcHandler> = {
       }
     }
 
-    // Request paymaster sponsorship based on gasPayment type
-    const shouldSponsor = gasPayment?.type === 'sponsor' || (!gasPayment && !!network.paymasterUrl)
-    if (!userOp.paymaster && shouldSponsor && network.paymasterUrl) {
-      const sponsorship = await requestPaymasterSponsorship(
-        network.paymasterUrl,
-        userOp,
-        entryPoint,
-        network.chainId
-      )
-      if (sponsorship) {
-        userOp.paymaster = sponsorship.paymaster
-        userOp.paymasterData = sponsorship.paymasterData
-        userOp.paymasterVerificationGasLimit = sponsorship.paymasterVerificationGasLimit
-        userOp.paymasterPostOpGasLimit = sponsorship.paymasterPostOpGasLimit
-      }
-    }
-    // Self-pay mode (native): no paymaster, EntryPoint deposit covers gas
-
-    // Sign the UserOperation
-    let signedUserOp: UserOperation
-    try {
-      const hash = getUserOperationHash(userOp, entryPoint, BigInt(network.chainId))
-      const signature = await keyringController.signMessage(userOp.sender, hash)
-      signedUserOp = { ...userOp, signature }
-    } catch (error) {
-      throw createRpcError({
-        code: RPC_ERRORS.INTERNAL_ERROR.code,
-        message: (error as Error).message || 'UserOperation signing failed',
-      })
-    }
-
-    // Submit to bundler (SDK handles packing internally)
-    try {
-      const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
-      const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
+    // Helper to submit UserOp and track pending transaction
+    const submitAndTrack = async (signedOp: UserOperation) => {
+      const bundlerClient = createBundlerClient({ url: bundlerUrl, entryPoint })
+      const userOpHash = await bundlerClient.sendUserOperation(signedOp)
 
       // Track as pending transaction with userOpHash (txHash comes later from bundler polling)
       try {
@@ -1305,25 +1416,164 @@ const handlers: Record<string, RpcHandler> = {
         const target = raw.target as Address | undefined
         await walletState.addPendingTransaction({
           id: txId,
-          from: userOp.sender,
-          to: target ?? userOp.sender,
+          from: signedOp.sender,
+          to: target ?? signedOp.sender,
           value: raw.value ? BigInt(raw.value as string) : 0n,
-          data: userOp.callData,
+          data: signedOp.callData,
           chainId: network.chainId,
           status: 'submitted',
           type: 'userOp',
           userOpHash,
           timestamp: Date.now(),
-          maxFeePerGas: userOp.maxFeePerGas,
-          maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
+          maxFeePerGas: signedOp.maxFeePerGas,
+          maxPriorityFeePerGas: signedOp.maxPriorityFeePerGas,
         })
       } catch {
         // Non-blocking: pending tx tracking failure should not fail the UserOp submission
       }
 
       return userOpHash
+    }
+
+    // ERC-7677: sponsorAndSign handles stub → estimate → final → sign
+    const shouldSponsor = gasPayment?.type === 'sponsor' || gasPayment?.type === 'erc20' || (!gasPayment && !!network.paymasterUrl)
+    logger.info(`[eth_sendUserOperation] sender=${userOp.sender}, nonce=${userOp.nonce}, shouldSponsor=${shouldSponsor}, gasPayment=${JSON.stringify(gasPayment ?? 'none')}`)
+
+    if (!userOp.paymaster && shouldSponsor && network.paymasterUrl) {
+      const paymasterContext: Record<string, unknown> =
+        gasPayment?.type === 'erc20' && gasPayment.tokenAddress
+          ? { paymasterType: 'erc20', tokenAddress: gasPayment.tokenAddress }
+          : {}
+
+      logger.info(`[eth_sendUserOperation] Sponsored path: paymasterUrl=${network.paymasterUrl}, context=${JSON.stringify(paymasterContext)}`)
+
+      const signedUserOp = await sponsorAndSign({
+        userOp,
+        paymasterUrl: network.paymasterUrl,
+        entryPoint,
+        chainId: network.chainId,
+        context: paymasterContext,
+        bundlerUrl,
+        signer: async (finalOp) => {
+          const signerAddr = resolveSignerAddress(finalOp.sender)
+          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(network.chainId))
+
+          // AA24 diagnostic: log hash and signer details
+          const clientHash = getUserOperationHash(finalOp, entryPoint, BigInt(network.chainId))
+          logger.info(`[eth_sendUserOperation] SIGN DIAG: entryPoint=${entryPoint}, chainId=${network.chainId}, sender=${finalOp.sender}, signerAddr=${signerAddr}, clientHash=${clientHash}`)
+
+          return keyringController.signTypedData(signerAddr, typedData)
+        },
+      })
+
+      if (signedUserOp) {
+        logger.info(`[eth_sendUserOperation] sponsorAndSign OK, submitting to bundler...`)
+
+        // AA24 diagnostic: compare client-side hash with on-chain EntryPoint hash
+        try {
+          const clientHash = getUserOperationHash(signedUserOp, entryPoint, BigInt(network.chainId))
+          const packed = packUserOperation(signedUserOp)
+          // Cast packed to satisfy EntryPoint ABI tuple type (nonce is Hex in packed but bigint in ABI)
+          const packedForAbi = { ...packed, nonce: BigInt(packed.nonce), preVerificationGas: BigInt(packed.preVerificationGas) }
+          const onChainHash = await getPublicClient(network.rpcUrl).readContract({
+            address: entryPoint,
+            abi: ENTRY_POINT_ABI,
+            functionName: 'getUserOpHash',
+            args: [packedForAbi as never],
+          }) as `0x${string}`
+          const hashMatch = clientHash === onChainHash
+          logger.info(`[eth_sendUserOperation] HASH DIAG: clientHash=${clientHash.slice(0, 14)}..., onChainHash=${String(onChainHash).slice(0, 14)}..., match=${hashMatch}`)
+          if (!hashMatch) {
+            logger.error(`[eth_sendUserOperation] HASH MISMATCH! Client signs different hash than EntryPoint expects. clientHash=${clientHash}, onChainHash=${String(onChainHash)}`)
+          }
+        } catch (hashErr) {
+          logger.warn(`[eth_sendUserOperation] HASH DIAG failed: ${(hashErr as Error).message}`)
+        }
+
+        try {
+          const hash = await submitAndTrack(signedUserOp)
+          logger.info(`[eth_sendUserOperation] Bundler accepted: userOpHash=${hash}`)
+          return hash
+        } catch (error) {
+          const err = error as Error & { code?: number; data?: unknown }
+          logger.error(`[eth_sendUserOperation] Bundler REJECTED: code=${err.code}, msg=${err.message}, data=${JSON.stringify(err.data ?? null)}`)
+          throw createRpcError({
+            code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+            message: err.message || 'UserOperation submission failed',
+            data: err.data,
+          })
+        }
+      }
+      logger.warn('[eth_sendUserOperation] sponsorAndSign returned null, falling through to self-pay')
+      // sponsorAndSign returned null → fall through to self-pay
+    }
+
+    // Self-pay path: estimate gas without paymaster, then sign with EIP-712
+    // NOTE: Do NOT add extra buffer here — the bundler's estimator already includes
+    // configurable buffers (default 10%). Adding more causes double-buffering that
+    // can exceed MAX_VERIFICATION_GAS validation limits.
+    logger.info('[eth_sendUserOperation] Self-pay path: estimating gas without paymaster')
+    try {
+      const bundlerClient = createBundlerClient({ url: bundlerUrl, entryPoint })
+      const gasEstimate = await bundlerClient.estimateUserOperationGas(userOp)
+      userOp.preVerificationGas = gasEstimate.preVerificationGas
+      userOp.verificationGasLimit = gasEstimate.verificationGasLimit
+      userOp.callGasLimit = gasEstimate.callGasLimit
+      logger.info(`[eth_sendUserOperation] Self-pay gas OK: preVerif=${userOp.preVerificationGas}, verifLimit=${userOp.verificationGasLimit}, callLimit=${userOp.callGasLimit}`)
+    } catch (error) {
+      logger.warn(`[eth_sendUserOperation] Self-pay gas estimation FAILED, using defaults: ${(error as Error).message}`)
+      userOp.verificationGasLimit = DEFAULT_VERIFICATION_GAS_LIMIT
+      userOp.callGasLimit = DEFAULT_CALL_GAS_LIMIT
+      userOp.preVerificationGas = DEFAULT_PRE_VERIFICATION_GAS
+    }
+
+    let signedUserOp: UserOperation
+    try {
+      const signerAddr = resolveSignerAddress(userOp.sender)
+      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(network.chainId))
+
+      // AA24 diagnostic: log hash and signer details
+      const clientHash = getUserOperationHash(userOp, entryPoint, BigInt(network.chainId))
+      logger.info(`[eth_sendUserOperation] SIGN DIAG (self-pay): entryPoint=${entryPoint}, chainId=${network.chainId}, sender=${userOp.sender}, signerAddr=${signerAddr}, clientHash=${clientHash}`)
+
+      const signature = await keyringController.signTypedData(signerAddr, typedData)
+      signedUserOp = { ...userOp, signature }
+      logger.info(`[eth_sendUserOperation] Self-pay signed OK: sigLen=${signature.length}`)
+    } catch (error) {
+      logger.error(`[eth_sendUserOperation] Self-pay signing FAILED: ${(error as Error).message}`)
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'UserOperation signing failed',
+      })
+    }
+
+    // AA24 diagnostic: compare client-side hash with on-chain EntryPoint hash
+    try {
+      const clientHash = getUserOperationHash(signedUserOp, entryPoint, BigInt(network.chainId))
+      const packed = packUserOperation(signedUserOp)
+      const packedForAbi = { ...packed, nonce: BigInt(packed.nonce), preVerificationGas: BigInt(packed.preVerificationGas) }
+      const onChainHash = await getPublicClient(network.rpcUrl).readContract({
+        address: entryPoint,
+        abi: ENTRY_POINT_ABI,
+        functionName: 'getUserOpHash',
+        args: [packedForAbi as never],
+      }) as `0x${string}`
+      const hashMatch = clientHash === onChainHash
+      logger.info(`[eth_sendUserOperation] HASH DIAG (self-pay): clientHash=${clientHash.slice(0, 14)}..., onChainHash=${String(onChainHash).slice(0, 14)}..., match=${hashMatch}`)
+      if (!hashMatch) {
+        logger.error(`[eth_sendUserOperation] HASH MISMATCH! clientHash=${clientHash}, onChainHash=${String(onChainHash)}`)
+      }
+    } catch (hashErr) {
+      logger.warn(`[eth_sendUserOperation] HASH DIAG (self-pay) failed: ${(hashErr as Error).message}`)
+    }
+
+    try {
+      const hash = await submitAndTrack(signedUserOp)
+      logger.info(`[eth_sendUserOperation] Self-pay submitted OK: userOpHash=${hash}`)
+      return hash
     } catch (error) {
       const err = error as Error & { code?: number; data?: unknown }
+      logger.error(`[eth_sendUserOperation] Self-pay bundler REJECTED: code=${err.code}, msg=${err.message}, data=${JSON.stringify(err.data ?? null)}`)
       throw createRpcError({
         code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
         message: err.message || 'UserOperation submission failed',
@@ -1602,7 +1852,14 @@ const handlers: Record<string, RpcHandler> = {
           data: txParams.data,
         })
       } catch {
-        gas = DEFAULT_VALUES.GAS_LIMIT // Default gas for simple transfers
+        // Delegated accounts (EIP-7702 → Kernel) need more gas than plain EOA transfers
+        // because Kernel's receive()/fallback() runs validation logic
+        const accountInfo = walletState.getAccounts().find(
+          (a) => a.address.toLowerCase() === txParams.from.toLowerCase()
+        )
+        gas = accountInfo?.type === 'delegated'
+          ? DEFAULT_CALL_GAS_LIMIT  // 200K — covers Kernel dispatch + validation
+          : DEFAULT_VALUES.GAS_LIMIT // 21K — plain EOA transfer
       }
     }
 
@@ -2060,20 +2317,9 @@ const handlers: Record<string, RpcHandler> = {
     const nonce = await client
       .readContract({
         address: entryPoint,
-        abi: [
-          {
-            inputs: [
-              { name: 'sender', type: 'address' },
-              { name: 'key', type: 'uint192' },
-            ],
-            name: 'getNonce',
-            outputs: [{ name: '', type: 'uint256' }],
-            stateMutability: 'view',
-            type: 'function',
-          },
-        ],
+        abi: ENTRY_POINT_ABI,
         functionName: 'getNonce',
-        args: [account, 0n],
+        args: [account, await getNonceKeyForAccount(account)],
       })
       .catch(() => 0n)
 
@@ -2083,12 +2329,15 @@ const handlers: Record<string, RpcHandler> = {
       maxPriorityFeePerGas: BigInt(1e8),
     }))
 
+    // Resolve factory for undeployed accounts
+    const factoryInfo = network.rpcUrl ? await resolveFactory(account, network.rpcUrl) : null
+
     // Create UserOperation
     const userOp: UserOperation = {
       sender: account,
       nonce,
-      factory: undefined,
-      factoryData: undefined,
+      factory: factoryInfo?.factory ?? undefined,
+      factoryData: factoryInfo?.factoryData ?? undefined,
       callData: moduleCalldata.data,
       callGasLimit: BigInt(500000),
       verificationGasLimit: BigInt(500000),
@@ -2102,24 +2351,7 @@ const handlers: Record<string, RpcHandler> = {
       signature: '0x',
     }
 
-    // Request paymaster sponsorship based on gas payment mode
-    if (gasPaymentMode !== 'native' && network.paymasterUrl) {
-      const sponsorship = await requestPaymasterSponsorship(
-        network.paymasterUrl,
-        userOp,
-        entryPoint,
-        chainId,
-        gasPaymentMode === 'erc20' ? gasPaymentTokenAddress : undefined
-      )
-      if (sponsorship) {
-        userOp.paymaster = sponsorship.paymaster
-        userOp.paymasterData = sponsorship.paymasterData
-        userOp.paymasterVerificationGasLimit = sponsorship.paymasterVerificationGasLimit
-        userOp.paymasterPostOpGasLimit = sponsorship.paymasterPostOpGasLimit
-      }
-    }
-
-    // Calculate estimated gas cost for display
+    // Calculate estimated gas cost for approval display (pre-paymaster estimate)
     const estimatedGasCost =
       (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
       userOp.maxFeePerGas
@@ -2142,11 +2374,51 @@ const handlers: Record<string, RpcHandler> = {
       }
     }
 
-    // Sign the UserOperation
+    // ERC-7677: sponsorAndSign handles stub → estimate → final → sign
+    if (gasPaymentMode !== 'native' && network.paymasterUrl) {
+      const paymasterContext: Record<string, unknown> =
+        gasPaymentMode === 'erc20' && gasPaymentTokenAddress
+          ? { paymasterType: 'erc20', tokenAddress: gasPaymentTokenAddress }
+          : {}
+
+      const signedUserOp = await sponsorAndSign({
+        userOp,
+        paymasterUrl: network.paymasterUrl,
+        entryPoint,
+        chainId,
+        context: paymasterContext,
+        bundlerUrl: network.bundlerUrl,
+        signer: async (finalOp) => {
+          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(chainId))
+          return keyringController.signTypedData(resolveSignerAddress(account), typedData)
+        },
+      })
+
+      if (signedUserOp) {
+        try {
+          const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+          const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
+          return { hash: userOpHash }
+        } catch (error) {
+          const err = error as Error & { code?: number; data?: unknown }
+          const message = err.message?.includes('fetch')
+            ? `Bundler unreachable (${network.bundlerUrl}): ${err.message}`
+            : err.message || 'Module installation failed'
+          throw createRpcError({
+            code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+            message,
+            data: err.data,
+          })
+        }
+      }
+      // sponsorAndSign returned null → fall through to self-pay
+    }
+
+    // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const hash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
-      const signature = await keyringController.signMessage(account, hash)
+      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
+      const signature = await keyringController.signTypedData(resolveSignerAddress(account), typedData)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
@@ -2155,7 +2427,6 @@ const handlers: Record<string, RpcHandler> = {
       })
     }
 
-    // Submit to bundler
     try {
       const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
       const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
@@ -2250,6 +2521,7 @@ const handlers: Record<string, RpcHandler> = {
         message: 'Bundler not configured for this network',
       })
     }
+    const bundlerUrl = network.bundlerUrl
 
     // Parse module type from string to ModuleType
     const moduleTypeParsed = BigInt(moduleType) as ModuleType
@@ -2271,20 +2543,9 @@ const handlers: Record<string, RpcHandler> = {
     const nonce = await client
       .readContract({
         address: entryPoint,
-        abi: [
-          {
-            inputs: [
-              { name: 'sender', type: 'address' },
-              { name: 'key', type: 'uint192' },
-            ],
-            name: 'getNonce',
-            outputs: [{ name: '', type: 'uint256' }],
-            stateMutability: 'view',
-            type: 'function',
-          },
-        ],
+        abi: ENTRY_POINT_ABI,
         functionName: 'getNonce',
-        args: [account, 0n],
+        args: [account, await getNonceKeyForAccount(account)],
       })
       .catch(() => 0n)
 
@@ -2294,12 +2555,15 @@ const handlers: Record<string, RpcHandler> = {
       maxPriorityFeePerGas: BigInt(1e8),
     }))
 
+    // Resolve factory for undeployed accounts
+    const factoryInfo2 = network.rpcUrl ? await resolveFactory(account, network.rpcUrl) : null
+
     // Create UserOperation
     const userOp: UserOperation = {
       sender: account,
       nonce,
-      factory: undefined,
-      factoryData: undefined,
+      factory: factoryInfo2?.factory ?? undefined,
+      factoryData: factoryInfo2?.factoryData ?? undefined,
       callData: moduleCalldata.data,
       callGasLimit: BigInt(300000),
       verificationGasLimit: BigInt(300000),
@@ -2313,24 +2577,7 @@ const handlers: Record<string, RpcHandler> = {
       signature: '0x',
     }
 
-    // Request paymaster sponsorship based on gas payment mode
-    if (gasPaymentMode !== 'native' && network.paymasterUrl) {
-      const sponsorship = await requestPaymasterSponsorship(
-        network.paymasterUrl,
-        userOp,
-        entryPoint,
-        chainId,
-        gasPaymentMode === 'erc20' ? gasPaymentTokenAddress : undefined
-      )
-      if (sponsorship) {
-        userOp.paymaster = sponsorship.paymaster
-        userOp.paymasterData = sponsorship.paymasterData
-        userOp.paymasterVerificationGasLimit = sponsorship.paymasterVerificationGasLimit
-        userOp.paymasterPostOpGasLimit = sponsorship.paymasterPostOpGasLimit
-      }
-    }
-
-    // Calculate estimated gas cost for display
+    // Calculate estimated gas cost for approval display
     const estimatedGasCost =
       (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
       userOp.maxFeePerGas
@@ -2353,11 +2600,72 @@ const handlers: Record<string, RpcHandler> = {
       }
     }
 
-    // Sign the UserOperation
+    // Helper to submit and handle uninstall-specific errors
+    const submitUninstallOp = async (signedOp: UserOperation) => {
+      try {
+        const bundlerClient = createBundlerClient({ url: bundlerUrl, entryPoint })
+        const userOpHash = await bundlerClient.sendUserOperation(signedOp)
+        return { hash: userOpHash }
+      } catch (error) {
+        const err = error as Error & { code?: number; data?: unknown }
+
+        // Detect ModuleOnUninstallFailed and suggest forceUninstallModule
+        const errMsg = err.message ?? ''
+        if (
+          errMsg.includes('Module rejected uninstall') ||
+          errMsg.includes('0x45b4a14f') ||
+          errMsg.includes('ModuleOnUninstallFailed')
+        ) {
+          throw createRpcError({
+            code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+            message:
+              'Module rejected uninstall operation. Use stablenet_forceUninstallModule for emergency removal.',
+            data: { ...((err.data as object) ?? {}), suggestForceUninstall: true },
+          })
+        }
+
+        const message = err.message?.includes('fetch')
+          ? `Bundler unreachable (${bundlerUrl}): ${err.message}`
+          : err.message || 'Module uninstallation failed'
+        throw createRpcError({
+          code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+          message,
+          data: err.data,
+        })
+      }
+    }
+
+    // ERC-7677: sponsorAndSign handles stub → estimate → final → sign
+    if (gasPaymentMode !== 'native' && network.paymasterUrl) {
+      const paymasterContext: Record<string, unknown> =
+        gasPaymentMode === 'erc20' && gasPaymentTokenAddress
+          ? { paymasterType: 'erc20', tokenAddress: gasPaymentTokenAddress }
+          : {}
+
+      const signedUserOp = await sponsorAndSign({
+        userOp,
+        paymasterUrl: network.paymasterUrl,
+        entryPoint,
+        chainId,
+        context: paymasterContext,
+        bundlerUrl,
+        signer: async (finalOp) => {
+          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(chainId))
+          return keyringController.signTypedData(resolveSignerAddress(account), typedData)
+        },
+      })
+
+      if (signedUserOp) {
+        return submitUninstallOp(signedUserOp)
+      }
+      // sponsorAndSign returned null → fall through to self-pay
+    }
+
+    // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const hash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
-      const signature = await keyringController.signMessage(account, hash)
+      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
+      const signature = await keyringController.signTypedData(resolveSignerAddress(account), typedData)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
@@ -2366,7 +2674,205 @@ const handlers: Record<string, RpcHandler> = {
       })
     }
 
-    // Submit to bundler
+    return submitUninstallOp(signedUserOp)
+  },
+
+  /**
+   * Force uninstall a module from a Smart Account (ERC-7579)
+   * Uses ExcessivelySafeCall — module onUninstall() revert is ignored.
+   */
+  stablenet_forceUninstallModule: async (params, origin) => {
+    const [moduleParams] = params as [
+      {
+        account: Address
+        moduleAddress: Address
+        moduleType: string
+        chainId: number
+        deInitData?: Hex
+        gasPaymentMode?: 'native' | 'sponsor' | 'erc20'
+        gasPaymentTokenAddress?: Address
+      },
+    ]
+
+    if (!moduleParams) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Missing module force uninstallation parameters',
+      })
+    }
+
+    const {
+      account,
+      moduleAddress,
+      moduleType,
+      chainId,
+      deInitData = '0x' as Hex,
+      gasPaymentMode = 'sponsor',
+      gasPaymentTokenAddress,
+    } = moduleParams
+
+    // Validate addresses
+    if (!isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid account address',
+      })
+    }
+
+    if (!isAddress(moduleAddress)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid module address',
+      })
+    }
+
+    // Verify account is connected
+    const connectedAccounts = walletState.getConnectedAccounts(origin)
+    const normalizedAccount = account.toLowerCase()
+    const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === normalizedAccount)
+    if (!isAuthorized) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    if (!keyringController.isUnlocked()) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: 'Wallet is locked',
+      })
+    }
+
+    const network = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!network.bundlerUrl) {
+      throw createRpcError({
+        code: RPC_ERRORS.RESOURCE_UNAVAILABLE.code,
+        message: 'Bundler not configured for this network',
+      })
+    }
+
+    const moduleTypeParsed = BigInt(moduleType) as ModuleType
+    const moduleTypeNameStr = getModuleTypeName(moduleTypeParsed)
+
+    const moduleOpClient = createModuleOperationClient({ chainId })
+    const moduleCalldata = moduleOpClient.prepareForceUninstall(account, {
+      moduleAddress,
+      moduleType: moduleTypeParsed,
+      deInitData,
+    })
+
+    const client = getPublicClient(network.rpcUrl)
+    const entryPoint = getEntryPointForChain(chainId)
+    const nonce = await client
+      .readContract({
+        address: entryPoint,
+        abi: ENTRY_POINT_ABI,
+        functionName: 'getNonce',
+        args: [account, await getNonceKeyForAccount(account)],
+      })
+      .catch(() => 0n)
+
+    const feeData = await client.estimateFeesPerGas().catch(() => ({
+      maxFeePerGas: BigInt(1e9),
+      maxPriorityFeePerGas: BigInt(1e8),
+    }))
+
+    // Resolve factory for undeployed accounts
+    const factoryInfo = network.rpcUrl ? await resolveFactory(account, network.rpcUrl) : null
+
+    const userOp: UserOperation = {
+      sender: account,
+      nonce,
+      factory: factoryInfo?.factory ?? undefined,
+      factoryData: factoryInfo?.factoryData ?? undefined,
+      callData: moduleCalldata.data,
+      callGasLimit: BigInt(500000),
+      verificationGasLimit: BigInt(500000),
+      preVerificationGas: BigInt(100000),
+      maxFeePerGas: feeData.maxFeePerGas ?? BigInt(1e9),
+      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ?? BigInt(1e8),
+      paymaster: undefined,
+      paymasterVerificationGasLimit: undefined,
+      paymasterPostOpGasLimit: undefined,
+      paymasterData: undefined,
+      signature: '0x',
+    }
+
+    const estimatedGasCost =
+      (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
+      userOp.maxFeePerGas
+
+    if (origin !== 'extension' && origin !== 'internal') {
+      try {
+        await approvalController.requestTransaction(
+          origin,
+          account,
+          account,
+          BigInt(0),
+          moduleCalldata.data,
+          estimatedGasCost,
+          `Force Uninstall ${moduleTypeNameStr} Module`,
+          undefined
+        )
+      } catch (error) {
+        handleApprovalError(error, { method: 'wallet_forceUninstallModule', origin })
+      }
+    }
+
+    // ERC-7677: sponsorAndSign handles stub → estimate → final → sign
+    if (gasPaymentMode !== 'native' && network.paymasterUrl) {
+      const paymasterContext: Record<string, unknown> =
+        gasPaymentMode === 'erc20' && gasPaymentTokenAddress
+          ? { paymasterType: 'erc20', tokenAddress: gasPaymentTokenAddress }
+          : {}
+
+      const signedUserOp = await sponsorAndSign({
+        userOp,
+        paymasterUrl: network.paymasterUrl,
+        entryPoint,
+        chainId,
+        context: paymasterContext,
+        bundlerUrl: network.bundlerUrl,
+        signer: async (finalOp) => {
+          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(chainId))
+          return keyringController.signTypedData(resolveSignerAddress(account), typedData)
+        },
+      })
+
+      if (signedUserOp) {
+        try {
+          const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+          const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
+          return { hash: userOpHash }
+        } catch (error) {
+          const err = error as Error & { code?: number; data?: unknown }
+          const message = err.message?.includes('fetch')
+            ? `Bundler unreachable (${network.bundlerUrl}): ${err.message}`
+            : err.message || 'Module force uninstallation failed'
+          throw createRpcError({
+            code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+            message,
+            data: err.data,
+          })
+        }
+      }
+    }
+
+    // Self-pay path: sign with EIP-712 and submit directly
+    let signedUserOp: UserOperation
+    try {
+      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
+      const signature = await keyringController.signTypedData(resolveSignerAddress(account), typedData)
+      signedUserOp = { ...userOp, signature }
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'UserOperation signing failed',
+      })
+    }
+
     try {
       const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
       const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
@@ -2375,7 +2881,230 @@ const handlers: Record<string, RpcHandler> = {
       const err = error as Error & { code?: number; data?: unknown }
       const message = err.message?.includes('fetch')
         ? `Bundler unreachable (${network.bundlerUrl}): ${err.message}`
-        : err.message || 'Module uninstallation failed'
+        : err.message || 'Module force uninstallation failed'
+      throw createRpcError({
+        code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+        message,
+        data: err.data,
+      })
+    }
+  },
+
+  /**
+   * Replace a module atomically on a Smart Account (ERC-7579)
+   * Old module is uninstalled and new module is installed in a single transaction.
+   * If the new module install fails, the old module remains.
+   */
+  stablenet_replaceModule: async (params, origin) => {
+    const [moduleParams] = params as [
+      {
+        account: Address
+        moduleType: string
+        oldModuleAddress: Address
+        deInitData?: Hex
+        newModuleAddress: Address
+        initData: Hex | Record<string, unknown>
+        initDataEncoded: boolean
+        chainId: number
+        gasPaymentMode?: 'native' | 'sponsor' | 'erc20'
+        gasPaymentTokenAddress?: Address
+      },
+    ]
+
+    if (!moduleParams) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Missing module replacement parameters',
+      })
+    }
+
+    const {
+      account,
+      moduleType,
+      oldModuleAddress,
+      deInitData = '0x' as Hex,
+      newModuleAddress,
+      initData,
+      initDataEncoded,
+      chainId,
+      gasPaymentMode = 'sponsor',
+      gasPaymentTokenAddress,
+    } = moduleParams
+
+    if (!isAddress(account)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid account address',
+      })
+    }
+
+    if (!isAddress(oldModuleAddress) || !isAddress(newModuleAddress)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid module address',
+      })
+    }
+
+    const connectedAccounts = walletState.getConnectedAccounts(origin)
+    const normalizedAccount = account.toLowerCase()
+    const isAuthorized = connectedAccounts.some((a) => a.toLowerCase() === normalizedAccount)
+    if (!isAuthorized) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    if (!keyringController.isUnlocked()) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: 'Wallet is locked',
+      })
+    }
+
+    const network = walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!network.bundlerUrl) {
+      throw createRpcError({
+        code: RPC_ERRORS.RESOURCE_UNAVAILABLE.code,
+        message: 'Bundler not configured for this network',
+      })
+    }
+
+    const moduleTypeParsed = BigInt(moduleType) as ModuleType
+    const moduleTypeNameStr = getModuleTypeName(moduleTypeParsed)
+
+    const moduleSpecificData: Hex = initDataEncoded ? (initData as Hex) : ('0x' as Hex)
+    const kernelInitData = buildKernelInstallData(moduleTypeParsed, moduleSpecificData)
+
+    const moduleOpClient = createModuleOperationClient({ chainId })
+    const moduleCalldata = moduleOpClient.prepareReplaceModule(account, {
+      moduleType: moduleTypeParsed,
+      oldModuleAddress,
+      deInitData,
+      newModuleAddress,
+      initData: kernelInitData,
+    })
+
+    const client = getPublicClient(network.rpcUrl)
+    const entryPoint = getEntryPointForChain(chainId)
+    const nonce = await client
+      .readContract({
+        address: entryPoint,
+        abi: ENTRY_POINT_ABI,
+        functionName: 'getNonce',
+        args: [account, await getNonceKeyForAccount(account)],
+      })
+      .catch(() => 0n)
+
+    const feeData = await client.estimateFeesPerGas().catch(() => ({
+      maxFeePerGas: BigInt(1e9),
+      maxPriorityFeePerGas: BigInt(1e8),
+    }))
+
+    // Resolve factory for undeployed accounts
+    const factoryInfo = network.rpcUrl ? await resolveFactory(account, network.rpcUrl) : null
+
+    const userOp: UserOperation = {
+      sender: account,
+      nonce,
+      factory: factoryInfo?.factory ?? undefined,
+      factoryData: factoryInfo?.factoryData ?? undefined,
+      callData: moduleCalldata.data,
+      callGasLimit: BigInt(800000),
+      verificationGasLimit: BigInt(500000),
+      preVerificationGas: BigInt(100000),
+      maxFeePerGas: feeData.maxFeePerGas ?? BigInt(1e9),
+      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ?? BigInt(1e8),
+      paymaster: undefined,
+      paymasterVerificationGasLimit: undefined,
+      paymasterPostOpGasLimit: undefined,
+      paymasterData: undefined,
+      signature: '0x',
+    }
+
+    const estimatedGasCost =
+      (userOp.preVerificationGas + userOp.verificationGasLimit + userOp.callGasLimit) *
+      userOp.maxFeePerGas
+
+    if (origin !== 'extension' && origin !== 'internal') {
+      try {
+        await approvalController.requestTransaction(
+          origin,
+          account,
+          account,
+          BigInt(0),
+          moduleCalldata.data,
+          estimatedGasCost,
+          `Replace ${moduleTypeNameStr} Module`,
+          undefined
+        )
+      } catch (error) {
+        handleApprovalError(error, { method: 'wallet_replaceModule', origin })
+      }
+    }
+
+    // ERC-7677: sponsorAndSign handles stub → estimate → final → sign
+    if (gasPaymentMode !== 'native' && network.paymasterUrl) {
+      const paymasterContext: Record<string, unknown> =
+        gasPaymentMode === 'erc20' && gasPaymentTokenAddress
+          ? { paymasterType: 'erc20', tokenAddress: gasPaymentTokenAddress }
+          : {}
+
+      const signedUserOp = await sponsorAndSign({
+        userOp,
+        paymasterUrl: network.paymasterUrl,
+        entryPoint,
+        chainId,
+        context: paymasterContext,
+        bundlerUrl: network.bundlerUrl,
+        signer: async (finalOp) => {
+          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(chainId))
+          return keyringController.signTypedData(resolveSignerAddress(account), typedData)
+        },
+      })
+
+      if (signedUserOp) {
+        try {
+          const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+          const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
+          return { hash: userOpHash }
+        } catch (error) {
+          const err = error as Error & { code?: number; data?: unknown }
+          const message = err.message?.includes('fetch')
+            ? `Bundler unreachable (${network.bundlerUrl}): ${err.message}`
+            : err.message || 'Module replacement failed'
+          throw createRpcError({
+            code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+            message,
+            data: err.data,
+          })
+        }
+      }
+    }
+
+    // Self-pay path: sign with EIP-712 and submit directly
+    let signedUserOp: UserOperation
+    try {
+      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
+      const signature = await keyringController.signTypedData(resolveSignerAddress(account), typedData)
+      signedUserOp = { ...userOp, signature }
+    } catch (error) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: (error as Error).message || 'UserOperation signing failed',
+      })
+    }
+
+    try {
+      const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+      const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
+      return { hash: userOpHash }
+    } catch (error) {
+      const err = error as Error & { code?: number; data?: unknown }
+      const message = err.message?.includes('fetch')
+        ? `Bundler unreachable (${network.bundlerUrl}): ${err.message}`
+        : err.message || 'Module replacement failed'
       throw createRpcError({
         code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
         message,
@@ -2446,13 +3175,17 @@ const handlers: Record<string, RpcHandler> = {
           })
           .catch(() => null)) as string | null
 
-        accountId = (await client
+        const rawAccountId = (await client
           .readContract({
             address: accountAddr,
             abi: KERNEL_ABI,
             functionName: 'accountId',
           })
           .catch(() => null)) as string | null
+
+        // Normalize accountId: both "kernel.advanced.v0.3.3" and "kernel.advanced.0.3.3"
+        // should be recognized as the same Kernel v0.3.3 account
+        accountId = rawAccountId ? normalizeAccountId(rawAccountId) : null
       } catch {
         // Contract may not support these methods
       }
@@ -2802,20 +3535,9 @@ const handlers: Record<string, RpcHandler> = {
     const nonce = await client
       .readContract({
         address: entryPoint,
-        abi: [
-          {
-            inputs: [
-              { name: 'sender', type: 'address' },
-              { name: 'key', type: 'uint192' },
-            ],
-            name: 'getNonce',
-            outputs: [{ name: '', type: 'uint256' }],
-            stateMutability: 'view',
-            type: 'function',
-          },
-        ],
+        abi: ENTRY_POINT_ABI,
         functionName: 'getNonce',
-        args: [account, 0n],
+        args: [account, await getNonceKeyForAccount(account)],
       })
       .catch(() => 0n)
 
@@ -2824,11 +3546,14 @@ const handlers: Record<string, RpcHandler> = {
       maxPriorityFeePerGas: BigInt(1e8),
     }))
 
+    // Resolve factory for undeployed accounts
+    const factoryInfo = network.rpcUrl ? await resolveFactory(account, network.rpcUrl) : null
+
     const userOp: UserOperation = {
       sender: account,
       nonce,
-      factory: undefined,
-      factoryData: undefined,
+      factory: factoryInfo?.factory ?? undefined,
+      factoryData: factoryInfo?.factoryData ?? undefined,
       callData,
       callGasLimit: BigInt(500000),
       verificationGasLimit: BigInt(500000),
@@ -2840,23 +3565,6 @@ const handlers: Record<string, RpcHandler> = {
       paymasterPostOpGasLimit: undefined,
       paymasterData: undefined,
       signature: '0x',
-    }
-
-    // Request paymaster sponsorship based on gas payment mode
-    if (gasPaymentMode !== 'native' && network.paymasterUrl) {
-      const sponsorship = await requestPaymasterSponsorship(
-        network.paymasterUrl,
-        userOp,
-        entryPoint,
-        chainId,
-        gasPaymentMode === 'erc20' ? gasPaymentTokenAddress : undefined
-      )
-      if (sponsorship) {
-        userOp.paymaster = sponsorship.paymaster
-        userOp.paymasterData = sponsorship.paymasterData
-        userOp.paymasterVerificationGasLimit = sponsorship.paymasterVerificationGasLimit
-        userOp.paymasterPostOpGasLimit = sponsorship.paymasterPostOpGasLimit
-      }
     }
 
     const estimatedGasCost =
@@ -2881,11 +3589,47 @@ const handlers: Record<string, RpcHandler> = {
       }
     }
 
-    // Sign the UserOperation
+    // ERC-7677: sponsorAndSign handles stub → estimate → final → sign
+    if (gasPaymentMode !== 'native' && network.paymasterUrl) {
+      const paymasterContext: Record<string, unknown> =
+        gasPaymentMode === 'erc20' && gasPaymentTokenAddress
+          ? { paymasterType: 'erc20', tokenAddress: gasPaymentTokenAddress }
+          : {}
+
+      const signedUserOp = await sponsorAndSign({
+        userOp,
+        paymasterUrl: network.paymasterUrl,
+        entryPoint,
+        chainId,
+        context: paymasterContext,
+        bundlerUrl: network.bundlerUrl,
+        signer: async (finalOp) => {
+          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(chainId))
+          return keyringController.signTypedData(resolveSignerAddress(account), typedData)
+        },
+      })
+
+      if (signedUserOp) {
+        try {
+          const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
+          const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)
+          return { hash: userOpHash }
+        } catch (error) {
+          const err = error as Error & { code?: number; data?: unknown }
+          throw createRpcError({
+            code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+            message: err.message || 'Swap execution failed',
+            data: err.data,
+          })
+        }
+      }
+    }
+
+    // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const hash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
-      const signature = await keyringController.signMessage(account, hash)
+      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
+      const signature = await keyringController.signTypedData(resolveSignerAddress(account), typedData)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
@@ -2894,7 +3638,6 @@ const handlers: Record<string, RpcHandler> = {
       })
     }
 
-    // Submit to bundler
     try {
       const bundlerClient = createBundlerClient({ url: network.bundlerUrl, entryPoint })
       const userOpHash = await bundlerClient.sendUserOperation(signedUserOp)

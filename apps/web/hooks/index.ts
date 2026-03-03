@@ -32,6 +32,7 @@ export type {
   PaymasterStubData,
   PaymasterType,
   SponsorshipPolicy,
+  SupportedToken,
 } from './usePaymaster'
 export { usePaymaster } from './usePaymaster'
 export type { Guardian, RecoveryConfig, UseRecoveryModuleReturn } from './useRecoveryModule'

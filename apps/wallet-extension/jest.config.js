@@ -12,6 +12,8 @@ module.exports = {
       moduleNameMapper: {
         '^@stablenet/core$': '<rootDir>/../../packages/sdk-ts/core/src/index.ts',
         '^@stablenet/sdk-types$': '<rootDir>/../../packages/sdk-ts/types/src/index.ts',
+        '^@stablenet/types$': '<rootDir>/../../packages/types/src/index.ts',
+        '^@stablenet/contracts$': '<rootDir>/../../packages/contracts/src/index.ts',
       },
     },
     // Project 2: Tests needing jsdom (inpage, setup.test, UI components/hooks)
@@ -30,6 +32,7 @@ module.exports = {
       moduleNameMapper: {
         '^@stablenet/core$': '<rootDir>/tests/utils/__mocks__/stablenetCore.js',
         '^@stablenet/plugin-stealth$': '<rootDir>/tests/utils/__mocks__/stablenetPluginStealth.js',
+        '^@stablenet/contracts$': '<rootDir>/tests/utils/__mocks__/stablenetContracts.js',
       },
     },
     // Project 3: All other tests - node env with mocked @stablenet/core
@@ -49,6 +52,7 @@ module.exports = {
       moduleNameMapper: {
         '^@stablenet/core$': '<rootDir>/tests/utils/__mocks__/stablenetCore.js',
         '^@stablenet/plugin-stealth$': '<rootDir>/tests/utils/__mocks__/stablenetPluginStealth.js',
+        '^@stablenet/contracts$': '<rootDir>/tests/utils/__mocks__/stablenetContracts.js',
       },
     },
   ],

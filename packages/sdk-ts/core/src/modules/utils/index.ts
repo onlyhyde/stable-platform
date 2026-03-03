@@ -83,6 +83,17 @@ export {
   wouldExceedLimit,
 } from './hookUtils'
 export {
+  type DecodedNonceKey,
+  decodeValidatorNonceKey,
+  type EncodeValidatorNonceKeyOptions,
+  encodeValidatorNonceKey,
+  isRootValidator,
+  VALIDATION_MODE,
+  type ValidationMode,
+  VALIDATION_TYPE,
+  type ValidationType,
+} from './nonceUtils'
+export {
   decodeECDSAValidatorInit,
   decodeMultiSigValidatorInit,
   decodeWebAuthnValidatorInit,

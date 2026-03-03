@@ -16,6 +16,7 @@ import {
   ENTRY_POINT_V06,
   // EntryPoints
   ENTRY_POINT_V07,
+  ENTRY_POINT_V09,
   // Networks
   ETH_CURRENCY,
   getChainAddresses,
@@ -50,21 +51,30 @@ describe('EntryPoints', () => {
       expect(ENTRY_POINT_V06).toMatch(/^0x[a-fA-F0-9]{40}$/)
     })
 
-    it('should have ENTRY_POINT_ADDRESSES with both versions', () => {
+    it('should have correct EntryPoint v0.9 address', () => {
+      expect(ENTRY_POINT_V09).toBe('0xEf6817fe73741A8F10088f9511c64b666a338A14')
+    })
+
+    it('should have ENTRY_POINT_ADDRESSES with all versions', () => {
+      expect(ENTRY_POINT_ADDRESSES.V09).toBe(ENTRY_POINT_V09)
       expect(ENTRY_POINT_ADDRESSES.V07).toBe(ENTRY_POINT_V07)
       expect(ENTRY_POINT_ADDRESSES.V06).toBe(ENTRY_POINT_V06)
     })
 
-    it('should have current version as V07', () => {
-      expect(CURRENT_ENTRY_POINT_VERSION).toBe('V07')
+    it('should have current version as V09', () => {
+      expect(CURRENT_ENTRY_POINT_VERSION).toBe('V09')
     })
 
-    it('should have ENTRY_POINT_ADDRESS equal to v0.7', () => {
-      expect(ENTRY_POINT_ADDRESS).toBe(ENTRY_POINT_V07)
+    it('should have ENTRY_POINT_ADDRESS equal to v0.9', () => {
+      expect(ENTRY_POINT_ADDRESS).toBe(ENTRY_POINT_V09)
     })
   })
 
   describe('isEntryPoint', () => {
+    it('should return true for EntryPoint v0.9', () => {
+      expect(isEntryPoint(ENTRY_POINT_V09)).toBe(true)
+    })
+
     it('should return true for EntryPoint v0.7', () => {
       expect(isEntryPoint(ENTRY_POINT_V07)).toBe(true)
     })
@@ -74,7 +84,7 @@ describe('EntryPoints', () => {
     })
 
     it('should return true for lowercase addresses', () => {
-      expect(isEntryPoint(ENTRY_POINT_V07.toLowerCase() as `0x${string}`)).toBe(true)
+      expect(isEntryPoint(ENTRY_POINT_V09.toLowerCase() as `0x${string}`)).toBe(true)
     })
 
     it('should return false for unknown addresses', () => {
@@ -83,6 +93,10 @@ describe('EntryPoints', () => {
   })
 
   describe('getEntryPointVersion', () => {
+    it('should return V09 for EntryPoint v0.9', () => {
+      expect(getEntryPointVersion(ENTRY_POINT_V09)).toBe('V09')
+    })
+
     it('should return V07 for EntryPoint v0.7', () => {
       expect(getEntryPointVersion(ENTRY_POINT_V07)).toBe('V07')
     })

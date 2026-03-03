@@ -4,7 +4,7 @@ import {
   type TransactionResult,
 } from '@stablenet/core'
 import {
-  ENTRY_POINT_V07_ADDRESS,
+  ENTRY_POINT_ADDRESS,
   getEntryPoint,
   isChainSupported,
 } from '@stablenet/contracts'
@@ -144,7 +144,7 @@ export function useSendTransaction(): UseSendTransactionReturn {
                     },
                     currentNetwork && isChainSupported(currentNetwork.chainId)
                       ? getEntryPoint(currentNetwork.chainId)
-                      : ENTRY_POINT_V07_ADDRESS,
+                      : ENTRY_POINT_ADDRESS,
                   ],
                 },
               },

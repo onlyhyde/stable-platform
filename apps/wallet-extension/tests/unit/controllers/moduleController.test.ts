@@ -407,8 +407,8 @@ describe('ModuleController', () => {
     it('should have correct values', () => {
       expect(MODULE_TYPE.VALIDATOR).toBe(1)
       expect(MODULE_TYPE.EXECUTOR).toBe(2)
-      expect(MODULE_TYPE.HOOK).toBe(3)
-      expect(MODULE_TYPE.FALLBACK).toBe(4)
+      expect(MODULE_TYPE.FALLBACK).toBe(3)
+      expect(MODULE_TYPE.HOOK).toBe(4)
     })
   })
 
@@ -432,6 +432,141 @@ describe('ModuleController', () => {
       const callData = mockProvider.request.mock.calls[0][0].params[0].data as string
       // Calldata should contain the module address
       expect(callData.toLowerCase()).toContain(MODULE_ADDR.slice(2).toLowerCase())
+    })
+  })
+
+  // ==========================================================================
+  // Kernel v0.3.3 — New module operations
+  // ==========================================================================
+
+  describe('forceUninstallModule()', () => {
+    beforeEach(async () => {
+      await controller.installModule(ACCOUNT, createInstallRequest())
+    })
+
+    it('should force uninstall a module and return txHash', async () => {
+      const result = await controller.forceUninstallModule(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
+
+      expect(result.txHash).toBe(TX_HASH)
+    })
+
+    it('should encode forceUninstallModule selector', async () => {
+      mockProvider.request.mockClear()
+
+      await controller.forceUninstallModule(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
+
+      const callParams = mockProvider.request.mock.calls[0][0].params[0]
+      expect(callParams.data).toContain('856b02ec') // forceUninstallModule selector
+    })
+
+    it('should mark module as inactive after force uninstall', async () => {
+      await controller.forceUninstallModule(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
+
+      const installed = controller.getInstalledModules(ACCOUNT)
+      expect(installed).toHaveLength(0)
+    })
+  })
+
+  describe('replaceModule()', () => {
+    beforeEach(async () => {
+      await controller.installModule(ACCOUNT, createInstallRequest())
+    })
+
+    it('should replace a module and return txHash', async () => {
+      const result = await controller.replaceModule(
+        ACCOUNT,
+        MODULE_TYPE.VALIDATOR,
+        MODULE_ADDR,
+        '0x',
+        MODULE_ADDR_2,
+        '0x'
+      )
+
+      expect(result.txHash).toBe(TX_HASH)
+    })
+
+    it('should encode replaceModule selector', async () => {
+      mockProvider.request.mockClear()
+
+      await controller.replaceModule(
+        ACCOUNT,
+        MODULE_TYPE.VALIDATOR,
+        MODULE_ADDR,
+        '0x',
+        MODULE_ADDR_2,
+        '0x'
+      )
+
+      const callParams = mockProvider.request.mock.calls[0][0].params[0]
+      expect(callParams.data).toContain('166add9c') // replaceModule selector
+    })
+
+    it('should deactivate old module after replace', async () => {
+      await controller.replaceModule(
+        ACCOUNT,
+        MODULE_TYPE.VALIDATOR,
+        MODULE_ADDR,
+        '0x',
+        MODULE_ADDR_2,
+        '0x'
+      )
+
+      const installed = controller.getInstalledModules(ACCOUNT)
+      expect(installed).toHaveLength(0) // Old module deactivated, new one not tracked via installModule
+    })
+
+    it('should encode both module addresses in calldata', async () => {
+      mockProvider.request.mockClear()
+
+      await controller.replaceModule(
+        ACCOUNT,
+        MODULE_TYPE.VALIDATOR,
+        MODULE_ADDR,
+        '0x',
+        MODULE_ADDR_2,
+        '0x'
+      )
+
+      const callData = (mockProvider.request.mock.calls[0][0].params[0].data as string).toLowerCase()
+      expect(callData).toContain(MODULE_ADDR.slice(2).toLowerCase())
+      expect(callData).toContain(MODULE_ADDR_2.slice(2).toLowerCase())
+    })
+  })
+
+  describe('uninstallModule → revert → forceUninstall fallback', () => {
+    beforeEach(async () => {
+      await controller.installModule(ACCOUNT, createInstallRequest())
+    })
+
+    it('should handle uninstall failure and fallback to forceUninstall', async () => {
+      // First call (uninstall) fails, second call (forceUninstall) succeeds
+      mockProvider.request
+        .mockRejectedValueOnce(new Error('ModuleOnUninstallFailed'))
+        .mockResolvedValueOnce(TX_HASH)
+
+      // Attempt normal uninstall
+      await expect(
+        controller.uninstallModule(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
+      ).rejects.toThrow('ModuleOnUninstallFailed')
+
+      // Module should still be active
+      expect(controller.getInstalledModules(ACCOUNT)).toHaveLength(1)
+
+      // Fallback to force uninstall
+      const result = await controller.forceUninstallModule(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
+
+      expect(result.txHash).toBe(TX_HASH)
+      expect(controller.getInstalledModules(ACCOUNT)).toHaveLength(0)
+    })
+  })
+
+  describe('Reentrancy error handling', () => {
+    it('should propagate reentrancy error from provider', async () => {
+      mockProvider.request.mockRejectedValue(new Error('Reentrancy detected'))
+
+      await expect(
+        controller.installModule(ACCOUNT, createInstallRequest())
+      ).rejects.toThrow('Reentrancy detected')
     })
   })
 })

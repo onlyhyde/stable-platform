@@ -16,6 +16,11 @@ var DelegationPrefix = types.Hex{0xef, 0x01, 0x00}
 // DelegationPrefixHex is the hex string representation of the delegation prefix.
 const DelegationPrefixHex = "0xef0100"
 
+// EIP7702InitCodeAddress is the special factory address for EIP-7702 initCode path.
+// When initCode starts with this address (0x7702 right-padded to 20 bytes),
+// the EntryPoint skips factory deployment and uses EIP-7702 authorization.
+var EIP7702InitCodeAddress = common.HexToAddress("0x0000000000000000000000000000000000007702")
+
 // ZeroAddress is the zero Ethereum address, used for revocation.
 var ZeroAddress = common.HexToAddress("0x0000000000000000000000000000000000000000")
 

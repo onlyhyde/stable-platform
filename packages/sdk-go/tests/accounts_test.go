@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -47,9 +48,21 @@ func TestEncodeSingleCall(t *testing.T) {
 		t.Fatalf("failed to encode single call: %v", err)
 	}
 
-	// Minimum size: address (32) + value (32) + offset (32) + length (32) + data (padded to 32)
-	if len(encoded) < 128 {
-		t.Errorf("encoded data too short: %d bytes", len(encoded))
+	// ERC-7579 packed encoding: address (20) + uint256 value (32) + raw calldata (4) = 56 bytes
+	expectedLen := 20 + 32 + len(call.Data)
+	if len(encoded) != expectedLen {
+		t.Errorf("expected encoded length %d, got %d bytes", expectedLen, len(encoded))
+	}
+
+	// Verify address bytes
+	if common.BytesToAddress(encoded[:20]) != call.To {
+		t.Errorf("encoded address mismatch")
+	}
+
+	// Verify calldata at the end
+	tailStart := 20 + 32
+	if !bytes.Equal(encoded[tailStart:], call.Data) {
+		t.Errorf("encoded calldata mismatch")
 	}
 }
 

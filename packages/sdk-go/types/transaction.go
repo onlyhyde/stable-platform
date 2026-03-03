@@ -204,6 +204,10 @@ type GasEstimate struct {
 
 	// PaymasterPostOpGasLimit is the paymaster post-op gas limit.
 	PaymasterPostOpGasLimit *big.Int `json:"paymasterPostOpGasLimit,omitempty"`
+
+	// UnusedGasPenalty is the EIP-4337 v0.9 unused gas penalty
+	// (10% of unused callGas + postOpGas above 40K threshold).
+	UnusedGasPenalty *big.Int `json:"unusedGasPenalty,omitempty"`
 }
 
 // ============================================================================

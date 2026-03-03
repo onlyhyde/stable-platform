@@ -48,7 +48,7 @@ sequenceDiagram
     Kernel->>Hook: preCheck(...)
     Kernel->>USDC: transfer(to,amount)
     Kernel->>Hook: postCheck(...)
-    EP->>PM: postOp(mode,context,actualGasCost,gasPrice)
+    EP->>PM: postOp(mode,context,actualGasCost,actualUserOpFeePerGas)
     PM->>USDC: transferFrom(user, paymaster, actualTokenCost)
     EP-->>Bundler: beneficiary ETH settlement
 ```
@@ -68,7 +68,7 @@ Wallet Extension RPC:
 4. 브로드캐스트 후 계정 타입을 `delegated`로 업데이트
 
 코드 참조:
-- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:935`
+- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:945`
 - `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1020`
 - `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1041`
 
@@ -87,12 +87,12 @@ Wallet Extension가 `eth_sendUserOperation` 처리:
 6. bundler에 제출
 
 코드 참조:
-- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1104`
-- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1121`
-- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1181`
-- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1225`
-- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1286`
-- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1299`
+- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1114`
+- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1134`
+- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1191`
+- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1275`
+- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1296`
+- `stable-platform/apps/wallet-extension/src/background/rpc/handler.ts:1309`
 
 ---
 
@@ -122,7 +122,7 @@ Proxy 측 라우팅:
 코드 참조:
 - `stable-platform/services/paymaster-proxy/src/app.ts:359`
 - `stable-platform/services/paymaster-proxy/src/handlers/getPaymasterData.ts:106`
-- `stable-platform/services/paymaster-proxy/src/handlers/getPaymasterData.ts:236`
+- `stable-platform/services/paymaster-proxy/src/handlers/getPaymasterData.ts:237`
 - `stable-platform/services/paymaster-proxy/src/schemas/index.ts:59`
 
 ---
@@ -138,10 +138,10 @@ RPC 수신:
 4. 배치 시 `EntryPoint.handleOps(...)` 트랜잭션 전송
 
 코드 참조:
-- `stable-platform/services/bundler/src/rpc/server.ts:335`
+- `stable-platform/services/bundler/src/rpc/server.ts:365`
 - `stable-platform/services/bundler/src/validation/validator.ts:135`
-- `stable-platform/services/bundler/src/executor/bundleExecutor.ts:166`
-- `stable-platform/services/bundler/src/executor/bundleExecutor.ts:190`
+- `stable-platform/services/bundler/src/executor/bundleExecutor.ts:379`
+- `stable-platform/services/bundler/src/executor/bundleExecutor.ts:448`
 
 ---
 
@@ -165,7 +165,7 @@ Kernel `validateUserOp(...)` 내부에서:
 - 결과 `validationData`를 EntryPoint 규약에 맞게 활용
 
 코드 참조:
-- `poc-contract/src/erc7579-smartaccount/Kernel.sol:266`
+- `poc-contract/src/erc7579-smartaccount/Kernel.sol:328`
 - `poc-contract/src/erc7579-smartaccount/core/ValidationManager.sol:317`
 
 리턴 활용:
@@ -189,8 +189,8 @@ Kernel 실행:
 
 코드 참조:
 - `poc-contract/src/erc4337-entrypoint/EntryPoint.sol:249`
-- `poc-contract/src/erc7579-smartaccount/Kernel.sol:390`
-- `poc-contract/src/erc7579-smartaccount/utils/ExecLib.sol:34`
+- `poc-contract/src/erc7579-smartaccount/Kernel.sol:458`
+- `poc-contract/src/erc7579-smartaccount/utils/ExecLib.sol:23`
 - `poc-contract/src/erc7579-smartaccount/utils/ExecLib.sol:100`
 
 ---
@@ -208,15 +208,15 @@ Fallback:
 - 일반 ERC20 transfer(userOp의 정상 execute 경로)에서는 보통 fallback 미사용
 
 코드 참조:
-- `poc-contract/src/erc7579-smartaccount/Kernel.sol:381`
-- `poc-contract/src/erc7579-smartaccount/Kernel.sol:390`
-- `poc-contract/src/erc7579-smartaccount/Kernel.sol:222`
+- `poc-contract/src/erc7579-smartaccount/Kernel.sol:269`
+- `poc-contract/src/erc7579-smartaccount/Kernel.sol:431`
+- `poc-contract/src/erc7579-smartaccount/Kernel.sol:458`
 
 ---
 
 ## 2.9 postOp 정산 단계
 EntryPoint:
-- `_postExecution`에서 Paymaster `postOp(mode, context, actualGasCost, gasPrice)` 호출
+- `_postExecution`에서 Paymaster `postOp(mode, context, actualGasCost, actualUserOpFeePerGas)` 호출
 
 ERC20Paymaster:
 1. 검증단계 `_validatePaymasterUserOp`에서 maxTokenCost 계산, context 반환
@@ -229,9 +229,9 @@ Bundler 정산:
 
 코드 참조:
 - `poc-contract/src/erc4337-entrypoint/EntryPoint.sol:853`
-- `poc-contract/src/erc4337-paymaster/ERC20Paymaster.sol:187`
-- `poc-contract/src/erc4337-paymaster/ERC20Paymaster.sol:251`
-- `poc-contract/src/erc4337-paymaster/ERC20Paymaster.sol:276`
+- `poc-contract/src/erc4337-paymaster/ERC20Paymaster.sol:193`
+- `poc-contract/src/erc4337-paymaster/ERC20Paymaster.sol:257`
+- `poc-contract/src/erc4337-paymaster/ERC20Paymaster.sol:284`
 
 ---
 
@@ -253,9 +253,9 @@ Bundler 정산:
 - 해당 이슈는 별도 감사표에서 추적 중
 
 2. Paymaster context 필드 정합성
-- Wallet Extension의 `requestPaymasterSponsorship`는 context에 `{ token: tokenAddress }`를 사용
+- ~~Wallet Extension의 `requestPaymasterSponsorship`는 context에 `{ token: tokenAddress }`를 사용~~ → `{ tokenAddress }`로 수정 완료
 - Proxy 스키마는 `tokenAddress`, `paymasterType`를 공식 필드로 사용
-- 네트워크/SDK 버전에 따라 ERC20 paymaster 선택이 의도와 다를 수 있어 점검 필요
+- 양측 필드명 `tokenAddress`로 통일 완료
 
 코드 참조:
 - `stable-platform/apps/wallet-extension/src/background/rpc/paymaster.ts:80`

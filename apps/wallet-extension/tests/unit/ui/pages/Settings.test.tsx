@@ -255,8 +255,8 @@ describe('Settings', () => {
       fireEvent.click(screen.getByText('+ Add Network'))
 
       expect(screen.getByPlaceholderText('Network Name')).toBeTruthy()
-      expect(screen.getByPlaceholderText(/Chain ID/)).toBeTruthy()
-      expect(screen.getAllByPlaceholderText(/RPC URL/).length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByPlaceholderText('e.g., 1, 137, 42161')).toBeTruthy()
+      expect(screen.getByPlaceholderText('https://rpc.example.com')).toBeTruthy()
     })
   })
 })

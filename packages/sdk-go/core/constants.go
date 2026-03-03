@@ -7,7 +7,11 @@ import (
 	"github.com/stablenet/sdk-go/types"
 )
 
-// ERC-4337 v0.7 EntryPoint address (deployed at same address on all chains).
+// ERC-4337 v0.9 EntryPoint address (StableNet deployment).
+var EntryPointV09Address = common.HexToAddress("0xEf6817fe73741A8F10088f9511c64b666a338A14")
+
+// EntryPointV07Address is the legacy v0.7 EntryPoint address.
+// Deprecated: Use EntryPointV09Address for new deployments.
 var EntryPointV07Address = common.HexToAddress("0x0000000071727De22E5E9d8BAf0edAc6f37da032")
 
 // Default configuration values.

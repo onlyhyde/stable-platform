@@ -23,7 +23,7 @@ export async function handleSupportedTokens(
   chainId: string,
   config: SupportedTokensConfig
 ): Promise<SupportedTokensResult> {
-  const chainIdNum = Number.parseInt(chainId, 16)
+  const chainIdNum = Number(chainId)
   if (!config.supportedChainIds.includes(chainIdNum)) {
     return {
       success: false,

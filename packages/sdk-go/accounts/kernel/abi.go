@@ -97,6 +97,59 @@ const kernelAccountABIJSON = `[
     "inputs": [],
     "outputs": [{"name": "", "type": "bytes21"}],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "forceUninstallModule",
+    "inputs": [
+      {"name": "moduleType", "type": "uint256"},
+      {"name": "module", "type": "address"},
+      {"name": "deInitData", "type": "bytes"}
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "replaceModule",
+    "inputs": [
+      {"name": "moduleType", "type": "uint256"},
+      {"name": "oldModule", "type": "address"},
+      {"name": "deInitData", "type": "bytes"},
+      {"name": "newModule", "type": "address"},
+      {"name": "initData", "type": "bytes"}
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "setHookGasLimit",
+    "inputs": [
+      {"name": "hook", "type": "address"},
+      {"name": "gasLimit", "type": "uint256"}
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "setDelegatecallWhitelist",
+    "inputs": [
+      {"name": "target", "type": "address"},
+      {"name": "allowed", "type": "bool"}
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "setEnforceDelegatecallWhitelist",
+    "inputs": [
+      {"name": "enforce", "type": "bool"}
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
   }
 ]`
 

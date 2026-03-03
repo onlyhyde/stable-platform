@@ -109,9 +109,9 @@ async function routePaymasterData(
     case 'sponsor':
       return handleSponsorData(params, config, address)
     case 'erc20':
-      return handleErc20Data(params, address)
+      return handleErc20Data(params, config, address)
     case 'permit2':
-      return handlePermit2Data(params, address)
+      return handlePermit2Data(params, config, address)
   }
 }
 
@@ -130,10 +130,13 @@ async function handleVerifyingData(
   const normalizedUserOp = normalizeUserOp(userOp)
   const estimatedGasCost = estimateGasCost(normalizedUserOp)
 
-  const policyResult = policyManager.checkPolicy(normalizedUserOp, policyId, estimatedGasCost)
+  // Atomically check policy and reserve spending to prevent TOCTOU race
+  // where concurrent requests could exceed the spending limit.
+  const policyResult = policyManager.checkAndReserve(normalizedUserOp, policyId, estimatedGasCost)
   if (!policyResult.allowed) {
     return { success: false, error: policyResult.rejection }
   }
+  const { reservationId } = policyResult
 
   const payload = encodeVerifyingPayload({
     policyId: toPolicyIdBytes32(context?.policyId),
@@ -149,8 +152,6 @@ async function handleVerifyingData(
     PaymasterTypeEnum.VERIFYING,
     payload
   )
-
-  const reservationId = policyManager.reserveSpending(normalizedUserOp.sender, estimatedGasCost)
 
   // Phase 1: Track reservation with userOpHash for receipt-based settlement
   if (reservationTracker) {
@@ -197,10 +198,12 @@ async function handleSponsorData(
   const normalizedUserOp = normalizeUserOp(userOp)
   const estimatedGasCost = estimateGasCost(normalizedUserOp)
 
-  const policyResult = policyManager.checkPolicy(normalizedUserOp, policyId, estimatedGasCost)
+  // Atomically check policy and reserve spending to prevent TOCTOU race
+  const policyResult = policyManager.checkAndReserve(normalizedUserOp, policyId, estimatedGasCost)
   if (!policyResult.allowed) {
     return { success: false, error: policyResult.rejection }
   }
+  const { reservationId } = policyResult
 
   const { paymasterData } = await signer.generateSignedData(
     userOp,
@@ -209,8 +212,6 @@ async function handleSponsorData(
     PaymasterTypeEnum.SPONSOR,
     payload
   )
-
-  const reservationId = policyManager.reserveSpending(normalizedUserOp.sender, estimatedGasCost)
 
   // Phase 1: Track reservation with userOpHash for receipt-based settlement
   if (reservationTracker) {
@@ -235,9 +236,10 @@ async function handleSponsorData(
  */
 function handleErc20Data(
   params: GetPaymasterDataParams,
+  config: GetPaymasterDataConfig,
   paymasterAddress: Address
 ): GetPaymasterDataResult {
-  const { context } = params
+  const { userOp, context } = params
   const tokenAddress = context?.tokenAddress
 
   if (!tokenAddress) {
@@ -248,6 +250,15 @@ function handleErc20Data(
         message: 'tokenAddress required in context for erc20 paymaster',
       },
     }
+  }
+
+  // Apply policy and risk checks (same as verifying/sponsor paths)
+  const normalizedUserOp = normalizeUserOp(userOp)
+  const estimatedGasCost = estimateGasCost(normalizedUserOp)
+  const policyId = context?.policyId ?? 'default'
+  const policyResult = config.policyManager.checkPolicy(normalizedUserOp, policyId, estimatedGasCost)
+  if (!policyResult.allowed) {
+    return { success: false, error: policyResult.rejection }
   }
 
   const maxTokenCost = BigInt(context?.maxTokenCost ?? 0)
@@ -293,9 +304,19 @@ function handleErc20Data(
  */
 function handlePermit2Data(
   params: GetPaymasterDataParams,
+  config: GetPaymasterDataConfig,
   paymasterAddress: Address
 ): GetPaymasterDataResult {
-  const { context } = params
+  const { userOp, context } = params
+
+  // Apply policy and risk checks
+  const normalizedUserOp = normalizeUserOp(userOp)
+  const estimatedGasCost = estimateGasCost(normalizedUserOp)
+  const policyId = context?.policyId ?? 'default'
+  const policyResult = config.policyManager.checkPolicy(normalizedUserOp, policyId, estimatedGasCost)
+  if (!policyResult.allowed) {
+    return { success: false, error: policyResult.rejection }
+  }
 
   if (context?.tokenAddress && context?.permitSig) {
     const payload = encodePermit2Payload({

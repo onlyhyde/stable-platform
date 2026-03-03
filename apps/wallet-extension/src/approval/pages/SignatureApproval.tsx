@@ -98,22 +98,24 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
           </p>
         </Card>
 
-        <Card padding="md">
-          <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            {t('message')}
-          </p>
-          <div
-            className="rounded-lg p-3 max-h-48 overflow-y-auto"
-            style={{ backgroundColor: 'rgb(var(--surface))' }}
-          >
-            <pre
-              className="text-sm whitespace-pre-wrap break-all font-mono"
-              style={{ color: 'rgb(var(--foreground))' }}
+        {(data.displayMessage || data.message) && (
+          <Card padding="md">
+            <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              {t('message')}
+            </p>
+            <div
+              className="rounded-lg p-3 max-h-48 overflow-y-auto"
+              style={{ backgroundColor: 'rgb(var(--surface))' }}
             >
-              {data.displayMessage ?? String(data.message)}
-            </pre>
-          </div>
-        </Card>
+              <pre
+                className="text-sm whitespace-pre-wrap break-all font-mono"
+                style={{ color: 'rgb(var(--foreground))' }}
+              >
+                {data.displayMessage || String(data.message)}
+              </pre>
+            </div>
+          </Card>
+        )}
 
         {/* Typed Data (if EIP-712) */}
         {data.typedData !== undefined && (

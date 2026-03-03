@@ -66,7 +66,9 @@ export function validateChainId(
   chainId: string,
   supportedChainIds: number[]
 ): ValidationError | null {
-  const chainIdNum = Number.parseInt(chainId, 16)
+  // Number() handles both hex (0x...) and decimal string inputs correctly,
+  // whereas parseInt(x, 16) would misparse decimal strings like "8283".
+  const chainIdNum = Number(chainId)
   if (!supportedChainIds.includes(chainIdNum)) {
     return {
       code: -32002,

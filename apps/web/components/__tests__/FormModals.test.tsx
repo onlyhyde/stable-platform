@@ -250,6 +250,7 @@ describe('AddLiquidityModal', () => {
       token0Amount: '1',
       token1Amount: '2500',
       poolAddress: mockPool.address,
+      slippageBps: 50,
     })
   })
 

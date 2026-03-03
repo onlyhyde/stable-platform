@@ -51,6 +51,12 @@ const DEFAULT_CONFIG: RiskScorerConfig = {
     '0xa22cb465', // setApprovalForAll(address,bool)
     '0x42842e0e', // safeTransferFrom (NFT)
     '0xf242432a', // safeTransferFrom (ERC-1155)
+    // Kernel v0.3.3 module management operations
+    '0x856b02ec', // forceUninstallModule — HIGH: can bypass security modules
+    '0x19a6f00a', // setDelegatecallWhitelist — HIGH: can expose account to delegatecall
+    '0xdb01ebce', // setEnforceDelegatecallWhitelist — HIGH: disabling removes delegatecall restriction
+    '0x166add9c', // replaceModule — MEDIUM: swaps module atomically
+    '0xb5c13e39', // setHookGasLimit — LOW: DoS risk minimal
   ],
   trackSenderHistory: true,
 }
@@ -158,8 +164,25 @@ export class RiskScorer {
     if (callData.length >= 10) {
       const selector = sliceHex(callData as Hex, 0, 4)
       if (this.config.riskySelectors.includes(selector)) {
-        score = 0.7
-        reason = `Risky function selector detected: ${selector}`
+        // Tiered scoring for module management operations
+        const highRiskSelectors = [
+          '0x856b02ec', // forceUninstallModule
+          '0x19a6f00a', // setDelegatecallWhitelist
+          '0xdb01ebce', // setEnforceDelegatecallWhitelist
+        ]
+        const lowRiskSelectors = [
+          '0xb5c13e39', // setHookGasLimit
+        ]
+        if (highRiskSelectors.includes(selector)) {
+          score = 0.85
+          reason = `High-risk module management operation: ${selector}`
+        } else if (lowRiskSelectors.includes(selector)) {
+          score = 0.4
+          reason = `Low-risk module management operation: ${selector}`
+        } else {
+          score = 0.7
+          reason = `Risky function selector detected: ${selector}`
+        }
       }
     }
 

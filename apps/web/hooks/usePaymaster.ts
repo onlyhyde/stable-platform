@@ -12,7 +12,7 @@ import {
 // Types
 // ============================================================================
 
-export type PaymasterType = 'verifying' | 'sponsor' | 'erc20' | 'permit2'
+export type PaymasterType = 'none' | 'verifying' | 'sponsor' | 'erc20' | 'permit2'
 
 export interface PaymasterConfig {
   type: PaymasterType
@@ -44,6 +44,13 @@ export interface SponsorshipPolicy {
   active: boolean
 }
 
+export interface SupportedToken {
+  address: Address
+  symbol: string
+  decimals: number
+  exchangeRate?: string
+}
+
 export interface PaymasterBalance {
   balance: bigint
   deposited: bigint
@@ -66,16 +73,18 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [selectedType, setSelectedType] = useState<PaymasterType>(config.defaultType ?? 'verifying')
+  const [selectedTokenAddress, setSelectedTokenAddress] = useState<Address | undefined>(config.tokenAddress)
+  const [selectedPolicyId, setSelectedPolicyId] = useState<string | undefined>(config.policyId)
 
   // Current paymaster config
   const paymasterConfig = useMemo<PaymasterConfig>(
     () => ({
       type: selectedType,
       address: defaultPaymasterAddress,
-      tokenAddress: config.tokenAddress,
-      policyId: config.policyId,
+      tokenAddress: selectedTokenAddress,
+      policyId: selectedPolicyId,
     }),
-    [selectedType, defaultPaymasterAddress, config.tokenAddress, config.policyId]
+    [selectedType, defaultPaymasterAddress, selectedTokenAddress, selectedPolicyId]
   )
 
   /**
@@ -286,7 +295,7 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
   /**
    * Get supported ERC20 tokens for token paymaster
    */
-  const getSupportedTokens = useCallback(async (): Promise<Address[] | null> => {
+  const getSupportedTokens = useCallback(async (): Promise<SupportedToken[] | null> => {
     setIsLoading(true)
     setError(null)
 
@@ -308,7 +317,12 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
         throw new Error(result.error.message)
       }
 
-      return result.result.tokens
+      return result.result.tokens.map((t: Record<string, unknown>) => ({
+        address: t.address as Address,
+        symbol: (t.symbol as string) ?? 'Unknown',
+        decimals: Number(t.decimals ?? 18),
+        exchangeRate: t.exchangeRate as string | undefined,
+      }))
     } catch (err) {
       const paymasterError =
         err instanceof Error ? err : new Error('Failed to get supported tokens')
@@ -325,6 +339,12 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
     paymasterAddress: defaultPaymasterAddress,
     selectedType,
     setSelectedType,
+
+    // Token & policy selection
+    selectedTokenAddress,
+    setSelectedTokenAddress,
+    selectedPolicyId,
+    setSelectedPolicyId,
 
     // Core functions
     getPaymasterStubData,

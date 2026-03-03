@@ -1,6 +1,10 @@
 import type { Address, Hex, PublicClient } from 'viem'
 import { concat, encodeFunctionData, pad, toHex } from 'viem'
-import { ENTRY_POINT_V07_ABI } from '../abi'
+import { ENTRY_POINT_ABI } from '../abi'
+import {
+  ENTRY_POINT_SIMULATIONS_ABI,
+  ENTRY_POINT_SIMULATIONS_BYTECODE,
+} from '../abi/entryPointSimulations'
 import type { UserOperation } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
@@ -10,11 +14,10 @@ import { VALIDATION_CONSTANTS } from './types'
 const { ZERO_ADDRESS } = VALIDATION_CONSTANTS
 
 import {
-  decodeExecutionResult,
+  decodeExecutionResultReturn,
   decodeFailedOp,
   decodeFailedOpWithRevert,
-  decodeValidationResult,
-  decodeValidationResultWithAggregation,
+  decodeValidationResultReturn,
   extractErrorData,
   isSignatureFailure,
   matchesErrorSelector,
@@ -96,13 +99,10 @@ export class SimulationValidator implements ISimulationValidator {
   /**
    * Simulate validation of a UserOperation
    *
-   * Both v0.7 and v0.9 EntryPoint revert on success with ValidationResult error data:
-   * - v0.7: selector 0xe0cff05f (4 fields, no aggregatorInfo)
-   * - v0.9: selector 0x5eb2984f (5 fields, includes aggregatorInfo)
-   * On failure, both revert with FailedOp (0x220266b6) or FailedOpWithRevert (0x65c8fd4d).
-   *
-   * Uses publicClient.call() to get raw revert data, avoiding viem's ABI decoding
-   * which fails on unknown error selectors like 0x5eb2984f.
+   * Uses EntryPointSimulations contract via eth_call state override.
+   * The simulation contract is injected at the EntryPoint address, so
+   * simulateValidation returns results normally (not via revert).
+   * FailedOp/FailedOpWithRevert still arrive as reverts on validation failure.
    *
    * @returns ValidationResult if successful
    * @throws RpcError if validation fails
@@ -115,33 +115,53 @@ export class SimulationValidator implements ISimulationValidator {
       'Starting simulation'
     )
 
-    // Encode calldata manually to use raw call() instead of simulateContract()
     const calldata = encodeFunctionData({
-      abi: ENTRY_POINT_V07_ABI,
+      abi: ENTRY_POINT_SIMULATIONS_ABI,
       functionName: 'simulateValidation',
       args: [packedOp],
     })
 
     try {
-      await this.publicClient.call({
+      const { data } = await this.publicClient.call({
         to: this.entryPoint,
         data: calldata,
+        stateOverride: [
+          {
+            address: this.entryPoint,
+            code: ENTRY_POINT_SIMULATIONS_BYTECODE as Hex,
+          },
+        ],
       })
 
-      // simulateValidation always reverts (both v0.7 and v0.9)
-      throw new RpcError(
-        'Unexpected: simulateValidation did not revert',
-        RPC_ERROR_CODES.INTERNAL_ERROR
+      if (!data) {
+        throw new RpcError(
+          'simulateValidation returned empty data',
+          RPC_ERROR_CODES.INTERNAL_ERROR
+        )
+      }
+
+      // Normal return — decode ValidationResult
+      const result = decodeValidationResultReturn(data)
+
+      this.logger.debug(
+        {
+          preOpGas: result.returnInfo.preOpGas.toString(),
+          prefund: result.returnInfo.prefund.toString(),
+        },
+        'Simulation successful'
       )
+
+      return result
     } catch (error) {
       if (error instanceof RpcError) throw error
-      // Parse revert data: ValidationResult (success) or FailedOp (failure)
+      // FailedOp/FailedOpWithRevert still arrive as reverts
       return this.parseSimulationError(error)
     }
   }
 
   /**
    * Simulate execution of a UserOperation (for gas estimation)
+   * Uses EntryPointSimulations via state override. Returns ExecutionResult normally.
    * @returns ExecutionResult if successful
    */
   async simulateExecution(
@@ -151,16 +171,34 @@ export class SimulationValidator implements ISimulationValidator {
   ): Promise<ExecutionResult> {
     const packedOp = packUserOperationForAbi(userOp)
 
+    const calldata = encodeFunctionData({
+      abi: ENTRY_POINT_SIMULATIONS_ABI,
+      functionName: 'simulateHandleOp',
+      args: [packedOp, target, targetCallData],
+    })
+
     try {
-      await this.publicClient.simulateContract({
-        address: this.entryPoint,
-        abi: ENTRY_POINT_V07_ABI,
-        functionName: 'simulateHandleOp',
-        args: [packedOp, target, targetCallData],
+      const { data } = await this.publicClient.call({
+        to: this.entryPoint,
+        data: calldata,
+        stateOverride: [
+          {
+            address: this.entryPoint,
+            code: ENTRY_POINT_SIMULATIONS_BYTECODE as Hex,
+          },
+        ],
       })
 
-      throw new Error('Unexpected: simulateHandleOp did not revert')
+      if (!data) {
+        throw new RpcError(
+          'simulateHandleOp returned empty data',
+          RPC_ERROR_CODES.INTERNAL_ERROR
+        )
+      }
+
+      return decodeExecutionResultReturn(data)
     } catch (error) {
+      if (error instanceof RpcError) throw error
       return this.parseExecutionError(error)
     }
   }
@@ -271,7 +309,7 @@ export class SimulationValidator implements ISimulationValidator {
     try {
       const nonce = await this.publicClient.readContract({
         address: this.entryPoint,
-        abi: ENTRY_POINT_V07_ABI,
+        abi: ENTRY_POINT_ABI,
         functionName: 'getNonce',
         args: [sender, key],
       })
@@ -295,7 +333,7 @@ export class SimulationValidator implements ISimulationValidator {
     try {
       const result = await this.publicClient.readContract({
         address: this.entryPoint,
-        abi: ENTRY_POINT_V07_ABI,
+        abi: ENTRY_POINT_ABI,
         functionName: 'getDepositInfo',
         args: [account],
       })
@@ -325,7 +363,7 @@ export class SimulationValidator implements ISimulationValidator {
     try {
       const balance = await this.publicClient.readContract({
         address: this.entryPoint,
-        abi: ENTRY_POINT_V07_ABI,
+        abi: ENTRY_POINT_ABI,
         functionName: 'balanceOf',
         args: [account],
       })
@@ -345,9 +383,11 @@ export class SimulationValidator implements ISimulationValidator {
   }
 
   /**
-   * Parse simulation error and extract ValidationResult or throw appropriate error
+   * Parse simulation error from FailedOp/FailedOpWithRevert reverts.
+   * With EntryPointSimulations + state override, successful results are returned
+   * normally. Only failure cases (FailedOp, FailedOpWithRevert) arrive here as reverts.
    */
-  private parseSimulationError(error: unknown): ValidationResult {
+  private parseSimulationError(error: unknown): never {
     const data = extractErrorData(error)
 
     if (!data) {
@@ -358,52 +398,7 @@ export class SimulationValidator implements ISimulationValidator {
       )
     }
 
-    // Success case - ValidationResult error (v0.7)
-    if (matchesErrorSelector(data, 'ValidationResult')) {
-      const result = decodeValidationResult(data)
-
-      this.logger.debug(
-        {
-          preOpGas: result.returnInfo.preOpGas.toString(),
-          prefund: result.returnInfo.prefund.toString(),
-        },
-        'Simulation successful (v0.7 ValidationResult)'
-      )
-
-      return result
-    }
-
-    // Success case - ValidationResult error (v0.9, includes aggregatorInfo)
-    if (matchesErrorSelector(data, 'ValidationResultV09')) {
-      const result = decodeValidationResultWithAggregation(data)
-
-      this.logger.debug(
-        {
-          preOpGas: result.returnInfo.preOpGas.toString(),
-          prefund: result.returnInfo.prefund.toString(),
-        },
-        'Simulation successful (v0.9 ValidationResult)'
-      )
-
-      return result
-    }
-
-    // Success case with aggregation (v0.7)
-    if (matchesErrorSelector(data, 'ValidationResultWithAggregation')) {
-      const result = decodeValidationResultWithAggregation(data)
-
-      this.logger.debug(
-        {
-          preOpGas: result.returnInfo.preOpGas.toString(),
-          aggregator: result.aggregatorInfo.aggregator,
-        },
-        'Simulation successful (with aggregator)'
-      )
-
-      return result
-    }
-
-    // Failure case - FailedOp
+    // FailedOp
     if (matchesErrorSelector(data, 'FailedOp')) {
       const { opIndex, reason } = decodeFailedOp(data)
 
@@ -412,7 +407,7 @@ export class SimulationValidator implements ISimulationValidator {
       throw this.mapFailedOpToRpcError(reason)
     }
 
-    // Failure case - FailedOpWithRevert
+    // FailedOpWithRevert
     if (matchesErrorSelector(data, 'FailedOpWithRevert')) {
       const { opIndex, reason, inner } = decodeFailedOpWithRevert(data)
 
@@ -433,9 +428,10 @@ export class SimulationValidator implements ISimulationValidator {
   }
 
   /**
-   * Parse execution simulation error
+   * Parse execution simulation error (FailedOp/FailedOpWithRevert only).
+   * Successful ExecutionResult is now returned normally via state override.
    */
-  private parseExecutionError(error: unknown): ExecutionResult {
+  private parseExecutionError(error: unknown): never {
     const data = extractErrorData(error)
 
     if (!data) {
@@ -443,11 +439,6 @@ export class SimulationValidator implements ISimulationValidator {
         `Execution simulation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         RPC_ERROR_CODES.REJECTED_BY_EP_OR_ACCOUNT
       )
-    }
-
-    // ExecutionResult error (expected)
-    if (matchesErrorSelector(data, 'ExecutionResult')) {
-      return decodeExecutionResult(data)
     }
 
     // FailedOp error
@@ -520,6 +511,28 @@ export class SimulationValidator implements ISimulationValidator {
     // Paymaster errors
     if (reason.startsWith('PM')) {
       return new RpcError(message, RPC_ERROR_CODES.REJECTED_BY_PAYMASTER)
+    }
+
+    // Kernel v0.3.3 module operation errors (detected in inner revert data)
+    if (inner) {
+      if (matchesErrorSelector(inner, 'ModuleOnUninstallFailed')) {
+        return new RpcError(
+          'Module rejected uninstall operation. Use forceUninstallModule for emergency removal.',
+          RPC_ERROR_CODES.REJECTED_BY_EP_OR_ACCOUNT
+        )
+      }
+      if (matchesErrorSelector(inner, 'Reentrancy')) {
+        return new RpcError(
+          'Reentrancy detected in module operation.',
+          RPC_ERROR_CODES.REJECTED_BY_EP_OR_ACCOUNT
+        )
+      }
+      if (matchesErrorSelector(inner, 'DelegatecallTargetNotWhitelisted')) {
+        return new RpcError(
+          'Delegatecall target not whitelisted. Call setDelegatecallWhitelist first.',
+          RPC_ERROR_CODES.REJECTED_BY_EP_OR_ACCOUNT
+        )
+      }
     }
 
     // Default

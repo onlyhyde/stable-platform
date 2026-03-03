@@ -152,6 +152,17 @@ const AA_ERROR_MAP: Record<AAErrorCode, AAErrorInfo> = {
     ],
     severity: 'transient',
   },
+  [AA_ERROR_CODES.AA26_OVER_VERIFICATION_GAS]: {
+    code: 'AA26',
+    category: 'account_execution',
+    message: 'Verification gas limit exceeded',
+    description: 'The account used more gas during validateUserOp than the verificationGasLimit.',
+    suggestions: [
+      'Increase verificationGasLimit in the UserOperation.',
+      'Simplify the account validation logic if possible.',
+    ],
+    severity: 'recoverable',
+  },
 
   // AA3x: Paymaster validation
   [AA_ERROR_CODES.AA30_PAYMASTER_NOT_DEPLOYED]: {
@@ -207,6 +218,17 @@ const AA_ERROR_MAP: Record<AAErrorCode, AAErrorInfo> = {
     suggestions: [
       'Request new paymaster data with a fresh signature.',
       'Ensure the UserOperation fields haven\'t changed after paymaster signing.',
+    ],
+    severity: 'recoverable',
+  },
+  [AA_ERROR_CODES.AA36_OVER_PAYMASTER_VERIFICATION_GAS]: {
+    code: 'AA36',
+    category: 'paymaster_validation',
+    message: 'Paymaster verification gas exceeded',
+    description: 'The paymaster used more gas during validatePaymasterUserOp than the paymasterVerificationGasLimit.',
+    suggestions: [
+      'Increase paymasterVerificationGasLimit in the UserOperation.',
+      'The paymaster may need optimization for complex validation logic.',
     ],
     severity: 'recoverable',
   },

@@ -1,6 +1,15 @@
 # ERC-4337 + EIP-7702 시퀀스 다이어그램
 
 > 한국어 번역본 (원문: ERC4337_EIP7702_SEQUENCE_DIAGRAM.md)
+>
+> ⚠️ 상태: 번역 동기화 대기(legacy). 최신 구현 기준은 영문 정본을 우선 확인:
+> - `docs/claude/spec/ERC4337_EIP7702_COMPLETE_FLOW.md`
+> - `docs/claude/spec/ERC4337_EIP7702_SEQUENCE_DIAGRAM.md`
+>
+> 연동 메모 (2026-03-02):
+> - 오프체인 인프라(Bundler/SDK/Proxy) 정합성은 **PARTIAL**
+> - 상세 근거: `docs/claude/spec/EIP-4337_7579_통합_스펙준수_보고서.md` §11.2.4, §11.3
+> - 세부 점검표: `docs/claude/spec/EIP-4337_7579_코드정합성_검토결과_2026-03-02.md`
 
 ## 1. 전체 End-to-End 흐름 (개요)
 
@@ -39,7 +48,7 @@ sequenceDiagram
     D->>PP: pm_getPaymasterData(userOp_with_gas)
     PP->>PP: Encode Erc20Payload + Envelope
     PP-->>D: {paymaster, paymasterData: envelope}
-    D->>D: Pack UserOp v0.7 format
+    D->>D: Pack UserOp (v0.9 호환 packed format)
     D->>D: Compute userOpHash
     D->>W: signMessage(userOpHash)
     W->>W: ECDSA sign(hash, privateKey)
@@ -109,6 +118,7 @@ sequenceDiagram
 
     Note over EP,T: Phase 4: PostOp Settlement
     EP->>EP: Calculate actualGasCost + penalties
+    Note over EP: postOp is invoked only when context.length > 0<br/>(ERC20 흐름은 non-empty context 반환)
     EP->>PM: postOp(opSucceeded, context, actualGasCost, gasPrice)
     PM->>PM: Decode context (sender, token, maxTokenCost, maxCost)
     PM->>PM: actualTokenCost = maxTokenCost × actualGasCost / maxCost
@@ -373,6 +383,7 @@ sequenceDiagram
 
     rect rgb(240, 248, 255)
         Note over EP,T: Paymaster PostOp
+        Note over EP: Conditional call: only if context.length > 0
         EP->>PM: postOp{gas: postOpGasLimit}(<br/>opSucceeded,<br/>context,<br/>actualGasCost,<br/>gasPrice)
         Note over PM: modifier: onlyEntryPoint
 
@@ -618,7 +629,7 @@ sequenceDiagram
 ### 주요 주소 (로컬 개발)
 
 ```
-EntryPoint:        0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
+EntryPoint:        0xEf6817fe73741A8F10088f9511c64b666a338A14
 Kernel:            0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
 ECDSA Validator:   0x5FC8d32690cc91D4c39d9d3abcBD16989F875707
 Kernel Factory:    0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9

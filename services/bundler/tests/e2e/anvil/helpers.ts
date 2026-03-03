@@ -9,7 +9,7 @@ import {
   parseAbi,
   toHex,
 } from 'viem'
-import { ENTRY_POINT_V07_ABI } from '../../../src/abi'
+import { ENTRY_POINT_ABI } from '../../../src/abi'
 import type { UserOperation } from '../../../src/types'
 import type { AnvilFixture } from './setup'
 
@@ -165,7 +165,7 @@ export async function getUserOpHash(
   try {
     const result = await publicClient.readContract({
       address: entryPoint,
-      abi: ENTRY_POINT_V07_ABI,
+      abi: ENTRY_POINT_ABI,
       functionName: 'getUserOpHash',
       args: [packed],
     })
@@ -237,7 +237,7 @@ export async function getOnChainNonce(
   try {
     const result = await publicClient.readContract({
       address: entryPoint,
-      abi: ENTRY_POINT_V07_ABI,
+      abi: ENTRY_POINT_ABI,
       functionName: 'getNonce',
       args: [sender, key],
     })

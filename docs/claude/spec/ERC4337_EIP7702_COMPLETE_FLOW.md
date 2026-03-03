@@ -43,8 +43,82 @@ A user with **no native coin (ETH)** wants to transfer their **ERC-20 token (USD
 ```
 User → DApp → Wallet (sign) → Paymaster-Proxy (approve) → Bundler (validate & bundle)
   → EntryPoint.handleOps (on-chain) → Kernel.validateUserOp → Paymaster.validatePaymasterUserOp
-  → Kernel.executeUserOp → USDC.transfer → Paymaster.postOp (collect fee) → Bundler (compensate)
+  → Kernel.execute (or executeUserOp when hook-required path) → USDC.transfer
+  → Paymaster.postOp (collect fee, only when context.length > 0) → Bundler (compensate)
 ```
+
+### Seminar Frame: 2-Track (Current vs Target)
+
+| Track | Purpose | This POC Status |
+|---|---|---|
+| **Track A: Current Implementation** | 실제 코드와 1:1로 대응되는 동작 설명 | **Implemented** |
+| **Track B: Target/Expansion Architecture** | 향후 확장 가능한 통합 아키텍처(학습/비전) 설명 | **Not implemented in current codebase** |
+
+Track A (현재 구현) 핵심:
+- EIP-7702 delegation 트랜잭션(type-4, `authorizationList`)은 **UserOp 제출 전에 별도 수행**
+- Bundler는 현재 **일반 `handleOps` 트랜잭션**만 제출
+- UserOp는 `initCode = 0x` (이미 delegated code 존재), nonce는 ROOT/7702 경로
+- 실행은 본 POC 기준으로 `Kernel.execute(...)` direct path 사용
+
+Track B (목표/확장) 예시:
+- 번들러가 delegation 상태/권한을 더 자동화해 처리하는 운영 파이프라인
+- 실행 경로/모듈/정책을 상황별 템플릿으로 표준화한 멀티 시나리오 지원
+- 세미나에서는 "현재 구현과 구분된 목표 상태"로 명확히 라벨링 권장
+
+### Seminar Context: EntryPoint Evolution (v0.6 → v0.9)
+
+| Version | Seminar Message (요약) |
+|---|---|
+| **v0.6** | 초기 대중화 단계. 계정 추상화 운영 패턴이 자리잡기 시작 |
+| **v0.7** | Packed UserOperation 중심 구조가 정리되며 구현 일관성 강화 |
+| **v0.9** | EIP-712 기반 `userOpHash` 정합성 강화 + EIP-7702 연계 경로 반영 |
+
+본 문서는 **v0.9 기준**으로 기술한다.
+
+### Implementation Sync (2026-03-02)
+
+This document describes the **target-correct v0.9 flow**.  
+Current repository status for off-chain infra is not fully converged yet.
+
+| Area | Current Status | Notes |
+|---|---|---|
+| Bundler `userOpHash` path | **PARTIAL** | RPC util has a legacy hash path; must be aligned to v0.9 EIP-712 |
+| `eth_getUserOperationReceipt` | **PARTIAL** | In-memory mempool dependency remains; on-chain fallback should be added |
+| EntryPoint defaults across packages | **PARTIAL** | Mixed defaults remain in SDK/config/env paths |
+| Gas estimation (penalty / 7702 add-on) | **PARTIAL** | 10% unused gas penalty and +25k (7702) handling need consistent reflection |
+
+Reference:
+- `docs/claude/spec/EIP-4337_7579_통합_스펙준수_보고서.md` (§11.2.4, §11.3)
+- `docs/claude/spec/EIP-4337_7579_코드정합성_검토결과_2026-03-02.md`
+
+### Track B Implementation Roadmap (Execution Plan)
+
+아래 로드맵은 **Track B(목표/확장)** 를 실제 구현 단계로 분해한 계획이다.
+
+| Milestone | Priority | Goal | Scope (핵심 작업) | Exit Criteria |
+|---|---|---|---|---|
+| **M1. Protocol Correctness Lock** | P0 (Now) | v0.9/7702 정합성 완전 고정 | bundler/paymaster/userOp hash 계산을 v0.9(EIP-712)로 통일, selector/주소 상수 중앙화, 문서-코드 동시 검증 테스트 추가 | 문서/SDK/Bundler가 동일 hash 산출, 회귀 테스트 green |
+| **M2. Delegation Orchestration Layer** | P0 (Now) | delegation 단계를 서비스 레벨로 표준화 | `isDelegated` 점검, type-4 delegation 전송, 재시도/중복방지(idempotency), delegation 상태 인덱싱 | 사용자 관점에서 delegation 성공률/복구 플로우가 운영 가능 |
+| **M3. Policy/Template UserOp Builder** | P1 (Next) | 시나리오별 UserOp 조립 표준화 | direct execute / executeUserOp(hook) 템플릿, nonce profile(ROOT/VALIDATOR/PERMISSION) 템플릿, paymaster 타입별 템플릿 | 동일 시나리오에서 클라이언트별 UserOp 조립 차이 제거 |
+| **M4. Bundler Multi-Scenario Orchestration** | P1 (Next) | 4337+7702 복합 시나리오 대응 | precheck 파이프라인 강화(delegation 상태/nonce profile/selector profile), 멀티 policy 라우팅, 실패코드 분류/자동 복구 정책 | 운영 환경에서 시나리오별 실패 원인 분류 및 자동 처리 가능 |
+| **M5. Security/Operations Guardrails** | P1 (Next) | 운영 보안/리스크 제어 | replay/nonce drift 알람, paymaster 지출 한도 및 circuit breaker, relayer key 운영 분리, 감사 로그 체계 | 이상 징후 탐지/차단/포렌식 경로가 문서화되고 자동화됨 |
+| **M6. Seminar-to-Production Package** | P2 (Later) | 교육 자료와 운영 런북 통합 | 세미나 슬라이드 + 실습 시나리오 + 트러블슈팅 런북 + KPI 대시보드 패키지화 | 신규 개발자가 세미나 후 독립적으로 POC 실행/디버깅 가능 |
+
+#### M1 Immediate Backlog (권장 착수 순서)
+
+1. Bundler `getUserOperationHash`를 EntryPoint v0.9 EIP-712 방식으로 교체
+2. 문서/SDK/Bundler hash 결과 일치 테스트 추가
+3. 주소 참조를 generated 주소 파일 기반으로 통일
+4. execute / executeUserOp 분기 규칙을 통합 검증 테스트로 고정
+5. `eth_getUserOperationReceipt`에 on-chain fallback(UserOperationEvent) 추가
+6. 가스 추정 로직에 10% 미사용 가스 페널티 및 EIP-7702(+25k) 반영 검증
+
+#### M2 Immediate Backlog (권장 착수 순서)
+
+1. delegation 전용 API/서비스 정의 (`check -> signAuthorization -> submit -> verify`)
+2. type-4 tx 실패/재시도 정책 및 중복 제출 방지 키 설계
+3. delegation 상태 인덱서(EOA code prefix + delegate address) 추가
+4. DApp onboarding에서 delegation 완료 전 UserOp 제출 차단
 
 ---
 
@@ -53,7 +127,7 @@ User → DApp → Wallet (sign) → Paymaster-Proxy (approve) → Bundler (valid
 ### On-Chain Contracts
 
 ```
-EntryPoint (ERC-4337 v0.7)
+EntryPoint (ERC-4337 v0.9)
 ├── handleOps(PackedUserOperation[], beneficiary)
 ├── handleAggregatedOps(UserOpsPerAggregator[], beneficiary)
 ├── simulateHandleOp(...)
@@ -109,6 +183,12 @@ Paymaster-Proxy (JSON-RPC)
 └── SettlementWorker: async receipt polling & settlement
 ```
 
+Known off-chain convergence gaps (2026-03-02):
+- Bundler hash path: target v0.9 EIP-712 not fully unified
+- `eth_getUserOperationReceipt`: on-chain fallback not fully reflected
+- EntryPoint defaults: mixed default addresses remain in some packages
+- Gas estimation alignment: penalty/7702 add-on needs consistent implementation
+
 ---
 
 ## 3. Phase 0: EIP-7702 Delegation Setup
@@ -151,28 +231,26 @@ Step 0.4: EVM processes the authorization
   // EOA retains its storage and balance
 ```
 
-### Post-Setup: Module Installation
+### Post-Setup: Initialization Rule for This POC
 
-After delegation, the Smart Account needs modules installed:
+For the EIP-7702 delegated Kernel flow used in this POC, `Kernel.initialize(...)` is **not** called.
 
 ```
-Kernel.initialize(
-    rootValidator,     // ValidationId: [0x01][ECDSAValidator address]
-    hook,              // IHook: address(1) for no hook, or hook contract
-    validatorData,     // bytes: ECDSA validator init data (owner address)
-    hookData,          // bytes: hook init data
-    initConfig         // bytes[]: additional module installations
-)
+Reason:
+  - When account code has EIP-7702 prefix (0xef0100), Kernel.initialize() reverts (AlreadyInitialized)
+  - Owner authority comes from delegated EOA signature path (ValidationType ROOT/7702)
 ```
 
 ### Key Contracts
 
 | Contract | Default Address (Local) | Purpose |
 |----------|------------------------|---------|
-| Kernel Implementation | `0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9` | Smart account logic |
-| ECDSA Validator | `0x5FC8d32690cc91D4c39d9d3abcBD16989F875707` | Signature verification |
-| Kernel Factory | `0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9` | Account deployment |
-| EntryPoint | `0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0` | UserOp orchestration |
+| Kernel Implementation | `0xA61b944dd427A85495B685D93237CB73087E0035` | Smart account logic |
+| ECDSA Validator | `0xA61b944dd427A85495B685D93237CB73087E0035` | Signature verification |
+| Kernel Factory | `0xbEbb0338503F9E28FFDC84C3548F8454F12Dd1D3` | Account deployment |
+| EntryPoint | `0xEf6817fe73741A8F10088f9511c64b666a338A14` | UserOp orchestration |
+
+Source: `stable-platform/packages/contracts/src/generated/addresses.ts` (chainId `8283`)
 
 ---
 
@@ -205,14 +283,16 @@ executionCalldata = abi.encodePacked(
     innerCallData        // callData: variable length
 )
 
-// Final callData for the UserOp:
-// Option A: Via executeUserOp (when hooks are present)
+// Final callData for this POC (direct execution path):
 callData = abi.encodeWithSelector(
-    Kernel.execute.selector,     // 0x61affe23 — execute(ExecMode, bytes)
+    Kernel.execute.selector,     // 0xe9ae5c53 — execute(bytes32,bytes)
     execMode,
     executionCalldata
 )
-// Note: EntryPoint wraps this inside executeUserOp(userOp, userOpHash) automatically
+
+// Optional hook-required path:
+// if callData starts with executeUserOp selector (0x8dd7712f),
+// EntryPoint rewrites callData to executeUserOp(userOp, userOpHash)
 ```
 
 ### Step 1.3: Get Paymaster Data from Paymaster-Proxy
@@ -288,37 +368,42 @@ struct Erc20Payload {
 PackedUserOperation {
     sender:            EOA_ADDRESS (= Smart Account)
     nonce:             [mode:1][type:1][validatorId:20][key:2][seq:8]
-                       [0x00 DEFAULT][0x01 VALIDATOR][ECDSAValidator addr][0x0000][sequence]
+                       [0x00 DEFAULT][0x00 ROOT/7702][0x000000...0000][0x0000][sequence]
     initCode:          0x (already deployed via EIP-7702)
     callData:          execute(ExecMode, executionCalldata)
     accountGasLimits:  pack(verificationGasLimit=200000, callGasLimit=200000)
     preVerificationGas: 100000
     gasFees:           pack(maxPriorityFeePerGas=1gwei, maxFeePerGas=1gwei)
     paymasterAndData:  [ERC20Paymaster:20][verGas:16][postOpGas:16][envelope...]
-    signature:         <ECDSA signature over userOpHash>
+    signature:         <EOA signature over ethSigned(userOpHash)>
 }
 ```
 
 ### Step 1.5: Sign the UserOp
 
 ```
-// Compute canonical hash
-userOpHash = keccak256(abi.encode(
-    keccak256(pack(sender, nonce, hashInitCode, hashCallData,
-                   accountGasLimits, preVerificationGas, gasFees,
-                   hashPaymasterAndData)),
-    entryPoint,
-    chainId
+// Compute canonical hash (EntryPoint v0.9, EIP-712)
+structHash = keccak256(abi.encode(
+    PACKED_USEROP_TYPEHASH,
+    sender, nonce, hashInitCode, hashCallData,
+    accountGasLimits, preVerificationGas, gasFees, hashPaymasterAndData
 ))
+domainSeparator = keccak256(abi.encode(
+    TYPE_HASH, keccak256("ERC4337"), keccak256("1"), chainId, entryPoint
+))
+userOpHash = keccak256("\x19\x01" || domainSeparator || structHash)
 
 // Wallet signs the hash
 signature = wallet.signMessage({ message: { raw: userOpHash } })
 
-// For Kernel v3 with ECDSA Validator:
-// The signature is used as-is (65 bytes: r || s || v)
+// For Kernel v3 EIP-7702 path:
+// validation verifies ECDSA.recover(toEthSignedMessageHash(userOpHash), signature) == address(this)
 ```
 
-### Step 1.6: Pack the UserOp (v0.7 Format)
+> Sync note (2026-03-02): This is the **target/canonical** hash path.  
+> Current bundler RPC path still contains a legacy hash implementation and must be converged.
+
+### Step 1.6: Pack the UserOp (v0.9-Compatible Packed Format)
 
 ```
 paymasterAndData = abi.encodePacked(
@@ -354,6 +439,9 @@ POST http://bundler:4337/
 
 Response: { "result": "0x<userOpHash>" }
 ```
+
+> Sync note (2026-03-02): Returned `userOpHash` is expected to match canonical v0.9 EIP-712 hash.  
+> Until bundler hash-path convergence is completed, treat cross-check with on-chain `UserOperationEvent` as mandatory in operations.
 
 ### Step 2.2: 6-Phase Validation Pipeline
 
@@ -417,7 +505,7 @@ Mempool Management:
 │   ├── Sort by gas price (priority)
 │   └── Evict lowest price if mempool full (max: 10,000)
 │
-└── Bundle Execution (every 4 seconds):
+	└── Bundle Execution (every 4 seconds):
     ├── getPendingForBundle(maxSize=25):
     │   ├── Group by sender
     │   ├── Sort each sender's ops by nonce (ascending)
@@ -426,12 +514,16 @@ Mempool Management:
     │
     ├── Pre-flight re-simulation (drop invalid)
     │
-    └── Submit bundle:
-        ├── Encode: EntryPoint.handleOps(ops[], beneficiary)
-        ├── estimateGas() + 20% buffer
-        ├── sendTransaction to EntryPoint
-        ├── Mark all ops as 'submitted'
-        └── Async: waitForReceipt → update status to 'included'/'failed'
+	    └── Submit bundle:
+	        ├── Encode: EntryPoint.handleOps(ops[], beneficiary)
+	        ├── estimateGas() + 20% buffer
+	        ├── sendTransaction to EntryPoint
+	        ├── Mark all ops as 'submitted'
+	        └── Async: waitForReceipt → update status to 'included'/'failed'
+
+Note:
+  - EIP-7702 `authorizationList` transaction is sent before UserOp (delegation phase)
+  - Bundler submission here is the regular `handleOps` transaction
 ```
 
 ---
@@ -461,7 +553,8 @@ function handleOps(
 For each UserOp:
 
 1. Copy to memory & compute hash
-   userOpHash = keccak256(pack(fields) || entryPoint || chainId)
+   userOpHash = EIP-712 hash:
+                keccak256("\x19\x01" || domainSeparator || structHash)
 
 2. Calculate required prefund
    requiredGas = verificationGasLimit           // 200,000
@@ -481,7 +574,7 @@ For each UserOp:
 5. Validate Paymaster (if present)
    → Deduct requiredPrefund from Paymaster's deposit
    → Call ERC20Paymaster.validatePaymasterUserOp() (see Step 3.4)
-   → Store returned context for postOp
+   → Store returned context for postOp (postOp is called only if context is non-empty)
 ```
 
 ### Step 3.3: Kernel.validateUserOp (Smart Account Validation)
@@ -491,55 +584,40 @@ EntryPoint calls:
   Kernel.validateUserOp(userOp, userOpHash, missingAccountFunds)
   Gas limit: verificationGasLimit (200,000)
 
-  ┌─────────────────────────────────────────────────────────────────┐
-  │ Kernel.validateUserOp                                           │
-  │                                                                 │
-  │ 1. NONCE DECODING                                               │
-  │    decodeNonce(userOp.nonce) →                                  │
-  │    ├── validationMode = 0x00 (VALIDATION_MODE_DEFAULT)          │
-  │    ├── validationType = 0x01 (VALIDATION_TYPE_VALIDATOR)        │
-  │    └── validationId   = [0x01][ECDSAValidator address]          │
-  │                                                                 │
-  │ 2. VALIDATOR CONFIG LOOKUP                                      │
-  │    config = validationConfig[validationId]                      │
-  │    ├── nonce: uint32 (validator's nonce)                        │
-  │    └── hook: IHook address                                      │
-  │    require(config.hook != address(0))  // must be installed     │
-  │                                                                 │
-  │ 3. INTERNAL VALIDATION DISPATCH                                 │
-  │    _validateUserOp(mode=DEFAULT, vId, userOp, userOpHash)       │
-  │    │                                                            │
-  │    └── VALIDATION_TYPE_VALIDATOR:                                │
-  │        Call: IValidator(ecdsaValidator).validateUserOp(          │
-  │            userOp,       // full PackedUserOperation             │
-  │            userOpHash    // canonical hash                       │
-  │        )                                                        │
-  │        Returns: uint256 validationData                          │
-  │        │                                                        │
-  │        └── ECDSAValidator internally:                           │
-  │            recovered = ecrecover(userOpHash, v, r, s)           │
-  │            if (recovered == owner) return 0     // success      │
-  │            else return 1                        // SIG_FAILED   │
-  │                                                                 │
-  │ 4. HOOK HANDLING                                                │
-  │    if (config.hook != address(1)) {  // hook is installed       │
-  │        executionHook[userOpHash] = config.hook                  │
-  │        // Require callData uses executeUserOp selector          │
-  │        require(callData.selector == 0x8dd7712f)                 │
-  │    }                                                            │
-  │                                                                 │
-  │ 5. SELECTOR ACCESS CHECK                                        │
-  │    targetSelector = bytes4(userOp.callData[4:8])                │
-  │    require(allowedSelectors[validationId][targetSelector])       │
-  │                                                                 │
-  │ 6. MISSING FUNDS FORWARDING                                     │
-  │    if (missingAccountFunds > 0) {                               │
-  │        call{value: missingAccountFunds}(entryPoint, "")         │
-  │    }                                                            │
-  │    // With paymaster: missingAccountFunds = 0                   │
-  │                                                                 │
-  │ return validationData                                           │
-  └─────────────────────────────────────────────────────────────────┘
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ Kernel.validateUserOp                                            │
+  │                                                                  │
+  │ 1. NONCE DECODING (this POC)                                     │
+  │    decodeNonce(userOp.nonce) →                                   │
+  │    ├── validationMode = 0x00 (VALIDATION_MODE_DEFAULT)           │
+  │    ├── validationType = 0x00 (VALIDATION_TYPE_ROOT/7702)         │
+  │    └── validationId   = 0x00...00                                │
+  │                                                                  │
+  │ 2. ROOT/7702 RESOLUTION                                          │
+  │    if (vType == ROOT) vId = rootValidator                        │
+  │    // for this flow rootValidator is zero-initialized            │
+  │                                                                  │
+  │ 3. INTERNAL VALIDATION DISPATCH                                  │
+  │    _validateUserOp(mode=DEFAULT, vId, userOp, userOpHash)        │
+  │    └── VALIDATION_TYPE_7702 path:                                │
+  │        _verify7702Signature(                                     │
+  │            toEthSignedMessageHash(userOpHash),                   │
+  │            userOp.signature                                      │
+  │        )                                                         │
+  │        Success iff recovered signer == address(this)             │
+  │                                                                  │
+  │ 4. HOOK/SELECTOR HANDLING                                        │
+  │    executionHook[userOpHash] = validationConfig[vId].hook        │
+  │    For ROOT/7702: module-installed validator checks are skipped  │
+  │                                                                  │
+  │ 5. MISSING FUNDS FORWARDING                                      │
+  │    if (missingAccountFunds > 0) {                                │
+  │        call{value: missingAccountFunds}(entryPoint, "")          │
+  │    }                                                             │
+  │    // With paymaster: missingAccountFunds = 0                    │
+  │                                                                  │
+  │ return validationData                                            │
+  └──────────────────────────────────────────────────────────────────┘
 ```
 
 #### Alternative Validation Paths
@@ -568,9 +646,9 @@ When validationType = 0x02 (PERMISSION):
 
 **VALIDATION_TYPE_7702 (EIP-7702 native)**:
 ```
-When validationType = 0x00 and detected as 7702:
+When validationType = 0x00 (same value as ROOT):
   → ECDSA recovery against address(this)
-  → Used for chain-agnostic signatures
+  → Signature input is ethSigned(userOpHash)
 ```
 
 ### Step 3.4: ERC20Paymaster.validatePaymasterUserOp
@@ -671,96 +749,43 @@ EntryPoint opens new call context via self-call:
        → This passes full UserOp context to the account
 
   3. Execute:
-     call{gas: callGasLimit}(sender, rewrittenCallData)
-     → Calls Kernel.executeUserOp(userOp, userOpHash)
+     call{gas: callGasLimit}(sender, finalCallData)
+     → This POC uses direct `Kernel.execute(...)` callData
+     → `Kernel.executeUserOp(...)` is only used when callData starts with selector 0x8dd7712f
 ```
 
-### Step 4.2: Kernel.executeUserOp (Hook Lifecycle)
+### Step 4.2: Kernel.execute (Direct Path in This POC)
 
 ```
-Kernel.executeUserOp(userOp, userOpHash)
-  modifier: onlyEntryPoint
+Kernel.execute(execMode, executionCalldata)
+  modifier: onlyEntryPointOrSelfOrRoot
 
   ┌─────────────────────────────────────────────────────────────────┐
   │                                                                 │
-  │ 1. RETRIEVE HOOK                                                │
-  │    hook = executionHook[userOpHash]                             │
-  │    delete executionHook[userOpHash]  // consumed once           │
+  │ 1. CALL AUTHORIZATION                                            │
+  │    Called by EntryPoint via innerHandleOp                       │
+  │                                                                  │
+  │ 2. ROOT HOOK (OPTIONAL)                                          │
+  │    hook = validationConfig[rootValidator].hook                   │
+  │    if (hook is contract address) preCheck(...) / postCheck(...)  │
+  │    // In this POC, hook is not installed                         │
   │                                                                 │
-  │ 2. PRE-HOOK                                                     │
-  │    if (hook != address(0) && hook != address(1)) {              │
-  │        hookContext = IHook(hook).preCheck(                      │
-  │            msg.sender,           // EntryPoint address          │
-  │            msg.value,            // 0                           │
-  │            userOp.callData[4:]   // inner callData              │
-  │        )                                                        │
-  │        // Hook validates pre-conditions:                        │
-  │        //   - spending limits                                   │
-  │        //   - time restrictions                                 │
-  │        //   - target whitelist                                  │
-  │        // Returns context bytes for postCheck                   │
-  │    }                                                            │
-  │                                                                 │
-  │ 3. DELEGATECALL TO SELF (execute inner callData)                │
-  │    innerCallData = userOp.callData[4:]                          │
-  │    // = execute(ExecMode, executionCalldata)                    │
-  │                                                                 │
-  │    (success, returnData) = address(this).delegatecall(          │
-  │        innerCallData                                            │
-  │    )                                                            │
-  │    │                                                            │
-  │    └── Kernel.execute(execMode, executionCalldata)              │
-  │        │                                                        │
-  │        │  modifier: onlyEntryPointOrSelfOrRoot                  │
-  │        │  (self-call via delegatecall → allowed)                │
-  │        │                                                        │
-  │        ├── Root Hook Pre-Check (if applicable)                  │
-  │        │   // Only for non-EntryPoint callers                   │
-  │        │                                                        │
-  │        ├── ExecLib.execute(execMode, executionCalldata)         │
-  │        │   │                                                    │
-  │        │   ├── Decode ExecMode:                                 │
-  │        │   │   callType = CALLTYPE_SINGLE (0x00)                │
-  │        │   │   execType = EXECTYPE_DEFAULT (0x00)               │
-  │        │   │                                                    │
-  │        │   ├── LibERC7579.decodeSingle(executionCalldata):      │
-  │        │   │   target = USDC_ADDRESS                            │
-  │        │   │   value  = 0                                       │
-  │        │   │   data   = transfer(recipient, 100_000_000)        │
-  │        │   │                                                    │
-  │        │   └── Low-level call:                                  │
-  │        │       call(gas, USDC_ADDRESS, 0, transferData, size)   │
-  │        │       msg.sender = Smart Account (EOA)                 │
-  │        │                                                        │
-  │        │       ┌─────────────────────────────────────────┐      │
-  │        │       │ USDC.transfer(recipient, 100_000_000)   │      │
-  │        │       │                                         │      │
-  │        │       │ 1. require(!paused)                     │      │
-  │        │       │ 2. require(!blacklisted[msg.sender])    │      │
-  │        │       │ 3. require(!blacklisted[recipient])     │      │
-  │        │       │ 4. _balances[sender] -= 100_000_000     │      │
-  │        │       │ 5. _balances[recipient] += 100_000_000  │      │
-  │        │       │ 6. emit Transfer(sender, to, amount)    │      │
-  │        │       │ 7. return true                          │      │
-  │        │       └─────────────────────────────────────────┘      │
-  │        │                                                        │
-  │        └── Root Hook Post-Check (if applicable)                 │
-  │                                                                 │
-  │ 4. VERIFY SUCCESS                                               │
-  │    require(success)  // revert entire executeUserOp if failed   │
-  │                                                                 │
-  │ 5. POST-HOOK                                                    │
-  │    if (hook != address(0) && hook != address(1)) {              │
-  │        IHook(hook).postCheck(hookContext)                       │
-  │        // Hook validates post-conditions:                       │
-  │        //   - balance changes within limits                     │
-  │        //   - state transitions are valid                       │
-  │        //   - no unexpected side effects                        │
-  │        // Reverts if validation fails → entire UserOp reverts   │
-  │    }                                                            │
+  │ 3. EXECUTION                                                     │
+  │    ExecLib.execute(execMode, executionCalldata)                  │
+  │    ├── Decode SINGLE mode                                        │
+  │    ├── target = USDC, value = 0                                  │
+  │    └── call USDC.transfer(recipient, 100_000_000)                │
+  │                                                                  │
+  │ 4. FAILURE HANDLING                                               │
+  │    EXECTYPE_DEFAULT reverts on failure                           │
+  │                                                                  │
+  │ 5. OPTIONAL HOOK POST-CHECK                                      │
+  │    postCheck(...) only if hook contract exists                   │
   │                                                                 │
   └─────────────────────────────────────────────────────────────────┘
 ```
+
+`executeUserOp(userOp, userOpHash)` remains supported for hook-required call paths.
 
 ### Batch Execution Mode
 
@@ -854,7 +879,10 @@ EntryPoint calls:
   ┌─────────────────────────────────────────────────────────────────┐
   │ ERC20Paymaster._postOp                                          │
   │                                                                 │
-  │ 1. SKIP IF POST-OP REVERTED                                    │
+  │ 1. DEFENSIVE GUARD (postOpReverted)                            │
+  │    In EntryPoint v0.9, paymaster postOp is expected with       │
+  │    opSucceeded/opReverted for normal flow.                     │
+  │    postOpReverted branch is kept as defensive handling.         │
   │    if (mode == PostOpMode.postOpReverted) return                │
   │                                                                 │
   │ 2. DECODE CONTEXT                                               │
@@ -1205,8 +1233,8 @@ Bytes 6-31  Payload       (reserved)
 Before executing this flow, the following must be in place:
 
 1. **EIP-7702 Delegation**: User's EOA has been delegated to Kernel implementation
-2. **Kernel Initialized**: `Kernel.initialize()` called with root validator and hook configuration
-3. **ECDSA Validator Installed**: Root validator configured with user's EOA as owner
+2. **No `initialize()` in 7702 Path**: In this flow, `Kernel.initialize()` is not called after delegation
+3. **7702 Signature Path Active**: UserOp is signed by delegated EOA key and validated via ROOT/7702 branch
 4. **USDC Approval**: User has called `USDC.approve(ERC20Paymaster, amount)` to allow paymaster to collect fees
 5. **Paymaster Deposit**: ERC20Paymaster has sufficient ETH deposited in EntryPoint via `EntryPoint.depositTo(paymaster)`
 6. **Oracle Configured**: ERC20Paymaster has a valid price oracle for USDC/ETH conversion

@@ -22,7 +22,7 @@ export function handleGetSponsorPolicy(
   chainId: string,
   config: GetSponsorPolicyConfig
 ): GetSponsorPolicyResult {
-  const chainIdNum = Number.parseInt(chainId, 16)
+  const chainIdNum = Number(chainId)
   if (!config.supportedChainIds.includes(chainIdNum)) {
     return {
       success: false,

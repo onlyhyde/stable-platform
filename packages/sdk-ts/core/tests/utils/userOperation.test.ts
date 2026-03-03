@@ -7,7 +7,9 @@
 import type { UserOperation } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { describe, expect, it } from 'vitest'
+import { hashTypedData } from 'viem'
 import {
+  buildUserOpTypedData,
   getUserOperationHash,
   packUserOperation,
   unpackUserOperation,
@@ -314,5 +316,93 @@ describe('getUserOperationHash', () => {
     const hash1 = getUserOperationHash(withoutFactory, ENTRY_POINT, 1n)
     const hash2 = getUserOperationHash(withFactory, ENTRY_POINT, 1n)
     expect(hash1).not.toBe(hash2)
+  })
+})
+
+describe('buildUserOpTypedData', () => {
+  it('should return valid EIP-712 TypedData structure', () => {
+    const userOp = createMinimalUserOp()
+    const typedData = buildUserOpTypedData(userOp, ENTRY_POINT, 1n)
+
+    expect(typedData.primaryType).toBe('PackedUserOperation')
+    expect(typedData.domain).toEqual({
+      name: 'ERC4337',
+      version: '1',
+      chainId: 1n,
+      verifyingContract: ENTRY_POINT,
+    })
+    expect(typedData.types.PackedUserOperation).toHaveLength(8)
+    expect(typedData.types.PackedUserOperation.map((f) => f.name)).toEqual([
+      'sender',
+      'nonce',
+      'initCode',
+      'callData',
+      'accountGasLimits',
+      'preVerificationGas',
+      'gasFees',
+      'paymasterAndData',
+    ])
+  })
+
+  it('should populate message fields from UserOperation', () => {
+    const userOp = createMinimalUserOp()
+    const typedData = buildUserOpTypedData(userOp, ENTRY_POINT, 1n)
+
+    expect(typedData.message.sender).toBe(SENDER)
+    expect(typedData.message.nonce).toBe(1n)
+    expect(typedData.message.callData).toBe('0xdeadbeef')
+    expect(typedData.message.initCode).toBe('0x')
+    expect(typedData.message.paymasterAndData).toBe('0x')
+  })
+
+  it('should include packed factory data in initCode', () => {
+    const userOp = createMinimalUserOp({
+      factory: FACTORY,
+      factoryData: '0x112233' as Hex,
+    })
+    const typedData = buildUserOpTypedData(userOp, ENTRY_POINT, 1n)
+
+    expect(typedData.message.initCode).not.toBe('0x')
+    expect((typedData.message.initCode as string).toLowerCase()).toContain(
+      FACTORY.slice(2).toLowerCase()
+    )
+  })
+
+  it('should include packed paymaster data in paymasterAndData', () => {
+    const userOp = createFullUserOp()
+    const typedData = buildUserOpTypedData(userOp, ENTRY_POINT, 1n)
+
+    expect(typedData.message.paymasterAndData).not.toBe('0x')
+    expect((typedData.message.paymasterAndData as string).toLowerCase()).toContain(
+      PAYMASTER.slice(2).toLowerCase()
+    )
+  })
+
+  it('hashTypedData(buildUserOpTypedData(...)) === getUserOperationHash(...) for minimal op', () => {
+    const userOp = createMinimalUserOp()
+    const typedData = buildUserOpTypedData(userOp, ENTRY_POINT, 1n)
+    const hashFromTypedData = hashTypedData(typedData)
+    const hashFromDirect = getUserOperationHash(userOp, ENTRY_POINT, 1n)
+
+    expect(hashFromTypedData).toBe(hashFromDirect)
+  })
+
+  it('hashTypedData(buildUserOpTypedData(...)) === getUserOperationHash(...) for full op', () => {
+    const userOp = createFullUserOp()
+    const typedData = buildUserOpTypedData(userOp, ENTRY_POINT, 1n)
+    const hashFromTypedData = hashTypedData(typedData)
+    const hashFromDirect = getUserOperationHash(userOp, ENTRY_POINT, 1n)
+
+    expect(hashFromTypedData).toBe(hashFromDirect)
+  })
+
+  it('hash equivalence holds across different chain IDs', () => {
+    const userOp = createMinimalUserOp()
+    for (const chainId of [1n, 137n, 42161n]) {
+      const typedData = buildUserOpTypedData(userOp, ENTRY_POINT, chainId)
+      const hashFromTypedData = hashTypedData(typedData)
+      const hashFromDirect = getUserOperationHash(userOp, ENTRY_POINT, chainId)
+      expect(hashFromTypedData).toBe(hashFromDirect)
+    }
   })
 })

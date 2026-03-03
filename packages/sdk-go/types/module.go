@@ -1,6 +1,9 @@
 package types
 
-import "math/big"
+import (
+	"fmt"
+	"math/big"
+)
 
 // ModuleType represents the ERC-7579 module type.
 type ModuleType uint8
@@ -64,6 +67,35 @@ func (s ModuleStatus) String() string {
 	}
 }
 
+// MarshalJSON serializes ModuleStatus as a JSON string for API compatibility with sdk-ts.
+func (s ModuleStatus) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + s.String() + `"`), nil
+}
+
+// UnmarshalJSON deserializes ModuleStatus from a JSON string.
+func (s *ModuleStatus) UnmarshalJSON(data []byte) error {
+	str := string(data)
+	// Strip quotes
+	if len(str) >= 2 && str[0] == '"' && str[len(str)-1] == '"' {
+		str = str[1 : len(str)-1]
+	}
+	switch str {
+	case "not_installed":
+		*s = ModuleStatusNotInstalled
+	case "installing":
+		*s = ModuleStatusInstalling
+	case "installed":
+		*s = ModuleStatusInstalled
+	case "uninstalling":
+		*s = ModuleStatusUninstalling
+	case "failed":
+		*s = ModuleStatusFailed
+	default:
+		return fmt.Errorf("unknown ModuleStatus: %s", str)
+	}
+	return nil
+}
+
 // InstalledModule represents an installed module on a smart account.
 type InstalledModule struct {
 	Type       ModuleType   `json:"type"`
@@ -98,6 +130,48 @@ type ModuleUninstallRequest struct {
 	Address    Address    `json:"address"`
 	DeInitData Hex        `json:"deInitData,omitempty"`
 }
+
+// ModuleForceUninstallRequest represents a request to force-uninstall a module.
+// Uses ExcessivelySafeCall - module revert is ignored.
+type ModuleForceUninstallRequest struct {
+	Type       ModuleType `json:"type"`
+	Address    Address    `json:"address"`
+	DeInitData Hex        `json:"deInitData,omitempty"`
+}
+
+// ModuleReplaceRequest represents a request to atomically replace a module.
+// Supported for VALIDATOR, EXECUTOR, FALLBACK types.
+type ModuleReplaceRequest struct {
+	Type       ModuleType `json:"type"`
+	OldAddress Address    `json:"oldAddress"`
+	DeInitData Hex        `json:"deInitData,omitempty"`
+	NewAddress Address    `json:"newAddress"`
+	InitData   Hex        `json:"initData,omitempty"`
+}
+
+// HookGasLimitRequest represents a request to set per-hook gas limit.
+// GasLimit of 0 means unlimited (backward compatible).
+type HookGasLimitRequest struct {
+	HookAddress Address  `json:"hookAddress"`
+	GasLimit    *big.Int `json:"gasLimit"`
+}
+
+// DelegatecallWhitelistRequest represents a request to set delegatecall whitelist entry.
+type DelegatecallWhitelistRequest struct {
+	Target  Address `json:"target"`
+	Allowed bool    `json:"allowed"`
+}
+
+// DelegatecallWhitelistEnforceRequest represents a request to enable/disable delegatecall whitelist enforcement.
+type DelegatecallWhitelistEnforceRequest struct {
+	Enforce bool `json:"enforce"`
+}
+
+// Module operation error constants matching Kernel.sol errors.
+const (
+	ErrDelegatecallTargetNotWhitelisted = "DelegatecallTargetNotWhitelisted"
+	ErrReentrancy                       = "Reentrancy"
+)
 
 // ECDSAValidatorConfig represents ECDSA validator initialization config.
 type ECDSAValidatorConfig struct {

@@ -55,9 +55,11 @@ export function ModuleDetails({
   const [isUninstalling, setIsUninstalling] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showForceUninstall, setShowForceUninstall] = useState(false)
+  const [isForceUninstalling, setIsForceUninstalling] = useState(false)
   const [showRevokeConfirm, setShowRevokeConfirm] = useState<Address | null>(null)
   const [isRevoking, setIsRevoking] = useState(false)
-  const { uninstallModule } = useModuleInstall()
+  const { uninstallModule, forceUninstallModule } = useModuleInstall()
 
   const isSessionKeyExecutor =
     module?.type === MODULE_TYPE.EXECUTOR && module?.metadata.name.toLowerCase().includes('session')
@@ -110,9 +112,37 @@ export function ModuleDetails({
     try {
       await onUninstall()
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('uninstallationFailed'))
+      const errorMsg = err instanceof Error ? err.message : t('uninstallationFailed')
+      setError(errorMsg)
+      // Detect ModuleOnUninstallFailed → suggest force uninstall
+      if (
+        errorMsg.includes('forceUninstallModule') ||
+        errorMsg.includes('Module rejected uninstall')
+      ) {
+        setShowForceUninstall(true)
+      }
       setIsUninstalling(false)
       setShowConfirm(false)
+    }
+  }
+
+  const handleForceUninstall = async () => {
+    if (!module) return
+    setIsForceUninstalling(true)
+    setError(null)
+
+    try {
+      await forceUninstallModule({
+        account: module.address as Address, // Will be replaced by actual account
+        moduleAddress: module.address as Address,
+        moduleType: module.type,
+      })
+      await onUninstall()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('uninstallationFailed'))
+    } finally {
+      setIsForceUninstalling(false)
+      setShowForceUninstall(false)
     }
   }
 
@@ -299,6 +329,52 @@ export function ModuleDetails({
             }}
           >
             {error}
+          </div>
+        )}
+
+        {/* Force Uninstall Option (shown when normal uninstall fails due to module rejection) */}
+        {showForceUninstall && (
+          <div
+            className="p-4 rounded-lg"
+            style={{
+              backgroundColor: 'rgb(var(--warning) / 0.1)',
+              borderWidth: 1,
+              borderColor: 'rgb(var(--warning) / 0.3)',
+            }}
+          >
+            <h4 className="font-medium mb-2" style={{ color: 'rgb(var(--warning))' }}>
+              {t('forceUninstallTitle', { defaultValue: 'Force Uninstall' })}
+            </h4>
+            <p className="text-sm mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              {t('forceUninstallWarning', {
+                defaultValue:
+                  'The module rejected the uninstall. Force uninstall will remove it regardless, but module cleanup may be incomplete.',
+              })}
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="flex-1 py-2 rounded-lg font-medium btn-ghost"
+                onClick={() => setShowForceUninstall(false)}
+                disabled={isForceUninstalling}
+              >
+                {tc('cancel')}
+              </button>
+              <button
+                type="button"
+                className="flex-1 py-2 rounded-lg font-medium"
+                style={{
+                  backgroundColor: 'rgb(var(--warning))',
+                  color: 'white',
+                }}
+                onClick={handleForceUninstall}
+                disabled={isForceUninstalling}
+              >
+                {isForceUninstalling
+                  ? t('forceUninstalling', { defaultValue: 'Force Uninstalling...' })
+                  : t('forceUninstall', { defaultValue: 'Force Uninstall' })}
+              </button>
+            </div>
           </div>
         )}
 

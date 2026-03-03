@@ -16,15 +16,26 @@ export interface FallbackValidationResult {
 
 /**
  * Token receiver capability
+ *
+ * NOTE: ERC-721 and ERC-1155 are handled by Kernel's built-in pure functions
+ * and cannot be overridden via fallback modules. Only ERC-777 (tokensReceived)
+ * reaches the fallback path. supportsERC721/supportsERC1155 are retained for
+ * informational/query purposes but have no effect on fallback handler registration.
  */
 export interface TokenReceiverCapability {
-  /** Supports ERC721 (NFTs) */
+  /**
+   * @deprecated Kernel handles ERC-721 natively via built-in pure function.
+   * This flag has no effect on fallback handler registration.
+   */
   supportsERC721: boolean
 
-  /** Supports ERC1155 (Multi-tokens) */
+  /**
+   * @deprecated Kernel handles ERC-1155 natively via built-in pure function.
+   * This flag has no effect on fallback handler registration.
+   */
   supportsERC1155: boolean
 
-  /** Supports ERC777 (Advanced tokens) */
+  /** Supports ERC777 (Advanced tokens) — routed through fallback module */
   supportsERC777: boolean
 
   /** Supports ETH receive */
@@ -185,26 +196,10 @@ export function getTokenReceiverHandlers(
 ): FallbackHandlerRegistration[] {
   const handlers: FallbackHandlerRegistration[] = []
 
-  if (config.supportsERC721) {
-    handlers.push({
-      selector: INTERFACE_SELECTORS.ERC721_RECEIVED,
-      handler: handlerAddress,
-      callType: 'static',
-    })
-  }
-
-  if (config.supportsERC1155) {
-    handlers.push({
-      selector: INTERFACE_SELECTORS.ERC1155_RECEIVED,
-      handler: handlerAddress,
-      callType: 'static',
-    })
-    handlers.push({
-      selector: INTERFACE_SELECTORS.ERC1155_BATCH_RECEIVED,
-      handler: handlerAddress,
-      callType: 'static',
-    })
-  }
+  // NOTE: ERC-721 and ERC-1155 handlers are NOT registered because Kernel
+  // declares onERC721Received/onERC1155Received/onERC1155BatchReceived as
+  // explicit pure functions. Solidity dispatches these before fallback(),
+  // so registering handlers for these selectors has no effect.
 
   if (config.supportsERC777) {
     handlers.push({

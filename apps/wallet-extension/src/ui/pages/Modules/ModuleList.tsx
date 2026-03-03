@@ -176,10 +176,12 @@ function getStatusInfo(
   switch (status) {
     case MODULE_STATUS.INSTALLED:
       return { label: t('active'), color: 'rgb(var(--success))', icon: '✓' }
-    case MODULE_STATUS.PENDING_INSTALL:
+    case MODULE_STATUS.INSTALLING:
       return { label: t('installing'), color: 'rgb(var(--warning))', icon: '⏳' }
-    case MODULE_STATUS.PENDING_UNINSTALL:
+    case MODULE_STATUS.UNINSTALLING:
       return { label: t('removing'), color: 'rgb(var(--warning))', icon: '⏳' }
+    case MODULE_STATUS.FAILED:
+      return { label: t('failed'), color: 'rgb(var(--destructive))', icon: '✗' }
     default:
       return { label: t('notInstalled'), color: 'rgb(var(--muted-foreground))', icon: '○' }
   }

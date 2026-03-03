@@ -183,6 +183,52 @@ export interface UninstallModuleParams {
   deInitData: Hex
 }
 
+/** Parameters for force-uninstalling a module (ExcessivelySafeCall) */
+export interface ForceUninstallModuleParams {
+  /** Module type */
+  moduleType: ModuleType
+  /** Module address */
+  module: Address
+  /** Deinitialization data */
+  deInitData: Hex
+}
+
+/** Parameters for atomically replacing a module */
+export interface ReplaceModuleParams {
+  /** Module type (VALIDATOR, EXECUTOR, FALLBACK only) */
+  moduleType: ModuleType
+  /** Old module address to uninstall */
+  oldModule: Address
+  /** Old module deinitialization data */
+  deInitData: Hex
+  /** New module address to install */
+  newModule: Address
+  /** New module initialization data */
+  initData: Hex
+}
+
+/** Parameters for setting hook gas limit */
+export interface SetHookGasLimitParams {
+  /** Hook contract address */
+  hook: Address
+  /** Gas limit (0 = unlimited) */
+  gasLimit: bigint
+}
+
+/** Parameters for setting delegatecall whitelist entry */
+export interface SetDelegatecallWhitelistParams {
+  /** Target contract address */
+  target: Address
+  /** Whether to allow delegatecall */
+  allowed: boolean
+}
+
+/** Parameters for enforcing delegatecall whitelist */
+export interface SetEnforceDelegatecallWhitelistParams {
+  /** Whether to enforce the whitelist */
+  enforce: boolean
+}
+
 /** Batch module installation */
 export interface BatchModuleInstallation {
   validators?: ValidatorConfig[]

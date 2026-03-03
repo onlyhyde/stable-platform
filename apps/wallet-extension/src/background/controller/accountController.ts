@@ -1,6 +1,7 @@
 import type { Address, Hex } from 'viem'
 import { createPublicClient, http } from 'viem'
-import { encodePacked, getAddress, keccak256 } from 'viem/utils'
+import { encodeFunctionData, encodePacked, getAddress, keccak256 } from 'viem/utils'
+import { KERNEL_FACTORY_ABI as CORE_FACTORY_ABI } from '@stablenet/core'
 import type { Account } from '../../types'
 import { walletState } from '../state/store'
 
@@ -84,11 +85,23 @@ export class AccountController {
       address = getAddress(`0x${deterministicHash.slice(26)}`) as Address
     }
 
+    // Compute factoryData for ERC-4337 account deployment (initCode = factory + factoryData)
+    const computedFactoryData = factoryAddress
+      ? encodeFunctionData({
+          abi: CORE_FACTORY_ABI,
+          functionName: 'createAccount',
+          args: [initData as Hex, salt as `0x${string}`],
+        })
+      : undefined
+
     const account: Account = {
       address,
       name: name ?? `Account ${walletState.getState().accounts.accounts.length + 1}`,
       type: 'smart',
       isDeployed: false,
+      factoryAddress: factoryAddress,
+      factoryData: computedFactoryData as `0x${string}` | undefined,
+      ownerAddress: ownerAddress,
     }
 
     await walletState.addAccount(account)

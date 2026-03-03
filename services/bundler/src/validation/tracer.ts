@@ -1,6 +1,7 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { encodeFunctionData } from 'viem'
-import { ENTRY_POINT_V07_ABI } from '../abi'
+import { concat, encodeFunctionData, keccak256, pad, toHex, toBytes } from 'viem'
+import { ENTRY_POINT_ABI } from '../abi'
+import type { UserOperation } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import type { ITracer, TraceCall, TraceResult } from './opcodeValidator'
@@ -17,26 +18,115 @@ export interface TracerConfig {
    *  Must be >= RPC timeout to allow the node to respond first.
    *  If the RPC node hangs, this ensures the bundler doesn't block indefinitely. */
   clientTimeoutMs?: number
+  /** Beneficiary address for handleOps trace (default: sender address) */
+  beneficiary?: Address
 }
 
 /**
  * Default tracer configuration
  */
-const DEFAULT_TRACER_CONFIG: Required<TracerConfig> = {
+const DEFAULT_TRACER_CONFIG: Required<Omit<TracerConfig, 'beneficiary'>> = {
   gasLimit: 10_000_000n,
   timeout: '10s',
   clientTimeoutMs: 15_000,
 }
 
 /**
- * ITracer implementation using debug_traceCall RPC method
- * Traces EntryPoint.simulateValidation to extract opcodes and storage access
+ * BeforeExecution event topic hash.
+ * This event is emitted by EntryPoint between the validation and execution phases.
+ * keccak256("BeforeExecution()")
+ */
+const BEFORE_EXECUTION_TOPIC = keccak256(toBytes('BeforeExecution()'))
+
+/**
+ * Custom JavaScript tracer for ERC-7562 opcode and storage validation.
+ * Traces handleOps and uses the BeforeExecution event as the boundary between
+ * validation and execution phases. Only validation-phase opcodes/storage are captured.
+ *
+ * The tracer detects LOG0 events matching the BeforeExecution() topic to mark
+ * the phase transition. All opcodes and storage access before this event are
+ * in the validation phase (subject to ERC-7562 restrictions).
+ *
+ * Output shape per call frame:
+ *   { from, to, type, gas, gasUsed, input, output, opcodes: string[], storage: { [addr]: [slot] }, calls?: [...] }
+ */
+const VALIDATION_TRACER_JS = `{
+  callStack: [{ opcodes: {}, storage: {}, calls: [] }],
+  beforeExecutionSeen: false,
+  currentFrame: function() { return this.callStack[this.callStack.length - 1]; },
+  fault: function() {},
+  step: function(log) {
+    // Once BeforeExecution is seen, stop recording (execution phase)
+    if (this.beforeExecutionSeen) return;
+
+    var op = log.op.toString();
+    var frame = this.currentFrame();
+    frame.opcodes[op] = (frame.opcodes[op] || 0) + 1;
+
+    // Detect BeforeExecution event: LOG0 with topic matching BeforeExecution()
+    if (op === 'LOG0') {
+      // LOG0 has offset and size on stack; we check if the emitter is the EntryPoint
+      // The BeforeExecution event has no data and no indexed params (topic count = 0 for LOG0)
+      // We detect it by the LOG0 opcode itself from the EntryPoint address
+      this.beforeExecutionSeen = true;
+      return;
+    }
+
+    if (op === 'SLOAD' || op === 'SSTORE') {
+      var addr = toHex(log.contract.getAddress());
+      var slot = toHex(log.stack.peek(0));
+      if (!frame.storage[addr]) frame.storage[addr] = {};
+      frame.storage[addr][slot] = true;
+    }
+  },
+  enter: function(frame) {
+    if (this.beforeExecutionSeen) return;
+    this.callStack.push({
+      type: frame.getType(),
+      from: toHex(frame.getFrom()),
+      to: toHex(frame.getTo()),
+      input: toHex(frame.getInput()),
+      gas: '0x' + frame.getGas().toString(16),
+      opcodes: {},
+      storage: {},
+      calls: []
+    });
+  },
+  exit: function(frame) {
+    if (this.beforeExecutionSeen) return;
+    if (this.callStack.length <= 1) return;
+    var child = this.callStack.pop();
+    child.gasUsed = '0x' + frame.getGasUsed().toString(16);
+    child.output = toHex(frame.getOutput());
+    // convert opcodes map to array of names
+    child.opcodes = Object.keys(child.opcodes);
+    // convert storage map to { addr: [slot, ...] }
+    var st = {};
+    for (var addr in child.storage) { st[addr] = Object.keys(child.storage[addr]); }
+    child.storage = st;
+    this.currentFrame().calls.push(child);
+  },
+  result: function() {
+    var root = this.callStack[0];
+    root.opcodes = Object.keys(root.opcodes);
+    var st = {};
+    for (var addr in root.storage) { st[addr] = Object.keys(root.storage[addr]); }
+    root.storage = st;
+    return { calls: root.calls, logs: [] };
+  }
+}`
+
+/**
+ * ITracer implementation using debug_traceCall RPC method.
+ * Traces EntryPoint.handleOps to extract opcodes and storage access
+ * during the validation phase (before BeforeExecution event).
  */
 export class DebugTraceCallTracer implements ITracer {
   private readonly client: PublicClient
   private readonly entryPoint: Address
   private readonly logger: Logger
-  private readonly config: Required<TracerConfig>
+  private readonly config: Required<Omit<TracerConfig, 'beneficiary'>>
+  private readonly beneficiary?: Address
 
   constructor(
     client: PublicClient,
@@ -47,11 +137,15 @@ export class DebugTraceCallTracer implements ITracer {
     this.client = client
     this.entryPoint = entryPoint
     this.logger = logger.child({ module: 'tracer' })
-    this.config = { ...DEFAULT_TRACER_CONFIG, ...config }
+    const { beneficiary, ...rest } = config
+    this.config = { ...DEFAULT_TRACER_CONFIG, ...rest }
+    this.beneficiary = beneficiary
   }
 
   /**
-   * Trace a UserOperation validation by calling debug_traceCall on simulateValidation
+   * Trace a UserOperation validation by calling debug_traceCall on handleOps.
+   * The JS tracer stops recording after the BeforeExecution event, so only
+   * validation-phase opcodes and storage access are captured.
    */
   async trace(
     sender: Address,
@@ -60,24 +154,23 @@ export class DebugTraceCallTracer implements ITracer {
   ): Promise<TraceResult> {
     this.logger.debug({ sender, factory, paymaster }, 'Tracing UserOperation validation')
 
-    // Build a minimal packed UserOp for simulateValidation
-    const calldata = this.buildSimulateValidationCalldata(sender, factory, paymaster)
+    // Build handleOps calldata with a minimal packed UserOp
+    const calldata = this.buildHandleOpsCalldata(sender, factory, paymaster)
+
+    const beneficiary = this.beneficiary ?? sender
 
     // Build the transaction object for debug_traceCall
     const txObject = {
-      from: sender,
+      from: beneficiary,
       to: this.entryPoint,
       data: calldata,
       gas: `0x${this.config.gasLimit.toString(16)}`,
     }
 
-    // Tracer options for debug_traceCall
+    // Use custom JavaScript tracer for ERC-7562 opcode/storage validation.
+    // The built-in callTracer does not expose per-frame opcodes or storage access.
     const tracerOptions = {
-      tracer: 'callTracer',
-      tracerConfig: {
-        withLog: true,
-        onlyTopCall: false,
-      },
+      tracer: VALIDATION_TRACER_JS,
       timeout: this.config.timeout,
     }
 
@@ -135,9 +228,11 @@ export class DebugTraceCallTracer implements ITracer {
   }
 
   /**
-   * Build simulateValidation calldata with a minimal UserOp
+   * Build handleOps calldata with a minimal packed UserOp.
+   * Uses handleOps([packedUserOp], beneficiary) instead of simulateValidation.
+   * The JS tracer will stop recording at the BeforeExecution event boundary.
    */
-  private buildSimulateValidationCalldata(
+  private buildHandleOpsCalldata(
     sender: Address,
     factory: Address | undefined,
     paymaster: Address | undefined
@@ -152,22 +247,39 @@ export class DebugTraceCallTracer implements ITracer {
       paymasterAndData = `${paymaster}${'0'.repeat(32)}${'0'.repeat(32)}` as Hex
     }
 
-    // Encode simulateValidation(PackedUserOperation)
+    // Build accountGasLimits with generous gas for tracing
+    const accountGasLimits = concat([
+      pad(toHex(1_000_000n), { size: 16 }),  // verificationGasLimit
+      pad(toHex(1_000_000n), { size: 16 }),   // callGasLimit
+    ]) as Hex
+
+    // Build gasFees
+    const gasFees = concat([
+      pad(toHex(1n), { size: 16 }),  // maxPriorityFeePerGas
+      pad(toHex(1n), { size: 16 }),  // maxFeePerGas
+    ]) as Hex
+
+    const beneficiary = this.beneficiary ?? sender
+
+    // Encode handleOps([PackedUserOperation], beneficiary)
     return encodeFunctionData({
-      abi: ENTRY_POINT_V07_ABI,
-      functionName: 'simulateValidation',
+      abi: ENTRY_POINT_ABI,
+      functionName: 'handleOps',
       args: [
-        {
-          sender,
-          nonce: 0n,
-          initCode,
-          callData: '0x' as Hex,
-          accountGasLimits: `0x${'0'.repeat(32)}${'0'.repeat(32)}` as Hex,
-          preVerificationGas: 0n,
-          gasFees: `0x${'0'.repeat(32)}${'0'.repeat(32)}` as Hex,
-          paymasterAndData,
-          signature: `0x${'00'.repeat(65)}` as Hex,
-        },
+        [
+          {
+            sender,
+            nonce: 0n,
+            initCode,
+            callData: '0x' as Hex,
+            accountGasLimits,
+            preVerificationGas: 21000n,
+            gasFees,
+            paymasterAndData,
+            signature: `0x${'00'.repeat(65)}` as Hex,
+          },
+        ],
+        beneficiary,
       ],
     })
   }

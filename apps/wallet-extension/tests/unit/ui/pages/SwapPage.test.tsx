@@ -14,6 +14,12 @@ jest.mock('../../../../src/ui/hooks/useWalletStore', () => ({
 jest.mock('../../../../src/ui/hooks', () => ({
   useAssets: () => mockAssets(),
   useSelectedNetwork: () => mockSelectedNetwork(),
+  useNetworkCurrency: () => ({ symbol: 'ETH', decimals: 18 }),
+}))
+
+jest.mock('../../../../src/ui/hooks/useNetworkCurrency', () => ({
+  useNetworkCurrency: () => ({ symbol: 'ETH', decimals: 18 }),
+  useSelectedNetwork: () => mockSelectedNetwork(),
 }))
 
 jest.mock('../../../../src/ui/hooks/useTokenPrices', () => ({

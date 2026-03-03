@@ -3,6 +3,7 @@ import {
   BUNDLER_ERROR_CODES,
   CALL_TYPE,
   ECDSA_VALIDATOR_ADDRESS,
+  ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   EXEC_MODE,
   KERNEL_ADDRESSES,
@@ -12,12 +13,16 @@ import {
 
 describe('Constants', () => {
   describe('Entry Point', () => {
-    it('should have correct EntryPoint v0.7 address', () => {
-      expect(ENTRY_POINT_V07_ADDRESS).toBe('0x0000000071727De22E5E9d8BAf0edAc6f37da032')
+    it('should have correct EntryPoint address (v0.9)', () => {
+      expect(ENTRY_POINT_ADDRESS).toBe('0xEf6817fe73741A8F10088f9511c64b666a338A14')
     })
 
     it('should be a valid Ethereum address', () => {
-      expect(ENTRY_POINT_V07_ADDRESS).toMatch(/^0x[a-fA-F0-9]{40}$/)
+      expect(ENTRY_POINT_ADDRESS).toMatch(/^0x[a-fA-F0-9]{40}$/)
+    })
+
+    it('should have deprecated ENTRY_POINT_V07_ADDRESS with v0.7 address', () => {
+      expect(ENTRY_POINT_V07_ADDRESS).toBe('0x0000000071727De22E5E9d8BAf0edAc6f37da032')
     })
   })
 

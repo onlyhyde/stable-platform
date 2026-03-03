@@ -5,7 +5,15 @@
  * Follows SRP: only handles module operations, not queries.
  */
 
-import type { ModuleInstallRequest, ModuleUninstallRequest } from '@stablenet/sdk-types'
+import type {
+  DelegatecallWhitelistEnforceRequest,
+  DelegatecallWhitelistRequest,
+  HookGasLimitRequest,
+  ModuleForceUninstallRequest,
+  ModuleInstallRequest,
+  ModuleReplaceRequest,
+  ModuleUninstallRequest,
+} from '@stablenet/sdk-types'
 import { getModuleTypeName, MODULE_TYPE } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData } from 'viem'
@@ -145,6 +153,112 @@ export function createModuleOperationClient(config: ModuleOperationClientConfig)
     return requests.map((request) => prepareUninstall(account, request))
   }
 
+  /**
+   * Prepare calldata for force module uninstallation (ExcessivelySafeCall)
+   */
+  function prepareForceUninstall(
+    account: Address,
+    request: ModuleForceUninstallRequest
+  ): ModuleCalldata {
+    const data = encodeFunctionData({
+      abi: KERNEL_ABI,
+      functionName: 'forceUninstallModule',
+      args: [request.moduleType, request.moduleAddress, request.deInitData],
+    })
+
+    return {
+      to: account,
+      data,
+      value: 0n,
+    }
+  }
+
+  /**
+   * Prepare calldata for atomic module replacement
+   */
+  function prepareReplaceModule(
+    account: Address,
+    request: ModuleReplaceRequest
+  ): ModuleCalldata {
+    const data = encodeFunctionData({
+      abi: KERNEL_ABI,
+      functionName: 'replaceModule',
+      args: [
+        request.moduleType,
+        request.oldModuleAddress,
+        request.deInitData,
+        request.newModuleAddress,
+        request.initData,
+      ],
+    })
+
+    return {
+      to: account,
+      data,
+      value: 0n,
+    }
+  }
+
+  /**
+   * Prepare calldata for setting hook gas limit
+   */
+  function prepareSetHookGasLimit(
+    account: Address,
+    request: HookGasLimitRequest
+  ): ModuleCalldata {
+    const data = encodeFunctionData({
+      abi: KERNEL_ABI,
+      functionName: 'setHookGasLimit',
+      args: [request.hookAddress, request.gasLimit],
+    })
+
+    return {
+      to: account,
+      data,
+      value: 0n,
+    }
+  }
+
+  /**
+   * Prepare calldata for setting delegatecall whitelist entry
+   */
+  function prepareSetDelegatecallWhitelist(
+    account: Address,
+    request: DelegatecallWhitelistRequest
+  ): ModuleCalldata {
+    const data = encodeFunctionData({
+      abi: KERNEL_ABI,
+      functionName: 'setDelegatecallWhitelist',
+      args: [request.target, request.allowed],
+    })
+
+    return {
+      to: account,
+      data,
+      value: 0n,
+    }
+  }
+
+  /**
+   * Prepare calldata for enforcing delegatecall whitelist
+   */
+  function prepareEnforceDelegatecallWhitelist(
+    account: Address,
+    request: DelegatecallWhitelistEnforceRequest
+  ): ModuleCalldata {
+    const data = encodeFunctionData({
+      abi: KERNEL_ABI,
+      functionName: 'setEnforceDelegatecallWhitelist',
+      args: [request.enforce],
+    })
+
+    return {
+      to: account,
+      data,
+      value: 0n,
+    }
+  }
+
   // ============================================================================
   // Validation
   // ============================================================================
@@ -245,6 +359,11 @@ export function createModuleOperationClient(config: ModuleOperationClientConfig)
     prepareUninstall,
     prepareBatchInstall,
     prepareBatchUninstall,
+    prepareForceUninstall,
+    prepareReplaceModule,
+    prepareSetHookGasLimit,
+    prepareSetDelegatecallWhitelist,
+    prepareEnforceDelegatecallWhitelist,
 
     // Validation
     validateInstallRequest,

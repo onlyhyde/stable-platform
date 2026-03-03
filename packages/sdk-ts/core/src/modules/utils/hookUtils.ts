@@ -1,4 +1,4 @@
-import type { AuditHookConfig, SpendingLimitHookConfig } from '@stablenet/sdk-types'
+import type { AuditHookConfig, HookGasLimitRequest, SpendingLimitHookConfig } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { encodeAbiParameters, formatEther, formatUnits, parseAbiParameters } from 'viem'
 
@@ -424,6 +424,76 @@ export function suggestSpendingLimit(
 }
 
 // ============================================================================
+// Hook Gas Limit Utils (Kernel v0.3.3)
+// ============================================================================
+
+/** Well-known gas limit presets */
+export const HOOK_GAS_LIMIT_PRESETS = {
+  /** No limit (backward compatible default) */
+  UNLIMITED: 0n,
+  /** Lightweight hooks (view-only checks) */
+  LOW: 50_000n,
+  /** Standard hooks (state reads + simple logic) */
+  STANDARD: 200_000n,
+  /** Heavy hooks (state writes, external calls) */
+  HIGH: 500_000n,
+  /** Maximum recommended limit */
+  MAX_RECOMMENDED: 1_000_000n,
+} as const
+
+/**
+ * Validate Hook Gas Limit configuration
+ */
+export function validateHookGasLimitConfig(config: HookGasLimitRequest): HookValidationResult {
+  const errors: string[] = []
+  const warnings: string[] = []
+
+  if (!config.hookAddress) {
+    errors.push('Hook address is required')
+  } else if (!ADDRESS_REGEX.test(config.hookAddress)) {
+    errors.push('Hook address must be a valid Ethereum address')
+  }
+
+  if (config.gasLimit < 0n) {
+    errors.push('Gas limit cannot be negative')
+  }
+
+  if (config.gasLimit > 0n && config.gasLimit < 21_000n) {
+    warnings.push('Gas limit below 21,000 may cause hooks to always fail')
+  }
+
+  if (config.gasLimit > 2_000_000n) {
+    warnings.push('Very high gas limit (>2M) — hook may consume excessive gas per transaction')
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings: warnings.length > 0 ? warnings : undefined,
+  }
+}
+
+/**
+ * Format hook gas limit for display
+ */
+export function formatHookGasLimit(gasLimit: bigint): string {
+  if (gasLimit === 0n) return 'Unlimited'
+  if (gasLimit < 1_000n) return `${gasLimit}`
+  if (gasLimit < 1_000_000n) return `${Number(gasLimit) / 1_000}K`
+  return `${(Number(gasLimit) / 1_000_000).toFixed(1)}M`
+}
+
+/**
+ * Get preset name for a gas limit value
+ */
+export function getHookGasLimitPresetName(gasLimit: bigint): string | null {
+  for (const [name, value] of Object.entries(HOOK_GAS_LIMIT_PRESETS)) {
+    if (value === gasLimit) return name
+  }
+  return null
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -442,6 +512,12 @@ export const hookUtils = {
   decodeAuditEventFlags,
   validateAuditHookConfig,
   formatAuditLogEntry,
+
+  // Hook Gas Limit
+  validateHookGasLimitConfig,
+  formatHookGasLimit,
+  getHookGasLimitPresetName,
+  HOOK_GAS_LIMIT_PRESETS,
 
   // Common
   getPeriodName,

@@ -31,6 +31,11 @@ interface UseModuleInstallReturn {
     moduleAddress: Address
     moduleType: bigint
   }) => Promise<Hash>
+  forceUninstallModule: (params: {
+    account: Address
+    moduleAddress: Address
+    moduleType: bigint
+  }) => Promise<Hash>
   isPending: boolean
   error: Error | null
 }
@@ -189,10 +194,59 @@ export function useModuleInstall(): UseModuleInstallReturn {
     [currentNetwork]
   )
 
+  const forceUninstallModule = useCallback(
+    async (params: {
+      account: Address
+      moduleAddress: Address
+      moduleType: bigint
+    }): Promise<Hash> => {
+      if (!currentNetwork) {
+        throw new Error('No network selected')
+      }
+
+      setIsPending(true)
+      setError(null)
+
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'RPC_REQUEST',
+          id: `force-uninstall-module-${Date.now()}`,
+          payload: {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'stablenet_forceUninstallModule',
+            params: [
+              {
+                account: params.account,
+                moduleAddress: params.moduleAddress,
+                moduleType: params.moduleType.toString(),
+                chainId: currentNetwork.chainId,
+              },
+            ],
+          },
+        })
+
+        if (response?.payload?.error) {
+          throw new Error(response.payload.error.message || 'Module force uninstallation failed')
+        }
+
+        return response?.payload?.result?.hash as Hash
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Module force uninstallation failed')
+        setError(error)
+        throw error
+      } finally {
+        setIsPending(false)
+      }
+    },
+    [currentNetwork]
+  )
+
   return {
     installModule,
     installCustomModule,
     uninstallModule,
+    forceUninstallModule,
     isPending,
     error,
   }

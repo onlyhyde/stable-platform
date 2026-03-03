@@ -43,12 +43,14 @@ export const MODULE_TYPE_NAMES: Map<bigint, string> = new Map([
 export const MODULE_STATUS = {
   /** Not installed */
   NOT_INSTALLED: 'not_installed',
-  /** Installation pending (tx submitted) */
-  PENDING_INSTALL: 'pending_install',
+  /** Installation in progress (tx submitted) */
+  INSTALLING: 'installing',
   /** Installed and active */
   INSTALLED: 'installed',
-  /** Uninstallation pending (tx submitted) */
-  PENDING_UNINSTALL: 'pending_uninstall',
+  /** Uninstallation in progress (tx submitted) */
+  UNINSTALLING: 'uninstalling',
+  /** Installation or operation failed */
+  FAILED: 'failed',
 } as const
 
 export type ModuleStatus = (typeof MODULE_STATUS)[keyof typeof MODULE_STATUS]

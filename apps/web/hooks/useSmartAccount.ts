@@ -7,6 +7,14 @@ import { privateKeyToAccount } from 'viem/accounts'
 import { anvil, mainnet, sepolia } from 'viem/chains'
 import { useAccount, useChainId, useWalletClient } from 'wagmi'
 import { getPublicClient } from 'wagmi/actions'
+import {
+  isChainSupported,
+  getEntryPoint,
+  getKernel,
+  getKernelFactory,
+  getEcdsaValidator,
+  ENTRY_POINT_ADDRESS,
+} from '@stablenet/contracts'
 import { getConfigByChainId } from '@/lib/config'
 import {
   extractDelegateAddress,
@@ -16,11 +24,39 @@ import {
 } from '@/lib/eip7702'
 import { wagmiConfig } from '@/lib/wagmi'
 
-// Contract addresses (local devnet) - can be overridden by user selection
-const DEFAULT_KERNEL_IMPLEMENTATION = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9' as const
-const ECDSA_VALIDATOR = '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707' as const
-const KERNEL_FACTORY = '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9' as const
-const ENTRY_POINT = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0' as const
+// Anvil fallback addresses — used only when chain is not in @stablenet/contracts
+const ANVIL_KERNEL_IMPLEMENTATION = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9' as const
+const ANVIL_ECDSA_VALIDATOR = '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707' as const
+const ANVIL_KERNEL_FACTORY = '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9' as const
+const ANVIL_ENTRY_POINT = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0' as const
+
+/**
+ * Resolve Smart Account contract addresses for a given chain.
+ * Uses @stablenet/contracts for supported chains, falls back to Anvil devnet addresses.
+ */
+export function getSmartAccountAddresses(chainId: number): {
+  entryPoint: Address
+  kernel: Address
+  kernelFactory: Address
+  ecdsaValidator: Address
+} {
+  if (isChainSupported(chainId)) {
+    return {
+      entryPoint: getEntryPoint(chainId),
+      kernel: getKernel(chainId),
+      kernelFactory: getKernelFactory(chainId),
+      ecdsaValidator: getEcdsaValidator(chainId),
+    }
+  }
+
+  // Fallback for unsupported chains (Anvil local dev, unknown chains)
+  return {
+    entryPoint: (chainId === 31337 ? ANVIL_ENTRY_POINT : ENTRY_POINT_ADDRESS) as Address,
+    kernel: ANVIL_KERNEL_IMPLEMENTATION as Address,
+    kernelFactory: ANVIL_KERNEL_FACTORY as Address,
+    ecdsaValidator: ANVIL_ECDSA_VALIDATOR as Address,
+  }
+}
 
 // Anvil default test accounts — ONLY available in development builds.
 // In production, this array is empty and private keys are never bundled.
@@ -148,11 +184,14 @@ export function useSmartAccount() {
       (wagmiWalletClient.transport as Record<string, unknown>).isStableNet === true
   )
 
+  // Resolve contract addresses for current chain
+  const contractAddresses = getSmartAccountAddresses(chainId)
+
   // Get default delegate address for current chain
   const getDefaultDelegateAddress = useCallback((): Address => {
     const presets = getDelegatePresets(chainId)
-    return presets.length > 0 ? presets[0].address : DEFAULT_KERNEL_IMPLEMENTATION
-  }, [chainId])
+    return presets.length > 0 ? presets[0].address : contractAddresses.kernel
+  }, [chainId, contractAddresses.kernel])
 
   // Check if address has code (is smart account)
   const checkSmartAccountStatus = useCallback(async () => {
@@ -701,12 +740,12 @@ export function useSmartAccount() {
     // Helpers
     getDefaultDelegateAddress,
 
-    // Contract addresses
+    // Contract addresses (chain-aware, from @stablenet/contracts)
     contracts: {
-      defaultKernelImplementation: DEFAULT_KERNEL_IMPLEMENTATION,
-      ecdsaValidator: ECDSA_VALIDATOR,
-      kernelFactory: KERNEL_FACTORY,
-      entryPoint: ENTRY_POINT,
+      defaultKernelImplementation: contractAddresses.kernel,
+      ecdsaValidator: contractAddresses.ecdsaValidator,
+      kernelFactory: contractAddresses.kernelFactory,
+      entryPoint: contractAddresses.entryPoint,
     },
 
     // Anvil test accounts

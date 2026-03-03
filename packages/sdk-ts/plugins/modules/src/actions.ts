@@ -8,12 +8,17 @@ import { encodeFunctionData } from 'viem'
 import { IModuleAbi, KernelModuleAbi } from './abis'
 import {
   type BatchModuleInstallation,
+  type ForceUninstallModuleParams,
   type InstallModuleParams,
   InvalidModuleTypeError,
   type IsModuleInstalledParams,
   MODULE_TYPES,
   type ModuleOperationCallData,
   type ModuleType,
+  type ReplaceModuleParams,
+  type SetDelegatecallWhitelistParams,
+  type SetEnforceDelegatecallWhitelistParams,
+  type SetHookGasLimitParams,
   type UninstallModuleParams,
 } from './types'
 
@@ -67,6 +72,89 @@ export function buildUninstallModuleCall(
   return {
     to: smartAccount,
     data: encodeUninstallModule(params),
+    value: 0n,
+  }
+}
+
+/**
+ * Encode call data for force-uninstalling a module (ExcessivelySafeCall)
+ */
+export function encodeForceUninstallModule(params: ForceUninstallModuleParams): Hex {
+  return encodeFunctionData({
+    abi: KernelModuleAbi,
+    functionName: 'forceUninstallModule',
+    args: [params.moduleType, params.module, params.deInitData],
+  })
+}
+
+/**
+ * Encode call data for atomically replacing a module
+ */
+export function encodeReplaceModule(params: ReplaceModuleParams): Hex {
+  return encodeFunctionData({
+    abi: KernelModuleAbi,
+    functionName: 'replaceModule',
+    args: [params.moduleType, params.oldModule, params.deInitData, params.newModule, params.initData],
+  })
+}
+
+/**
+ * Encode call data for setting hook gas limit
+ */
+export function encodeSetHookGasLimit(params: SetHookGasLimitParams): Hex {
+  return encodeFunctionData({
+    abi: KernelModuleAbi,
+    functionName: 'setHookGasLimit',
+    args: [params.hook, params.gasLimit],
+  })
+}
+
+/**
+ * Encode call data for setting delegatecall whitelist entry
+ */
+export function encodeSetDelegatecallWhitelist(params: SetDelegatecallWhitelistParams): Hex {
+  return encodeFunctionData({
+    abi: KernelModuleAbi,
+    functionName: 'setDelegatecallWhitelist',
+    args: [params.target, params.allowed],
+  })
+}
+
+/**
+ * Encode call data for enforcing delegatecall whitelist
+ */
+export function encodeSetEnforceDelegatecallWhitelist(params: SetEnforceDelegatecallWhitelistParams): Hex {
+  return encodeFunctionData({
+    abi: KernelModuleAbi,
+    functionName: 'setEnforceDelegatecallWhitelist',
+    args: [params.enforce],
+  })
+}
+
+/**
+ * Build a call for force-uninstalling a module from a smart account
+ */
+export function buildForceUninstallModuleCall(
+  smartAccount: Address,
+  params: ForceUninstallModuleParams
+): ModuleOperationCallData {
+  return {
+    to: smartAccount,
+    data: encodeForceUninstallModule(params),
+    value: 0n,
+  }
+}
+
+/**
+ * Build a call for atomically replacing a module on a smart account
+ */
+export function buildReplaceModuleCall(
+  smartAccount: Address,
+  params: ReplaceModuleParams
+): ModuleOperationCallData {
+  return {
+    to: smartAccount,
+    data: encodeReplaceModule(params),
     value: 0n,
   }
 }

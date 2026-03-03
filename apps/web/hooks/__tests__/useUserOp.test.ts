@@ -3,218 +3,184 @@ import type { Address, Hex } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useUserOp } from '../useUserOp'
 
-// Mock the context provider
-const mockContext = {
-  bundlerUrl: 'http://localhost:4337',
-  entryPoint: '0x5FbDB2315678afecb367f032d93F642f64180aa3' as Address,
-  chainId: 31337,
-}
+// ============================================================================
+// Mocks — vi.hoisted ensures these are available during vi.mock hoisting
+// ============================================================================
 
-vi.mock('@/providers', () => ({
-  useStableNetContext: () => mockContext,
+const { mockSendTransaction, mockWaitReceipt } = vi.hoisted(() => ({
+  mockSendTransaction: vi.fn(),
+  mockWaitReceipt: vi.fn().mockResolvedValue({
+    success: true,
+    receipt: { transactionHash: `0x${'ee'.repeat(32)}` },
+  }),
 }))
 
-const mockSignUserOp = vi.fn().mockResolvedValue(`0x${'ab'.repeat(65)}` as Hex)
-
-// Receipt response for waitForUserOpReceipt polling
-const mockReceiptResponse = {
-  ok: true,
-  json: async () => ({
-    jsonrpc: '2.0',
-    id: 1,
-    result: {
-      transactionHash: `0x${'ee'.repeat(32)}`,
-      success: true,
-    },
+// Mock wallet-sdk: detectProvider returns our mock provider
+vi.mock('@stablenet/wallet-sdk', () => ({
+  detectProvider: vi.fn().mockResolvedValue({
+    sendTransaction: mockSendTransaction,
   }),
-} as Response
+  createBundlerClient: vi.fn(() => ({
+    waitForUserOperationReceipt: mockWaitReceipt,
+  })),
+}))
+
+// Mock context provider
+vi.mock('@/providers', () => ({
+  useStableNetContext: () => ({
+    bundlerUrl: 'http://localhost:4337',
+    entryPoint: '0xEf6817fe73741A8F10088f9511c64b666a338A14' as Address,
+  }),
+}))
+
+const SENDER = '0x1234567890123456789012345678901234567890' as Address
+const RECIPIENT = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address
+const TX_HASH = `0x${'aa'.repeat(32)}` as Hex
+
+// ============================================================================
+// Tests
+// ============================================================================
 
 describe('useUserOp', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockSignUserOp.mockResolvedValue(`0x${'ab'.repeat(65)}` as Hex)
+    mockSendTransaction.mockResolvedValue(TX_HASH)
   })
 
-  describe('nonce fetching', () => {
-    it('should fetch nonce from chain before building UserOp', async () => {
-      const _mockNonce = '0x5'
-      const mockGetNonce = vi.fn().mockResolvedValue(BigInt(5))
+  describe('sendUserOp', () => {
+    it('should send transaction through wallet-sdk provider', async () => {
+      const { result } = renderHook(() => useUserOp())
 
-      vi.mocked(global.fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            jsonrpc: '2.0',
-            id: 1,
-            result: '0xabcd1234',
-          }),
-        } as Response)
-        .mockResolvedValueOnce(mockReceiptResponse)
-
-      const { result } = renderHook(() =>
-        useUserOp({
-          getNonce: mockGetNonce,
-          signUserOp: mockSignUserOp,
-        })
-      )
-
+      // Wait for provider detection
       await act(async () => {
-        await result.current.sendUserOp('0x1234567890123456789012345678901234567890' as Address, {
-          to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
+        await new Promise((r) => setTimeout(r, 10))
+      })
+
+      let opResult: unknown
+      await act(async () => {
+        opResult = await result.current.sendUserOp(SENDER, {
+          to: RECIPIENT,
+          value: 1000000000000000000n, // 1 ETH
           data: '0x' as Hex,
         })
       })
 
-      // Should have called getNonce
-      expect(mockGetNonce).toHaveBeenCalledWith('0x1234567890123456789012345678901234567890')
+      // Should call provider.sendTransaction with correct params
+      expect(mockSendTransaction).toHaveBeenCalledWith(
+        {
+          from: SENDER,
+          to: RECIPIENT,
+          value: 1000000000000000000n,
+          data: '0x',
+        },
+        { waitForConfirmation: true }
+      )
 
-      // Should have sent UserOp with correct nonce
-      expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:4337',
+      // Should return confirmed result
+      expect(opResult).toEqual({
+        userOpHash: TX_HASH,
+        transactionHash: TX_HASH,
+        success: true,
+        status: 'confirmed',
+      })
+    })
+
+    it('should send custom calldata (staking, swap, etc.)', async () => {
+      const { result } = renderHook(() => useUserOp())
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 10))
+      })
+
+      const customCalldata = '0xa9059cbb000000000000000000000000abcdef' as Hex
+
+      await act(async () => {
+        await result.current.sendUserOp(SENDER, {
+          to: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707' as Address,
+          data: customCalldata,
+        })
+      })
+
+      expect(mockSendTransaction).toHaveBeenCalledWith(
         expect.objectContaining({
-          method: 'POST',
-          body: expect.stringContaining('"nonce":"0x5"'),
-        })
+          from: SENDER,
+          to: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',
+          data: customCalldata,
+        }),
+        { waitForConfirmation: true }
       )
     })
-  })
 
-  describe('gas estimation', () => {
-    it('should estimate gas dynamically', async () => {
-      const mockGasEstimate = {
-        callGasLimit: BigInt(100000),
-        verificationGasLimit: BigInt(200000),
-        preVerificationGas: BigInt(50000),
-      }
-
-      const mockEstimateGas = vi.fn().mockResolvedValue(mockGasEstimate)
-      const mockGetNonce = vi.fn().mockResolvedValue(BigInt(0))
-
-      vi.mocked(global.fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            jsonrpc: '2.0',
-            id: 1,
-            result: '0xabcd1234',
-          }),
-        } as Response)
-        .mockResolvedValueOnce(mockReceiptResponse)
-
-      const { result } = renderHook(() =>
-        useUserOp({
-          getNonce: mockGetNonce,
-          estimateGas: mockEstimateGas,
-          signUserOp: mockSignUserOp,
-        })
+    it('should set isLoading during transaction', async () => {
+      // Make sendTransaction hang
+      mockSendTransaction.mockImplementation(
+        () => new Promise((r) => setTimeout(() => r(TX_HASH), 100))
       )
 
+      const { result } = renderHook(() => useUserOp())
       await act(async () => {
-        await result.current.sendUserOp('0x1234567890123456789012345678901234567890' as Address, {
-          to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
-          data: '0x12345678' as Hex,
-        })
+        await new Promise((r) => setTimeout(r, 10))
       })
 
-      // Should have called estimateGas
-      expect(mockEstimateGas).toHaveBeenCalled()
+      expect(result.current.isLoading).toBe(false)
 
-      // Should have used estimated gas values in UserOp
-      const fetchCall = vi.mocked(global.fetch).mock.calls[0]
-      const body = JSON.parse(fetchCall[1]?.body as string)
-      expect(body.params[0].callGasLimit).toBe('0x186a0') // 100000 in hex
-      expect(body.params[0].verificationGasLimit).toBe('0x30d40') // 200000 in hex
-      expect(body.params[0].preVerificationGas).toBe('0xc350') // 50000 in hex
-    })
-
-    it('should fetch gas price dynamically', async () => {
-      const mockGetNonce = vi.fn().mockResolvedValue(BigInt(0))
-      const mockEstimateGas = vi.fn().mockResolvedValue({
-        callGasLimit: BigInt(100000),
-        verificationGasLimit: BigInt(200000),
-        preVerificationGas: BigInt(50000),
-      })
-      const mockGetGasPrice = vi.fn().mockResolvedValue({
-        maxFeePerGas: BigInt(50000000000), // 50 gwei
-        maxPriorityFeePerGas: BigInt(2000000000), // 2 gwei
-      })
-
-      vi.mocked(global.fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            jsonrpc: '2.0',
-            id: 1,
-            result: '0xabcd1234',
-          }),
-        } as Response)
-        .mockResolvedValueOnce(mockReceiptResponse)
-
-      const { result } = renderHook(() =>
-        useUserOp({
-          getNonce: mockGetNonce,
-          estimateGas: mockEstimateGas,
-          getGasPrice: mockGetGasPrice,
-          signUserOp: mockSignUserOp,
-        })
-      )
-
-      await act(async () => {
-        await result.current.sendUserOp('0x1234567890123456789012345678901234567890' as Address, {
-          to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
+      let sendPromise: Promise<unknown>
+      act(() => {
+        sendPromise = result.current.sendUserOp(SENDER, {
+          to: RECIPIENT,
           data: '0x' as Hex,
         })
       })
 
-      // Should have called getGasPrice
-      expect(mockGetGasPrice).toHaveBeenCalled()
+      // isLoading should be true during send
+      expect(result.current.isLoading).toBe(true)
 
-      // Should have used dynamic gas prices in UserOp
-      const fetchCall = vi.mocked(global.fetch).mock.calls[0]
-      const body = JSON.parse(fetchCall[1]?.body as string)
-      expect(body.params[0].maxFeePerGas).toBe('0xba43b7400') // 50 gwei in hex
-      expect(body.params[0].maxPriorityFeePerGas).toBe('0x77359400') // 2 gwei in hex
+      await act(async () => {
+        await sendPromise
+      })
+
+      expect(result.current.isLoading).toBe(false)
+    })
+  })
+
+  describe('sendTransaction helper', () => {
+    it('should parse ETH value and send through provider', async () => {
+      const { result } = renderHook(() => useUserOp())
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 10))
+      })
+
+      await act(async () => {
+        await result.current.sendTransaction(SENDER, RECIPIENT, '1.5')
+      })
+
+      // Should convert '1.5' ETH to wei
+      expect(mockSendTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from: SENDER,
+          to: RECIPIENT,
+          value: 1500000000000000000n, // 1.5 ETH in wei
+          data: '0x',
+        }),
+        { waitForConfirmation: true }
+      )
     })
   })
 
   describe('error handling', () => {
-    it('should handle bundler RPC errors properly', async () => {
-      const mockGetNonce = vi.fn().mockResolvedValue(BigInt(0))
-      const mockEstimateGas = vi.fn().mockResolvedValue({
-        callGasLimit: BigInt(100000),
-        verificationGasLimit: BigInt(200000),
-        preVerificationGas: BigInt(50000),
+    it('should handle provider.sendTransaction errors', async () => {
+      mockSendTransaction.mockRejectedValueOnce(new Error('AA21 did not pay prefund'))
+
+      const { result } = renderHook(() => useUserOp())
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 10))
       })
-
-      vi.mocked(global.fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          jsonrpc: '2.0',
-          id: 1,
-          error: {
-            code: -32500,
-            message: 'AA21 did not pay prefund',
-          },
-        }),
-      } as Response)
-
-      const { result } = renderHook(() =>
-        useUserOp({
-          getNonce: mockGetNonce,
-          estimateGas: mockEstimateGas,
-          signUserOp: mockSignUserOp,
-        })
-      )
 
       let opResult: unknown
       await act(async () => {
-        opResult = await result.current.sendUserOp(
-          '0x1234567890123456789012345678901234567890' as Address,
-          {
-            to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
-            data: '0x' as Hex,
-          }
-        )
+        opResult = await result.current.sendUserOp(SENDER, {
+          to: RECIPIENT,
+          data: '0x' as Hex,
+        })
       })
 
       expect(opResult).toBeNull()
@@ -222,149 +188,90 @@ describe('useUserOp', () => {
       expect(result.current.error?.message).toContain('AA21 did not pay prefund')
     })
 
-    it('should handle network errors', async () => {
-      const mockGetNonce = vi.fn().mockResolvedValue(BigInt(0))
-      const mockEstimateGas = vi.fn().mockResolvedValue({
-        callGasLimit: BigInt(100000),
-        verificationGasLimit: BigInt(200000),
-        preVerificationGas: BigInt(50000),
+    it('should handle user rejection', async () => {
+      mockSendTransaction.mockRejectedValueOnce(new Error('User rejected the request'))
+
+      const { result } = renderHook(() => useUserOp())
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 10))
       })
-
-      vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Network error'))
-
-      const { result } = renderHook(() =>
-        useUserOp({
-          getNonce: mockGetNonce,
-          estimateGas: mockEstimateGas,
-          signUserOp: mockSignUserOp,
-        })
-      )
 
       let opResult: unknown
       await act(async () => {
-        opResult = await result.current.sendUserOp(
-          '0x1234567890123456789012345678901234567890' as Address,
-          {
-            to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
-            data: '0x' as Hex,
-          }
-        )
-      })
-
-      expect(opResult).toBeNull()
-      expect(result.current.error).toBeTruthy()
-    })
-
-    it('should handle nonce fetch errors', async () => {
-      const mockGetNonce = vi.fn().mockRejectedValue(new Error('Failed to get nonce'))
-
-      const { result } = renderHook(() =>
-        useUserOp({
-          getNonce: mockGetNonce,
-        })
-      )
-
-      let opResult: unknown
-      await act(async () => {
-        opResult = await result.current.sendUserOp(
-          '0x1234567890123456789012345678901234567890' as Address,
-          {
-            to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
-            data: '0x' as Hex,
-          }
-        )
-      })
-
-      expect(opResult).toBeNull()
-      expect(result.current.error?.message).toContain('Failed to get nonce')
-    })
-  })
-
-  describe('sendTransaction helper', () => {
-    it('should correctly format simple ETH transfer', async () => {
-      const mockGetNonce = vi.fn().mockResolvedValue(BigInt(0))
-      const mockEstimateGas = vi.fn().mockResolvedValue({
-        callGasLimit: BigInt(21000),
-        verificationGasLimit: BigInt(100000),
-        preVerificationGas: BigInt(50000),
-      })
-
-      vi.mocked(global.fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            jsonrpc: '2.0',
-            id: 1,
-            result: '0xabcd1234',
-          }),
-        } as Response)
-        .mockResolvedValueOnce(mockReceiptResponse)
-
-      const { result } = renderHook(() =>
-        useUserOp({
-          getNonce: mockGetNonce,
-          estimateGas: mockEstimateGas,
-          signUserOp: mockSignUserOp,
-        })
-      )
-
-      await act(async () => {
-        await result.current.sendTransaction(
-          '0x1234567890123456789012345678901234567890' as Address,
-          '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
-          '1.5' // 1.5 ETH
-        )
-      })
-
-      const fetchCall = vi.mocked(global.fetch).mock.calls[0]
-      const body = JSON.parse(fetchCall[1]?.body as string)
-
-      // Should include correct value (1.5 ETH in wei as hex)
-      expect(body.params[0].callData).toBeDefined()
-    })
-  })
-
-  describe('UserOp signing', () => {
-    it('should sign UserOp with provided signer', async () => {
-      const mockGetNonce = vi.fn().mockResolvedValue(BigInt(0))
-      const mockEstimateGas = vi.fn().mockResolvedValue({
-        callGasLimit: BigInt(100000),
-        verificationGasLimit: BigInt(200000),
-        preVerificationGas: BigInt(50000),
-      })
-      const mockSignUserOp = vi.fn().mockResolvedValue(`0x${'ab'.repeat(65)}` as Hex)
-
-      vi.mocked(global.fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            jsonrpc: '2.0',
-            id: 1,
-            result: '0xabcd1234',
-          }),
-        } as Response)
-        .mockResolvedValueOnce(mockReceiptResponse)
-
-      const { result } = renderHook(() =>
-        useUserOp({
-          getNonce: mockGetNonce,
-          estimateGas: mockEstimateGas,
-          signUserOp: mockSignUserOp,
-        })
-      )
-
-      await act(async () => {
-        await result.current.sendUserOp('0x1234567890123456789012345678901234567890' as Address, {
-          to: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as Address,
+        opResult = await result.current.sendUserOp(SENDER, {
+          to: RECIPIENT,
           data: '0x' as Hex,
         })
       })
 
-      expect(mockSignUserOp).toHaveBeenCalled()
+      expect(opResult).toBeNull()
+      expect(result.current.error?.message).toContain('User rejected')
+    })
 
-      const fetchCall = vi.mocked(global.fetch).mock.calls[0]
-      const body = JSON.parse(fetchCall[1]?.body as string)
-      expect(body.params[0].signature).toBe(`0x${'ab'.repeat(65)}`)
+    it('should return null when provider is not detected', async () => {
+      // Override detectProvider to return null
+      const { detectProvider } = await import('@stablenet/wallet-sdk')
+      vi.mocked(detectProvider).mockResolvedValueOnce(null)
+
+      const { result } = renderHook(() => useUserOp())
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 10))
+      })
+
+      let opResult: unknown
+      await act(async () => {
+        opResult = await result.current.sendUserOp(SENDER, {
+          to: RECIPIENT,
+          data: '0x' as Hex,
+        })
+      })
+
+      expect(opResult).toBeNull()
+      expect(result.current.error?.message).toContain('wallet not detected')
+    })
+
+    it('should clear error with clearError', async () => {
+      mockSendTransaction.mockRejectedValueOnce(new Error('Some error'))
+
+      const { result } = renderHook(() => useUserOp())
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 10))
+      })
+
+      await act(async () => {
+        await result.current.sendUserOp(SENDER, {
+          to: RECIPIENT,
+          data: '0x' as Hex,
+        })
+      })
+
+      expect(result.current.error).toBeTruthy()
+
+      act(() => {
+        result.current.clearError()
+      })
+
+      expect(result.current.error).toBeNull()
+    })
+  })
+
+  describe('recheckUserOp', () => {
+    it('should poll bundler for receipt of previously submitted op', async () => {
+      const { result } = renderHook(() => useUserOp())
+
+      const userOpHash = `0x${'bb'.repeat(32)}` as Hex
+      let checkResult: unknown
+      await act(async () => {
+        checkResult = await result.current.recheckUserOp(userOpHash)
+      })
+
+      expect(checkResult).toEqual(
+        expect.objectContaining({
+          userOpHash,
+          success: true,
+          status: 'confirmed',
+        })
+      )
     })
   })
 })

@@ -5,7 +5,7 @@
  * Supports EntryPoint getSenderAddress and CREATE2 prediction.
  */
 
-import { ENTRY_POINT_V07_ADDRESS } from '@stablenet/core'
+import { ENTRY_POINT_ADDRESS } from '@stablenet/core'
 import type { Address, Hex } from 'viem'
 import { concat, encodeAbiParameters, getContractAddress, type PublicClient } from 'viem'
 
@@ -21,13 +21,13 @@ export { KERNEL_V3_1_FACTORY_ADDRESS } from '@stablenet/sdk-types'
  * @param publicClient - Viem public client
  * @param factory - Factory contract address
  * @param factoryData - Encoded factory call data
- * @param entryPoint - EntryPoint address (default: v0.7)
+ * @param entryPoint - EntryPoint address
  */
 export async function getSenderAddress(
   publicClient: PublicClient,
   factory: Address,
   factoryData: Hex,
-  entryPoint: Address = ENTRY_POINT_V07_ADDRESS
+  entryPoint: Address = ENTRY_POINT_ADDRESS
 ): Promise<Address> {
   const initCode = concat([factory, factoryData])
 

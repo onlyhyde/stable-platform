@@ -184,6 +184,7 @@ export {
 // Bundler Client
 export {
   createBundlerClient,
+  ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   type BundlerClient,
   type BundlerClientConfig,

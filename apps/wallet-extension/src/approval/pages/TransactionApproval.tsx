@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { formatEther } from 'viem'
+import { formatEther, formatUnits } from 'viem'
 import type { TransactionApprovalRequest } from '../../types'
 import { Badge, Button, Card } from '../../ui/components/common'
 import { useNetworkCurrency } from '../../ui/hooks'
@@ -239,7 +239,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
                     }}
                   >
                     {transfer.direction === 'out' ? '-' : '+'}
-                    {(Number(toBigInt(transfer.amount)) / 10 ** transfer.decimals).toFixed(4)}{' '}
+                    {formatUnits(toBigInt(transfer.amount), transfer.decimals)}{' '}
                     {transfer.symbol}
                   </span>
                 </div>

@@ -1,4 +1,5 @@
 import type { Address, Hex } from 'viem'
+import { keccak256, encodeAbiParameters, parseAbiParameters } from 'viem'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 
@@ -269,14 +270,15 @@ export class OpcodeValidator {
       const normalizedFactory = factory?.toLowerCase()
       const normalizedPaymaster = paymaster?.toLowerCase()
 
-      // Check if access is allowed based on entity type and storage owner
+      // Check if access is allowed based on entity type, storage owner, and slots
       const isAllowed = this.isStorageAccessAllowed(
         normalizedStorageAddr,
         normalizedFrom,
         normalizedSender,
         normalizedFactory,
         normalizedPaymaster,
-        entityType
+        entityType,
+        slots
       )
 
       if (!isAllowed) {
@@ -298,7 +300,8 @@ export class OpcodeValidator {
   }
 
   /**
-   * Check if storage access is allowed per ERC-7562 rules
+   * Check if storage access is allowed per ERC-7562 rules.
+   * Validates both at address level and at slot level (associated storage).
    */
   private isStorageAccessAllowed(
     storageAddress: string,
@@ -306,7 +309,8 @@ export class OpcodeValidator {
     sender: string,
     _factory: string | undefined,
     paymaster: string | undefined,
-    entityType: EntityType
+    entityType: EntityType,
+    slots?: string[]
   ): boolean {
     // Entity can always access its own storage
     if (storageAddress === from) {
@@ -324,12 +328,54 @@ export class OpcodeValidator {
         return storageAddress === sender || storageAddress === from
 
       case 'paymaster':
-        // Paymaster can access own storage and sender's associated storage
-        return storageAddress === paymaster || storageAddress === from
+        // Paymaster can access own storage
+        if (storageAddress === paymaster || storageAddress === from) {
+          return true
+        }
+        // Paymaster can also access "associated storage" of the sender,
+        // i.e., slots of the form keccak256(sender || i) in external contracts.
+        // Per ERC-7562 §2.2: entity may access associated storage of the sender.
+        if (slots && slots.length > 0) {
+          return slots.every((slot) =>
+            this.isAssociatedSlot(slot, sender) ||
+            this.isAssociatedSlot(slot, paymaster ?? from)
+          )
+        }
+        return false
 
       default:
         // Unknown entities can only access own storage
         return storageAddress === from
     }
   }
+
+  /**
+   * Check if a storage slot is "associated" with the given address.
+   * Per ERC-7562, an associated slot is keccak256(address || X) where X is a
+   * mapping base slot index (0..MAX_SLOT_SCAN). This covers Solidity
+   * mapping(address => ...) patterns like ERC-20 balances.
+   */
+  private isAssociatedSlot(slot: string, address: string): boolean {
+    const normalizedSlot = slot.toLowerCase()
+    const normalizedAddr = address.toLowerCase() as Address
+    // Scan the first few mapping base slots (covers most ERC-20 and common contracts)
+    for (let i = 0; i < MAX_ASSOCIATED_SLOT_SCAN; i++) {
+      const computed = keccak256(
+        encodeAbiParameters(
+          parseAbiParameters('address, uint256'),
+          [normalizedAddr, BigInt(i)]
+        )
+      )
+      if (computed.toLowerCase() === normalizedSlot) {
+        return true
+      }
+    }
+    return false
+  }
 }
+
+/**
+ * Number of base mapping slots to scan for associated storage validation.
+ * Most common contracts (ERC-20) use slots 0-10 for their mappings.
+ */
+const MAX_ASSOCIATED_SLOT_SCAN = 20

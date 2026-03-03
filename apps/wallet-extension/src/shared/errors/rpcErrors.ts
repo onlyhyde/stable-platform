@@ -266,6 +266,66 @@ export function limitExceeded(message?: string, data?: unknown): RpcError {
   )
 }
 
+// =============================================================================
+// Kernel v0.3.3 Custom Solidity Error Decoders
+// =============================================================================
+
+/** Known Kernel error selectors */
+const KERNEL_ERROR_SELECTORS = {
+  ModuleOnUninstallFailed: '0x45b4a14f',
+  Reentrancy: '0xab143c06',
+  DelegatecallTargetNotWhitelisted: '0x7eb83a8a',
+} as const
+
+/**
+ * Decoded Kernel custom error
+ */
+export interface DecodedKernelError {
+  name: string
+  message: string
+  params?: Record<string, string>
+}
+
+/**
+ * Decode a Kernel custom Solidity error from hex revert data.
+ * Returns null if the selector is not recognized.
+ */
+export function decodeKernelError(data: string): DecodedKernelError | null {
+  if (!data || data.length < 10) return null
+
+  const selector = data.slice(0, 10).toLowerCase()
+
+  if (selector === KERNEL_ERROR_SELECTORS.ModuleOnUninstallFailed) {
+    // ModuleOnUninstallFailed(uint256 moduleType, address module)
+    const moduleType = data.length >= 74 ? Number.parseInt(data.slice(10, 74), 16).toString() : '?'
+    const module = data.length >= 138 ? `0x${data.slice(98, 138)}` : '?'
+    return {
+      name: 'ModuleOnUninstallFailed',
+      message: `모듈(${module})이 제거를 거부했습니다. 강제 제거를 사용하세요.`,
+      params: { moduleType, module },
+    }
+  }
+
+  if (selector === KERNEL_ERROR_SELECTORS.Reentrancy) {
+    return {
+      name: 'Reentrancy',
+      message: '재진입이 감지되었습니다. 모듈 설치/제거 작업을 순차적으로 실행해주세요.',
+    }
+  }
+
+  if (selector === KERNEL_ERROR_SELECTORS.DelegatecallTargetNotWhitelisted) {
+    // DelegatecallTargetNotWhitelisted(address target)
+    const target = data.length >= 74 ? `0x${data.slice(34, 74)}` : '?'
+    return {
+      name: 'DelegatecallTargetNotWhitelisted',
+      message: `대상 컨트랙트(${target})가 delegatecall 화이트리스트에 등록되지 않았습니다.`,
+      params: { target },
+    }
+  }
+
+  return null
+}
+
 export type {
   RpcErrorCode,
   RpcErrorData,

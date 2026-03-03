@@ -57,7 +57,7 @@ export interface BundlerConfig {
 }
 
 /**
- * UserOperation for ERC-4337 v0.7
+ * UserOperation for ERC-4337 v0.9
  */
 export interface UserOperation {
   sender: Address

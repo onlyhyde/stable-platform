@@ -22,7 +22,7 @@ export const KERNEL_ABI = [
       { name: 'initData', type: 'bytes' },
     ],
     outputs: [],
-    stateMutability: 'nonpayable',
+    stateMutability: 'payable',
   },
 
   /**
@@ -40,7 +40,49 @@ export const KERNEL_ABI = [
       { name: 'deInitData', type: 'bytes' },
     ],
     outputs: [],
-    stateMutability: 'nonpayable',
+    stateMutability: 'payable',
+  },
+
+  /**
+   * Force uninstall a module (ExcessivelySafeCall - revert ignored)
+   * Used for removing malicious or stuck modules
+   * @param moduleType - Module type
+   * @param module - Module contract address
+   * @param deInitData - Module de-initialization data
+   */
+  {
+    type: 'function',
+    name: 'forceUninstallModule',
+    inputs: [
+      { name: 'moduleType', type: 'uint256' },
+      { name: 'module', type: 'address' },
+      { name: 'deInitData', type: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+
+  /**
+   * Atomically replace a module (uninstall old + install new)
+   * Supported for VALIDATOR, EXECUTOR, FALLBACK types
+   * @param moduleType - Module type
+   * @param oldModule - Old module address to uninstall
+   * @param deInitData - Old module de-initialization data
+   * @param newModule - New module address to install
+   * @param initData - New module initialization data
+   */
+  {
+    type: 'function',
+    name: 'replaceModule',
+    inputs: [
+      { name: 'moduleType', type: 'uint256' },
+      { name: 'oldModule', type: 'address' },
+      { name: 'deInitData', type: 'bytes' },
+      { name: 'newModule', type: 'address' },
+      { name: 'initData', type: 'bytes' },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
   },
 
   /**
@@ -60,6 +102,52 @@ export const KERNEL_ABI = [
     ],
     outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'view',
+  },
+
+  /**
+   * Set per-hook gas limit (0 = unlimited, backward compatible)
+   * @param hook - Hook contract address
+   * @param gasLimit - Gas limit for the hook
+   */
+  {
+    type: 'function',
+    name: 'setHookGasLimit',
+    inputs: [
+      { name: 'hook', type: 'address' },
+      { name: 'gasLimit', type: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+
+  /**
+   * Add/remove a delegatecall target to/from whitelist
+   * @param target - Target contract address
+   * @param allowed - Whether to allow delegatecall to this target
+   */
+  {
+    type: 'function',
+    name: 'setDelegatecallWhitelist',
+    inputs: [
+      { name: 'target', type: 'address' },
+      { name: 'allowed', type: 'bool' },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+
+  /**
+   * Enable/disable delegatecall whitelist enforcement (default: false)
+   * @param enforce - Whether to enforce the whitelist
+   */
+  {
+    type: 'function',
+    name: 'setEnforceDelegatecallWhitelist',
+    inputs: [
+      { name: 'enforce', type: 'bool' },
+    ],
+    outputs: [],
+    stateMutability: 'payable',
   },
 
   /**
@@ -209,6 +297,7 @@ export const KERNEL_ABI = [
 
   /**
    * Get account implementation ID
+   * Returns "kernel.advanced.0.3.3" (semver without 'v' prefix)
    */
   {
     type: 'function',
@@ -270,5 +359,47 @@ export const KERNEL_ABI = [
       { name: 'value', type: 'uint256', indexed: false },
       { name: 'data', type: 'bytes', indexed: false },
     ],
+  },
+
+  {
+    type: 'event',
+    name: 'HookGasLimitSet',
+    inputs: [
+      { name: 'hook', type: 'address', indexed: true },
+      { name: 'gasLimit', type: 'uint256', indexed: false },
+    ],
+  },
+
+  {
+    type: 'event',
+    name: 'DelegatecallWhitelistUpdated',
+    inputs: [
+      { name: 'target', type: 'address', indexed: true },
+      { name: 'allowed', type: 'bool', indexed: false },
+    ],
+  },
+
+  {
+    type: 'event',
+    name: 'DelegatecallWhitelistEnforced',
+    inputs: [
+      { name: 'enforce', type: 'bool', indexed: false },
+    ],
+  },
+
+  // ============================================================================
+  // Errors
+  // ============================================================================
+
+  {
+    type: 'error',
+    name: 'DelegatecallTargetNotWhitelisted',
+    inputs: [{ name: 'target', type: 'address' }],
+  },
+
+  {
+    type: 'error',
+    name: 'Reentrancy',
+    inputs: [],
   },
 ] as const

@@ -477,6 +477,9 @@ func (s *SmartAccountStrategy) Estimate(ctx context.Context, request *types.Mult
 		// On error, fall through to local calculation
 	}
 
+	// Track estimated actual call gas before buffer for penalty calculation
+	estimatedCallGas := new(big.Int).Set(callGasLimit)
+
 	// Local calculation fallback (EIP-4337 Section 13)
 	if !bundlerEstimated {
 		// Calculate preVerificationGas from calldata
@@ -488,11 +491,40 @@ func (s *SmartAccountStrategy) Estimate(ctx context.Context, request *types.Mult
 			calldataGas := config.CalculateCalldataGas(request.Data)
 			callGasLimit.Add(callGasLimit, calldataGas)
 		}
+		// Update estimated call gas (pre-buffer value)
+		estimatedCallGas = new(big.Int).Set(callGasLimit)
+
+		// Apply buffer to call gas limit
+		callGasLimit = config.ApplyGasBuffer(callGasLimit)
 	}
 
-	// Total gas
+	// Add paymaster gas if applicable
+	var pmVerificationGas, pmPostOpGas *big.Int
+	estimatedPostOpGas := big.NewInt(0)
+	if request.GasPayment != nil && !types.IsNativeGas(request.GasPayment) {
+		pmVerificationGas = new(big.Int).Set(config.GasConfig.PaymasterVerificationGas)
+		pmPostOpGas = new(big.Int).Set(config.GasConfig.PaymasterPostOpGas)
+		// Estimated actual postOp usage (~80% of allocated is typical for ERC20Paymaster)
+		estimatedPostOpGas = new(big.Int).Mul(pmPostOpGas, big.NewInt(80))
+		estimatedPostOpGas.Div(estimatedPostOpGas, big.NewInt(100))
+	}
+
+	// EIP-4337 v0.9: Calculate 10% unused gas penalty
+	allocatedPostOp := big.NewInt(0)
+	if pmPostOpGas != nil {
+		allocatedPostOp = pmPostOpGas
+	}
+	unusedGasPenalty := config.CalculateUnusedGasPenalty(
+		callGasLimit, estimatedCallGas,
+		allocatedPostOp, estimatedPostOpGas,
+	)
+
+	// Total gas including penalty
 	totalGas := new(big.Int).Add(preVerificationGas, verificationGasLimit)
 	totalGas.Add(totalGas, callGasLimit)
+	if unusedGasPenalty.Sign() > 0 {
+		totalGas.Add(totalGas, unusedGasPenalty)
+	}
 
 	// Check for sponsored gas
 	var estimatedCost *big.Int
@@ -502,13 +534,6 @@ func (s *SmartAccountStrategy) Estimate(ctx context.Context, request *types.Mult
 	} else {
 		// User pays
 		estimatedCost = new(big.Int).Mul(totalGas, gasPrices.MaxFeePerGas)
-	}
-
-	// Add paymaster gas if applicable
-	var pmVerificationGas, pmPostOpGas *big.Int
-	if request.GasPayment != nil && !types.IsNativeGas(request.GasPayment) {
-		pmVerificationGas = new(big.Int).Set(config.GasConfig.PaymasterVerificationGas)
-		pmPostOpGas = new(big.Int).Set(config.GasConfig.PaymasterPostOpGas)
 	}
 
 	return &types.GasEstimate{
@@ -521,5 +546,6 @@ func (s *SmartAccountStrategy) Estimate(ctx context.Context, request *types.Mult
 		CallGasLimit:                  callGasLimit,
 		PaymasterVerificationGasLimit: pmVerificationGas,
 		PaymasterPostOpGasLimit:       pmPostOpGas,
+		UnusedGasPenalty:              unusedGasPenalty,
 	}, nil
 }

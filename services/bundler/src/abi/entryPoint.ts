@@ -1,10 +1,10 @@
 import type { Abi } from 'viem'
 
 /**
- * EntryPoint v0.7 ABI
- * https://github.com/eth-infinitism/account-abstraction/blob/v0.7.0/contracts/interfaces/IEntryPoint.sol
+ * EntryPoint ABI (v0.9, ABI-compatible with v0.7/v0.8)
+ * https://github.com/eth-infinitism/account-abstraction/tree/v0.9.0/contracts/interfaces
  */
-export const ENTRY_POINT_V07_ABI = [
+export const ENTRY_POINT_ABI = [
   // ============ Core Functions ============
   {
     type: 'function',
@@ -26,115 +26,6 @@ export const ENTRY_POINT_V07_ABI = [
         ],
       },
       { name: 'beneficiary', type: 'address' },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-
-  // ============ Simulation Functions ============
-  // Both v0.7 and v0.9 revert on success with ValidationResult error data.
-  // v0.7 uses selector 0xe0cff05f, v0.9 uses 0x5eb2984f (includes aggregatorInfo).
-  {
-    type: 'function',
-    name: 'simulateValidation',
-    inputs: [
-      {
-        name: 'userOp',
-        type: 'tuple',
-        components: [
-          { name: 'sender', type: 'address' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'initCode', type: 'bytes' },
-          { name: 'callData', type: 'bytes' },
-          { name: 'accountGasLimits', type: 'bytes32' },
-          { name: 'preVerificationGas', type: 'uint256' },
-          { name: 'gasFees', type: 'bytes32' },
-          { name: 'paymasterAndData', type: 'bytes' },
-          { name: 'signature', type: 'bytes' },
-        ],
-      },
-    ],
-    outputs: [
-      {
-        name: '',
-        type: 'tuple',
-        components: [
-          {
-            name: 'returnInfo',
-            type: 'tuple',
-            components: [
-              { name: 'preOpGas', type: 'uint256' },
-              { name: 'prefund', type: 'uint256' },
-              { name: 'accountValidationData', type: 'uint256' },
-              { name: 'paymasterValidationData', type: 'uint256' },
-              { name: 'paymasterContext', type: 'bytes' },
-            ],
-          },
-          {
-            name: 'senderInfo',
-            type: 'tuple',
-            components: [
-              { name: 'stake', type: 'uint256' },
-              { name: 'unstakeDelaySec', type: 'uint256' },
-            ],
-          },
-          {
-            name: 'factoryInfo',
-            type: 'tuple',
-            components: [
-              { name: 'stake', type: 'uint256' },
-              { name: 'unstakeDelaySec', type: 'uint256' },
-            ],
-          },
-          {
-            name: 'paymasterInfo',
-            type: 'tuple',
-            components: [
-              { name: 'stake', type: 'uint256' },
-              { name: 'unstakeDelaySec', type: 'uint256' },
-            ],
-          },
-          {
-            name: 'aggregatorInfo',
-            type: 'tuple',
-            components: [
-              { name: 'aggregator', type: 'address' },
-              {
-                name: 'stakeInfo',
-                type: 'tuple',
-                components: [
-                  { name: 'stake', type: 'uint256' },
-                  { name: 'unstakeDelaySec', type: 'uint256' },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'simulateHandleOp',
-    inputs: [
-      {
-        name: 'op',
-        type: 'tuple',
-        components: [
-          { name: 'sender', type: 'address' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'initCode', type: 'bytes' },
-          { name: 'callData', type: 'bytes' },
-          { name: 'accountGasLimits', type: 'bytes32' },
-          { name: 'preVerificationGas', type: 'uint256' },
-          { name: 'gasFees', type: 'bytes32' },
-          { name: 'paymasterAndData', type: 'bytes' },
-          { name: 'signature', type: 'bytes' },
-        ],
-      },
-      { name: 'target', type: 'address' },
-      { name: 'targetCallData', type: 'bytes' },
     ],
     outputs: [],
     stateMutability: 'nonpayable',
@@ -257,115 +148,6 @@ export const ENTRY_POINT_V07_ABI = [
       { name: 'opIndex', type: 'uint256' },
       { name: 'reason', type: 'string' },
       { name: 'inner', type: 'bytes' },
-    ],
-  },
-  {
-    type: 'error',
-    name: 'ValidationResult',
-    inputs: [
-      {
-        name: 'returnInfo',
-        type: 'tuple',
-        components: [
-          { name: 'preOpGas', type: 'uint256' },
-          { name: 'prefund', type: 'uint256' },
-          { name: 'accountValidationData', type: 'uint256' },
-          { name: 'paymasterValidationData', type: 'uint256' },
-          { name: 'paymasterContext', type: 'bytes' },
-        ],
-      },
-      {
-        name: 'senderInfo',
-        type: 'tuple',
-        components: [
-          { name: 'stake', type: 'uint256' },
-          { name: 'unstakeDelaySec', type: 'uint256' },
-        ],
-      },
-      {
-        name: 'factoryInfo',
-        type: 'tuple',
-        components: [
-          { name: 'stake', type: 'uint256' },
-          { name: 'unstakeDelaySec', type: 'uint256' },
-        ],
-      },
-      {
-        name: 'paymasterInfo',
-        type: 'tuple',
-        components: [
-          { name: 'stake', type: 'uint256' },
-          { name: 'unstakeDelaySec', type: 'uint256' },
-        ],
-      },
-    ],
-  },
-  {
-    type: 'error',
-    name: 'ValidationResultWithAggregation',
-    inputs: [
-      {
-        name: 'returnInfo',
-        type: 'tuple',
-        components: [
-          { name: 'preOpGas', type: 'uint256' },
-          { name: 'prefund', type: 'uint256' },
-          { name: 'accountValidationData', type: 'uint256' },
-          { name: 'paymasterValidationData', type: 'uint256' },
-          { name: 'paymasterContext', type: 'bytes' },
-        ],
-      },
-      {
-        name: 'senderInfo',
-        type: 'tuple',
-        components: [
-          { name: 'stake', type: 'uint256' },
-          { name: 'unstakeDelaySec', type: 'uint256' },
-        ],
-      },
-      {
-        name: 'factoryInfo',
-        type: 'tuple',
-        components: [
-          { name: 'stake', type: 'uint256' },
-          { name: 'unstakeDelaySec', type: 'uint256' },
-        ],
-      },
-      {
-        name: 'paymasterInfo',
-        type: 'tuple',
-        components: [
-          { name: 'stake', type: 'uint256' },
-          { name: 'unstakeDelaySec', type: 'uint256' },
-        ],
-      },
-      {
-        name: 'aggregatorInfo',
-        type: 'tuple',
-        components: [
-          { name: 'aggregator', type: 'address' },
-          {
-            name: 'stakeInfo',
-            type: 'tuple',
-            components: [
-              { name: 'stake', type: 'uint256' },
-              { name: 'unstakeDelaySec', type: 'uint256' },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    type: 'error',
-    name: 'ExecutionResult',
-    inputs: [
-      { name: 'preOpGas', type: 'uint256' },
-      { name: 'paid', type: 'uint256' },
-      { name: 'accountValidationData', type: 'uint256' },
-      { name: 'paymasterValidationData', type: 'uint256' },
-      { name: 'targetSuccess', type: 'bool' },
-      { name: 'targetResult', type: 'bytes' },
     ],
   },
   {
@@ -591,15 +373,20 @@ export const AGGREGATOR_ABI = [
  * Error selectors for quick matching
  */
 export const ERROR_SELECTORS = {
+  // Legacy error selectors (kept for backward compatibility with older EntryPoints)
   ValidationResult: '0xe0cff05f',
-  // v0.9 EntryPointSimulations: ValidationResult includes aggregatorInfo field
   ValidationResultV09: '0x5eb2984f',
   ValidationResultWithAggregation: '0x8a1a02cd',
+  ExecutionResult: '0x8b7ac980',
+  // Active error selectors (still used by v0.9 EntryPoint)
   FailedOp: '0x220266b6',
   FailedOpWithRevert: '0x65c8fd4d',
-  ExecutionResult: '0x8b7ac980',
   SignatureValidationFailed: '0x86a9f750',
   SenderAddressResult: '0x6ca7b806',
+  // Kernel v0.3.3 module operation errors
+  ModuleOnUninstallFailed: '0x45b4a14f',
+  Reentrancy: '0xab143c06',
+  DelegatecallTargetNotWhitelisted: '0x7eb83a8a',
 } as const
 
 /**

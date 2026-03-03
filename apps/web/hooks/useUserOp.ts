@@ -1,17 +1,18 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
-import { concat, encodeFunctionData, pad, parseEther, toHex } from 'viem'
-import { useWalletClient } from 'wagmi'
+import { parseEther } from 'viem'
 import { useStableNetContext } from '@/providers'
 import {
-  getUserOperationHash,
-  packUserOperation,
-  signUserOpForKernel,
-} from '@stablenet/core'
-import type { UserOperation } from '@stablenet/core'
-import { createBundlerClient } from '@stablenet/wallet-sdk'
+  detectProvider,
+  type StableNetProvider,
+  createBundlerClient,
+} from '@stablenet/wallet-sdk'
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface SendUserOpParams {
   to: Address
@@ -28,46 +29,8 @@ interface UserOpResult {
   status: UserOpStatus
 }
 
-interface GasEstimate {
-  callGasLimit: bigint
-  verificationGasLimit: bigint
-  preVerificationGas: bigint
-}
-
-interface GasPrice {
-  maxFeePerGas: bigint
-  maxPriorityFeePerGas: bigint
-}
-
-interface UseUserOpConfig {
-  getNonce?: (sender: Address) => Promise<bigint>
-  estimateGas?: (userOp: unknown) => Promise<GasEstimate>
-  getGasPrice?: () => Promise<GasPrice>
-  signUserOp?: (userOp: unknown, entryPoint: Address, chainId: number) => Promise<Hex>
-}
-
 // ============================================================================
-// Kernel v3 Execute ABI (ERC-7579)
-// ============================================================================
-
-const KERNEL_EXECUTE_ABI = [
-  {
-    type: 'function',
-    name: 'execute',
-    inputs: [
-      { name: 'mode', type: 'bytes32' },
-      { name: 'executionCalldata', type: 'bytes' },
-    ],
-    outputs: [],
-    stateMutability: 'payable',
-  },
-] as const
-
-/** Single call mode: callType=0x00, execMode=0x00 */
-const SINGLE_EXEC_MODE = `0x${'00'.repeat(32)}` as Hex
-
-// ============================================================================
-// Pending UserOp localStorage
+// Pending UserOp localStorage (for re-checking timed-out submissions)
 // ============================================================================
 
 const PENDING_OPS_KEY = 'stablenet:pending-user-ops'
@@ -90,16 +53,6 @@ function loadPendingOps(): PendingUserOp[] {
   }
 }
 
-function savePendingOp(op: PendingUserOp): void {
-  try {
-    const ops = loadPendingOps()
-    ops.push(op)
-    localStorage.setItem(PENDING_OPS_KEY, JSON.stringify(ops))
-  } catch {
-    // Ignore storage errors
-  }
-}
-
 function removePendingOp(userOpHash: Hex): void {
   try {
     const ops = loadPendingOps().filter((op) => op.userOpHash !== userOpHash)
@@ -110,194 +63,90 @@ function removePendingOp(userOpHash: Hex): void {
 }
 
 // ============================================================================
-// Default gas values (fallback if estimation not provided)
-// ============================================================================
-
-const DEFAULT_GAS = {
-  callGasLimit: 200000n,
-  verificationGasLimit: 200000n,
-  preVerificationGas: 100000n,
-}
-
-const DEFAULT_GAS_PRICE = {
-  maxFeePerGas: 1000000000n, // 1 gwei
-  maxPriorityFeePerGas: 1000000000n, // 1 gwei
-}
-
-// ============================================================================
 // Hook
 // ============================================================================
 
-export function useUserOp(config: UseUserOpConfig = {}) {
-  const { bundlerUrl, entryPoint, chainId } = useStableNetContext()
-  const { data: walletClient } = useWalletClient()
+/**
+ * Send transactions through the StableNet wallet extension.
+ *
+ * The extension's handler.ts handles all UserOp logic:
+ * - Kernel v3 execute calldata wrapping (ERC-7579)
+ * - Nonce fetching from EntryPoint
+ * - Gas estimation via bundler
+ * - Signing with the wallet's private key
+ * - Bundler submission and receipt polling
+ *
+ * The DApp only needs to specify {to, value, data} — no direct
+ * bundler communication, UserOp construction, or signing required.
+ */
+export function useUserOp() {
+  const { bundlerUrl, entryPoint } = useStableNetContext()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+  const [provider, setProvider] = useState<StableNetProvider | null>(null)
 
-  const { getNonce, estimateGas, getGasPrice, signUserOp } = config
+  // Detect wallet-sdk provider on mount
+  useEffect(() => {
+    detectProvider({ timeout: 2000 })
+      .then((p) => {
+        if (p) setProvider(p)
+      })
+      .catch(() => {
+        // Provider not available
+      })
+  }, [])
 
-  // Use wallet-sdk bundler client for RPC calls
+  // Bundler client — only for recheckUserOp (receipt polling of old submissions)
   const bundlerClient = useMemo(
     () => createBundlerClient({ url: bundlerUrl, entryPoint }),
     [bundlerUrl, entryPoint]
   )
 
   /**
-   * Poll bundler for UserOp receipt until confirmed or timeout.
-   * Uses wallet-sdk's bundler client instead of raw fetch.
-   */
-  const waitForUserOpReceipt = useCallback(
-    async (
-      userOpHash: Hex,
-      maxAttempts = 15,
-      intervalMs = 2000
-    ): Promise<{ transactionHash: Hex; success: boolean } | null> => {
-      try {
-        const receipt = await bundlerClient.waitForUserOperationReceipt(userOpHash, {
-          timeout: maxAttempts * intervalMs,
-          pollingInterval: intervalMs,
-        })
-        return {
-          transactionHash: receipt.receipt?.transactionHash ?? (receipt as unknown as Record<string, unknown>).transactionHash as Hex,
-          success: receipt.success ?? true,
-        }
-      } catch {
-        // Timeout or bundler unreachable
-        return null
-      }
-    },
-    [bundlerClient]
-  )
-
-  /**
-   * Build Kernel v3 execute calldata for a single call.
-   * Uses execute(bytes32 mode, bytes executionCalldata) with mode=0x00...00 (single call).
+   * Send a transaction through the wallet extension.
    *
-   * executionCalldata uses ERC-7579 packed encoding (NOT abi.encode):
-   *   abi.encodePacked(address target, uint256 value, bytes callData)
-   *   = 20 bytes (address) + 32 bytes (uint256) + raw bytes
-   */
-  const buildExecuteCalldata = useCallback((to: Address, value: bigint, data: Hex): Hex => {
-    const executionCalldata = concat([
-      to,                              // 20 bytes: address (packed, no padding)
-      pad(toHex(value), { size: 32 }), // 32 bytes: uint256
-      data,                            // variable: raw calldata bytes
-    ]) as Hex
-    return encodeFunctionData({
-      abi: KERNEL_EXECUTE_ABI,
-      functionName: 'execute',
-      args: [SINGLE_EXEC_MODE, executionCalldata],
-    })
-  }, [])
-
-  /**
-   * Send UserOperation to bundler using packed v0.7 RPC format.
+   * For smart accounts (delegated via EIP-7702), the extension automatically:
+   * 1. Wraps {to, value, data} into Kernel execute calldata
+   * 2. Builds a UserOperation with correct nonce and gas
+   * 3. Signs and submits to the bundler
+   * 4. Waits for on-chain confirmation
    */
   const sendUserOp = useCallback(
     async (sender: Address, params: SendUserOpParams): Promise<UserOpResult | null> => {
+      if (!provider) {
+        setError(new Error('StableNet wallet not detected. Please install the extension.'))
+        return null
+      }
+
       setIsLoading(true)
       setError(null)
 
       try {
-        // 1. Fetch nonce from chain
-        let nonce = 0n
-        if (getNonce) {
-          nonce = await getNonce(sender)
-        }
-
-        // 2. Build Kernel execute calldata
-        const callData = buildExecuteCalldata(
-          params.to,
-          params.value ?? 0n,
-          params.data ?? '0x'
+        const txHash = await provider.sendTransaction(
+          {
+            from: sender,
+            to: params.to,
+            value: params.value,
+            data: params.data,
+          },
+          { waitForConfirmation: true }
         )
 
-        // 3. Estimate gas
-        let gasLimits = DEFAULT_GAS
-        if (estimateGas) {
-          gasLimits = await estimateGas({
-            sender,
-            nonce: toHex(nonce),
-            callData,
-          })
-        }
-
-        // 4. Get gas price
-        let gasPrices = DEFAULT_GAS_PRICE
-        if (getGasPrice) {
-          gasPrices = await getGasPrice()
-        }
-
-        // 5. Build UserOperation and pack using SDK
-        const userOp: UserOperation = {
-          sender,
-          nonce,
-          callData,
-          callGasLimit: gasLimits.callGasLimit,
-          verificationGasLimit: gasLimits.verificationGasLimit,
-          preVerificationGas: gasLimits.preVerificationGas,
-          maxFeePerGas: gasPrices.maxFeePerGas,
-          maxPriorityFeePerGas: gasPrices.maxPriorityFeePerGas,
-          signature: '0x' as Hex,
-        }
-
-        // 6. Compute EIP-712 hash and sign
-        if (signUserOp) {
-          const packed = packUserOperation(userOp)
-          userOp.signature = await signUserOp(packed, entryPoint, chainId)
-        } else if (walletClient) {
-          const opHash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
-          const rawSignature = await walletClient.signMessage({
-            message: { raw: opHash },
-          })
-          userOp.signature = signUserOpForKernel(rawSignature)
-        } else {
-          throw new Error(
-            'No wallet connected. Please connect your wallet to sign transactions.'
-          )
-        }
-
-        // 7. Send UserOp to bundler via wallet-sdk client
-        const userOpHash: Hex = await bundlerClient.sendUserOperation(userOp)
-
-        // 8. Poll for UserOp receipt to confirm on-chain inclusion
-        const receipt = await waitForUserOpReceipt(userOpHash)
-
-        // If polling timed out, save to pending ops for later recheck
-        if (!receipt) {
-          savePendingOp({
-            userOpHash,
-            timestamp: Date.now(),
-            to: params.to,
-          })
-        }
-
         return {
-          userOpHash,
-          transactionHash: receipt?.transactionHash,
-          success: receipt ? receipt.success : true,
-          status: receipt ? (receipt.success ? 'confirmed' : 'failed') : 'submitted',
+          userOpHash: txHash as Hex,
+          transactionHash: txHash as Hex,
+          success: true,
+          status: 'confirmed',
         }
       } catch (err) {
-        const opError = err instanceof Error ? err : new Error('Failed to send UserOperation')
+        const opError = err instanceof Error ? err : new Error('Transaction failed')
         setError(opError)
         return null
       } finally {
         setIsLoading(false)
       }
     },
-    [
-      bundlerClient,
-      entryPoint,
-      chainId,
-      walletClient,
-      getNonce,
-      estimateGas,
-      getGasPrice,
-      signUserOp,
-      buildExecuteCalldata,
-      waitForUserOpReceipt,
-    ]
+    [provider]
   )
 
   /**
@@ -316,21 +165,31 @@ export function useUserOp(config: UseUserOpConfig = {}) {
 
   /**
    * Re-check a previously submitted UserOp that timed out.
+   * Uses bundler client directly for receipt polling.
    */
   const recheckUserOp = useCallback(
     async (userOpHash: Hex): Promise<UserOpResult> => {
-      const receipt = await waitForUserOpReceipt(userOpHash, 10, 3000)
-      if (receipt) {
+      try {
+        const receipt = await bundlerClient.waitForUserOperationReceipt(userOpHash, {
+          timeout: 30000,
+          pollingInterval: 3000,
+        })
         removePendingOp(userOpHash)
-      }
-      return {
-        userOpHash,
-        transactionHash: receipt?.transactionHash,
-        success: receipt ? receipt.success : false,
-        status: receipt ? (receipt.success ? 'confirmed' : 'failed') : 'submitted',
+        return {
+          userOpHash,
+          transactionHash: receipt.receipt?.transactionHash,
+          success: receipt.success ?? false,
+          status: receipt.success ? 'confirmed' : 'failed',
+        }
+      } catch {
+        return {
+          userOpHash,
+          success: false,
+          status: 'submitted',
+        }
       }
     },
-    [waitForUserOpReceipt]
+    [bundlerClient]
   )
 
   return {

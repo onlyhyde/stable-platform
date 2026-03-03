@@ -1,6 +1,10 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { concat, encodeAbiParameters, hexToBytes, pad, toHex } from 'viem'
-import { ENTRY_POINT_V07_ABI } from '../abi'
+import { concat, encodeAbiParameters, encodeFunctionData, hexToBytes, pad, slice as sliceHex, toHex } from 'viem'
+import { ENTRY_POINT_ABI } from '../abi'
+import {
+  ENTRY_POINT_SIMULATIONS_ABI,
+  ENTRY_POINT_SIMULATIONS_BYTECODE,
+} from '../abi/entryPointSimulations'
 import type { GasEstimation, UserOperation } from '../types'
 import type { Logger } from '../utils/logger'
 
@@ -34,6 +38,8 @@ export interface GasEstimatorConfig {
   l2GasPrice?: bigint
   /** Gas to add for factory deployment in fallback estimation (default: 200000n) */
   factoryDeploymentGas?: bigint
+  /** Whether EIP-7702 authorization is used (adds PER_AUTHORIZATION_GAS to preVerificationGas, default: false) */
+  isEIP7702?: boolean
 }
 
 /**
@@ -50,6 +56,8 @@ const DEFAULT_GAS_OVERHEAD = {
   NON_ZERO_BYTE: 16n,
   /** L1 data cost multiplier for L2 chains */
   L1_DATA_COST_MULTIPLIER: 16n,
+  /** EIP-7702 per-authorization gas cost */
+  PER_AUTHORIZATION_GAS: 25000n,
 }
 
 /**
@@ -69,9 +77,22 @@ const DEFAULT_CONFIG = {
   l1GasPrice: undefined as bigint | undefined,
   l2GasPrice: undefined as bigint | undefined,
   factoryDeploymentGas: 200000n,
+  isEIP7702: false,
 }
 
 type RequiredConfig = typeof DEFAULT_CONFIG
+
+/**
+ * Gas profiles for Kernel v0.3.3 module operations.
+ * Maps function selector → fallback gas estimate when binary search fails.
+ */
+const MODULE_OP_GAS_PROFILES: Record<string, bigint> = {
+  '0x856b02ec': 350000n, // forceUninstallModule — state cleanup + ExcessivelySafeCall (uninstall + 10% buffer)
+  '0x166add9c': 600000n, // replaceModule — uninstall + install combined
+  '0xb5c13e39': 25000n,  // setHookGasLimit — single storage write
+  '0x19a6f00a': 25000n,  // setDelegatecallWhitelist — single mapping write
+  '0xdb01ebce': 25000n,  // setEnforceDelegatecallWhitelist — single storage write
+}
 
 /**
  * Validate buffer percentage is within valid range
@@ -160,7 +181,7 @@ export class GasEstimator {
    * Includes L1 data cost for L2 chains
    */
   private async calculatePreVerificationGas(userOp: UserOperation): Promise<bigint> {
-    // Pack UserOp in v0.7 format for accurate byte calculation
+    // Pack UserOp for accurate byte calculation
     const packedBytes = this.packUserOpForGasCalculation(userOp)
 
     let calldataGas = 0n
@@ -173,6 +194,11 @@ export class GasEstimator {
     }
 
     let baseGas = calldataGas + this.config.fixedOverhead + this.config.perUserOpOverhead
+
+    // Add EIP-7702 authorization gas (v0.9 spec requirement)
+    if (this.config.isEIP7702) {
+      baseGas += DEFAULT_GAS_OVERHEAD.PER_AUTHORIZATION_GAS
+    }
 
     // Add L1 data cost for L2 chains
     if (this.config.isL2Chain) {
@@ -308,6 +334,7 @@ export class GasEstimator {
   private async binarySearchVerificationGas(userOp: UserOperation): Promise<bigint> {
     let low = 10000n
     let high = this.config.initialGasUpperBound
+    let found = false
     let result = high
 
     for (let i = 0; i < this.config.maxBinarySearchIterations; i++) {
@@ -316,6 +343,7 @@ export class GasEstimator {
       const success = await this.trySimulateValidation(userOp, mid)
 
       if (success) {
+        found = true
         result = mid
         high = mid - 1n
       } else {
@@ -328,37 +356,47 @@ export class GasEstimator {
       }
     }
 
+    if (!found) {
+      throw new Error('Verification gas binary search: no simulation succeeded within gas range')
+    }
     return result
   }
 
   /**
-   * Try to simulate validation with a given gas limit
+   * Try to simulate validation with a given gas limit.
+   * Uses EntryPointSimulations via state override. Normal return = success, revert = failure.
    */
   private async trySimulateValidation(userOp: UserOperation, gasLimit: bigint): Promise<boolean> {
     try {
-      // Override verificationGasLimit with the binary search value so the EntryPoint
-      // allocates this amount of gas to the inner validateUserOp call.
-      // Without this, a 0n verificationGasLimit in the packed UserOp causes the
-      // EntryPoint to give 0 gas to validateUserOp, making the binary search always fail.
       const packedOp = this.packUserOpForSimulation({
         ...userOp,
         verificationGasLimit: gasLimit,
       })
 
-      await this.client.simulateContract({
-        address: this.entryPoint,
-        abi: ENTRY_POINT_V07_ABI,
+      const calldata = encodeFunctionData({
+        abi: ENTRY_POINT_SIMULATIONS_ABI,
         functionName: 'simulateValidation',
         args: [packedOp],
-        gas: gasLimit,
-        // biome-ignore lint/suspicious/noExplicitAny: simulateContract type mismatch with packed UserOp
-      } as any)
+      })
 
-      // simulateValidation always reverts, so if we get here something is wrong
-      return false
+      await this.client.call({
+        to: this.entryPoint,
+        data: calldata,
+        gas: gasLimit,
+        stateOverride: [
+          {
+            address: this.entryPoint,
+            code: ENTRY_POINT_SIMULATIONS_BYTECODE as Hex,
+          },
+        ],
+      })
+
+      // Normal return = validation succeeded
+      return true
     } catch (error: unknown) {
-      // Check if it's an out of gas error
       const errorStr = String(error)
+
+      // Out of gas → gas limit was insufficient
       if (
         errorStr.includes('out of gas') ||
         errorStr.includes('OutOfGas') ||
@@ -367,36 +405,23 @@ export class GasEstimator {
         return false
       }
 
-      // ValidationResult error means success (validation passed)
-      if (this.isValidationResultError(error)) {
-        return true
-      }
-
-      // FailedOp means validation logic failed (not gas)
+      // FailedOp means validation logic failed (not gas) — gas was sufficient
       if (this.isFailedOpError(error)) {
-        return true // Gas was sufficient, validation logic failed
-      }
-
-      // Unknown error - assume gas was insufficient
-      return false
-    }
-  }
-
-  /**
-   * Check if error is a ValidationResult (expected revert)
-   */
-  private isValidationResultError(error: unknown): boolean {
-    if (typeof error === 'object' && error !== null) {
-      const errObj = error as Record<string, unknown>
-      // Check for ValidationResult selector: v0.7=0xe0cff05f, v0.9=0x5eb2984f
-      if (typeof errObj.data === 'string') {
-        return errObj.data.startsWith('0xe0cff05f') || errObj.data.startsWith('0x5eb2984f')
-      }
-      if (errObj.name === 'ContractFunctionExecutionError') {
         return true
       }
+
+      // Execution revert with known signatures → gas was sufficient but logic failed
+      if (
+        errorStr.includes('execution reverted') ||
+        errorStr.includes('revert') ||
+        errorStr.includes('CALL_EXCEPTION')
+      ) {
+        return true
+      }
+
+      // Unknown error (network, state override unsupported, etc.) → propagate to trigger fallback
+      throw error
     }
-    return false
   }
 
   /**
@@ -409,20 +434,6 @@ export class GasEstimator {
         // FailedOp selector: 0x220266b6
         // FailedOpWithRevert selector: 0x65c8fd4d
         return errObj.data.startsWith('0x220266b6') || errObj.data.startsWith('0x65c8fd4d')
-      }
-    }
-    return false
-  }
-
-  /**
-   * Check if error is an ExecutionResult (expected revert from simulateHandleOp)
-   */
-  private isExecutionResultError(error: unknown): boolean {
-    if (typeof error === 'object' && error !== null) {
-      const errObj = error as Record<string, unknown>
-      // Check for ExecutionResult selector: 0x8b7ac980
-      if (typeof errObj.data === 'string') {
-        return errObj.data.startsWith('0x8b7ac980')
       }
     }
     return false
@@ -525,6 +536,7 @@ export class GasEstimator {
   private async binarySearchCallGas(userOp: UserOperation): Promise<bigint> {
     let low = 21000n
     let high = this.config.initialGasUpperBound
+    let found = false
     let result = high
 
     for (let i = 0; i < this.config.maxBinarySearchIterations; i++) {
@@ -533,6 +545,7 @@ export class GasEstimator {
       const success = await this.trySimulateHandleOp(userOp, mid)
 
       if (success) {
+        found = true
         result = mid
         high = mid - 1n
       } else {
@@ -545,36 +558,48 @@ export class GasEstimator {
       }
     }
 
+    if (!found) {
+      throw new Error('Call gas binary search: no simulation succeeded within gas range')
+    }
     return result
   }
 
   /**
-   * Try to simulate handle op with a given gas limit
+   * Try to simulate handle op with a given gas limit.
+   * Uses EntryPointSimulations via state override. Normal return = success.
    */
   private async trySimulateHandleOp(userOp: UserOperation, gasLimit: bigint): Promise<boolean> {
     try {
-      // Override callGasLimit with the binary search value so the EntryPoint
-      // allocates this amount of gas to the inner execution call.
       const packedOp = this.packUserOpForSimulation({
         ...userOp,
         callGasLimit: gasLimit,
-        // Ensure verification passes by providing a generous verificationGasLimit
         verificationGasLimit: userOp.verificationGasLimit || this.config.initialGasUpperBound,
       })
 
-      await this.client.simulateContract({
-        address: this.entryPoint,
-        abi: ENTRY_POINT_V07_ABI,
+      const calldata = encodeFunctionData({
+        abi: ENTRY_POINT_SIMULATIONS_ABI,
         functionName: 'simulateHandleOp',
         args: [packedOp, userOp.sender, '0x'],
-        gas: gasLimit + (userOp.verificationGasLimit || this.config.initialGasUpperBound),
       })
 
-      // simulateHandleOp always reverts with ExecutionResult
-      return false
+      await this.client.call({
+        to: this.entryPoint,
+        data: calldata,
+        gas: gasLimit + (userOp.verificationGasLimit || this.config.initialGasUpperBound),
+        stateOverride: [
+          {
+            address: this.entryPoint,
+            code: ENTRY_POINT_SIMULATIONS_BYTECODE as Hex,
+          },
+        ],
+      })
+
+      // Normal return = execution completed successfully
+      return true
     } catch (error: unknown) {
-      // Check if it's an out of gas error
       const errorStr = String(error)
+
+      // Out of gas → gas limit was insufficient
       if (
         errorStr.includes('out of gas') ||
         errorStr.includes('OutOfGas') ||
@@ -583,31 +608,22 @@ export class GasEstimator {
         return false
       }
 
-      // ExecutionResult error means success (execution completed)
-      if (this.isExecutionResultError(error)) {
-        return true
-      }
-
-      // ValidationResult is also acceptable (validation passed)
-      if (this.isValidationResultError(error)) {
-        return true
-      }
-
       // FailedOp means logic failed but gas was sufficient
       if (this.isFailedOpError(error)) {
         return true
       }
 
-      // For any ContractFunctionExecutionError, assume gas was sufficient
-      if (typeof error === 'object' && error !== null) {
-        const errObj = error as Record<string, unknown>
-        if (errObj.name === 'ContractFunctionExecutionError') {
-          return true
-        }
+      // Execution revert with known signatures → gas was sufficient but logic failed
+      if (
+        errorStr.includes('execution reverted') ||
+        errorStr.includes('revert') ||
+        errorStr.includes('CALL_EXCEPTION')
+      ) {
+        return true
       }
 
-      // Unknown error - assume gas was insufficient
-      return false
+      // Unknown error (network, state override unsupported, etc.) → propagate to trigger fallback
+      throw error
     }
   }
 
@@ -624,6 +640,14 @@ export class GasEstimator {
       })
       return this.applyCallGasBuffer(gasEstimate)
     } catch {
+      // Check for known module operation selectors with pre-computed gas profiles
+      if (userOp.callData && userOp.callData.length >= 10) {
+        const selector = sliceHex(userOp.callData, 0, 4)
+        const profileGas = MODULE_OP_GAS_PROFILES[selector]
+        if (profileGas !== undefined) {
+          return this.applyCallGasBuffer(profileGas)
+        }
+      }
       // Last resort: return a reasonable default
       return this.applyCallGasBuffer(200000n)
     }

@@ -1,9 +1,18 @@
 import type { Call, SmartAccount, Validator } from '@stablenet/sdk-types'
-import { ENTRY_POINT_V07_ADDRESS, KERNEL_V3_1_FACTORY_ADDRESS } from '@stablenet/sdk-types'
+import { ENTRY_POINT_ADDRESS, KERNEL_V3_1_FACTORY_ADDRESS } from '@stablenet/sdk-types'
 import type { Address, Hex, PublicClient } from 'viem'
 import { concat, encodeFunctionData, getContractAddress, keccak256 } from 'viem'
 import { EntryPointAbi, KernelFactoryAbi } from './abi'
 import { calculateSalt, encodeKernelExecuteCallData, encodeKernelInitializeData } from './utils'
+
+/**
+ * ValidatorRouter interface (duck-typed to avoid circular dependency with @stablenet/core).
+ * If the validator object has `getActiveValidator`, it's treated as a router.
+ */
+interface ValidatorRouterLike {
+  getActiveValidator(): Validator
+  getActiveNonceKey(): bigint
+}
 
 /**
  * Configuration for creating a Kernel smart account
@@ -11,9 +20,12 @@ import { calculateSalt, encodeKernelExecuteCallData, encodeKernelInitializeData 
 export interface ToKernelSmartAccountConfig {
   /** Public client for chain interaction */
   client: PublicClient
-  /** The validator to use for signing */
-  validator: Validator
-  /** The EntryPoint address (defaults to v0.7) */
+  /**
+   * The validator to use for signing.
+   * Accepts a single Validator or a ValidatorRouter for multi-validator support.
+   */
+  validator: Validator | ValidatorRouterLike
+  /** The EntryPoint address */
   entryPoint?: Address
   /** The Kernel factory address (defaults to v3.1) */
   factoryAddress?: Address
@@ -44,17 +56,26 @@ export async function toKernelSmartAccount(
 ): Promise<SmartAccount> {
   const {
     client,
-    validator,
-    entryPoint = ENTRY_POINT_V07_ADDRESS,
+    validator: validatorOrRouter,
+    entryPoint = ENTRY_POINT_ADDRESS,
     factoryAddress = KERNEL_V3_1_FACTORY_ADDRESS,
     index = 0n,
   } = config
 
+  // Duck-type detection: ValidatorRouter has getActiveValidator method
+  const isRouter = 'getActiveValidator' in validatorOrRouter
+    && typeof (validatorOrRouter as ValidatorRouterLike).getActiveValidator === 'function'
+
+  // For initialization, always use the root/primary validator
+  const initValidator: Validator = isRouter
+    ? (validatorOrRouter as ValidatorRouterLike).getActiveValidator()
+    : (validatorOrRouter as Validator)
+
   // Get validator initialization data
-  const validatorInitData = await validator.getInitData()
+  const validatorInitData = await initValidator.getInitData()
 
   // Encode the initialization data
-  const initializeData = encodeKernelInitializeData(validator, validatorInitData)
+  const initializeData = encodeKernelInitializeData(initValidator, validatorInitData)
 
   // Calculate the salt
   const salt = calculateSalt(index)
@@ -67,12 +88,16 @@ export async function toKernelSmartAccount(
 
   const getNonce = async (): Promise<bigint> => {
     // Get nonce from EntryPoint
-    // The key is validator-specific, for default validator it's 0
+    // The key is validator-specific: 0n for root, encoded key for non-root
+    const nonceKey = isRouter
+      ? (validatorOrRouter as ValidatorRouterLike).getActiveNonceKey()
+      : 0n
+
     const nonce = await client.readContract({
       address: entryPoint,
       abi: EntryPointAbi,
       functionName: 'getNonce',
-      args: [address, 0n],
+      args: [address, nonceKey],
     })
     return nonce
   }
@@ -96,11 +121,16 @@ export async function toKernelSmartAccount(
   }
 
   const signUserOperation = async (userOpHash: Hex): Promise<Hex> => {
-    // Sign with the validator
-    const signature = await validator.signHash(userOpHash)
+    // Resolve the currently active validator (supports dynamic switching via router)
+    const activeValidator: Validator = isRouter
+      ? (validatorOrRouter as ValidatorRouterLike).getActiveValidator()
+      : (validatorOrRouter as Validator)
+
+    // Sign with the active validator
+    const signature = await activeValidator.signHash(userOpHash)
 
     // For Kernel v3 (ERC-7579), the validation mode is encoded in the nonce,
-    // not in the signature. The signature should be a clean 65-byte ECDSA signature.
+    // not in the signature. The signature format depends on the validator type.
     return signature
   }
 

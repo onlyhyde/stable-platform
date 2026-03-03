@@ -1,5 +1,5 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { AGGREGATOR_ABI, ENTRY_POINT_V07_ABI } from '../abi'
+import { AGGREGATOR_ABI, ENTRY_POINT_ABI } from '../abi'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import type {
@@ -113,7 +113,7 @@ export class AggregatorValidator implements IAggregatorValidator {
   async getAggregatorStakeInfo(aggregator: Address): Promise<StakeInfo> {
     const depositInfo = (await this.publicClient.readContract({
       address: this.entryPoint,
-      abi: ENTRY_POINT_V07_ABI,
+      abi: ENTRY_POINT_ABI,
       functionName: 'getDepositInfo',
       args: [aggregator],
     })) as {

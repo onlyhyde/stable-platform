@@ -6,7 +6,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "build/**"],
+      "outputs": ["dist/**", ".next/**", "build/**", "bin/**"],
       "env": ["NODE_ENV"]
     },
     "dev": {

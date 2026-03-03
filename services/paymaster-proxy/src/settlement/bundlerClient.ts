@@ -8,6 +8,8 @@ export interface UserOperationReceipt {
   success: boolean
   actualGasCost: bigint
   actualGasUsed: bigint
+  /** Revert reason hex if the UserOp execution reverted (from UserOperationRevertReason event) */
+  reason?: Hex
   receipt: {
     transactionHash: Hex
     blockNumber: bigint
@@ -22,6 +24,7 @@ interface RawUserOpReceipt {
   success: boolean
   actualGasCost: string
   actualGasUsed: string
+  reason?: string
   receipt: {
     transactionHash: string
     blockNumber: string
@@ -78,6 +81,7 @@ export class BundlerClient {
       success: raw.success,
       actualGasCost: BigInt(raw.actualGasCost),
       actualGasUsed: BigInt(raw.actualGasUsed),
+      reason: raw.reason ? (raw.reason as Hex) : undefined,
       receipt: {
         transactionHash: raw.receipt.transactionHash as Hex,
         blockNumber: BigInt(raw.receipt.blockNumber),

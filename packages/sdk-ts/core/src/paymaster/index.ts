@@ -1,5 +1,7 @@
 export {
   PAYMASTER_DATA_VERSION,
+  PAYMASTER_SIG_MAGIC,
+  PAYMASTER_SIG_MAGIC_SIZE,
   HEADER_SIZE,
   PaymasterType,
   encodePaymasterData,
@@ -7,6 +9,8 @@ export {
   isPaymasterDataSupported,
   envelopeLength,
   encodePaymasterDataWithSignature,
+  encodePaymasterDataWithSignatureV09,
+  hasSignatureMagic,
   splitEnvelopeAndSignature,
   type PaymasterDataEnvelope,
 } from './paymasterDataCodec'

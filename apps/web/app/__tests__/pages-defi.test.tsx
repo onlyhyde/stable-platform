@@ -34,6 +34,7 @@ vi.mock('@/components/common', () => {
         description ? React.createElement('p', null, description) : null
       ),
     Pagination: () => null,
+    PaymasterSelector: c(),
     ToastProvider: c(),
     Toggle: c(),
     ToggleCard: c(),

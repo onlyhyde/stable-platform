@@ -8,9 +8,11 @@ export {
 // Error utilities
 export {
   decodeExecutionResult,
+  decodeExecutionResultReturn,
   decodeFailedOp,
   decodeFailedOpWithRevert,
   decodeValidationResult,
+  decodeValidationResultReturn,
   decodeValidationResultWithAggregation,
   extractErrorData,
   formatRevertReason,

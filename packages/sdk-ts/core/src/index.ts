@@ -67,6 +67,7 @@ export {
   canInstallModules,
   DEFAULT_CURRENCIES,
   ECDSA_VALIDATOR_ADDRESS,
+  ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   EXEC_MODE,
   GAS_PAYMENT_TYPE,
@@ -268,6 +269,20 @@ export {
   type AuditLogEntry,
   BUILT_IN_MODULES,
   type ConflictCheckResult,
+  // Nonce Utils
+  type DecodedNonceKey,
+  decodeValidatorNonceKey,
+  type EncodeValidatorNonceKeyOptions,
+  encodeValidatorNonceKey,
+  isRootValidator,
+  VALIDATION_MODE,
+  type ValidationMode,
+  VALIDATION_TYPE,
+  type ValidationType,
+  // Validator Router
+  createValidatorRouter,
+  type ValidatorRouter,
+  type ValidatorRouterConfig,
   calculateRecurringPaymentStatus,
   calculateSelector,
   calculateSpendingLimitStatus,
@@ -574,9 +589,20 @@ export {
 } from './paymaster'
 // Utils
 export {
+  buildUserOpTypedData,
   computeDomainSeparator,
   getUserOperationHash,
   packUserOperation,
   signUserOpForKernel,
   unpackUserOperation,
 } from './utils/userOperation'
+export {
+  SIG_VALIDATION_FAILED,
+  VALIDITY_BLOCK_RANGE_FLAG,
+  VALIDITY_BLOCK_RANGE_MASK,
+  isSignatureValidationFailed,
+  packValidationData,
+  parseValidationData,
+  usesBlockNumberMode,
+  type ValidationData,
+} from './utils/validationData'

@@ -274,6 +274,99 @@ func (c *OperationClient) CreateInstallRequest(entry *config.ModuleRegistryEntry
 	}, nil
 }
 
+// PrepareForceUninstall prepares calldata for force-uninstalling a module (ExcessivelySafeCall).
+func (c *OperationClient) PrepareForceUninstall(account types.Address, request types.ModuleForceUninstallRequest) (*ModuleCalldata, error) {
+	data, err := c.accountABI.Pack(
+		"forceUninstallModule",
+		uint256(request.Type),
+		common.Address(request.Address),
+		request.DeInitData.Bytes(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode forceUninstallModule: %w", err)
+	}
+
+	return &ModuleCalldata{
+		To:    account,
+		Data:  types.Hex(data),
+		Value: 0,
+	}, nil
+}
+
+// PrepareReplaceModule prepares calldata for atomically replacing a module.
+func (c *OperationClient) PrepareReplaceModule(account types.Address, request types.ModuleReplaceRequest) (*ModuleCalldata, error) {
+	data, err := c.accountABI.Pack(
+		"replaceModule",
+		uint256(request.Type),
+		common.Address(request.OldAddress),
+		request.DeInitData.Bytes(),
+		common.Address(request.NewAddress),
+		request.InitData.Bytes(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode replaceModule: %w", err)
+	}
+
+	return &ModuleCalldata{
+		To:    account,
+		Data:  types.Hex(data),
+		Value: 0,
+	}, nil
+}
+
+// PrepareSetHookGasLimit prepares calldata for setting hook gas limit.
+func (c *OperationClient) PrepareSetHookGasLimit(account types.Address, request types.HookGasLimitRequest) (*ModuleCalldata, error) {
+	data, err := c.accountABI.Pack(
+		"setHookGasLimit",
+		common.Address(request.HookAddress),
+		request.GasLimit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode setHookGasLimit: %w", err)
+	}
+
+	return &ModuleCalldata{
+		To:    account,
+		Data:  types.Hex(data),
+		Value: 0,
+	}, nil
+}
+
+// PrepareSetDelegatecallWhitelist prepares calldata for setting delegatecall whitelist entry.
+func (c *OperationClient) PrepareSetDelegatecallWhitelist(account types.Address, request types.DelegatecallWhitelistRequest) (*ModuleCalldata, error) {
+	data, err := c.accountABI.Pack(
+		"setDelegatecallWhitelist",
+		common.Address(request.Target),
+		request.Allowed,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode setDelegatecallWhitelist: %w", err)
+	}
+
+	return &ModuleCalldata{
+		To:    account,
+		Data:  types.Hex(data),
+		Value: 0,
+	}, nil
+}
+
+// PrepareEnforceDelegatecallWhitelist prepares calldata for enforcing delegatecall whitelist.
+func (c *OperationClient) PrepareEnforceDelegatecallWhitelist(account types.Address, request types.DelegatecallWhitelistEnforceRequest) (*ModuleCalldata, error) {
+	data, err := c.accountABI.Pack(
+		"setEnforceDelegatecallWhitelist",
+		request.Enforce,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode setEnforceDelegatecallWhitelist: %w", err)
+	}
+
+	return &ModuleCalldata{
+		To:    account,
+		Data:  types.Hex(data),
+		Value: 0,
+	}, nil
+}
+
 // CreateUninstallRequest creates an uninstall request from a registry entry.
 func (c *OperationClient) CreateUninstallRequest(entry *config.ModuleRegistryEntry, deInitData types.Hex) (*types.ModuleUninstallRequest, error) {
 	address, ok := entry.GetAddress(c.chainID)

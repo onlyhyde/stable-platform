@@ -9,6 +9,7 @@ export type {
 } from '@stablenet/sdk-types'
 export {
   CALL_TYPE,
+  ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   EXEC_MODE,
   KERNEL_ADDRESSES,

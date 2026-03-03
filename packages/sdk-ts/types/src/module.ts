@@ -43,12 +43,14 @@ export const MODULE_TYPE_NAMES: Map<bigint, string> = new Map([
 export const MODULE_STATUS = {
   /** Not installed */
   NOT_INSTALLED: 'not_installed',
-  /** Installation pending (tx submitted) */
-  PENDING_INSTALL: 'pending_install',
+  /** Installation in progress (tx submitted) */
+  INSTALLING: 'installing',
   /** Installed and active */
   INSTALLED: 'installed',
-  /** Uninstallation pending (tx submitted) */
-  PENDING_UNINSTALL: 'pending_uninstall',
+  /** Uninstallation in progress (tx submitted) */
+  UNINSTALLING: 'uninstalling',
+  /** Installation or operation failed */
+  FAILED: 'failed',
 } as const
 
 export type ModuleStatus = (typeof MODULE_STATUS)[keyof typeof MODULE_STATUS]
@@ -235,6 +237,73 @@ export interface ModuleUninstallRequest {
 
   /** Encoded de-initialization data */
   deInitData: Hex
+}
+
+/**
+ * Force module uninstallation request
+ * Uses ExcessivelySafeCall - module revert is ignored
+ */
+export interface ModuleForceUninstallRequest {
+  /** Module address to force uninstall */
+  moduleAddress: Address
+
+  /** Module type */
+  moduleType: ModuleType
+
+  /** Encoded de-initialization data */
+  deInitData: Hex
+}
+
+/**
+ * Atomic module replacement request
+ * Supported for VALIDATOR, EXECUTOR, FALLBACK types
+ */
+export interface ModuleReplaceRequest {
+  /** Module type */
+  moduleType: ModuleType
+
+  /** Old module address to uninstall */
+  oldModuleAddress: Address
+
+  /** Old module de-initialization data */
+  deInitData: Hex
+
+  /** New module address to install */
+  newModuleAddress: Address
+
+  /** New module initialization data */
+  initData: Hex
+}
+
+/**
+ * Hook gas limit configuration request
+ * 0 = unlimited (backward compatible)
+ */
+export interface HookGasLimitRequest {
+  /** Hook contract address */
+  hookAddress: Address
+
+  /** Gas limit for the hook */
+  gasLimit: bigint
+}
+
+/**
+ * Delegatecall whitelist configuration request
+ */
+export interface DelegatecallWhitelistRequest {
+  /** Target contract address */
+  target: Address
+
+  /** Whether to allow delegatecall to this target */
+  allowed: boolean
+}
+
+/**
+ * Delegatecall whitelist enforcement request
+ */
+export interface DelegatecallWhitelistEnforceRequest {
+  /** Whether to enforce the whitelist (default: false) */
+  enforce: boolean
 }
 
 // ============================================================================

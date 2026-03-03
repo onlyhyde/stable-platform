@@ -1,6 +1,15 @@
 # ERC-4337 + EIP-7702 + ERC-7579 전체 메시지 흐름
 
 > 한국어 번역본 (원문: ERC4337_EIP7702_COMPLETE_FLOW.md)
+>
+> ⚠️ 상태: 번역 동기화 대기(legacy). 최신 구현 기준은 영문 정본을 우선 확인:
+> - `docs/claude/spec/ERC4337_EIP7702_COMPLETE_FLOW.md`
+> - `docs/claude/spec/ERC4337_EIP7702_SEQUENCE_DIAGRAM.md`
+>
+> 연동 메모 (2026-03-02):
+> - 오프체인 인프라(Bundler/SDK/Proxy) 정합성은 **PARTIAL**
+> - 상세 근거: `docs/claude/spec/EIP-4337_7579_통합_스펙준수_보고서.md` §11.2.4, §11.3
+> - 세부 점검표: `docs/claude/spec/EIP-4337_7579_코드정합성_검토결과_2026-03-02.md`
 
 > StableNet POC — ERC-20 Token Transfer via Smart Account with Paymaster Gas Sponsorship
 
@@ -45,7 +54,8 @@
 ```
 User → DApp → Wallet (sign) → Paymaster-Proxy (approve) → Bundler (validate & bundle)
   → EntryPoint.handleOps (on-chain) → Kernel.validateUserOp → Paymaster.validatePaymasterUserOp
-  → Kernel.executeUserOp → USDC.transfer → Paymaster.postOp (collect fee) → Bundler (compensate)
+  → Kernel.execute (or executeUserOp when hook-required path) → USDC.transfer
+  → Paymaster.postOp (collect fee, only when context.length > 0) → Bundler (compensate)
 ```
 
 ---
@@ -55,7 +65,7 @@ User → DApp → Wallet (sign) → Paymaster-Proxy (approve) → Bundler (valid
 ### 온체인 컨트랙트
 
 ```
-EntryPoint (ERC-4337 v0.7)
+EntryPoint (ERC-4337 v0.9)
 ├── handleOps(PackedUserOperation[], beneficiary)
 ├── handleAggregatedOps(UserOpsPerAggregator[], beneficiary)
 ├── simulateHandleOp(...)
@@ -174,7 +184,7 @@ Kernel.initialize(
 | Kernel Implementation | `0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9` | 스마트 계정 로직 |
 | ECDSA Validator | `0x5FC8d32690cc91D4c39d9d3abcBD16989F875707` | 서명 검증 |
 | Kernel Factory | `0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9` | 계정 배포 |
-| EntryPoint | `0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0` | UserOp 오케스트레이션 |
+| EntryPoint | `0xEf6817fe73741A8F10088f9511c64b666a338A14` | UserOp 오케스트레이션 |
 
 ---
 
@@ -304,14 +314,16 @@ PackedUserOperation {
 ### Step 1.5: UserOp 서명
 
 ```
-// Compute canonical hash
-userOpHash = keccak256(abi.encode(
-    keccak256(pack(sender, nonce, hashInitCode, hashCallData,
-                   accountGasLimits, preVerificationGas, gasFees,
-                   hashPaymasterAndData)),
-    entryPoint,
-    chainId
+// Compute canonical hash (EntryPoint v0.9, EIP-712)
+structHash = keccak256(abi.encode(
+    PACKED_USEROP_TYPEHASH,
+    sender, nonce, hashInitCode, hashCallData,
+    accountGasLimits, preVerificationGas, gasFees, hashPaymasterAndData
 ))
+domainSeparator = keccak256(abi.encode(
+    TYPE_HASH, keccak256("ERC4337"), keccak256("1"), chainId, entryPoint
+))
+userOpHash = keccak256("\x19\x01" || domainSeparator || structHash)
 
 // Wallet signs the hash
 signature = wallet.signMessage({ message: { raw: userOpHash } })
@@ -320,7 +332,7 @@ signature = wallet.signMessage({ message: { raw: userOpHash } })
 // The signature is used as-is (65 bytes: r || s || v)
 ```
 
-### Step 1.6: UserOp 패킹 (v0.7 형식)
+### Step 1.6: UserOp 패킹 (v0.9 호환 packed 형식)
 
 ```
 paymasterAndData = abi.encodePacked(
@@ -463,7 +475,7 @@ function handleOps(
 For each UserOp:
 
 1. Copy to memory & compute hash
-   userOpHash = keccak256(pack(fields) || entryPoint || chainId)
+   userOpHash = EIP-712 typed data hash
 
 2. Calculate required prefund
    requiredGas = verificationGasLimit           // 200,000
@@ -483,7 +495,7 @@ For each UserOp:
 5. Validate Paymaster (if present)
    → Deduct requiredPrefund from Paymaster's deposit
    → Call ERC20Paymaster.validatePaymasterUserOp() (see Step 3.4)
-   → Store returned context for postOp
+   → Store returned context for postOp (postOp은 context가 비어있지 않을 때만 호출)
 ```
 
 ### Step 3.3: Kernel.validateUserOp (스마트 계정 검증)
@@ -856,7 +868,10 @@ EntryPoint calls:
   ┌─────────────────────────────────────────────────────────────────┐
   │ ERC20Paymaster._postOp                                          │
   │                                                                 │
-  │ 1. SKIP IF POST-OP REVERTED                                    │
+  │ 1. DEFENSIVE GUARD (postOpReverted)                            │
+  │    EntryPoint v0.9의 일반 경로는                               │
+  │    opSucceeded/opReverted 기반 postOp 호출이며,                │
+  │    postOpReverted 분기는 방어적 처리로 유지된다.               │
   │    if (mode == PostOpMode.postOpReverted) return                │
   │                                                                 │
   │ 2. DECODE CONTEXT                                               │
