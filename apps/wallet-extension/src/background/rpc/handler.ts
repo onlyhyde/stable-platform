@@ -169,6 +169,53 @@ function resolveSignerAddress(sender: Address): Address {
 }
 
 /**
+ * Check if an account is an EIP-7702 delegated account.
+ *
+ * Kernel v0.3.3 EIP-7702 accounts use VALIDATION_TYPE_7702 (0x00) which
+ * verifies signatures via ECDSA.recover(toEthSignedMessageHash(userOpHash), sig).
+ * This requires EIP-191 signing (signMessage) instead of EIP-712 (signTypedData).
+ */
+function isDelegatedSender(sender: Address): boolean {
+  const account = walletState
+    .getState()
+    .accounts.accounts.find((a) => a.address.toLowerCase() === sender.toLowerCase())
+  return account?.type === 'delegated'
+}
+
+/**
+ * Sign a UserOperation for submission.
+ *
+ * For EIP-7702 delegated accounts (Kernel VALIDATION_TYPE_7702):
+ *   - Signs with EIP-191: signMessage(userOpHash) → adds "\x19Ethereum Signed Message:\n32" prefix
+ *   - Kernel verifies: ECDSA.recover(toEthSignedMessageHash(userOpHash), sig) == address(this)
+ *
+ * For regular smart accounts (Kernel VALIDATION_TYPE_ROOT):
+ *   - Signs with EIP-712: signTypedData(typedData) → structured PackedUserOperation hash
+ *   - Kernel verifies via installed ECDSA validator module
+ */
+async function signUserOp(
+  userOp: UserOperation,
+  entryPoint: Address,
+  chainId: number
+): Promise<Hex> {
+  const signerAddr = resolveSignerAddress(userOp.sender)
+
+  if (isDelegatedSender(userOp.sender)) {
+    // EIP-7702 path: Kernel uses _verify7702Signature which expects
+    // ECDSA.recover(toEthSignedMessageHash(userOpHash), sig) == address(this)
+    // signMessage with raw hash adds the EIP-191 prefix automatically
+    const userOpHash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
+    logger.info(`[signUserOp] EIP-7702 path: sender=${userOp.sender.slice(0, 10)}..., signerAddr=${signerAddr.slice(0, 10)}..., userOpHash=${userOpHash.slice(0, 14)}...`)
+    return keyringController.signMessage(signerAddr, userOpHash)
+  }
+
+  // Standard smart account path: EIP-712 typed data signing
+  const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
+  logger.info(`[signUserOp] EIP-712 path: sender=${userOp.sender.slice(0, 10)}..., signerAddr=${signerAddr.slice(0, 10)}...`)
+  return keyringController.signTypedData(signerAddr, typedData)
+}
+
+/**
  * Normalize accountId to a canonical form.
  * Handles both "kernel.advanced.v0.3.3" (old) and "kernel.advanced.0.3.3" (new) formats.
  */
@@ -1157,29 +1204,27 @@ const handlers: Record<string, RpcHandler> = {
         authorizationHash
       )
 
-      // Step 4: Encode Kernel.initialize() calldata
-      // After EIP-7702 delegation sets the code, this call initializes the Kernel
-      // with the ECDSA validator as root validator and the EOA as its owner.
-      const ecdsaValidatorAddress = getEcdsaValidator(chainId)
-      const initData = encodeKernelInitialize(ecdsaValidatorAddress, account)
+      // Step 4: Kernel v0.3.3 EIP-7702 Design
+      // Kernel intentionally blocks initialize() for EIP-7702 delegated accounts
+      // (detects 0xef0100 prefix in address(this).code and reverts with AlreadyInitialized).
+      // Instead, Kernel uses VALIDATION_TYPE_7702 (nonce key 0x00) which validates
+      // signatures via ECDSA.recover(toEthSignedMessageHash(userOpHash), sig) == address(this).
+      // No root validator or ECDSA module installation is needed.
+      // The delegation transaction is a pure authorization-only tx with no data payload.
 
       // Step 5: Get gas prices and calculate gas
-      // NOTE: estimateGas cannot be used here — it doesn't see the authorizationList,
-      // so it returns ~21K (plain self-transfer) which is below intrinsic gas minimum.
-      // Formula: base(21K) + authOverhead(25K) + perAuth(12.5K) per auth + initGas(100K), with 10% buffer
+      // Pure delegation tx: base(21K) + authOverhead(25K) + perAuth(12.5K)
       const gasPrice = await client.getGasPrice()
       const numAuths = 1n
-      const KERNEL_INIT_GAS = 100_000n
-      const baseGas = BASE_TRANSFER_GAS + EIP7702_AUTH_GAS + GAS_PER_AUTHORIZATION * numAuths + KERNEL_INIT_GAS
+      const baseGas = BASE_TRANSFER_GAS + EIP7702_AUTH_GAS + GAS_PER_AUTHORIZATION * numAuths
       const gas = (baseGas * GAS_BUFFER_MULTIPLIER) / GAS_BUFFER_DIVISOR
 
-      // Step 6: Build the EIP-7702 transaction with proper viem field names
-      // The tx calls account.initialize() via self-referencing to, setting up the
-      // Kernel root validator in the same transaction as the delegation.
+      // Step 6: Build the EIP-7702 transaction
+      // No data payload — delegation alone is sufficient for Kernel EIP-7702 mode
       const transaction = {
-        to: account, // Self-referencing: calls initialize() on the delegated account
+        to: account,
         value: 0n,
-        data: initData,
+        data: '0x' as Hex,
         gas,
         nonce: txNonce,
         chainId: network.chainId,
@@ -1455,14 +1500,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl,
         signer: async (finalOp) => {
-          const signerAddr = resolveSignerAddress(finalOp.sender)
-          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(network.chainId))
-
-          // AA24 diagnostic: log hash and signer details
-          const clientHash = getUserOperationHash(finalOp, entryPoint, BigInt(network.chainId))
-          logger.info(`[eth_sendUserOperation] SIGN DIAG: entryPoint=${entryPoint}, chainId=${network.chainId}, sender=${finalOp.sender}, signerAddr=${signerAddr}, clientHash=${clientHash}`)
-
-          return keyringController.signTypedData(signerAddr, typedData)
+          return signUserOp(finalOp, entryPoint, network.chainId)
         },
       })
 
@@ -1529,14 +1567,7 @@ const handlers: Record<string, RpcHandler> = {
 
     let signedUserOp: UserOperation
     try {
-      const signerAddr = resolveSignerAddress(userOp.sender)
-      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(network.chainId))
-
-      // AA24 diagnostic: log hash and signer details
-      const clientHash = getUserOperationHash(userOp, entryPoint, BigInt(network.chainId))
-      logger.info(`[eth_sendUserOperation] SIGN DIAG (self-pay): entryPoint=${entryPoint}, chainId=${network.chainId}, sender=${userOp.sender}, signerAddr=${signerAddr}, clientHash=${clientHash}`)
-
-      const signature = await keyringController.signTypedData(signerAddr, typedData)
+      const signature = await signUserOp(userOp, entryPoint, network.chainId)
       signedUserOp = { ...userOp, signature }
       logger.info(`[eth_sendUserOperation] Self-pay signed OK: sigLen=${signature.length}`)
     } catch (error) {
@@ -2389,8 +2420,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl: network.bundlerUrl,
         signer: async (finalOp) => {
-          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(chainId))
-          return keyringController.signTypedData(resolveSignerAddress(account), typedData)
+          return signUserOp(finalOp, entryPoint, chainId)
         },
       })
 
@@ -2417,8 +2447,7 @@ const handlers: Record<string, RpcHandler> = {
     // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
-      const signature = await keyringController.signTypedData(resolveSignerAddress(account), typedData)
+      const signature = await signUserOp(userOp, entryPoint, chainId)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
@@ -2650,8 +2679,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl,
         signer: async (finalOp) => {
-          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(chainId))
-          return keyringController.signTypedData(resolveSignerAddress(account), typedData)
+          return signUserOp(finalOp, entryPoint, chainId)
         },
       })
 
@@ -2664,8 +2692,7 @@ const handlers: Record<string, RpcHandler> = {
     // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
-      const signature = await keyringController.signTypedData(resolveSignerAddress(account), typedData)
+      const signature = await signUserOp(userOp, entryPoint, chainId)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
@@ -2836,8 +2863,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl: network.bundlerUrl,
         signer: async (finalOp) => {
-          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(chainId))
-          return keyringController.signTypedData(resolveSignerAddress(account), typedData)
+          return signUserOp(finalOp, entryPoint, chainId)
         },
       })
 
@@ -2863,8 +2889,7 @@ const handlers: Record<string, RpcHandler> = {
     // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
-      const signature = await keyringController.signTypedData(resolveSignerAddress(account), typedData)
+      const signature = await signUserOp(userOp, entryPoint, chainId)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
@@ -3059,8 +3084,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl: network.bundlerUrl,
         signer: async (finalOp) => {
-          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(chainId))
-          return keyringController.signTypedData(resolveSignerAddress(account), typedData)
+          return signUserOp(finalOp, entryPoint, chainId)
         },
       })
 
@@ -3086,8 +3110,7 @@ const handlers: Record<string, RpcHandler> = {
     // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
-      const signature = await keyringController.signTypedData(resolveSignerAddress(account), typedData)
+      const signature = await signUserOp(userOp, entryPoint, chainId)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
@@ -3604,8 +3627,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl: network.bundlerUrl,
         signer: async (finalOp) => {
-          const typedData = buildUserOpTypedData(finalOp, entryPoint, BigInt(chainId))
-          return keyringController.signTypedData(resolveSignerAddress(account), typedData)
+          return signUserOp(finalOp, entryPoint, chainId)
         },
       })
 
@@ -3628,8 +3650,7 @@ const handlers: Record<string, RpcHandler> = {
     // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
-      const signature = await keyringController.signTypedData(resolveSignerAddress(account), typedData)
+      const signature = await signUserOp(userOp, entryPoint, chainId)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
