@@ -9,15 +9,18 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./addresses": {
       "types": "./dist/addresses.d.ts",
-      "import": "./dist/addresses.js"
+      "import": "./dist/addresses.js",
+      "default": "./dist/addresses.js"
     },
     "./watcher": {
       "types": "./dist/watcher.d.ts",
-      "import": "./dist/watcher.js"
+      "import": "./dist/watcher.js",
+      "default": "./dist/watcher.js"
     }
   },
   "files": [
