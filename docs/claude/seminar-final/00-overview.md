@@ -17,6 +17,7 @@ Smart Account는 EVM의 컨트랙트 계정(CA)을 트랜잭션의 주체로 격
 ### 구조
 
 ```mermaid
+%%{ init: { 'flowchart': { 'nodeSpacing': 80, 'rankSpacing': 50 } } }%%
 flowchart TB
     User["사용자"]
 
@@ -35,6 +36,7 @@ flowchart TB
         E["Executor<br/>실행 로직"]
         H["Hook<br/>전후 처리"]
         F["Fallback<br/>확장 콜백"]
+        V ~~~ E ~~~ H ~~~ F
     end
 ```
 
