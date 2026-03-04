@@ -194,9 +194,9 @@ describe('FormatValidator', () => {
     it('should reject total gas exceeding maximum', () => {
       const invalidOp: UserOperation = {
         ...validUserOp,
-        preVerificationGas: 400000n,
-        verificationGasLimit: 400000n,
-        callGasLimit: 29_500_000n, // Total > 30M but each field individually within limits
+        preVerificationGas: 5_000_000n,
+        verificationGasLimit: 500_000n,
+        callGasLimit: 100_000_000n, // Total > 105M
       }
       expect(() => validator.validate(invalidOp)).toThrow(RpcError)
       expect(() => validator.validate(invalidOp)).toThrow(/total gas/)

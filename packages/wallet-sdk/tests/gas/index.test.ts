@@ -24,10 +24,10 @@ describe('gas module', () => {
   })
 
   it('should export gas constants with correct values', () => {
-    expect(DEFAULT_CALL_GAS_LIMIT).toBe(100_000n)
+    expect(DEFAULT_CALL_GAS_LIMIT).toBe(200_000n)
     expect(DEFAULT_VERIFICATION_GAS_LIMIT).toBe(150_000n)
     expect(DEFAULT_PRE_VERIFICATION_GAS).toBe(50_000n)
-    expect(PAYMASTER_VERIFICATION_GAS).toBe(30_000n)
+    expect(PAYMASTER_VERIFICATION_GAS).toBe(75_000n)
     expect(PAYMASTER_POST_OP_GAS).toBe(50_000n)
   })
 })

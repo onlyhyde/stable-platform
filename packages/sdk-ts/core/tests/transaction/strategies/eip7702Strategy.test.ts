@@ -165,7 +165,7 @@ describe('createEIP7702Strategy', () => {
 
     it('should include gas estimate', async () => {
       const prepared = await createStrategy().prepare(createRequest(), createAccount())
-      expect(prepared.gasEstimate.gasLimit).toBe(58_500n)
+      expect(prepared.gasEstimate.gasLimit).toBe(64_350n)
       expect(prepared.gasEstimate.maxFeePerGas).toBeGreaterThan(0n)
       expect(prepared.gasEstimate.estimatedCost).toBeGreaterThan(0n)
     })

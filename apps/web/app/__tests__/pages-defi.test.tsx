@@ -8,10 +8,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/components/common', () => {
   const React = require('react')
   const c = () => {
-    return ({ children }: unknown) => React.createElement('div', null, children)
+    return ({ children }: Record<string, unknown>) => React.createElement('div', null, children)
   }
   return {
-    Button: ({ children, onClick, disabled }: unknown) =>
+    Button: ({ children, onClick, disabled }: Record<string, unknown>) =>
       React.createElement('button', { onClick, disabled, type: 'button' }, children),
     Card: c(),
     CardContent: c(),
@@ -19,14 +19,14 @@ vi.mock('@/components/common', () => {
     CardFooter: c(),
     CardHeader: c(),
     CardTitle: c(),
-    ConnectWalletCard: ({ message }: unknown) => React.createElement('div', null, message),
+    ConnectWalletCard: ({ message }: Record<string, unknown>) => React.createElement('div', null, message),
     InfoBanner: c(),
     Input: c(),
     Modal: c(),
     ModalActions: c(),
     NetworkSelector: c(),
     NetworkWarningBanner: c(),
-    PageHeader: ({ title, description }: unknown) =>
+    PageHeader: ({ title, description }: Record<string, unknown>) =>
       React.createElement(
         'div',
         null,
@@ -71,7 +71,7 @@ vi.mock('@/lib/utils', () => ({
   formatDate: () => '2024-01-01',
   cn: (...classes: unknown[]) => classes.filter(Boolean).join(' '),
   copyToClipboard: async () => true,
-  delay: (ms: number) => new Promise((r: unknown) => setTimeout(r, ms)),
+  delay: (ms: number) => new Promise((r: (v?: unknown) => void) => setTimeout(r, ms)),
   getBlockExplorerUrl: () => 'https://explorer.example.com',
   sanitizeErrorMessage: () => 'An error occurred',
   getRpcSettings: () => null,

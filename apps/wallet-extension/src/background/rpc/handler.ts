@@ -1885,8 +1885,8 @@ const handlers: Record<string, RpcHandler> = {
       } catch {
         // Delegated accounts (EIP-7702 → Kernel) need more gas than plain EOA transfers
         // because Kernel's receive()/fallback() runs validation logic
-        const accountInfo = walletState.getAccounts().find(
-          (a) => a.address.toLowerCase() === txParams.from.toLowerCase()
+        const accountInfo = walletState.getState().accounts.accounts.find(
+          (a: { address: string }) => a.address.toLowerCase() === txParams.from!.toLowerCase()
         )
         gas = accountInfo?.type === 'delegated'
           ? DEFAULT_CALL_GAS_LIMIT  // 200K — covers Kernel dispatch + validation

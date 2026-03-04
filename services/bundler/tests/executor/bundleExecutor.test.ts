@@ -63,6 +63,7 @@ describe('BundleExecutor', () => {
     // Setup mocks
     mockPublicClient = {
       estimateGas: vi.fn().mockResolvedValue(500000n),
+      call: vi.fn().mockRejectedValue(new Error('call reverted')),
       waitForTransactionReceipt: vi.fn().mockResolvedValue({
         status: 'success',
         blockNumber: 12345n,
@@ -342,7 +343,7 @@ describe('BundleExecutor', () => {
       // Operation should be marked as failed
       const entry = mempool.get(hash)
       expect(entry?.status).toBe('failed')
-      expect(entry?.error).toBe('Transaction failed')
+      expect(entry?.error).toBe('eth_call also reverted: call reverted')
     })
   })
 

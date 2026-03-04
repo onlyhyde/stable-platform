@@ -123,18 +123,22 @@ describe('Home', () => {
     expect(mockSetPage).toHaveBeenCalledWith('settings')
   })
 
-  it('should display balance in ETH', () => {
+  it('should display balance in ETH', async () => {
     setupDefaults()
 
     render(<Home />)
-    expect(screen.getByText('2.0000 ETH')).toBeTruthy()
+    await waitFor(() => {
+      expect(screen.getByText('2.0000 ETH')).toBeTruthy()
+    })
   })
 
-  it('should display USD value when price available', () => {
+  it('should display USD value when price available', async () => {
     setupDefaults()
 
     render(<Home />)
-    expect(screen.getByText('$4000.00 USD')).toBeTruthy()
+    await waitFor(() => {
+      expect(screen.getByText('$4000.00 USD')).toBeTruthy()
+    })
   })
 
   it('should show "Total Balance" label', () => {
