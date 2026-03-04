@@ -316,7 +316,7 @@ export function MerchantDashboard() {
   // ---------- API Key Handlers ----------
 
   const handleCreateApiKey = async (name: string, permissions: string[]) => {
-    const fullKey = `sk_live_${crypto.randomUUID().replace(/-/g, '')}`
+    const fullKey = `sk_test_${crypto.randomUUID().replace(/-/g, '')}`
     const newKey: ApiKey = {
       id: crypto.randomUUID(),
       name,

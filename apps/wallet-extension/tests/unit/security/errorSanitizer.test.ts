@@ -134,7 +134,7 @@ describe('errorSanitizer', () => {
       })
 
       it('should redact potential API keys', () => {
-        const error = 'Invalid key: sk_live_1234567890abcdefghijklmnop'
+        const error = 'Invalid key: sk_test_1234567890abcdefghijklmnop'
         const result = sanitizeErrorMessage(error, { allowSafeMessages: false })
         expect(result).not.toContain('1234567890abcdefghijklmnop')
       })
