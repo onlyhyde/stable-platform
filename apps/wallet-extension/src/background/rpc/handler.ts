@@ -4588,18 +4588,21 @@ export async function handleRpcRequest(
   const { id, method, params } = request
 
   try {
-    // Check rate limit (SEC-4)
-    const rateLimitResult = rateLimiter.checkLimit(origin, method)
-    if (!rateLimitResult.allowed) {
-      throw createRpcError({
-        code: RPC_ERRORS.LIMIT_EXCEEDED.code,
-        message: `Rate limit exceeded. Try again in ${rateLimitResult.retryAfter} seconds`,
-        data: {
-          remaining: rateLimitResult.remaining,
-          resetAt: rateLimitResult.resetAt,
-          retryAfter: rateLimitResult.retryAfter,
-        },
-      })
+    // Check rate limit (SEC-4) — only for external dApp requests
+    // Internal extension UI is trusted and should not be rate-limited
+    if (!isExtension) {
+      const rateLimitResult = rateLimiter.checkLimit(origin, method)
+      if (!rateLimitResult.allowed) {
+        throw createRpcError({
+          code: RPC_ERRORS.LIMIT_EXCEEDED.code,
+          message: `Rate limit exceeded. Try again in ${rateLimitResult.retryAfter} seconds`,
+          data: {
+            remaining: rateLimitResult.remaining,
+            resetAt: rateLimitResult.resetAt,
+            retryAfter: rateLimitResult.retryAfter,
+          },
+        })
+      }
     }
 
     // Validate RPC request structure

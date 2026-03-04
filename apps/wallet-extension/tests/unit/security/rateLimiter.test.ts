@@ -368,6 +368,36 @@ describe('RateLimiter', () => {
       expect(METHOD_CATEGORIES.eth_chainId).toBe('read')
       expect(METHOD_CATEGORIES.eth_getBalance).toBe('read')
     })
+
+    it('should categorize StableNet custom methods correctly', () => {
+      // StableNet read operations
+      expect(METHOD_CATEGORIES.stablenet_getSmartAccountInfo).toBe('read')
+      expect(METHOD_CATEGORIES.stablenet_getRegistryModules).toBe('read')
+      expect(METHOD_CATEGORIES.stablenet_getInstalledModules).toBe('read')
+      expect(METHOD_CATEGORIES.stablenet_estimateGas).toBe('read')
+      expect(METHOD_CATEGORIES.stablenet_getSpendingLimitStatus).toBe('read')
+      expect(METHOD_CATEGORIES.stablenet_getEntryPointBalance).toBe('read')
+
+      // StableNet sensitive operations
+      expect(METHOD_CATEGORIES.stablenet_installModule).toBe('sensitive')
+      expect(METHOD_CATEGORIES.stablenet_uninstallModule).toBe('sensitive')
+      expect(METHOD_CATEGORIES.stablenet_forceUninstallModule).toBe('sensitive')
+      expect(METHOD_CATEGORIES.stablenet_replaceModule).toBe('sensitive')
+      expect(METHOD_CATEGORIES.stablenet_executeSwap).toBe('sensitive')
+      expect(METHOD_CATEGORIES.stablenet_depositToEntryPoint).toBe('sensitive')
+
+      // Wallet custom operations
+      expect(METHOD_CATEGORIES.wallet_delegateAccount).toBe('sensitive')
+      expect(METHOD_CATEGORIES.wallet_signAuthorization).toBe('signing')
+      expect(METHOD_CATEGORIES.wallet_getNetworks).toBe('read')
+      expect(METHOD_CATEGORIES.wallet_getAssets).toBe('read')
+
+      // Paymaster operations
+      expect(METHOD_CATEGORIES.pm_supportedTokens).toBe('read')
+      expect(METHOD_CATEGORIES.pm_sponsorPolicy).toBe('read')
+      expect(METHOD_CATEGORIES.pm_accountStatus).toBe('read')
+      expect(METHOD_CATEGORIES.pm_registerAccount).toBe('connection')
+    })
   })
 
   describe('sliding window behavior', () => {

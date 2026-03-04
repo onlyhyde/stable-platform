@@ -5,6 +5,19 @@ import { SYNC_TIMEOUT_MS, sendMessageWithTimeout } from '../../shared/utils/mess
 import type { Account, Network, PendingTransaction, WalletState } from '../../types'
 
 /**
+ * Shallow-compare two Network arrays by chainId to avoid unnecessary
+ * re-renders when the actual content hasn't changed.
+ */
+function networksEqual(a: Network[], b: Network[]): boolean {
+  if (a === b) return true
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    if (a[i]?.chainId !== b[i]?.chainId) return false
+  }
+  return true
+}
+
+/**
  * Convert a serialized transaction (BigInt fields as strings) back to
  * a proper PendingTransaction with bigint values.
  *
@@ -227,7 +240,7 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
         // Defensive checks for nested properties
         const accounts = state.accounts?.accounts ?? []
         const selectedAccount = state.accounts?.selectedAccount ?? null
-        const networks = state.networks?.networks ?? DEFAULT_NETWORKS
+        const newNetworks = state.networks?.networks ?? DEFAULT_NETWORKS
         const selectedChainId =
           state.networks?.selectedChainId ?? DEFAULT_NETWORKS[0]?.chainId ?? 31337
         const pendingTransactions = (state.transactions?.pendingTransactions ?? []).map(
@@ -236,6 +249,13 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
         const history = (state.transactions?.history ?? []).map(
           (tx: unknown) => deserializeTransaction(tx as Record<string, unknown>)
         )
+
+        // Preserve existing networks reference if content is unchanged
+        // to prevent useSelectedNetwork → useCallback → useEffect cascade
+        const currentState = get()
+        const networks = networksEqual(currentState.networks, newNetworks)
+          ? currentState.networks
+          : newNetworks
 
         set({
           accounts,
