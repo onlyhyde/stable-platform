@@ -14,7 +14,7 @@ actix = "0.13"
 
 # Async runtime
 tokio = { version = "1", features = ["full"] }
-tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
+tokio-tungstenite = { version = "0.28", features = ["native-tls"] }
 futures-util = "0.3"
 
 # Database
