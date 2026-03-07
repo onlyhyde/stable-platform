@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
@@ -143,7 +144,7 @@ function buildStandaloneScripts() {
 }
 
 export default defineConfig({
-  plugins: [react(), copyManifestPlugin(), buildStandaloneScripts()],
+  plugins: [tailwindcss(), react(), copyManifestPlugin(), buildStandaloneScripts()],
   build: {
     rollupOptions: {
       input: {
