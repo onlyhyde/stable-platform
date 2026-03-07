@@ -14,6 +14,9 @@ import type { SerializedKeyring, VaultData, VaultSessionData } from '../../../sr
 import { mockChrome } from '../../utils/mockChrome'
 import { TEST_PASSWORD } from '../../utils/testUtils'
 
+// PBKDF2 with 100K iterations is slow on CI runners
+jest.setTimeout(30_000)
+
 /**
  * Helper to get vault salt from local storage for test decryption
  */
