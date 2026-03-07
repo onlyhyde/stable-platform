@@ -34,7 +34,8 @@ export interface ExtensionFixtures {
  */
 export const test = base.extend<ExtensionFixtures>({
   // Create a browser context with the extension loaded
-  extensionContext: async (_options, use) => {
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright fixture requires destructuring pattern
+  extensionContext: async ({}, use) => {
     const context = await chromium.launchPersistentContext('', {
       headless: false, // Extensions require headed mode
       args: [
