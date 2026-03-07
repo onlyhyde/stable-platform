@@ -929,7 +929,11 @@ describe('UserOperationValidator', () => {
         mockPublicClient,
         { entryPoint: TEST_ENTRY_POINT, skipOpcodeValidation: true },
         mockLogger,
-        { validateUserOpSignature: vi.fn(), aggregateSignatures: vi.fn(), validateSignatures: vi.fn() } as unknown as IAggregatorValidator
+        {
+          validateUserOpSignature: vi.fn(),
+          aggregateSignatures: vi.fn(),
+          validateSignatures: vi.fn(),
+        } as unknown as IAggregatorValidator
       )
 
       expect(validator.getAggregatorValidator()).toBeDefined()

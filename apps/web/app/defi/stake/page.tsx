@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
+import { useState } from 'react'
 import type { Address } from 'viem'
-import { formatEther, formatUnits, parseEther, parseUnits } from 'viem'
+import { formatEther, formatUnits, parseUnits } from 'viem'
 import {
   Button,
   Card,
@@ -82,7 +82,11 @@ export default function StakingPage() {
   const handleCompound = async (pool: Address) => {
     const result = await compoundRewards(pool)
     if (result) {
-      addToast({ type: 'success', title: 'Compound Submitted', message: 'Rewards compounding initiated' })
+      addToast({
+        type: 'success',
+        title: 'Compound Submitted',
+        message: 'Rewards compounding initiated',
+      })
     }
   }
 
@@ -109,8 +113,12 @@ export default function StakingPage() {
             >
               DeFi
             </Link>
-            <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>/</span>
-            <span className="text-sm" style={{ color: 'rgb(var(--foreground))' }}>Staking</span>
+            <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              /
+            </span>
+            <span className="text-sm" style={{ color: 'rgb(var(--foreground))' }}>
+              Staking
+            </span>
           </div>
           <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
             Staking
@@ -144,7 +152,11 @@ export default function StakingPage() {
           <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
             You need to install the Staking Executor module on your Smart Account to use staking
             features.{' '}
-            <Link href="/marketplace" className="underline" style={{ color: 'rgb(var(--primary))' }}>
+            <Link
+              href="/marketplace"
+              className="underline"
+              style={{ color: 'rgb(var(--primary))' }}
+            >
               Go to Marketplace
             </Link>
           </p>
@@ -160,7 +172,9 @@ export default function StakingPage() {
             borderColor: 'rgb(var(--destructive) / 0.3)',
           }}
         >
-          <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error}</p>
+          <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
+            {error}
+          </p>
         </div>
       )}
 
@@ -252,7 +266,8 @@ export default function StakingPage() {
               return (
                 <>
                   <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                    Currently staked: {formatUnits(position.stakedAmount, position.stakingToken.decimals)}{' '}
+                    Currently staked:{' '}
+                    {formatUnits(position.stakedAmount, position.stakingToken.decimals)}{' '}
                     {position.stakingToken.symbol}
                   </p>
                   <Input
@@ -312,9 +327,7 @@ export default function StakingPage() {
                   pool={pool}
                   isSelected={selectedPool?.address === pool.address}
                   onSelect={() =>
-                    setSelectedPool(
-                      selectedPool?.address === pool.address ? null : pool
-                    )
+                    setSelectedPool(selectedPool?.address === pool.address ? null : pool)
                   }
                 />
               ))}
@@ -342,13 +355,17 @@ export default function StakingPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>APR</p>
+                <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  APR
+                </p>
                 <p className="font-semibold" style={{ color: 'rgb(var(--primary))' }}>
                   {selectedPool.apr}%
                 </p>
               </div>
               <div>
-                <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>TVL</p>
+                <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  TVL
+                </p>
                 <p className="font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
                   {formatUnits(selectedPool.tvl, selectedPool.stakingToken.decimals)}{' '}
                   {selectedPool.stakingToken.symbol}
@@ -364,7 +381,10 @@ export default function StakingPage() {
               onChange={(e) => setStakeAmount(e.target.value)}
             />
 
-            <div className="flex items-center justify-between text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            <div
+              className="flex items-center justify-between text-xs"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
               <span>
                 Min: {formatUnits(selectedPool.minStake, selectedPool.stakingToken.decimals)}{' '}
                 {selectedPool.stakingToken.symbol}
@@ -378,11 +398,7 @@ export default function StakingPage() {
             <Button
               onClick={handleStake}
               isLoading={isExecuting}
-              disabled={
-                !stakeAmount ||
-                Number(stakeAmount) <= 0 ||
-                !executorInstalled
-              }
+              disabled={!stakeAmount || Number(stakeAmount) <= 0 || !executorInstalled}
               className="w-full"
             >
               {executorInstalled ? 'Stake' : 'Install Staking Module First'}
@@ -429,7 +445,9 @@ function PositionCard({
             {formatUnits(position.stakedAmount, position.stakingToken.decimals)}{' '}
             {position.stakingToken.symbol}
           </p>
-          <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>Staked</p>
+          <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            Staked
+          </p>
         </div>
       </div>
 

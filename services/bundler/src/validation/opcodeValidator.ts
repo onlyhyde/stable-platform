@@ -1,5 +1,5 @@
 import type { Address, Hex } from 'viem'
-import { keccak256, encodeAbiParameters, parseAbiParameters } from 'viem'
+import { encodeAbiParameters, keccak256, parseAbiParameters } from 'viem'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 
@@ -336,9 +336,9 @@ export class OpcodeValidator {
         // i.e., slots of the form keccak256(sender || i) in external contracts.
         // Per ERC-7562 §2.2: entity may access associated storage of the sender.
         if (slots && slots.length > 0) {
-          return slots.every((slot) =>
-            this.isAssociatedSlot(slot, sender) ||
-            this.isAssociatedSlot(slot, paymaster ?? from)
+          return slots.every(
+            (slot) =>
+              this.isAssociatedSlot(slot, sender) || this.isAssociatedSlot(slot, paymaster ?? from)
           )
         }
         return false
@@ -361,10 +361,7 @@ export class OpcodeValidator {
     // Scan the first few mapping base slots (covers most ERC-20 and common contracts)
     for (let i = 0; i < MAX_ASSOCIATED_SLOT_SCAN; i++) {
       const computed = keccak256(
-        encodeAbiParameters(
-          parseAbiParameters('address, uint256'),
-          [normalizedAddr, BigInt(i)]
-        )
+        encodeAbiParameters(parseAbiParameters('address, uint256'), [normalizedAddr, BigInt(i)])
       )
       if (computed.toLowerCase() === normalizedSlot) {
         return true

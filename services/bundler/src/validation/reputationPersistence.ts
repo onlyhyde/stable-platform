@@ -3,8 +3,7 @@ import { dirname, resolve } from 'node:path'
 import type { Address } from 'viem'
 import type { ReputationPersistenceConfig } from '../config/constants'
 import type { Logger } from '../utils/logger'
-import type { IReputationManager } from './types'
-import type { ReputationStatus } from './types'
+import type { IReputationManager, ReputationStatus } from './types'
 
 /**
  * Serialized reputation entry for JSON persistence
@@ -75,10 +74,7 @@ export class ReputationPersistence {
       writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8')
       renameSync(tmpPath, filePath)
 
-      this.logger.debug(
-        { entryCount: entries.length, path: filePath },
-        'Saved reputation data'
-      )
+      this.logger.debug({ entryCount: entries.length, path: filePath }, 'Saved reputation data')
     } catch (error) {
       this.logger.error({ error, path: filePath }, 'Failed to save reputation data')
     }

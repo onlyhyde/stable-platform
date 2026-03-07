@@ -1,5 +1,5 @@
-import type { Hex, Address } from 'viem'
-import { encodeAbiParameters, decodeAbiParameters, parseAbiParameters } from 'viem'
+import type { Address, Hex } from 'viem'
+import { decodeAbiParameters, encodeAbiParameters, parseAbiParameters } from 'viem'
 
 // ============ Verifying Payload (Type 0) ============
 
@@ -11,10 +11,12 @@ export interface VerifyingPayloadData {
 }
 
 export function encodeVerifyingPayload(data: VerifyingPayloadData): Hex {
-  return encodeAbiParameters(
-    parseAbiParameters('bytes32, address, uint256, bytes'),
-    [data.policyId, data.sponsor, data.maxCost, data.verifierExtra]
-  )
+  return encodeAbiParameters(parseAbiParameters('bytes32, address, uint256, bytes'), [
+    data.policyId,
+    data.sponsor,
+    data.maxCost,
+    data.verifierExtra,
+  ])
 }
 
 export function decodeVerifyingPayload(payload: Hex): VerifyingPayloadData {
@@ -28,25 +30,26 @@ export function decodeVerifyingPayload(payload: Hex): VerifyingPayloadData {
 // ============ Sponsor Payload (Type 1) ============
 
 export interface SponsorPayloadData {
-  campaignId: Hex           // bytes32
-  perUserLimit: bigint      // uint256
-  targetContract: Address   // address
-  targetSelector: Hex       // bytes4
-  sponsorExtra: Hex         // bytes
+  campaignId: Hex // bytes32
+  perUserLimit: bigint // uint256
+  targetContract: Address // address
+  targetSelector: Hex // bytes4
+  sponsorExtra: Hex // bytes
 }
 
 export function encodeSponsorPayload(data: SponsorPayloadData): Hex {
-  return encodeAbiParameters(
-    parseAbiParameters('bytes32, uint256, address, bytes4, bytes'),
-    [data.campaignId, data.perUserLimit, data.targetContract, data.targetSelector, data.sponsorExtra]
-  )
+  return encodeAbiParameters(parseAbiParameters('bytes32, uint256, address, bytes4, bytes'), [
+    data.campaignId,
+    data.perUserLimit,
+    data.targetContract,
+    data.targetSelector,
+    data.sponsorExtra,
+  ])
 }
 
 export function decodeSponsorPayload(payload: Hex): SponsorPayloadData {
-  const [campaignId, perUserLimit, targetContract, targetSelector, sponsorExtra] = decodeAbiParameters(
-    parseAbiParameters('bytes32, uint256, address, bytes4, bytes'),
-    payload
-  )
+  const [campaignId, perUserLimit, targetContract, targetSelector, sponsorExtra] =
+    decodeAbiParameters(parseAbiParameters('bytes32, uint256, address, bytes4, bytes'), payload)
   return { campaignId, perUserLimit, targetContract, targetSelector, sponsorExtra }
 }
 
@@ -60,10 +63,12 @@ export interface Erc20PayloadData {
 }
 
 export function encodeErc20Payload(data: Erc20PayloadData): Hex {
-  return encodeAbiParameters(
-    parseAbiParameters('address, uint256, uint256, bytes'),
-    [data.token, data.maxTokenCost, data.quoteId, data.erc20Extra]
-  )
+  return encodeAbiParameters(parseAbiParameters('address, uint256, uint256, bytes'), [
+    data.token,
+    data.maxTokenCost,
+    data.quoteId,
+    data.erc20Extra,
+  ])
 }
 
 export function decodeErc20Payload(payload: Hex): Erc20PayloadData {
@@ -86,17 +91,14 @@ export interface Permit2PayloadData {
 }
 
 export function encodePermit2Payload(data: Permit2PayloadData): Hex {
-  return encodeAbiParameters(
-    parseAbiParameters('address, uint160, uint48, uint48, bytes, bytes'),
-    [
-      data.token,
-      data.permitAmount,
-      data.permitExpiration,
-      data.permitNonce,
-      data.permitSig,
-      data.permit2Extra,
-    ]
-  )
+  return encodeAbiParameters(parseAbiParameters('address, uint160, uint48, uint48, bytes, bytes'), [
+    data.token,
+    data.permitAmount,
+    data.permitExpiration,
+    data.permitNonce,
+    data.permitSig,
+    data.permit2Extra,
+  ])
 }
 
 export function decodePermit2Payload(payload: Hex): Permit2PayloadData {

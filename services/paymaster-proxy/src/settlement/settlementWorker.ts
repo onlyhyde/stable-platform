@@ -1,7 +1,7 @@
 import type { Hex } from 'viem'
+import type { SponsorPolicyManager } from '../policy/sponsorPolicy'
 import type { BundlerClient } from './bundlerClient'
 import type { ReservationTracker } from './reservationTracker'
-import type { SponsorPolicyManager } from '../policy/sponsorPolicy'
 
 /** Kernel v0.3.3 error selectors for settlement classification */
 const MODULE_ERROR_SELECTORS = {
@@ -10,7 +10,11 @@ const MODULE_ERROR_SELECTORS = {
   DelegatecallTargetNotWhitelisted: '0x7eb83a8a',
 } as const
 
-type FailureReason = 'module_deinit_failed' | 'reentrancy' | 'delegatecall_not_whitelisted' | 'unknown'
+type FailureReason =
+  | 'module_deinit_failed'
+  | 'reentrancy'
+  | 'delegatecall_not_whitelisted'
+  | 'unknown'
 
 /**
  * Settlement worker statistics
@@ -143,10 +147,7 @@ export class SettlementWorker {
           }
 
           // UserOp failed — cancel the reservation (release budget)
-          this.policyManager.cancelReservation(
-            reservation.sender,
-            reservation.reservationId
-          )
+          this.policyManager.cancelReservation(reservation.sender, reservation.reservationId)
           this.stats.cancelled++
         }
 

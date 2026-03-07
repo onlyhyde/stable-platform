@@ -137,8 +137,8 @@ async function main() {
   const mode = `0x${'00'.repeat(32)}` as Hex
   // Kernel v3 expects abi.encodePacked(target[20], value[32], callData[variable])
   const executionCalldata = concat([
-    smartAccountAddress,             // 20 bytes: target address
-    pad(toHex(0n), { size: 32 }),    // 32 bytes: value
+    smartAccountAddress, // 20 bytes: target address
+    pad(toHex(0n), { size: 32 }), // 32 bytes: value
   ]) as Hex // no callData for no-op
   const callData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,
@@ -169,14 +169,28 @@ async function main() {
 
   // Compute hash for signing using EIP-712 (v0.9 EntryPoint)
   const PACKED_USEROP_TYPEHASH = keccak256(
-    stringToHex('PackedUserOperation(address sender,uint256 nonce,bytes initCode,bytes callData,bytes32 accountGasLimits,uint256 preVerificationGas,bytes32 gasFees,bytes paymasterAndData)')
+    stringToHex(
+      'PackedUserOperation(address sender,uint256 nonce,bytes initCode,bytes callData,bytes32 accountGasLimits,uint256 preVerificationGas,bytes32 gasFees,bytes paymasterAndData)'
+    )
   )
   const EIP712_DOMAIN_TYPEHASH = keccak256(
-    stringToHex('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
+    stringToHex(
+      'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
+    )
   )
   const structHash = keccak256(
     encodeAbiParameters(
-      [{ type: 'bytes32' }, { type: 'address' }, { type: 'uint256' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'uint256' }, { type: 'bytes32' }, { type: 'bytes32' }],
+      [
+        { type: 'bytes32' },
+        { type: 'address' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+      ],
       [
         PACKED_USEROP_TYPEHASH,
         smartAccountAddress,
@@ -192,8 +206,20 @@ async function main() {
   )
   const domainSeparator = keccak256(
     encodeAbiParameters(
-      [{ type: 'bytes32' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'uint256' }, { type: 'address' }],
-      [EIP712_DOMAIN_TYPEHASH, keccak256(stringToHex('ERC4337')), keccak256(stringToHex('1')), 8283n, CONFIG.entryPoint]
+      [
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'address' },
+      ],
+      [
+        EIP712_DOMAIN_TYPEHASH,
+        keccak256(stringToHex('ERC4337')),
+        keccak256(stringToHex('1')),
+        8283n,
+        CONFIG.entryPoint,
+      ]
     )
   )
   const userOpHash = keccak256(concat(['0x1901' as Hex, domainSeparator, structHash]))

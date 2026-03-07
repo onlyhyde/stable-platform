@@ -82,58 +82,61 @@ export function InstallModuleWizard({
   const { installModule, installCustomModule } = useModuleInstall()
 
   // Poll for UserOp receipt and status while confirming
-  const pollReceipt = useCallback(async (hash: Hash) => {
-    try {
-      // Check receipt first (on-chain confirmation)
-      const receiptResponse = await chrome.runtime.sendMessage({
-        type: 'RPC_REQUEST',
-        id: `receipt-poll-${Date.now()}`,
-        payload: {
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'eth_getUserOperationReceipt',
-          params: [hash],
-        },
-      })
-      if (receiptResponse?.payload?.result) {
-        if (pollingRef.current) {
-          clearInterval(pollingRef.current)
-          pollingRef.current = null
+  const pollReceipt = useCallback(
+    async (hash: Hash) => {
+      try {
+        // Check receipt first (on-chain confirmation)
+        const receiptResponse = await chrome.runtime.sendMessage({
+          type: 'RPC_REQUEST',
+          id: `receipt-poll-${Date.now()}`,
+          payload: {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'eth_getUserOperationReceipt',
+            params: [hash],
+          },
+        })
+        if (receiptResponse?.payload?.result) {
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current)
+            pollingRef.current = null
+          }
+          if (receiptResponse.payload.result.success === false) {
+            setError(t('operationReverted', 'Transaction reverted on-chain'))
+            setStep('confirm')
+          } else {
+            setStep('success')
+          }
+          return
         }
-        if (receiptResponse.payload.result.success === false) {
-          setError(t('operationReverted', 'Transaction reverted on-chain'))
-          setStep('confirm')
-        } else {
-          setStep('success')
-        }
-        return
-      }
 
-      // Check bundler status (detect pre-chain failures like bundle revert)
-      const statusResponse = await chrome.runtime.sendMessage({
-        type: 'RPC_REQUEST',
-        id: `status-poll-${Date.now()}`,
-        payload: {
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'debug_bundler_getUserOperationStatus',
-          params: [hash],
-        },
-      })
-      const opStatus = statusResponse?.payload?.result
-      if (opStatus && (opStatus.status === 'failed' || opStatus.status === 'dropped')) {
-        if (pollingRef.current) {
-          clearInterval(pollingRef.current)
-          pollingRef.current = null
+        // Check bundler status (detect pre-chain failures like bundle revert)
+        const statusResponse = await chrome.runtime.sendMessage({
+          type: 'RPC_REQUEST',
+          id: `status-poll-${Date.now()}`,
+          payload: {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'debug_bundler_getUserOperationStatus',
+            params: [hash],
+          },
+        })
+        const opStatus = statusResponse?.payload?.result
+        if (opStatus && (opStatus.status === 'failed' || opStatus.status === 'dropped')) {
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current)
+            pollingRef.current = null
+          }
+          setError(opStatus.error ?? t('operationFailed', 'Operation failed during bundling'))
+          setUserOpHash(null)
+          setStep('confirm')
         }
-        setError(opStatus.error ?? t('operationFailed', 'Operation failed during bundling'))
-        setUserOpHash(null)
-        setStep('confirm')
+      } catch {
+        // Silently continue polling
       }
-    } catch {
-      // Silently continue polling
-    }
-  }, [t])
+    },
+    [t]
+  )
 
   useEffect(() => {
     if (step !== 'confirming' || !userOpHash) return
@@ -609,7 +612,12 @@ export function InstallModuleWizard({
                 stroke="rgb(var(--primary))"
                 aria-hidden="true"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={3}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
             <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>

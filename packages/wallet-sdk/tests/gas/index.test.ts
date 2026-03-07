@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   createGasEstimator,
   createSmartAccountGasStrategy,
-  estimateUserOperationGas,
   DEFAULT_CALL_GAS_LIMIT,
-  DEFAULT_VERIFICATION_GAS_LIMIT,
   DEFAULT_PRE_VERIFICATION_GAS,
-  PAYMASTER_VERIFICATION_GAS,
+  DEFAULT_VERIFICATION_GAS_LIMIT,
+  estimateUserOperationGas,
   PAYMASTER_POST_OP_GAS,
+  PAYMASTER_VERIFICATION_GAS,
 } from '../../src/gas'
 
 describe('gas module', () => {

@@ -7,9 +7,15 @@ const localStorageMock = (() => {
   let store: Record<string, string> = {}
   return {
     getItem: vi.fn((key: string) => store[key] ?? null),
-    setItem: vi.fn((key: string, value: string) => { store[key] = value }),
-    removeItem: vi.fn((key: string) => { delete store[key] }),
-    clear: vi.fn(() => { store = {} }),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key]
+    }),
+    clear: vi.fn(() => {
+      store = {}
+    }),
   }
 })()
 
@@ -22,9 +28,7 @@ describe('useUserOpReceipt', () => {
   })
 
   it('should initialize with default state', () => {
-    const { result } = renderHook(() =>
-      useUserOpReceipt({ bundlerClient: null })
-    )
+    const { result } = renderHook(() => useUserOpReceipt({ bundlerClient: null }))
 
     expect(result.current.receipt).toBeNull()
     expect(result.current.isWaiting).toBe(false)
@@ -36,21 +40,17 @@ describe('useUserOpReceipt', () => {
   })
 
   it('should throw when waiting without bundler client', async () => {
-    const { result } = renderHook(() =>
-      useUserOpReceipt({ bundlerClient: null })
-    )
+    const { result } = renderHook(() => useUserOpReceipt({ bundlerClient: null }))
 
     await act(async () => {
-      await expect(
-        result.current.waitForReceipt('0xhash123')
-      ).rejects.toThrow('Bundler client not configured')
+      await expect(result.current.waitForReceipt('0xhash123')).rejects.toThrow(
+        'Bundler client not configured'
+      )
     })
   })
 
   it('should add and remove pending operations', () => {
-    const { result } = renderHook(() =>
-      useUserOpReceipt({ bundlerClient: null })
-    )
+    const { result } = renderHook(() => useUserOpReceipt({ bundlerClient: null }))
 
     act(() => {
       result.current.addPendingOp('0xhash1', 'Transfer')

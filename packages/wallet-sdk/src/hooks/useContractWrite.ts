@@ -74,7 +74,7 @@ interface UseContractWriteResult {
  * ```
  */
 export function useContractWrite<TAbi extends Abi = Abi, TFunctionName extends string = string>(
-  options: UseContractWriteOptions<TAbi, TFunctionName>,
+  options: UseContractWriteOptions<TAbi, TFunctionName>
 ): UseContractWriteResult {
   const contextProvider = useOptionalProvider()
   const {
@@ -146,7 +146,7 @@ export function useContractWrite<TAbi extends Abi = Abi, TFunctionName extends s
         setIsLoading(false)
       }
     },
-    [provider, address, abi, functionName, value, gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas],
+    [provider, address, abi, functionName, value, gas, gasPrice, maxFeePerGas, maxPriorityFeePerGas]
   )
 
   return {

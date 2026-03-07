@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createModuleRegistry, MODULE_TYPE, type ModuleRegistryEntry } from '@stablenet/core'
+import { useCallback, useEffect, useState } from 'react'
 import { useChainId } from 'wagmi'
 import type { ModuleCardData } from '@/components/marketplace/ModuleCard'
 
@@ -156,10 +156,13 @@ function inferCategory(tags: string[]): string {
   const tagSet = new Set(tags.map((t) => t.toLowerCase()))
   if (tagSet.has('security') || tagSet.has('ecdsa') || tagSet.has('signature')) return 'security'
   if (tagSet.has('defi') || tagSet.has('swap') || tagSet.has('lending')) return 'defi'
-  if (tagSet.has('recovery') || tagSet.has('guardian') || tagSet.has('social')) return 'social-recovery'
-  if (tagSet.has('governance') || tagSet.has('multisig') || tagSet.has('threshold')) return 'governance'
+  if (tagSet.has('recovery') || tagSet.has('guardian') || tagSet.has('social'))
+    return 'social-recovery'
+  if (tagSet.has('governance') || tagSet.has('multisig') || tagSet.has('threshold'))
+    return 'governance'
   if (tagSet.has('privacy') || tagSet.has('stealth') || tagSet.has('anonymous')) return 'privacy'
-  if (tagSet.has('automation') || tagSet.has('subscription') || tagSet.has('recurring')) return 'automation'
+  if (tagSet.has('automation') || tagSet.has('subscription') || tagSet.has('recurring'))
+    return 'automation'
   return 'utility'
 }
 

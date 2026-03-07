@@ -9,13 +9,13 @@ import type { GasEstimate, MultiModeTransactionRequest } from '@stablenet/sdk-ty
 import { GAS_PAYMENT_TYPE, TRANSACTION_MODE } from '@stablenet/sdk-types'
 import {
   BASE_TRANSFER_GAS,
+  calculateUnusedGasPenalty,
   DEFAULT_PRE_VERIFICATION_GAS,
   DEFAULT_VERIFICATION_GAS_LIMIT,
   GAS_BUFFER_DIVISOR,
   GAS_BUFFER_MULTIPLIER,
   PAYMASTER_POST_OP_GAS,
   PAYMASTER_VERIFICATION_GAS,
-  calculateUnusedGasPenalty,
 } from '../../config'
 import { GasEstimationError } from '../../errors'
 import type { GasEstimationStrategy, GasPrices, GasStrategyConfig } from './types'

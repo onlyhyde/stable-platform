@@ -5,6 +5,21 @@
  * This package re-exports everything from @stablenet/contracts for backward compatibility.
  */
 
+export type {
+  ChainAddresses,
+  ChainConfig,
+  ComplianceAddresses,
+  CoreAddresses,
+  DelegatePreset,
+  ExecutorAddresses,
+  HookAddresses,
+  PaymasterAddresses,
+  PrivacyAddresses,
+  ServiceUrls,
+  SubscriptionAddresses,
+  TokenDefinition,
+  ValidatorAddresses,
+} from '@stablenet/contracts'
 export {
   assertNotZeroAddress,
   CHAIN_ADDRESSES,
@@ -46,20 +61,4 @@ export {
   SERVICE_URLS,
   SUPPORTED_CHAIN_IDS,
   ZERO_ADDRESS,
-} from '@stablenet/contracts'
-
-export type {
-  ChainAddresses,
-  ChainConfig,
-  ComplianceAddresses,
-  CoreAddresses,
-  DelegatePreset,
-  ExecutorAddresses,
-  HookAddresses,
-  PaymasterAddresses,
-  PrivacyAddresses,
-  ServiceUrls,
-  SubscriptionAddresses,
-  TokenDefinition,
-  ValidatorAddresses,
 } from '@stablenet/contracts'

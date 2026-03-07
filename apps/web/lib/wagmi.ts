@@ -30,9 +30,7 @@ export const wagmiConfig = createConfig({
   chains: supportedChains,
   // Enable EIP-6963 multi-wallet discovery
   multiInjectedProviderDiscovery: true,
-  connectors: [
-    injected(),
-  ],
+  connectors: [injected()],
   transports: {
     // Anvil (Local) - chainId 31337
     [anvilLocal.id]: createRpcTransport('http://127.0.0.1:8545'),

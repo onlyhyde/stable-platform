@@ -1,6 +1,13 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { concat, encodeAbiParameters, encodeFunctionData, hexToBytes, pad, slice as sliceHex, toHex } from 'viem'
-import { ENTRY_POINT_ABI } from '../abi'
+import {
+  concat,
+  encodeAbiParameters,
+  encodeFunctionData,
+  hexToBytes,
+  pad,
+  slice as sliceHex,
+  toHex,
+} from 'viem'
 import {
   ENTRY_POINT_SIMULATIONS_ABI,
   ENTRY_POINT_SIMULATIONS_BYTECODE,
@@ -89,9 +96,9 @@ type RequiredConfig = typeof DEFAULT_CONFIG
 const MODULE_OP_GAS_PROFILES: Record<string, bigint> = {
   '0x856b02ec': 350000n, // forceUninstallModule — state cleanup + ExcessivelySafeCall (uninstall + 10% buffer)
   '0x166add9c': 600000n, // replaceModule — uninstall + install combined
-  '0xb5c13e39': 25000n,  // setHookGasLimit — single storage write
-  '0x19a6f00a': 25000n,  // setDelegatecallWhitelist — single mapping write
-  '0xdb01ebce': 25000n,  // setEnforceDelegatecallWhitelist — single storage write
+  '0xb5c13e39': 25000n, // setHookGasLimit — single storage write
+  '0x19a6f00a': 25000n, // setDelegatecallWhitelist — single mapping write
+  '0xdb01ebce': 25000n, // setEnforceDelegatecallWhitelist — single storage write
 }
 
 /**

@@ -52,8 +52,7 @@ const MULTICALL3_ABI = [
 ] as const
 
 /** ERC-7579 batch execution mode */
-const EXEC_MODE_BATCH =
-  '0x0100000000000000000000000000000000000000000000000000000000000000' as Hex
+const EXEC_MODE_BATCH = '0x0100000000000000000000000000000000000000000000000000000000000000' as Hex
 
 /** ERC-7579 execute function ABI (bytes32 mode, bytes executionCalldata) */
 const KERNEL_EXECUTE_ABI = [
@@ -164,12 +163,9 @@ export function useBatchTransaction(): UseBatchTransactionReturn {
     })
   }, [])
 
-  const updateRecipient = useCallback(
-    (id: string, field: 'address' | 'amount', value: string) => {
-      setRecipients((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)))
-    },
-    []
-  )
+  const updateRecipient = useCallback((id: string, field: 'address' | 'amount', value: string) => {
+    setRecipients((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)))
+  }, [])
 
   const clearRecipients = useCallback(() => {
     setRecipients([createRecipient(), createRecipient()])

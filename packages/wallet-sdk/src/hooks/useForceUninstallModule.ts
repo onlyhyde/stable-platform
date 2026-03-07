@@ -57,7 +57,7 @@ interface UseForceUninstallModuleResult {
  * ```
  */
 export function useForceUninstallModule(
-  options: UseForceUninstallModuleOptions = {},
+  options: UseForceUninstallModuleOptions = {}
 ): UseForceUninstallModuleResult {
   const contextProvider = useOptionalProvider()
   const provider = options.provider ?? contextProvider
@@ -108,7 +108,7 @@ export function useForceUninstallModule(
         setIsLoading(false)
       }
     },
-    [provider],
+    [provider]
   )
 
   return {

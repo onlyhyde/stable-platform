@@ -177,7 +177,10 @@ export function EntryPointDeposit({ account, network, onBack }: EntryPointDeposi
           <p className="text-sm font-medium" style={{ color: 'rgb(var(--success))' }}>
             {t('entryPointDeposit.success')}
           </p>
-          <p className="text-xs mt-1 font-mono break-all" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          <p
+            className="text-xs mt-1 font-mono break-all"
+            style={{ color: 'rgb(var(--muted-foreground))' }}
+          >
             {t('txLabel', { hash: `${txHash.slice(0, 10)}...${txHash.slice(-8)}` })}
           </p>
         </div>
@@ -203,10 +206,7 @@ export function EntryPointDeposit({ account, network, onBack }: EntryPointDeposi
       )}
 
       {/* Info Note */}
-      <div
-        className="rounded-lg p-3"
-        style={{ backgroundColor: 'rgb(var(--secondary))' }}
-      >
+      <div className="rounded-lg p-3" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
         <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
           {t('entryPointDeposit.info')}
         </p>

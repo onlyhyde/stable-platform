@@ -1,7 +1,7 @@
+import { getKernel } from '@stablenet/contracts'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Address, Hash } from 'viem'
-import { getKernel } from '@stablenet/contracts'
 import { ZERO_ADDRESS } from '../../../shared/utils/eip7702'
 import { sendMessageWithTimeout, TX_TIMEOUT_MS } from '../../../shared/utils/messaging'
 import { useSelectedNetwork, useWalletStore } from '../../hooks'

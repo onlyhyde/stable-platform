@@ -239,8 +239,7 @@ export function TransactionApproval({ approval, onApprove, onReject }: Transacti
                     }}
                   >
                     {transfer.direction === 'out' ? '-' : '+'}
-                    {formatUnits(toBigInt(transfer.amount), transfer.decimals)}{' '}
-                    {transfer.symbol}
+                    {formatUnits(toBigInt(transfer.amount), transfer.decimals)} {transfer.symbol}
                   </span>
                 </div>
               ))}

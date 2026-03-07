@@ -79,15 +79,20 @@ export function useContractRead<TAbi extends Abi = Abi, TFunctionName extends st
   options: UseContractReadOptions<TAbi, TFunctionName>
 ): UseContractReadResult {
   const contextProvider = useOptionalProvider()
-  const { address, abi, functionName, args, enabled = true, provider: explicitProvider, watch = false } = options
+  const {
+    address,
+    abi,
+    functionName,
+    args,
+    enabled = true,
+    provider: explicitProvider,
+    watch = false,
+  } = options
   const provider = explicitProvider ?? contextProvider
 
   const [data, setData] = useState<unknown | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
-
-  // Stable serialization of args for value-based comparison in deps
-  const argsCacheKey = buildCacheKey(address, functionName, args)
 
   // Keep a ref to the latest args so the callback always reads current values
   const argsRef = useRef(args)
@@ -146,7 +151,7 @@ export function useContractRead<TAbi extends Abi = Abi, TFunctionName extends st
       setIsLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider, address, abi, functionName, argsCacheKey, enabled])
+  }, [provider, address, abi, functionName, enabled])
 
   // Fetch on mount and when dependencies change
   useEffect(() => {

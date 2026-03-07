@@ -1,9 +1,9 @@
 import type { Address, Hex } from 'viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SponsorPolicyManager } from '../src/policy/sponsorPolicy'
+import type { BundlerClient, UserOperationReceipt } from '../src/settlement/bundlerClient'
 import { ReservationTracker } from '../src/settlement/reservationTracker'
 import { SettlementWorker } from '../src/settlement/settlementWorker'
-import type { BundlerClient, UserOperationReceipt } from '../src/settlement/bundlerClient'
 import type { SponsorPolicy, UserOperationRpc } from '../src/types'
 import { validateEntryPoint } from '../src/utils/validation'
 

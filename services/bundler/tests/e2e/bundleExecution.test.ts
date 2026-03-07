@@ -336,18 +336,9 @@ describe('Bundle Execution E2E', () => {
       const op3 = createPackedUserOp({ sender: TEST_SENDER_3 as Hex })
 
       // Submit all operations
-      const { result: hash1 } = await rpcCall(testPort, 'eth_sendUserOperation', [
-        op1,
-        ENTRY_POINT,
-      ])
-      const { result: hash2 } = await rpcCall(testPort, 'eth_sendUserOperation', [
-        op2,
-        ENTRY_POINT,
-      ])
-      const { result: hash3 } = await rpcCall(testPort, 'eth_sendUserOperation', [
-        op3,
-        ENTRY_POINT,
-      ])
+      const { result: hash1 } = await rpcCall(testPort, 'eth_sendUserOperation', [op1, ENTRY_POINT])
+      const { result: hash2 } = await rpcCall(testPort, 'eth_sendUserOperation', [op2, ENTRY_POINT])
+      const { result: hash3 } = await rpcCall(testPort, 'eth_sendUserOperation', [op3, ENTRY_POINT])
 
       expect(hash1).toBeDefined()
       expect(hash2).toBeDefined()
@@ -365,14 +356,8 @@ describe('Bundle Execution E2E', () => {
       const op1 = createPackedUserOp({ sender: TEST_SENDER as Hex, nonce: '0x0' })
       const op2 = createPackedUserOp({ sender: TEST_SENDER as Hex, nonce: '0x1' })
 
-      const { result: hash1 } = await rpcCall(testPort, 'eth_sendUserOperation', [
-        op1,
-        ENTRY_POINT,
-      ])
-      const { result: hash2 } = await rpcCall(testPort, 'eth_sendUserOperation', [
-        op2,
-        ENTRY_POINT,
-      ])
+      const { result: hash1 } = await rpcCall(testPort, 'eth_sendUserOperation', [op1, ENTRY_POINT])
+      const { result: hash2 } = await rpcCall(testPort, 'eth_sendUserOperation', [op2, ENTRY_POINT])
 
       expect(hash1).toBeDefined()
       expect(hash2).toBeDefined()
@@ -624,17 +609,11 @@ describe('Bundle Execution E2E', () => {
       })
 
       // Submit first operation
-      const { result: hash1 } = await rpcCall(testPort, 'eth_sendUserOperation', [
-        op1,
-        ENTRY_POINT,
-      ])
+      const { result: hash1 } = await rpcCall(testPort, 'eth_sendUserOperation', [op1, ENTRY_POINT])
       expect(hash1).toBeDefined()
 
       // Submit second operation with same nonce (different hash due to different signature/gas)
-      const { result: hash2 } = await rpcCall(testPort, 'eth_sendUserOperation', [
-        op2,
-        ENTRY_POINT,
-      ])
+      const { result: hash2 } = await rpcCall(testPort, 'eth_sendUserOperation', [op2, ENTRY_POINT])
       expect(hash2).toBeDefined()
 
       // Both are in mempool (different hashes, though same nonce is allowed if < maxOpsPerSender)

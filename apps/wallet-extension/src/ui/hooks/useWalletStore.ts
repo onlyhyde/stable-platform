@@ -246,8 +246,8 @@ export const useWalletStore = create<UIWalletState>((set, get) => ({
         const pendingTransactions = (state.transactions?.pendingTransactions ?? []).map(
           (tx: unknown) => deserializeTransaction(tx as Record<string, unknown>)
         )
-        const history = (state.transactions?.history ?? []).map(
-          (tx: unknown) => deserializeTransaction(tx as Record<string, unknown>)
+        const history = (state.transactions?.history ?? []).map((tx: unknown) =>
+          deserializeTransaction(tx as Record<string, unknown>)
         )
 
         // Preserve existing networks reference if content is unchanged

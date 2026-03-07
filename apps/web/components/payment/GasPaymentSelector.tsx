@@ -18,10 +18,7 @@ interface GasPaymentSelectorProps {
 // Mode configuration
 // ============================================================================
 
-const MODE_CONFIG: Record<
-  GasPaymentMode,
-  { label: string; description: string; icon: string }
-> = {
+const MODE_CONFIG: Record<GasPaymentMode, { label: string; description: string; icon: string }> = {
   'self-pay': {
     label: 'Self-Pay',
     description: 'Pay gas with native coin',
@@ -53,10 +50,7 @@ export function GasPaymentSelector({
 }: GasPaymentSelectorProps) {
   return (
     <div className="space-y-2">
-      <span
-        className="block text-sm font-medium"
-        style={{ color: 'rgb(var(--foreground))' }}
-      >
+      <span className="block text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
         Gas Payment
       </span>
       <div className="grid grid-cols-3 gap-2">
@@ -79,12 +73,8 @@ export function GasPaymentSelector({
                 isSelected ? 'ring-2' : ''
               } ${!isAvailable ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
               style={{
-                backgroundColor: isSelected
-                  ? 'rgb(var(--primary) / 0.1)'
-                  : 'rgb(var(--secondary))',
-                borderColor: isSelected
-                  ? 'rgb(var(--primary))'
-                  : 'rgb(var(--border))',
+                backgroundColor: isSelected ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
+                borderColor: isSelected ? 'rgb(var(--primary))' : 'rgb(var(--border))',
                 ...(isSelected &&
                   ({ '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as React.CSSProperties)),
               }}
@@ -104,25 +94,16 @@ export function GasPaymentSelector({
                   {config.icon}
                 </span>
                 <div>
-                  <p
-                    className="text-xs font-medium"
-                    style={{ color: 'rgb(var(--foreground))' }}
-                  >
+                  <p className="text-xs font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                     {config.label}
                   </p>
                 </div>
               </div>
-              <p
-                className="text-xs mt-1"
-                style={{ color: 'rgb(var(--muted-foreground))' }}
-              >
+              <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {config.description}
               </p>
               {mode === 'self-pay' && depositBalance != null && (
-                <p
-                  className="text-xs mt-1 font-mono"
-                  style={{ color: 'rgb(var(--foreground))' }}
-                >
+                <p className="text-xs mt-1 font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                   Deposit: {depositBalance} ETH
                 </p>
               )}

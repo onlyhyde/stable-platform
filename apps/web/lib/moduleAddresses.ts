@@ -1,5 +1,3 @@
-import type { Address, Hex } from 'viem'
-
 import {
   getContractAddress,
   getEcdsaValidator,
@@ -7,6 +5,7 @@ import {
   getRecurringPaymentExecutor,
   getUniswapRouter,
 } from '@stablenet/contracts'
+import type { Address, Hex } from 'viem'
 import { MODULE_TYPES, type ModuleType } from '@/hooks/useModule'
 
 // ============================================================================

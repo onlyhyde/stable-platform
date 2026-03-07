@@ -90,7 +90,11 @@ export function GasSponsorshipView({ account, network, onBack }: GasSponsorshipV
                   : 'rgb(var(--secondary))',
             }}
           >
-            {registrationStatus === 'registered' ? '✅' : registrationStatus === 'unregistered' ? '⏳' : '❌'}
+            {registrationStatus === 'registered'
+              ? '✅'
+              : registrationStatus === 'unregistered'
+                ? '⏳'
+                : '❌'}
           </div>
           <div className="flex-1">
             <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
@@ -102,10 +106,19 @@ export function GasSponsorshipView({ account, network, onBack }: GasSponsorshipV
             </p>
             <p className="text-xs mt-0.5" style={{ color: 'rgb(var(--muted-foreground))' }}>
               {registrationStatus === 'registered'
-                ? t('gasSponsorship.registeredDesc', 'Your transactions are eligible for gas sponsorship')
+                ? t(
+                    'gasSponsorship.registeredDesc',
+                    'Your transactions are eligible for gas sponsorship'
+                  )
                 : registrationStatus === 'unregistered'
-                  ? t('gasSponsorship.unregisteredDesc', 'Register to enable gas sponsorship for your transactions')
-                  : t('gasSponsorship.unavailableDesc', 'Paymaster is not configured for this network')}
+                  ? t(
+                      'gasSponsorship.unregisteredDesc',
+                      'Register to enable gas sponsorship for your transactions'
+                    )
+                  : t(
+                      'gasSponsorship.unavailableDesc',
+                      'Paymaster is not configured for this network'
+                    )}
             </p>
           </div>
         </div>
@@ -127,10 +140,7 @@ export function GasSponsorshipView({ account, network, onBack }: GasSponsorshipV
             borderColor: 'rgb(var(--border))',
           }}
         >
-          <h3
-            className="text-sm font-medium mb-3"
-            style={{ color: 'rgb(var(--foreground))' }}
-          >
+          <h3 className="text-sm font-medium mb-3" style={{ color: 'rgb(var(--foreground))' }}>
             {t('gasSponsorship.policyTitle', 'Sponsorship Policy')}
           </h3>
 
@@ -159,7 +169,8 @@ export function GasSponsorshipView({ account, network, onBack }: GasSponsorshipV
                   {t('gasSponsorship.dailyLimit', 'Daily Limit')}
                 </span>
                 <span style={{ color: 'rgb(var(--foreground))' }}>
-                  {formatBigIntAmount(BigInt(String(sponsorPolicy.dailyLimit)))} {network?.currency.symbol ?? ''}
+                  {formatBigIntAmount(BigInt(String(sponsorPolicy.dailyLimit)))}{' '}
+                  {network?.currency.symbol ?? ''}
                 </span>
               </div>
               {sponsorPolicy.maxGas != null && (
@@ -168,7 +179,8 @@ export function GasSponsorshipView({ account, network, onBack }: GasSponsorshipV
                     {t('gasSponsorship.maxGasPerTx', 'Max Gas Per Tx')}
                   </span>
                   <span style={{ color: 'rgb(var(--foreground))' }}>
-                    {formatBigIntAmount(BigInt(String(sponsorPolicy.maxGas)))} {network?.currency.symbol ?? ''}
+                    {formatBigIntAmount(BigInt(String(sponsorPolicy.maxGas)))}{' '}
+                    {network?.currency.symbol ?? ''}
                   </span>
                 </div>
               )}
@@ -183,9 +195,7 @@ export function GasSponsorshipView({ account, network, onBack }: GasSponsorshipV
               <span style={{ color: 'rgb(var(--muted-foreground))' }}>
                 {t('gasSponsorship.sponsor', 'Sponsor')}
               </span>
-              <span style={{ color: 'rgb(var(--foreground))' }}>
-                {sponsorPolicy.sponsor.name}
-              </span>
+              <span style={{ color: 'rgb(var(--foreground))' }}>{sponsorPolicy.sponsor.name}</span>
             </div>
           )}
         </div>
@@ -201,23 +211,20 @@ export function GasSponsorshipView({ account, network, onBack }: GasSponsorshipV
             borderColor: 'rgb(var(--border))',
           }}
         >
-          <h3
-            className="text-sm font-medium mb-3"
-            style={{ color: 'rgb(var(--foreground))' }}
-          >
+          <h3 className="text-sm font-medium mb-3" style={{ color: 'rgb(var(--foreground))' }}>
             {t('gasSponsorship.supportedTokens', 'Supported Tokens')}
           </h3>
           <div className="space-y-2">
             {supportedTokens.map((token) => {
               const isNativeToken = token.address === '0x0000000000000000000000000000000000000000'
               return (
-                <div
-                  key={token.address}
-                  className="flex items-center justify-between py-1.5"
-                >
+                <div key={token.address} className="flex items-center justify-between py-1.5">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{isNativeToken ? '💎' : '🪙'}</span>
-                    <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                    <span
+                      className="text-sm font-medium"
+                      style={{ color: 'rgb(var(--foreground))' }}
+                    >
                       {token.symbol}
                     </span>
                   </div>
@@ -361,9 +368,7 @@ function PolicyRow({ label, used, total, symbol }: PolicyRowProps) {
   const totalBn = BigInt(total || '0')
   const usedBn = used ? BigInt(used) : undefined
 
-  const percentage = usedBn != null && totalBn > 0n
-    ? Number((usedBn * 100n) / totalBn)
-    : undefined
+  const percentage = usedBn != null && totalBn > 0n ? Number((usedBn * 100n) / totalBn) : undefined
 
   return (
     <div>

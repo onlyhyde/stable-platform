@@ -231,10 +231,10 @@ export class UserOperationBuilder {
 
     // Validate gas fee relationship
     if (this._maxPriorityFeePerGas! > this._maxFeePerGas!) {
-      throw new UserOperationValidationError(
-        'maxPriorityFeePerGas cannot exceed maxFeePerGas',
-        ['maxPriorityFeePerGas', 'maxFeePerGas']
-      )
+      throw new UserOperationValidationError('maxPriorityFeePerGas cannot exceed maxFeePerGas', [
+        'maxPriorityFeePerGas',
+        'maxFeePerGas',
+      ])
     }
 
     const userOp: UserOperation = {

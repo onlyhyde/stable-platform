@@ -1,13 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Address } from 'viem'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { ReputationPersistenceConfig } from '../../src/config/constants'
+import { createLogger } from '../../src/utils/logger'
 import { ReputationManager } from '../../src/validation/reputationManager'
 import { ReputationPersistence } from '../../src/validation/reputationPersistence'
-import { createLogger } from '../../src/utils/logger'
 
 const mockLogger = createLogger('error', false)
 
@@ -21,7 +20,10 @@ describe('ReputationPersistence', () => {
   let config: ReputationPersistenceConfig
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `bundler-rep-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    testDir = join(
+      tmpdir(),
+      `bundler-rep-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    )
     filePath = join(testDir, 'reputation.json')
     config = {
       enabled: true,
@@ -283,7 +285,15 @@ describe('ReputationPersistence', () => {
         JSON.stringify({
           version: 1,
           persistedAt: Date.now(),
-          entries: [{ address: TEST_ADDR_1, opsSeen: 10, opsIncluded: 8, status: 'ok', lastUpdated: Date.now() }],
+          entries: [
+            {
+              address: TEST_ADDR_1,
+              opsSeen: 10,
+              opsIncluded: 8,
+              status: 'ok',
+              lastUpdated: Date.now(),
+            },
+          ],
         }),
         'utf-8'
       )

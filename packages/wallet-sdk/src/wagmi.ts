@@ -20,6 +20,7 @@
  * ```
  */
 
+import { ChainNotConfiguredError, type Connector, createConnector } from '@wagmi/core'
 import {
   type AddEthereumChainParameter,
   type EIP1193Provider,
@@ -32,9 +33,6 @@ import {
   SwitchChainError,
   UserRejectedRequestError,
 } from 'viem'
-
-import { type Connector, createConnector } from '@wagmi/core'
-import { ChainNotConfiguredError } from '@wagmi/core'
 
 import { getProviderRegistry } from './provider/eip6963'
 
@@ -107,18 +105,17 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
           }
           if (!accountsChanged) {
             accountsChanged = this.onAccountsChanged.bind(this)
-            provider.on(
-              'accountsChanged',
-              accountsChanged as (...args: unknown[]) => void,
-            )
+            provider.on('accountsChanged', accountsChanged as (...args: unknown[]) => void)
           }
         }
       },
 
-      async connect({ chainId, isReconnecting } = {} as {
-        chainId?: number
-        isReconnecting?: boolean
-      }) {
+      async connect(
+        { chainId, isReconnecting } = {} as {
+          chainId?: number
+          isReconnecting?: boolean
+        }
+      ) {
         const provider = await getStableNetProvider()
         if (!provider) throw new Error('StableNet Wallet not found')
 
@@ -137,18 +134,12 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
 
           // Manage EIP-1193 event listeners
           if (connectListener) {
-            provider.removeListener(
-              'connect',
-              connectListener as (...args: unknown[]) => void,
-            )
+            provider.removeListener('connect', connectListener as (...args: unknown[]) => void)
             connectListener = undefined
           }
           if (!accountsChanged) {
             accountsChanged = this.onAccountsChanged.bind(this)
-            provider.on(
-              'accountsChanged',
-              accountsChanged as (...args: unknown[]) => void,
-            )
+            provider.on('accountsChanged', accountsChanged as (...args: unknown[]) => void)
           }
           if (!chainChanged) {
             chainChanged = this.onChainChanged.bind(this)
@@ -156,21 +147,16 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
           }
           if (!disconnectListener) {
             disconnectListener = this.onDisconnect.bind(this)
-            provider.on(
-              'disconnect',
-              disconnectListener as (...args: unknown[]) => void,
-            )
+            provider.on('disconnect', disconnectListener as (...args: unknown[]) => void)
           }
 
           // Switch to chain if provided
           let currentChainId = await this.getChainId()
           if (chainId && currentChainId !== chainId && this.switchChain) {
-            const chain = await this.switchChain({ chainId }).catch(
-              (error: RpcError) => {
-                if (error.code === UserRejectedRequestError.code) throw error
-                return { id: currentChainId }
-              },
-            )
+            const chain = await this.switchChain({ chainId }).catch((error: RpcError) => {
+              if (error.code === UserRejectedRequestError.code) throw error
+              return { id: currentChainId }
+            })
             currentChainId = chain?.id ?? currentChainId
           }
 
@@ -200,17 +186,11 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
 
         // Remove event listeners
         if (chainChanged) {
-          provider.removeListener(
-            'chainChanged',
-            chainChanged as (...args: unknown[]) => void,
-          )
+          provider.removeListener('chainChanged', chainChanged as (...args: unknown[]) => void)
           chainChanged = undefined
         }
         if (disconnectListener) {
-          provider.removeListener(
-            'disconnect',
-            disconnectListener as (...args: unknown[]) => void,
-          )
+          provider.removeListener('disconnect', disconnectListener as (...args: unknown[]) => void)
           disconnectListener = undefined
         }
         if (!connectListener) {
@@ -245,8 +225,7 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
       async isAuthorized() {
         try {
           const isDisconnected =
-            shimDisconnect &&
-            (await config.storage?.getItem('stableNetWallet.disconnected'))
+            shimDisconnect && (await config.storage?.getItem('stableNetWallet.disconnected'))
           if (isDisconnected) return false
 
           const connected = await config.storage?.getItem('stableNetWallet.connected')
@@ -270,9 +249,7 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
         if (!chain) throw new SwitchChainError(new ChainNotConfiguredError())
 
         const promise = new Promise<void>((resolve) => {
-          const listener = (
-            data: Record<string, unknown> & { chainId?: number },
-          ) => {
+          const listener = (data: Record<string, unknown> & { chainId?: number }) => {
             if ('chainId' in data && data.chainId === chainId) {
               config.emitter.off('change', listener)
               resolve()
@@ -303,12 +280,11 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
           // Chain not added - try wallet_addEthereumChain
           if (
             error.code === 4902 ||
-            (error as ProviderRpcError<{ originalError?: { code: number } }>)?.data
-              ?.originalError?.code === 4902
+            (error as ProviderRpcError<{ originalError?: { code: number } }>)?.data?.originalError
+              ?.code === 4902
           ) {
             try {
-              const { default: blockExplorer, ...blockExplorers } =
-                chain.blockExplorers ?? {}
+              const { default: blockExplorer, ...blockExplorers } = chain.blockExplorers ?? {}
               let blockExplorerUrls: string[] | undefined
               if (addEthereumChainParameter?.blockExplorerUrls) {
                 blockExplorerUrls = addEthereumChainParameter.blockExplorerUrls
@@ -331,8 +307,7 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
                 chainId: numberToHex(chainId),
                 chainName: addEthereumChainParameter?.chainName ?? chain.name,
                 iconUrls: addEthereumChainParameter?.iconUrls,
-                nativeCurrency:
-                  addEthereumChainParameter?.nativeCurrency ?? chain.nativeCurrency,
+                nativeCurrency: addEthereumChainParameter?.nativeCurrency ?? chain.nativeCurrency,
                 rpcUrls,
               } satisfies AddEthereumChainParameter
 
@@ -348,7 +323,7 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
                       config.emitter.emit('change', { chainId })
                     } else {
                       throw new UserRejectedRequestError(
-                        new Error('User rejected switch after adding network.'),
+                        new Error('User rejected switch after adding network.')
                       )
                     }
                   }),
@@ -399,18 +374,12 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
         const provider = await getStableNetProvider()
         if (provider) {
           if (connectListener) {
-            provider.removeListener(
-              'connect',
-              connectListener as (...args: unknown[]) => void,
-            )
+            provider.removeListener('connect', connectListener as (...args: unknown[]) => void)
             connectListener = undefined
           }
           if (!accountsChanged) {
             accountsChanged = this.onAccountsChanged.bind(this)
-            provider.on(
-              'accountsChanged',
-              accountsChanged as (...args: unknown[]) => void,
-            )
+            provider.on('accountsChanged', accountsChanged as (...args: unknown[]) => void)
           }
           if (!chainChanged) {
             chainChanged = this.onChainChanged.bind(this)
@@ -418,10 +387,7 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
           }
           if (!disconnectListener) {
             disconnectListener = this.onDisconnect.bind(this)
-            provider.on(
-              'disconnect',
-              disconnectListener as (...args: unknown[]) => void,
-            )
+            provider.on('disconnect', disconnectListener as (...args: unknown[]) => void)
           }
         }
       },
@@ -438,28 +404,22 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
 
         if (provider) {
           if (chainChanged) {
-            provider.removeListener(
-              'chainChanged',
-              chainChanged as (...args: unknown[]) => void,
-            )
+            provider.removeListener('chainChanged', chainChanged as (...args: unknown[]) => void)
             chainChanged = undefined
           }
           if (disconnectListener) {
             provider.removeListener(
               'disconnect',
-              disconnectListener as (...args: unknown[]) => void,
+              disconnectListener as (...args: unknown[]) => void
             )
             disconnectListener = undefined
           }
           if (!connectListener) {
             connectListener = this.onConnect!.bind(this)
-            provider.on(
-              'connect',
-              connectListener as (...args: unknown[]) => void,
-            )
+            provider.on('connect', connectListener as (...args: unknown[]) => void)
           }
         }
       },
-    }),
+    })
   )
 }

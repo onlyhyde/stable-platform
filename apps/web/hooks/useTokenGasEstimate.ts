@@ -58,12 +58,7 @@ export function useTokenGasEstimate(): TokenGasEstimateState {
             jsonrpc: '2.0',
             id: 1,
             method: 'pm_estimateTokenPayment',
-            params: [
-              userOpPartial,
-              entryPoint,
-              `0x${chainId.toString(16)}` as Hex,
-              tokenAddress,
-            ],
+            params: [userOpPartial, entryPoint, `0x${chainId.toString(16)}` as Hex, tokenAddress],
           }),
         })
 
@@ -77,9 +72,7 @@ export function useTokenGasEstimate(): TokenGasEstimateState {
         setEstimate(data)
       } catch (err) {
         setEstimate(null)
-        setError(
-          err instanceof Error ? err : new Error('Failed to estimate token gas cost')
-        )
+        setError(err instanceof Error ? err : new Error('Failed to estimate token gas cost'))
       } finally {
         setIsLoading(false)
       }
@@ -88,9 +81,7 @@ export function useTokenGasEstimate(): TokenGasEstimateState {
   )
 
   const formattedTokenCost =
-    estimate != null
-      ? formatUnits(BigInt(estimate.tokenAmount), estimate.tokenDecimals)
-      : null
+    estimate != null ? formatUnits(BigInt(estimate.tokenAmount), estimate.tokenDecimals) : null
 
   return {
     estimate,

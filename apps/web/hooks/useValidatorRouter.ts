@@ -1,15 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { Address, Hex } from 'viem'
-import { useWalletClient } from 'wagmi'
-import {
-  createValidatorRouter,
-  type ValidatorRouter,
-  type Validator,
-} from '@stablenet/core'
+import { createValidatorRouter, type Validator, type ValidatorRouter } from '@stablenet/core'
 import { createEcdsaValidator } from '@stablenet/plugin-ecdsa'
-import type { LocalAccount } from 'viem'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { Address, Hex, LocalAccount } from 'viem'
+import { useWalletClient } from 'wagmi'
 
 // ============================================================================
 // Types
@@ -144,7 +139,9 @@ export function useValidatorRouter(
       return {
         address: v.address,
         type,
-        label: isRoot ? 'ECDSA (Root)' : `${type.charAt(0).toUpperCase() + type.slice(1)} ${v.address.slice(0, 8)}...`,
+        label: isRoot
+          ? 'ECDSA (Root)'
+          : `${type.charAt(0).toUpperCase() + type.slice(1)} ${v.address.slice(0, 8)}...`,
         isRoot,
       }
     })

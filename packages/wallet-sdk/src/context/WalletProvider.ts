@@ -29,9 +29,9 @@ import { useWallet } from '../hooks/useWallet'
 import type { NetworkConfig } from '../types'
 import { WalletContext } from './WalletContext'
 
+export type { WalletContextValue } from './WalletContext'
 // Re-export context consumer hooks for convenience
 export { useOptionalProvider, useWalletContext } from './WalletContext'
-export type { WalletContextValue } from './WalletContext'
 
 // ---------------------------------------------------------------------------
 // Provider Component

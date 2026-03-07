@@ -716,10 +716,7 @@ export function Settings() {
   ]
 
   return (
-    <div
-      className="p-4"
-      style={{ backgroundColor: 'rgb(var(--background))' }}
-    >
+    <div className="p-4" style={{ backgroundColor: 'rgb(var(--background))' }}>
       <h2 className="text-xl font-bold mb-6" style={{ color: 'rgb(var(--foreground))' }}>
         {t('title')}
       </h2>
@@ -795,7 +792,10 @@ export function Settings() {
               </h4>
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('networkName')} <span style={{ color: 'rgb(var(--destructive))' }}>*</span>
                   </label>
                   <input
@@ -807,7 +807,10 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('chainIdLabel')} <span style={{ color: 'rgb(var(--destructive))' }}>*</span>
                   </label>
                   <input
@@ -819,7 +822,10 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('rpcUrlLabel')} <span style={{ color: 'rgb(var(--destructive))' }}>*</span>
                   </label>
                   <input
@@ -831,7 +837,10 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('bundlerUrlLabel')}
                   </label>
                   <input
@@ -843,7 +852,10 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('currencySymbolLabel')}
                   </label>
                   <input
@@ -857,19 +869,27 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('explorerUrlLabel')}
                   </label>
                   <input
                     type="text"
                     placeholder={t('explorerUrlPlaceholder')}
                     value={networkForm.explorerUrl}
-                    onChange={(e) => setNetworkForm({ ...networkForm, explorerUrl: e.target.value })}
+                    onChange={(e) =>
+                      setNetworkForm({ ...networkForm, explorerUrl: e.target.value })
+                    }
                     className="input-base w-full p-2 rounded-lg text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('indexerUrlLabel')}
                   </label>
                   <input
@@ -919,7 +939,10 @@ export function Settings() {
               </p>
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('networkName')} <span style={{ color: 'rgb(var(--destructive))' }}>*</span>
                   </label>
                   <input
@@ -931,7 +954,10 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('rpcUrlLabel')} <span style={{ color: 'rgb(var(--destructive))' }}>*</span>
                   </label>
                   <input
@@ -943,7 +969,10 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('bundlerUrlLabel')}
                   </label>
                   <input
@@ -955,7 +984,10 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('paymasterUrlLabel')}
                   </label>
                   <input
@@ -967,7 +999,10 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('currencySymbolLabel')}
                   </label>
                   <input
@@ -979,7 +1014,10 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('explorerUrlLabel')}
                   </label>
                   <input
@@ -991,7 +1029,10 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: 'rgb(var(--foreground-secondary))' }}>
+                  <label
+                    className="text-xs font-medium block mb-1"
+                    style={{ color: 'rgb(var(--foreground-secondary))' }}
+                  >
                     {t('indexerUrlLabel')}
                   </label>
                   <input

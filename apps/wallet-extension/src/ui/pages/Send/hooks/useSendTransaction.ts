@@ -1,13 +1,9 @@
+import { ENTRY_POINT_ADDRESS, getEntryPoint, isChainSupported } from '@stablenet/contracts'
 import {
   type MultiModeTransactionRequest,
   TRANSACTION_MODE,
   type TransactionResult,
 } from '@stablenet/core'
-import {
-  ENTRY_POINT_ADDRESS,
-  getEntryPoint,
-  isChainSupported,
-} from '@stablenet/contracts'
 import { useCallback, useState } from 'react'
 import type { Hash } from 'viem'
 import { sendMessageWithTimeout, TX_TIMEOUT_MS } from '../../../../shared/utils/messaging'

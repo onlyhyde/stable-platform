@@ -61,9 +61,7 @@ interface UseReplaceModuleResult {
  * }
  * ```
  */
-export function useReplaceModule(
-  options: UseReplaceModuleOptions = {},
-): UseReplaceModuleResult {
+export function useReplaceModule(options: UseReplaceModuleOptions = {}): UseReplaceModuleResult {
   const contextProvider = useOptionalProvider()
   const provider = options.provider ?? contextProvider
 
@@ -107,15 +105,14 @@ export function useReplaceModule(
         setTxHash(hash)
         return hash
       } catch (err) {
-        const wrappedError =
-          err instanceof Error ? err : new Error('Failed to replace module')
+        const wrappedError = err instanceof Error ? err : new Error('Failed to replace module')
         setError(wrappedError)
         throw wrappedError
       } finally {
         setIsLoading(false)
       }
     },
-    [provider],
+    [provider]
   )
 
   return {

@@ -128,9 +128,7 @@ const PACKED_USEROP_TYPEHASH = keccak256(
 )
 
 const EIP712_DOMAIN_TYPEHASH = keccak256(
-  stringToHex(
-    'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
-  )
+  stringToHex('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
 )
 
 const EIP712_DOMAIN_NAME_HASH = keccak256(stringToHex('ERC4337'))

@@ -27,7 +27,12 @@ export interface AAErrorInfo {
   /** The raw AA error code (e.g., 'AA21') */
   code: AAErrorCode
   /** Error category */
-  category: 'account_validation' | 'account_execution' | 'paymaster_validation' | 'paymaster_execution' | 'stake'
+  category:
+    | 'account_validation'
+    | 'account_execution'
+    | 'paymaster_validation'
+    | 'paymaster_execution'
+    | 'stake'
   /** One-line human-readable summary */
   message: string
   /** Detailed explanation of what went wrong */
@@ -48,7 +53,9 @@ const AA_ERROR_MAP: Record<AAErrorCode, AAErrorInfo> = {
     category: 'account_validation',
     message: 'Account already deployed',
     description: 'The initCode was provided but the sender account already has code deployed.',
-    suggestions: ['Remove factory and factoryData from the UserOperation since the account is already deployed.'],
+    suggestions: [
+      'Remove factory and factoryData from the UserOperation since the account is already deployed.',
+    ],
     severity: 'recoverable',
   },
   [AA_ERROR_CODES.AA13_INIT_CODE_FAILED]: {
@@ -68,7 +75,9 @@ const AA_ERROR_MAP: Record<AAErrorCode, AAErrorInfo> = {
     category: 'account_validation',
     message: 'Invalid initCode length',
     description: 'The initCode is too short (must be at least 20 bytes for factory address).',
-    suggestions: ['Ensure initCode contains factory address (20 bytes) followed by factory call data.'],
+    suggestions: [
+      'Ensure initCode contains factory address (20 bytes) followed by factory call data.',
+    ],
     severity: 'fatal',
   },
   [AA_ERROR_CODES.AA15_INIT_CODE_CREATE_ADDR]: {
@@ -89,7 +98,9 @@ const AA_ERROR_MAP: Record<AAErrorCode, AAErrorInfo> = {
     category: 'account_execution',
     message: 'Account not deployed',
     description: 'The sender account has no code and no initCode was provided.',
-    suggestions: ['Include factory and factoryData to deploy the account with the first UserOperation.'],
+    suggestions: [
+      'Include factory and factoryData to deploy the account with the first UserOperation.',
+    ],
     severity: 'recoverable',
   },
   [AA_ERROR_CODES.AA21_DIDNT_PAY_PREFUND]: {
@@ -120,10 +131,10 @@ const AA_ERROR_MAP: Record<AAErrorCode, AAErrorInfo> = {
     code: 'AA23',
     category: 'account_execution',
     message: 'Account validation reverted',
-    description: 'The account\'s validateUserOp function reverted.',
+    description: "The account's validateUserOp function reverted.",
     suggestions: [
       'Check that the signature is valid for this account.',
-      'Verify the account\'s validation logic accepts this operation.',
+      "Verify the account's validation logic accepts this operation.",
       'Ensure the validator module is correctly installed.',
     ],
     severity: 'recoverable',
@@ -136,7 +147,7 @@ const AA_ERROR_MAP: Record<AAErrorCode, AAErrorInfo> = {
     suggestions: [
       'Re-sign the UserOperation with the correct private key.',
       'Verify the userOpHash computation matches the EntryPoint version.',
-      'Check that the signature format matches the validator\'s expectations.',
+      "Check that the signature format matches the validator's expectations.",
     ],
     severity: 'recoverable',
   },
@@ -202,7 +213,7 @@ const AA_ERROR_MAP: Record<AAErrorCode, AAErrorInfo> = {
     code: 'AA33',
     category: 'paymaster_validation',
     message: 'Paymaster validation reverted',
-    description: 'The paymaster\'s validatePaymasterUserOp function reverted.',
+    description: "The paymaster's validatePaymasterUserOp function reverted.",
     suggestions: [
       'The paymaster may have rejected this operation (policy violation).',
       'Verify the paymasterData is correctly formatted.',
@@ -217,7 +228,7 @@ const AA_ERROR_MAP: Record<AAErrorCode, AAErrorInfo> = {
     description: 'The paymaster returned SIG_VALIDATION_FAILED.',
     suggestions: [
       'Request new paymaster data with a fresh signature.',
-      'Ensure the UserOperation fields haven\'t changed after paymaster signing.',
+      "Ensure the UserOperation fields haven't changed after paymaster signing.",
     ],
     severity: 'recoverable',
   },
@@ -225,7 +236,8 @@ const AA_ERROR_MAP: Record<AAErrorCode, AAErrorInfo> = {
     code: 'AA36',
     category: 'paymaster_validation',
     message: 'Paymaster verification gas exceeded',
-    description: 'The paymaster used more gas during validatePaymasterUserOp than the paymasterVerificationGasLimit.',
+    description:
+      'The paymaster used more gas during validatePaymasterUserOp than the paymasterVerificationGasLimit.',
     suggestions: [
       'Increase paymasterVerificationGasLimit in the UserOperation.',
       'The paymaster may need optimization for complex validation logic.',
@@ -249,7 +261,7 @@ const AA_ERROR_MAP: Record<AAErrorCode, AAErrorInfo> = {
     code: 'AA41',
     category: 'paymaster_execution',
     message: 'Insufficient gas for postOp',
-    description: 'Not enough gas remained for the paymaster\'s postOp callback.',
+    description: "Not enough gas remained for the paymaster's postOp callback.",
     suggestions: [
       'Increase paymasterPostOpGasLimit.',
       'Reduce callGasLimit if the main execution is over-estimated.',

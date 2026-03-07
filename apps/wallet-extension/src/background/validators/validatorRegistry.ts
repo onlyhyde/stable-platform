@@ -5,8 +5,8 @@
  * Persisted to chrome.storage.local for cross-session durability.
  */
 
-import type { Address } from 'viem'
 import { getEcdsaValidator } from '@stablenet/contracts'
+import type { Address } from 'viem'
 
 // ============================================================================
 // Types
@@ -24,10 +24,7 @@ export interface ActiveValidatorConfig {
 }
 
 /** Type-specific config variants */
-export type ValidatorTypeConfig =
-  | EcdsaConfig
-  | WebAuthnConfig
-  | MultiSigConfig
+export type ValidatorTypeConfig = EcdsaConfig | WebAuthnConfig | MultiSigConfig
 
 export interface EcdsaConfig {
   type: 'ecdsa'
@@ -65,7 +62,11 @@ export interface ValidatorRegistry {
   /** Get the active validator config for an account */
   getActiveValidator(chainId: number, account: Address): ActiveValidatorConfig
   /** Set the active validator for an account */
-  setActiveValidator(chainId: number, account: Address, config: ActiveValidatorConfig): Promise<void>
+  setActiveValidator(
+    chainId: number,
+    account: Address,
+    config: ActiveValidatorConfig
+  ): Promise<void>
   /** Get the validator type for an account */
   getActiveType(chainId: number, account: Address): ValidatorType
   /** Reset to ECDSA default */

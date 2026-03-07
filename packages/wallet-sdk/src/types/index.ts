@@ -7,9 +7,9 @@
 // Re-export viem types for convenience
 export type {
   Address,
+  EIP1193Provider,
   Hash,
   Hex,
-  EIP1193Provider,
   ProviderConnectInfo,
   ProviderRpcError,
 } from 'viem'

@@ -143,9 +143,7 @@ export const KERNEL_ABI = [
   {
     type: 'function',
     name: 'setEnforceDelegatecallWhitelist',
-    inputs: [
-      { name: 'enforce', type: 'bool' },
-    ],
+    inputs: [{ name: 'enforce', type: 'bool' }],
     outputs: [],
     stateMutability: 'payable',
   },
@@ -382,9 +380,7 @@ export const KERNEL_ABI = [
   {
     type: 'event',
     name: 'DelegatecallWhitelistEnforced',
-    inputs: [
-      { name: 'enforce', type: 'bool', indexed: false },
-    ],
+    inputs: [{ name: 'enforce', type: 'bool', indexed: false }],
   },
 
   // ============================================================================

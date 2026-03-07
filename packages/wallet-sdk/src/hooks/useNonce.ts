@@ -5,9 +5,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import type { Address, PublicClient } from 'viem'
 import { getNonce, parseNonce } from '../nonce'
-import type { Address } from 'viem'
-import type { PublicClient } from 'viem'
 
 export interface UseNonceConfig {
   publicClient: PublicClient | null
@@ -38,7 +37,13 @@ export interface UseNonceResult {
  * ```
  */
 export function useNonce(config: UseNonceConfig): UseNonceResult {
-  const { publicClient, sender, nonceKey = 0n, autoRefresh = false, refreshInterval = 10000 } = config
+  const {
+    publicClient,
+    sender,
+    nonceKey = 0n,
+    autoRefresh = false,
+    refreshInterval = 10000,
+  } = config
   const [nonce, setNonce] = useState<bigint | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)

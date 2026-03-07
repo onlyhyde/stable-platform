@@ -8,8 +8,7 @@
  * ValidationResult revert, failure by FailedOp revert.
  */
 
-import { ENTRY_POINT_ADDRESS } from '@stablenet/core'
-import { packUserOperation } from '@stablenet/core'
+import { ENTRY_POINT_ADDRESS, packUserOperation } from '@stablenet/core'
 import type { UserOperation } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData, type PublicClient } from 'viem'
@@ -152,11 +151,21 @@ export async function simulateValidation(
       to: entryPoint,
       data: callData,
     })
-    return { valid: false, returnInfo: emptyReturnInfo(), senderInfo: emptyStakeInfo(), error: 'Expected revert' }
+    return {
+      valid: false,
+      returnInfo: emptyReturnInfo(),
+      senderInfo: emptyStakeInfo(),
+      error: 'Expected revert',
+    }
   } catch (error: unknown) {
     const revertData = extractRevertData(error)
     if (!revertData) {
-      return { valid: false, returnInfo: emptyReturnInfo(), senderInfo: emptyStakeInfo(), error: String(error) }
+      return {
+        valid: false,
+        returnInfo: emptyReturnInfo(),
+        senderInfo: emptyStakeInfo(),
+        error: String(error),
+      }
     }
 
     return parseSimulationRevert(revertData)
@@ -217,10 +226,20 @@ function parseSimulationRevert(data: Hex): SimulationResult {
 
   if (selector === FAILED_OP_SELECTOR) {
     const reason = decodeFailedOp(data)
-    return { valid: false, returnInfo: emptyReturnInfo(), senderInfo: emptyStakeInfo(), error: reason }
+    return {
+      valid: false,
+      returnInfo: emptyReturnInfo(),
+      senderInfo: emptyStakeInfo(),
+      error: reason,
+    }
   }
 
-  return { valid: false, returnInfo: emptyReturnInfo(), senderInfo: emptyStakeInfo(), error: `Unknown revert selector: ${selector}` }
+  return {
+    valid: false,
+    returnInfo: emptyReturnInfo(),
+    senderInfo: emptyStakeInfo(),
+    error: `Unknown revert selector: ${selector}`,
+  }
 }
 
 function parseHandleOpRevert(data: Hex): HandleOpSimulationResult {
@@ -241,7 +260,12 @@ function parseHandleOpRevert(data: Hex): HandleOpSimulationResult {
     return { valid: false, targetSuccess: false, targetResult: '0x', error: reason }
   }
 
-  return { valid: false, targetSuccess: false, targetResult: '0x', error: `Unknown revert selector: ${selector}` }
+  return {
+    valid: false,
+    targetSuccess: false,
+    targetResult: '0x',
+    error: `Unknown revert selector: ${selector}`,
+  }
 }
 
 function decodeValidationResult(data: Hex): Omit<SimulationResult, 'valid'> {

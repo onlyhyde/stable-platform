@@ -6,7 +6,11 @@
  */
 
 import type { Address } from 'viem'
-import type { PrecompiledAddresses, SystemContractAddresses, SystemPrecompileAddresses } from './types'
+import type {
+  PrecompiledAddresses,
+  SystemContractAddresses,
+  SystemPrecompileAddresses,
+} from './types'
 
 // ─── System Contracts (governance, native coin) ─────────────────────────────
 

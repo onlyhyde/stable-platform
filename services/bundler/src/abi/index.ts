@@ -7,7 +7,7 @@ export {
 } from './entryPoint'
 
 export {
+  buildSimulationStateOverride,
   ENTRY_POINT_SIMULATIONS_ABI,
   ENTRY_POINT_SIMULATIONS_BYTECODE,
-  buildSimulationStateOverride,
 } from './entryPointSimulations'

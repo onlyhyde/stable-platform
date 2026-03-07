@@ -5,7 +5,9 @@ import type { PackedUserOperationRpc, UserOperationRpc } from '../types'
 /**
  * Normalize UserOperation to unpacked format for policy checking
  */
-export function normalizeUserOp(userOp: UserOperationRpc | PackedUserOperationRpc): UserOperationRpc {
+export function normalizeUserOp(
+  userOp: UserOperationRpc | PackedUserOperationRpc
+): UserOperationRpc {
   if ('callGasLimit' in userOp) {
     return userOp
   }

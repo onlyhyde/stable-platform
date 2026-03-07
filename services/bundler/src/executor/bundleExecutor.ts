@@ -1,24 +1,19 @@
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
 import { concat, decodeEventLog, encodeFunctionData, pad, toHex } from 'viem'
 import { ENTRY_POINT_ABI, EVENT_SIGNATURES, HANDLE_AGGREGATED_OPS_ABI } from '../abi'
-import {
-  extractErrorData,
-  matchesErrorSelector,
-  decodeFailedOp,
-  decodeFailedOpWithRevert,
-  parseSimulationError,
-  formatRevertReason,
-  isSignatureFailure,
-  parseValidationData,
-} from '../validation/errors'
-import type {
-  DependencyTracker,
-  StorageAccessRecord,
-} from '../mempool/dependencyTracker'
+import type { DependencyTracker, StorageAccessRecord } from '../mempool/dependencyTracker'
 import type { Mempool } from '../mempool/mempool'
 import type { MempoolEntry, UserOperation } from '../types'
 import type { Logger } from '../utils/logger'
 import type { AggregatorValidator, OpcodeValidator, UserOperationValidator } from '../validation'
+import {
+  decodeFailedOp,
+  decodeFailedOpWithRevert,
+  extractErrorData,
+  formatRevertReason,
+  matchesErrorSelector,
+  parseSimulationError,
+} from '../validation/errors'
 import type { TraceCall } from '../validation/opcodeValidator'
 import type { UserOperationEventData, UserOpsPerAggregator } from '../validation/types'
 import { VALIDATION_CONSTANTS } from '../validation/types'
@@ -450,15 +445,10 @@ export class BundleExecutor {
       )
 
       // Mark operations as failed with detailed reason
-      const reasonStr = failureReason.decodedReason ?? (error instanceof Error ? error.message : 'Unknown error')
+      const reasonStr =
+        failureReason.decodedReason ?? (error instanceof Error ? error.message : 'Unknown error')
       for (const entry of entries) {
-        this.mempool.updateStatus(
-          entry.userOpHash,
-          'failed',
-          undefined,
-          undefined,
-          reasonStr
-        )
+        this.mempool.updateStatus(entry.userOpHash, 'failed', undefined, undefined, reasonStr)
       }
 
       throw error
@@ -542,7 +532,9 @@ export class BundleExecutor {
       // Decode SignatureValidationFailed
       else if (matchesErrorSelector(errorData, 'SignatureValidationFailed')) {
         result.decodedReason = 'SignatureValidationFailed: on-chain signature check failed'
-        this.logger.error('handleOps SignatureValidationFailed: ECDSA signature validation failed on-chain')
+        this.logger.error(
+          'handleOps SignatureValidationFailed: ECDSA signature validation failed on-chain'
+        )
       }
 
       // Unknown selector — log raw data for analysis
@@ -560,7 +552,8 @@ export class BundleExecutor {
           data: handleOpsData,
         })
         // If eth_call succeeds, the revert was transient (state changed between attempts)
-        result.decodedReason = 'Transient failure: eth_call succeeded on retry (state may have changed)'
+        result.decodedReason =
+          'Transient failure: eth_call succeeded on retry (state may have changed)'
       } catch (callError) {
         const callErrorData = extractErrorData(callError)
         if (callErrorData) {
@@ -587,7 +580,8 @@ export class BundleExecutor {
     }
 
     // Step 3: Log UserOp details for the failed operation(s)
-    const failedEntry = result.failedOpIndex !== undefined ? entries[result.failedOpIndex] : undefined
+    const failedEntry =
+      result.failedOpIndex !== undefined ? entries[result.failedOpIndex] : undefined
     const opsToLog = failedEntry ? [failedEntry] : entries
 
     result.userOpDetails = opsToLog.map((e) => ({

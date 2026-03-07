@@ -1,9 +1,6 @@
 import type { Validator } from '@stablenet/sdk-types'
 import type { Address } from 'viem'
-import {
-  encodeValidatorNonceKey,
-  VALIDATION_TYPE,
-} from './utils/nonceUtils'
+import { encodeValidatorNonceKey, VALIDATION_TYPE } from './utils/nonceUtils'
 
 // ============================================================================
 // Types

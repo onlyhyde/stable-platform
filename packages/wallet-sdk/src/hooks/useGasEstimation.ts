@@ -2,8 +2,8 @@
  * React hook for UserOperation gas estimation via bundler.
  */
 
-import { useCallback, useState } from 'react'
 import type { BundlerClient, UserOperation, UserOperationGasEstimation } from '@stablenet/sdk-types'
+import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
 
 export interface UseGasEstimationConfig {
@@ -12,7 +12,9 @@ export interface UseGasEstimationConfig {
 
 export interface UseGasEstimationResult {
   gasEstimate: UserOperationGasEstimation | null
-  estimate: (userOp: Partial<UserOperation> & { sender: Address; callData: Hex }) => Promise<UserOperationGasEstimation>
+  estimate: (
+    userOp: Partial<UserOperation> & { sender: Address; callData: Hex }
+  ) => Promise<UserOperationGasEstimation>
   isLoading: boolean
   error: Error | null
 }
@@ -33,27 +35,30 @@ export function useGasEstimation(config: UseGasEstimationConfig): UseGasEstimati
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const estimate = useCallback(async (
-    userOp: Partial<UserOperation> & { sender: Address; callData: Hex }
-  ): Promise<UserOperationGasEstimation> => {
-    if (!bundlerClient) {
-      throw new Error('Bundler client not configured')
-    }
+  const estimate = useCallback(
+    async (
+      userOp: Partial<UserOperation> & { sender: Address; callData: Hex }
+    ): Promise<UserOperationGasEstimation> => {
+      if (!bundlerClient) {
+        throw new Error('Bundler client not configured')
+      }
 
-    setIsLoading(true)
-    setError(null)
-    try {
-      const result = await bundlerClient.estimateUserOperationGas(userOp)
-      setGasEstimate(result)
-      return result
-    } catch (err) {
-      const e = err instanceof Error ? err : new Error('Gas estimation failed')
-      setError(e)
-      throw e
-    } finally {
-      setIsLoading(false)
-    }
-  }, [bundlerClient])
+      setIsLoading(true)
+      setError(null)
+      try {
+        const result = await bundlerClient.estimateUserOperationGas(userOp)
+        setGasEstimate(result)
+        return result
+      } catch (err) {
+        const e = err instanceof Error ? err : new Error('Gas estimation failed')
+        setError(e)
+        throw e
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [bundlerClient]
+  )
 
   return { gasEstimate, estimate, isLoading, error }
 }

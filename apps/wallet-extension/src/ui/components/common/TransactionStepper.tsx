@@ -273,9 +273,7 @@ export function TransactionStepper({
             {explorerUrl && (
               <button
                 type="button"
-                onClick={() =>
-                  chrome.tabs.create({ url: `${explorerUrl}/tx/${txHash}` })
-                }
+                onClick={() => chrome.tabs.create({ url: `${explorerUrl}/tx/${txHash}` })}
                 className="p-1"
                 style={{ color: 'rgb(var(--primary))' }}
                 title="View on Explorer"

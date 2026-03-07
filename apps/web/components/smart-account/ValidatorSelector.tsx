@@ -79,9 +79,11 @@ export function ValidatorSelector({
       </select>
       {activeValidator && (
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {VALIDATOR_DESCRIPTIONS[
-            validators.find((v) => v.address === activeValidator)?.type ?? 'ecdsa'
-          ]}
+          {
+            VALIDATOR_DESCRIPTIONS[
+              validators.find((v) => v.address === activeValidator)?.type ?? 'ecdsa'
+            ]
+          }
         </p>
       )}
     </div>

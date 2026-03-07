@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseNonce, encodeNonceKey } from '../../src/nonce'
+import { encodeNonceKey, parseNonce } from '../../src/nonce'
 
 describe('nonce module', () => {
   describe('parseNonce', () => {

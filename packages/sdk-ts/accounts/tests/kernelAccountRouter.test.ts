@@ -21,7 +21,8 @@ function createMockValidator(address: Address): Validator {
     address,
     type: 'validator',
     getInitData: async () => address as Hex,
-    signHash: async (hash: Hex) => `0x${address.slice(2)}_${hash.slice(2, 10)}`.padEnd(132, '0') as Hex,
+    signHash: async (hash: Hex) =>
+      `0x${address.slice(2)}_${hash.slice(2, 10)}`.padEnd(132, '0') as Hex,
     getSignerAddress: () => address,
   }
 }
@@ -51,17 +52,19 @@ function createMockPublicClient(
   const accountAddress = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address
 
   return {
-    readContract: vi.fn().mockImplementation(({ functionName, args }: { functionName: string; args: unknown[] }) => {
-      if (functionName === 'getAddress') {
-        return accountAddress
-      }
-      if (functionName === 'getNonce') {
-        // Return a mock nonce based on the key
-        const key = args[1] as bigint
-        return key === 0n ? 42n : 100n + key
-      }
-      return '0x'
-    }),
+    readContract: vi
+      .fn()
+      .mockImplementation(({ functionName, args }: { functionName: string; args: unknown[] }) => {
+        if (functionName === 'getAddress') {
+          return accountAddress
+        }
+        if (functionName === 'getNonce') {
+          // Return a mock nonce based on the key
+          const key = args[1] as bigint
+          return key === 0n ? 42n : 100n + key
+        }
+        return '0x'
+      }),
     getCode: vi.fn().mockResolvedValue(deployedCode),
   }
 }

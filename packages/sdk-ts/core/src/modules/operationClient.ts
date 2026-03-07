@@ -176,10 +176,7 @@ export function createModuleOperationClient(config: ModuleOperationClientConfig)
   /**
    * Prepare calldata for atomic module replacement
    */
-  function prepareReplaceModule(
-    account: Address,
-    request: ModuleReplaceRequest
-  ): ModuleCalldata {
+  function prepareReplaceModule(account: Address, request: ModuleReplaceRequest): ModuleCalldata {
     const data = encodeFunctionData({
       abi: KERNEL_ABI,
       functionName: 'replaceModule',
@@ -202,10 +199,7 @@ export function createModuleOperationClient(config: ModuleOperationClientConfig)
   /**
    * Prepare calldata for setting hook gas limit
    */
-  function prepareSetHookGasLimit(
-    account: Address,
-    request: HookGasLimitRequest
-  ): ModuleCalldata {
+  function prepareSetHookGasLimit(account: Address, request: HookGasLimitRequest): ModuleCalldata {
     const data = encodeFunctionData({
       abi: KERNEL_ABI,
       functionName: 'setHookGasLimit',

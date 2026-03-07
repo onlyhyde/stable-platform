@@ -79,7 +79,9 @@ describe('useBundler', () => {
 
     // Override the mock to throw
     const client = result.current.client
-    ;(client.sendUserOperation as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Send failed'))
+    ;(client.sendUserOperation as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('Send failed')
+    )
 
     await act(async () => {
       try {

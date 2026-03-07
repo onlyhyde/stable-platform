@@ -1,7 +1,6 @@
 import type { Address, Hex, PublicClient } from 'viem'
-import { concat, encodeFunctionData, keccak256, pad, toHex, toBytes } from 'viem'
+import { concat, encodeFunctionData, keccak256, pad, toBytes, toHex } from 'viem'
 import { ENTRY_POINT_ABI } from '../abi'
-import type { UserOperation } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import type { ITracer, TraceCall, TraceResult } from './opcodeValidator'
@@ -36,7 +35,7 @@ const DEFAULT_TRACER_CONFIG: Required<Omit<TracerConfig, 'beneficiary'>> = {
  * This event is emitted by EntryPoint between the validation and execution phases.
  * keccak256("BeforeExecution()")
  */
-const BEFORE_EXECUTION_TOPIC = keccak256(toBytes('BeforeExecution()'))
+const _BEFORE_EXECUTION_TOPIC = keccak256(toBytes('BeforeExecution()'))
 
 /**
  * Custom JavaScript tracer for ERC-7562 opcode and storage validation.
@@ -249,14 +248,14 @@ export class DebugTraceCallTracer implements ITracer {
 
     // Build accountGasLimits with generous gas for tracing
     const accountGasLimits = concat([
-      pad(toHex(1_000_000n), { size: 16 }),  // verificationGasLimit
-      pad(toHex(1_000_000n), { size: 16 }),   // callGasLimit
+      pad(toHex(1_000_000n), { size: 16 }), // verificationGasLimit
+      pad(toHex(1_000_000n), { size: 16 }), // callGasLimit
     ]) as Hex
 
     // Build gasFees
     const gasFees = concat([
-      pad(toHex(1n), { size: 16 }),  // maxPriorityFeePerGas
-      pad(toHex(1n), { size: 16 }),  // maxFeePerGas
+      pad(toHex(1n), { size: 16 }), // maxPriorityFeePerGas
+      pad(toHex(1n), { size: 16 }), // maxFeePerGas
     ]) as Hex
 
     const beneficiary = this.beneficiary ?? sender

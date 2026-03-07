@@ -19,7 +19,8 @@ vi.mock('@/components/common', () => {
     CardFooter: c(),
     CardHeader: c(),
     CardTitle: c(),
-    ConnectWalletCard: ({ message }: Record<string, unknown>) => React.createElement('div', null, message),
+    ConnectWalletCard: ({ message }: Record<string, unknown>) =>
+      React.createElement('div', null, message),
     InfoBanner: c(),
     Input: c(),
     Modal: c(),
@@ -57,7 +58,9 @@ vi.mock('@/components/enterprise', () => {
       React.createElement(
         'div',
         null,
-        (logs as Array<Record<string, unknown>>)?.map((l: Record<string, unknown>, i: number) => React.createElement('div', { key: i }, l.details as string))
+        (logs as Array<Record<string, unknown>>)?.map((l: Record<string, unknown>, i: number) =>
+          React.createElement('div', { key: i }, l.details as string)
+        )
       ),
     AuditSummaryCards: () => null,
     ComplianceInfoCard: () => null,

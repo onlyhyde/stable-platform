@@ -1,13 +1,13 @@
-import type { Address, Hex } from 'viem'
 import {
-  PaymasterType as PaymasterTypeEnum,
+  encodeErc20Payload,
   encodePaymasterData,
   encodeSponsorPayload,
-  encodeErc20Payload,
   encodeVerifyingPayload,
+  PaymasterType as PaymasterTypeEnum,
   // encodePermit2Payload intentionally not imported: Permit2 stub returns
   // empty paymasterData; user builds the full envelope client-side via SDK.
 } from '@stablenet/core'
+import type { Address, Hex } from 'viem'
 import type { SponsorPolicyManager } from '../policy/sponsorPolicy'
 import type { PaymasterSigner } from '../signer/paymasterSigner'
 import type {
@@ -18,7 +18,12 @@ import type {
   PaymasterType,
 } from '../types'
 import { normalizeUserOp } from '../utils/userOpNormalizer'
-import { toPolicyIdBytes32, validateChainId, validateEntryPoint, validateTimeRange } from '../utils/validation'
+import {
+  toPolicyIdBytes32,
+  validateChainId,
+  validateEntryPoint,
+  validateTimeRange,
+} from '../utils/validation'
 
 export type { GetPaymasterStubDataParams }
 
@@ -210,10 +215,7 @@ function handleVerifyingStubData(
     verifierExtra: '0x' as Hex,
   })
 
-  const { paymasterData } = signer.generateStubData(
-    PaymasterTypeEnum.VERIFYING,
-    payload
-  )
+  const { paymasterData } = signer.generateStubData(PaymasterTypeEnum.VERIFYING, payload)
   const gasLimits = estimateGasLimits('verifying', userOp)
 
   const response: PaymasterStubDataResponse = {
@@ -251,17 +253,14 @@ function handleSponsorStubData(
   }
 
   const payload = encodeSponsorPayload({
-    campaignId: context?.campaignId ?? ('0x' + '00'.repeat(32)) as Hex,
+    campaignId: context?.campaignId ?? (('0x' + '00'.repeat(32)) as Hex),
     perUserLimit: BigInt(context?.perUserLimit ?? 0),
-    targetContract: context?.targetContract ?? ('0x' + '00'.repeat(20)) as Address,
-    targetSelector: context?.targetSelector ?? '0x00000000' as Hex,
+    targetContract: context?.targetContract ?? (('0x' + '00'.repeat(20)) as Address),
+    targetSelector: context?.targetSelector ?? ('0x00000000' as Hex),
     sponsorExtra: '0x' as Hex,
   })
 
-  const { paymasterData } = signer.generateStubData(
-    PaymasterTypeEnum.SPONSOR,
-    payload
-  )
+  const { paymasterData } = signer.generateStubData(PaymasterTypeEnum.SPONSOR, payload)
   const gasLimits = estimateGasLimits('sponsor', userOp)
 
   const response: PaymasterStubDataResponse = {

@@ -1,5 +1,5 @@
-import type { Address } from 'viem'
 import { getChainAddresses, isChainSupported } from '@stablenet/contracts'
+import type { Address } from 'viem'
 
 export interface ResolvedContractAddresses {
   verifying: Address

@@ -1,10 +1,10 @@
+import type { WebAuthnSignatureData } from '@stablenet/core'
 import type { Address, Hex } from 'viem'
 import { keccak256, toHex } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { WebAuthnSignatureData } from '@stablenet/core'
 import {
-  createWebAuthnValidator,
   type CreateWebAuthnValidatorConfig,
+  createWebAuthnValidator,
 } from '../src/webauthnValidator'
 
 // P256 curve order for malleability tests
@@ -17,7 +17,8 @@ describe('webauthn plugin', () => {
 
   const mockSignatureData: WebAuthnSignatureData = {
     authenticatorData: '0x49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d9763' as Hex,
-    clientDataJSON: '0x7b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22' as Hex,
+    clientDataJSON:
+      '0x7b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22' as Hex,
     challengeIndex: 23,
     typeIndex: 1,
     r: 0xaabbccdd11223344aabbccdd11223344aabbccdd11223344aabbccdd11223344n,

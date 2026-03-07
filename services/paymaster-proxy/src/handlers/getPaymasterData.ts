@@ -1,12 +1,12 @@
-import type { Address, Hex } from 'viem'
 import {
-  PaymasterType as PaymasterTypeEnum,
-  encodePaymasterData,
-  encodeSponsorPayload,
   encodeErc20Payload,
+  encodePaymasterData,
   encodePermit2Payload,
+  encodeSponsorPayload,
   encodeVerifyingPayload,
+  PaymasterType as PaymasterTypeEnum,
 } from '@stablenet/core'
+import type { Address, Hex } from 'viem'
 import type { SponsorPolicyManager } from '../policy/sponsorPolicy'
 import type { ReservationTracker } from '../settlement/reservationTracker'
 import { computeUserOpHash } from '../settlement/userOpHasher'
@@ -20,7 +20,12 @@ import type {
 } from '../types'
 import { estimateGasCost } from '../utils/gasEstimator'
 import { normalizeUserOp } from '../utils/userOpNormalizer'
-import { toPolicyIdBytes32, validateChainId, validateEntryPoint, validateTimeRange } from '../utils/validation'
+import {
+  toPolicyIdBytes32,
+  validateChainId,
+  validateEntryPoint,
+  validateTimeRange,
+} from '../utils/validation'
 
 /** Default validity window for non-signed envelope types (ERC20, Permit2) */
 const DEFAULT_VALID_UNTIL_SECONDS = 300
@@ -181,10 +186,10 @@ async function handleSponsorData(
   const { userOp, entryPoint, chainId, context } = params
   const { signer, policyManager, reservationTracker } = config
 
-  const campaignId = context?.campaignId ?? ('0x' + '00'.repeat(32)) as Hex
+  const campaignId = context?.campaignId ?? (('0x' + '00'.repeat(32)) as Hex)
   const perUserLimit = BigInt(context?.perUserLimit ?? 0)
-  const targetContract = context?.targetContract ?? ('0x' + '00'.repeat(20)) as Address
-  const targetSelector = context?.targetSelector ?? '0x00000000' as Hex
+  const targetContract = context?.targetContract ?? (('0x' + '00'.repeat(20)) as Address)
+  const targetSelector = context?.targetSelector ?? ('0x00000000' as Hex)
 
   const payload = encodeSponsorPayload({
     campaignId,
@@ -256,7 +261,11 @@ function handleErc20Data(
   const normalizedUserOp = normalizeUserOp(userOp)
   const estimatedGasCost = estimateGasCost(normalizedUserOp)
   const policyId = context?.policyId ?? 'default'
-  const policyResult = config.policyManager.checkPolicy(normalizedUserOp, policyId, estimatedGasCost)
+  const policyResult = config.policyManager.checkPolicy(
+    normalizedUserOp,
+    policyId,
+    estimatedGasCost
+  )
   if (!policyResult.allowed) {
     return { success: false, error: policyResult.rejection }
   }
@@ -313,7 +322,11 @@ function handlePermit2Data(
   const normalizedUserOp = normalizeUserOp(userOp)
   const estimatedGasCost = estimateGasCost(normalizedUserOp)
   const policyId = context?.policyId ?? 'default'
-  const policyResult = config.policyManager.checkPolicy(normalizedUserOp, policyId, estimatedGasCost)
+  const policyResult = config.policyManager.checkPolicy(
+    normalizedUserOp,
+    policyId,
+    estimatedGasCost
+  )
   if (!policyResult.allowed) {
     return { success: false, error: policyResult.rejection }
   }

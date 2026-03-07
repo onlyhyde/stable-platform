@@ -180,8 +180,6 @@ export function MerchantDashboard() {
     paymentData: eventPaymentData,
     transactions: eventTransactions,
     stats: eventStats,
-    isLoading: isLoadingEvents,
-    refetch: refetchEvents,
   } = useSubscriptionEvents(timeRange)
 
   // Load merchant plans on mount

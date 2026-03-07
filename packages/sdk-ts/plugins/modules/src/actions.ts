@@ -94,7 +94,13 @@ export function encodeReplaceModule(params: ReplaceModuleParams): Hex {
   return encodeFunctionData({
     abi: KernelModuleAbi,
     functionName: 'replaceModule',
-    args: [params.moduleType, params.oldModule, params.deInitData, params.newModule, params.initData],
+    args: [
+      params.moduleType,
+      params.oldModule,
+      params.deInitData,
+      params.newModule,
+      params.initData,
+    ],
   })
 }
 
@@ -123,7 +129,9 @@ export function encodeSetDelegatecallWhitelist(params: SetDelegatecallWhitelistP
 /**
  * Encode call data for enforcing delegatecall whitelist
  */
-export function encodeSetEnforceDelegatecallWhitelist(params: SetEnforceDelegatecallWhitelistParams): Hex {
+export function encodeSetEnforceDelegatecallWhitelist(
+  params: SetEnforceDelegatecallWhitelistParams
+): Hex {
   return encodeFunctionData({
     abi: KernelModuleAbi,
     functionName: 'setEnforceDelegatecallWhitelist',

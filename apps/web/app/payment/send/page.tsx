@@ -217,7 +217,9 @@ export default function SendPage() {
 
     const result = await executeBatch({
       isNative: isNativeAsset,
-      tokenAddress: !isNativeAsset ? ((selectedAsset as WalletToken).address as Address) : undefined,
+      tokenAddress: !isNativeAsset
+        ? ((selectedAsset as WalletToken).address as Address)
+        : undefined,
       decimals,
     })
 

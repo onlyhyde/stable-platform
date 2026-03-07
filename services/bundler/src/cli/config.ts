@@ -197,9 +197,7 @@ export function parseConfig(options: CliOptions): BundlerConfig {
     options.entryPoint?.length && options.entryPoint.length > 0
       ? (options.entryPoint as Address[])
       : parseEntryPointsFromEnv() ||
-        (chainId && isChainSupported(chainId)
-          ? [getEntryPoint(chainId) as Address]
-          : null) ||
+        (chainId && isChainSupported(chainId) ? [getEntryPoint(chainId) as Address] : null) ||
         preset?.entryPoints ||
         []
 

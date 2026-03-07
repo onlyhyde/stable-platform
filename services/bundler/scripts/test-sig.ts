@@ -5,7 +5,6 @@ import {
   type Address,
   concat,
   createPublicClient,
-  encodeAbiParameters,
   encodeFunctionData,
   type Hex,
   http,
@@ -199,8 +198,8 @@ async function main() {
   const mode = `0x${'00'.repeat(32)}` as Hex
   // Kernel v3 expects abi.encodePacked(target[20], value[32], callData[variable])
   const executionCalldata = concat([
-    smartAccountAddress,             // 20 bytes: target address
-    pad(toHex(0n), { size: 32 }),    // 32 bytes: value
+    smartAccountAddress, // 20 bytes: target address
+    pad(toHex(0n), { size: 32 }), // 32 bytes: value
   ]) as Hex // no callData for no-op
   const callData = encodeFunctionData({
     abi: KERNEL_ACCOUNT_ABI,

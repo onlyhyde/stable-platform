@@ -5,11 +5,15 @@
  * and ERC-20 gas payment.
  */
 
-import { useCallback, useMemo, useState } from 'react'
-import { createPaymasterClient } from '../paymaster'
-import type { PaymasterResponse, ERC20PaymentEstimate, PartialUserOperationForPaymaster } from '@stablenet/core'
+import type {
+  ERC20PaymentEstimate,
+  PartialUserOperationForPaymaster,
+  PaymasterResponse,
+} from '@stablenet/core'
 import type { SponsorPolicy, SupportedToken } from '@stablenet/sdk-types'
+import { useCallback, useMemo, useState } from 'react'
 import type { Address } from 'viem'
+import { createPaymasterClient } from '../paymaster'
 
 export interface UsePaymasterConfig {
   paymasterUrl: string
@@ -18,11 +22,20 @@ export interface UsePaymasterConfig {
 }
 
 export interface UsePaymasterResult {
-  getSponsorPolicy: (sender: Address, operation: 'transfer' | 'swap' | 'contract_call') => Promise<SponsorPolicy>
+  getSponsorPolicy: (
+    sender: Address,
+    operation: 'transfer' | 'swap' | 'contract_call'
+  ) => Promise<SponsorPolicy>
   getSponsoredData: (userOp: PartialUserOperationForPaymaster) => Promise<PaymasterResponse>
   getSupportedTokens: () => Promise<SupportedToken[]>
-  estimateERC20: (userOp: PartialUserOperationForPaymaster, token: Address) => Promise<ERC20PaymentEstimate>
-  getERC20Data: (userOp: PartialUserOperationForPaymaster, token: Address) => Promise<PaymasterResponse & { tokenAmount: bigint }>
+  estimateERC20: (
+    userOp: PartialUserOperationForPaymaster,
+    token: Address
+  ) => Promise<ERC20PaymentEstimate>
+  getERC20Data: (
+    userOp: PartialUserOperationForPaymaster,
+    token: Address
+  ) => Promise<PaymasterResponse & { tokenAmount: bigint }>
   isLoading: boolean
   error: Error | null
 }

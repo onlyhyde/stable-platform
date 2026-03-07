@@ -32,10 +32,7 @@ const EXECUTE_SELECTOR: Hex = '0xe9ae5c53'
  * @param moduleSpecificData - Pre-encoded module-specific initialization data
  * @returns Properly formatted Kernel v3 initData
  */
-export function buildKernelInstallData(
-  moduleType: bigint,
-  moduleSpecificData: Hex
-): Hex {
+export function buildKernelInstallData(moduleType: bigint, moduleSpecificData: Hex): Hex {
   switch (moduleType) {
     case 1n: // VALIDATOR
       return buildValidatorInstallData(moduleSpecificData)

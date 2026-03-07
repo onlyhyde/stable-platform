@@ -141,10 +141,7 @@ export function decodeDelegatecallTargetNotWhitelisted(data: Hex): {
   target: Address
 } {
   const params = slice(data, 4)
-  const decoded = decodeAbiParameters(
-    [{ name: 'target', type: 'address' }],
-    params
-  )
+  const decoded = decodeAbiParameters([{ name: 'target', type: 'address' }], params)
   return {
     target: decoded[0] as Address,
   }

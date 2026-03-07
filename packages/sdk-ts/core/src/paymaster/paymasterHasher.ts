@@ -1,5 +1,5 @@
-import type { Hex, Address } from 'viem'
-import { keccak256, encodeAbiParameters, parseAbiParameters, stringToHex } from 'viem'
+import type { Address, Hex } from 'viem'
+import { encodeAbiParameters, keccak256, parseAbiParameters, stringToHex } from 'viem'
 
 // ============ Domain Constants ============
 
@@ -81,9 +81,10 @@ export function computePaymasterHash(
   envelopeWithoutSignature: Hex
 ): Hex {
   return keccak256(
-    encodeAbiParameters(
-      parseAbiParameters('bytes32, bytes32, bytes32'),
-      [domainSeparator, userOpCoreHash, keccak256(envelopeWithoutSignature)]
-    )
+    encodeAbiParameters(parseAbiParameters('bytes32, bytes32, bytes32'), [
+      domainSeparator,
+      userOpCoreHash,
+      keccak256(envelopeWithoutSignature),
+    ])
   )
 }

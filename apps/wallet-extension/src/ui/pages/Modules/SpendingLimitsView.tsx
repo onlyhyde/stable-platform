@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { formatEther } from 'viem'
 
 import type { Account } from '../../../types/account'
-import { useSpendingLimitStatus, type SpendingLimitInfo } from './hooks/useSpendingLimitStatus'
+import { type SpendingLimitInfo, useSpendingLimitStatus } from './hooks/useSpendingLimitStatus'
 
 // ============================================================================
 // Types
@@ -126,8 +126,7 @@ export function SpendingLimitsView({
 function SpendingLimitCard({ limit }: { limit: SpendingLimitInfo }) {
   const { t } = useTranslation('modules')
 
-  const percentage =
-    limit.limit > 0n ? Number((limit.spent * 100n) / limit.limit) : 0
+  const percentage = limit.limit > 0n ? Number((limit.spent * 100n) / limit.limit) : 0
   const remaining = limit.limit > limit.spent ? limit.limit - limit.spent : 0n
   const periodLabel = getPeriodLabel(limit.period)
 
@@ -170,7 +169,8 @@ function SpendingLimitCard({ limit }: { limit: SpendingLimitInfo }) {
             {t('spendingLimits.spent', 'Spent')}
           </span>
           <span style={{ color: 'rgb(var(--foreground))' }}>
-            {formatBigIntAmount(limit.spent)} / {formatBigIntAmount(limit.limit)} {limit.tokenSymbol}
+            {formatBigIntAmount(limit.spent)} / {formatBigIntAmount(limit.limit)}{' '}
+            {limit.tokenSymbol}
           </span>
         </div>
         <div
@@ -195,7 +195,8 @@ function SpendingLimitCard({ limit }: { limit: SpendingLimitInfo }) {
       {/* Details */}
       <div className="flex justify-between text-xs mt-2">
         <span style={{ color: 'rgb(var(--muted-foreground))' }}>
-          {t('spendingLimits.remaining', 'Remaining')}: {formatBigIntAmount(remaining)} {limit.tokenSymbol}
+          {t('spendingLimits.remaining', 'Remaining')}: {formatBigIntAmount(remaining)}{' '}
+          {limit.tokenSymbol}
         </span>
         {resetIn > 0n && (
           <span style={{ color: 'rgb(var(--muted-foreground))' }}>

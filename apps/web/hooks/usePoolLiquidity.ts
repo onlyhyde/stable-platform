@@ -5,7 +5,6 @@ import { useCallback, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData, parseUnits } from 'viem'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
-import { getServiceUrls } from '@/lib/constants'
 import { useStableNetContext } from '@/providers'
 import type { Pool } from '@/types'
 
@@ -72,7 +71,14 @@ const ERC20_ABI = [
   },
 ] as const
 
-export type LiquidityStep = 'idle' | 'approving-token0' | 'approving-token1' | 'adding' | 'removing' | 'confirmed' | 'failed'
+export type LiquidityStep =
+  | 'idle'
+  | 'approving-token0'
+  | 'approving-token1'
+  | 'adding'
+  | 'removing'
+  | 'confirmed'
+  | 'failed'
 
 interface AddLiquidityParams {
   pool: Pool

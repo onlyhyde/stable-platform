@@ -16,6 +16,7 @@
  */
 
 import {
+  getContractAddress,
   getEntryPoint,
   getKernelFactory,
   getPermissionManager,
@@ -24,7 +25,6 @@ import {
   getStealthRegistry,
   getSubscriptionManager,
   getVerifyingPaymaster,
-  getContractAddress,
 } from '@stablenet/contracts'
 
 import { getRpcSettings } from '../utils'

@@ -190,7 +190,9 @@ export function Send() {
   const trackedTx = useMemo(() => {
     if (!txResult?.hash) return null
     return (
-      pendingTransactions.find((tx) => tx.txHash === txResult.hash || tx.userOpHash === txResult.hash) ??
+      pendingTransactions.find(
+        (tx) => tx.txHash === txResult.hash || tx.userOpHash === txResult.hash
+      ) ??
       history.find((tx) => tx.txHash === txResult.hash || tx.userOpHash === txResult.hash) ??
       null
     )
@@ -279,7 +281,12 @@ export function Send() {
       {/* Send Form */}
       {step === 'form' && (
         <>
-          <SendForm formData={formData} onFormChange={handleFormChange} isValid={isFormValid} currencySymbol={currencySymbol} />
+          <SendForm
+            formData={formData}
+            onFormChange={handleFormChange}
+            isValid={isFormValid}
+            currencySymbol={currencySymbol}
+          />
 
           {/* Gas Payment Selector (Smart Account only) */}
           {transactionMode === TRANSACTION_MODE.SMART_ACCOUNT && (

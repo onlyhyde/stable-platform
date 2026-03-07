@@ -1,8 +1,7 @@
-import { createBundlerClient } from '@stablenet/core'
 import { getEntryPoint, isChainSupported } from '@stablenet/contracts'
-import { ENTRY_POINT_ADDRESS } from '@stablenet/core'
-import { createPublicClient, http } from 'viem'
+import { createBundlerClient, ENTRY_POINT_ADDRESS } from '@stablenet/core'
 import type { Address, Hex } from 'viem'
+import { createPublicClient, http } from 'viem'
 import { createLogger } from '../../shared/utils/logger'
 import type { PendingTransaction } from '../../types'
 import { walletState } from '../state/store'
@@ -117,9 +116,7 @@ class TransactionWatcher {
 
     // Step 2: Query bundler for UserOp receipt (contains txHash + success status)
     try {
-      const receipt = await bundlerClient.getUserOperationReceipt(
-        tx.userOpHash as `0x${string}`
-      )
+      const receipt = await bundlerClient.getUserOperationReceipt(tx.userOpHash as `0x${string}`)
 
       if (receipt) {
         // Bundle was submitted on-chain — extract txHash and status
@@ -145,16 +142,12 @@ class TransactionWatcher {
     // (avoid checking every single poll — getUserOperationByHash is heavier)
     if (this.pollCount % BUNDLER_DROP_CHECK_INTERVAL === 0) {
       try {
-        const opInfo = await bundlerClient.getUserOperationByHash(
-          tx.userOpHash as `0x${string}`
-        )
+        const opInfo = await bundlerClient.getUserOperationByHash(tx.userOpHash as `0x${string}`)
 
         if (!opInfo) {
           // UserOp is NOT in mempool AND has no on-chain receipt
           // → Bundler dropped it (validation failure, bundle revert, restart)
-          logger.warn(
-            `[UserOp] ${tx.userOpHash.slice(0, 14)}... dropped from bundler mempool`
-          )
+          logger.warn(`[UserOp] ${tx.userOpHash.slice(0, 14)}... dropped from bundler mempool`)
           await this.finalizeTx(tx.id, 'failed', {
             error: 'UserOp dropped by bundler (not in mempool)',
           })
@@ -201,10 +194,7 @@ class TransactionWatcher {
    * Check on-chain transaction receipt for a known txHash.
    * Works for both UserOp (after txHash is resolved) and direct transactions.
    */
-  private async checkOnChainReceipt(
-    tx: PendingTransaction,
-    rpcUrl: string
-  ): Promise<void> {
+  private async checkOnChainReceipt(tx: PendingTransaction, rpcUrl: string): Promise<void> {
     if (!tx.txHash) return
 
     try {
@@ -221,9 +211,7 @@ class TransactionWatcher {
         blockNumber: receipt.blockNumber,
       })
 
-      logger.info(
-        `[TX] ${tx.txHash.slice(0, 14)}... ${status} at block ${receipt.blockNumber}`
-      )
+      logger.info(`[TX] ${tx.txHash.slice(0, 14)}... ${status} at block ${receipt.blockNumber}`)
     } catch {
       // Receipt not available yet — tx still in mempool
     }
@@ -254,9 +242,7 @@ class TransactionWatcher {
   }
 
   private getEntryPoint(chainId: number): Address {
-    return (
-      isChainSupported(chainId) ? getEntryPoint(chainId) : ENTRY_POINT_ADDRESS
-    ) as Address
+    return (isChainSupported(chainId) ? getEntryPoint(chainId) : ENTRY_POINT_ADDRESS) as Address
   }
 }
 

@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
-import { simulateValidation, simulateHandleOp } from '../../src/simulation'
-import type { SimulationResult, HandleOpSimulationResult } from '../../src/simulation'
 import type { UserOperation } from '@stablenet/sdk-types'
+import { describe, expect, it, vi } from 'vitest'
+import type { HandleOpSimulationResult, SimulationResult } from '../../src/simulation'
+import { simulateHandleOp, simulateValidation } from '../../src/simulation'
 
 const mockUserOp: UserOperation = {
   sender: '0x1234567890123456789012345678901234567890',
@@ -34,14 +34,16 @@ describe('simulation module', () => {
         '0000000000000000000000000000000000000000000000000000000000000000' + // factoryStake
         '0000000000000000000000000000000000000000000000000000000000000000' + // factoryUnstakeDelay
         '0000000000000000000000000000000000000000000000000000000000000000' + // paymasterStake
-        '0000000000000000000000000000000000000000000000000000000000000000'   // paymasterUnstakeDelay
+        '0000000000000000000000000000000000000000000000000000000000000000' // paymasterUnstakeDelay
 
       const mockClient = {
         call: vi.fn().mockRejectedValue({ data: validationResultData }),
       } as unknown as Parameters<typeof simulateValidation>[0]
 
       const result: SimulationResult = await simulateValidation(
-        mockClient, mockUserOp, mockEntryPoint
+        mockClient,
+        mockUserOp,
+        mockEntryPoint
       )
 
       expect(result.valid).toBe(true)
@@ -58,7 +60,8 @@ describe('simulation module', () => {
         '0000000000000000000000000000000000000000000000000000000000000000' + // opIndex = 0
         '0000000000000000000000000000000000000000000000000000000000000040' + // offset to string = 64
         '0000000000000000000000000000000000000000000000000000000000000006' + // string length = 6
-        '4141323020' + '00'.repeat(27) // "AA20 " padded (6 bytes: 0x41 0x41 0x32 0x30 0x20 0x00 → "AA20 \0")
+        '4141323020' +
+        '00'.repeat(27) // "AA20 " padded (6 bytes: 0x41 0x41 0x32 0x30 0x20 0x00 → "AA20 \0")
 
       const mockClient = {
         call: vi.fn().mockRejectedValue({ data: failedOpData }),
@@ -103,7 +106,7 @@ describe('simulation module', () => {
         '0000000000000000000000000000000000000000000000000000000000002000' + // paid
         '0000000000000000000000000000000000000000000000000000000000000001' + // targetSuccess = true
         '0000000000000000000000000000000000000000000000000000000000000080' + // targetResult offset
-        '0000000000000000000000000000000000000000000000000000000000000000'   // targetResult (empty)
+        '0000000000000000000000000000000000000000000000000000000000000000' // targetResult (empty)
 
       const mockClient = {
         call: vi.fn().mockRejectedValue({ data: executionResultData }),
@@ -111,7 +114,11 @@ describe('simulation module', () => {
 
       const target = '0x0000000000000000000000000000000000000000' as const
       const result: HandleOpSimulationResult = await simulateHandleOp(
-        mockClient, mockUserOp, target, '0x', mockEntryPoint
+        mockClient,
+        mockUserOp,
+        target,
+        '0x',
+        mockEntryPoint
       )
 
       expect(result.valid).toBe(true)
@@ -124,16 +131,15 @@ describe('simulation module', () => {
         '0000000000000000000000000000000000000000000000000000000000000000' +
         '0000000000000000000000000000000000000000000000000000000000000040' +
         '0000000000000000000000000000000000000000000000000000000000000004' +
-        '66616964' + '00'.repeat(28) // "faid" + padding
+        '66616964' +
+        '00'.repeat(28) // "faid" + padding
 
       const mockClient = {
         call: vi.fn().mockRejectedValue({ data: failedOpData }),
       } as unknown as Parameters<typeof simulateHandleOp>[0]
 
       const target = '0x0000000000000000000000000000000000000000' as const
-      const result = await simulateHandleOp(
-        mockClient, mockUserOp, target, '0x', mockEntryPoint
-      )
+      const result = await simulateHandleOp(mockClient, mockUserOp, target, '0x', mockEntryPoint)
 
       expect(result.valid).toBe(false)
       expect(result.error).toBeDefined()
@@ -145,9 +151,7 @@ describe('simulation module', () => {
       } as unknown as Parameters<typeof simulateHandleOp>[0]
 
       const target = '0x0000000000000000000000000000000000000000' as const
-      const result = await simulateHandleOp(
-        mockClient, mockUserOp, target, '0x', mockEntryPoint
-      )
+      const result = await simulateHandleOp(mockClient, mockUserOp, target, '0x', mockEntryPoint)
 
       expect(result.valid).toBe(false)
       expect(result.error).toContain('RPC failure')

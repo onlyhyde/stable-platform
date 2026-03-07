@@ -7,9 +7,6 @@
 
 import type { Address, Hex } from 'viem'
 
-// Client factory
-export { createPaymasterClient } from '@stablenet/core'
-
 // Types from core
 export type {
   ERC20PaymentEstimate,
@@ -17,6 +14,8 @@ export type {
   PaymasterClientInstance,
   PaymasterResponse,
 } from '@stablenet/core'
+// Client factory
+export { createPaymasterClient } from '@stablenet/core'
 
 // Types from sdk-types
 export type {

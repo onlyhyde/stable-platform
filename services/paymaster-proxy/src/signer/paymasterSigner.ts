@@ -1,13 +1,13 @@
-import type { Address, Hex, PublicClient } from 'viem'
-import { privateKeyToAccount, signMessage } from 'viem/accounts'
 import {
-  PaymasterType,
+  computePaymasterDomainSeparator,
+  computePaymasterHash,
+  computeUserOpCoreHash,
   encodePaymasterData,
   encodePaymasterDataWithSignature,
-  computePaymasterDomainSeparator,
-  computeUserOpCoreHash,
-  computePaymasterHash,
+  type PaymasterType,
 } from '@stablenet/core'
+import type { Address, Hex, PublicClient } from 'viem'
+import { privateKeyToAccount, signMessage } from 'viem/accounts'
 import { getSignerConfig } from '../config/constants'
 import type { PackedUserOperationRpc, UserOperationRpc } from '../types'
 import { toPackedForCoreHash } from '../utils/userOpNormalizer'
@@ -148,9 +148,10 @@ export class PaymasterSigner {
     // ERC-1271 stub includes extra bytes for the contract signature wrapper
     // Format: 0x00 (EOA mode byte) + 65 bytes ECDSA = 66 bytes for EOA
     // Format: 0x01 (ERC-1271 mode byte) + 20 bytes signer + 65 bytes ECDSA = 86 bytes for ERC-1271
-    const stubSig = this.signerType === 'erc1271'
-      ? (`0x01${'00'.repeat(20)}${'00'.repeat(65)}` as Hex)
-      : STUB_SIGNATURE
+    const stubSig =
+      this.signerType === 'erc1271'
+        ? (`0x01${'00'.repeat(20)}${'00'.repeat(65)}` as Hex)
+        : STUB_SIGNATURE
 
     const paymasterData = encodePaymasterDataWithSignature(envelope, stubSig)
 

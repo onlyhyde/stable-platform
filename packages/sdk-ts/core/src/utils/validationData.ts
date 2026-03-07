@@ -11,7 +11,7 @@
  *   the value represents a block number instead of a timestamp.
  */
 
-import type { Address, Hex } from 'viem'
+import type { Address } from 'viem'
 
 // ============================================================================
 // Constants
@@ -82,7 +82,7 @@ export function parseValidationData(validationData: bigint): ValidationData {
   } else if (authorizerRaw === 1n) {
     authorizer = 1n
   } else {
-    authorizer = (`0x${authorizerRaw.toString(16).padStart(40, '0')}` as Address)
+    authorizer = `0x${authorizerRaw.toString(16).padStart(40, '0')}` as Address
   }
 
   return {
@@ -128,9 +128,7 @@ export function packValidationData(
   }
 
   return (
-    (authorizerValue << 96n) |
-    ((until & 0xffff_ffff_ffffn) << 48n) |
-    (after & 0xffff_ffff_ffffn)
+    (authorizerValue << 96n) | ((until & 0xffff_ffff_ffffn) << 48n) | (after & 0xffff_ffff_ffffn)
   )
 }
 

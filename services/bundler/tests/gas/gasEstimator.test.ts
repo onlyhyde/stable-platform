@@ -196,18 +196,16 @@ describe('GasEstimator', () => {
       const minCallGasRequired = 50000n
       const verificationGas = userOp.verificationGasLimit || 100000n
       const minTotalGasRequired = minCallGasRequired + verificationGas
-      mockClient.call = vi
-        .fn()
-        .mockImplementation(async (params: { gas?: bigint }) => {
-          // For simulateHandleOp calls (gas = callGasLimit + verificationGasLimit, so larger)
-          if (params.gas && params.gas > verificationGas) {
-            if (params.gas < minTotalGasRequired) {
-              throw new Error('out of gas')
-            }
+      mockClient.call = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        // For simulateHandleOp calls (gas = callGasLimit + verificationGasLimit, so larger)
+        if (params.gas && params.gas > verificationGas) {
+          if (params.gas < minTotalGasRequired) {
+            throw new Error('out of gas')
           }
-          // Normal return = success (both simulateValidation and simulateHandleOp)
-          return { data: '0x' }
-        })
+        }
+        // Normal return = success (both simulateValidation and simulateHandleOp)
+        return { data: '0x' }
+      })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -299,23 +297,21 @@ describe('GasEstimator', () => {
       const verificationGas = userOp.verificationGasLimit || 100000n
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
-      mockClient.call = vi
-        .fn()
-        .mockImplementation(async (params: { gas?: bigint }) => {
-          // Differentiate by gas value: simulateHandleOp passes gas = callGas + verificationGas
-          if (params.gas && params.gas > verificationGas) {
-            // simulateHandleOp path
-            if (params.gas < actualCallGas + verificationGas) {
-              throw new Error('out of gas')
-            }
-          } else {
-            // simulateValidation path
-            if (params.gas && params.gas < actualVerificationGas) {
-              throw new Error('out of gas')
-            }
+      mockClient.call = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        // Differentiate by gas value: simulateHandleOp passes gas = callGas + verificationGas
+        if (params.gas && params.gas > verificationGas) {
+          // simulateHandleOp path
+          if (params.gas < actualCallGas + verificationGas) {
+            throw new Error('out of gas')
           }
-          return { data: '0x' }
-        })
+        } else {
+          // simulateValidation path
+          if (params.gas && params.gas < actualVerificationGas) {
+            throw new Error('out of gas')
+          }
+        }
+        return { data: '0x' }
+      })
       mockClient.estimateGas = vi.fn().mockResolvedValue(actualCallGas)
 
       const result = await gasEstimator.estimate(userOp)
@@ -332,23 +328,21 @@ describe('GasEstimator', () => {
       const actualCallGas = 45000n
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
-      mockClient.call = vi
-        .fn()
-        .mockImplementation(async (params: { gas?: bigint }) => {
-          // Differentiate by gas value
-          if (params.gas && params.gas > 100000n) {
-            // simulateHandleOp (larger gas = callGas + verificationGas)
-            if (params.gas < actualCallGas) {
-              throw new Error('out of gas')
-            }
-          } else {
-            // simulateValidation (verification gas only)
-            if (params.gas && params.gas < actualVerificationGas) {
-              throw new Error('out of gas')
-            }
+      mockClient.call = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        // Differentiate by gas value
+        if (params.gas && params.gas > 100000n) {
+          // simulateHandleOp (larger gas = callGas + verificationGas)
+          if (params.gas < actualCallGas) {
+            throw new Error('out of gas')
           }
-          return { data: '0x' }
-        })
+        } else {
+          // simulateValidation (verification gas only)
+          if (params.gas && params.gas < actualVerificationGas) {
+            throw new Error('out of gas')
+          }
+        }
+        return { data: '0x' }
+      })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -401,12 +395,10 @@ describe('GasEstimator', () => {
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
 
       // Track that client.call is used (state override pattern)
-      mockClient.call = vi
-        .fn()
-        .mockImplementation(async () => {
-          // Normal return = success (v0.9 state override: both simulateValidation and simulateHandleOp)
-          return { data: '0x' }
-        })
+      mockClient.call = vi.fn().mockImplementation(async () => {
+        // Normal return = success (v0.9 state override: both simulateValidation and simulateHandleOp)
+        return { data: '0x' }
+      })
 
       await gasEstimator.estimate(userOp)
 
@@ -423,17 +415,15 @@ describe('GasEstimator', () => {
       // so the threshold must account for the verification gas overhead.
       const actualCallGasUsed = 75000n
       const verificationGas = userOp.verificationGasLimit || 100000n
-      mockClient.call = vi
-        .fn()
-        .mockImplementation(async (params: { gas?: bigint }) => {
-          // simulateHandleOp calls have gas = callGas + verificationGas (larger values)
-          if (params.gas && params.gas > verificationGas) {
-            if (params.gas < actualCallGasUsed + verificationGas) {
-              throw new Error('out of gas')
-            }
+      mockClient.call = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        // simulateHandleOp calls have gas = callGas + verificationGas (larger values)
+        if (params.gas && params.gas > verificationGas) {
+          if (params.gas < actualCallGasUsed + verificationGas) {
+            throw new Error('out of gas')
           }
-          return { data: '0x' }
-        })
+        }
+        return { data: '0x' }
+      })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -449,11 +439,9 @@ describe('GasEstimator', () => {
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
 
       // Normal return from state override = success regardless of target execution result
-      mockClient.call = vi
-        .fn()
-        .mockImplementation(async () => {
-          return { data: '0x' }
-        })
+      mockClient.call = vi.fn().mockImplementation(async () => {
+        return { data: '0x' }
+      })
 
       // Should still provide gas estimate even if target execution fails
       const result = await gasEstimator.estimate(userOp)
@@ -473,16 +461,14 @@ describe('GasEstimator', () => {
       let callCount = 0
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
-      mockClient.call = vi
-        .fn()
-        .mockImplementation(async () => {
-          callCount++
-          // Note: The paymaster verification gas binary search varies
-          // paymasterVerificationGasLimit in the packed UserOp calldata,
-          // not the gas parameter. All calls use initialGasUpperBound as gas.
-          // Normal return = validation succeeded
-          return { data: '0x' }
-        })
+      mockClient.call = vi.fn().mockImplementation(async () => {
+        callCount++
+        // Note: The paymaster verification gas binary search varies
+        // paymasterVerificationGasLimit in the packed UserOp calldata,
+        // not the gas parameter. All calls use initialGasUpperBound as gas.
+        // Normal return = validation succeeded
+        return { data: '0x' }
+      })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -504,11 +490,9 @@ describe('GasEstimator', () => {
       })
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
-      mockClient.call = vi
-        .fn()
-        .mockImplementation(async () => {
-          return { data: '0x' }
-        })
+      mockClient.call = vi.fn().mockImplementation(async () => {
+        return { data: '0x' }
+      })
 
       const result = await gasEstimator.estimate(userOp)
 
@@ -659,14 +643,12 @@ describe('GasEstimator', () => {
 
       // Use a stateful mock that tracks call patterns to differentiate factory vs non-factory
       let currentThreshold = noFactoryGasThreshold
-      mockClient.call = vi
-        .fn()
-        .mockImplementation(async (params: { gas?: bigint }) => {
-          if (params.gas && params.gas < currentThreshold) {
-            throw new Error('out of gas')
-          }
-          return { data: '0x' }
-        })
+      mockClient.call = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        if (params.gas && params.gas < currentThreshold) {
+          throw new Error('out of gas')
+        }
+        return { data: '0x' }
+      })
 
       const estimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, {
         factoryDeploymentGas: 500000n,
@@ -732,11 +714,9 @@ describe('GasEstimator', () => {
       })
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
-      mockClient.call = vi
-        .fn()
-        .mockImplementation(async () => {
-          return { data: '0x' }
-        })
+      mockClient.call = vi.fn().mockImplementation(async () => {
+        return { data: '0x' }
+      })
 
       const result = await customEstimator.estimate(userOp)
 

@@ -4,9 +4,7 @@ import { useGasEstimation } from '../../src/hooks/useGasEstimation'
 
 describe('useGasEstimation', () => {
   it('should initialize with default state', () => {
-    const { result } = renderHook(() =>
-      useGasEstimation({ bundlerClient: null })
-    )
+    const { result } = renderHook(() => useGasEstimation({ bundlerClient: null }))
 
     expect(result.current.gasEstimate).toBeNull()
     expect(result.current.isLoading).toBe(false)
@@ -15,9 +13,7 @@ describe('useGasEstimation', () => {
   })
 
   it('should throw when estimating without client', async () => {
-    const { result } = renderHook(() =>
-      useGasEstimation({ bundlerClient: null })
-    )
+    const { result } = renderHook(() => useGasEstimation({ bundlerClient: null }))
 
     await act(async () => {
       await expect(
@@ -40,9 +36,7 @@ describe('useGasEstimation', () => {
       estimateUserOperationGas: vi.fn().mockResolvedValue(mockGas),
     } as unknown as Parameters<typeof useGasEstimation>[0]['bundlerClient']
 
-    const { result } = renderHook(() =>
-      useGasEstimation({ bundlerClient: mockClient })
-    )
+    const { result } = renderHook(() => useGasEstimation({ bundlerClient: mockClient }))
 
     let gas: typeof mockGas | undefined
     await act(async () => {
@@ -64,9 +58,7 @@ describe('useGasEstimation', () => {
       estimateUserOperationGas: vi.fn().mockRejectedValue(new Error('Estimation failed')),
     } as unknown as Parameters<typeof useGasEstimation>[0]['bundlerClient']
 
-    const { result } = renderHook(() =>
-      useGasEstimation({ bundlerClient: mockClient })
-    )
+    const { result } = renderHook(() => useGasEstimation({ bundlerClient: mockClient }))
 
     await act(async () => {
       try {

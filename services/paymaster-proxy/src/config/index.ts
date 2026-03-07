@@ -1,6 +1,12 @@
 import type { Address, Hex } from 'viem'
 import type { PaymasterAddresses, PaymasterProxyConfig } from '../types'
-import { PAYMASTER_ENV_VARS, getEnvOptional, getServerConfig, getSettlementConfig, parseEntryPoints } from './constants'
+import {
+  getEnvOptional,
+  getServerConfig,
+  getSettlementConfig,
+  PAYMASTER_ENV_VARS,
+  parseEntryPoints,
+} from './constants'
 import { resolveContractAddresses } from './contracts'
 
 /**
@@ -75,9 +81,7 @@ function buildPaymasterAddresses(
 ): PaymasterAddresses {
   // Resolve from @stablenet/contracts using first supported chain
   const firstChainId = supportedChainIds[0]
-  const resolved = firstChainId !== undefined
-    ? resolveContractAddresses(firstChainId)
-    : null
+  const resolved = firstChainId !== undefined ? resolveContractAddresses(firstChainId) : null
 
   const envVerifying = parseOptionalAddress(PAYMASTER_ENV_VARS.VERIFYING_PAYMASTER_ADDRESS)
   const envErc20 = parseOptionalAddress(PAYMASTER_ENV_VARS.ERC20_PAYMASTER_ADDRESS)
@@ -113,15 +117,14 @@ export function loadConfig(): PaymasterProxyConfig {
 
   // Resolve from @stablenet/contracts for first supported chain
   const firstChain = supportedChainIds[0]
-  const resolved = firstChain !== undefined
-    ? resolveContractAddresses(firstChain)
-    : null
+  const resolved = firstChain !== undefined ? resolveContractAddresses(firstChain) : null
 
   // PAYMASTER_ADDRESS is now optional if @stablenet/contracts can resolve
   const paymasterAddressEnv = process.env[ENV_KEYS.PAYMASTER_ADDRESS]
-  const fallbackAddress = paymasterAddressEnv && isValidAddress(paymasterAddressEnv)
-    ? (paymasterAddressEnv as Address)
-    : undefined
+  const fallbackAddress =
+    paymasterAddressEnv && isValidAddress(paymasterAddressEnv)
+      ? (paymasterAddressEnv as Address)
+      : undefined
 
   // Determine the canonical paymaster address (verifying)
   const paymasterAddress = fallbackAddress ?? resolved?.verifying
@@ -146,12 +149,12 @@ export function loadConfig(): PaymasterProxyConfig {
   const paymasterAddresses = buildPaymasterAddresses(supportedChainIds, fallbackAddress)
 
   // oracle: ENV > contracts
-  const oracleAddress = parseOptionalAddress(PAYMASTER_ENV_VARS.PRICE_ORACLE_ADDRESS)
-    ?? resolved?.oracle
+  const oracleAddress =
+    parseOptionalAddress(PAYMASTER_ENV_VARS.PRICE_ORACLE_ADDRESS) ?? resolved?.oracle
 
   // permit2 contract: ENV > contracts
-  const permit2Address = parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_CONTRACT_ADDRESS)
-    ?? resolved?.permit2Contract
+  const permit2Address =
+    parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_CONTRACT_ADDRESS) ?? resolved?.permit2Contract
 
   const settlement = getSettlementConfig()
 
@@ -210,14 +213,12 @@ export function createConfig(options: {
 
   // Resolve from @stablenet/contracts for first supported chain
   const firstChain = supportedChainIds[0]
-  const resolved = firstChain !== undefined
-    ? resolveContractAddresses(firstChain)
-    : null
+  const resolved = firstChain !== undefined ? resolveContractAddresses(firstChain) : null
 
-  const oracleAddress = parseOptionalAddress(PAYMASTER_ENV_VARS.PRICE_ORACLE_ADDRESS)
-    ?? resolved?.oracle
-  const permit2Address = parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_CONTRACT_ADDRESS)
-    ?? resolved?.permit2Contract
+  const oracleAddress =
+    parseOptionalAddress(PAYMASTER_ENV_VARS.PRICE_ORACLE_ADDRESS) ?? resolved?.oracle
+  const permit2Address =
+    parseOptionalAddress(PAYMASTER_ENV_VARS.PERMIT2_CONTRACT_ADDRESS) ?? resolved?.permit2Contract
 
   return {
     port: options.port || defaults.port,

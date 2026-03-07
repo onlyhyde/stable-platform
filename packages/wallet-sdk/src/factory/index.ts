@@ -36,10 +36,7 @@ export async function getSenderAddress(
     // SenderAddressResult(address) on success, or FailedOp on error
     await publicClient.call({
       to: entryPoint,
-      data: encodeAbiParameters(
-        [{ type: 'bytes' }],
-        [initCode]
-      ),
+      data: encodeAbiParameters([{ type: 'bytes' }], [initCode]),
     })
     throw new Error('Expected revert from getSenderAddress')
   } catch (error: unknown) {

@@ -49,7 +49,7 @@ const SUBSCRIPTION_EVENTS_ABI = [
 const DEFAULT_SUBSCRIPTION_MANAGER = '0x9d4454B023096f34B160D6B654540c56A1F81688' as const
 
 // Token info for formatting
-const TOKEN_INFO: Record<string, { symbol: string; decimals: number }> = {
+const _TOKEN_INFO: Record<string, { symbol: string; decimals: number }> = {
   '0x0000000000000000000000000000000000000000': { symbol: 'ETH', decimals: 18 },
   '0x322813fd9a801c5507c9de605d63cea4f2ce6c44': { symbol: 'USDC', decimals: 6 },
 }
@@ -207,7 +207,8 @@ export function useSubscriptionEvents(
           txHash: log.transactionHash as Hex,
           blockNumber: log.blockNumber,
           // Estimate timestamp from block number relative to current time
-          timestamp: BigInt(Math.floor(Date.now() / 1000)) -
+          timestamp:
+            BigInt(Math.floor(Date.now() / 1000)) -
             (currentBlock - log.blockNumber) * BigInt(BLOCKS_PER_SECOND_ESTIMATE),
         })),
         ...cancelledLogs.map((log) => ({
@@ -216,7 +217,8 @@ export function useSubscriptionEvents(
           subscriber: (log.args as { subscriber: Address }).subscriber,
           txHash: log.transactionHash as Hex,
           blockNumber: log.blockNumber,
-          timestamp: BigInt(Math.floor(Date.now() / 1000)) -
+          timestamp:
+            BigInt(Math.floor(Date.now() / 1000)) -
             (currentBlock - log.blockNumber) * BigInt(BLOCKS_PER_SECOND_ESTIMATE),
         })),
       ]
@@ -299,13 +301,9 @@ export function useSubscriptionEvents(
     const previousPeriodStart = now - days * 2 * SECONDS_PER_DAY
 
     // Current period payments
-    const currentPayments = payments.filter(
-      (p) => Number(p.timestamp) >= currentPeriodStart
-    )
+    const currentPayments = payments.filter((p) => Number(p.timestamp) >= currentPeriodStart)
     const previousPayments = payments.filter(
-      (p) =>
-        Number(p.timestamp) >= previousPeriodStart &&
-        Number(p.timestamp) < currentPeriodStart
+      (p) => Number(p.timestamp) >= previousPeriodStart && Number(p.timestamp) < currentPeriodStart
     )
 
     // Revenue
@@ -329,14 +327,9 @@ export function useSubscriptionEvents(
 
     // Average transaction value
     const avgValue = totalPayments > 0 ? currentRevenue / totalPayments : 0
-    const prevAvg =
-      previousPayments.length > 0 ? previousRevenue / previousPayments.length : 0
+    const prevAvg = previousPayments.length > 0 ? previousRevenue / previousPayments.length : 0
     const avgValueChange =
-      prevAvg > 0
-        ? Math.round(((avgValue - prevAvg) / prevAvg) * 100)
-        : avgValue > 0
-          ? 100
-          : 0
+      prevAvg > 0 ? Math.round(((avgValue - prevAvg) / prevAvg) * 100) : avgValue > 0 ? 100 : 0
 
     // Subscriptions
     const currentSubs = subscriptionEvents.filter(

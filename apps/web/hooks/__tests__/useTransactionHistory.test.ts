@@ -1,8 +1,8 @@
 'use client'
 
 import { renderHook, waitFor } from '@testing-library/react'
+import type { Address } from 'viem'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Address, Hex } from 'viem'
 import { useTransactionHistory } from '../useTransactionHistory'
 
 // Mock the StableNetProvider context
@@ -84,9 +84,7 @@ describe('useTransactionHistory — IndexerClient path', () => {
 
     global.fetch = mockFetchWith(graphqlResponse)
 
-    const { result } = renderHook(() =>
-      useTransactionHistory({ address: testAddress })
-    )
+    const { result } = renderHook(() => useTransactionHistory({ address: testAddress }))
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -144,9 +142,7 @@ describe('useTransactionHistory — IndexerClient path', () => {
 
     global.fetch = mockFetchWith(graphqlResponse, sentTransfers)
 
-    const { result } = renderHook(() =>
-      useTransactionHistory({ address: testAddress })
-    )
+    const { result } = renderHook(() => useTransactionHistory({ address: testAddress }))
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -189,9 +185,7 @@ describe('useTransactionHistory — IndexerClient path', () => {
 
     global.fetch = mockFetchWith(graphqlResponse, sentTransfers)
 
-    const { result } = renderHook(() =>
-      useTransactionHistory({ address: testAddress })
-    )
+    const { result } = renderHook(() => useTransactionHistory({ address: testAddress }))
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -244,9 +238,7 @@ describe('useTransactionHistory — IndexerClient path', () => {
 
     global.fetch = mockFetchWith(graphqlResponse, sentTransfers)
 
-    const { result } = renderHook(() =>
-      useTransactionHistory({ address: testAddress })
-    )
+    const { result } = renderHook(() => useTransactionHistory({ address: testAddress }))
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -282,9 +274,7 @@ describe('useTransactionHistory — IndexerClient path', () => {
 
     global.fetch = mockFetchWith(graphqlResponse)
 
-    const { result } = renderHook(() =>
-      useTransactionHistory({ address: testAddress })
-    )
+    const { result } = renderHook(() => useTransactionHistory({ address: testAddress }))
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -302,9 +292,7 @@ describe('useTransactionHistory — IndexerClient path', () => {
 
     global.fetch = mockFetchWith(errorResponse)
 
-    const { result } = renderHook(() =>
-      useTransactionHistory({ address: testAddress })
-    )
+    const { result } = renderHook(() => useTransactionHistory({ address: testAddress }))
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -317,9 +305,7 @@ describe('useTransactionHistory — IndexerClient path', () => {
   it('should handle network failure', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 })
 
-    const { result } = renderHook(() =>
-      useTransactionHistory({ address: testAddress })
-    )
+    const { result } = renderHook(() => useTransactionHistory({ address: testAddress }))
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
@@ -330,9 +316,7 @@ describe('useTransactionHistory — IndexerClient path', () => {
   })
 
   it('should return empty when no address is provided', () => {
-    const { result } = renderHook(() =>
-      useTransactionHistory({ address: undefined })
-    )
+    const { result } = renderHook(() => useTransactionHistory({ address: undefined }))
 
     expect(result.current.transactions).toHaveLength(0)
     expect(result.current.isLoading).toBe(false)
@@ -374,9 +358,7 @@ describe('useTransactionHistory — IndexerClient path', () => {
       return Promise.resolve({ ok: false, status: 404 })
     })
 
-    const { result } = renderHook(() =>
-      useTransactionHistory({ address: testAddress })
-    )
+    const { result } = renderHook(() => useTransactionHistory({ address: testAddress }))
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)

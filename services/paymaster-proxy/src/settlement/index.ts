@@ -1,5 +1,5 @@
+export { BundlerClient, type UserOperationReceipt } from './bundlerClient'
 export { ReservationPersistence } from './reservationPersistence'
 export { ReservationTracker, type TrackedReservation } from './reservationTracker'
+export { type SettlementStats, SettlementWorker } from './settlementWorker'
 export { computeUserOpHash } from './userOpHasher'
-export { BundlerClient, type UserOperationReceipt } from './bundlerClient'
-export { SettlementWorker, type SettlementStats } from './settlementWorker'

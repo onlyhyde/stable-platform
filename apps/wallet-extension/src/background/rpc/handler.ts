@@ -1,39 +1,37 @@
 // Use SDK for bundler client, UserOperation utilities, and security modules
+
+import { ENTRY_POINT_ADDRESS, getEntryPoint, isChainSupported } from '@stablenet/contracts'
 import {
+  // Gas constants
+  BASE_TRANSFER_GAS,
   buildUserOpTypedData,
   createBundlerClient,
-  getUserOperationHash,
-  packUserOperation,
   // Module operations
   createModuleOperationClient,
   createRateLimiter,
   createTypedDataValidator,
-  getModuleTypeName,
-  // Security utilities
-  InputValidator,
-  type ModuleType,
-  type UserOperation,
-  ENTRY_POINT_ABI,
-  KERNEL_ABI,
-  // Gas constants
-  BASE_TRANSFER_GAS,
   DEFAULT_CALL_GAS_LIMIT,
   DEFAULT_PRE_VERIFICATION_GAS,
   DEFAULT_VERIFICATION_GAS_LIMIT,
   EIP7702_AUTH_GAS,
-  GAS_PER_AUTHORIZATION,
-  GAS_BUFFER_MULTIPLIER,
+  ENTRY_POINT_ABI,
+  encodeValidatorNonceKey,
   GAS_BUFFER_DIVISOR,
+  GAS_BUFFER_MULTIPLIER,
+  GAS_PER_AUTHORIZATION,
+  getModuleTypeName,
+  getUserOperationHash,
+  // Security utilities
+  InputValidator,
+  KERNEL_ABI,
+  type ModuleType,
+  packUserOperation,
+  type UserOperation,
+  VALIDATION_TYPE,
 } from '@stablenet/core'
 import type { Address, Hash, Hex } from 'viem'
 import { createPublicClient, http } from 'viem'
 import { concat, encodeFunctionData, getAddress, isAddress, pad, toHex } from 'viem/utils'
-import {
-  ENTRY_POINT_ADDRESS,
-  getEcdsaValidator,
-  getEntryPoint,
-  isChainSupported,
-} from '@stablenet/contracts'
 import { DEFAULT_VALUES, RPC_ERRORS } from '../../shared/constants'
 import { RpcError } from '../../shared/errors/rpcErrors'
 import { handleApprovalError } from '../../shared/errors/WalletError'
@@ -44,6 +42,8 @@ import { keyringController } from '../keyring'
 import { checkOrigin } from '../security/phishingGuard'
 import { walletState } from '../state/store'
 import { eventBroadcaster } from '../utils/eventBroadcaster'
+import { createValidatorRegistry, type ValidatorRegistry } from '../validators/validatorRegistry'
+import { buildKernelInstallData } from './kernelInitData'
 import { fetchFromPaymaster, sponsorAndSign } from './paymaster'
 import {
   createRpcError,
@@ -53,13 +53,7 @@ import {
   formatTransactionType,
   parseUserOperation,
 } from './utils'
-import { buildKernelInstallData } from './kernelInitData'
 import { validateRpcParams } from './validation'
-import {
-  createValidatorRegistry,
-  type ValidatorRegistry,
-} from '../validators/validatorRegistry'
-import { encodeValidatorNonceKey, VALIDATION_TYPE } from '@stablenet/core'
 
 const logger = createLogger('RpcHandler')
 
@@ -160,7 +154,9 @@ function resolveSignerAddress(sender: Address): Address {
     .accounts.accounts.find((a) => a.address.toLowerCase() === sender.toLowerCase())
 
   if (account?.ownerAddress) {
-    logger.info(`[resolveSignerAddress] ${sender.slice(0, 10)}... → owner=${account.ownerAddress.slice(0, 10)}... (type=${account.type})`)
+    logger.info(
+      `[resolveSignerAddress] ${sender.slice(0, 10)}... → owner=${account.ownerAddress.slice(0, 10)}... (type=${account.type})`
+    )
     return account.ownerAddress
   }
 
@@ -205,13 +201,17 @@ async function signUserOp(
     // ECDSA.recover(toEthSignedMessageHash(userOpHash), sig) == address(this)
     // signMessage with raw hash adds the EIP-191 prefix automatically
     const userOpHash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
-    logger.info(`[signUserOp] EIP-7702 path: sender=${userOp.sender.slice(0, 10)}..., signerAddr=${signerAddr.slice(0, 10)}..., userOpHash=${userOpHash.slice(0, 14)}...`)
+    logger.info(
+      `[signUserOp] EIP-7702 path: sender=${userOp.sender.slice(0, 10)}..., signerAddr=${signerAddr.slice(0, 10)}..., userOpHash=${userOpHash.slice(0, 14)}...`
+    )
     return keyringController.signMessage(signerAddr, userOpHash)
   }
 
   // Standard smart account path: EIP-712 typed data signing
   const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
-  logger.info(`[signUserOp] EIP-712 path: sender=${userOp.sender.slice(0, 10)}..., signerAddr=${signerAddr.slice(0, 10)}...`)
+  logger.info(
+    `[signUserOp] EIP-712 path: sender=${userOp.sender.slice(0, 10)}..., signerAddr=${signerAddr.slice(0, 10)}...`
+  )
   return keyringController.signTypedData(signerAddr, typedData)
 }
 
@@ -271,11 +271,7 @@ function getPublicClient(rpcUrl: string): ReturnType<typeof createPublicClient> 
  */
 function encodeKernelExecute(to: Address, value: bigint = 0n, data: Hex = '0x'): Hex {
   const execMode = pad('0x00' as Hex, { size: 32 })
-  const executionCalldata = concat([
-    to,
-    pad(toHex(value), { size: 32 }),
-    data,
-  ]) as Hex
+  const executionCalldata = concat([to, pad(toHex(value), { size: 32 }), data]) as Hex
   return encodeFunctionData({
     abi: KERNEL_ABI,
     functionName: 'execute',
@@ -290,12 +286,9 @@ function encodeKernelExecute(to: Address, value: bigint = 0n, data: Hex = '0x'):
  * @param validatorAddress - ECDSA validator contract address
  * @param ownerAddress - EOA address to register as the signer/owner
  */
-function encodeKernelInitialize(validatorAddress: Address, ownerAddress: Address): Hex {
+function _encodeKernelInitialize(validatorAddress: Address, ownerAddress: Address): Hex {
   // rootValidator is bytes21: 0x01 (MODULE_TYPE.VALIDATOR) + 20-byte validator address
-  const rootValidator = concat([
-    pad(toHex(1), { size: 1 }),
-    validatorAddress,
-  ]) as Hex
+  const rootValidator = concat([pad(toHex(1), { size: 1 }), validatorAddress]) as Hex
   const hook = '0x0000000000000000000000000000000000000000' as Address
   // validatorData = the owner address (ECDSA validator stores this as the signer)
   const validatorData = ownerAddress as Hex
@@ -1278,7 +1271,9 @@ const handlers: Record<string, RpcHandler> = {
           delegateAddress: contractAddress,
         })
       } catch (_err) {
-        logger.warn('Failed to update account type after delegation (tx was broadcast successfully)')
+        logger.warn(
+          'Failed to update account type after delegation (tx was broadcast successfully)'
+        )
       }
 
       return { txHash }
@@ -1402,7 +1397,9 @@ const handlers: Record<string, RpcHandler> = {
       if (factoryInfo) {
         userOp.factory = factoryInfo.factory
         userOp.factoryData = factoryInfo.factoryData
-        logger.info(`[eth_sendUserOperation] Account not deployed, attaching factory: ${factoryInfo.factory}`)
+        logger.info(
+          `[eth_sendUserOperation] Account not deployed, attaching factory: ${factoryInfo.factory}`
+        )
       }
     }
 
@@ -1416,7 +1413,8 @@ const handlers: Record<string, RpcHandler> = {
         userOp.maxFeePerGas = (fees.maxFeePerGas ?? 0n) + buffer
         // ERC-4337: maxPriorityFeePerGas must not exceed maxFeePerGas
         const rawPriority = fees.maxPriorityFeePerGas ?? 0n
-        userOp.maxPriorityFeePerGas = rawPriority > userOp.maxFeePerGas ? userOp.maxFeePerGas : rawPriority
+        userOp.maxPriorityFeePerGas =
+          rawPriority > userOp.maxFeePerGas ? userOp.maxFeePerGas : rawPriority
       } catch {
         // Fallback to legacy gas price for non-EIP-1559 chains
         const gasPrice = await publicClient.getGasPrice()
@@ -1481,8 +1479,13 @@ const handlers: Record<string, RpcHandler> = {
     }
 
     // ERC-7677: sponsorAndSign handles stub → estimate → final → sign
-    const shouldSponsor = gasPayment?.type === 'sponsor' || gasPayment?.type === 'erc20' || (!gasPayment && !!network.paymasterUrl)
-    logger.info(`[eth_sendUserOperation] sender=${userOp.sender}, nonce=${userOp.nonce}, shouldSponsor=${shouldSponsor}, gasPayment=${JSON.stringify(gasPayment ?? 'none')}`)
+    const shouldSponsor =
+      gasPayment?.type === 'sponsor' ||
+      gasPayment?.type === 'erc20' ||
+      (!gasPayment && !!network.paymasterUrl)
+    logger.info(
+      `[eth_sendUserOperation] sender=${userOp.sender}, nonce=${userOp.nonce}, shouldSponsor=${shouldSponsor}, gasPayment=${JSON.stringify(gasPayment ?? 'none')}`
+    )
 
     if (!userOp.paymaster && shouldSponsor && network.paymasterUrl) {
       const paymasterContext: Record<string, unknown> =
@@ -1490,7 +1493,9 @@ const handlers: Record<string, RpcHandler> = {
           ? { paymasterType: 'erc20', tokenAddress: gasPayment.tokenAddress }
           : {}
 
-      logger.info(`[eth_sendUserOperation] Sponsored path: paymasterUrl=${network.paymasterUrl}, context=${JSON.stringify(paymasterContext)}`)
+      logger.info(
+        `[eth_sendUserOperation] Sponsored path: paymasterUrl=${network.paymasterUrl}, context=${JSON.stringify(paymasterContext)}`
+      )
 
       const signedUserOp = await sponsorAndSign({
         userOp,
@@ -1512,17 +1517,25 @@ const handlers: Record<string, RpcHandler> = {
           const clientHash = getUserOperationHash(signedUserOp, entryPoint, BigInt(network.chainId))
           const packed = packUserOperation(signedUserOp)
           // Cast packed to satisfy EntryPoint ABI tuple type (nonce is Hex in packed but bigint in ABI)
-          const packedForAbi = { ...packed, nonce: BigInt(packed.nonce), preVerificationGas: BigInt(packed.preVerificationGas) }
-          const onChainHash = await getPublicClient(network.rpcUrl).readContract({
+          const packedForAbi = {
+            ...packed,
+            nonce: BigInt(packed.nonce),
+            preVerificationGas: BigInt(packed.preVerificationGas),
+          }
+          const onChainHash = (await getPublicClient(network.rpcUrl).readContract({
             address: entryPoint,
             abi: ENTRY_POINT_ABI,
             functionName: 'getUserOpHash',
             args: [packedForAbi as never],
-          }) as `0x${string}`
+          })) as `0x${string}`
           const hashMatch = clientHash === onChainHash
-          logger.info(`[eth_sendUserOperation] HASH DIAG: clientHash=${clientHash.slice(0, 14)}..., onChainHash=${String(onChainHash).slice(0, 14)}..., match=${hashMatch}`)
+          logger.info(
+            `[eth_sendUserOperation] HASH DIAG: clientHash=${clientHash.slice(0, 14)}..., onChainHash=${String(onChainHash).slice(0, 14)}..., match=${hashMatch}`
+          )
           if (!hashMatch) {
-            logger.error(`[eth_sendUserOperation] HASH MISMATCH! Client signs different hash than EntryPoint expects. clientHash=${clientHash}, onChainHash=${String(onChainHash)}`)
+            logger.error(
+              `[eth_sendUserOperation] HASH MISMATCH! Client signs different hash than EntryPoint expects. clientHash=${clientHash}, onChainHash=${String(onChainHash)}`
+            )
           }
         } catch (hashErr) {
           logger.warn(`[eth_sendUserOperation] HASH DIAG failed: ${(hashErr as Error).message}`)
@@ -1534,7 +1547,9 @@ const handlers: Record<string, RpcHandler> = {
           return hash
         } catch (error) {
           const err = error as Error & { code?: number; data?: unknown }
-          logger.error(`[eth_sendUserOperation] Bundler REJECTED: code=${err.code}, msg=${err.message}, data=${JSON.stringify(err.data ?? null)}`)
+          logger.error(
+            `[eth_sendUserOperation] Bundler REJECTED: code=${err.code}, msg=${err.message}, data=${JSON.stringify(err.data ?? null)}`
+          )
           throw createRpcError({
             code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
             message: err.message || 'UserOperation submission failed',
@@ -1542,7 +1557,9 @@ const handlers: Record<string, RpcHandler> = {
           })
         }
       }
-      logger.warn('[eth_sendUserOperation] sponsorAndSign returned null, falling through to self-pay')
+      logger.warn(
+        '[eth_sendUserOperation] sponsorAndSign returned null, falling through to self-pay'
+      )
       // sponsorAndSign returned null → fall through to self-pay
     }
 
@@ -1557,9 +1574,13 @@ const handlers: Record<string, RpcHandler> = {
       userOp.preVerificationGas = gasEstimate.preVerificationGas
       userOp.verificationGasLimit = gasEstimate.verificationGasLimit
       userOp.callGasLimit = gasEstimate.callGasLimit
-      logger.info(`[eth_sendUserOperation] Self-pay gas OK: preVerif=${userOp.preVerificationGas}, verifLimit=${userOp.verificationGasLimit}, callLimit=${userOp.callGasLimit}`)
+      logger.info(
+        `[eth_sendUserOperation] Self-pay gas OK: preVerif=${userOp.preVerificationGas}, verifLimit=${userOp.verificationGasLimit}, callLimit=${userOp.callGasLimit}`
+      )
     } catch (error) {
-      logger.warn(`[eth_sendUserOperation] Self-pay gas estimation FAILED, using defaults: ${(error as Error).message}`)
+      logger.warn(
+        `[eth_sendUserOperation] Self-pay gas estimation FAILED, using defaults: ${(error as Error).message}`
+      )
       userOp.verificationGasLimit = DEFAULT_VERIFICATION_GAS_LIMIT
       userOp.callGasLimit = DEFAULT_CALL_GAS_LIMIT
       userOp.preVerificationGas = DEFAULT_PRE_VERIFICATION_GAS
@@ -1582,20 +1603,30 @@ const handlers: Record<string, RpcHandler> = {
     try {
       const clientHash = getUserOperationHash(signedUserOp, entryPoint, BigInt(network.chainId))
       const packed = packUserOperation(signedUserOp)
-      const packedForAbi = { ...packed, nonce: BigInt(packed.nonce), preVerificationGas: BigInt(packed.preVerificationGas) }
-      const onChainHash = await getPublicClient(network.rpcUrl).readContract({
+      const packedForAbi = {
+        ...packed,
+        nonce: BigInt(packed.nonce),
+        preVerificationGas: BigInt(packed.preVerificationGas),
+      }
+      const onChainHash = (await getPublicClient(network.rpcUrl).readContract({
         address: entryPoint,
         abi: ENTRY_POINT_ABI,
         functionName: 'getUserOpHash',
         args: [packedForAbi as never],
-      }) as `0x${string}`
+      })) as `0x${string}`
       const hashMatch = clientHash === onChainHash
-      logger.info(`[eth_sendUserOperation] HASH DIAG (self-pay): clientHash=${clientHash.slice(0, 14)}..., onChainHash=${String(onChainHash).slice(0, 14)}..., match=${hashMatch}`)
+      logger.info(
+        `[eth_sendUserOperation] HASH DIAG (self-pay): clientHash=${clientHash.slice(0, 14)}..., onChainHash=${String(onChainHash).slice(0, 14)}..., match=${hashMatch}`
+      )
       if (!hashMatch) {
-        logger.error(`[eth_sendUserOperation] HASH MISMATCH! clientHash=${clientHash}, onChainHash=${String(onChainHash)}`)
+        logger.error(
+          `[eth_sendUserOperation] HASH MISMATCH! clientHash=${clientHash}, onChainHash=${String(onChainHash)}`
+        )
       }
     } catch (hashErr) {
-      logger.warn(`[eth_sendUserOperation] HASH DIAG (self-pay) failed: ${(hashErr as Error).message}`)
+      logger.warn(
+        `[eth_sendUserOperation] HASH DIAG (self-pay) failed: ${(hashErr as Error).message}`
+      )
     }
 
     try {
@@ -1604,7 +1635,9 @@ const handlers: Record<string, RpcHandler> = {
       return hash
     } catch (error) {
       const err = error as Error & { code?: number; data?: unknown }
-      logger.error(`[eth_sendUserOperation] Self-pay bundler REJECTED: code=${err.code}, msg=${err.message}, data=${JSON.stringify(err.data ?? null)}`)
+      logger.error(
+        `[eth_sendUserOperation] Self-pay bundler REJECTED: code=${err.code}, msg=${err.message}, data=${JSON.stringify(err.data ?? null)}`
+      )
       throw createRpcError({
         code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
         message: err.message || 'UserOperation submission failed',
@@ -1885,12 +1918,15 @@ const handlers: Record<string, RpcHandler> = {
       } catch {
         // Delegated accounts (EIP-7702 → Kernel) need more gas than plain EOA transfers
         // because Kernel's receive()/fallback() runs validation logic
-        const accountInfo = walletState.getState().accounts.accounts.find(
-          (a: { address: string }) => a.address.toLowerCase() === txParams.from!.toLowerCase()
-        )
-        gas = accountInfo?.type === 'delegated'
-          ? DEFAULT_CALL_GAS_LIMIT  // 200K — covers Kernel dispatch + validation
-          : DEFAULT_VALUES.GAS_LIMIT // 21K — plain EOA transfer
+        const accountInfo = walletState
+          .getState()
+          .accounts.accounts.find(
+            (a: { address: string }) => a.address.toLowerCase() === txParams.from!.toLowerCase()
+          )
+        gas =
+          accountInfo?.type === 'delegated'
+            ? DEFAULT_CALL_GAS_LIMIT // 200K — covers Kernel dispatch + validation
+            : DEFAULT_VALUES.GAS_LIMIT // 21K — plain EOA transfer
       }
     }
 
@@ -3179,9 +3215,8 @@ const handlers: Record<string, RpcHandler> = {
     }
     const { classifyAccountByCode, extractDelegateAddress } = await import('@stablenet/core')
     const accountType = classifyAccountByCode(code as Hex | undefined)
-    const delegationTarget = accountType === 'delegated'
-      ? getAddress(extractDelegateAddress(code as Hex)!)
-      : null
+    const delegationTarget =
+      accountType === 'delegated' ? getAddress(extractDelegateAddress(code as Hex)!) : null
 
     let rootValidator: string | null = null
     let accountId: string | null = null
@@ -4493,7 +4528,13 @@ const handlers: Record<string, RpcHandler> = {
       args: [account],
     })
 
-    const info = result as { deposit: bigint; staked: boolean; stake: bigint; unstakeDelaySec: number; withdrawTime: number }
+    const info = result as {
+      deposit: bigint
+      staked: boolean
+      stake: bigint
+      unstakeDelaySec: number
+      withdrawTime: number
+    }
     return {
       deposit: info.deposit.toString(),
       staked: info.staked,

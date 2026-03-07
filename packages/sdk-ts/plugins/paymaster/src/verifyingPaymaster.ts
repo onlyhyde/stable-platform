@@ -1,3 +1,12 @@
+import {
+  computePaymasterDomainSeparator,
+  computePaymasterHash,
+  computeUserOpCoreHash,
+  encodePaymasterData,
+  encodePaymasterDataWithSignature,
+  encodeVerifyingPayload,
+  PaymasterType,
+} from '@stablenet/core'
 import type {
   PaymasterClient,
   PaymasterData,
@@ -6,15 +15,6 @@ import type {
 } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { concat, pad, toHex } from 'viem'
-import {
-  encodePaymasterData,
-  encodePaymasterDataWithSignature,
-  PaymasterType,
-  computePaymasterDomainSeparator,
-  computeUserOpCoreHash,
-  computePaymasterHash,
-  encodeVerifyingPayload,
-} from '@stablenet/core'
 import type { VerifyingPaymasterConfig } from './types'
 import { DEFAULT_VALIDITY_SECONDS } from './types'
 
@@ -160,11 +160,7 @@ export function createVerifyingPaymaster(config: VerifyingPaymasterConfig): Paym
     })
 
     // Compute the hash using the 3-step core approach
-    const domainSeparator = computePaymasterDomainSeparator(
-      chainId,
-      entryPoint,
-      paymasterAddress
-    )
+    const domainSeparator = computePaymasterDomainSeparator(chainId, entryPoint, paymasterAddress)
     const packedOp = packUserOpForHash(userOperation)
     const userOpCoreHash = computeUserOpCoreHash(packedOp)
     const hash = computePaymasterHash(domainSeparator, userOpCoreHash, envelope)

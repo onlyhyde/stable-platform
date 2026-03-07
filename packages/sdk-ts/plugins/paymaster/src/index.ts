@@ -52,6 +52,18 @@
  * ```
  */
 
+// Re-export core paymaster types and utilities for convenience
+export {
+  decodePaymasterData,
+  encodePaymasterData,
+  encodePaymasterDataWithSignature,
+  HEADER_SIZE,
+  isPaymasterDataSupported,
+  PAYMASTER_DATA_VERSION,
+  type PaymasterDataEnvelope,
+  PaymasterType as CorePaymasterType,
+  splitEnvelopeAndSignature,
+} from '@stablenet/core'
 // Permit2 Paymaster (Token-based gas payment)
 export {
   createPermit2Paymaster,
@@ -81,16 +93,3 @@ export {
   createVerifyingPaymaster,
   createVerifyingPaymasterFromPrivateKey,
 } from './verifyingPaymaster'
-
-// Re-export core paymaster types and utilities for convenience
-export {
-  type PaymasterDataEnvelope,
-  PaymasterType as CorePaymasterType,
-  encodePaymasterData,
-  decodePaymasterData,
-  encodePaymasterDataWithSignature,
-  splitEnvelopeAndSignature,
-  isPaymasterDataSupported,
-  PAYMASTER_DATA_VERSION,
-  HEADER_SIZE,
-} from '@stablenet/core'

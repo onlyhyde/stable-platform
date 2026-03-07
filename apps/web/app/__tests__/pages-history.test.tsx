@@ -26,7 +26,8 @@ vi.mock('@/components/common', () => {
     CardFooter: c(),
     CardHeader: c(),
     CardTitle: c(),
-    ConnectWalletCard: ({ message }: Record<string, unknown>) => React.createElement('div', null, message),
+    ConnectWalletCard: ({ message }: Record<string, unknown>) =>
+      React.createElement('div', null, message),
     InfoBanner: c(),
     Input: c(),
     Modal: c(),
@@ -76,7 +77,7 @@ vi.mock('wagmi', () => ({
 }))
 
 vi.mock('@stablenet/wallet-sdk', () => ({
-  getNativeCurrencySymbol: (chainId: number) => chainId === 8283 ? 'WKRC' : 'ETH',
+  getNativeCurrencySymbol: (chainId: number) => (chainId === 8283 ? 'WKRC' : 'ETH'),
   detectProvider: vi.fn(() => Promise.resolve(null)),
 }))
 

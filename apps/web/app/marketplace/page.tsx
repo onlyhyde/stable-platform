@@ -39,10 +39,9 @@ export default function MarketplacePage() {
     uninstallModule,
     installedModules,
     installingModuleId,
-    uninstallingModuleId,
     loadInstalledModules,
   } = useModuleInstall()
-  const { modules: MODULE_CATALOG, isLoading: isLoadingRegistry } = useModuleRegistry()
+  const { modules: MODULE_CATALOG } = useModuleRegistry()
 
   // Load on-chain installed status when smart account is ready
   useEffect(() => {
@@ -57,7 +56,7 @@ export default function MarketplacePage() {
 
   const findModule = useCallback(
     (id: string) => MODULE_CATALOG.find((m) => m.id === id) ?? null,
-    []
+    [MODULE_CATALOG.find]
   )
 
   const handleInstallClick = useCallback(
@@ -185,7 +184,7 @@ export default function MarketplacePage() {
     }
 
     return results
-  }, [searchQuery, selectedCategory, selectedType])
+  }, [searchQuery, selectedCategory, selectedType, MODULE_CATALOG])
 
   const featuredModules = MODULE_CATALOG.filter((m) => m.featured)
 

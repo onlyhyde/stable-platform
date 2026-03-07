@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { predictCounterfactualAddress, getSenderAddress } from '../../src/factory'
+import { getSenderAddress, predictCounterfactualAddress } from '../../src/factory'
 
 describe('factory module', () => {
   describe('predictCounterfactualAddress', () => {
     it('should compute a deterministic CREATE2 address', () => {
       const factory = '0x1234567890123456789012345678901234567890' as const
-      const initCodeHash = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' as const
+      const initCodeHash =
+        '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' as const
       const salt = '0x0000000000000000000000000000000000000000000000000000000000000001' as const
 
       const address = predictCounterfactualAddress(factory, initCodeHash, salt)
@@ -14,7 +15,8 @@ describe('factory module', () => {
 
     it('should return different addresses for different salts', () => {
       const factory = '0x1234567890123456789012345678901234567890' as const
-      const initCodeHash = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' as const
+      const initCodeHash =
+        '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' as const
       const salt1 = '0x0000000000000000000000000000000000000000000000000000000000000001' as const
       const salt2 = '0x0000000000000000000000000000000000000000000000000000000000000002' as const
 
@@ -25,7 +27,8 @@ describe('factory module', () => {
 
     it('should return same address for same inputs', () => {
       const factory = '0x1234567890123456789012345678901234567890' as const
-      const initCodeHash = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' as const
+      const initCodeHash =
+        '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' as const
       const salt = '0x0000000000000000000000000000000000000000000000000000000000000001' as const
 
       const address1 = predictCounterfactualAddress(factory, initCodeHash, salt)
@@ -38,7 +41,8 @@ describe('factory module', () => {
     it('should parse SenderAddressResult revert data', async () => {
       const expectedAddress = '0xABcdEF1234567890ABCDef1234567890AbCdEf12'
       // SenderAddressResult selector (0x6ca7b806) + padded address
-      const revertData = '0x6ca7b806000000000000000000000000abcdef1234567890abcdef1234567890abcdef12'
+      const revertData =
+        '0x6ca7b806000000000000000000000000abcdef1234567890abcdef1234567890abcdef12'
 
       const mockClient = {
         call: vi.fn().mockRejectedValue({ data: revertData }),
@@ -59,11 +63,7 @@ describe('factory module', () => {
       } as unknown as Parameters<typeof getSenderAddress>[0]
 
       await expect(
-        getSenderAddress(
-          mockClient,
-          '0x0000000000000000000000000000000000000001',
-          '0xabcd'
-        )
+        getSenderAddress(mockClient, '0x0000000000000000000000000000000000000001', '0xabcd')
       ).rejects.toThrow('Unexpected revert data')
     })
 
@@ -73,11 +73,7 @@ describe('factory module', () => {
       } as unknown as Parameters<typeof getSenderAddress>[0]
 
       await expect(
-        getSenderAddress(
-          mockClient,
-          '0x0000000000000000000000000000000000000001',
-          '0xabcd'
-        )
+        getSenderAddress(mockClient, '0x0000000000000000000000000000000000000001', '0xabcd')
       ).rejects.toThrow('Network error')
     })
   })

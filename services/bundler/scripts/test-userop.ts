@@ -156,9 +156,9 @@ function encodeKernelExecuteCallData(to: Address, value: bigint, data: Hex): Hex
 
   // Kernel v3 expects abi.encodePacked(target[20], value[32], callData[variable])
   const executionCalldata = concat([
-    to,                              // 20 bytes: target address
+    to, // 20 bytes: target address
     pad(toHex(value), { size: 32 }), // 32 bytes: value
-    data,                            // variable: raw calldata
+    data, // variable: raw calldata
   ]) as Hex
 
   return encodeFunctionData({
@@ -273,8 +273,20 @@ function computeUserOpHash(
 
   const domainSeparator = keccak256(
     encodeAbiParameters(
-      [{ type: 'bytes32' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'uint256' }, { type: 'address' }],
-      [EIP712_DOMAIN_TYPEHASH, EIP712_DOMAIN_NAME_HASH, EIP712_DOMAIN_VERSION_HASH, chainId, entryPoint]
+      [
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'bytes32' },
+        { type: 'uint256' },
+        { type: 'address' },
+      ],
+      [
+        EIP712_DOMAIN_TYPEHASH,
+        EIP712_DOMAIN_NAME_HASH,
+        EIP712_DOMAIN_VERSION_HASH,
+        chainId,
+        entryPoint,
+      ]
     )
   )
 

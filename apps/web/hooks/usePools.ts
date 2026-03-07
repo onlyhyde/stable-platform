@@ -60,16 +60,28 @@ export function usePools(): UsePoolsReturn {
       const mapped: Pool[] = (data.pools ?? data ?? []).map((p: Record<string, unknown>) => ({
         address: p.address as Address,
         token0: {
-          address: (p.token0Address ?? (p.token0 as Record<string, unknown>)?.address ?? '') as Address,
+          address: (p.token0Address ??
+            (p.token0 as Record<string, unknown>)?.address ??
+            '') as Address,
           name: (p.token0Name ?? (p.token0 as Record<string, unknown>)?.name ?? 'Token0') as string,
-          symbol: (p.token0Symbol ?? (p.token0 as Record<string, unknown>)?.symbol ?? '???') as string,
-          decimals: Number(p.token0Decimals ?? (p.token0 as Record<string, unknown>)?.decimals ?? 18),
+          symbol: (p.token0Symbol ??
+            (p.token0 as Record<string, unknown>)?.symbol ??
+            '???') as string,
+          decimals: Number(
+            p.token0Decimals ?? (p.token0 as Record<string, unknown>)?.decimals ?? 18
+          ),
         },
         token1: {
-          address: (p.token1Address ?? (p.token1 as Record<string, unknown>)?.address ?? '') as Address,
+          address: (p.token1Address ??
+            (p.token1 as Record<string, unknown>)?.address ??
+            '') as Address,
           name: (p.token1Name ?? (p.token1 as Record<string, unknown>)?.name ?? 'Token1') as string,
-          symbol: (p.token1Symbol ?? (p.token1 as Record<string, unknown>)?.symbol ?? '???') as string,
-          decimals: Number(p.token1Decimals ?? (p.token1 as Record<string, unknown>)?.decimals ?? 18),
+          symbol: (p.token1Symbol ??
+            (p.token1 as Record<string, unknown>)?.symbol ??
+            '???') as string,
+          decimals: Number(
+            p.token1Decimals ?? (p.token1 as Record<string, unknown>)?.decimals ?? 18
+          ),
         },
         reserve0: BigInt(p.reserve0?.toString() ?? '0'),
         reserve1: BigInt(p.reserve1?.toString() ?? '0'),
@@ -129,17 +141,29 @@ export function usePools(): UsePoolsReturn {
         (p: Record<string, unknown>) => ({
           poolAddress: p.poolAddress as Address,
           token0: {
-            address: (p.token0Address ?? (p.token0 as Record<string, unknown>)?.address ?? '') as Address,
-            name: (p.token0Name ?? (p.token0 as Record<string, unknown>)?.name ?? 'Token0') as string,
-            symbol: (p.token0Symbol ?? (p.token0 as Record<string, unknown>)?.symbol ?? '???') as string,
+            address: (p.token0Address ??
+              (p.token0 as Record<string, unknown>)?.address ??
+              '') as Address,
+            name: (p.token0Name ??
+              (p.token0 as Record<string, unknown>)?.name ??
+              'Token0') as string,
+            symbol: (p.token0Symbol ??
+              (p.token0 as Record<string, unknown>)?.symbol ??
+              '???') as string,
             decimals: Number(
               p.token0Decimals ?? (p.token0 as Record<string, unknown>)?.decimals ?? 18
             ),
           },
           token1: {
-            address: (p.token1Address ?? (p.token1 as Record<string, unknown>)?.address ?? '') as Address,
-            name: (p.token1Name ?? (p.token1 as Record<string, unknown>)?.name ?? 'Token1') as string,
-            symbol: (p.token1Symbol ?? (p.token1 as Record<string, unknown>)?.symbol ?? '???') as string,
+            address: (p.token1Address ??
+              (p.token1 as Record<string, unknown>)?.address ??
+              '') as Address,
+            name: (p.token1Name ??
+              (p.token1 as Record<string, unknown>)?.name ??
+              'Token1') as string,
+            symbol: (p.token1Symbol ??
+              (p.token1 as Record<string, unknown>)?.symbol ??
+              '???') as string,
             decimals: Number(
               p.token1Decimals ?? (p.token1 as Record<string, unknown>)?.decimals ?? 18
             ),

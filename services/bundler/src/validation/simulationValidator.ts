@@ -134,10 +134,7 @@ export class SimulationValidator implements ISimulationValidator {
       })
 
       if (!data) {
-        throw new RpcError(
-          'simulateValidation returned empty data',
-          RPC_ERROR_CODES.INTERNAL_ERROR
-        )
+        throw new RpcError('simulateValidation returned empty data', RPC_ERROR_CODES.INTERNAL_ERROR)
       }
 
       // Normal return — decode ValidationResult
@@ -190,10 +187,7 @@ export class SimulationValidator implements ISimulationValidator {
       })
 
       if (!data) {
-        throw new RpcError(
-          'simulateHandleOp returned empty data',
-          RPC_ERROR_CODES.INTERNAL_ERROR
-        )
+        throw new RpcError('simulateHandleOp returned empty data', RPC_ERROR_CODES.INTERNAL_ERROR)
       }
 
       return decodeExecutionResultReturn(data)

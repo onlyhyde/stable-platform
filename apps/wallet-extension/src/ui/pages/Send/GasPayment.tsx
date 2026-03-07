@@ -134,7 +134,7 @@ export function GasPaymentSelector({
     }
 
     return options
-  }, [gasEstimate, sponsorPolicy, supportedTokens, gasPayment, erc20Estimate, t])
+  }, [gasEstimate, sponsorPolicy, supportedTokens, gasPayment, erc20Estimate, t, nativeSymbol])
 
   // Handle option selection
   const handleOptionSelect = (option: PaymentOption) => {

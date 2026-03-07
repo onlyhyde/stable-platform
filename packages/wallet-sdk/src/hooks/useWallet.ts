@@ -25,8 +25,6 @@ export function useWallet(config: WalletSDKConfig = {}) {
   const providerRef = useRef<StableNetProvider | null>(null)
   const unsubscribesRef = useRef<Array<() => void>>([])
 
-  // Stable serialization of networks for value-based comparison
-  const networksKey = JSON.stringify(networks ?? null)
   const networksRef = useRef(networks)
   networksRef.current = networks
 
@@ -36,7 +34,11 @@ export function useWallet(config: WalletSDKConfig = {}) {
 
     const init = async () => {
       try {
-        const provider = await detectProvider({ autoConnect, timeout, networks: networksRef.current })
+        const provider = await detectProvider({
+          autoConnect,
+          timeout,
+          networks: networksRef.current,
+        })
         if (!mounted) return
 
         if (provider) {
@@ -129,7 +131,7 @@ export function useWallet(config: WalletSDKConfig = {}) {
       unsubscribesRef.current = []
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoConnect, timeout, networksKey])
+  }, [autoConnect, timeout])
 
   // Connect action
   const connect = useCallback(async (): Promise<Address[]> => {

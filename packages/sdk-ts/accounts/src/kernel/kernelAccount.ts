@@ -63,8 +63,9 @@ export async function toKernelSmartAccount(
   } = config
 
   // Duck-type detection: ValidatorRouter has getActiveValidator method
-  const isRouter = 'getActiveValidator' in validatorOrRouter
-    && typeof (validatorOrRouter as ValidatorRouterLike).getActiveValidator === 'function'
+  const isRouter =
+    'getActiveValidator' in validatorOrRouter &&
+    typeof (validatorOrRouter as ValidatorRouterLike).getActiveValidator === 'function'
 
   // For initialization, always use the root/primary validator
   const initValidator: Validator = isRouter
@@ -89,9 +90,7 @@ export async function toKernelSmartAccount(
   const getNonce = async (): Promise<bigint> => {
     // Get nonce from EntryPoint
     // The key is validator-specific: 0n for root, encoded key for non-root
-    const nonceKey = isRouter
-      ? (validatorOrRouter as ValidatorRouterLike).getActiveNonceKey()
-      : 0n
+    const nonceKey = isRouter ? (validatorOrRouter as ValidatorRouterLike).getActiveNonceKey() : 0n
 
     const nonce = await client.readContract({
       address: entryPoint,

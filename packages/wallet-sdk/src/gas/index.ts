@@ -6,34 +6,29 @@
  */
 
 // Gas estimation factory and types
+// Gas constants
 export {
   createGasEstimator,
   createSmartAccountGasStrategy,
+  DEFAULT_CALL_GAS_LIMIT,
+  DEFAULT_PRE_VERIFICATION_GAS,
+  DEFAULT_VERIFICATION_GAS_LIMIT,
+  type ERC20GasEstimate,
+  GAS_BUFFER_DIVISOR,
+  GAS_BUFFER_MULTIPLIER,
+  type GasEstimationStrategy,
   type GasEstimator,
   type GasEstimatorConfig,
   type GasPriceInfo,
-  type ERC20GasEstimate,
-  type GasEstimationStrategy,
   type GasStrategyConfig,
   type GasStrategyRegistry,
-} from '@stablenet/core'
-
-// Gas constants
-export {
-  DEFAULT_CALL_GAS_LIMIT,
-  DEFAULT_VERIFICATION_GAS_LIMIT,
-  DEFAULT_PRE_VERIFICATION_GAS,
-  PAYMASTER_VERIFICATION_GAS,
-  PAYMASTER_POST_OP_GAS,
-  GAS_BUFFER_MULTIPLIER,
-  GAS_BUFFER_DIVISOR,
   MAX_GAS_LIMIT,
+  PAYMASTER_POST_OP_GAS,
+  PAYMASTER_VERIFICATION_GAS,
 } from '@stablenet/core'
 
 // Types
-export type {
-  UserOperationGasEstimation,
-} from '@stablenet/sdk-types'
+export type { UserOperationGasEstimation } from '@stablenet/sdk-types'
 
 import type { BundlerClient, UserOperationGasEstimation } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
@@ -48,5 +43,7 @@ export async function estimateUserOperationGas(
   bundlerClient: BundlerClient,
   userOp: { sender: Address; callData: Hex } & Record<string, unknown>
 ): Promise<UserOperationGasEstimation> {
-  return bundlerClient.estimateUserOperationGas(userOp as Parameters<BundlerClient['estimateUserOperationGas']>[0])
+  return bundlerClient.estimateUserOperationGas(
+    userOp as Parameters<BundlerClient['estimateUserOperationGas']>[0]
+  )
 }

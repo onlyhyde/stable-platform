@@ -28,6 +28,7 @@ export {
 export {
   // Base gas limits
   BASE_TRANSFER_GAS,
+  calculateUnusedGasPenalty,
   DEFAULT_CALL_GAS_LIMIT,
   DEFAULT_MAX_FEE_PER_GAS,
   DEFAULT_PRE_VERIFICATION_GAS,
@@ -51,5 +52,4 @@ export {
   // EIP-4337 v0.9 unused gas penalty
   UNUSED_GAS_PENALTY_DIVISOR,
   UNUSED_GAS_PENALTY_THRESHOLD,
-  calculateUnusedGasPenalty,
 } from './gas'

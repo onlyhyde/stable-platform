@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { Address } from 'viem'
 import {
   Button,
   Card,
@@ -12,8 +11,8 @@ import {
   useToast,
 } from '@/components/common'
 import { useWallet } from '@/hooks'
-import { useOnRamp } from '@/hooks/useOnRamp'
 import { useBankAccounts } from '@/hooks/useBankAccounts'
+import { useOnRamp } from '@/hooks/useOnRamp'
 import type {
   CryptoCurrency,
   FiatCurrency,
@@ -122,9 +121,7 @@ export default function BuyPage() {
         <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
           Buy Crypto
         </h1>
-        <p style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Purchase crypto with fiat currency
-        </p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Purchase crypto with fiat currency</p>
       </div>
 
       {/* Tab Toggle */}
@@ -135,8 +132,7 @@ export default function BuyPage() {
           className="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all"
           style={{
             backgroundColor: activeTab === 'buy' ? 'rgb(var(--background))' : 'transparent',
-            color:
-              activeTab === 'buy' ? 'rgb(var(--foreground))' : 'rgb(var(--muted-foreground))',
+            color: activeTab === 'buy' ? 'rgb(var(--foreground))' : 'rgb(var(--muted-foreground))',
             boxShadow: activeTab === 'buy' ? '0 1px 2px rgb(0 0 0 / 0.05)' : 'none',
           }}
         >
@@ -436,7 +432,10 @@ function QuoteDisplay({ quote }: { quote: OnRampQuote }) {
   return (
     <div
       className="p-4 rounded-lg border space-y-2"
-      style={{ borderColor: 'rgb(var(--primary) / 0.3)', backgroundColor: 'rgb(var(--primary) / 0.05)' }}
+      style={{
+        borderColor: 'rgb(var(--primary) / 0.3)',
+        backgroundColor: 'rgb(var(--primary) / 0.05)',
+      }}
     >
       <div className="flex justify-between text-sm">
         <span style={{ color: 'rgb(var(--muted-foreground))' }}>You pay</span>

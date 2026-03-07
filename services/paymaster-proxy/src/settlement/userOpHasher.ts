@@ -1,6 +1,6 @@
-import type { Address, Hex } from 'viem'
 import { getUserOperationHash } from '@stablenet/core'
-import type { UserOperationRpc, PackedUserOperationRpc } from '../types'
+import type { Address, Hex } from 'viem'
+import type { PackedUserOperationRpc, UserOperationRpc } from '../types'
 
 /**
  * Compute the standard ERC-4337 userOpHash for a UserOperation

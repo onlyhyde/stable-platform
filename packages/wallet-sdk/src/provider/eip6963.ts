@@ -7,8 +7,8 @@
  * @see https://eips.ethereum.org/EIPS/eip-6963
  */
 
-import { walletSdkLogger } from '../logger'
 import type { EIP1193Provider } from 'viem'
+import { walletSdkLogger } from '../logger'
 import type { EIP6963ProviderDetail, EIP6963ProviderInfo } from '../types'
 
 /**

@@ -51,12 +51,15 @@ export interface DepositMonitorConfig {
  * Deposit monitor stats for health endpoint
  */
 export interface DepositMonitorStats {
-  deposits: Record<string, {
-    type: PaymasterType
-    deposit: string
-    isLow: boolean
-    lastCheckedAt: string | null
-  }>
+  deposits: Record<
+    string,
+    {
+      type: PaymasterType
+      deposit: string
+      isLow: boolean
+      lastCheckedAt: string | null
+    }
+  >
   anyLow: boolean
   lastPollAt: string | null
 }
@@ -132,18 +135,21 @@ export class DepositMonitor {
    * Poll all paymaster deposits
    */
   async poll(): Promise<void> {
-    const entries = Object.entries(this.config.paymasterAddresses) as [PaymasterType, Address | undefined][]
+    const entries = Object.entries(this.config.paymasterAddresses) as [
+      PaymasterType,
+      Address | undefined,
+    ][]
 
     const promises = entries
       .filter((entry): entry is [PaymasterType, Address] => entry[1] !== undefined)
       .map(async ([type, address]) => {
         try {
-          const deposit = await this.client.readContract({
+          const deposit = (await this.client.readContract({
             address: this.config.entryPoint,
             abi: ENTRY_POINT_BALANCE_ABI,
             functionName: 'balanceOf',
             args: [address],
-          }) as bigint
+          })) as bigint
 
           const isLow = deposit < this.config.minDepositThreshold
 
@@ -211,7 +217,6 @@ export class DepositMonitor {
     const amount = this.config.autoDepositAmount ?? 10n ** 17n // 0.1 ETH
 
     this.autoDepositInFlight.add(key)
-    console.log(`[deposit-monitor] Auto-depositing ${amount} wei to ${address}`)
 
     const account = this.walletClient.account
     if (!account) {
@@ -231,7 +236,6 @@ export class DepositMonitor {
         account,
       })
       .then((txHash) => {
-        console.log(`[deposit-monitor] Auto-deposit tx sent: ${txHash} for ${address}`)
         this.lastAutoDepositAt.set(key, Date.now())
       })
       .catch((err) => {

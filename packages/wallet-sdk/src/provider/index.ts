@@ -7,10 +7,10 @@ export {
   getKnownProviders,
   getProviderRegistry,
   ProviderRegistry,
-  resetProviderRegistry,
   type ProviderRegistryEvent,
   type ProviderRegistryListener,
   type RegisteredProvider,
+  resetProviderRegistry,
 } from './eip6963'
 export type {
   StableNetProviderEvent,

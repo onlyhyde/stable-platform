@@ -65,7 +65,12 @@ export async function handleEstimateTokenPayment(
     const estimatedGasCost = estimateGasCost(normalized)
 
     const [tokenAmount, tokenConfig] = await Promise.all([
-      calculateTokenAmount(config.client, config.erc20PaymasterAddress, tokenAddress, estimatedGasCost),
+      calculateTokenAmount(
+        config.client,
+        config.erc20PaymasterAddress,
+        tokenAddress,
+        estimatedGasCost
+      ),
       getTokenConfig(config.client, config.erc20PaymasterAddress, tokenAddress),
     ])
 
@@ -88,4 +93,3 @@ export async function handleEstimateTokenPayment(
     }
   }
 }
-

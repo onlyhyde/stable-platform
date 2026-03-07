@@ -19,7 +19,8 @@
       "a11y": {
         "noLabelWithoutControl": "warn",
         "useAriaPropsSupportedByRole": "warn",
-        "noStaticElementInteractions": "warn"
+        "noStaticElementInteractions": "warn",
+        "useSemanticElements": "warn"
       },
       "complexity": {
         "noForEach": "off",

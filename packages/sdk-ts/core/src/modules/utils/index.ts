@@ -89,8 +89,8 @@ export {
   encodeValidatorNonceKey,
   isRootValidator,
   VALIDATION_MODE,
-  type ValidationMode,
   VALIDATION_TYPE,
+  type ValidationMode,
   type ValidationType,
 } from './nonceUtils'
 export {

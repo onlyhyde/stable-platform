@@ -6,8 +6,8 @@
 
 import type { UserOperation } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import { describe, expect, it } from 'vitest'
 import { hashTypedData } from 'viem'
+import { describe, expect, it } from 'vitest'
 import {
   buildUserOpTypedData,
   getUserOperationHash,

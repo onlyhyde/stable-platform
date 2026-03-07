@@ -1,12 +1,12 @@
 'use client'
 
+import {
+  getPaymasterData as sdkGetPaymasterData,
+  getPaymasterStubData as sdkGetPaymasterStubData,
+} from '@stablenet/wallet-sdk'
 import { useCallback, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { useStableNetContext } from '@/providers'
-import {
-  getPaymasterStubData as sdkGetPaymasterStubData,
-  getPaymasterData as sdkGetPaymasterData,
-} from '@stablenet/wallet-sdk'
 
 // ============================================================================
 // Types
@@ -73,7 +73,9 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [selectedType, setSelectedType] = useState<PaymasterType>(config.defaultType ?? 'verifying')
-  const [selectedTokenAddress, setSelectedTokenAddress] = useState<Address | undefined>(config.tokenAddress)
+  const [selectedTokenAddress, setSelectedTokenAddress] = useState<Address | undefined>(
+    config.tokenAddress
+  )
   const [selectedPolicyId, setSelectedPolicyId] = useState<string | undefined>(config.policyId)
 
   // Current paymaster config

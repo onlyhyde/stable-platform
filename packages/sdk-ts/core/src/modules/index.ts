@@ -40,27 +40,6 @@ export {
   type ModuleQueryClient,
   type ModuleQueryClientConfig,
 } from './queryClient'
-
-// Nonce Utils
-export {
-  type DecodedNonceKey,
-  decodeValidatorNonceKey,
-  type EncodeValidatorNonceKeyOptions,
-  encodeValidatorNonceKey,
-  isRootValidator,
-  VALIDATION_MODE,
-  type ValidationMode,
-  VALIDATION_TYPE,
-  type ValidationType,
-} from './utils/nonceUtils'
-
-// Validator Router
-export {
-  createValidatorRouter,
-  type ValidatorRouter,
-  type ValidatorRouterConfig,
-} from './validatorRouter'
-
 // Validator Utilities
 export {
   type AuditLogEntry,
@@ -164,3 +143,21 @@ export {
   type WebAuthnSignatureData,
   wouldExceedLimit,
 } from './utils'
+// Nonce Utils
+export {
+  type DecodedNonceKey,
+  decodeValidatorNonceKey,
+  type EncodeValidatorNonceKeyOptions,
+  encodeValidatorNonceKey,
+  isRootValidator,
+  VALIDATION_MODE,
+  VALIDATION_TYPE,
+  type ValidationMode,
+  type ValidationType,
+} from './utils/nonceUtils'
+// Validator Router
+export {
+  createValidatorRouter,
+  type ValidatorRouter,
+  type ValidatorRouterConfig,
+} from './validatorRouter'

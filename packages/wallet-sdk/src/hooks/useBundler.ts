@@ -5,10 +5,15 @@
  * convenience methods for sending/estimating UserOperations.
  */
 
+import type {
+  BundlerClient,
+  UserOperation,
+  UserOperationGasEstimation,
+  UserOperationReceipt,
+} from '@stablenet/sdk-types'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { createBundlerClient } from '../bundler'
-import type { BundlerClient, UserOperation, UserOperationGasEstimation, UserOperationReceipt } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
+import { createBundlerClient } from '../bundler'
 
 export interface UseBundlerConfig {
   bundlerUrl: string
@@ -19,7 +24,9 @@ export interface UseBundlerConfig {
 export interface UseBundlerResult {
   client: BundlerClient
   sendUserOp: (userOp: UserOperation) => Promise<Hex>
-  estimateGas: (userOp: Partial<UserOperation> & { sender: Address; callData: Hex }) => Promise<UserOperationGasEstimation>
+  estimateGas: (
+    userOp: Partial<UserOperation> & { sender: Address; callData: Hex }
+  ) => Promise<UserOperationGasEstimation>
   getReceipt: (hash: Hex) => Promise<UserOperationReceipt | null>
   waitForReceipt: (hash: Hex) => Promise<UserOperationReceipt>
   isLoading: boolean
@@ -49,59 +56,71 @@ export function useBundler(config: UseBundlerConfig): UseBundlerResult {
     [bundlerUrl, entryPoint]
   )
 
-  const sendUserOp = useCallback(async (userOp: UserOperation): Promise<Hex> => {
-    loadingCount.current++
-    setIsLoading(true)
-    setError(null)
-    try {
-      return await client.sendUserOperation(userOp)
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to send UserOperation')
-      setError(error)
-      throw error
-    } finally {
-      loadingCount.current--
-      if (loadingCount.current === 0) setIsLoading(false)
-    }
-  }, [client])
+  const sendUserOp = useCallback(
+    async (userOp: UserOperation): Promise<Hex> => {
+      loadingCount.current++
+      setIsLoading(true)
+      setError(null)
+      try {
+        return await client.sendUserOperation(userOp)
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to send UserOperation')
+        setError(error)
+        throw error
+      } finally {
+        loadingCount.current--
+        if (loadingCount.current === 0) setIsLoading(false)
+      }
+    },
+    [client]
+  )
 
-  const estimateGas = useCallback(async (
-    userOp: Partial<UserOperation> & { sender: Address; callData: Hex }
-  ): Promise<UserOperationGasEstimation> => {
-    loadingCount.current++
-    setIsLoading(true)
-    setError(null)
-    try {
-      return await client.estimateUserOperationGas(userOp)
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to estimate gas')
-      setError(error)
-      throw error
-    } finally {
-      loadingCount.current--
-      if (loadingCount.current === 0) setIsLoading(false)
-    }
-  }, [client])
+  const estimateGas = useCallback(
+    async (
+      userOp: Partial<UserOperation> & { sender: Address; callData: Hex }
+    ): Promise<UserOperationGasEstimation> => {
+      loadingCount.current++
+      setIsLoading(true)
+      setError(null)
+      try {
+        return await client.estimateUserOperationGas(userOp)
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to estimate gas')
+        setError(error)
+        throw error
+      } finally {
+        loadingCount.current--
+        if (loadingCount.current === 0) setIsLoading(false)
+      }
+    },
+    [client]
+  )
 
-  const getReceipt = useCallback(async (hash: Hex): Promise<UserOperationReceipt | null> => {
-    return client.getUserOperationReceipt(hash)
-  }, [client])
+  const getReceipt = useCallback(
+    async (hash: Hex): Promise<UserOperationReceipt | null> => {
+      return client.getUserOperationReceipt(hash)
+    },
+    [client]
+  )
 
-  const waitForReceipt = useCallback(async (hash: Hex): Promise<UserOperationReceipt> => {
-    loadingCount.current++
-    setIsLoading(true)
-    setError(null)
-    try {
-      return await client.waitForUserOperationReceipt(hash)
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed waiting for receipt')
-      setError(error)
-      throw error
-    } finally {
-      loadingCount.current--
-      if (loadingCount.current === 0) setIsLoading(false)
-    }
-  }, [client])
+  const waitForReceipt = useCallback(
+    async (hash: Hex): Promise<UserOperationReceipt> => {
+      loadingCount.current++
+      setIsLoading(true)
+      setError(null)
+      try {
+        return await client.waitForUserOperationReceipt(hash)
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed waiting for receipt')
+        setError(error)
+        throw error
+      } finally {
+        loadingCount.current--
+        if (loadingCount.current === 0) setIsLoading(false)
+      }
+    },
+    [client]
+  )
 
   return { client, sendUserOp, estimateGas, getReceipt, waitForReceipt, isLoading, error }
 }

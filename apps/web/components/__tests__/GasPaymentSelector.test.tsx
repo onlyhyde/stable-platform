@@ -13,9 +13,7 @@ vi.mock('wagmi', () => ({
 
 describe('F-03: GasPaymentSelector', () => {
   it('should render all 3 gas payment options for Smart Account', async () => {
-    const { GasPaymentSelector } = await import(
-      '@/components/payment/GasPaymentSelector'
-    )
+    const { GasPaymentSelector } = await import('@/components/payment/GasPaymentSelector')
     const onModeChange = vi.fn()
 
     render(
@@ -33,9 +31,7 @@ describe('F-03: GasPaymentSelector', () => {
   })
 
   it('should disable unavailable modes for EOA', async () => {
-    const { GasPaymentSelector } = await import(
-      '@/components/payment/GasPaymentSelector'
-    )
+    const { GasPaymentSelector } = await import('@/components/payment/GasPaymentSelector')
     const onModeChange = vi.fn()
 
     render(
@@ -60,9 +56,7 @@ describe('F-03: GasPaymentSelector', () => {
   })
 
   it('should call onModeChange when option clicked', async () => {
-    const { GasPaymentSelector } = await import(
-      '@/components/payment/GasPaymentSelector'
-    )
+    const { GasPaymentSelector } = await import('@/components/payment/GasPaymentSelector')
     const onModeChange = vi.fn()
     const user = userEvent.setup()
 
@@ -80,9 +74,7 @@ describe('F-03: GasPaymentSelector', () => {
   })
 
   it('should NOT call onModeChange when disabled option clicked', async () => {
-    const { GasPaymentSelector } = await import(
-      '@/components/payment/GasPaymentSelector'
-    )
+    const { GasPaymentSelector } = await import('@/components/payment/GasPaymentSelector')
     const onModeChange = vi.fn()
     const user = userEvent.setup()
 
@@ -100,9 +92,7 @@ describe('F-03: GasPaymentSelector', () => {
   })
 
   it('should show deposit balance when provided', async () => {
-    const { GasPaymentSelector } = await import(
-      '@/components/payment/GasPaymentSelector'
-    )
+    const { GasPaymentSelector } = await import('@/components/payment/GasPaymentSelector')
 
     render(
       <GasPaymentSelector
@@ -117,9 +107,7 @@ describe('F-03: GasPaymentSelector', () => {
   })
 
   it('should highlight selected mode', async () => {
-    const { GasPaymentSelector } = await import(
-      '@/components/payment/GasPaymentSelector'
-    )
+    const { GasPaymentSelector } = await import('@/components/payment/GasPaymentSelector')
 
     render(
       <GasPaymentSelector

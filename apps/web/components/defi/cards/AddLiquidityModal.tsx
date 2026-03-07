@@ -101,7 +101,8 @@ export function AddLiquidityModal({
     )
   }, [selectedPool, token0Amount, token1Amount])
 
-  const isProcessing = step === 'approving-token0' || step === 'approving-token1' || step === 'adding'
+  const isProcessing =
+    step === 'approving-token0' || step === 'approving-token1' || step === 'adding'
 
   const handleSubmit = async () => {
     if (!isValid || !selectedPool || !onSubmit) return
@@ -127,7 +128,7 @@ export function AddLiquidityModal({
   const handleCustomSlippage = (value: string) => {
     setCustomSlippage(value)
     const num = parseFloat(value)
-    if (!isNaN(num) && num > 0 && num <= 50) {
+    if (!Number.isNaN(num) && num > 0 && num <= 50) {
       setSlippageBps(Math.round(num * 100))
     }
   }
@@ -270,7 +271,10 @@ export function AddLiquidityModal({
             {isProcessing && (
               <div
                 className="p-3 rounded-lg text-sm text-center"
-                style={{ backgroundColor: 'rgb(var(--primary) / 0.1)', color: 'rgb(var(--primary))' }}
+                style={{
+                  backgroundColor: 'rgb(var(--primary) / 0.1)',
+                  color: 'rgb(var(--primary))',
+                }}
               >
                 {getStepLabel(step)}
               </div>
@@ -279,7 +283,10 @@ export function AddLiquidityModal({
             {step === 'confirmed' && (
               <div
                 className="p-3 rounded-lg text-sm text-center"
-                style={{ backgroundColor: 'rgb(var(--success) / 0.1)', color: 'rgb(var(--success))' }}
+                style={{
+                  backgroundColor: 'rgb(var(--success) / 0.1)',
+                  color: 'rgb(var(--success))',
+                }}
               >
                 Liquidity added successfully!
               </div>
@@ -302,7 +309,11 @@ export function AddLiquidityModal({
               onClick={handleSubmit}
               disabled={!isValid || isLoading || isProcessing}
             >
-              {isProcessing ? getStepLabel(step) : isLoading ? 'Adding Liquidity...' : 'Add Liquidity'}
+              {isProcessing
+                ? getStepLabel(step)
+                : isLoading
+                  ? 'Adding Liquidity...'
+                  : 'Add Liquidity'}
             </Button>
           </>
         ) : (

@@ -6,7 +6,7 @@
  */
 
 import type { Address, Hex } from 'viem'
-import { recoverAddress, type PublicClient } from 'viem'
+import { type PublicClient, recoverAddress } from 'viem'
 
 /** ERC-1271 magic value: bytes4(keccak256("isValidSignature(bytes32,bytes)")) */
 const ERC1271_MAGIC_VALUE = '0x1626ba7e' as const

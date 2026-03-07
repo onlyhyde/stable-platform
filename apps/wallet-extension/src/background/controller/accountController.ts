@@ -1,7 +1,7 @@
+import { KERNEL_FACTORY_ABI as CORE_FACTORY_ABI } from '@stablenet/core'
 import type { Address, Hex } from 'viem'
 import { createPublicClient, http } from 'viem'
 import { encodeFunctionData, encodePacked, getAddress, keccak256 } from 'viem/utils'
-import { KERNEL_FACTORY_ABI as CORE_FACTORY_ABI } from '@stablenet/core'
 import type { Account } from '../../types'
 import { walletState } from '../state/store'
 

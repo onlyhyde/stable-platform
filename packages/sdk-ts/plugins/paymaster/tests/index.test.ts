@@ -1,14 +1,14 @@
+import {
+  PaymasterType as CorePaymasterType,
+  decodePaymasterData,
+  HEADER_SIZE,
+  isPaymasterDataSupported,
+  splitEnvelopeAndSignature,
+} from '@stablenet/core'
 import type { UserOperation } from '@stablenet/sdk-types'
 import type { Address, Hex, LocalAccount } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  decodePaymasterData,
-  isPaymasterDataSupported,
-  splitEnvelopeAndSignature,
-  PaymasterType as CorePaymasterType,
-  HEADER_SIZE,
-} from '@stablenet/core'
 import {
   createVerifyingPaymaster,
   createVerifyingPaymasterFromPrivateKey,
@@ -338,7 +338,7 @@ describe('paymaster plugin', () => {
       const data = await paymaster.getPaymasterData(mockUserOp, testEntryPoint, testChainId)
 
       // The data must be longer than just the header
-      const hexLength = (data.paymasterData.length - 2) / 2  // bytes
+      const hexLength = (data.paymasterData.length - 2) / 2 // bytes
       expect(hexLength).toBeGreaterThan(HEADER_SIZE)
 
       // Must be decodable as v2 envelope

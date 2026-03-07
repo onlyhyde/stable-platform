@@ -1,14 +1,10 @@
 'use client'
 
+import { createBundlerClient, detectProvider, type StableNetProvider } from '@stablenet/wallet-sdk'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { parseEther } from 'viem'
 import { useStableNetContext } from '@/providers'
-import {
-  detectProvider,
-  type StableNetProvider,
-  createBundlerClient,
-} from '@stablenet/wallet-sdk'
 
 // ============================================================================
 // Types

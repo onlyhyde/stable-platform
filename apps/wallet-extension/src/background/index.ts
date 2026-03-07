@@ -14,6 +14,7 @@
 // Buffer polyfill for browser/service worker environment
 // Must be imported before any other modules that depend on Node.js Buffer
 import { Buffer } from 'buffer'
+
 globalThis.Buffer = Buffer
 
 import type { Address, Hex } from 'viem'
@@ -1086,7 +1087,11 @@ async function handleMessage(
     }
 
     case 'GET_TRANSACTION_HISTORY': {
-      const { address, limit = 50, offset = 0 } = message.payload as {
+      const {
+        address,
+        limit = 50,
+        offset = 0,
+      } = message.payload as {
         address: Address
         limit?: number
         offset?: number

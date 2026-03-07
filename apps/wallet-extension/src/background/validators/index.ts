@@ -1,19 +1,18 @@
 export {
-  createValidatorRegistry,
-  type ActiveValidatorConfig,
-  type ValidatorRegistry,
-  type ValidatorType,
-  type ValidatorTypeConfig,
-  type EcdsaConfig,
-  type WebAuthnConfig,
-  type MultiSigConfig,
-} from './validatorRegistry'
-
-export {
   createSignatureRouter,
   type SignatureRouter,
   type SignatureRouterConfig,
 } from './signatureRouter'
+export {
+  type ActiveValidatorConfig,
+  createValidatorRegistry,
+  type EcdsaConfig,
+  type MultiSigConfig,
+  type ValidatorRegistry,
+  type ValidatorType,
+  type ValidatorTypeConfig,
+  type WebAuthnConfig,
+} from './validatorRegistry'
 
 export {
   createWebAuthnBridge,

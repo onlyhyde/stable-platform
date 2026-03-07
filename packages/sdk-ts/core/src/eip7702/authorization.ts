@@ -200,9 +200,7 @@ export function isRevocationAuthorization(authorization: Authorization): boolean
  * @param code - Account bytecode from eth_getCode
  * @returns Account type classification
  */
-export function classifyAccountByCode(
-  code: Hex | undefined | null
-): 'eoa' | 'delegated' | 'smart' {
+export function classifyAccountByCode(code: Hex | undefined | null): 'eoa' | 'delegated' | 'smart' {
   if (!code || code === '0x') return 'eoa'
   if (isDelegatedAccount(code)) return 'delegated'
   return 'smart'
@@ -247,13 +245,10 @@ export function isEIP7702InitCode(initCode: Hex): boolean {
  * @param initCode - The initCode field from a UserOperation
  * @returns Parsed initCode components, or null if not EIP-7702 format
  */
-export function parseEIP7702InitCode(
-  initCode: Hex
-): { isEIP7702: true; initData: Hex } | null {
+export function parseEIP7702InitCode(initCode: Hex): { isEIP7702: true; initData: Hex } | null {
   if (!isEIP7702InitCode(initCode)) return null
 
-  const initData =
-    initCode.length > 42 ? (`0x${initCode.slice(42)}` as Hex) : ('0x' as Hex)
+  const initData = initCode.length > 42 ? (`0x${initCode.slice(42)}` as Hex) : ('0x' as Hex)
 
   return { isEIP7702: true, initData }
 }

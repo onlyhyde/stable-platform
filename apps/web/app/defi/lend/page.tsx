@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import type { Address } from 'viem'
+import { useState } from 'react'
 import { formatEther, formatUnits, parseUnits } from 'viem'
 import {
   Button,
@@ -15,7 +14,7 @@ import {
 } from '@/components/common'
 import { useWallet } from '@/hooks'
 import { useLending } from '@/hooks/useLending'
-import type { LendingMarket, LendingPosition } from '@/types/defi'
+import type { LendingMarket } from '@/types/defi'
 
 type ActionMode = null | 'supply' | 'withdraw' | 'borrow' | 'repay'
 
@@ -116,8 +115,12 @@ export default function LendingPage() {
             >
               DeFi
             </Link>
-            <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>/</span>
-            <span className="text-sm" style={{ color: 'rgb(var(--foreground))' }}>Lending</span>
+            <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              /
+            </span>
+            <span className="text-sm" style={{ color: 'rgb(var(--foreground))' }}>
+              Lending
+            </span>
           </div>
           <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
             Lending
@@ -150,7 +153,11 @@ export default function LendingPage() {
           </p>
           <p className="text-sm mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Install the Lending Executor module on your Smart Account to use lending features.{' '}
-            <Link href="/marketplace" className="underline" style={{ color: 'rgb(var(--primary))' }}>
+            <Link
+              href="/marketplace"
+              className="underline"
+              style={{ color: 'rgb(var(--primary))' }}
+            >
               Go to Marketplace
             </Link>
           </p>
@@ -166,7 +173,9 @@ export default function LendingPage() {
             borderColor: 'rgb(var(--destructive) / 0.3)',
           }}
         >
-          <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>{error}</p>
+          <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
+            {error}
+          </p>
         </div>
       )}
 
@@ -220,7 +229,10 @@ export default function LendingPage() {
           <CardContent className="space-y-3">
             {positions.filter((p) => p.suppliedAmount > 0n).length > 0 && (
               <div>
-                <p className="text-xs font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                <p
+                  className="text-xs font-medium mb-2"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                >
                   Supplied
                 </p>
                 {positions
@@ -263,7 +275,10 @@ export default function LendingPage() {
 
             {positions.filter((p) => p.borrowedAmount > 0n).length > 0 && (
               <div>
-                <p className="text-xs font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                <p
+                  className="text-xs font-medium mb-2"
+                  style={{ color: 'rgb(var(--muted-foreground))' }}
+                >
                   Borrowed
                 </p>
                 {positions
@@ -344,15 +359,10 @@ export default function LendingPage() {
                     className="font-semibold"
                     style={{
                       color:
-                        actionMode === 'supply'
-                          ? 'rgb(var(--primary))'
-                          : 'rgb(var(--destructive))',
+                        actionMode === 'supply' ? 'rgb(var(--primary))' : 'rgb(var(--destructive))',
                     }}
                   >
-                    {actionMode === 'supply'
-                      ? selectedAsset.supplyAPY
-                      : selectedAsset.borrowAPY}
-                    %
+                    {actionMode === 'supply' ? selectedAsset.supplyAPY : selectedAsset.borrowAPY}%
                   </p>
                 </div>
                 <div>
@@ -395,7 +405,10 @@ export default function LendingPage() {
           ) : (
             <div className="space-y-1">
               {/* Table Header */}
-              <div className="grid grid-cols-5 gap-2 px-3 py-2 text-xs font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              <div
+                className="grid grid-cols-5 gap-2 px-3 py-2 text-xs font-medium"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
                 <span>Asset</span>
                 <span className="text-right">Supply APY</span>
                 <span className="text-right">Borrow APY</span>
@@ -507,7 +520,10 @@ function HealthFactorCard({
           />
         </div>
 
-        <div className="flex justify-between mt-1 text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+        <div
+          className="flex justify-between mt-1 text-xs"
+          style={{ color: 'rgb(var(--muted-foreground))' }}
+        >
           <span>0</span>
           <span>1.0 (Liquidation)</span>
           <span>1.5</span>
@@ -564,9 +580,7 @@ function MarketRow({
             style={{
               width: `${market.utilizationRate}%`,
               backgroundColor:
-                market.utilizationRate > 80
-                  ? 'rgb(var(--destructive))'
-                  : 'rgb(var(--primary))',
+                market.utilizationRate > 80 ? 'rgb(var(--destructive))' : 'rgb(var(--primary))',
             }}
           />
         </div>

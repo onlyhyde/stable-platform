@@ -651,9 +651,7 @@ export class ApprovalController {
     if (method === 'personal_sign' && message.startsWith('0x')) {
       try {
         const hex = message.slice(2)
-        const bytes = new Uint8Array(
-          hex.match(/.{1,2}/g)!.map((byte) => Number.parseInt(byte, 16))
-        )
+        const bytes = new Uint8Array(hex.match(/.{1,2}/g)!.map((byte) => Number.parseInt(byte, 16)))
         // fatal: true → non-UTF-8 bytes throw instead of producing \uFFFD
         return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
       } catch {

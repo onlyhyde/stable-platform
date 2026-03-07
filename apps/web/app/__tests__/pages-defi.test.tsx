@@ -19,7 +19,8 @@ vi.mock('@/components/common', () => {
     CardFooter: c(),
     CardHeader: c(),
     CardTitle: c(),
-    ConnectWalletCard: ({ message }: Record<string, unknown>) => React.createElement('div', null, message),
+    ConnectWalletCard: ({ message }: Record<string, unknown>) =>
+      React.createElement('div', null, message),
     InfoBanner: c(),
     Input: c(),
     Modal: c(),

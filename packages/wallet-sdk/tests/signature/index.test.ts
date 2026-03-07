@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { isSmartContractAccount, isValidSignature, verifySignature } from '../../src/signature'
 import type { SignatureVerificationResult } from '../../src/signature'
+import { isSmartContractAccount, isValidSignature, verifySignature } from '../../src/signature'
 
 const mockHash = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' as const
 const mockSignature = '0x1234' as const
@@ -74,7 +74,10 @@ describe('signature module', () => {
       } as unknown as Parameters<typeof verifySignature>[0]
 
       const result: SignatureVerificationResult = await verifySignature(
-        mockClient, mockAccount, mockHash, mockSignature
+        mockClient,
+        mockAccount,
+        mockHash,
+        mockSignature
       )
 
       expect(result.isValid).toBe(true)
@@ -88,9 +91,7 @@ describe('signature module', () => {
         readContract: vi.fn().mockResolvedValue('0xffffffff'),
       } as unknown as Parameters<typeof verifySignature>[0]
 
-      const result = await verifySignature(
-        mockClient, mockAccount, mockHash, mockSignature
-      )
+      const result = await verifySignature(mockClient, mockAccount, mockHash, mockSignature)
 
       expect(result.isValid).toBe(false)
       expect(result.signerType).toBe('contract')
@@ -102,9 +103,7 @@ describe('signature module', () => {
       } as unknown as Parameters<typeof verifySignature>[0]
 
       // ecrecover will likely fail with our mock data, which is expected
-      const result = await verifySignature(
-        mockClient, mockAccount, mockHash, mockSignature
-      )
+      const result = await verifySignature(mockClient, mockAccount, mockHash, mockSignature)
 
       expect(result.signerType).toBe('eoa')
       // With invalid signature data, it should gracefully return invalid

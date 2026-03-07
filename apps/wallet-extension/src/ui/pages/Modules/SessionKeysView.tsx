@@ -112,13 +112,7 @@ export function SessionKeysView({
 // Sub-Components
 // ============================================================================
 
-function SessionKeyCard({
-  module,
-  onClick,
-}: {
-  module: InstalledModule
-  onClick: () => void
-}) {
+function SessionKeyCard({ module, onClick }: { module: InstalledModule; onClick: () => void }) {
   const truncatedAddress = `${module.address.slice(0, 8)}...${module.address.slice(-6)}`
 
   return (
@@ -166,10 +160,7 @@ function SessionKeyCard({
         </span>
       </div>
       {module.metadata.description && (
-        <p
-          className="text-xs mt-2 truncate"
-          style={{ color: 'rgb(var(--muted-foreground))' }}
-        >
+        <p className="text-xs mt-2 truncate" style={{ color: 'rgb(var(--muted-foreground))' }}>
           {module.metadata.description}
         </p>
       )}

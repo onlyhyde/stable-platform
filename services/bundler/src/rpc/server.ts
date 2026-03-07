@@ -66,7 +66,9 @@ export class RpcServer {
     // Block debug mode in production environment
     if (config.debug && process.env.NODE_ENV === 'production') {
       config.debug = false
-      this.logger.warn('Debug mode requested but blocked in production environment (NODE_ENV=production)')
+      this.logger.warn(
+        'Debug mode requested but blocked in production environment (NODE_ENV=production)'
+      )
     }
 
     // Initialize mempool with optional nonce continuity validation

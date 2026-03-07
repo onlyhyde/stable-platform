@@ -2,8 +2,8 @@ import type { Address, Hex } from 'viem'
 import { keccak256, toHex } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  createMultiSigValidator,
   type CreateMultiSigValidatorConfig,
+  createMultiSigValidator,
 } from '../src/multisigValidator'
 
 describe('multisig plugin', () => {
@@ -13,7 +13,7 @@ describe('multisig plugin', () => {
 
   const mockSignatureA = '0xaa'.padEnd(132, 'a') as Hex
   const mockSignatureB = '0xbb'.padEnd(132, 'b') as Hex
-  const mockSignatureC = '0xcc'.padEnd(132, 'c') as Hex
+  const _mockSignatureC = '0xcc'.padEnd(132, 'c') as Hex
 
   let mockCollectSignatures: ReturnType<typeof vi.fn>
   let defaultConfig: CreateMultiSigValidatorConfig
@@ -87,9 +87,9 @@ describe('multisig plugin', () => {
     })
 
     it('should throw if fewer signatures than threshold', async () => {
-      const insufficientSignatures = vi.fn().mockResolvedValue([
-        { signer: signerA, signature: mockSignatureA },
-      ])
+      const insufficientSignatures = vi
+        .fn()
+        .mockResolvedValue([{ signer: signerA, signature: mockSignatureA }])
 
       const validator = await createMultiSigValidator({
         ...defaultConfig,
@@ -156,9 +156,7 @@ describe('multisig plugin', () => {
 
   describe('edge cases', () => {
     it('should work with threshold of 1', async () => {
-      const singleSig = vi.fn().mockResolvedValue([
-        { signer: signerA, signature: mockSignatureA },
-      ])
+      const singleSig = vi.fn().mockResolvedValue([{ signer: signerA, signature: mockSignatureA }])
 
       const validator = await createMultiSigValidator({
         signers: [signerA, signerB],

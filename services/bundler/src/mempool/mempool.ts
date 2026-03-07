@@ -84,7 +84,10 @@ export class Mempool {
     // Return existing entry if already in mempool (idempotent)
     const existing = this.pool.get(userOpHash)
     if (existing) {
-      this.logger.debug({ userOpHash }, 'UserOperation already in mempool, returning existing entry')
+      this.logger.debug(
+        { userOpHash },
+        'UserOperation already in mempool, returning existing entry'
+      )
       return existing
     }
 

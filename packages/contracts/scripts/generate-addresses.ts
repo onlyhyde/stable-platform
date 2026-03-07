@@ -241,7 +241,6 @@ function mergeIntoEnv(envContractsPath: string): void {
   }
 
   writeFileSync(dotenvPath, result, 'utf-8')
-  console.log(`Merged ${contractVars.size} contract vars into: ${dotenvPath} (${updated.size} updated, ${newVars.length} added)`)
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -313,7 +312,7 @@ async function loadDeployment(filePath: string): Promise<ChainDeployment | null>
   }
 }
 
-function getAddr(addresses: DeploymentOutput, key: string): string {
+function _getAddr(addresses: DeploymentOutput, key: string): string {
   return addresses[key] || ZERO_ADDRESS
 }
 
@@ -360,8 +359,6 @@ function generateAddressesTs(deployments: ChainDeployment[]): string {
     ' */',
     '',
     "import type { ChainAddresses } from '../types'",
-    '',
-    `const ZERO = '${ZERO_ADDRESS}' as const`,
     '',
     '/**',
     ' * Contract addresses by chain ID',
@@ -701,9 +698,7 @@ const PRECOMPILE_ENV: Record<string, { envKey: string; address: string; comment:
 function generatePrecompileEnvSection(chainId: number): string {
   if (chainId !== 8283) return ''
 
-  const lines: string[] = [
-    '# System Contracts (Precompiled)',
-  ]
+  const lines: string[] = ['# System Contracts (Precompiled)']
 
   for (const entry of Object.values(PRECOMPILE_ENV)) {
     lines.push(`${entry.envKey}=${entry.address}`)
@@ -727,9 +722,7 @@ async function main() {
     : resolve(__dirname, '../../../../poc-contract/deployments')
 
   // CHAIN_ID from .env → target single chain
-  const defaultChainId = process.env.CHAIN_ID
-    ? Number.parseInt(process.env.CHAIN_ID, 10)
-    : null
+  const defaultChainId = process.env.CHAIN_ID ? Number.parseInt(process.env.CHAIN_ID, 10) : null
 
   let inputPath = defaultDeploymentDir
   let specificChain = defaultChainId
@@ -748,18 +741,14 @@ async function main() {
   }
 
   if (specificChain) {
-    console.log(`Target chain: ${specificChain} (from ${process.env.CHAIN_ID ? '.env CHAIN_ID' : '--chain'})`)
   }
 
   // Find deployment files
   const files = await findDeploymentFiles(inputPath)
 
   if (files.length === 0) {
-    console.log(`No deployment files found in ${inputPath}`)
     return
   }
-
-  console.log(`Found ${files.length} deployment file(s)`)
 
   // Load deployments
   const deployments: ChainDeployment[] = []
@@ -769,15 +758,11 @@ async function main() {
     if (deployment) {
       if (specificChain === null || deployment.chainId === specificChain) {
         deployments.push(deployment)
-        console.log(
-          `  Chain ${deployment.chainId}: ${Object.keys(deployment.addresses).length} contracts`
-        )
       }
     }
   }
 
   if (deployments.length === 0) {
-    console.log('No deployments matched')
     return
   }
 
@@ -788,18 +773,14 @@ async function main() {
   const tsContent = generateAddressesTs(deployments)
   const tsOutputPath = resolve(__dirname, '../src/generated/addresses.ts')
   await writeFile(tsOutputPath, tsContent, 'utf-8')
-  console.log(`\nGenerated: ${tsOutputPath}`)
 
   // Generate .env.contracts file
   const envContent = generateEnvContracts(deployments)
   const envOutputPath = resolve(__dirname, '../../../.env.contracts')
   await writeFile(envOutputPath, envContent, 'utf-8')
-  console.log(`Generated: ${envOutputPath}`)
 
   // Merge contract addresses into .env for docker-compose auto-loading
   mergeIntoEnv(envOutputPath)
-
-  console.log(`\nDone! ${deployments.length} chain(s) processed.`)
 }
 
 main().catch(console.error)

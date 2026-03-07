@@ -60,9 +60,17 @@ function TokenSubSelector({
 }) {
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-        <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgb(var(--muted-foreground))', borderTopColor: 'transparent' }} />
-        <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Loading tokens...</span>
+      <div
+        className="flex items-center gap-2 p-3 rounded-lg"
+        style={{ backgroundColor: 'rgb(var(--secondary))' }}
+      >
+        <div
+          className="w-4 h-4 border-2 rounded-full animate-spin"
+          style={{ borderColor: 'rgb(var(--muted-foreground))', borderTopColor: 'transparent' }}
+        />
+        <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          Loading tokens...
+        </span>
       </div>
     )
   }
@@ -70,7 +78,9 @@ function TokenSubSelector({
   if (!tokens || tokens.length === 0) {
     return (
       <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-        <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>No supported tokens available</p>
+        <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          No supported tokens available
+        </p>
       </div>
     )
   }
@@ -90,12 +100,12 @@ function TokenSubSelector({
               selectedAddress === token.address ? 'ring-2' : ''
             }`}
             style={{
-              backgroundColor: selectedAddress === token.address
-                ? 'rgb(var(--primary) / 0.1)'
-                : 'rgb(var(--secondary))',
-              borderColor: selectedAddress === token.address
-                ? 'rgb(var(--primary))'
-                : 'rgb(var(--border))',
+              backgroundColor:
+                selectedAddress === token.address
+                  ? 'rgb(var(--primary) / 0.1)'
+                  : 'rgb(var(--secondary))',
+              borderColor:
+                selectedAddress === token.address ? 'rgb(var(--primary))' : 'rgb(var(--border))',
               ...(selectedAddress === token.address &&
                 ({ '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as React.CSSProperties)),
             }}
@@ -132,9 +142,17 @@ function SponsorSubSelector({
 }) {
   if (eligible === null || eligible === undefined) {
     return (
-      <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-        <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgb(var(--muted-foreground))', borderTopColor: 'transparent' }} />
-        <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Checking eligibility...</span>
+      <div
+        className="flex items-center gap-2 p-3 rounded-lg"
+        style={{ backgroundColor: 'rgb(var(--secondary))' }}
+      >
+        <div
+          className="w-4 h-4 border-2 rounded-full animate-spin"
+          style={{ borderColor: 'rgb(var(--muted-foreground))', borderTopColor: 'transparent' }}
+        />
+        <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          Checking eligibility...
+        </span>
       </div>
     )
   }
@@ -162,9 +180,17 @@ function SponsorSubSelector({
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-        <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgb(var(--muted-foreground))', borderTopColor: 'transparent' }} />
-        <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>Loading policies...</span>
+      <div
+        className="flex items-center gap-2 p-3 rounded-lg"
+        style={{ backgroundColor: 'rgb(var(--secondary))' }}
+      >
+        <div
+          className="w-4 h-4 border-2 rounded-full animate-spin"
+          style={{ borderColor: 'rgb(var(--muted-foreground))', borderTopColor: 'transparent' }}
+        />
+        <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          Loading policies...
+        </span>
       </div>
     )
   }
@@ -185,33 +211,35 @@ function SponsorSubSelector({
         Select Policy
       </span>
       <div className="space-y-1">
-        {policies.filter((p) => p.active).map((policy) => (
-          <button
-            key={policy.id}
-            type="button"
-            onClick={() => onPolicySelect?.(policy.id)}
-            className={`w-full px-3 py-2 rounded-lg border text-left transition-all ${
-              selectedPolicyId === policy.id ? 'ring-2' : ''
-            }`}
-            style={{
-              backgroundColor: selectedPolicyId === policy.id
-                ? 'rgb(var(--primary) / 0.1)'
-                : 'rgb(var(--secondary))',
-              borderColor: selectedPolicyId === policy.id
-                ? 'rgb(var(--primary))'
-                : 'rgb(var(--border))',
-              ...(selectedPolicyId === policy.id &&
-                ({ '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as React.CSSProperties)),
-            }}
-          >
-            <p className="font-medium text-sm" style={{ color: 'rgb(var(--foreground))' }}>
-              {policy.name}
-            </p>
-            <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Max {policy.maxOpsPerDay} ops/day
-            </p>
-          </button>
-        ))}
+        {policies
+          .filter((p) => p.active)
+          .map((policy) => (
+            <button
+              key={policy.id}
+              type="button"
+              onClick={() => onPolicySelect?.(policy.id)}
+              className={`w-full px-3 py-2 rounded-lg border text-left transition-all ${
+                selectedPolicyId === policy.id ? 'ring-2' : ''
+              }`}
+              style={{
+                backgroundColor:
+                  selectedPolicyId === policy.id
+                    ? 'rgb(var(--primary) / 0.1)'
+                    : 'rgb(var(--secondary))',
+                borderColor:
+                  selectedPolicyId === policy.id ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                ...(selectedPolicyId === policy.id &&
+                  ({ '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as React.CSSProperties)),
+              }}
+            >
+              <p className="font-medium text-sm" style={{ color: 'rgb(var(--foreground))' }}>
+                {policy.name}
+              </p>
+              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Max {policy.maxOpsPerDay} ops/day
+              </p>
+            </button>
+          ))}
       </div>
     </div>
   )
@@ -257,12 +285,9 @@ export function PaymasterSelector({
                 selectedType === type ? 'ring-2' : ''
               }`}
               style={{
-                backgroundColor: selectedType === type
-                  ? 'rgb(var(--primary) / 0.1)'
-                  : 'rgb(var(--secondary))',
-                borderColor: selectedType === type
-                  ? 'rgb(var(--primary))'
-                  : 'rgb(var(--border))',
+                backgroundColor:
+                  selectedType === type ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
+                borderColor: selectedType === type ? 'rgb(var(--primary))' : 'rgb(var(--border))',
                 ...(selectedType === type &&
                   ({ '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as React.CSSProperties)),
               }}

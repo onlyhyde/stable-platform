@@ -90,10 +90,7 @@ export function createWebAuthnBridge(): WebAuthnBridge {
     }
   }
 
-  const sign = async (
-    challenge: Hex,
-    credential: WebAuthnCredentialInfo
-  ): Promise<Hex> => {
+  const sign = async (challenge: Hex, credential: WebAuthnCredentialInfo): Promise<Hex> => {
     await ensureOffscreenDocument()
 
     const requestId = `webauthn_${++nextRequestId}_${Date.now()}`
@@ -121,10 +118,7 @@ export function createWebAuthnBridge(): WebAuthnBridge {
 
         if (message.error) {
           reject(new Error(`WebAuthn signing failed: ${message.error}`))
-        } else if (
-          typeof message.signature === 'string' &&
-          message.signature.startsWith('0x')
-        ) {
+        } else if (typeof message.signature === 'string' && message.signature.startsWith('0x')) {
           resolve(message.signature as Hex)
         } else if (message.signature) {
           reject(new Error('WebAuthn signature has invalid format'))

@@ -52,7 +52,7 @@ export function usePaymasterStatus(accountAddress?: Address): UsePaymasterStatus
   const [accountStatus, setAccountStatus] = useState<PaymasterAccountStatus | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
-  const [fetchTrigger, setFetchTrigger] = useState(0)
+  const [_fetchTrigger, setFetchTrigger] = useState(0)
 
   const currentNetwork = useSelectedNetwork()
 
@@ -128,7 +128,7 @@ export function usePaymasterStatus(accountAddress?: Address): UsePaymasterStatus
     }
 
     fetchAll()
-  }, [currentNetwork, accountAddress, fetchTrigger])
+  }, [currentNetwork, accountAddress])
 
   // Register account with paymaster
   const registerAccount = useCallback(async (): Promise<{ success: boolean; error?: string }> => {

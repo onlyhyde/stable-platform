@@ -31,7 +31,7 @@ export interface GasPaymentModeState {
 const MODE_DESCRIPTIONS: Record<GasPaymentMode, string> = {
   'self-pay': 'Pay gas with native coin (from EntryPoint deposit or EOA balance)',
   'erc20-paymaster': 'Pay gas with ERC-20 tokens via Paymaster',
-  'sponsored': 'Gas sponsored by a third party (zero cost)',
+  sponsored: 'Gas sponsored by a third party (zero cost)',
 }
 
 // ============================================================================

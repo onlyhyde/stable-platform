@@ -15,9 +15,7 @@ describe('useNonce', () => {
   const mockPublicClient = {} as Parameters<typeof useNonce>[0]['publicClient']
 
   it('should start with null state when no client', () => {
-    const { result } = renderHook(() =>
-      useNonce({ publicClient: null, sender: null })
-    )
+    const { result } = renderHook(() => useNonce({ publicClient: null, sender: null }))
 
     expect(result.current.nonce).toBeNull()
     expect(result.current.key).toBeNull()

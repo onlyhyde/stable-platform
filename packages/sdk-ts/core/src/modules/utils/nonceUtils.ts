@@ -79,9 +79,7 @@ export function encodeValidatorNonceKey(
 
   // Validate nonceKey fits in 2 bytes (uint16)
   if (nonceKey < 0 || nonceKey > 0xffff) {
-    throw new Error(
-      `nonceKey must be in range 0-65535, got ${nonceKey}`
-    )
+    throw new Error(`nonceKey must be in range 0-65535, got ${nonceKey}`)
   }
 
   // Root validator always uses key = 0n
@@ -125,7 +123,11 @@ export function decodeValidatorNonceKey(key: bigint): DecodedNonceKey {
   const mode = modeValue as ValidationMode
 
   const typeValue = parseInt(hex.slice(2, 4), 16)
-  const validTypes = [VALIDATION_TYPE.ROOT, VALIDATION_TYPE.VALIDATOR, VALIDATION_TYPE.PERMISSION] as const
+  const validTypes = [
+    VALIDATION_TYPE.ROOT,
+    VALIDATION_TYPE.VALIDATOR,
+    VALIDATION_TYPE.PERMISSION,
+  ] as const
   if (!validTypes.includes(typeValue as ValidationType)) {
     throw new Error(`Invalid validation type: 0x${typeValue.toString(16)}`)
   }

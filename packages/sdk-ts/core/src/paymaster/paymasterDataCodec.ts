@@ -1,5 +1,5 @@
 import type { Hex } from 'viem'
-import { concatHex, hexToBigInt, hexToNumber, numberToHex, sliceHex, size as hexSize } from 'viem'
+import { concatHex, size as hexSize, hexToBigInt, hexToNumber, numberToHex, sliceHex } from 'viem'
 
 // ============ Constants (matching PaymasterDataLib.sol) ============
 
@@ -48,9 +48,7 @@ export interface PaymasterDataEnvelope {
  * Encode paymaster data envelope (matching PaymasterDataLib.encode in Solidity)
  * Layout: [version(1)][type(1)][flags(1)][validUntil(6)][validAfter(6)][nonce(8)][payloadLen(2)][payload(N)]
  */
-export function encodePaymasterData(
-  envelope: Omit<PaymasterDataEnvelope, 'version'>
-): Hex {
+export function encodePaymasterData(envelope: Omit<PaymasterDataEnvelope, 'version'>): Hex {
   const { paymasterType, flags, validUntil, validAfter, nonce, payload } = envelope
 
   if (paymasterType > PaymasterType.PERMIT2) {
@@ -110,9 +108,7 @@ export function decodePaymasterData(data: Hex): PaymasterDataEnvelope {
   }
 
   const payload =
-    payloadLen > 0
-      ? sliceHex(data, PAYLOAD_OFFSET, PAYLOAD_OFFSET + payloadLen)
-      : ('0x' as Hex)
+    payloadLen > 0 ? sliceHex(data, PAYLOAD_OFFSET, PAYLOAD_OFFSET + payloadLen) : ('0x' as Hex)
 
   return {
     version,
@@ -170,12 +166,7 @@ export function encodePaymasterDataWithSignature(envelopeHex: Hex, signature: He
  */
 export function encodePaymasterDataWithSignatureV09(envelopeHex: Hex, signature: Hex): Hex {
   const sigSize = hexSize(signature)
-  return concatHex([
-    envelopeHex,
-    signature,
-    numberToHex(sigSize, { size: 2 }),
-    PAYMASTER_SIG_MAGIC,
-  ])
+  return concatHex([envelopeHex, signature, numberToHex(sigSize, { size: 2 }), PAYMASTER_SIG_MAGIC])
 }
 
 /**

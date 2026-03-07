@@ -1,4 +1,8 @@
-import type { AuditHookConfig, HookGasLimitRequest, SpendingLimitHookConfig } from '@stablenet/sdk-types'
+import type {
+  AuditHookConfig,
+  HookGasLimitRequest,
+  SpendingLimitHookConfig,
+} from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { encodeAbiParameters, formatEther, formatUnits, parseAbiParameters } from 'viem'
 

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ENTRY_POINT_V07_ADDRESS,
   ENTRY_POINT_ABI,
+  ENTRY_POINT_V07_ADDRESS,
   getEntryPointVersion,
-  isEntryPointV07,
   isEntryPointV06,
+  isEntryPointV07,
 } from '../../src/entrypoint'
 
 describe('entrypoint module', () => {

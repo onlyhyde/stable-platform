@@ -395,9 +395,7 @@ describe('RPC Server E2E', () => {
     it('should return null for unknown hash', async () => {
       const unknownHash = '0x' + '00'.repeat(32)
 
-      const { result, error } = await rpcCall(testPort, 'eth_getUserOperationByHash', [
-        unknownHash,
-      ])
+      const { result, error } = await rpcCall(testPort, 'eth_getUserOperationByHash', [unknownHash])
 
       expect(error).toBeUndefined()
       expect(result).toBeNull()
@@ -428,9 +426,7 @@ describe('RPC Server E2E', () => {
       ])
 
       // Try to get receipt (should be null since not yet included)
-      const { result, error } = await rpcCall(testPort, 'eth_getUserOperationReceipt', [
-        userOpHash,
-      ])
+      const { result, error } = await rpcCall(testPort, 'eth_getUserOperationReceipt', [userOpHash])
 
       expect(error).toBeUndefined()
       expect(result).toBeNull()

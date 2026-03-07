@@ -6,8 +6,7 @@
  */
 
 import { ENTRY_POINT_ABI, ENTRY_POINT_ADDRESS } from '@stablenet/core'
-import type { Address } from 'viem'
-import type { PublicClient } from 'viem'
+import type { Address, PublicClient } from 'viem'
 
 /**
  * Get the current nonce for a smart account from the EntryPoint.

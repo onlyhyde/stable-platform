@@ -1,5 +1,13 @@
 'use client'
 
+import {
+  ENTRY_POINT_ADDRESS,
+  getEcdsaValidator,
+  getEntryPoint,
+  getKernel,
+  getKernelFactory,
+  isChainSupported,
+} from '@stablenet/contracts'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address, Hex, SignedAuthorization as ViemSignedAuthorization } from 'viem'
 import { type Chain, createWalletClient, http } from 'viem'
@@ -7,14 +15,6 @@ import { privateKeyToAccount } from 'viem/accounts'
 import { anvil, mainnet, sepolia } from 'viem/chains'
 import { useAccount, useChainId, useWalletClient } from 'wagmi'
 import { getPublicClient } from 'wagmi/actions'
-import {
-  isChainSupported,
-  getEntryPoint,
-  getKernel,
-  getKernelFactory,
-  getEcdsaValidator,
-  ENTRY_POINT_ADDRESS,
-} from '@stablenet/contracts'
 import { getConfigByChainId } from '@/lib/config'
 import {
   extractDelegateAddress,

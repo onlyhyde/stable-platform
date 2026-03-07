@@ -1,13 +1,10 @@
 import type { Address, Hex } from 'viem'
-import { encodeFunctionData, pad, concat, toHex } from 'viem'
+import { concat, encodeFunctionData, pad, toHex } from 'viem'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import {
-  ENTRY_POINT_SIMULATIONS_ABI,
-  ENTRY_POINT_SIMULATIONS_BYTECODE,
-} from '../../../src/abi'
+import { ENTRY_POINT_SIMULATIONS_ABI, ENTRY_POINT_SIMULATIONS_BYTECODE } from '../../../src/abi'
 import { decodeValidationResultReturn } from '../../../src/validation/errors'
-import { type AnvilFixture, shouldSkipAnvilTests } from './setup'
 import { startAnvilStandalone } from './anvilStandalone'
+import { type AnvilFixture, shouldSkipAnvilTests } from './setup'
 
 /**
  * State Override Integration Test
@@ -128,7 +125,15 @@ describe.skipIf(shouldSkipAnvilTests())('State Override Integration', () => {
     await fixture.walletClient.sendTransaction({
       to: entryPoint,
       data: encodeFunctionData({
-        abi: [{ type: 'function', name: 'depositTo', inputs: [{ name: 'account', type: 'address' }], outputs: [], stateMutability: 'payable' }],
+        abi: [
+          {
+            type: 'function',
+            name: 'depositTo',
+            inputs: [{ name: 'account', type: 'address' }],
+            outputs: [],
+            stateMutability: 'payable',
+          },
+        ],
         functionName: 'depositTo',
         args: [sender],
       }),
@@ -169,9 +174,7 @@ describe.skipIf(shouldSkipAnvilTests())('State Override Integration', () => {
       // Even if it fails, it should be an AA error (meaning simulation ran)
       const errorStr = String(error)
       expect(
-        errorStr.includes('AA') ||
-          errorStr.includes('FailedOp') ||
-          errorStr.includes('revert')
+        errorStr.includes('AA') || errorStr.includes('FailedOp') || errorStr.includes('revert')
       ).toBe(true)
     }
   })
@@ -183,14 +186,30 @@ describe.skipIf(shouldSkipAnvilTests())('State Override Integration', () => {
     // Read balance via original EntryPoint
     const balanceBefore = await fixture.publicClient.readContract({
       address: entryPoint,
-      abi: [{ type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }],
+      abi: [
+        {
+          type: 'function',
+          name: 'balanceOf',
+          inputs: [{ name: 'account', type: 'address' }],
+          outputs: [{ type: 'uint256' }],
+          stateMutability: 'view',
+        },
+      ],
       functionName: 'balanceOf',
       args: [sender],
     })
 
     // Read balance via state-overridden contract (EntryPointSimulations)
     const balanceCalldata = encodeFunctionData({
-      abi: [{ type: 'function', name: 'balanceOf', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }], stateMutability: 'view' }],
+      abi: [
+        {
+          type: 'function',
+          name: 'balanceOf',
+          inputs: [{ name: 'account', type: 'address' }],
+          outputs: [{ type: 'uint256' }],
+          stateMutability: 'view',
+        },
+      ],
       functionName: 'balanceOf',
       args: [sender],
     })
@@ -222,8 +241,7 @@ describe.skipIf(shouldSkipAnvilTests())('State Override Integration', () => {
  * Returns success (0) for any call — enough to pass the validateUserOp check.
  * PUSH1 0x00, PUSH1 0x00, MSTORE, PUSH1 0x20, PUSH1 0x00, RETURN
  */
-const MINIMAL_ACCOUNT_BYTECODE =
-  '0x60006000526020600060003960206000f3' as Hex
+const MINIMAL_ACCOUNT_BYTECODE = '0x60006000526020600060003960206000f3' as Hex
 
 /**
  * Build a minimal PackedUserOperation for testing.

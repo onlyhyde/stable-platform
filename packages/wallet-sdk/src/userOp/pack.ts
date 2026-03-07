@@ -5,5 +5,5 @@
  * Re-exports types from @stablenet/sdk-types for type unification.
  */
 
-export type { PackedUserOperation, UserOperation } from '@stablenet/sdk-types'
 export { packUserOperation, unpackUserOperation } from '@stablenet/core'
+export type { PackedUserOperation, UserOperation } from '@stablenet/sdk-types'

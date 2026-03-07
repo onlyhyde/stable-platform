@@ -1,10 +1,10 @@
-import type { Validator } from '@stablenet/sdk-types'
+import { getWebAuthnValidator as getWebAuthnValidatorAddress } from '@stablenet/contracts'
 import {
   encodeWebAuthnSignature,
   encodeWebAuthnValidatorInit,
   type WebAuthnSignatureData,
 } from '@stablenet/core'
-import { getWebAuthnValidator as getWebAuthnValidatorAddress } from '@stablenet/contracts'
+import type { Validator } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { keccak256, toBytes } from 'viem'
 
@@ -64,22 +64,14 @@ function resolveAddress(config: CreateWebAuthnValidatorConfig): Address {
 export async function createWebAuthnValidator(
   config: CreateWebAuthnValidatorConfig
 ): Promise<Validator> {
-  const {
-    pubKeyX,
-    pubKeyY,
-    credentialId,
-    signFn,
-  } = config
+  const { pubKeyX, pubKeyY, credentialId, signFn } = config
 
   const address = resolveAddress(config)
 
   // Derive a deterministic "signer address" from the credential for identification.
   // WebAuthn doesn't have a traditional Ethereum address, so we hash the public key.
   const signerAddress = keccak256(
-    new Uint8Array([
-      ...toBytes(pubKeyX, { size: 32 }),
-      ...toBytes(pubKeyY, { size: 32 }),
-    ])
+    new Uint8Array([...toBytes(pubKeyX, { size: 32 }), ...toBytes(pubKeyY, { size: 32 })])
   ).slice(0, 42) as Address
 
   const getInitData = async (): Promise<Hex> => {

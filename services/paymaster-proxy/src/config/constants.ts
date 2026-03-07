@@ -208,9 +208,10 @@ export function getSettlementConfig() {
   return {
     bundlerRpcUrl,
     settlementPollMs: getEnvNumber(PAYMASTER_ENV_VARS.SETTLEMENT_POLL_MS, 15_000),
-    settlementEnabled: settlementEnabled !== undefined
-      ? getEnvBool(PAYMASTER_ENV_VARS.SETTLEMENT_ENABLED, true)
-      : !!bundlerRpcUrl,
+    settlementEnabled:
+      settlementEnabled !== undefined
+        ? getEnvBool(PAYMASTER_ENV_VARS.SETTLEMENT_ENABLED, true)
+        : !!bundlerRpcUrl,
   }
 }
 

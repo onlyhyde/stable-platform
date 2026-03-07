@@ -7,6 +7,7 @@
  * Uses SDK's Strategy pattern for extensible transaction handling.
  */
 
+import { getEntryPoint, isChainSupported } from '@stablenet/contracts'
 import {
   type Account,
   type BundlerClient,
@@ -26,7 +27,6 @@ import {
   type TransactionRouter,
   type UserOperation,
 } from '@stablenet/core'
-import { getEntryPoint, isChainSupported } from '@stablenet/contracts'
 import type { Address, Hex } from 'viem'
 import { createLogger } from '../../shared/utils/logger'
 import type {

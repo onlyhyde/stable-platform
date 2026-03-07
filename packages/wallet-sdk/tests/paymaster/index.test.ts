@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createPaymasterClient, getPaymasterStubData, getPaymasterData } from '../../src/paymaster'
+import { createPaymasterClient, getPaymasterData, getPaymasterStubData } from '../../src/paymaster'
 
 describe('paymaster module', () => {
   it('should re-export createPaymasterClient', () => {
@@ -35,9 +35,12 @@ describe('paymaster module', () => {
         },
       }
 
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        json: () => Promise.resolve(mockResponse),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          json: () => Promise.resolve(mockResponse),
+        })
+      )
 
       const result = await getPaymasterStubData(
         'https://paymaster.example.com',
@@ -65,13 +68,17 @@ describe('paymaster module', () => {
     })
 
     it('should throw on RPC error', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        json: () => Promise.resolve({
-          jsonrpc: '2.0',
-          id: 1,
-          error: { code: -32000, message: 'Policy rejected' },
-        }),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          json: () =>
+            Promise.resolve({
+              jsonrpc: '2.0',
+              id: 1,
+              error: { code: -32000, message: 'Policy rejected' },
+            }),
+        })
+      )
 
       await expect(
         getPaymasterStubData(
@@ -97,16 +104,20 @@ describe('paymaster module', () => {
 
   describe('ERC-7677 getPaymasterData', () => {
     it('should call pm_getPaymasterData RPC', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        json: () => Promise.resolve({
-          jsonrpc: '2.0',
-          id: 1,
-          result: {
-            paymaster: '0x1234567890123456789012345678901234567890',
-            paymasterData: '0xfinaldata',
-          },
-        }),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          json: () =>
+            Promise.resolve({
+              jsonrpc: '2.0',
+              id: 1,
+              result: {
+                paymaster: '0x1234567890123456789012345678901234567890',
+                paymasterData: '0xfinaldata',
+              },
+            }),
+        })
+      )
 
       const result = await getPaymasterData(
         'https://paymaster.example.com',

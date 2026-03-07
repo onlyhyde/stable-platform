@@ -5,7 +5,12 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
 import { getPublicClient, getWalletClient } from './chain/client'
-import { getAutoDepositConfig, getDepositMonitorConfig, getReservationPersistenceConfig, getServerConfig } from './config/constants'
+import {
+  getAutoDepositConfig,
+  getDepositMonitorConfig,
+  getReservationPersistenceConfig,
+  getServerConfig,
+} from './config/constants'
 import { DepositMonitor } from './deposit/depositMonitor'
 import {
   handleEstimateTokenPayment,
@@ -15,10 +20,6 @@ import {
   handleSupportedTokens,
 } from './handlers'
 import { SponsorPolicyManager } from './policy/sponsorPolicy'
-import { BundlerClient } from './settlement/bundlerClient'
-import { ReservationPersistence } from './settlement/reservationPersistence'
-import { ReservationTracker } from './settlement/reservationTracker'
-import { SettlementWorker } from './settlement/settlementWorker'
 import {
   estimateTokenPaymentParamsSchema,
   getPaymasterDataParamsSchema,
@@ -27,6 +28,10 @@ import {
   jsonRpcRequestSchema,
   supportedTokensParamsSchema,
 } from './schemas'
+import { BundlerClient } from './settlement/bundlerClient'
+import { ReservationPersistence } from './settlement/reservationPersistence'
+import { ReservationTracker } from './settlement/reservationTracker'
+import { SettlementWorker } from './settlement/settlementWorker'
 import { PaymasterSigner } from './signer/paymasterSigner'
 import type {
   JsonRpcResponse,
@@ -79,12 +84,9 @@ export function createApp(config: PaymasterProxyConfig): Hono {
   let settlementWorker: SettlementWorker | undefined
   if (config.bundlerRpcUrl && config.settlementEnabled !== false) {
     const bundlerClient = new BundlerClient(config.bundlerRpcUrl)
-    settlementWorker = new SettlementWorker(
-      reservationTracker,
-      policyManager,
-      bundlerClient,
-      { pollIntervalMs: config.settlementPollMs }
-    )
+    settlementWorker = new SettlementWorker(reservationTracker, policyManager, bundlerClient, {
+      pollIntervalMs: config.settlementPollMs,
+    })
     settlementWorker.start()
   }
 
@@ -183,9 +185,7 @@ export function createApp(config: PaymasterProxyConfig): Hono {
             }
           : {}),
       },
-      deposit: depositMonitor
-        ? depositMonitor.getStats()
-        : { enabled: false },
+      deposit: depositMonitor ? depositMonitor.getStats() : { enabled: false },
     })
   })
 
@@ -280,9 +280,7 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
     console.warn(
       `[paymaster-proxy] No PAYMASTER_ADMIN_TOKEN configured. Generated ephemeral token: ${masked}`
     )
-    console.warn(
-      '[paymaster-proxy] Set PAYMASTER_ADMIN_TOKEN env var for persistent admin access.'
-    )
+    console.warn('[paymaster-proxy] Set PAYMASTER_ADMIN_TOKEN env var for persistent admin access.')
     // In development, log the full token to stderr so operator can use it
     if (process.env.NODE_ENV !== 'production') {
       console.warn(`[paymaster-proxy] Full ephemeral admin token: ${adminToken}`)
@@ -338,10 +336,7 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
 /**
  * Handle a single JSON-RPC request
  */
-async function handleJsonRpcRequest(
-  req: unknown,
-  config: HandlerConfig
-): Promise<JsonRpcResponse> {
+async function handleJsonRpcRequest(req: unknown, config: HandlerConfig): Promise<JsonRpcResponse> {
   // Parse request
   const parseResult = jsonRpcRequestSchema.safeParse(req)
   if (!parseResult.success) {
@@ -383,7 +378,9 @@ async function handleJsonRpcRequest(
         code: RPC_ERROR_CODES.INTERNAL_ERROR,
         message: isProduction
           ? 'Internal error'
-          : (error instanceof Error ? error.message : 'Internal error'),
+          : error instanceof Error
+            ? error.message
+            : 'Internal error',
       },
     }
   }
@@ -498,7 +495,10 @@ function handlePmGetPaymasterStubData(params: unknown[], config: HandlerConfig):
 /**
  * Handle pm_getPaymasterData
  */
-async function handlePmGetPaymasterData(params: unknown[], config: HandlerConfig): Promise<unknown> {
+async function handlePmGetPaymasterData(
+  params: unknown[],
+  config: HandlerConfig
+): Promise<unknown> {
   const parseResult = getPaymasterDataParamsSchema.safeParse(params)
   if (!parseResult.success) {
     throw new RpcError(
@@ -544,10 +544,7 @@ async function handlePmGetPaymasterData(params: unknown[], config: HandlerConfig
  */
 async function handlePmSupportedTokens(params: unknown[], config: HandlerConfig): Promise<unknown> {
   if (!config.erc20PaymasterAddress) {
-    throw new RpcError(
-      'ERC20 paymaster not configured',
-      RPC_ERROR_CODES.UNSUPPORTED_PAYMASTER_TYPE
-    )
+    throw new RpcError('ERC20 paymaster not configured', RPC_ERROR_CODES.UNSUPPORTED_PAYMASTER_TYPE)
   }
 
   if (!config.client) {
@@ -587,10 +584,7 @@ async function handlePmEstimateTokenPayment(
   config: HandlerConfig
 ): Promise<unknown> {
   if (!config.erc20PaymasterAddress) {
-    throw new RpcError(
-      'ERC20 paymaster not configured',
-      RPC_ERROR_CODES.UNSUPPORTED_PAYMASTER_TYPE
-    )
+    throw new RpcError('ERC20 paymaster not configured', RPC_ERROR_CODES.UNSUPPORTED_PAYMASTER_TYPE)
   }
 
   if (!config.client) {

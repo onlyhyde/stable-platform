@@ -1,11 +1,7 @@
 import type { Validator } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { beforeEach, describe, expect, it } from 'vitest'
-import {
-  createValidatorRouter,
-  type ValidatorRouter,
-} from '../../src/modules/validatorRouter'
-import { VALIDATION_TYPE } from '../../src/modules/utils/nonceUtils'
+import { createValidatorRouter, type ValidatorRouter } from '../../src/modules/validatorRouter'
 
 // ============================================================================
 // Test fixtures

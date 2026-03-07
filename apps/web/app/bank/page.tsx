@@ -12,8 +12,8 @@ import {
 } from '@/components/common'
 import { useWallet } from '@/hooks'
 import { useBankAccounts } from '@/hooks/useBankAccounts'
-import type { BankAccountType, LinkedBankAccount } from '@/types/bank'
 import { formatRelativeTime } from '@/lib/utils'
+import type { BankAccountType, LinkedBankAccount } from '@/types/bank'
 
 type Tab = 'accounts' | 'transfer'
 
@@ -102,9 +102,7 @@ export default function BankPage() {
         <h1 className="text-2xl font-bold" style={{ color: 'rgb(var(--foreground))' }}>
           Bank Accounts
         </h1>
-        <p style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Link and manage your bank accounts
-        </p>
+        <p style={{ color: 'rgb(var(--muted-foreground))' }}>Link and manage your bank accounts</p>
       </div>
 
       {/* Tab Toggle */}
@@ -116,9 +114,7 @@ export default function BankPage() {
           style={{
             backgroundColor: activeTab === 'accounts' ? 'rgb(var(--background))' : 'transparent',
             color:
-              activeTab === 'accounts'
-                ? 'rgb(var(--foreground))'
-                : 'rgb(var(--muted-foreground))',
+              activeTab === 'accounts' ? 'rgb(var(--foreground))' : 'rgb(var(--muted-foreground))',
             boxShadow: activeTab === 'accounts' ? '0 1px 2px rgb(0 0 0 / 0.05)' : 'none',
           }}
         >
@@ -131,9 +127,7 @@ export default function BankPage() {
           style={{
             backgroundColor: activeTab === 'transfer' ? 'rgb(var(--background))' : 'transparent',
             color:
-              activeTab === 'transfer'
-                ? 'rgb(var(--foreground))'
-                : 'rgb(var(--muted-foreground))',
+              activeTab === 'transfer' ? 'rgb(var(--foreground))' : 'rgb(var(--muted-foreground))',
             boxShadow: activeTab === 'transfer' ? '0 1px 2px rgb(0 0 0 / 0.05)' : 'none',
           }}
         >
@@ -365,9 +359,7 @@ function AccountCard({
       </div>
       <div className="flex items-center justify-between">
         <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          {account.lastSynced
-            ? `Synced ${formatRelativeTime(account.lastSynced)}`
-            : 'Never synced'}
+          {account.lastSynced ? `Synced ${formatRelativeTime(account.lastSynced)}` : 'Never synced'}
         </p>
         <div className="flex gap-2">
           <button

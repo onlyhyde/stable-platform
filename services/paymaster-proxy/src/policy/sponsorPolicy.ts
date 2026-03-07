@@ -1,7 +1,7 @@
 import type { Address } from 'viem'
 import { getDefaultPolicyConfig } from '../config/constants'
-import type { SpendingReservation, SponsorPolicy, SponsorTracker, UserOperationRpc } from '../types'
-import { RiskScorer, type RiskAssessment, type RiskScorerConfig } from './riskScorer'
+import type { SponsorPolicy, SponsorTracker, UserOperationRpc } from '../types'
+import { type RiskAssessment, RiskScorer, type RiskScorerConfig } from './riskScorer'
 
 /**
  * Get default policy configuration from environment

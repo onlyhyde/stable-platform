@@ -343,12 +343,8 @@ describe('DependencyTracker', () => {
       const sender2 = createAddress(2)
       const createdAddr = createAddress(50)
 
-      tracker.recordAccess(
-        createAccessRecord(hash1, sender1, [], [createdAddr])
-      )
-      tracker.recordAccess(
-        createAccessRecord(hash2, sender2, [], [createdAddr])
-      )
+      tracker.recordAccess(createAccessRecord(hash1, sender1, [], [createdAddr]))
+      tracker.recordAccess(createAccessRecord(hash2, sender2, [], [createdAddr]))
 
       const collisions = tracker.findFactoryCollisions([hash1, hash2])
       expect(collisions.length).toBe(1)
@@ -364,12 +360,8 @@ describe('DependencyTracker', () => {
       const sender1 = createAddress(1)
       const sender2 = createAddress(2)
 
-      tracker.recordAccess(
-        createAccessRecord(hash1, sender1, [], [createAddress(50)])
-      )
-      tracker.recordAccess(
-        createAccessRecord(hash2, sender2, [], [createAddress(51)])
-      )
+      tracker.recordAccess(createAccessRecord(hash1, sender1, [], [createAddress(50)]))
+      tracker.recordAccess(createAccessRecord(hash2, sender2, [], [createAddress(51)]))
 
       const collisions = tracker.findFactoryCollisions([hash1, hash2])
       expect(collisions.length).toBe(0)
@@ -596,7 +588,9 @@ describe('DependencyTracker', () => {
         createAccessRecord(hash1, sender1, [[contract, ['0xaa']]], undefined, [])
       )
       tracker.recordAccess(
-        createAccessRecord(hash2, sender2, [[contract, ['0xbb']]], undefined, [[contract, ['0xbb']]])
+        createAccessRecord(hash2, sender2, [[contract, ['0xbb']]], undefined, [
+          [contract, ['0xbb']],
+        ])
       )
 
       const deps = tracker.findDependencies([hash1, hash2])
@@ -719,22 +713,14 @@ describe('DependencyTracker', () => {
       const contract = createAddress(100)
 
       tracker.recordAccess(
-        createAccessRecord(
-          hash1,
-          sender1,
-          [[contract, ['0xaa']]],
-          undefined,
-          [[contract, ['0xaa']]]
-        )
+        createAccessRecord(hash1, sender1, [[contract, ['0xaa']]], undefined, [
+          [contract, ['0xaa']],
+        ])
       )
       tracker.recordAccess(
-        createAccessRecord(
-          hash2,
-          sender2,
-          [[contract, ['0xbb']]],
-          undefined,
-          [[contract, ['0xbb']]]
-        )
+        createAccessRecord(hash2, sender2, [[contract, ['0xbb']]], undefined, [
+          [contract, ['0xbb']],
+        ])
       )
 
       const conflicts = tracker.findWriteConflicts([hash1, hash2])
@@ -770,31 +756,19 @@ describe('DependencyTracker', () => {
 
       // hash1 writes 0xaa, hash2 writes 0xaa (conflict with hash1) and 0xbb, hash3 writes 0xbb
       tracker.recordAccess(
-        createAccessRecord(
-          hash1,
-          sender1,
-          [[contract, ['0xaa']]],
-          undefined,
-          [[contract, ['0xaa']]]
-        )
+        createAccessRecord(hash1, sender1, [[contract, ['0xaa']]], undefined, [
+          [contract, ['0xaa']],
+        ])
       )
       tracker.recordAccess(
-        createAccessRecord(
-          hash2,
-          sender2,
-          [[contract, ['0xaa', '0xbb']]],
-          undefined,
-          [[contract, ['0xaa', '0xbb']]]
-        )
+        createAccessRecord(hash2, sender2, [[contract, ['0xaa', '0xbb']]], undefined, [
+          [contract, ['0xaa', '0xbb']],
+        ])
       )
       tracker.recordAccess(
-        createAccessRecord(
-          hash3,
-          sender3,
-          [[contract, ['0xbb']]],
-          undefined,
-          [[contract, ['0xbb']]]
-        )
+        createAccessRecord(hash3, sender3, [[contract, ['0xbb']]], undefined, [
+          [contract, ['0xbb']],
+        ])
       )
 
       const conflicts = tracker.findWriteConflicts([hash1, hash2, hash3])

@@ -308,7 +308,9 @@ export function RecurringPaymentConfigUI({
               htmlFor="amount-per-payment"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              {t('amountPerPayment', { unit: form.tokenType === 'native' ? nativeSymbol : tc('tokens') })}
+              {t('amountPerPayment', {
+                unit: form.tokenType === 'native' ? nativeSymbol : tc('tokens'),
+              })}
             </label>
             <input
               id="amount-per-payment"
@@ -452,11 +454,15 @@ export function RecurringPaymentConfigUI({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">{t('token')}</span>
-              <span className="font-medium">{form.tokenType === 'native' ? nativeSymbol : 'ERC-20'}</span>
+              <span className="font-medium">
+                {form.tokenType === 'native' ? nativeSymbol : 'ERC-20'}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">{t('amountPerPaymentLabel')}</span>
-              <span className="font-medium">{form.amountEth} {nativeSymbol}</span>
+              <span className="font-medium">
+                {form.amountEth} {nativeSymbol}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">{t('frequency')}</span>

@@ -8,10 +8,10 @@
 
 import type { Address, Hex } from 'viem'
 import type {
+  MultiSigConfig,
   ValidatorRegistry,
   ValidatorTypeConfig,
   WebAuthnConfig,
-  MultiSigConfig,
 } from './validatorRegistry'
 import type { WebAuthnBridge } from './webauthnBridge'
 
@@ -69,11 +69,7 @@ export interface SignatureRouter {
 export function createSignatureRouter(config: SignatureRouterConfig): SignatureRouter {
   const { registry, ecdsaSign, webauthnBridge, multisigCollect } = config
 
-  const signHash = async (
-    chainId: number,
-    account: Address,
-    hash: Hex
-  ): Promise<Hex> => {
+  const signHash = async (chainId: number, account: Address, hash: Hex): Promise<Hex> => {
     const activeConfig = registry.getActiveValidator(chainId, account)
 
     switch (activeConfig.validatorType) {

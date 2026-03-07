@@ -3,13 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "StableNet PoC Platform - ERC-4337 Account Abstraction with Privacy Features",
-  "keywords": [
-    "stablenet",
-    "erc-4337",
-    "account-abstraction",
-    "smart-account",
-    "stealth-address"
-  ],
+  "keywords": ["stablenet", "erc-4337", "account-abstraction", "smart-account", "stealth-address"],
   "license": "MIT",
   "author": "StableNet Team",
   "type": "module",
@@ -49,10 +43,7 @@
       "elliptic": ">=6.6.1",
       "bn.js": ">=5.2.3"
     },
-    "onlyBuiltDependencies": [
-      "sharp",
-      "unrs-resolver"
-    ]
+    "onlyBuiltDependencies": ["sharp", "unrs-resolver"]
   },
   "packageManager": "pnpm@10.30.3",
   "engines": {

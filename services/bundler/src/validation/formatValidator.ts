@@ -319,7 +319,10 @@ export class FormatValidator implements IFormatValidator {
       )
     }
 
-    if (userOp.paymasterVerificationGasLimit && userOp.paymasterVerificationGasLimit > VALIDATION_CONSTANTS.MAX_VERIFICATION_GAS) {
+    if (
+      userOp.paymasterVerificationGasLimit &&
+      userOp.paymasterVerificationGasLimit > VALIDATION_CONSTANTS.MAX_VERIFICATION_GAS
+    ) {
       throw new RpcError(
         `paymasterVerificationGasLimit (${userOp.paymasterVerificationGasLimit}) exceeds maximum (${VALIDATION_CONSTANTS.MAX_VERIFICATION_GAS})`,
         RPC_ERROR_CODES.INVALID_PARAMS

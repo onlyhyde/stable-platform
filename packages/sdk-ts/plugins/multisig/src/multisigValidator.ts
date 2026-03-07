@@ -1,6 +1,6 @@
-import type { Validator } from '@stablenet/sdk-types'
-import { encodeMultiSigValidatorInit } from '@stablenet/core'
 import { getMultiSigValidator as getMultiSigValidatorAddress } from '@stablenet/contracts'
+import { encodeMultiSigValidatorInit } from '@stablenet/core'
+import type { Validator } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { concat, keccak256, toBytes } from 'viem'
 
@@ -65,19 +65,13 @@ function resolveAddress(config: CreateMultiSigValidatorConfig): Address {
 export async function createMultiSigValidator(
   config: CreateMultiSigValidatorConfig
 ): Promise<Validator> {
-  const {
-    signers,
-    threshold,
-    collectSignatures,
-  } = config
+  const { signers, threshold, collectSignatures } = config
 
   const address = resolveAddress(config)
 
   // Derive a deterministic "signer address" from the multisig configuration.
   // Hash sorted signers + threshold to produce a unique identifier.
-  const sortedSigners = [...signers].sort((a, b) =>
-    a.toLowerCase().localeCompare(b.toLowerCase())
-  )
+  const sortedSigners = [...signers].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
   const signerAddress = keccak256(
     new Uint8Array([
       ...sortedSigners.flatMap((s) => [...toBytes(s)]),

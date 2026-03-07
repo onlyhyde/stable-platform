@@ -1,4 +1,9 @@
 export {
+  type EstimateTokenPaymentConfig,
+  type EstimateTokenPaymentResult,
+  handleEstimateTokenPayment,
+} from './estimateTokenPayment'
+export {
   type GetPaymasterDataConfig,
   type GetPaymasterDataParams,
   type GetPaymasterDataResult,
@@ -11,17 +16,12 @@ export {
   handleGetPaymasterStubData,
 } from './getPaymasterStubData'
 export {
-  type EstimateTokenPaymentConfig,
-  type EstimateTokenPaymentResult,
-  handleEstimateTokenPayment,
-} from './estimateTokenPayment'
-export {
   type GetSponsorPolicyConfig,
   type GetSponsorPolicyResult,
   handleGetSponsorPolicy,
 } from './sponsorPolicy'
 export {
+  handleSupportedTokens,
   type SupportedTokensConfig,
   type SupportedTokensResult,
-  handleSupportedTokens,
 } from './supportedTokens'

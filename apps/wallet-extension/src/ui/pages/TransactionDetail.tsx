@@ -263,7 +263,10 @@ export function TransactionDetail() {
           <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {t('from')}
           </p>
-          <p className="text-sm font-mono mt-0.5 break-all" style={{ color: 'rgb(var(--foreground))' }}>
+          <p
+            className="text-sm font-mono mt-0.5 break-all"
+            style={{ color: 'rgb(var(--foreground))' }}
+          >
             {tx.from}
           </p>
         </div>
@@ -273,7 +276,10 @@ export function TransactionDetail() {
           <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {t('to')}
           </p>
-          <p className="text-sm font-mono mt-0.5 break-all" style={{ color: 'rgb(var(--foreground))' }}>
+          <p
+            className="text-sm font-mono mt-0.5 break-all"
+            style={{ color: 'rgb(var(--foreground))' }}
+          >
             {tx.to || '-'}
           </p>
         </div>
@@ -400,7 +406,6 @@ export function TransactionDetail() {
           </button>
         </div>
       )}
-
     </div>
   )
 }

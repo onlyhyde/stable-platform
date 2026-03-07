@@ -1,6 +1,11 @@
-import type { Address, Hash, EIP1193Provider, ProviderConnectInfo, ProviderRpcError } from 'viem'
+import type { Address, EIP1193Provider, Hash, ProviderConnectInfo, ProviderRpcError } from 'viem'
 import { walletSdkLogger } from '../logger'
-import type { StableNetRpcSchema, UserOperationGasEstimate, UserOperationReceipt, UserOperationRequest } from '../rpc'
+import type {
+  StableNetRpcSchema,
+  UserOperationGasEstimate,
+  UserOperationReceipt,
+  UserOperationRequest,
+} from '../rpc'
 import type { TransactionRequest } from '../types'
 import { filterValidAddresses, parseChainIdHex } from '../validation'
 
@@ -226,7 +231,7 @@ export class StableNetProvider {
       rpcUrls: readonly string[]
       blockExplorerUrls?: string[]
       iconUrls?: string[]
-    },
+    }
   ): Promise<void> {
     try {
       await this.rpc({
@@ -235,8 +240,7 @@ export class StableNetProvider {
       })
     } catch (err) {
       const error = err as { code?: number; data?: { originalError?: { code?: number } } }
-      const isChainNotAdded =
-        error.code === 4902 || error.data?.originalError?.code === 4902
+      const isChainNotAdded = error.code === 4902 || error.data?.originalError?.code === 4902
 
       if (isChainNotAdded && addChainConfig) {
         await this.addChain({ chainId, ...addChainConfig })
@@ -714,10 +718,7 @@ export class StableNetProvider {
   /**
    * Submit a UserOperation to the bundler via the wallet
    */
-  async sendUserOperation(
-    userOp: UserOperationRequest,
-    entryPoint: Address
-  ): Promise<Hash> {
+  async sendUserOperation(userOp: UserOperationRequest, entryPoint: Address): Promise<Hash> {
     const result = await this.rpc({
       method: 'wallet_sendUserOperation',
       params: [userOp, entryPoint],
@@ -742,9 +743,7 @@ export class StableNetProvider {
   /**
    * Get the receipt for a UserOperation by its hash
    */
-  async getUserOperationReceipt(
-    userOpHash: Hash
-  ): Promise<UserOperationReceipt | null> {
+  async getUserOperationReceipt(userOpHash: Hash): Promise<UserOperationReceipt | null> {
     const result = await this.rpc({
       method: 'wallet_getUserOperationReceipt',
       params: [userOpHash],
@@ -774,8 +773,6 @@ export class StableNetProvider {
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
 
-    throw new Error(
-      `Timeout waiting for UserOperation ${userOpHash} after ${timeout}ms`
-    )
+    throw new Error(`Timeout waiting for UserOperation ${userOpHash} after ${timeout}ms`)
   }
 }

@@ -1,8 +1,8 @@
 import {
   createPublicClient,
   createWalletClient,
-  http,
   type Hex,
+  http,
   type PublicClient,
   type WalletClient,
 } from 'viem'

@@ -55,11 +55,14 @@ export {
 // ============================================================================
 export {
   type AuditHookConfig,
+  type DelegatecallWhitelistEnforceRequest,
+  type DelegatecallWhitelistRequest,
   // Validator configs
   type ECDSAValidatorConfig,
   type FieldValidation,
   type FlashLoanConfig,
   getModuleTypeName,
+  type HookGasLimitRequest,
   type InstalledModule,
   isExecutor,
   isFallback,
@@ -84,9 +87,6 @@ export {
   // Types
   type ModuleType,
   type ModuleUninstallRequest,
-  type HookGasLimitRequest,
-  type DelegatecallWhitelistRequest,
-  type DelegatecallWhitelistEnforceRequest,
   type MultiSigValidatorConfig,
   type RecurringPaymentConfig,
   // Executor configs

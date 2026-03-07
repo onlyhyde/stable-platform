@@ -445,7 +445,11 @@ describe('ModuleController', () => {
     })
 
     it('should force uninstall a module and return txHash', async () => {
-      const result = await controller.forceUninstallModule(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
+      const result = await controller.forceUninstallModule(
+        ACCOUNT,
+        MODULE_ADDR,
+        MODULE_TYPE.VALIDATOR
+      )
 
       expect(result.txHash).toBe(TX_HASH)
     })
@@ -527,7 +531,9 @@ describe('ModuleController', () => {
         '0x'
       )
 
-      const callData = (mockProvider.request.mock.calls[0][0].params[0].data as string).toLowerCase()
+      const callData = (
+        mockProvider.request.mock.calls[0][0].params[0].data as string
+      ).toLowerCase()
       expect(callData).toContain(MODULE_ADDR.slice(2).toLowerCase())
       expect(callData).toContain(MODULE_ADDR_2.slice(2).toLowerCase())
     })
@@ -553,7 +559,11 @@ describe('ModuleController', () => {
       expect(controller.getInstalledModules(ACCOUNT)).toHaveLength(1)
 
       // Fallback to force uninstall
-      const result = await controller.forceUninstallModule(ACCOUNT, MODULE_ADDR, MODULE_TYPE.VALIDATOR)
+      const result = await controller.forceUninstallModule(
+        ACCOUNT,
+        MODULE_ADDR,
+        MODULE_TYPE.VALIDATOR
+      )
 
       expect(result.txHash).toBe(TX_HASH)
       expect(controller.getInstalledModules(ACCOUNT)).toHaveLength(0)
@@ -564,9 +574,9 @@ describe('ModuleController', () => {
     it('should propagate reentrancy error from provider', async () => {
       mockProvider.request.mockRejectedValue(new Error('Reentrancy detected'))
 
-      await expect(
-        controller.installModule(ACCOUNT, createInstallRequest())
-      ).rejects.toThrow('Reentrancy detected')
+      await expect(controller.installModule(ACCOUNT, createInstallRequest())).rejects.toThrow(
+        'Reentrancy detected'
+      )
     })
   })
 })

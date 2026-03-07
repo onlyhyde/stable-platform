@@ -6,9 +6,9 @@
 
 import type { Address } from 'viem'
 
+export { ENTRY_POINT_ABI } from '@stablenet/core'
 // Re-export EntryPoint constants and ABI
 export { ENTRY_POINT_ADDRESS, ENTRY_POINT_V07_ADDRESS } from '@stablenet/sdk-types'
-export { ENTRY_POINT_ABI } from '@stablenet/core'
 
 /** Known EntryPoint v0.9 address (StableNet) */
 const ENTRY_POINT_V09_ADDRESS = '0xEf6817fe73741A8F10088f9511c64b666a338A14' as const
