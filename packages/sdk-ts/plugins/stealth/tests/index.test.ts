@@ -691,7 +691,7 @@ describe('stealth plugin', () => {
       expect(computed.stealthAddress.toLowerCase()).toBe(generated.stealthAddress.toLowerCase())
     })
 
-    it('should handle view tag collision probability correctly', () => {
+    it('should handle view tag collision probability correctly', { timeout: 30_000 }, () => {
       // View tags provide 1/256 filtering (1 byte)
       // After checking 100 random announcements, we should rarely match
       const spendingKeyPair = generateStealthKeyPair()

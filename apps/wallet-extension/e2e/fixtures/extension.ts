@@ -34,9 +34,10 @@ export interface ExtensionFixtures {
  */
 export const test = base.extend<ExtensionFixtures>({
   // Create a browser context with the extension loaded
-  extensionContext: async (_options, use) => {
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright fixture requires destructuring pattern
+  extensionContext: async ({}, use) => {
     const context = await chromium.launchPersistentContext('', {
-      headless: false, // Extensions require headed mode
+      channel: 'chromium',
       args: [
         `--disable-extensions-except=${EXTENSION_PATH}`,
         `--load-extension=${EXTENSION_PATH}`,
@@ -50,58 +51,13 @@ export const test = base.extend<ExtensionFixtures>({
     await context.close()
   },
 
-  // Get extension ID from service worker
+  // Get extension ID from service worker (Playwright 1.58 official pattern)
   extensionId: async ({ extensionContext }, use) => {
-    // Wait for service worker to be registered
-    let extensionId = ''
-
-    // Get background service worker to find extension ID
-    const serviceWorkers = extensionContext.serviceWorkers()
-    if (serviceWorkers.length > 0) {
-      const url = serviceWorkers[0].url()
-      const match = url.match(/chrome-extension:\/\/([^/]+)/)
-      if (match) {
-        extensionId = match[1]
-      }
+    let [serviceWorker] = extensionContext.serviceWorkers()
+    if (!serviceWorker) {
+      serviceWorker = await extensionContext.waitForEvent('serviceworker')
     }
-
-    // If not found from service workers, try from pages
-    if (!extensionId) {
-      // Open a page and check for extension
-      const page = await extensionContext.newPage()
-      await page.goto('chrome://extensions/')
-      await page.waitForTimeout(1000)
-
-      // Try to get extension ID from manifest
-      const backgroundPages = extensionContext.backgroundPages()
-      if (backgroundPages.length > 0) {
-        const url = backgroundPages[0].url()
-        const match = url.match(/chrome-extension:\/\/([^/]+)/)
-        if (match) {
-          extensionId = match[1]
-        }
-      }
-
-      await page.close()
-    }
-
-    // Fallback: wait for service worker and retry
-    if (!extensionId) {
-      await extensionContext.waitForEvent('serviceworker', { timeout: 10000 })
-      const workers = extensionContext.serviceWorkers()
-      if (workers.length > 0) {
-        const url = workers[0].url()
-        const match = url.match(/chrome-extension:\/\/([^/]+)/)
-        if (match) {
-          extensionId = match[1]
-        }
-      }
-    }
-
-    if (!extensionId) {
-      throw new Error('Could not find extension ID')
-    }
-
+    const extensionId = serviceWorker.url().split('/')[2]
     await use(extensionId)
   },
 
@@ -146,38 +102,11 @@ export { expect } from '@playwright/test'
  * Useful when not using the full test fixtures
  */
 export async function getExtensionId(context: BrowserContext): Promise<string> {
-  // Try service workers first
-  const serviceWorkers = context.serviceWorkers()
-  if (serviceWorkers.length > 0) {
-    const url = serviceWorkers[0].url()
-    const match = url.match(/chrome-extension:\/\/([^/]+)/)
-    if (match) {
-      return match[1]
-    }
+  let [serviceWorker] = context.serviceWorkers()
+  if (!serviceWorker) {
+    serviceWorker = await context.waitForEvent('serviceworker', { timeout: 10000 })
   }
-
-  // Try background pages
-  const backgroundPages = context.backgroundPages()
-  if (backgroundPages.length > 0) {
-    const url = backgroundPages[0].url()
-    const match = url.match(/chrome-extension:\/\/([^/]+)/)
-    if (match) {
-      return match[1]
-    }
-  }
-
-  // Wait for service worker and retry
-  await context.waitForEvent('serviceworker', { timeout: 10000 })
-  const workers = context.serviceWorkers()
-  if (workers.length > 0) {
-    const url = workers[0].url()
-    const match = url.match(/chrome-extension:\/\/([^/]+)/)
-    if (match) {
-      return match[1]
-    }
-  }
-
-  throw new Error('Could not find extension ID')
+  return serviceWorker.url().split('/')[2]
 }
 
 /**

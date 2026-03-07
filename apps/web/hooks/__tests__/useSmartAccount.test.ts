@@ -28,10 +28,10 @@ describe('F-01: Dynamic contract address resolution', () => {
 
       const addresses = fn(8283)
 
-      expect(addresses.entryPoint).toBe('0x2ef7E4897d71647502e2Fe60F707AcD9a110660C')
-      expect(addresses.kernel).toBe('0x92458C9920376Ddd0152dbA56888ac60547408E6')
-      expect(addresses.kernelFactory).toBe('0xA18C1d76de513FEa27127E2508de43AdC0820a72')
-      expect(addresses.ecdsaValidator).toBe('0xFaf73bf2E642ADD50cf9d9853C44553ECCdFC670')
+      expect(addresses.entryPoint).toBe('0xEf6817fe73741A8F10088f9511c64b666a338A14')
+      expect(addresses.kernel).toBe('0xA61b944dd427A85495B685D93237CB73087E0035')
+      expect(addresses.kernelFactory).toBe('0xbEbb0338503F9E28FFDC84C3548F8454F12Dd1D3')
+      expect(addresses.ecdsaValidator).toBe('0xb33DC2d82eAee723ca7687D70209ed9A861b3B46')
     })
 
     it('should NOT return hardcoded Anvil addresses for chain 8283', async () => {

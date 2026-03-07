@@ -43,6 +43,11 @@ export class MetricsCollector implements IMetricsCollector {
   private rpcResponseTimeSum = 0
   private rpcResponseTimeCount = 0
 
+  // Profitability metrics
+  private bundleProfitTotal = 0n
+  private bundleProfitableCount = 0
+  private bundleUnprofitableCount = 0
+
   // Gas estimation metrics
   private gasEstimationTotal = 0
   private gasEstimationSuccessful = 0

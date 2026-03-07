@@ -55,9 +55,11 @@ describe('ProviderRegistry', () => {
 
     it('should not start listening twice', () => {
       const addSpy = vi.spyOn(window, 'addEventListener')
+      const callsBefore = addSpy.mock.calls.length
       registry.startListening()
       registry.startListening()
-      expect(addSpy).toHaveBeenCalledTimes(1)
+      const callsAfter = addSpy.mock.calls.length
+      expect(callsAfter - callsBefore).toBe(1)
     })
   })
 

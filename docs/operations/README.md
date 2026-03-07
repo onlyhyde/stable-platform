@@ -580,6 +580,5 @@ curl -X POST http://localhost:3000/rpc \
 
 ## Related Documentation
 
-- [Deployment Guide](../deployment/README.md)
+- [Deployment Guide](./deployment.md)
 - [Service API Reference](../services/README.md)
-- [Incident Postmortems](./postmortems/)

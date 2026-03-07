@@ -1,9 +1,22 @@
 /* Import Pretendard (Korean font) via CDN */
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+/* Tailwind v4: register shared base classes as utilities for @apply compatibility */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.98];
+  --tw-ring-offset-color: rgb(var(--background));
+}
+
+@utility badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+@utility status-dot {
+  @apply w-2 h-2 rounded-full;
+}
 
 @layer base {
   /* ==========================================
@@ -369,11 +382,6 @@
   /* ==========================================
      BUTTONS
      ========================================== */
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.98];
-    --tw-ring-offset-color: rgb(var(--background));
-  }
-
   .btn-primary {
     @apply btn;
     background: rgb(var(--primary));
@@ -492,11 +500,16 @@
   }
 
   .card-interactive {
-    @apply card cursor-pointer;
+    background-color: rgb(var(--card));
+    color: rgb(var(--card-foreground));
+    border: 1px solid rgb(var(--border));
+    @apply rounded-2xl shadow-soft transition-all duration-150 cursor-pointer;
   }
 
   .card-interactive:hover {
-    @apply card-hover;
+    background-color: rgb(var(--card-hover));
+    border-color: rgb(var(--border-hover));
+    @apply shadow-medium -translate-y-0.5;
   }
 
   .card-glass {
@@ -560,10 +573,6 @@
   /* ==========================================
      BADGES
      ========================================== */
-  .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-  }
-
   .badge-primary {
     @apply badge;
     background-color: rgb(var(--primary-muted) / 0.1);
@@ -697,10 +706,6 @@
   /* ==========================================
      STATUS DOT
      ========================================== */
-  .status-dot {
-    @apply w-2 h-2 rounded-full;
-  }
-
   .status-dot-success {
     @apply status-dot;
     background-color: rgb(var(--success));
