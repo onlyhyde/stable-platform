@@ -28,11 +28,6 @@ updates:
 
   # Go dependencies
   - package-ecosystem: "gomod"
-    directory: "/services/stealth-server"
-    schedule:
-      interval: "weekly"
-
-  - package-ecosystem: "gomod"
     directory: "/services/order-router"
     schedule:
       interval: "weekly"
@@ -48,17 +43,23 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "gomod"
-    directory: "/simulators/bank"
+    directory: "/services/bank-simulator"
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "gomod"
-    directory: "/simulators/pg"
+    directory: "/services/pg-simulator"
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "gomod"
-    directory: "/simulators/onramp"
+    directory: "/services/onramp-simulator"
+    schedule:
+      interval: "weekly"
+
+  # Rust dependencies
+  - package-ecosystem: "cargo"
+    directory: "/services/stealth-server"
     schedule:
       interval: "weekly"
 
