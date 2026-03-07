@@ -452,7 +452,7 @@ export class DependencyTracker {
   private hasWrite(record: StorageAccessRecord, contract: Address, slot: string): boolean {
     if (!record.writtenSlots) return true
     const slots = record.writtenSlots.get(contract)
-    return slots?.has(slot)
+    return slots?.has(slot) ?? false
   }
 
   private slotKey(contract: Address, slot: string): string {

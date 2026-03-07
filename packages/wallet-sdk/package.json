@@ -59,7 +59,7 @@
     "tsup": "^8.0.0",
     "typescript": "^5.3.0",
     "viem": "^2.46.3",
-    "vitest": "^2.1.8",
+    "vitest": "^4.0.18",
     "wagmi": "^3.5.0"
   },
   "keywords": [
