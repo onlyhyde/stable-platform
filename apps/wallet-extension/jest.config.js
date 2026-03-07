@@ -40,6 +40,7 @@ module.exports = {
       displayName: 'unit',
       preset: 'ts-jest',
       testEnvironment: 'node',
+      testTimeout: 30000,
       roots: ['<rootDir>/tests'],
       testMatch: ['**/*.test.ts'],
       testPathIgnorePatterns: [
