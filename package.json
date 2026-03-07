@@ -25,9 +25,9 @@
     "generate": "pnpm -F @stablenet/contracts generate && pnpm -F @stablenet/contracts build"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.4",
+    "@biomejs/biome": "^2.4.6",
     "@changesets/cli": "^2.27.10",
-    "turbo": "^2.8.13",
+    "turbo": "^2.8.14",
     "typescript": "^5.7.2",
     "viem": "^2.46.3",
     "vitest": "^2.1.9"
