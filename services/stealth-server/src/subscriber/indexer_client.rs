@@ -132,7 +132,7 @@ impl IndexerClient {
         };
 
         let msg = serde_json::to_string(&subscribe_request)?;
-        write.send(Message::Text(msg)).await?;
+        write.send(Message::Text(msg.into())).await?;
 
         info!("Subscription request sent, waiting for events...");
 
