@@ -37,7 +37,7 @@ export const test = base.extend<ExtensionFixtures>({
   // biome-ignore lint/correctness/noEmptyPattern: Playwright fixture requires destructuring pattern
   extensionContext: async ({}, use) => {
     const context = await chromium.launchPersistentContext('', {
-      channel: 'chromium',
+      headless: false,
       args: [
         `--disable-extensions-except=${EXTENSION_PATH}`,
         `--load-extension=${EXTENSION_PATH}`,
