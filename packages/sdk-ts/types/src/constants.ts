@@ -6,10 +6,16 @@
  */
 export {
   CALL_TYPE,
+  type CallType,
+  decodeExecutionMode,
   ECDSA_VALIDATOR_ADDRESS,
+  encodeExecutionMode,
   ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   EXEC_MODE,
+  EXEC_TYPE,
+  type ExecType,
+  type ExecutionMode,
   KERNEL_ADDRESSES,
   KERNEL_V3_1_FACTORY_ADDRESS,
 } from '@stablenet/types'

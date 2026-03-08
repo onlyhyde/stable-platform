@@ -42,11 +42,17 @@ export { BUNDLER_ERROR_CODES, BUNDLER_ERROR_CODES as RPC_BUNDLER_ERROR_CODES } f
 // ============================================================================
 export {
   CALL_TYPE,
+  type CallType,
+  decodeExecutionMode,
   ECDSA_VALIDATOR_ADDRESS,
+  encodeExecutionMode,
   ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   // MODULE_TYPE is exported from ./module with complete 6 types
   EXEC_MODE,
+  EXEC_TYPE,
+  type ExecType,
+  type ExecutionMode,
   KERNEL_ADDRESSES,
   KERNEL_V3_1_FACTORY_ADDRESS,
 } from './constants'
