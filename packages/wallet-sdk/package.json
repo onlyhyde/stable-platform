@@ -26,6 +26,7 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:ci": "vitest run tests/bundler/ tests/factory/ tests/gas/ tests/nonce/ tests/paymaster/ tests/provider/ tests/signature/",
     "test:watch": "vitest",
     "clean": "rm -rf dist"
   },

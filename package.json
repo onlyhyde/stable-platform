@@ -16,6 +16,7 @@
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "test": "turbo test",
+    "test:ci": "turbo test:ci",
     "test:watch": "turbo test:watch",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "vitest run tests/e2e",

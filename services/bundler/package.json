@@ -16,6 +16,7 @@
     "lint:fix": "biome lint --write src/",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:ci": "vitest run --exclude='tests/e2e/**'",
     "test:watch": "vitest",
     "test:anvil": "SKIP_ANVIL_TESTS=false vitest run tests/e2e/anvil/ --timeout=60000",
     "bench": "vitest bench",

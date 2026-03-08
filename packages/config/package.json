@@ -19,6 +19,7 @@
     "lint": "biome lint src/",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:ci": "vitest run",
     "clean": "rm -rf dist"
   },
   "dependencies": {
