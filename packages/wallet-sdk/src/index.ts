@@ -238,6 +238,16 @@ export {
   type SponsorPolicy,
   type SupportedToken,
 } from './paymaster'
+// Paymaster Selector (multi-paymaster fallback)
+export {
+  createPaymasterSelector,
+  createPaymasterSelectorFromUrl,
+  type PaymasterEndpoint,
+  type PaymasterSelectionResult,
+  type PaymasterSelector,
+  type PaymasterSelectorConfig,
+  PaymasterSelectorError,
+} from './paymaster/selector'
 
 // ERC-1271 Signature Verification
 export {
