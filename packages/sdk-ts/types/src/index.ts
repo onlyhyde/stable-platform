@@ -45,7 +45,6 @@ export {
   type CallType,
   decodeExecutionMode,
   ECDSA_VALIDATOR_ADDRESS,
-  encodeExecutionMode,
   ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   // MODULE_TYPE is exported from ./module with complete 6 types
@@ -53,6 +52,7 @@ export {
   EXEC_TYPE,
   type ExecType,
   type ExecutionMode,
+  encodeExecutionMode,
   KERNEL_ADDRESSES,
   KERNEL_V3_1_FACTORY_ADDRESS,
 } from './constants'

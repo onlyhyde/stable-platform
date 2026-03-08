@@ -101,6 +101,7 @@ export const PaymentHistory: FC<PaymentHistoryProps> = ({
       <CardContent className="p-0">
         <div className="divide-y" style={{ borderColor: 'rgb(var(--border) / 0.5)' }}>
           {payments.map((payment, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: payment list with stable order
             <PaymentHistoryItem key={`${payment.txHash}-${index}`} payment={payment} />
           ))}
         </div>

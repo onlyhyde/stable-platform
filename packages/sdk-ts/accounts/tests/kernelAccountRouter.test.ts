@@ -83,6 +83,7 @@ describe('KernelAccount with ValidatorRouter', () => {
     const client = createMockPublicClient()
 
     const account = await toKernelSmartAccount({
+      // biome-ignore lint/suspicious/noExplicitAny: mock PublicClient for testing
       client: client as any,
       validator,
     })
@@ -98,6 +99,7 @@ describe('KernelAccount with ValidatorRouter', () => {
     const client = createMockPublicClient()
 
     const account = await toKernelSmartAccount({
+      // biome-ignore lint/suspicious/noExplicitAny: mock PublicClient for testing
       client: client as any,
       validator: router,
     })
@@ -111,6 +113,7 @@ describe('KernelAccount with ValidatorRouter', () => {
     const client = createMockPublicClient()
 
     const account = await toKernelSmartAccount({
+      // biome-ignore lint/suspicious/noExplicitAny: mock PublicClient for testing
       client: client as any,
       validator,
     })
@@ -136,6 +139,7 @@ describe('KernelAccount with ValidatorRouter', () => {
     const client = createMockPublicClient()
 
     const account = await toKernelSmartAccount({
+      // biome-ignore lint/suspicious/noExplicitAny: mock PublicClient for testing
       client: client as any,
       validator: router,
     })
@@ -160,6 +164,7 @@ describe('KernelAccount with ValidatorRouter', () => {
     const client = createMockPublicClient()
 
     const account = await toKernelSmartAccount({
+      // biome-ignore lint/suspicious/noExplicitAny: mock PublicClient for testing
       client: client as any,
       validator: router,
     })
@@ -176,6 +181,7 @@ describe('KernelAccount with ValidatorRouter', () => {
     const client = createMockPublicClient()
 
     const account = await toKernelSmartAccount({
+      // biome-ignore lint/suspicious/noExplicitAny: mock PublicClient for testing
       client: client as any,
       validator,
     })

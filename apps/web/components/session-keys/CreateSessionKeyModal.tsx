@@ -297,6 +297,7 @@ export const CreateSessionKeyModal: FC<CreateSessionKeyModalProps> = ({
               <div className="space-y-2">
                 {permissions.map((perm, idx) => (
                   <div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: same target+selector can appear multiple times
                     key={`${perm.target}-${perm.selector}-${idx}`}
                     className="flex items-center justify-between p-3 rounded-lg"
                     style={{ backgroundColor: 'rgb(var(--secondary))' }}

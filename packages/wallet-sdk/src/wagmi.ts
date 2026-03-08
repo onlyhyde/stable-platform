@@ -166,7 +166,7 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
           }
           await config.storage?.setItem('stableNetWallet.connected', true)
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // biome-ignore lint/suspicious/noExplicitAny: wagmi connector return type mismatch
           return { accounts, chainId: currentChainId } as any
         } catch (err) {
           const error = err as RpcError

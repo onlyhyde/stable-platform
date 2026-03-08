@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { handleGetPaymasterData } from '../src/handlers/getPaymasterData'
 import { handleGetPaymasterStubData } from '../src/handlers/getPaymasterStubData'
 import { SponsorPolicyManager } from '../src/policy/sponsorPolicy'
+import type { BundlerClient } from '../src/settlement/bundlerClient'
 import { ReservationTracker } from '../src/settlement/reservationTracker'
 import type { PaymasterSigner } from '../src/signer/paymasterSigner'
 import type {
@@ -780,13 +781,13 @@ describe('SettlementWorker', () => {
     const worker = new SettlementWorker(
       reservationTracker,
       policyManager,
-      mockBundlerClient as any,
+      mockBundlerClient as unknown as BundlerClient,
       { pollIntervalMs: 100_000 } // High interval to prevent auto-polling
     )
 
     // Manually trigger a poll
     // Access private method for testing
-    await (worker as any).poll()
+    await (worker as unknown as Record<string, () => Promise<void>>).poll()
 
     // Verify: reservation settled, tracker cleared
     const stats = worker.getStats()
@@ -822,11 +823,11 @@ describe('SettlementWorker', () => {
     const worker = new SettlementWorker(
       reservationTracker,
       policyManager,
-      mockBundlerClient as any,
+      mockBundlerClient as unknown as BundlerClient,
       { pollIntervalMs: 100_000 }
     )
 
-    await (worker as any).poll()
+    await (worker as unknown as Record<string, () => Promise<void>>).poll()
 
     const stats = worker.getStats()
     expect(stats.settled).toBe(0)

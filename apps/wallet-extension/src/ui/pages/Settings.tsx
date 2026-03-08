@@ -793,12 +793,14 @@ export function Settings() {
               <div className="space-y-3">
                 <div>
                   <label
+                    htmlFor="add-network-name"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('networkName')} <span style={{ color: 'rgb(var(--destructive))' }}>*</span>
                   </label>
                   <input
+                    id="add-network-name"
                     type="text"
                     placeholder={t('networkName')}
                     value={networkForm.name}
@@ -808,12 +810,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="add-network-chain-id"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('chainIdLabel')} <span style={{ color: 'rgb(var(--destructive))' }}>*</span>
                   </label>
                   <input
+                    id="add-network-chain-id"
                     type="text"
                     placeholder={t('chainIdPlaceholder')}
                     value={networkForm.chainId}
@@ -823,12 +827,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="add-network-rpc-url"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('rpcUrlLabel')} <span style={{ color: 'rgb(var(--destructive))' }}>*</span>
                   </label>
                   <input
+                    id="add-network-rpc-url"
                     type="text"
                     placeholder="https://rpc.example.com"
                     value={networkForm.rpcUrl}
@@ -838,12 +844,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="add-network-bundler-url"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('bundlerUrlLabel')}
                   </label>
                   <input
+                    id="add-network-bundler-url"
                     type="text"
                     placeholder={t('bundlerUrlPlaceholder')}
                     value={networkForm.bundlerUrl}
@@ -853,12 +861,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="add-network-currency-symbol"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('currencySymbolLabel')}
                   </label>
                   <input
+                    id="add-network-currency-symbol"
                     type="text"
                     placeholder={t('currencySymbolPlaceholder')}
                     value={networkForm.currencySymbol}
@@ -870,12 +880,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="add-network-explorer-url"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('explorerUrlLabel')}
                   </label>
                   <input
+                    id="add-network-explorer-url"
                     type="text"
                     placeholder={t('explorerUrlPlaceholder')}
                     value={networkForm.explorerUrl}
@@ -887,12 +899,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="add-network-indexer-url"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('indexerUrlLabel')}
                   </label>
                   <input
+                    id="add-network-indexer-url"
                     type="text"
                     placeholder={t('indexerUrlPlaceholder')}
                     value={networkForm.indexerUrl}
@@ -940,12 +954,14 @@ export function Settings() {
               <div className="space-y-3">
                 <div>
                   <label
+                    htmlFor="edit-network-name"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('networkName')} <span style={{ color: 'rgb(var(--destructive))' }}>*</span>
                   </label>
                   <input
+                    id="edit-network-name"
                     type="text"
                     placeholder={t('networkName')}
                     value={editForm.name}
@@ -955,12 +971,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="edit-network-rpc-url"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('rpcUrlLabel')} <span style={{ color: 'rgb(var(--destructive))' }}>*</span>
                   </label>
                   <input
+                    id="edit-network-rpc-url"
                     type="text"
                     placeholder="https://rpc.example.com"
                     value={editForm.rpcUrl}
@@ -970,12 +988,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="edit-network-bundler-url"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('bundlerUrlLabel')}
                   </label>
                   <input
+                    id="edit-network-bundler-url"
                     type="text"
                     placeholder={t('bundlerUrlPlaceholder')}
                     value={editForm.bundlerUrl}
@@ -985,12 +1005,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="edit-network-paymaster-url"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('paymasterUrlLabel')}
                   </label>
                   <input
+                    id="edit-network-paymaster-url"
                     type="text"
                     placeholder={t('paymasterUrlPlaceholder')}
                     value={editForm.paymasterUrl}
@@ -1000,12 +1022,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="edit-network-currency-symbol"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('currencySymbolLabel')}
                   </label>
                   <input
+                    id="edit-network-currency-symbol"
                     type="text"
                     placeholder={t('currencySymbolPlaceholder')}
                     value={editForm.currencySymbol}
@@ -1015,12 +1039,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="edit-network-explorer-url"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('explorerUrlLabel')}
                   </label>
                   <input
+                    id="edit-network-explorer-url"
                     type="text"
                     placeholder={t('explorerUrlPlaceholder')}
                     value={editForm.explorerUrl}
@@ -1030,12 +1056,14 @@ export function Settings() {
                 </div>
                 <div>
                   <label
+                    htmlFor="edit-network-indexer-url"
                     className="text-xs font-medium block mb-1"
                     style={{ color: 'rgb(var(--foreground-secondary))' }}
                   >
                     {t('indexerUrlLabel')}
                   </label>
                   <input
+                    id="edit-network-indexer-url"
                     type="text"
                     placeholder={t('indexerUrlPlaceholder')}
                     value={editForm.indexerUrl}

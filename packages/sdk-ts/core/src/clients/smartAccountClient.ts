@@ -193,8 +193,7 @@ export function createSmartAccountClient<
 
     // Phase 2: Estimate gas
     const gasEstimation = await bundlerClient.estimateUserOperationGas(userOp)
-    let postOpGas =
-      gasEstimation.paymasterPostOpGasLimit ?? userOp.paymasterPostOpGasLimit
+    let postOpGas = gasEstimation.paymasterPostOpGasLimit ?? userOp.paymasterPostOpGasLimit
 
     // Apply postOp gas multiplier if configured
     if (postOpGas && postOpGasMultiplier && postOpGasMultiplier > 100n) {

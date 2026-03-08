@@ -1,3 +1,4 @@
+import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex } from 'viem'
 
 /**
@@ -57,30 +58,11 @@ export interface BundlerConfig {
 }
 
 /**
- * UserOperation for ERC-4337 v0.9
+ * Packed UserOperation for JSON-RPC (hex-string format).
+ * Renamed to RpcPackedUserOperation to distinguish from the SDK's
+ * contract-format PackedUserOperation (which uses bigint for nonce/preVerificationGas).
  */
-export interface UserOperation {
-  sender: Address
-  nonce: bigint
-  factory?: Address
-  factoryData?: Hex
-  callData: Hex
-  callGasLimit: bigint
-  verificationGasLimit: bigint
-  preVerificationGas: bigint
-  maxFeePerGas: bigint
-  maxPriorityFeePerGas: bigint
-  paymaster?: Address
-  paymasterVerificationGasLimit?: bigint
-  paymasterPostOpGasLimit?: bigint
-  paymasterData?: Hex
-  signature: Hex
-}
-
-/**
- * Packed UserOperation for RPC
- */
-export interface PackedUserOperation {
+export interface RpcPackedUserOperation {
   sender: Address
   nonce: Hex
   initCode: Hex
@@ -91,6 +73,11 @@ export interface PackedUserOperation {
   paymasterAndData: Hex
   signature: Hex
 }
+
+/**
+ * Backward-compatible alias so existing imports don't break.
+ */
+export type PackedUserOperation = RpcPackedUserOperation
 
 /**
  * UserOperation status in mempool

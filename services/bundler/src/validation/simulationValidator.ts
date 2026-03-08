@@ -1,3 +1,4 @@
+import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex, PublicClient } from 'viem'
 import { concat, encodeFunctionData, pad, toHex } from 'viem'
 import { ENTRY_POINT_ABI } from '../abi'
@@ -5,7 +6,6 @@ import {
   ENTRY_POINT_SIMULATIONS_ABI,
   ENTRY_POINT_SIMULATIONS_BYTECODE,
 } from '../abi/entryPointSimulations'
-import type { UserOperation } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import type { ExecutionResult, ISimulationValidator, StakeInfo, ValidationResult } from './types'

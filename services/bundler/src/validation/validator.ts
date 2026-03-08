@@ -1,6 +1,6 @@
+import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex, PublicClient } from 'viem'
 import { concat, pad, toHex } from 'viem'
-import type { UserOperation } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import { FormatValidator } from './formatValidator'

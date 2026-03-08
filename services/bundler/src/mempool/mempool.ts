@@ -1,5 +1,6 @@
+import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex } from 'viem'
-import type { MempoolEntry, UserOperation } from '../types'
+import type { MempoolEntry } from '../types'
 import type { Logger } from '../utils/logger'
 
 /**

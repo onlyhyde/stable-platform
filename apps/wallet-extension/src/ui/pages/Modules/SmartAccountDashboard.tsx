@@ -348,6 +348,7 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, label, status, isActive, detail, onClick }: FeatureCardProps) {
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: role is conditionally applied based on onClick prop
     <div
       className="rounded-lg p-3 transition-colors"
       style={{

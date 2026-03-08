@@ -1,7 +1,7 @@
+import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex } from 'viem'
 import { isAddress, isHex } from 'viem'
 import { z } from 'zod'
-import type { UserOperation } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { IFormatValidator } from './types'
 import { VALIDATION_CONSTANTS } from './types'

@@ -12,11 +12,11 @@
 
 import type { Address, Hex } from 'viem'
 import {
+  getPaymasterData,
+  getPaymasterStubData,
   type PaymasterDataResponse,
   type PaymasterStubDataResponse,
   type PaymasterUserOpContext,
-  getPaymasterData,
-  getPaymasterStubData,
 } from './index'
 
 // ============================================================================
@@ -127,16 +127,12 @@ export function createPaymasterSelectorFromUrl(url: string): PaymasterSelector {
 /**
  * Create a PaymasterSelector with multiple endpoints
  */
-export function createPaymasterSelector(
-  config: PaymasterSelectorConfig
-): PaymasterSelector {
+export function createPaymasterSelector(config: PaymasterSelectorConfig): PaymasterSelector {
   const { endpoints, healthCheckInterval = 30_000 } = config
   const unhealthyUntil = new Map<string, number>()
 
   // Sort endpoints by priority (ascending)
-  const sorted = [...endpoints].sort(
-    (a, b) => (a.priority ?? 0) - (b.priority ?? 0)
-  )
+  const sorted = [...endpoints].sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
 
   function getHealthyEndpoints(): PaymasterEndpoint[] {
     const now = Date.now()
@@ -184,15 +180,11 @@ export function createPaymasterSelector(
 
   return {
     getStubData(userOp, entryPoint, chainId) {
-      return tryEndpoints((ep) =>
-        getPaymasterStubData(ep.url, userOp, entryPoint, chainId)
-      )
+      return tryEndpoints((ep) => getPaymasterStubData(ep.url, userOp, entryPoint, chainId))
     },
 
     getData(userOp, entryPoint, chainId) {
-      return tryEndpoints((ep) =>
-        getPaymasterData(ep.url, userOp, entryPoint, chainId)
-      )
+      return tryEndpoints((ep) => getPaymasterData(ep.url, userOp, entryPoint, chainId))
     },
 
     getStubDataFrom(endpoint, userOp, entryPoint, chainId) {

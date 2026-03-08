@@ -1,18 +1,12 @@
+import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex, PublicClient } from 'viem'
-import {
-  concat,
-  encodeAbiParameters,
-  encodeFunctionData,
-  hexToBytes,
-  pad,
-  slice as sliceHex,
-  toHex,
-} from 'viem'
+import { encodeAbiParameters, encodeFunctionData, hexToBytes, slice as sliceHex } from 'viem'
 import {
   ENTRY_POINT_SIMULATIONS_ABI,
   ENTRY_POINT_SIMULATIONS_BYTECODE,
 } from '../abi/entryPointSimulations'
-import type { GasEstimation, UserOperation } from '../types'
+import { packForContract } from '../shared/packUserOp'
+import type { GasEstimation } from '../types'
 import type { Logger } from '../utils/logger'
 
 /**
@@ -51,18 +45,23 @@ export interface GasEstimatorConfig {
 
 /**
  * Gas overhead constants
+ * ZERO_BYTE / NON_ZERO_BYTE match @stablenet/core CALLDATA_ZERO_BYTE_COST / CALLDATA_NONZERO_BYTE_COST
+ * PER_AUTHORIZATION_GAS matches @stablenet/core EIP7702_AUTH_GAS
  */
 const DEFAULT_GAS_OVERHEAD = {
   /** Fixed overhead for EntryPoint handling */
   FIXED: 21000n,
   /** Per UserOp overhead */
   PER_USER_OP: 18300n,
+  // Matches @stablenet/core CALLDATA_ZERO_BYTE_COST
   /** Per zero byte in calldata */
   ZERO_BYTE: 4n,
+  // Matches @stablenet/core CALLDATA_NONZERO_BYTE_COST
   /** Per non-zero byte in calldata */
   NON_ZERO_BYTE: 16n,
   /** L1 data cost multiplier for L2 chains */
   L1_DATA_COST_MULTIPLIER: 16n,
+  // Matches @stablenet/core EIP7702_AUTH_GAS
   /** EIP-7702 per-authorization gas cost */
   PER_AUTHORIZATION_GAS: 25000n,
 }
@@ -260,37 +259,13 @@ export class GasEstimator {
   }
 
   /**
-   * Pack UserOperation for gas calculation (v0.7 format)
+   * Pack UserOperation for byte-accurate gas calculation (v0.7 format).
+   * Uses shared packForContract then ABI-encodes for calldata byte counting.
    */
   private packUserOpForGasCalculation(userOp: UserOperation): Uint8Array {
-    // Build initCode
-    const initCode =
-      userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
+    const packed = packForContract(userOp)
 
-    // Build accountGasLimits (verificationGasLimit || callGasLimit)
-    const accountGasLimits = concat([
-      pad(toHex(userOp.verificationGasLimit), { size: 16 }),
-      pad(toHex(userOp.callGasLimit), { size: 16 }),
-    ])
-
-    // Build gasFees (maxPriorityFeePerGas || maxFeePerGas)
-    const gasFees = concat([
-      pad(toHex(userOp.maxPriorityFeePerGas), { size: 16 }),
-      pad(toHex(userOp.maxFeePerGas), { size: 16 }),
-    ])
-
-    // Build paymasterAndData
-    let paymasterAndData: Hex = '0x'
-    if (userOp.paymaster) {
-      paymasterAndData = concat([
-        userOp.paymaster,
-        pad(toHex(userOp.paymasterVerificationGasLimit || 0n), { size: 16 }),
-        pad(toHex(userOp.paymasterPostOpGasLimit || 0n), { size: 16 }),
-        userOp.paymasterData || '0x',
-      ])
-    }
-
-    // Encode as ABI-packed tuple (approximation for gas calculation)
+    // Encode as ABI tuple for byte-accurate calldata gas calculation
     const encoded = encodeAbiParameters(
       [
         { type: 'address' },
@@ -304,15 +279,15 @@ export class GasEstimator {
         { type: 'bytes' },
       ],
       [
-        userOp.sender,
-        userOp.nonce,
-        initCode as Hex,
-        userOp.callData,
-        accountGasLimits as Hex,
-        userOp.preVerificationGas,
-        gasFees as Hex,
-        paymasterAndData,
-        userOp.signature,
+        packed.sender,
+        packed.nonce,
+        packed.initCode,
+        packed.callData,
+        packed.accountGasLimits as Hex,
+        packed.preVerificationGas,
+        packed.gasFees as Hex,
+        packed.paymasterAndData,
+        packed.signature,
       ]
     )
 
@@ -375,7 +350,9 @@ export class GasEstimator {
    */
   private async trySimulateValidation(userOp: UserOperation, gasLimit: bigint): Promise<boolean> {
     try {
-      const packedOp = this.packUserOpForSimulation({
+      // packForContract returns bigint nonce/preVerificationGas (contract format)
+      // which is what simulateValidation expects
+      const packedOp = packForContract({
         ...userOp,
         verificationGasLimit: gasLimit,
       })
@@ -444,56 +421,6 @@ export class GasEstimator {
       }
     }
     return false
-  }
-
-  /**
-   * Pack UserOperation for simulation call
-   */
-  private packUserOpForSimulation(userOp: UserOperation): {
-    sender: Address
-    nonce: bigint
-    initCode: Hex
-    callData: Hex
-    accountGasLimits: Hex
-    preVerificationGas: bigint
-    gasFees: Hex
-    paymasterAndData: Hex
-    signature: Hex
-  } {
-    const initCode =
-      userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
-
-    const accountGasLimits = concat([
-      pad(toHex(userOp.verificationGasLimit), { size: 16 }),
-      pad(toHex(userOp.callGasLimit), { size: 16 }),
-    ])
-
-    const gasFees = concat([
-      pad(toHex(userOp.maxPriorityFeePerGas), { size: 16 }),
-      pad(toHex(userOp.maxFeePerGas), { size: 16 }),
-    ])
-
-    let paymasterAndData: Hex = '0x'
-    if (userOp.paymaster) {
-      paymasterAndData = concat([
-        userOp.paymaster,
-        pad(toHex(userOp.paymasterVerificationGasLimit || 0n), { size: 16 }),
-        pad(toHex(userOp.paymasterPostOpGasLimit || 0n), { size: 16 }),
-        userOp.paymasterData || '0x',
-      ])
-    }
-
-    return {
-      sender: userOp.sender,
-      nonce: userOp.nonce,
-      initCode: initCode as Hex,
-      callData: userOp.callData,
-      accountGasLimits: accountGasLimits as Hex,
-      preVerificationGas: userOp.preVerificationGas,
-      gasFees: gasFees as Hex,
-      paymasterAndData,
-      signature: userOp.signature,
-    }
   }
 
   /**
@@ -577,7 +504,7 @@ export class GasEstimator {
    */
   private async trySimulateHandleOp(userOp: UserOperation, gasLimit: bigint): Promise<boolean> {
     try {
-      const packedOp = this.packUserOpForSimulation({
+      const packedOp = packForContract({
         ...userOp,
         callGasLimit: gasLimit,
         verificationGasLimit: userOp.verificationGasLimit || this.config.initialGasUpperBound,

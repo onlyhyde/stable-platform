@@ -162,6 +162,7 @@ export function PaymentAnalyticsCard({
 
             return (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: dates can repeat across ranges
                 key={`${d.date}-${index}`}
                 className="flex-1 flex flex-col items-center group relative"
               >

@@ -158,65 +158,18 @@ jobs:
         continue-on-error: true
 
   # ===================
-  # E2E Tests
+  # E2E Tests (temporarily disabled)
   # ===================
-  # Chrome extension E2E tests require a headed browser with real Chrome
-  # extension support. Playwright's bundled Chromium on CI does not support
-  # MV3 service worker registration, so these tests are non-blocking.
+  # SKIPPED: Playwright's bundled Chromium on CI does not support MV3 service
+  # worker registration, causing all Chrome extension E2E tests to fail with
+  # "serviceworker timeout" and "ERR_FILE_NOT_FOUND" errors.
+  # TODO: Re-enable once CI has a Chrome build that supports MV3 extensions.
   # Run locally with: cd apps/wallet-extension && npx playwright test
-  e2e:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    needs: [typescript]
-    continue-on-error: true
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
-        with:
-          node-version: 22
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Download wallet extension build
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
-        with:
-          name: wallet-extension-${{ github.sha }}
-          path: apps/wallet-extension/dist/
-
-      - name: Install Playwright browsers
-        working-directory: apps/wallet-extension
-        run: npx playwright install --with-deps chromium
-
-      - name: Run E2E tests
-        working-directory: apps/wallet-extension
-        run: xvfb-run npx playwright test
-        env:
-          CI: true
-
-      - name: Upload E2E test report
-        if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
-        with:
-          name: e2e-report-${{ github.sha }}
-          path: apps/wallet-extension/e2e-report/
-          retention-days: 7
-
-      - name: Upload E2E test results
-        if: failure()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
-        with:
-          name: e2e-results-${{ github.sha }}
-          path: apps/wallet-extension/e2e-results/
-          retention-days: 7
+  # e2e:
+  #   name: E2E Tests
+  #   runs-on: ubuntu-latest
+  #   needs: [typescript]
+  #   ...
 
   # ===================
   # Biome Format Check

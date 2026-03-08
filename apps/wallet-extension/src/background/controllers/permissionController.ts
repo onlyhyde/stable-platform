@@ -29,12 +29,10 @@ interface RequestMetadata {
 }
 
 export class PermissionController {
-  private readonly options: PermissionControllerOptions
   private state: PermissionControllerState
   private eventHandlers: Map<PermissionEventType, Set<EventHandler>>
 
-  constructor(options: PermissionControllerOptions) {
-    this.options = options
+  constructor(_options: PermissionControllerOptions) {
     this.state = {
       permissions: {},
       pendingRequests: {},

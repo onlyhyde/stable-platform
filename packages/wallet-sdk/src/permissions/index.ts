@@ -123,9 +123,9 @@ export class PermissionManager {
    * ```
    */
   async requestPermissions(requests: PermissionRequest): Promise<Permission[]> {
-    // biome-ignore lint/suspicious/noExplicitAny: PermissionRequest is wider than viem's strict type
     const permissions = (await this.provider.request({
       method: 'wallet_requestPermissions',
+      // biome-ignore lint/suspicious/noExplicitAny: PermissionRequest is wider than viem's strict type
       params: [requests as any],
     })) as Permission[]
 
@@ -232,9 +232,9 @@ export class PermissionManager {
    */
   async revokePermission(target: PermissionTarget | string): Promise<void> {
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: dynamic permission target key
       await this.provider.request({
         method: 'wallet_revokePermissions',
+        // biome-ignore lint/suspicious/noExplicitAny: dynamic permission target key
         params: [{ [target]: {} } as any],
       })
 

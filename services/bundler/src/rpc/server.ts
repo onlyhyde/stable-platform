@@ -1,5 +1,7 @@
 import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
+import { getUserOperationHash, unpackUserOperation } from '@stablenet/core'
+import type { UserOperation } from '@stablenet/types'
 import Fastify, { type FastifyInstance } from 'fastify'
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
 import { DEFAULT_CORS_ORIGINS } from '../cli/config'
@@ -8,12 +10,12 @@ import { BundleExecutor } from '../executor/bundleExecutor'
 import { GasEstimator } from '../gas/gasEstimator'
 import { DependencyTracker } from '../mempool/dependencyTracker'
 import { Mempool } from '../mempool/mempool'
-import type { BundlerConfig, UserOperation, UserOperationReceipt } from '../types'
+import type { BundlerConfig, UserOperationReceipt } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import { AggregatorValidator, UserOperationValidator } from '../validation'
 import { ReputationPersistence } from '../validation/reputationPersistence'
-import { getUserOperationHash, unpackUserOperation } from './utils'
+import { DebugHandlers } from './debugHandlers'
 
 /**
  * JSON-RPC request
@@ -51,6 +53,7 @@ export class RpcServer {
   private config: BundlerConfig
   private publicClient: PublicClient
   private logger: Logger
+  private debugHandlers: DebugHandlers
   private reputationPersistence: ReputationPersistence | null = null
 
   constructor(
@@ -144,6 +147,14 @@ export class RpcServer {
         'DEBUG MODE ENABLED: CORS allows all origins, simulation/opcode validation bypassed, internal error details exposed to clients. Do NOT use in production.'
       )
     }
+
+    // Initialize debug handlers
+    this.debugHandlers = new DebugHandlers(
+      this.mempool,
+      this.validator,
+      config,
+      this.packUserOpForResponse.bind(this)
+    )
 
     // Get server config from environment
     const serverConfig = getServerConfig()
@@ -339,22 +350,22 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
         return this.ethChainId()
 
       case 'debug_bundler_clearState':
-        return this.debugClearState()
+        return this.debugHandlers.clearState()
 
       case 'debug_bundler_dumpMempool':
-        return this.debugDumpMempool(params)
+        return this.debugHandlers.dumpMempool(params)
 
       case 'debug_bundler_setReputation':
-        return this.debugSetReputation(params)
+        return this.debugHandlers.setReputation(params)
 
       case 'debug_bundler_dumpReputation':
-        return this.debugDumpReputation(params)
+        return this.debugHandlers.dumpReputation(params)
 
       case 'debug_bundler_clearReputation':
-        return this.debugClearReputation()
+        return this.debugHandlers.clearReputation()
 
       case 'debug_bundler_getUserOperationStatus':
-        return this.debugGetUserOperationStatus(params)
+        return this.debugHandlers.getUserOperationStatus(params)
 
       default:
         throw new RpcError(`Method ${method} not found`, RPC_ERROR_CODES.METHOD_NOT_FOUND)
@@ -612,10 +623,10 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
   /**
    * Format a UserOperationReceipt from transaction receipt and UserOp metadata
    */
-  // biome-ignore lint/suspicious/noExplicitAny: viem log types are complex
   private formatUserOpReceipt(
     userOpHash: Hex,
     entryPoint: Address,
+    // biome-ignore lint/suspicious/noExplicitAny: viem TransactionReceipt type is complex
     txReceipt: any,
     meta: {
       sender: Address
@@ -630,6 +641,7 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
     const toHexStr = (v: bigint | number): Hex => `0x${BigInt(v).toString(16)}` as Hex
     // biome-ignore lint/suspicious/noExplicitAny: viem log types are complex
     const mapLogs = (logs: any[]) =>
+      // biome-ignore lint/suspicious/noExplicitAny: viem log types are complex
       logs.map((log: any) => ({
         logIndex: toHexStr(log.logIndex ?? 0),
         transactionIndex: toHexStr(log.transactionIndex ?? 0),
@@ -682,117 +694,6 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
   private async ethChainId(): Promise<Hex> {
     const chainId = await this.publicClient.getChainId()
     return `0x${chainId.toString(16)}`
-  }
-
-  /**
-   * debug_bundler_clearState
-   */
-  private debugClearState(): { success: boolean } {
-    if (!this.config.debug) {
-      throw new RpcError('Debug methods disabled', RPC_ERROR_CODES.METHOD_NOT_FOUND)
-    }
-    this.mempool.clear()
-    return { success: true }
-  }
-
-  /**
-   * debug_bundler_dumpMempool
-   */
-  private debugDumpMempool(params: unknown[]): unknown[] {
-    if (!this.config.debug) {
-      throw new RpcError('Debug methods disabled', RPC_ERROR_CODES.METHOD_NOT_FOUND)
-    }
-    const [entryPoint] = params as [Address]
-    const entries = this.mempool.dump()
-    return entries
-      .filter((e) => !entryPoint || e.entryPoint.toLowerCase() === entryPoint.toLowerCase())
-      .map((e) => ({
-        userOp: this.packUserOpForResponse(e.userOp),
-        userOpHash: e.userOpHash,
-        status: e.status,
-      }))
-  }
-
-  /**
-   * debug_bundler_setReputation
-   */
-  private debugSetReputation(params: unknown[]): { success: boolean } {
-    if (!this.config.debug) {
-      throw new RpcError('Debug methods disabled', RPC_ERROR_CODES.METHOD_NOT_FOUND)
-    }
-
-    const [entries] = params as [
-      Array<{
-        address: Address
-        opsSeen: number
-        opsIncluded: number
-        status?: 'ok' | 'throttled' | 'banned'
-      }>,
-    ]
-
-    const reputationManager = this.validator.getReputationManager()
-    for (const entry of entries) {
-      reputationManager.setReputation(entry.address, entry.opsSeen, entry.opsIncluded, entry.status)
-    }
-
-    return { success: true }
-  }
-
-  /**
-   * debug_bundler_dumpReputation
-   */
-  private debugDumpReputation(params: unknown[]): unknown[] {
-    if (!this.config.debug) {
-      throw new RpcError('Debug methods disabled', RPC_ERROR_CODES.METHOD_NOT_FOUND)
-    }
-
-    const [_entryPoint] = params as [Address | undefined]
-    // EntryPoint parameter is ignored since reputation is global
-    // but we accept it for API compatibility (unused intentionally)
-
-    const reputationManager = this.validator.getReputationManager()
-    return reputationManager.dump().map((entry) => ({
-      address: entry.address,
-      opsSeen: entry.opsSeen,
-      opsIncluded: entry.opsIncluded,
-      status: entry.status,
-    }))
-  }
-
-  /**
-   * debug_bundler_clearReputation
-   */
-  private debugClearReputation(): { success: boolean } {
-    if (!this.config.debug) {
-      throw new RpcError('Debug methods disabled', RPC_ERROR_CODES.METHOD_NOT_FOUND)
-    }
-
-    this.validator.clearAllReputation()
-    return { success: true }
-  }
-
-  /**
-   * debug_bundler_getUserOperationStatus
-   * Returns the current status of a UserOperation in the mempool.
-   */
-  private debugGetUserOperationStatus(
-    params: unknown[]
-  ): { status: string; error?: string } | null {
-    if (!this.config.debug) {
-      throw new RpcError('Debug methods disabled', RPC_ERROR_CODES.METHOD_NOT_FOUND)
-    }
-
-    const [hash] = params as [Hex]
-
-    const entry = this.mempool.get(hash)
-    if (!entry) {
-      return null
-    }
-
-    return {
-      status: entry.status,
-      error: entry.error,
-    }
   }
 
   /**

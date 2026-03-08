@@ -44,8 +44,11 @@ export class MetricsCollector implements IMetricsCollector {
   private rpcResponseTimeCount = 0
 
   // Profitability metrics
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: used in recordBundleProfitability and reset methods
   private bundleProfitTotal = 0n
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: used in recordBundleProfitability and reset methods
   private bundleProfitableCount = 0
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: used in recordBundleProfitability and reset methods
   private bundleUnprofitableCount = 0
 
   // Gas estimation metrics
