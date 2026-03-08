@@ -35,6 +35,17 @@ export interface SendUserOperationArgs {
   paymaster?: PaymasterClient
   maxFeePerGas?: bigint
   maxPriorityFeePerGas?: bigint
+  /**
+   * PostOp gas multiplier (default: 100 = no extra buffer).
+   * Increase to add safety margin for paymaster postOp execution.
+   * E.g., 120 = 20% extra postOp gas.
+   */
+  postOpGasMultiplier?: bigint
+  /**
+   * If true, falls back to self-pay (no paymaster) when paymaster fails.
+   * Default: false — paymaster failure throws an error.
+   */
+  fallbackToSelfPay?: boolean
 }
 
 export interface SendTransactionArgs {
@@ -96,7 +107,14 @@ export function createSmartAccountClient<
   }
 
   const sendUserOperation = async (args: SendUserOperationArgs): Promise<Hex> => {
-    const { calls, paymaster = defaultPaymaster, maxFeePerGas, maxPriorityFeePerGas } = args
+    const {
+      calls,
+      paymaster = defaultPaymaster,
+      maxFeePerGas,
+      maxPriorityFeePerGas,
+      postOpGasMultiplier,
+      fallbackToSelfPay = false,
+    } = args
 
     // Encode call data
     const callData = await account.encodeCallData(calls)
@@ -122,7 +140,7 @@ export function createSmartAccountClient<
     }
 
     // Build partial user operation
-    let userOp: UserOperation = {
+    const baseUserOp: UserOperation = {
       sender: account.address,
       nonce,
       factory,
@@ -136,24 +154,53 @@ export function createSmartAccountClient<
       signature: '0x',
     }
 
-    // Get paymaster data if paymaster is provided
+    // Try with paymaster first, fallback to self-pay if configured
     if (paymaster) {
-      const paymasterStubData = await paymaster.getPaymasterStubData(
-        userOp,
-        account.entryPoint,
-        BigInt(chain.id)
-      )
-      userOp = {
-        ...userOp,
-        paymaster: paymasterStubData.paymaster,
-        paymasterData: paymasterStubData.paymasterData,
-        paymasterVerificationGasLimit: paymasterStubData.paymasterVerificationGasLimit,
-        paymasterPostOpGasLimit: paymasterStubData.paymasterPostOpGasLimit,
+      try {
+        return await buildAndSendWithPaymaster(baseUserOp, paymaster, postOpGasMultiplier)
+      } catch (err) {
+        if (!fallbackToSelfPay) throw err
+        // Paymaster failed — fall back to self-pay (no paymaster)
       }
     }
 
-    // Estimate gas
+    // Self-pay path (no paymaster)
+    return await buildAndSend(baseUserOp)
+  }
+
+  /**
+   * Build and send UserOp with paymaster.
+   * Applies postOp gas multiplier for safety margin.
+   */
+  const buildAndSendWithPaymaster = async (
+    baseOp: UserOperation,
+    paymaster: PaymasterClient,
+    postOpGasMultiplier?: bigint
+  ): Promise<Hex> => {
+    // Phase 1: Get paymaster stub data for gas estimation
+    const paymasterStubData = await paymaster.getPaymasterStubData(
+      baseOp,
+      account.entryPoint,
+      BigInt(chain.id)
+    )
+    let userOp: UserOperation = {
+      ...baseOp,
+      paymaster: paymasterStubData.paymaster,
+      paymasterData: paymasterStubData.paymasterData,
+      paymasterVerificationGasLimit: paymasterStubData.paymasterVerificationGasLimit,
+      paymasterPostOpGasLimit: paymasterStubData.paymasterPostOpGasLimit,
+    }
+
+    // Phase 2: Estimate gas
     const gasEstimation = await bundlerClient.estimateUserOperationGas(userOp)
+    let postOpGas =
+      gasEstimation.paymasterPostOpGasLimit ?? userOp.paymasterPostOpGasLimit
+
+    // Apply postOp gas multiplier if configured
+    if (postOpGas && postOpGasMultiplier && postOpGasMultiplier > 100n) {
+      postOpGas = (postOpGas * postOpGasMultiplier) / 100n
+    }
+
     userOp = {
       ...userOp,
       callGasLimit: gasEstimation.callGasLimit,
@@ -161,31 +208,46 @@ export function createSmartAccountClient<
       preVerificationGas: gasEstimation.preVerificationGas,
       paymasterVerificationGasLimit:
         gasEstimation.paymasterVerificationGasLimit ?? userOp.paymasterVerificationGasLimit,
-      paymasterPostOpGasLimit:
-        gasEstimation.paymasterPostOpGasLimit ?? userOp.paymasterPostOpGasLimit,
+      paymasterPostOpGasLimit: postOpGas,
     }
 
-    // Get final paymaster data if paymaster is provided
-    if (paymaster) {
-      const paymasterData = await paymaster.getPaymasterData(
-        userOp,
-        account.entryPoint,
-        BigInt(chain.id)
-      )
-      userOp = {
-        ...userOp,
-        paymaster: paymasterData.paymaster,
-        paymasterData: paymasterData.paymasterData,
-      }
+    // Phase 3: Get final paymaster data
+    const paymasterData = await paymaster.getPaymasterData(
+      userOp,
+      account.entryPoint,
+      BigInt(chain.id)
+    )
+    userOp = {
+      ...userOp,
+      paymaster: paymasterData.paymaster,
+      paymasterData: paymasterData.paymasterData,
     }
 
-    // Calculate user operation hash and sign
+    // Sign and send
+    return await signAndSend(userOp)
+  }
+
+  /**
+   * Build and send UserOp without paymaster (self-pay).
+   */
+  const buildAndSend = async (baseOp: UserOperation): Promise<Hex> => {
+    const gasEstimation = await bundlerClient.estimateUserOperationGas(baseOp)
+    const userOp: UserOperation = {
+      ...baseOp,
+      callGasLimit: gasEstimation.callGasLimit,
+      verificationGasLimit: gasEstimation.verificationGasLimit,
+      preVerificationGas: gasEstimation.preVerificationGas,
+    }
+    return await signAndSend(userOp)
+  }
+
+  /**
+   * Sign UserOp and send to bundler.
+   */
+  const signAndSend = async (userOp: UserOperation): Promise<Hex> => {
     const userOpHash = getUserOperationHash(userOp, account.entryPoint, BigInt(chain.id))
     const signature = await account.signUserOperation(userOpHash)
-    userOp = { ...userOp, signature }
-
-    // Send to bundler
-    return bundlerClient.sendUserOperation(userOp)
+    return bundlerClient.sendUserOperation({ ...userOp, signature })
   }
 
   const sendTransaction = async (args: SendTransactionArgs): Promise<Hex> => {

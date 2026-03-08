@@ -158,6 +158,99 @@ export function calculateUnusedGasPenalty(
 }
 
 // ============================================================================
+// L2 Data Cost (preVerificationGas adjustment for rollups)
+// ============================================================================
+
+/**
+ * Known L2 chain IDs where L1 data cost should be factored into preVerificationGas.
+ * These chains post calldata to L1 and charge accordingly.
+ */
+export const L2_CHAIN_IDS: ReadonlySet<number> = new Set([
+  10, // Optimism
+  420, // Optimism Goerli
+  11155420, // Optimism Sepolia
+  42161, // Arbitrum One
+  421614, // Arbitrum Sepolia
+  8453, // Base
+  84532, // Base Sepolia
+  534352, // Scroll
+  534351, // Scroll Sepolia
+  59144, // Linea
+  59141, // Linea Sepolia
+])
+
+/**
+ * Cost per zero byte in calldata (EIP-2028)
+ */
+export const CALLDATA_ZERO_BYTE_COST = 4n
+
+/**
+ * Cost per non-zero byte in calldata (EIP-2028)
+ */
+export const CALLDATA_NONZERO_BYTE_COST = 16n
+
+/**
+ * Fixed per-UserOp overhead for bundler processing
+ */
+export const PER_USEROP_OVERHEAD = 15_000n
+
+/**
+ * Check if a chain is an L2 rollup where L1 data cost applies
+ */
+export function isL2Chain(chainId: number): boolean {
+  return L2_CHAIN_IDS.has(chainId)
+}
+
+/**
+ * Calculate calldata cost for a serialized UserOp (hex string).
+ * Per EIP-2028: 4 gas per zero byte, 16 gas per non-zero byte.
+ *
+ * @param calldataHex - The serialized UserOp as hex string (0x-prefixed)
+ * @returns Gas cost for the calldata
+ */
+export function calculateCalldataCost(calldataHex: string): bigint {
+  const hex = calldataHex.startsWith('0x') ? calldataHex.slice(2) : calldataHex
+  let zeroCost = 0n
+  let nonZeroCost = 0n
+
+  for (let i = 0; i < hex.length; i += 2) {
+    const byte = hex.slice(i, i + 2)
+    if (byte === '00') {
+      zeroCost += CALLDATA_ZERO_BYTE_COST
+    } else {
+      nonZeroCost += CALLDATA_NONZERO_BYTE_COST
+    }
+  }
+
+  return zeroCost + nonZeroCost
+}
+
+/**
+ * Calculate preVerificationGas with L1 data cost for L2 chains.
+ *
+ * On L2 rollups, preVerificationGas must cover both:
+ * 1. Base bundler overhead (fixed 50K)
+ * 2. L1 data posting cost (calldata bytes × per-byte cost)
+ *
+ * @param chainId - Chain ID to check for L2
+ * @param calldataHex - Optional serialized UserOp hex for L1 cost calculation
+ * @returns Adjusted preVerificationGas
+ */
+export function calculatePreVerificationGas(
+  chainId: number,
+  calldataHex?: string
+): bigint {
+  const base = DEFAULT_PRE_VERIFICATION_GAS
+
+  if (!isL2Chain(chainId) || !calldataHex) {
+    return base
+  }
+
+  const l1DataCost = calculateCalldataCost(calldataHex)
+  return base + l1DataCost + PER_USEROP_OVERHEAD
+}
+
+// ============================================================================
 // Gas Config Object (for structured access)
 // ============================================================================
 

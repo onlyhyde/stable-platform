@@ -9,8 +9,8 @@ import type { GasEstimate, MultiModeTransactionRequest } from '@stablenet/sdk-ty
 import { GAS_PAYMENT_TYPE, TRANSACTION_MODE } from '@stablenet/sdk-types'
 import {
   BASE_TRANSFER_GAS,
+  calculatePreVerificationGas,
   calculateUnusedGasPenalty,
-  DEFAULT_PRE_VERIFICATION_GAS,
   DEFAULT_VERIFICATION_GAS_LIMIT,
   GAS_BUFFER_DIVISOR,
   GAS_BUFFER_MULTIPLIER,
@@ -28,7 +28,7 @@ import type { GasEstimationStrategy, GasPrices, GasStrategyConfig } from './type
  * Create Smart Account gas estimation strategy
  */
 export function createSmartAccountGasStrategy(config: GasStrategyConfig): GasEstimationStrategy {
-  const { provider, bundlerUrl } = config
+  const { provider, bundlerUrl, chainId } = config
 
   return {
     mode: TRANSACTION_MODE.SMART_ACCOUNT,
@@ -66,7 +66,8 @@ export function createSmartAccountGasStrategy(config: GasStrategyConfig): GasEst
 
       // Standard verification gas limits
       const verificationGasLimit = DEFAULT_VERIFICATION_GAS_LIMIT
-      const preVerificationGas = DEFAULT_PRE_VERIFICATION_GAS
+      // preVerificationGas: base + L1 data cost on L2 chains
+      const preVerificationGas = calculatePreVerificationGas(chainId, request.data)
 
       // Add paymaster gas if needed
       let paymasterVerificationGasLimit = 0n

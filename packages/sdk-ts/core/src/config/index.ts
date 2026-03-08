@@ -28,7 +28,11 @@ export {
 export {
   // Base gas limits
   BASE_TRANSFER_GAS,
+  calculateCalldataCost,
+  calculatePreVerificationGas,
   calculateUnusedGasPenalty,
+  CALLDATA_NONZERO_BYTE_COST,
+  CALLDATA_ZERO_BYTE_COST,
   DEFAULT_CALL_GAS_LIMIT,
   DEFAULT_MAX_FEE_PER_GAS,
   DEFAULT_PRE_VERIFICATION_GAS,
@@ -42,12 +46,15 @@ export {
   // Structured config
   GAS_CONFIG,
   GAS_PER_AUTHORIZATION,
+  isL2Chain,
+  L2_CHAIN_IDS,
   MAX_GAS_LIMIT,
   MAX_PRIORITY_FEE,
   // Priority fee bounds
   MIN_PRIORITY_FEE,
   PAYMASTER_POST_OP_GAS,
   PAYMASTER_VERIFICATION_GAS,
+  PER_USEROP_OVERHEAD,
   SETCODE_BASE_GAS,
   // EIP-4337 v0.9 unused gas penalty
   UNUSED_GAS_PENALTY_DIVISOR,
