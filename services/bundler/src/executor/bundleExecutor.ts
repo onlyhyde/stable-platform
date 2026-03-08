@@ -4,7 +4,6 @@ import { ENTRY_POINT_ABI, EVENT_SIGNATURES, HANDLE_AGGREGATED_OPS_ABI } from '..
 import type { DependencyTracker, StorageAccessRecord } from '../mempool/dependencyTracker'
 import { packForContract } from '../shared/packUserOp'
 import type { Mempool } from '../mempool/mempool'
-import type { UserOperation } from '@stablenet/types'
 import type { MempoolEntry } from '../types'
 import type { Logger } from '../utils/logger'
 import type { AggregatorValidator, OpcodeValidator, UserOperationValidator } from '../validation'
