@@ -50,6 +50,21 @@ export const ECDSA_VALIDATOR_ABI = [
     outputs: [{ name: '', type: 'bytes4' }],
     stateMutability: 'view',
   },
+  /**
+   * ERC-7579 §3.8: Validator signature verification with sender context.
+   * The account forwards the calling sender for access control.
+   */
+  {
+    type: 'function',
+    name: 'isValidSignatureWithSender',
+    inputs: [
+      { name: 'sender', type: 'address' },
+      { name: 'hash', type: 'bytes32' },
+      { name: 'signature', type: 'bytes' },
+    ],
+    outputs: [{ name: '', type: 'bytes4' }],
+    stateMutability: 'view',
+  },
   {
     type: 'function',
     name: 'getOwner',

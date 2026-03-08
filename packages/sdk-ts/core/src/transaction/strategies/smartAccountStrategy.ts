@@ -17,9 +17,11 @@ import {
   GAS_PAYMENT_TYPE,
   TRANSACTION_MODE,
 } from '@stablenet/sdk-types'
+import type { UserOperation as UserOperationType } from '@stablenet/sdk-types'
 import type { Address, Hash, Hex } from 'viem'
 import { concat, encodeFunctionData, pad, toHex } from 'viem'
 import { ENTRY_POINT_ABI } from '../../abis/entryPoint'
+import { EIP7702_INIT_CODE_ADDRESS } from '../../eip7702/constants'
 import { KERNEL_ABI } from '../../abis/kernel'
 import { createBundlerClient } from '../../clients/bundlerClient'
 import {
@@ -113,12 +115,13 @@ export function createSmartAccountStrategy(
     mode: TRANSACTION_MODE.SMART_ACCOUNT,
 
     /**
-     * Smart Account mode supports deployed smart accounts
+     * Smart Account mode supports deployed smart accounts and
+     * delegated accounts (EIP-7702 init path for undeployed)
      */
     supports(account: Account): boolean {
       return (
         account.type === ACCOUNT_TYPE.SMART ||
-        (account.type === ACCOUNT_TYPE.DELEGATED && account.isDeployed === true)
+        account.type === ACCOUNT_TYPE.DELEGATED
       )
     },
 
@@ -184,6 +187,19 @@ export function createSmartAccountStrategy(
         preVerificationGas: gasEstimation.preVerificationGas ?? DEFAULT_PRE_VERIFICATION_GAS,
         maxFeePerGas: request.maxFeePerGas ?? 0n,
         maxPriorityFeePerGas: request.maxPriorityFeePerGas ?? 0n,
+      }
+
+      // EIP-7702 initCode path (EIP-4337 v0.9 §10):
+      // For delegated accounts that need EIP-7702 initialization,
+      // use the 0x7702 factory address to skip factory deployment.
+      // The EntryPoint will verify EIP-7702 authorization instead.
+      if (account.type === ACCOUNT_TYPE.DELEGATED && !account.isDeployed) {
+        userOp.factory = EIP7702_INIT_CODE_ADDRESS
+        // No factoryData needed — EntryPoint uses EIP-7702 authorization
+        // Add PER_AUTHCALL_COST (6700 gas) to preVerificationGas per spec
+        const perAuthCallCost = 6700n
+        userOp.preVerificationGas =
+          (userOp.preVerificationGas ?? DEFAULT_PRE_VERIFICATION_GAS) + perAuthCallCost
       }
 
       const preparedData: SmartAccountPreparedData = {

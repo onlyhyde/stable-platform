@@ -8,6 +8,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
 import { formatEther, parseEther } from 'viem'
+import { useContractAddresses } from './hooks/useContractAddresses'
 
 // ============================================================================
 // Types
@@ -54,6 +55,7 @@ export function SpendingLimitConfigUI({
 }: SpendingLimitConfigProps) {
   const { t } = useTranslation('modules')
   const { t: tc } = useTranslation('common')
+  const { tokens } = useContractAddresses()
   const [step, setStep] = useState<Step>('token')
   const [form, setForm] = useState<FormState>({
     tokenType: 'native',
@@ -236,6 +238,39 @@ export function SpendingLimitConfigUI({
 
             {form.tokenType === 'erc20' && (
               <div className="mt-4">
+                {tokens.length > 0 && (
+                  <div className="mb-3">
+                    <p
+                      className="text-xs font-medium mb-2"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
+                      {t('selectKnownToken', 'Select known token')}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {tokens.map((token) => {
+                        const isSelected = form.customToken === token.address
+                        return (
+                          <button
+                            key={token.address}
+                            type="button"
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                            style={{
+                              backgroundColor: isSelected
+                                ? 'rgb(var(--primary))'
+                                : 'rgb(var(--secondary))',
+                              color: isSelected ? 'white' : 'rgb(var(--foreground))',
+                            }}
+                            onClick={() =>
+                              setForm((prev) => ({ ...prev, customToken: token.address }))
+                            }
+                          >
+                            {token.symbol}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
                 <label
                   htmlFor="spending-limit-token-address"
                   className="block text-sm font-medium mb-1"

@@ -14,7 +14,9 @@ import {
   parseAbiParameters,
   toBytes,
 } from 'viem'
+import { ECDSA_VALIDATOR_ABI } from '../../abis/validators'
 import { ValidationError } from '../../errors'
+import type { RpcProvider } from '../../providers'
 
 // ============================================================================
 // Types
@@ -462,6 +464,39 @@ export function isValidSignatureFormat(signature: Hex): boolean {
 // Exports
 // ============================================================================
 
+// ============================================================================
+// ERC-7579 Signature Verification (§3.8)
+// ============================================================================
+
+/** ERC-1271 magic value for valid signatures */
+const ERC1271_MAGIC_VALUE = '0x1626ba7e'
+
+/**
+ * Call isValidSignatureWithSender on a validator module (ERC-7579 §3.8).
+ * The account forwards the calling sender for access control.
+ *
+ * @returns true if the validator returns the ERC-1271 magic value
+ */
+export async function callIsValidSignatureWithSender(
+  provider: RpcProvider,
+  validatorAddress: Address,
+  sender: Address,
+  hash: Hex,
+  signature: Hex
+): Promise<boolean> {
+  try {
+    const result = await provider.readContract<Hex>({
+      address: validatorAddress,
+      abi: ECDSA_VALIDATOR_ABI,
+      functionName: 'isValidSignatureWithSender',
+      args: [sender, hash, signature],
+    })
+    return result === ERC1271_MAGIC_VALUE
+  } catch {
+    return false
+  }
+}
+
 export const validatorUtils = {
   // ECDSA
   encodeECDSAValidatorInit,
@@ -486,4 +521,7 @@ export const validatorUtils = {
   // Common
   identifyValidatorType,
   isValidSignatureFormat,
+
+  // ERC-7579 §3.8
+  callIsValidSignatureWithSender,
 }

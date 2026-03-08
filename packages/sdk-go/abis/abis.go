@@ -157,6 +157,22 @@ const EntryPointABIJSON = `[
 			{"name": "nonce", "type": "uint256", "indexed": false},
 			{"name": "revertReason", "type": "bytes", "indexed": false}
 		]
+	},
+	{
+		"type": "event",
+		"name": "IgnoredInitCode",
+		"inputs": [
+			{"name": "userOpHash", "type": "bytes32", "indexed": true},
+			{"name": "sender", "type": "address", "indexed": true}
+		]
+	},
+	{
+		"type": "event",
+		"name": "EIP7702AccountInitialized",
+		"inputs": [
+			{"name": "userOpHash", "type": "bytes32", "indexed": true},
+			{"name": "sender", "type": "address", "indexed": true}
+		]
 	}
 ]`
 
@@ -231,6 +247,13 @@ const KernelABIJSON = `[
 		"name": "accountId",
 		"inputs": [],
 		"outputs": [{"name": "", "type": "string"}],
+		"stateMutability": "view"
+	},
+	{
+		"type": "function",
+		"name": "supportsModule",
+		"inputs": [{"name": "moduleTypeId", "type": "uint256"}],
+		"outputs": [{"name": "", "type": "bool"}],
 		"stateMutability": "view"
 	},
 	{

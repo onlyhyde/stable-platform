@@ -142,4 +142,31 @@ export const ENTRY_POINT_ABI = [
       { name: 'revertReason', type: 'bytes', indexed: false },
     ],
   },
+
+  // ===== EIP-4337 v0.9 Events =====
+
+  /**
+   * Emitted when initCode is provided for an already-deployed account.
+   * The initCode is ignored and execution proceeds normally.
+   */
+  {
+    type: 'event',
+    name: 'IgnoredInitCode',
+    inputs: [
+      { name: 'userOpHash', type: 'bytes32', indexed: true },
+      { name: 'sender', type: 'address', indexed: true },
+    ],
+  },
+
+  /**
+   * Emitted when EIP-7702 account initialization is completed.
+   */
+  {
+    type: 'event',
+    name: 'EIP7702AccountInitialized',
+    inputs: [
+      { name: 'userOpHash', type: 'bytes32', indexed: true },
+      { name: 'sender', type: 'address', indexed: true },
+    ],
+  },
 ] as const

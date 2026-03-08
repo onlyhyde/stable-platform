@@ -1,4 +1,8 @@
 import type { PackedUserOperation, UserOperation } from '@stablenet/sdk-types'
+import {
+  ENTRY_POINT_ADDRESS,
+  ENTRY_POINT_V07_ADDRESS,
+} from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { concat, encodeAbiParameters, pad, stringToHex, toHex } from 'viem'
 
@@ -269,4 +273,42 @@ export function buildUserOpTypedData(
  */
 export function signUserOpForKernel(rawSignature: Hex): Hex {
   return concat(['0x02', rawSignature]) as Hex
+}
+
+// ============================================================================
+// Version-aware Hash Selection
+// ============================================================================
+
+export type EntryPointVersion = 'v0.9' | 'v0.7' | 'unknown'
+
+/**
+ * Detect EntryPoint version from address.
+ */
+export function detectEntryPointVersion(entryPoint: Address): EntryPointVersion {
+  const normalized = entryPoint.toLowerCase()
+  if (normalized === ENTRY_POINT_ADDRESS.toLowerCase()) return 'v0.9'
+  if (normalized === ENTRY_POINT_V07_ADDRESS.toLowerCase()) return 'v0.7'
+  return 'unknown'
+}
+
+/**
+ * Version-aware UserOperation hash.
+ * Currently supports v0.9 (EIP-712). For v0.7 or unknown EntryPoint addresses,
+ * falls back to v0.9 hash with a warning-level assumption.
+ *
+ * @throws Error if EntryPoint version is v0.7 (not supported — use v0.7 SDK)
+ */
+export function getUserOperationHashVersioned(
+  userOp: UserOperation,
+  entryPoint: Address,
+  chainId: bigint
+): Hex {
+  const version = detectEntryPointVersion(entryPoint)
+  if (version === 'v0.7') {
+    throw new Error(
+      'EntryPoint v0.7 hash is not supported. Use the v0.7 SDK or upgrade to v0.9.'
+    )
+  }
+  // v0.9 and unknown both use the v0.9 EIP-712 hash
+  return getUserOperationHash(userOp, entryPoint, chainId)
 }

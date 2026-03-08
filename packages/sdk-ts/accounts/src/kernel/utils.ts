@@ -14,20 +14,42 @@ import { KernelAccountAbi } from './abi'
  * - bytes 10-31: context (22 bytes, usually 0x00...00)
  */
 export function encodeExecutionMode(
-  callType: typeof CALL_TYPE.SINGLE | typeof CALL_TYPE.BATCH | typeof CALL_TYPE.DELEGATE,
+  callType:
+    | typeof CALL_TYPE.SINGLE
+    | typeof CALL_TYPE.BATCH
+    | typeof CALL_TYPE.STATIC
+    | typeof CALL_TYPE.DELEGATE,
   execMode:
     | typeof EXEC_MODE.DEFAULT
     | typeof EXEC_MODE.TRY
     | typeof EXEC_MODE.DELEGATE = EXEC_MODE.DEFAULT
 ): Hex {
   // Construct mode bytes32
-  const callTypeByte =
-    callType === CALL_TYPE.SINGLE ? '00' : callType === CALL_TYPE.BATCH ? '01' : 'ff'
-  const execModeByte =
-    execMode === EXEC_MODE.DEFAULT ? '00' : execMode === EXEC_MODE.TRY ? '01' : 'ff'
+  const callTypeMap: Record<string, string> = {
+    [CALL_TYPE.SINGLE]: '00',
+    [CALL_TYPE.BATCH]: '01',
+    [CALL_TYPE.STATIC]: 'fe',
+    [CALL_TYPE.DELEGATE]: 'ff',
+  }
+  const execModeMap: Record<string, string> = {
+    [EXEC_MODE.DEFAULT]: '00',
+    [EXEC_MODE.TRY]: '01',
+    [EXEC_MODE.DELEGATE]: 'ff',
+  }
+  const callTypeByte = callTypeMap[callType] ?? '00'
+  const execModeByte = execModeMap[execMode] ?? '00'
 
   // bytes32: callType (1) + execMode (1) + unused (4) + selector (4) + context (22)
   return `0x${callTypeByte}${execModeByte}${'0'.repeat(60)}` as Hex
+}
+
+/**
+ * Encode a staticcall execution calldata.
+ * Per ERC-7579 §3.4, staticcall uses same encoding as delegatecall:
+ * abi.encodePacked(target, callData) — no value field.
+ */
+export function encodeStaticCall(target: Address, callData: Hex = '0x'): Hex {
+  return concat([target, callData]) as Hex
 }
 
 /**

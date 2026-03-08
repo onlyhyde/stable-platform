@@ -7,6 +7,7 @@ import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
 import { formatEther, parseEther } from 'viem'
+import { useContractAddresses } from './hooks/useContractAddresses'
 
 // ============================================================================
 // Types
@@ -52,6 +53,7 @@ export function SessionKeyConfigUI({
 }: SessionKeyConfigProps) {
   const { t } = useTranslation('modules')
   const { t: tc } = useTranslation('common')
+  const { defi } = useContractAddresses()
   const [step, setStep] = useState<Step>('key')
   const [form, setForm] = useState<FormState>({
     sessionKey: '',
@@ -330,6 +332,62 @@ export function SessionKeyConfigUI({
           >
             {t('addContract')}
           </button>
+
+          {defi.length > 0 && (
+            <div className="mt-4">
+              <p
+                className="text-xs font-medium mb-2"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
+                {t('quickAddContract', 'Quick add known contracts')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {defi.map((contract) => {
+                  const alreadyAdded = form.allowedTargets.includes(contract.address)
+                  return (
+                    <button
+                      key={contract.address}
+                      type="button"
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{
+                        backgroundColor: alreadyAdded
+                          ? 'rgb(var(--primary) / 0.15)'
+                          : 'rgb(var(--secondary))',
+                        color: alreadyAdded
+                          ? 'rgb(var(--primary))'
+                          : 'rgb(var(--muted-foreground))',
+                        borderWidth: 1,
+                        borderColor: alreadyAdded
+                          ? 'rgb(var(--primary) / 0.4)'
+                          : 'transparent',
+                      }}
+                      onClick={() => {
+                        if (!alreadyAdded) {
+                          setForm((prev) => {
+                            const emptyIdx = prev.allowedTargets.findIndex((t) => t === '')
+                            if (emptyIdx >= 0) {
+                              return {
+                                ...prev,
+                                allowedTargets: prev.allowedTargets.map((t, i) =>
+                                  i === emptyIdx ? contract.address : t
+                                ),
+                              }
+                            }
+                            return {
+                              ...prev,
+                              allowedTargets: [...prev.allowedTargets, contract.address],
+                            }
+                          })
+                        }
+                      }}
+                    >
+                      {alreadyAdded ? '✓ ' : '+ '}{contract.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="mt-6">
             <h5

@@ -65,8 +65,17 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Addr
 // it returns the chain-specific address when available, or falls back to the
 // canonical address below.
 
-/** Canonical EntryPoint address (ERC-4337 v0.9) */
+/** Canonical EntryPoint address (ERC-4337 v0.9, StableNet deployment) */
 export const ENTRY_POINT_ADDRESS: Address = '0xEf6817fe73741A8F10088f9511c64b666a338A14'
+
+/** Explicit v0.9 alias for multi-version codebases */
+export const ENTRY_POINT_V09_ADDRESS: Address = ENTRY_POINT_ADDRESS
+
+/** EIP-4337 spec standard EntryPoint v0.9 address (for reference/interop) */
+export const ENTRY_POINT_V09_CANONICAL_ADDRESS: Address = '0x433709009B8330FDa32311DF1C2AFA402eD8D009'
+
+/** SenderCreator v0.9 address (spec standard) */
+export const SENDER_CREATOR_V09_ADDRESS: Address = '0x0A630a99Df908A81115A3022927Be82f9299987e'
 
 /** @deprecated Use ENTRY_POINT_ADDRESS instead. */
 export const ENTRY_POINT_V07_ADDRESS: Address = '0x0000000071727De22E5E9d8BAf0edAc6f37da032'

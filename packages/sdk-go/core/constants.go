@@ -48,6 +48,30 @@ var (
 
 	// ExecutionModeDelegateCall is the mode for delegate call execution.
 	ExecutionModeDelegateCall ExecutionMode
+
+	// ExecutionModeStaticCall is the mode for staticcall (read-only) execution.
+	// Per ERC-7579 section 3.4, callType 0xfe is staticcall.
+	// Encoding uses same format as delegatecall: abi.encodePacked(target, callData) with no value.
+	ExecutionModeStaticCall ExecutionMode
+)
+
+// EntryPoint v0.9 canonical address from spec (for reference/interop).
+var EntryPointV09CanonicalAddress = common.HexToAddress("0x433709009B8330FDa32311DF1C2AFA402eD8D009")
+
+// SenderCreator v0.9 address from spec.
+var SenderCreatorV09Address = common.HexToAddress("0x0A630a99Df908A81115A3022927Be82f9299987e")
+
+// PostOpMode represents the mode passed to paymaster.postOp().
+// v0.9 change: postOp revert no longer triggers a second call;
+// the EntryPoint reverts execution and settles directly from prefund.
+type PostOpMode uint8
+
+const (
+	// PostOpModeOpSucceeded indicates the UserOp execution succeeded.
+	PostOpModeOpSucceeded PostOpMode = 0
+	// PostOpModeOpReverted indicates the UserOp execution reverted.
+	// The paymaster still pays gas costs.
+	PostOpModeOpReverted PostOpMode = 1
 )
 
 func init() {
@@ -59,4 +83,7 @@ func init() {
 
 	// Delegate call: callType = 0xff
 	ExecutionModeDelegateCall[0] = 0xff
+
+	// Static call: callType = 0xfe
+	ExecutionModeStaticCall[0] = 0xfe
 }

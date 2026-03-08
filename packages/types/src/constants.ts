@@ -9,8 +9,11 @@ export {
   ECDSA_VALIDATOR_ADDRESS,
   ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
+  ENTRY_POINT_V09_ADDRESS,
+  ENTRY_POINT_V09_CANONICAL_ADDRESS,
   KERNEL_ADDRESSES,
   KERNEL_V3_1_FACTORY_ADDRESS,
+  SENDER_CREATOR_V09_ADDRESS,
 } from '@stablenet/contracts'
 
 import type { Hex } from 'viem'
@@ -105,3 +108,11 @@ export function decodeExecutionMode(encoded: Hex): ExecutionMode {
     modePayload: `0x${hex.slice(20, 64)}` as Hex,
   }
 }
+
+export const CALL_TYPE = {
+  SINGLE: '0x00' as const,
+  BATCH: '0x01' as const,
+  /** ERC-7579 §3.4: staticcall mode — read-only execution */
+  STATIC: '0xfe' as const,
+  DELEGATE: '0xff' as const,
+} as const

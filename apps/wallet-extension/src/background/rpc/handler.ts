@@ -179,7 +179,26 @@ function isDelegatedSender(sender: Address): boolean {
 }
 
 /**
+ * Convert an object tree so that BigInt values become decimal strings.
+ * Required because Chrome extension messaging and JSON.stringify cannot
+ * serialize BigInt natively.
+ */
+function toJsonSafe(obj: unknown): unknown {
+  if (typeof obj === 'bigint') return obj.toString()
+  if (Array.isArray(obj)) return obj.map(toJsonSafe)
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [k, toJsonSafe(v)])
+    )
+  }
+  return obj
+}
+
+/**
  * Sign a UserOperation for submission.
+ *
+ * Before signing, the user is shown exactly what data they will sign
+ * (EIP-712 typed data or EIP-191 message hash) and must explicitly confirm.
  *
  * For EIP-7702 delegated accounts (Kernel VALIDATION_TYPE_7702):
  *   - Signs with EIP-191: signMessage(userOpHash) → adds "\x19Ethereum Signed Message:\n32" prefix
@@ -192,7 +211,8 @@ function isDelegatedSender(sender: Address): boolean {
 async function signUserOp(
   userOp: UserOperation,
   entryPoint: Address,
-  chainId: number
+  chainId: number,
+  origin: string
 ): Promise<Hex> {
   const signerAddr = resolveSignerAddress(userOp.sender)
 
@@ -204,6 +224,15 @@ async function signUserOp(
     logger.info(
       `[signUserOp] EIP-7702 path: sender=${userOp.sender.slice(0, 10)}..., signerAddr=${signerAddr.slice(0, 10)}..., userOpHash=${userOpHash.slice(0, 14)}...`
     )
+
+    // Show EIP-191 signing data and wait for user confirmation
+    await approvalController.requestSignature(
+      origin,
+      'personal_sign',
+      signerAddr,
+      userOpHash
+    )
+
     return keyringController.signMessage(signerAddr, userOpHash)
   }
 
@@ -212,6 +241,17 @@ async function signUserOp(
   logger.info(
     `[signUserOp] EIP-712 path: sender=${userOp.sender.slice(0, 10)}..., signerAddr=${signerAddr.slice(0, 10)}...`
   )
+
+  // Show EIP-712 typed data and wait for user confirmation
+  // BigInt values are converted to strings for Chrome messaging serialization
+  await approvalController.requestSignature(
+    origin,
+    'eth_signTypedData_v4',
+    signerAddr,
+    '',
+    toJsonSafe(typedData)
+  )
+
   return keyringController.signTypedData(signerAddr, typedData)
 }
 
@@ -1505,7 +1545,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl,
         signer: async (finalOp) => {
-          return signUserOp(finalOp, entryPoint, network.chainId)
+          return signUserOp(finalOp, entryPoint, network.chainId, origin)
         },
       })
 
@@ -1588,7 +1628,7 @@ const handlers: Record<string, RpcHandler> = {
 
     let signedUserOp: UserOperation
     try {
-      const signature = await signUserOp(userOp, entryPoint, network.chainId)
+      const signature = await signUserOp(userOp, entryPoint, network.chainId, origin)
       signedUserOp = { ...userOp, signature }
       logger.info(`[eth_sendUserOperation] Self-pay signed OK: sigLen=${signature.length}`)
     } catch (error) {
@@ -2456,7 +2496,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl: network.bundlerUrl,
         signer: async (finalOp) => {
-          return signUserOp(finalOp, entryPoint, chainId)
+          return signUserOp(finalOp, entryPoint, chainId, origin)
         },
       })
 
@@ -2483,7 +2523,7 @@ const handlers: Record<string, RpcHandler> = {
     // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const signature = await signUserOp(userOp, entryPoint, chainId)
+      const signature = await signUserOp(userOp, entryPoint, chainId, origin)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
@@ -2715,7 +2755,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl,
         signer: async (finalOp) => {
-          return signUserOp(finalOp, entryPoint, chainId)
+          return signUserOp(finalOp, entryPoint, chainId, origin)
         },
       })
 
@@ -2728,7 +2768,7 @@ const handlers: Record<string, RpcHandler> = {
     // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const signature = await signUserOp(userOp, entryPoint, chainId)
+      const signature = await signUserOp(userOp, entryPoint, chainId, origin)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
@@ -2899,7 +2939,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl: network.bundlerUrl,
         signer: async (finalOp) => {
-          return signUserOp(finalOp, entryPoint, chainId)
+          return signUserOp(finalOp, entryPoint, chainId, origin)
         },
       })
 
@@ -2925,7 +2965,7 @@ const handlers: Record<string, RpcHandler> = {
     // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const signature = await signUserOp(userOp, entryPoint, chainId)
+      const signature = await signUserOp(userOp, entryPoint, chainId, origin)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
@@ -3120,7 +3160,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl: network.bundlerUrl,
         signer: async (finalOp) => {
-          return signUserOp(finalOp, entryPoint, chainId)
+          return signUserOp(finalOp, entryPoint, chainId, origin)
         },
       })
 
@@ -3146,7 +3186,7 @@ const handlers: Record<string, RpcHandler> = {
     // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const signature = await signUserOp(userOp, entryPoint, chainId)
+      const signature = await signUserOp(userOp, entryPoint, chainId, origin)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({
@@ -3662,7 +3702,7 @@ const handlers: Record<string, RpcHandler> = {
         context: paymasterContext,
         bundlerUrl: network.bundlerUrl,
         signer: async (finalOp) => {
-          return signUserOp(finalOp, entryPoint, chainId)
+          return signUserOp(finalOp, entryPoint, chainId, origin)
         },
       })
 
@@ -3685,7 +3725,7 @@ const handlers: Record<string, RpcHandler> = {
     // Self-pay path: sign with EIP-712 and submit directly
     let signedUserOp: UserOperation
     try {
-      const signature = await signUserOp(userOp, entryPoint, chainId)
+      const signature = await signUserOp(userOp, entryPoint, chainId, origin)
       signedUserOp = { ...userOp, signature }
     } catch (error) {
       throw createRpcError({

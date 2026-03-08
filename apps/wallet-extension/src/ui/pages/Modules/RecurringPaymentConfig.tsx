@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import type { Address, Hex } from 'viem'
 import { encodeAbiParameters, formatEther, isAddress, parseAbiParameters, parseEther } from 'viem'
 import { useNetworkCurrency } from '../../hooks/useNetworkCurrency'
+import { useContractAddresses } from './hooks/useContractAddresses'
 
 // ============================================================================
 // Types
@@ -120,6 +121,7 @@ export function RecurringPaymentConfigUI({
   const { t } = useTranslation('modules')
   const { t: tc } = useTranslation('common')
   const { symbol: nativeSymbol } = useNetworkCurrency()
+  const { tokens } = useContractAddresses()
   const [step, setStep] = useState<Step>('recipient')
   const [form, setForm] = useState<FormState>({
     recipient: '',
@@ -279,6 +281,32 @@ export function RecurringPaymentConfigUI({
 
           {form.tokenType === 'custom' && (
             <div className="mt-3">
+              {tokens.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-gray-600 mb-2">
+                    {t('selectKnownToken', 'Select known token')}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {tokens.map((token) => {
+                      const isSelected = form.customToken === token.address
+                      return (
+                        <button
+                          key={token.address}
+                          type="button"
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            isSelected
+                              ? 'border-orange-500 bg-orange-50 text-orange-700'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => setForm((f) => ({ ...f, customToken: token.address }))}
+                        >
+                          {token.symbol}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
               <label
                 htmlFor="token-contract-address"
                 className="block text-sm font-medium text-gray-700 mb-1"

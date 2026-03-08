@@ -256,6 +256,35 @@ export {
   type PaymasterSelectorConfig,
   PaymasterSelectorError,
 } from './paymaster/selector'
+// EntryPoint
+export {
+  ENTRY_POINT_ABI,
+  ENTRY_POINT_V09_ADDRESS,
+  ENTRY_POINT_V09_CANONICAL_ADDRESS,
+  SENDER_CREATOR_V09_ADDRESS,
+  getEntryPointVersion,
+  isEntryPointV07,
+  isEntryPointV06,
+} from './entrypoint'
+
+// ERC-7579 Execution Mode
+export { CALL_TYPE, EXEC_MODE } from './execution'
+
+// EIP-4337 ValidationData
+export {
+  packValidationData,
+  parseValidationData,
+  usesBlockNumberMode,
+} from './validationData'
+
+// EIP-4337 v0.9 Gas Penalty
+export {
+  calculateEffectiveGasCost,
+  calculateUnusedGasPenalty,
+  UNUSED_GAS_PENALTY_DIVISOR,
+  UNUSED_GAS_PENALTY_THRESHOLD,
+} from '@stablenet/core'
+
 // ERC-1271 Signature Verification
 export {
   isSmartContractAccount,

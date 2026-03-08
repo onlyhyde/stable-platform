@@ -31,8 +31,13 @@
 
   "signatureRequest": "Signature Request",
   "signingWith": "Signing with",
+  "signingStandard": "Signing Standard",
+  "eip712Label": "EIP-712 Typed Data (PackedUserOperation)",
+  "eip191Label": "EIP-191 Personal Sign (UserOperation Hash)",
   "message": "Message",
   "typedData": "Typed Data",
+  "userOpTypedDataDesc": "You are signing a UserOperation with the following EIP-712 structured data. Review the fields carefully before confirming.",
+  "userOpHashDesc": "You are signing a UserOperation hash with EIP-191. This hash represents the packed UserOperation sent to the EntryPoint.",
   "securityWarnings": "Security Warnings",
   "sign": "Sign",
 

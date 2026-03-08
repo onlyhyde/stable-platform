@@ -1,6 +1,7 @@
 import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex, PublicClient } from 'viem'
-import { encodeAbiParameters, encodeFunctionData, hexToBytes, slice as sliceHex } from 'viem'
+import { concat, decodeAbiParameters, encodeAbiParameters, encodeFunctionData, hexToBytes, pad, slice as sliceHex, toHex } from 'viem'
+import { ENTRY_POINT_ABI } from '../abi'
 import {
   ENTRY_POINT_SIMULATIONS_ABI,
   ENTRY_POINT_SIMULATIONS_BYTECODE,
@@ -363,7 +364,7 @@ export class GasEstimator {
         args: [packedOp],
       })
 
-      await this.client.call({
+      const result = await this.client.call({
         to: this.entryPoint,
         data: calldata,
         gas: gasLimit,
@@ -375,10 +376,20 @@ export class GasEstimator {
         ],
       })
 
-      // Normal return = validation succeeded
+      // If state override simulation returns empty data, it's not working on this chain
+      if (!result.data || result.data === '0x') {
+        throw new Error('UNSUPPORTED_SIMULATION: simulateValidation returned empty data')
+      }
+
+      // Normal return with data = validation succeeded
       return true
     } catch (error: unknown) {
       const errorStr = String(error)
+
+      // Unsupported simulation — propagate immediately to trigger fallback
+      if (errorStr.includes('UNSUPPORTED_SIMULATION')) {
+        throw error
+      }
 
       // Out of gas → gas limit was insufficient
       if (
@@ -389,21 +400,7 @@ export class GasEstimator {
         return false
       }
 
-      // FailedOp means validation logic failed (not gas) — gas was sufficient
-      if (this.isFailedOpError(error)) {
-        return true
-      }
-
-      // Execution revert with known signatures → gas was sufficient but logic failed
-      if (
-        errorStr.includes('execution reverted') ||
-        errorStr.includes('revert') ||
-        errorStr.includes('CALL_EXCEPTION')
-      ) {
-        return true
-      }
-
-      // Unknown error (network, state override unsupported, etc.) → propagate to trigger fallback
+      // Any other error — propagate to trigger fallback estimation
       throw error
     }
   }
@@ -516,7 +513,7 @@ export class GasEstimator {
         args: [packedOp, userOp.sender, '0x'],
       })
 
-      await this.client.call({
+      const result = await this.client.call({
         to: this.entryPoint,
         data: calldata,
         gas: gasLimit + (userOp.verificationGasLimit || this.config.initialGasUpperBound),
@@ -528,10 +525,44 @@ export class GasEstimator {
         ],
       })
 
-      // Normal return = execution completed successfully
+      // Decode the simulation return value to check targetSuccess
+      if (!result.data || result.data === '0x') {
+        // State override simulation returned empty data — EntryPointSimulations
+        // bytecode is not producing valid output on this chain.
+        // Throw to trigger fallback to eth_estimateGas.
+        throw new Error('UNSUPPORTED_SIMULATION: simulateHandleOp returned empty data')
+      }
+
+      try {
+        const decoded = decodeAbiParameters(
+          [
+            { name: 'preOpGas', type: 'uint256' },
+            { name: 'paid', type: 'uint256' },
+            { name: 'accountValidationData', type: 'uint256' },
+            { name: 'paymasterValidationData', type: 'uint256' },
+            { name: 'targetSuccess', type: 'bool' },
+            { name: 'targetResult', type: 'bytes' },
+          ],
+          result.data,
+        )
+        const targetSuccess = decoded[4]
+        if (!targetSuccess) {
+          // Inner execute() call failed (likely OOG) — gas was insufficient
+          return false
+        }
+      } catch {
+        // Decoding failed — simulation output is unreliable, trigger fallback
+        throw new Error('UNSUPPORTED_SIMULATION: failed to decode simulateHandleOp return data')
+      }
+
       return true
     } catch (error: unknown) {
       const errorStr = String(error)
+
+      // Unsupported simulation — propagate immediately to trigger fallback
+      if (errorStr.includes('UNSUPPORTED_SIMULATION')) {
+        throw error
+      }
 
       // Out of gas → gas limit was insufficient
       if (
@@ -542,21 +573,9 @@ export class GasEstimator {
         return false
       }
 
-      // FailedOp means logic failed but gas was sufficient
-      if (this.isFailedOpError(error)) {
-        return true
-      }
-
-      // Execution revert with known signatures → gas was sufficient but logic failed
-      if (
-        errorStr.includes('execution reverted') ||
-        errorStr.includes('revert') ||
-        errorStr.includes('CALL_EXCEPTION')
-      ) {
-        return true
-      }
-
-      // Unknown error (network, state override unsupported, etc.) → propagate to trigger fallback
+      // Any other error (FailedOp, execution reverted, network errors, etc.)
+      // — we cannot reliably determine if gas was sufficient, so propagate
+      // to trigger fallback estimation via eth_estimateGas
       throw error
     }
   }

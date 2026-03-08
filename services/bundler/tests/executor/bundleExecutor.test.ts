@@ -63,7 +63,7 @@ describe('BundleExecutor', () => {
     // Setup mocks
     mockPublicClient = {
       estimateGas: vi.fn().mockResolvedValue(500000n),
-      call: vi.fn().mockRejectedValue(new Error('call reverted')),
+      call: vi.fn().mockResolvedValue({ data: '0x' }),
       waitForTransactionReceipt: vi.fn().mockResolvedValue({
         status: 'success',
         blockNumber: 12345n,
@@ -209,22 +209,10 @@ describe('BundleExecutor', () => {
       mempool.add(userOp1, createHash(1), ENTRY_POINT)
       mempool.add(userOp2, createHash(2), ENTRY_POINT)
 
-      // Make second operation fail simulation
-      const mockSimValidator = mockValidator.getSimulationValidator()
-      vi.mocked(mockSimValidator.simulate)
-        .mockResolvedValueOnce({
-          returnInfo: {
-            preOpGas: 50000n,
-            prefund: 0n,
-            accountValidationData: 0n,
-            paymasterValidationData: 0n,
-            paymasterContext: '0x',
-          },
-          senderInfo: { stake: 0n, unstakeDelaySec: 0n },
-          factoryInfo: { stake: 0n, unstakeDelaySec: 0n },
-          paymasterInfo: { stake: 0n, unstakeDelaySec: 0n },
-        })
-        .mockRejectedValueOnce(new Error('Simulation failed'))
+      // Make second operation fail pre-flight handleOps check
+      vi.mocked(mockPublicClient.call)
+        .mockResolvedValueOnce({ data: '0x' }) // first op passes
+        .mockRejectedValueOnce(new Error('Simulation failed')) // second op fails
 
       await executor.tryBundle()
 
@@ -241,9 +229,8 @@ describe('BundleExecutor', () => {
       mempool.add(userOp1, createHash(1), ENTRY_POINT)
       mempool.add(userOp2, createHash(2), ENTRY_POINT)
 
-      // Make all operations fail simulation
-      const mockSimValidator = mockValidator.getSimulationValidator()
-      vi.mocked(mockSimValidator.simulate).mockRejectedValue(new Error('All simulations failed'))
+      // Make all operations fail pre-flight handleOps check
+      vi.mocked(mockPublicClient.call).mockRejectedValue(new Error('All simulations failed'))
 
       const result = await executor.tryBundle()
 
@@ -264,34 +251,11 @@ describe('BundleExecutor', () => {
       mempool.add(userOp2, createHash(2), ENTRY_POINT)
       mempool.add(userOp3, createHash(3), ENTRY_POINT)
 
-      // First and third pass, second fails
-      const mockSimValidator = mockValidator.getSimulationValidator()
-      vi.mocked(mockSimValidator.simulate)
-        .mockResolvedValueOnce({
-          returnInfo: {
-            preOpGas: 50000n,
-            prefund: 0n,
-            accountValidationData: 0n,
-            paymasterValidationData: 0n,
-            paymasterContext: '0x',
-          },
-          senderInfo: { stake: 0n, unstakeDelaySec: 0n },
-          factoryInfo: { stake: 0n, unstakeDelaySec: 0n },
-          paymasterInfo: { stake: 0n, unstakeDelaySec: 0n },
-        })
-        .mockRejectedValueOnce(new Error('Second op failed'))
-        .mockResolvedValueOnce({
-          returnInfo: {
-            preOpGas: 50000n,
-            prefund: 0n,
-            accountValidationData: 0n,
-            paymasterValidationData: 0n,
-            paymasterContext: '0x',
-          },
-          senderInfo: { stake: 0n, unstakeDelaySec: 0n },
-          factoryInfo: { stake: 0n, unstakeDelaySec: 0n },
-          paymasterInfo: { stake: 0n, unstakeDelaySec: 0n },
-        })
+      // First and third pass, second fails pre-flight handleOps check
+      vi.mocked(mockPublicClient.call)
+        .mockResolvedValueOnce({ data: '0x' }) // first op passes
+        .mockRejectedValueOnce(new Error('Second op failed')) // second op fails
+        .mockResolvedValueOnce({ data: '0x' }) // third op passes
 
       const result = await executor.tryBundle()
 
@@ -343,7 +307,7 @@ describe('BundleExecutor', () => {
       // Operation should be marked as failed
       const entry = mempool.get(hash)
       expect(entry?.status).toBe('failed')
-      expect(entry?.error).toBe('eth_call also reverted: call reverted')
+      expect(entry?.error).toBe('Transient failure: eth_call succeeded on retry (state may have changed)')
     })
   })
 

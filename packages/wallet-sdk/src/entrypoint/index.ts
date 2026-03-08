@@ -5,13 +5,17 @@
  */
 
 import type { Address } from 'viem'
+import { ENTRY_POINT_V09_ADDRESS } from '@stablenet/sdk-types'
 
 export { ENTRY_POINT_ABI } from '@stablenet/core'
 // Re-export EntryPoint constants and ABI
-export { ENTRY_POINT_ADDRESS, ENTRY_POINT_V07_ADDRESS } from '@stablenet/sdk-types'
-
-/** Known EntryPoint v0.9 address (StableNet) */
-const ENTRY_POINT_V09_ADDRESS = '0xEf6817fe73741A8F10088f9511c64b666a338A14' as const
+export {
+  ENTRY_POINT_ADDRESS,
+  ENTRY_POINT_V07_ADDRESS,
+  ENTRY_POINT_V09_ADDRESS,
+  ENTRY_POINT_V09_CANONICAL_ADDRESS,
+  SENDER_CREATOR_V09_ADDRESS,
+} from '@stablenet/sdk-types'
 
 /** Known EntryPoint v0.7 address */
 const ENTRY_POINT_V07 = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as const

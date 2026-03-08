@@ -21,6 +21,14 @@ export {
   type GasPriceTiers,
 } from './oracle'
 
+// EIP-4337 v0.9 unused gas penalty
+export {
+  calculateEffectiveGasCost,
+  calculateUnusedGasPenalty,
+  UNUSED_GAS_PENALTY_DIVISOR,
+  UNUSED_GAS_PENALTY_THRESHOLD,
+} from './gasPenalty'
+
 // Strategy Pattern exports (OCP: allows custom strategy registration)
 export {
   createEIP7702GasStrategy,

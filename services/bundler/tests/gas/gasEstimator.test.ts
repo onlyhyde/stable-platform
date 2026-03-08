@@ -1,4 +1,5 @@
 import type { Address, Hex, PublicClient } from 'viem'
+import { encodeAbiParameters } from 'viem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GasEstimator } from '../../src/gas/gasEstimator'
 import type { UserOperation } from '../../src/types'
@@ -6,6 +7,22 @@ import { createLogger } from '../../src/utils/logger'
 
 // Mock logger
 const mockLogger = createLogger('error', false)
+
+/** Encode a valid simulateHandleOp / simulateValidation return value */
+function encodeSimulationResult(targetSuccess = true): { data: Hex } {
+  const data = encodeAbiParameters(
+    [
+      { name: 'preOpGas', type: 'uint256' },
+      { name: 'paid', type: 'uint256' },
+      { name: 'accountValidationData', type: 'uint256' },
+      { name: 'paymasterValidationData', type: 'uint256' },
+      { name: 'targetSuccess', type: 'bool' },
+      { name: 'targetResult', type: 'bytes' },
+    ],
+    [50000n, 100000n, 0n, 0n, targetSuccess, '0x'],
+  )
+  return { data }
+}
 
 // Test constants
 const ENTRY_POINT = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
@@ -122,7 +139,7 @@ describe('GasEstimator', () => {
           throw new Error('out of gas')
         }
         // Normal return = validation succeeded (v0.9 state override pattern)
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -148,7 +165,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < 250000n) {
           throw new Error('out of gas')
         }
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -164,7 +181,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < 100000n) {
           throw new Error('out of gas')
         }
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       // Create estimator with custom config
@@ -204,7 +221,7 @@ describe('GasEstimator', () => {
           }
         }
         // Normal return = success (both simulateValidation and simulateHandleOp)
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -258,7 +275,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < 60000n) {
           throw new Error('out of gas')
         }
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -277,7 +294,7 @@ describe('GasEstimator', () => {
       })
 
       mockClient.call = vi.fn().mockImplementation(async () => {
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -310,7 +327,7 @@ describe('GasEstimator', () => {
             throw new Error('out of gas')
           }
         }
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
       mockClient.estimateGas = vi.fn().mockResolvedValue(actualCallGas)
 
@@ -341,7 +358,7 @@ describe('GasEstimator', () => {
             throw new Error('out of gas')
           }
         }
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -397,7 +414,7 @@ describe('GasEstimator', () => {
       // Track that client.call is used (state override pattern)
       mockClient.call = vi.fn().mockImplementation(async () => {
         // Normal return = success (v0.9 state override: both simulateValidation and simulateHandleOp)
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       await gasEstimator.estimate(userOp)
@@ -422,7 +439,7 @@ describe('GasEstimator', () => {
             throw new Error('out of gas')
           }
         }
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -440,12 +457,56 @@ describe('GasEstimator', () => {
 
       // Normal return from state override = success regardless of target execution result
       mockClient.call = vi.fn().mockImplementation(async () => {
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       // Should still provide gas estimate even if target execution fails
       const result = await gasEstimator.estimate(userOp)
       expect(result.callGasLimit).toBeGreaterThan(0n)
+    })
+
+    it('should detect targetSuccess=false from simulateHandleOp return value', async () => {
+      const userOp = createTestUserOp({
+        callData: '0xb61d27f6' as Hex,
+      })
+
+      mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
+
+      // Encode simulateHandleOp return value with targetSuccess=false when gas is too low
+      const actualCallGasNeeded = 60000n
+      const verificationGas = userOp.verificationGasLimit || 100000n
+
+      mockClient.call = vi
+        .fn()
+        .mockImplementation(async (params: { gas?: bigint }) => {
+          // simulateHandleOp calls have gas = callGas + verificationGas
+          if (params.gas && params.gas > verificationGas) {
+            const callGas = params.gas - verificationGas
+            const targetSuccess = callGas >= actualCallGasNeeded
+
+            const data = encodeAbiParameters(
+              [
+                { name: 'preOpGas', type: 'uint256' },
+                { name: 'paid', type: 'uint256' },
+                { name: 'accountValidationData', type: 'uint256' },
+                { name: 'paymasterValidationData', type: 'uint256' },
+                { name: 'targetSuccess', type: 'bool' },
+                { name: 'targetResult', type: 'bytes' },
+              ],
+              [50000n, 100000n, 0n, 0n, targetSuccess, '0x'],
+            )
+            return { data }
+          }
+          // simulateValidation calls — return success
+          return encodeSimulationResult()
+        })
+
+      const result = await gasEstimator.estimate(userOp)
+
+      // callGasLimit should be >= actualCallGasNeeded (binary search finds minimum where targetSuccess=true)
+      expect(result.callGasLimit).toBeGreaterThanOrEqual(actualCallGasNeeded)
+      // Should not converge to the low bound (21000) like the old buggy behavior
+      expect(result.callGasLimit).toBeGreaterThan(30000n)
     })
   })
 
@@ -467,7 +528,7 @@ describe('GasEstimator', () => {
         // paymasterVerificationGasLimit in the packed UserOp calldata,
         // not the gas parameter. All calls use initialGasUpperBound as gas.
         // Normal return = validation succeeded
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -491,7 +552,7 @@ describe('GasEstimator', () => {
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
       mockClient.call = vi.fn().mockImplementation(async () => {
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -510,7 +571,7 @@ describe('GasEstimator', () => {
       })
 
       mockClient.call = vi.fn().mockImplementation(async () => {
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const result = await gasEstimator.estimate(userOp)
@@ -537,7 +598,7 @@ describe('GasEstimator', () => {
       })
 
       mockClient.call = vi.fn().mockImplementation(async () => {
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const l2Result = await l2Estimator.estimate(userOp)
@@ -567,7 +628,7 @@ describe('GasEstimator', () => {
       })
 
       mockClient.call = vi.fn().mockImplementation(async () => {
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const smallResult = await l2Estimator.estimate(smallCalldata)
@@ -593,7 +654,7 @@ describe('GasEstimator', () => {
       )
 
       mockClient.call = vi.fn().mockImplementation(async () => {
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       await l2Estimator.estimate(userOp)
@@ -619,7 +680,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < 250000n) {
           throw new Error('out of gas')
         }
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const defaultEstimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger)
@@ -647,7 +708,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < currentThreshold) {
           throw new Error('out of gas')
         }
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const estimator = new GasEstimator(mockClient, ENTRY_POINT, mockLogger, {
@@ -684,7 +745,7 @@ describe('GasEstimator', () => {
         if (params.gas && params.gas < 50000n) {
           throw new Error('out of gas')
         }
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const userOp = createTestUserOp() // no factory
@@ -715,7 +776,7 @@ describe('GasEstimator', () => {
 
       mockClient.getCode = vi.fn().mockResolvedValue('0x1234' as Hex)
       mockClient.call = vi.fn().mockImplementation(async () => {
-        return { data: '0x' }
+        return encodeSimulationResult()
       })
 
       const result = await customEstimator.estimate(userOp)

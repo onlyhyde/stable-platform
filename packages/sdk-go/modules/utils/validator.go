@@ -411,3 +411,13 @@ func IdentifyValidatorType(address types.Address, knownValidators map[string]typ
 func IsValidSignatureFormat(signature types.Hex) bool {
 	return len(signature) >= 65
 }
+
+// ============================================================================
+// ERC-7579 section 3.8: isValidSignatureWithSender
+// ============================================================================
+
+// ERC1271MagicValue is the magic value returned by isValidSignature for valid signatures.
+var ERC1271MagicValue = [4]byte{0x16, 0x26, 0xba, 0x7e}
+
+// CallTypeStatic is the ERC-7579 callType for staticcall (read-only execution).
+const CallTypeStatic byte = 0xfe

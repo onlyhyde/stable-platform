@@ -9,7 +9,7 @@ import type {
 import type { Address, Chain, Hex, Transport } from 'viem'
 import { ConfigurationError } from '../errors'
 import { createViemProvider, type RpcProvider } from '../providers'
-import { getUserOperationHash } from '../utils/userOperation'
+import { getUserOperationHashVersioned } from '../utils/userOperation'
 import { createBundlerClient } from './bundlerClient'
 
 /**
@@ -244,7 +244,7 @@ export function createSmartAccountClient<
    * Sign UserOp and send to bundler.
    */
   const signAndSend = async (userOp: UserOperation): Promise<Hex> => {
-    const userOpHash = getUserOperationHash(userOp, account.entryPoint, BigInt(chain.id))
+    const userOpHash = getUserOperationHashVersioned(userOp, account.entryPoint, BigInt(chain.id))
     const signature = await account.signUserOperation(userOpHash)
     return bundlerClient.sendUserOperation({ ...userOp, signature })
   }

@@ -8,10 +8,58 @@ interface SignatureApprovalProps {
   onReject: () => void
 }
 
+/**
+ * Detect whether the typed data represents an EIP-4337 PackedUserOperation.
+ */
+function isUserOpTypedData(
+  typedData: unknown
+): typedData is {
+  primaryType: 'PackedUserOperation'
+  domain: { name: string; version: string; chainId: string; verifyingContract: string }
+  types: Record<string, Array<{ name: string; type: string }>>
+  message: Record<string, string>
+} {
+  if (!typedData || typeof typedData !== 'object') return false
+  const td = typedData as Record<string, unknown>
+  return td.primaryType === 'PackedUserOperation'
+}
+
+/**
+ * Human-readable labels for PackedUserOperation fields.
+ */
+const USER_OP_FIELD_LABELS: Record<string, string> = {
+  sender: 'Sender',
+  nonce: 'Nonce',
+  initCode: 'Init Code',
+  callData: 'Call Data',
+  accountGasLimits: 'Account Gas Limits',
+  preVerificationGas: 'Pre-Verification Gas',
+  gasFees: 'Gas Fees',
+  paymasterAndData: 'Paymaster & Data',
+}
+
+/**
+ * Truncate long hex strings for display, keeping head and tail visible.
+ */
+function truncateHex(value: string, maxLen = 42): string {
+  if (value.length <= maxLen) return value
+  return `${value.slice(0, 22)}...${value.slice(-16)}`
+}
+
 export function SignatureApproval({ approval, onApprove, onReject }: SignatureApprovalProps) {
   const { t } = useTranslation('approval')
   const { t: tc } = useTranslation('common')
   const { data } = approval
+
+  const isUserOp = isUserOpTypedData(data.typedData)
+  const isEip712 = data.method === 'eth_signTypedData_v4'
+  // Narrowed typed data reference after type guard
+  const userOpTypedData = isUserOp
+    ? (data.typedData as {
+        domain: Record<string, string>
+        message: Record<string, string>
+      })
+    : null
 
   const getRiskColor = (level?: string) => {
     switch (level) {
@@ -87,7 +135,7 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-6 space-y-4">
+      <div className="flex-1 p-6 space-y-4 overflow-y-auto">
         {/* Signing account */}
         <Card padding="md">
           <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
@@ -98,7 +146,26 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
           </p>
         </Card>
 
-        {(data.displayMessage || data.message) && (
+        {/* EIP Standard indicator */}
+        {isUserOp && (
+          <Card padding="md">
+            <p className="text-xs mb-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              {t('signingStandard')}
+            </p>
+            <p className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              {isEip712 ? t('eip712Label') : t('eip191Label')}
+            </p>
+            <p
+              className="text-xs mt-2"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
+              {isEip712 ? t('userOpTypedDataDesc') : t('userOpHashDesc')}
+            </p>
+          </Card>
+        )}
+
+        {/* EIP-191 message (personal_sign) */}
+        {(data.displayMessage || data.message) && !isUserOp && (
           <Card padding="md">
             <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
               {t('message')}
@@ -117,8 +184,104 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
           </Card>
         )}
 
-        {/* Typed Data (if EIP-712) */}
-        {data.typedData !== undefined && (
+        {/* UserOp EIP-191 hash display */}
+        {data.message && isUserOp && !isEip712 && (
+          <Card padding="md">
+            <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              UserOperation Hash
+            </p>
+            <div
+              className="rounded-lg p-3 overflow-x-auto"
+              style={{ backgroundColor: 'rgb(var(--surface))' }}
+            >
+              <code
+                className="text-xs break-all font-mono"
+                style={{ color: 'rgb(var(--foreground))' }}
+              >
+                {String(data.message)}
+              </code>
+            </div>
+          </Card>
+        )}
+
+        {/* UserOp EIP-712 structured display */}
+        {isUserOp && isEip712 && (
+          <>
+            {/* Domain */}
+            <Card padding="md">
+              <p className="text-xs font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                EIP-712 Domain
+              </p>
+              <div className="space-y-2">
+                {Object.entries(userOpTypedData!.domain).map(([key, value]) => (
+                  <div key={key} className="flex items-start justify-between gap-2">
+                    <span
+                      className="text-xs shrink-0"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
+                    >
+                      {key}
+                    </span>
+                    <span
+                      className="text-xs font-mono text-right break-all"
+                      style={{ color: 'rgb(var(--foreground))' }}
+                    >
+                      {String(value)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Message fields */}
+            <Card padding="md">
+              <p className="text-xs font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                PackedUserOperation
+              </p>
+              <div className="space-y-3">
+                {Object.entries(userOpTypedData!.message).map(([key, value]) => {
+                  const strValue = String(value)
+                  const label = USER_OP_FIELD_LABELS[key] ?? key
+                  const isLongHex = strValue.startsWith('0x') && strValue.length > 42
+
+                  return (
+                    <div key={key}>
+                      <p
+                        className="text-xs mb-0.5"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
+                        {label}
+                      </p>
+                      {isLongHex ? (
+                        <div
+                          className="rounded p-2 overflow-x-auto"
+                          style={{ backgroundColor: 'rgb(var(--surface))' }}
+                        >
+                          <code
+                            className="text-xs break-all font-mono"
+                            style={{ color: 'rgb(var(--foreground))' }}
+                            title={strValue}
+                          >
+                            {truncateHex(strValue, 66)}
+                          </code>
+                        </div>
+                      ) : (
+                        <p
+                          className="text-xs font-mono break-all"
+                          style={{ color: 'rgb(var(--foreground))' }}
+                        >
+                          {strValue}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </Card>
+          </>
+        )}
+
+        {/* Generic Typed Data (non-UserOp EIP-712) */}
+        {data.typedData !== undefined && !isUserOp && (
           <Card padding="md">
             <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
               {t('typedData')}

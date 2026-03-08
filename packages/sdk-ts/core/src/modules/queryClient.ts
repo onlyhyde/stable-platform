@@ -8,7 +8,7 @@
 import type { InstalledModule, ModuleType } from '@stablenet/sdk-types'
 import { MODULE_STATUS, MODULE_TYPE } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
-import { KERNEL_ABI } from '../abis'
+import { ACCOUNT_CONFIG_ABI, KERNEL_ABI } from '../abis'
 import type { RpcProvider } from '../providers'
 import { createModuleRegistry, type ModuleRegistry } from './moduleRegistry'
 
@@ -168,6 +168,74 @@ export function createModuleQueryClient(config: ModuleQueryClientConfig) {
     return getInstalledModulesByType(account, MODULE_TYPE.FALLBACK)
   }
 
+  // ============================================================================
+  // ERC-7579 Account Config (IERC7579AccountConfig)
+  // ============================================================================
+
+  /**
+   * Get the account ID string (ERC-7579 §3.5)
+   * Format: "vendorname.accountname.semver"
+   */
+  async function getAccountId(
+    account: Address
+  ): Promise<{ raw: string; vendor: string; name: string; version: string } | null> {
+    try {
+      const raw = await provider.readContract<string>({
+        address: account,
+        abi: ACCOUNT_CONFIG_ABI,
+        functionName: 'accountId',
+        args: [],
+      })
+      const parts = raw.split('.')
+      return {
+        raw,
+        vendor: parts[0] ?? '',
+        name: parts[1] ?? '',
+        version: parts.slice(2).join('.'),
+      }
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Check if account supports a specific execution mode (ERC-7579 §3.5)
+   */
+  async function supportsExecutionMode(
+    account: Address,
+    encodedMode: Hex
+  ): Promise<boolean> {
+    try {
+      return await provider.readContract<boolean>({
+        address: account,
+        abi: ACCOUNT_CONFIG_ABI,
+        functionName: 'supportsExecutionMode',
+        args: [encodedMode],
+      })
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * Check if account supports a specific module type (ERC-7579 §3.5)
+   */
+  async function supportsModule(
+    account: Address,
+    moduleTypeId: bigint
+  ): Promise<boolean> {
+    try {
+      return await provider.readContract<boolean>({
+        address: account,
+        abi: ACCOUNT_CONFIG_ABI,
+        functionName: 'supportsModule',
+        args: [moduleTypeId],
+      })
+    } catch {
+      return false
+    }
+  }
+
   return {
     // Core queries
     isModuleInstalled,
@@ -180,6 +248,11 @@ export function createModuleQueryClient(config: ModuleQueryClientConfig) {
     hasHooks,
     getInstalledExecutors,
     getInstalledFallbacks,
+
+    // ERC-7579 Account Config
+    getAccountId,
+    supportsExecutionMode,
+    supportsModule,
 
     // Registry access
     registry,

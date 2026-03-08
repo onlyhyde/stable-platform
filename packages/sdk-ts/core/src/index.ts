@@ -254,6 +254,9 @@ export {
   createGasEstimator,
   // Gas Price Oracle (dynamic fee estimation)
   createGasPriceOracle,
+  // EIP-4337 v0.9 unused gas penalty
+  calculateEffectiveGasCost,
+  calculateUnusedGasPenalty,
   createGasStrategyRegistry,
   createSmartAccountGasStrategy,
   type ERC20GasEstimate,
@@ -268,6 +271,8 @@ export {
   type GasPriceTiers,
   type GasStrategyConfig,
   type GasStrategyRegistry,
+  UNUSED_GAS_PENALTY_DIVISOR,
+  UNUSED_GAS_PENALTY_THRESHOLD,
 } from './gas'
 // Module System
 export {

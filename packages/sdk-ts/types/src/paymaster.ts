@@ -79,6 +79,19 @@ export interface PaymasterClientConfig {
 /**
  * Paymaster RPC method names
  */
+/**
+ * EIP-4337 v0.9 PostOp mode
+ *
+ * v0.9 behavior change: if postOp reverts, EntryPoint does NOT re-call postOp.
+ * Instead, the execution is reverted and the paymaster is charged from its prefund.
+ */
+export enum PostOpMode {
+  /** UserOp execution succeeded */
+  opSucceeded = 0,
+  /** UserOp execution reverted (paymaster still pays gas) */
+  opReverted = 1,
+}
+
 export const PAYMASTER_RPC_METHODS = {
   /** Get sponsored paymaster data */
   SPONSOR_USER_OPERATION: 'pm_sponsorUserOperation',

@@ -3,15 +3,33 @@
  */
 
 import type { BundlerClient, UserOperation, UserOperationGasEstimation } from '@stablenet/sdk-types'
+import { calculateEffectiveGasCost } from '@stablenet/core'
 import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
 
 export interface UseGasEstimationConfig {
   bundlerClient: BundlerClient | null
+  /** Enable v0.9 unused gas penalty in cost calculations */
+  includeGasPenalty?: boolean
+}
+
+/** Gas penalty breakdown for v0.9 unused gas penalty */
+export interface GasPenaltyInfo {
+  effectiveCost: bigint
+  callPenalty: bigint
+  postOpPenalty: bigint
 }
 
 export interface UseGasEstimationResult {
   gasEstimate: UserOperationGasEstimation | null
+  /** Calculate v0.9 effective gas cost with penalty given actual usage */
+  calculatePenalty: (params: {
+    actualGasCost: bigint
+    callGasUsed: bigint
+    callGasLimit: bigint
+    postOpGasUsed: bigint
+    postOpGasLimit: bigint
+  }) => GasPenaltyInfo
   estimate: (
     userOp: Partial<UserOperation> & { sender: Address; callData: Hex }
   ) => Promise<UserOperationGasEstimation>
@@ -60,5 +78,21 @@ export function useGasEstimation(config: UseGasEstimationConfig): UseGasEstimati
     [bundlerClient]
   )
 
-  return { gasEstimate, estimate, isLoading, error }
+  const calculatePenalty = useCallback((params: {
+    actualGasCost: bigint
+    callGasUsed: bigint
+    callGasLimit: bigint
+    postOpGasUsed: bigint
+    postOpGasLimit: bigint
+  }): GasPenaltyInfo => {
+    return calculateEffectiveGasCost(
+      params.actualGasCost,
+      params.callGasUsed,
+      params.callGasLimit,
+      params.postOpGasUsed,
+      params.postOpGasLimit,
+    )
+  }, [])
+
+  return { gasEstimate, calculatePenalty, estimate, isLoading, error }
 }

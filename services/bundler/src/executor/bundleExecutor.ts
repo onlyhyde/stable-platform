@@ -173,13 +173,14 @@ export class BundleExecutor {
    */
   private async preflightValidation(entries: MempoolEntry[]): Promise<MempoolEntry[]> {
     const valid: MempoolEntry[] = []
-    const simulationValidator = this.validator.getSimulationValidator()
     const opcodeValidator = this.validator.getOpcodeValidator() as OpcodeValidator | undefined
 
+    // Pre-flight uses handleOps eth_call against the real EntryPoint (no stateOverride).
+    // This is more reliable than simulateValidation which requires EntryPointSimulations
+    // bytecode injection via stateOverride (unsupported on some chains like StableNet).
     for (const entry of entries) {
       try {
-        // Re-simulate before bundling
-        await simulationValidator.simulate(entry.userOp)
+        await this.preflightHandleOpsCheck(entry)
 
         // Re-validate opcodes and storage access (ERC-7562) before inclusion
         if (opcodeValidator) {
@@ -219,6 +220,26 @@ export class BundleExecutor {
     }
 
     return valid
+  }
+
+  /**
+   * Pre-flight check using handleOps eth_call against the real EntryPoint.
+   * Unlike simulateValidation (which requires EntryPointSimulations stateOverride),
+   * this works on all chains by calling the actual deployed EntryPoint contract.
+   */
+  private async preflightHandleOpsCheck(entry: MempoolEntry): Promise<void> {
+    const packedOp = this.packUserOp(entry.userOp)
+    const data = encodeFunctionData({
+      abi: ENTRY_POINT_ABI,
+      functionName: 'handleOps',
+      args: [[packedOp], this.config.beneficiary],
+    })
+
+    await this.publicClient.call({
+      account: this.walletClient.account!,
+      to: this.config.entryPoint,
+      data,
+    })
   }
 
   /**

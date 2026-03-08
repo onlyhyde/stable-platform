@@ -47,6 +47,8 @@ export {
   ECDSA_VALIDATOR_ADDRESS,
   ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
+  ENTRY_POINT_V09_ADDRESS,
+  ENTRY_POINT_V09_CANONICAL_ADDRESS,
   // MODULE_TYPE is exported from ./module with complete 6 types
   EXEC_MODE,
   EXEC_TYPE,
@@ -55,6 +57,7 @@ export {
   encodeExecutionMode,
   KERNEL_ADDRESSES,
   KERNEL_V3_1_FACTORY_ADDRESS,
+  SENDER_CREATOR_V09_ADDRESS,
 } from './constants'
 // ============================================================================
 // Module types
@@ -118,6 +121,7 @@ export {
   // Constants
   PAYMASTER_RPC_METHODS,
   type PaymasterClientConfig,
+  PostOpMode,
   type SponsorPolicy,
   type SupportedToken,
 } from './paymaster'
