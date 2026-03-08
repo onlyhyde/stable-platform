@@ -257,6 +257,15 @@ export {
   verifySignature,
 } from './signature'
 
+// Mempool Monitoring
+export {
+  type MonitorConfig,
+  type StatusChangeCallback,
+  type TrackedUserOp,
+  type UserOpStatus,
+  UserOpMonitor,
+} from './mempool'
+
 // Simulation
 export {
   type HandleOpSimulationResult,
