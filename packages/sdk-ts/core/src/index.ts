@@ -252,6 +252,8 @@ export {
   createEIP7702GasStrategy,
   createEOAGasStrategy,
   createGasEstimator,
+  // Gas Price Oracle (dynamic fee estimation)
+  createGasPriceOracle,
   createGasStrategyRegistry,
   createSmartAccountGasStrategy,
   type ERC20GasEstimate,
@@ -260,7 +262,10 @@ export {
   type GasEstimator,
   type GasEstimatorConfig,
   type GasPriceInfo,
+  type GasPriceOracle,
+  type GasPriceOracleConfig,
   type GasPrices as GasStrategyPrices,
+  type GasPriceTiers,
   type GasStrategyConfig,
   type GasStrategyRegistry,
 } from './gas'
