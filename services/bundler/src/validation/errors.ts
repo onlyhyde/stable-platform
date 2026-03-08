@@ -1,5 +1,6 @@
 import type { Address, Hex } from 'viem'
 import { decodeAbiParameters, slice } from 'viem'
+import { parseValidationData as sdkParseValidationData } from '@stablenet/core'
 import { ERROR_SELECTORS } from '../abi'
 import type {
   AggregatorInfo,
@@ -523,22 +524,25 @@ export function decodeExecutionResultReturn(data: Hex): ExecutionResult {
 /**
  * Parse validation data (packed uint256 with aggregator, validAfter, validUntil)
  * Format: [aggregator (20 bytes)][validUntil (6 bytes)][validAfter (6 bytes)]
+ *
+ * Delegates to @stablenet/core's parseValidationData and maps field names:
+ * SDK uses `authorizer`, bundler uses `aggregator` (same concept in EIP-4337).
  */
 export function parseValidationData(validationData: bigint): ParsedValidationData {
-  // validAfter is the lower 48 bits
-  const validAfter = validationData & 0xffffffffffffn
+  const result = sdkParseValidationData(validationData)
 
-  // validUntil is the next 48 bits
-  const validUntil = (validationData >> 48n) & 0xffffffffffffn
-
-  // aggregator is the upper 160 bits
-  const aggregatorBigInt = validationData >> 96n
-  const aggregator = `0x${aggregatorBigInt.toString(16).padStart(40, '0')}` as Address
+  // Map SDK's authorizer to bundler's aggregator address format
+  let aggregator: Address
+  if (typeof result.authorizer === 'bigint') {
+    aggregator = `0x${result.authorizer.toString(16).padStart(40, '0')}` as Address
+  } else {
+    aggregator = result.authorizer
+  }
 
   return {
     aggregator,
-    validAfter,
-    validUntil,
+    validAfter: result.validAfter,
+    validUntil: result.validUntil,
   }
 }
 

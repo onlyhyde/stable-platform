@@ -1,7 +1,8 @@
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
-import { concat, decodeEventLog, encodeFunctionData, pad, toHex } from 'viem'
+import { decodeEventLog, encodeFunctionData } from 'viem'
 import { ENTRY_POINT_ABI, EVENT_SIGNATURES, HANDLE_AGGREGATED_OPS_ABI } from '../abi'
 import type { DependencyTracker, StorageAccessRecord } from '../mempool/dependencyTracker'
+import { packForContract } from '../shared/packUserOp'
 import type { Mempool } from '../mempool/mempool'
 import type { MempoolEntry, UserOperation } from '../types'
 import type { Logger } from '../utils/logger'
@@ -382,7 +383,7 @@ export class BundleExecutor {
     } else {
       // All non-aggregated - use handleOps
       const userOps = entries.map((e) => e.userOp)
-      const packedOps = userOps.map((op) => this.packUserOp(op))
+      const packedOps = userOps.map((op) => packForContract(op))
 
       data = encodeFunctionData({
         abi: ENTRY_POINT_ABI,
@@ -891,60 +892,6 @@ export class BundleExecutor {
   }
 
   /**
-   * Pack a UserOperation for EntryPoint v0.7
-   */
-  private packUserOp(userOp: UserOperation): {
-    sender: Address
-    nonce: bigint
-    initCode: Hex
-    callData: Hex
-    accountGasLimits: Hex
-    preVerificationGas: bigint
-    gasFees: Hex
-    paymasterAndData: Hex
-    signature: Hex
-  } {
-    // Build initCode
-    const initCode =
-      userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
-
-    // Build accountGasLimits (verificationGasLimit + callGasLimit)
-    const accountGasLimits = concat([
-      pad(toHex(userOp.verificationGasLimit), { size: 16 }),
-      pad(toHex(userOp.callGasLimit), { size: 16 }),
-    ]) as Hex
-
-    // Build gasFees (maxPriorityFeePerGas + maxFeePerGas)
-    const gasFees = concat([
-      pad(toHex(userOp.maxPriorityFeePerGas), { size: 16 }),
-      pad(toHex(userOp.maxFeePerGas), { size: 16 }),
-    ]) as Hex
-
-    // Build paymasterAndData
-    let paymasterAndData: Hex = '0x'
-    if (userOp.paymaster) {
-      paymasterAndData = concat([
-        userOp.paymaster,
-        pad(toHex(userOp.paymasterVerificationGasLimit ?? 0n), { size: 16 }),
-        pad(toHex(userOp.paymasterPostOpGasLimit ?? 0n), { size: 16 }),
-        userOp.paymasterData ?? '0x',
-      ]) as Hex
-    }
-
-    return {
-      sender: userOp.sender,
-      nonce: userOp.nonce,
-      initCode,
-      callData: userOp.callData,
-      accountGasLimits,
-      preVerificationGas: userOp.preVerificationGas,
-      gasFees,
-      paymasterAndData,
-      signature: userOp.signature,
-    }
-  }
-
-  /**
    * Separate entries by whether they have an aggregator
    */
   private separateByAggregator(entries: MempoolEntry[]): {
@@ -987,7 +934,7 @@ export class BundleExecutor {
     const opsPerAggregator: UserOpsPerAggregator[] = []
 
     for (const [aggregator, groupEntries] of groupedByAggregator) {
-      const packedOps = groupEntries.map((e) => this.packUserOp(e.userOp))
+      const packedOps = groupEntries.map((e) => packForContract(e.userOp))
 
       let aggregatedSignature: Hex
 
