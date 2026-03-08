@@ -1,3 +1,4 @@
+import { RpcError } from '@stablenet/types'
 import { Hono } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
 import { bodyLimit } from 'hono/body-limit'
@@ -383,20 +384,6 @@ async function handleJsonRpcRequest(req: unknown, config: HandlerConfig): Promis
             : 'Internal error',
       },
     }
-  }
-}
-
-/**
- * RPC Error class
- */
-class RpcError extends Error {
-  constructor(
-    message: string,
-    public code: number,
-    public data?: unknown
-  ) {
-    super(message)
-    this.name = 'RpcError'
   }
 }
 

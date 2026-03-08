@@ -1,3 +1,5 @@
+import type { PackedUserOperation } from '@stablenet/types'
+import { JSON_RPC_ERROR_CODES } from '@stablenet/types'
 import type { Address, Hex } from 'viem'
 
 /**
@@ -145,19 +147,10 @@ export interface UserOperationRpc {
 }
 
 /**
- * Packed UserOperation format
+ * Packed UserOperation format — aliased from @stablenet/types PackedUserOperation.
+ * The two types are structurally identical.
  */
-export interface PackedUserOperationRpc {
-  sender: Address
-  nonce: Hex
-  initCode: Hex
-  callData: Hex
-  accountGasLimits: Hex
-  preVerificationGas: Hex
-  gasFees: Hex
-  paymasterAndData: Hex
-  signature: Hex
-}
+export type PackedUserOperationRpc = PackedUserOperation
 
 /**
  * JSON-RPC request
@@ -304,14 +297,10 @@ export interface SponsorTracker {
 }
 
 /**
- * RPC error codes
+ * RPC error codes — standard codes from SDK + paymaster-specific codes
  */
 export const RPC_ERROR_CODES = {
-  INVALID_REQUEST: -32600,
-  METHOD_NOT_FOUND: -32601,
-  INVALID_PARAMS: -32602,
-  INTERNAL_ERROR: -32603,
-  PARSE_ERROR: -32700,
+  ...JSON_RPC_ERROR_CODES,
   // Paymaster specific
   REJECTED_BY_POLICY: -32001,
   UNSUPPORTED_CHAIN: -32002,

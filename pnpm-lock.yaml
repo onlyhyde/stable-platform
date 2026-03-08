@@ -922,6 +922,9 @@ importers:
       '@stablenet/core':
         specifier: workspace:*
         version: link:../../packages/sdk-ts/core
+      '@stablenet/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       hono:
         specifier: ^4.12.5
         version: 4.12.5
@@ -9080,22 +9083,6 @@ snapshots:
       porto: 0.2.35(@tanstack/react-query@5.90.21(react@19.2.3))(@types/react@19.2.9)(@wagmi/core@3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.9)(immer@11.1.4)(ox@0.14.0(typescript@5.9.3)(zod@4.3.6))(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)))(immer@11.1.4)(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(wagmi@3.5.0)
       typescript: 5.9.3
 
-  '@wagmi/core@3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.9)(immer@11.1.4)(ox@0.14.0(typescript@5.9.3)(zod@4.3.6))(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))':
-    dependencies:
-      eventemitter3: 5.0.1
-      mipd: 0.0.7(typescript@5.9.3)
-      viem: 2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
-      zustand: 5.0.0(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.4.0(react@19.2.3))
-    optionalDependencies:
-      '@tanstack/query-core': 5.90.20
-      ox: 0.14.0(typescript@5.9.3)(zod@4.3.6)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-      - react
-      - use-sync-external-store
-
   '@wagmi/core@3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.9)(immer@11.1.4)(ox@0.14.0(typescript@5.9.3)(zod@4.3.6))(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))':
     dependencies:
       eventemitter3: 5.0.1
@@ -13441,7 +13428,7 @@ snapshots:
     dependencies:
       '@tanstack/react-query': 5.90.21(react@19.2.3)
       '@wagmi/connectors': 7.2.1(342f7b36a0d23e35b0c9e9bd9ce76032)
-      '@wagmi/core': 3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.9)(immer@11.1.4)(ox@0.14.0(typescript@5.9.3)(zod@4.3.6))(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))
+      '@wagmi/core': 3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.9)(immer@11.1.4)(ox@0.14.0(typescript@5.9.3)(zod@4.3.6))(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))
       react: 19.2.3
       use-sync-external-store: 1.4.0(react@19.2.3)
       viem: 2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -13639,13 +13626,6 @@ snapshots:
 
   zod@4.3.6:
     optional: true
-
-  zustand@5.0.0(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.4.0(react@19.2.3)):
-    optionalDependencies:
-      '@types/react': 19.2.9
-      immer: 11.1.4
-      react: 19.2.3
-      use-sync-external-store: 1.4.0(react@19.2.3)
 
   zustand@5.0.0(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)):
     optionalDependencies:
