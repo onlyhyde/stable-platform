@@ -5,7 +5,8 @@ import {
   ENTRY_POINT_SIMULATIONS_BYTECODE,
 } from '../abi/entryPointSimulations'
 import { packForContract } from '../shared/packUserOp'
-import type { GasEstimation, UserOperation } from '../types'
+import type { UserOperation } from '@stablenet/types'
+import type { GasEstimation } from '../types'
 import type { Logger } from '../utils/logger'
 
 /**

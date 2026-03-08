@@ -5,7 +5,7 @@ import {
   ENTRY_POINT_SIMULATIONS_ABI,
   ENTRY_POINT_SIMULATIONS_BYTECODE,
 } from '../abi/entryPointSimulations'
-import type { UserOperation } from '../types'
+import type { UserOperation } from '@stablenet/types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import type { ExecutionResult, ISimulationValidator, StakeInfo, ValidationResult } from './types'

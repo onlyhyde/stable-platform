@@ -9,6 +9,7 @@ export { GasEstimator } from './gas/gasEstimator'
 export { Mempool } from './mempool/mempool'
 export { RpcServer } from './rpc/server'
 export { getUserOperationHash, packUserOperation, unpackUserOperation } from '@stablenet/core'
+export type { UserOperation } from '@stablenet/types'
 export type {
   BundlerConfig,
   GasEstimation,
@@ -19,7 +20,6 @@ export type {
   ReputationStatus,
   ReturnInfo,
   StakeInfo,
-  UserOperation,
   UserOperationReceipt,
   UserOperationStatus,
   ValidationResult,

@@ -1,12 +1,5 @@
-import type { Address, Hex } from 'viem'
-
-// Import and re-export UserOperation from SDK types (DRY — identical to previous local definition)
 import type { UserOperation } from '@stablenet/types'
-export type { UserOperation }
-
-// Import PackedUserOperation from SDK types as the contract-format type alias
-import type { PackedUserOperation as ContractPackedUserOperation } from '@stablenet/types'
-export type { ContractPackedUserOperation }
+import type { Address, Hex } from 'viem'
 
 /**
  * Bundler configuration
