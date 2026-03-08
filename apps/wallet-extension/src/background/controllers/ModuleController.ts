@@ -7,10 +7,10 @@
  * ERC-7579 module types
  */
 export const MODULE_TYPE = {
-  VALIDATOR: 1,
-  EXECUTOR: 2,
-  FALLBACK: 3,
-  HOOK: 4,
+  VALIDATOR: 1n,
+  EXECUTOR: 2n,
+  FALLBACK: 3n,
+  HOOK: 4n,
 } as const
 
 export type ModuleTypeValue = (typeof MODULE_TYPE)[keyof typeof MODULE_TYPE]

@@ -9,7 +9,7 @@ import type { Address, Hex } from 'viem'
 // Common Types
 // ============================================================================
 
-export type ModuleType = 1 | 2 | 3 | 4 // Validator, Executor, Fallback, Hook
+export type ModuleType = 1n | 2n | 3n | 4n // Validator, Executor, Fallback, Hook (uint256 per ERC-7579)
 
 export interface ModuleConfig {
   moduleAddress: Address

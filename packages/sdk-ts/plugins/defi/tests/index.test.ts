@@ -69,10 +69,10 @@ describe('@stablenet/plugin-defi', () => {
 
   describe('Constants', () => {
     it('should have correct MODULE_TYPE values', () => {
-      expect(MODULE_TYPE.VALIDATOR).toBe(1)
-      expect(MODULE_TYPE.EXECUTOR).toBe(2)
-      expect(MODULE_TYPE.FALLBACK).toBe(3)
-      expect(MODULE_TYPE.HOOK).toBe(4)
+      expect(MODULE_TYPE.VALIDATOR).toBe(1n)
+      expect(MODULE_TYPE.EXECUTOR).toBe(2n)
+      expect(MODULE_TYPE.FALLBACK).toBe(3n)
+      expect(MODULE_TYPE.HOOK).toBe(4n)
     })
 
     it('should have correct DEFAULTS values', () => {

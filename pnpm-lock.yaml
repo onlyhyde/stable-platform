@@ -166,6 +166,9 @@ importers:
       '@stablenet/core':
         specifier: workspace:*
         version: link:../../packages/sdk-ts/core
+      '@stablenet/plugin-defi':
+        specifier: workspace:*
+        version: link:../../packages/sdk-ts/plugins/defi
       '@stablenet/plugin-ecdsa':
         specifier: workspace:*
         version: link:../../packages/sdk-ts/plugins/ecdsa

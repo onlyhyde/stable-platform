@@ -19,6 +19,9 @@ import type { SponsorshipPolicy, SupportedToken, WalletToken } from '@/hooks'
 import { usePaymaster, useUserOp, useWallet, useWalletAssets } from '@/hooks'
 import { useBatchTransaction } from '@/hooks/useBatchTransaction'
 import { useEntryPointDeposit } from '@/hooks/useEntryPointDeposit'
+import { usePaymasterHealth } from '@/hooks/usePaymasterHealth'
+import { usePermit2Approval } from '@/hooks/usePermit2Approval'
+import { useTokenGasEstimate } from '@/hooks/useTokenGasEstimate'
 import { formatTokenAmount } from '@/lib/utils'
 
 type SelectedAsset = 'native' | WalletToken
@@ -38,6 +41,7 @@ export default function SendPage() {
     setSelectedTokenAddress: setPaymasterTokenAddress,
     selectedPolicyId: paymasterPolicyId,
     setSelectedPolicyId: setPaymasterPolicyId,
+    paymasterAddress,
     getSupportedTokens,
     getSponsorshipPolicies,
     checkSponsorshipEligibility,
@@ -47,6 +51,29 @@ export default function SendPage() {
 
   // EntryPoint deposit (for self-pay mode)
   const { formattedDeposit, fetchDeposit } = useEntryPointDeposit(address)
+
+  // Token gas estimate (for erc20/permit2 mode)
+  const {
+    formattedTokenCost,
+    estimate: tokenEstimate,
+    isLoading: isEstimatingGas,
+    estimateTokenCost,
+  } = useTokenGasEstimate()
+
+  // Paymaster health check
+  const { isHealthy: paymasterHealthy } = usePaymasterHealth()
+
+  // Permit2 approval (for permit2 paymaster mode)
+  const {
+    permitSignature,
+    isSigning: permit2Signing,
+    error: permit2Error,
+    requestPermit2Signature,
+    reset: resetPermit2,
+  } = usePermit2Approval()
+
+  // Deposit top-up state
+  const [isDepositing, setIsDepositing] = useState(false)
 
   const [recipient, setRecipient] = useState('')
   const [amount, setAmount] = useState('')
@@ -88,6 +115,25 @@ export default function SendPage() {
         .finally(() => setIsLoadingPolicies(false))
     }
   }, [paymasterType, address, checkSponsorshipEligibility, getSponsorshipPolicies])
+
+  // Reset Permit2 state when switching away from permit2 mode
+  useEffect(() => {
+    if (paymasterType !== 'permit2') {
+      resetPermit2()
+    }
+  }, [paymasterType, resetPermit2])
+
+  // Estimate token gas cost when token selected in erc20/permit2 mode
+  useEffect(() => {
+    if (
+      (paymasterType === 'erc20' || paymasterType === 'permit2') &&
+      paymasterTokenAddress &&
+      address
+    ) {
+      // Build a minimal userOp partial for estimation
+      estimateTokenCost(paymasterTokenAddress, { sender: address })
+    }
+  }, [paymasterType, paymasterTokenAddress, address, estimateTokenCost])
 
   // Batch transaction hook
   const {
@@ -151,6 +197,33 @@ export default function SendPage() {
 
   // Gas savings for batch mode
   const gasSavings = estimateGasSavings(Math.max(batchValidCount, 2), isNativeAsset)
+
+  async function handleDepositTopUp() {
+    if (!address) return
+    setIsDepositing(true)
+    try {
+      const { entryPoint } = await import('@/hooks/useSmartAccount').then((m) =>
+        m.getSmartAccountAddresses(8283)
+      )
+      const result = await sendTransaction(address, entryPoint, '0.01')
+      if (result?.success) {
+        addToast({
+          type: 'success',
+          title: 'Deposit Sent',
+          message: '0.01 ETH deposited to EntryPoint',
+        })
+        fetchDeposit()
+      }
+    } catch {
+      addToast({
+        type: 'error',
+        title: 'Deposit Failed',
+        message: 'Failed to top up EntryPoint deposit',
+      })
+    } finally {
+      setIsDepositing(false)
+    }
+  }
 
   async function handleSend() {
     if (!canSend || !address) return
@@ -430,9 +503,9 @@ export default function SendPage() {
             />
           )}
 
-          {/* Gas Info */}
-          <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-            {isBatchMode && batchValidCount >= 2 ? (
+          {/* Batch Gas Savings */}
+          {isBatchMode && batchValidCount >= 2 && (
+            <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
               <div className="space-y-1">
                 <div className="flex justify-between text-sm">
                   <span style={{ color: 'rgb(var(--muted-foreground))' }}>
@@ -462,24 +535,47 @@ export default function SendPage() {
                   </span>
                 </div>
               </div>
-            ) : (
-              <PaymasterSelector
-                selectedType={paymasterType}
-                onTypeChange={setPaymasterType}
-                supportedTokens={supportedTokens}
-                selectedTokenAddress={paymasterTokenAddress}
-                onTokenSelect={setPaymasterTokenAddress}
-                isLoadingTokens={isLoadingTokens}
-                sponsorshipPolicies={sponsorPolicies}
-                selectedPolicyId={paymasterPolicyId}
-                onPolicySelect={setPaymasterPolicyId}
-                isLoadingPolicies={isLoadingPolicies}
-                sponsorEligible={sponsorEligible}
-                depositBalance={formattedDeposit}
-                isLoading={paymasterLoading}
-                error={paymasterError?.message}
-              />
-            )}
+            </div>
+          )}
+
+          {/* Gas Payment Selection (always visible) */}
+          <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+            <PaymasterSelector
+              selectedType={paymasterType}
+              onTypeChange={setPaymasterType}
+              supportedTokens={supportedTokens}
+              selectedTokenAddress={paymasterTokenAddress}
+              onTokenSelect={setPaymasterTokenAddress}
+              isLoadingTokens={isLoadingTokens}
+              tokenGasEstimate={
+                tokenEstimate
+                  ? {
+                      formattedCost: formattedTokenCost ?? '0',
+                      symbol: tokenEstimate.tokenSymbol,
+                    }
+                  : null
+              }
+              isEstimatingGas={isEstimatingGas}
+              sponsorshipPolicies={sponsorPolicies}
+              selectedPolicyId={paymasterPolicyId}
+              onPolicySelect={setPaymasterPolicyId}
+              isLoadingPolicies={isLoadingPolicies}
+              sponsorEligible={sponsorEligible}
+              depositBalance={formattedDeposit}
+              onDepositTopUp={handleDepositTopUp}
+              isDepositing={isDepositing}
+              paymasterHealthy={paymasterHealthy}
+              permit2Signed={permitSignature !== null}
+              permit2Signing={permit2Signing}
+              onPermit2Sign={
+                paymasterTokenAddress
+                  ? () => requestPermit2Signature(paymasterTokenAddress, paymasterAddress)
+                  : undefined
+              }
+              permit2Error={permit2Error}
+              isLoading={paymasterLoading}
+              error={paymasterError?.message}
+            />
           </div>
 
           {/* Error */}

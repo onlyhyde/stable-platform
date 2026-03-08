@@ -15,6 +15,9 @@ interface PaymasterSelectorProps {
   selectedTokenAddress?: Address
   onTokenSelect?: (address: Address) => void
   isLoadingTokens?: boolean
+  // Token gas estimate
+  tokenGasEstimate?: { formattedCost: string; symbol: string } | null
+  isEstimatingGas?: boolean
   // Sponsor sub-selector
   sponsorshipPolicies?: SponsorshipPolicy[] | null
   selectedPolicyId?: string
@@ -24,6 +27,16 @@ interface PaymasterSelectorProps {
   sponsorIneligibleReason?: string
   // Self-pay (no paymaster)
   depositBalance?: string | null
+  /** Callback to deposit ETH to EntryPoint */
+  onDepositTopUp?: () => void
+  isDepositing?: boolean
+  // Health
+  paymasterHealthy?: boolean | null
+  // Permit2
+  permit2Signed?: boolean
+  permit2Signing?: boolean
+  onPermit2Sign?: () => void
+  permit2Error?: string | null
   // State
   isLoading?: boolean
   error?: string | null
@@ -52,11 +65,15 @@ function TokenSubSelector({
   selectedAddress,
   onSelect,
   isLoading,
+  gasEstimate,
+  isEstimatingGas,
 }: {
   tokens?: SupportedToken[] | null
   selectedAddress?: Address
   onSelect?: (address: Address) => void
   isLoading?: boolean
+  gasEstimate?: { formattedCost: string; symbol: string } | null
+  isEstimatingGas?: boolean
 }) {
   if (isLoading) {
     return (
@@ -121,6 +138,42 @@ function TokenSubSelector({
           </button>
         ))}
       </div>
+      {/* Token gas estimate */}
+      {selectedAddress && (
+        <div
+          className="flex items-center justify-between p-2 rounded-lg"
+          style={{ backgroundColor: 'rgb(var(--secondary))' }}
+        >
+          <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            Estimated Gas Cost
+          </span>
+          {isEstimatingGas ? (
+            <div className="flex items-center gap-1">
+              <div
+                className="w-3 h-3 border-2 rounded-full animate-spin"
+                style={{
+                  borderColor: 'rgb(var(--muted-foreground))',
+                  borderTopColor: 'transparent',
+                }}
+              />
+              <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Estimating...
+              </span>
+            </div>
+          ) : gasEstimate ? (
+            <span
+              className="text-xs font-mono font-medium"
+              style={{ color: 'rgb(var(--foreground))' }}
+            >
+              ~{gasEstimate.formattedCost} {gasEstimate.symbol}
+            </span>
+          ) : (
+            <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              --
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -256,6 +309,8 @@ export function PaymasterSelector({
   selectedTokenAddress,
   onTokenSelect,
   isLoadingTokens,
+  tokenGasEstimate,
+  isEstimatingGas,
   sponsorshipPolicies,
   selectedPolicyId,
   onPolicySelect,
@@ -263,14 +318,39 @@ export function PaymasterSelector({
   sponsorEligible,
   sponsorIneligibleReason,
   depositBalance,
+  onDepositTopUp,
+  isDepositing,
+  paymasterHealthy,
+  permit2Signed,
+  permit2Signing,
+  onPermit2Sign,
+  permit2Error,
   isLoading: _isLoading,
   error,
 }: PaymasterSelectorProps) {
   return (
     <div className="space-y-3">
-      <span className="block text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-        Gas Payment
-      </span>
+      <div className="flex items-center justify-between">
+        <span className="block text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+          Gas Payment
+        </span>
+        {/* Paymaster health indicator */}
+        {paymasterHealthy !== null && paymasterHealthy !== undefined && (
+          <span className="flex items-center gap-1 text-xs">
+            <span
+              className="w-2 h-2 rounded-full inline-block"
+              style={{
+                backgroundColor: paymasterHealthy
+                  ? 'rgb(var(--success, 34 197 94))'
+                  : 'rgb(var(--destructive))',
+              }}
+            />
+            <span style={{ color: 'rgb(var(--muted-foreground))' }}>
+              {paymasterHealthy ? 'Paymaster Online' : 'Paymaster Offline'}
+            </span>
+          </span>
+        )}
+      </div>
 
       {/* 2x2 Type Grid */}
       <div className="grid grid-cols-2 gap-2">
@@ -306,12 +386,35 @@ export function PaymasterSelector({
       {/* Self-Pay deposit info */}
       {selectedType === 'none' && depositBalance != null && (
         <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            EntryPoint Deposit
-          </p>
-          <p className="font-medium font-mono" style={{ color: 'rgb(var(--foreground))' }}>
-            {depositBalance} ETH
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                EntryPoint Deposit
+              </p>
+              <p className="font-medium font-mono" style={{ color: 'rgb(var(--foreground))' }}>
+                {depositBalance} ETH
+              </p>
+            </div>
+            {onDepositTopUp && (
+              <button
+                type="button"
+                onClick={onDepositTopUp}
+                disabled={isDepositing}
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-50"
+                style={{
+                  backgroundColor: 'rgb(var(--primary))',
+                  color: 'rgb(var(--primary-foreground))',
+                }}
+              >
+                {isDepositing ? 'Depositing...' : 'Top Up'}
+              </button>
+            )}
+          </div>
+          {depositBalance === '0' && (
+            <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
+              No deposit — you need to fund your EntryPoint deposit to send transactions
+            </p>
+          )}
         </div>
       )}
 
@@ -322,7 +425,55 @@ export function PaymasterSelector({
           selectedAddress={selectedTokenAddress}
           onSelect={onTokenSelect}
           isLoading={isLoadingTokens}
+          gasEstimate={tokenGasEstimate}
+          isEstimatingGas={isEstimatingGas}
         />
+      )}
+
+      {/* Permit2 Approval */}
+      {selectedType === 'permit2' && selectedTokenAddress && onPermit2Sign && (
+        <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+          {permit2Signed ? (
+            <div className="flex items-center gap-2">
+              <span
+                className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                style={{
+                  backgroundColor: 'rgb(var(--success, 34 197 94) / 0.2)',
+                  color: 'rgb(var(--success, 34 197 94))',
+                }}
+              >
+                ✓
+              </span>
+              <span className="text-sm" style={{ color: 'rgb(var(--success, 34 197 94))' }}>
+                Permit2 signature approved
+              </span>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Permit2 requires a one-time signature to authorize the paymaster to use your tokens
+                for gas payment. No on-chain transaction needed.
+              </p>
+              <button
+                type="button"
+                onClick={onPermit2Sign}
+                disabled={permit2Signing}
+                className="w-full px-3 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                style={{
+                  backgroundColor: 'rgb(var(--primary))',
+                  color: 'rgb(var(--primary-foreground))',
+                }}
+              >
+                {permit2Signing ? 'Waiting for signature...' : 'Sign Permit2 Approval'}
+              </button>
+              {permit2Error && (
+                <p className="text-xs" style={{ color: 'rgb(var(--destructive))' }}>
+                  {permit2Error}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Sponsor Sub-selector */}

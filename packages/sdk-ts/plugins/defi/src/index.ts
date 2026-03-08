@@ -123,12 +123,12 @@ export {
 // Constants
 // ============================================================================
 
-/** ERC-7579 Module Types */
+/** ERC-7579 Module Types (uint256 per spec) */
 export const MODULE_TYPE = {
-  VALIDATOR: 1,
-  EXECUTOR: 2,
-  FALLBACK: 3,
-  HOOK: 4,
+  VALIDATOR: 1n,
+  EXECUTOR: 2n,
+  FALLBACK: 3n,
+  HOOK: 4n,
 } as const
 
 /** Default configuration values */
