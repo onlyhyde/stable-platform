@@ -17,6 +17,7 @@
   "dependencies": {
     "@stablenet/contracts": "workspace:*",
     "@stablenet/core": "workspace:*",
+    "@stablenet/types": "workspace:*",
     "@stablenet/plugin-ecdsa": "workspace:*",
     "@stablenet/plugin-stealth": "workspace:*",
     "@stablenet/wallet-sdk": "workspace:*",

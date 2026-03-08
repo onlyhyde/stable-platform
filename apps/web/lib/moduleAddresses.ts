@@ -5,8 +5,9 @@ import {
   getRecurringPaymentExecutor,
   getUniswapRouter,
 } from '@stablenet/contracts'
+import type { ModuleType } from '@stablenet/types'
+import { MODULE_TYPE } from '@stablenet/types'
 import type { Address, Hex } from 'viem'
-import { MODULE_TYPES, type ModuleType } from '@/hooks/useModule'
 
 // ============================================================================
 // Contract Addresses (sourced from @stablenet/contracts, chain 8283)
@@ -40,42 +41,42 @@ export interface ModuleRegistryEntry {
 export const MODULE_REGISTRY: Record<string, ModuleRegistryEntry> = {
   'ecdsa-validator': {
     address: ECDSA_VALIDATOR,
-    moduleType: MODULE_TYPES.VALIDATOR,
+    moduleType: MODULE_TYPE.VALIDATOR,
     defaultInitData: '0x',
   },
   'session-key-validator': {
     address: SESSION_KEY_VALIDATOR,
-    moduleType: MODULE_TYPES.VALIDATOR,
+    moduleType: MODULE_TYPE.VALIDATOR,
     defaultInitData: '0x',
   },
   'subscription-executor': {
     address: SUBSCRIPTION_EXECUTOR,
-    moduleType: MODULE_TYPES.EXECUTOR,
+    moduleType: MODULE_TYPE.EXECUTOR,
     defaultInitData: '0x',
   },
   'spending-limit-hook': {
     address: SPENDING_LIMIT_HOOK,
-    moduleType: MODULE_TYPES.HOOK,
+    moduleType: MODULE_TYPE.HOOK,
     defaultInitData: '0x',
   },
   'social-recovery': {
     address: SOCIAL_RECOVERY_VALIDATOR,
-    moduleType: MODULE_TYPES.VALIDATOR,
+    moduleType: MODULE_TYPE.VALIDATOR,
     defaultInitData: '0x',
   },
   'dex-swap-executor': {
     address: DEX_SWAP_EXECUTOR,
-    moduleType: MODULE_TYPES.EXECUTOR,
+    moduleType: MODULE_TYPE.EXECUTOR,
     defaultInitData: '0x',
   },
   'stealth-address-fallback': {
     address: STEALTH_ADDRESS_FALLBACK,
-    moduleType: MODULE_TYPES.FALLBACK,
+    moduleType: MODULE_TYPE.FALLBACK,
     defaultInitData: '0x',
   },
   'multisig-validator': {
     address: MULTISIG_VALIDATOR,
-    moduleType: MODULE_TYPES.VALIDATOR,
+    moduleType: MODULE_TYPE.VALIDATOR,
     defaultInitData: '0x',
   },
 } as const

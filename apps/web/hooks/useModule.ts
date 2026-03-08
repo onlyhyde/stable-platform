@@ -1,22 +1,24 @@
 'use client'
 
+import type { ModuleType } from '@stablenet/types'
+import { MODULE_TYPE, getModuleTypeName as sdkGetModuleTypeName } from '@stablenet/types'
 import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData } from 'viem'
 import { useStableNetContext } from '@/providers'
 
 // ============================================================================
-// Types
+// Types — ModuleType and MODULE_TYPE from @stablenet/types
 // ============================================================================
 
-export type ModuleType = 1n | 2n | 3n | 4n
+export type { ModuleType }
+export { MODULE_TYPE }
 
-export const MODULE_TYPES = {
-  VALIDATOR: 1n,
-  EXECUTOR: 2n,
-  FALLBACK: 3n,
-  HOOK: 4n,
-} as const
+/**
+ * Backward-compatible alias: existing consumers import MODULE_TYPES (plural).
+ * Points to the canonical MODULE_TYPE from SDK.
+ */
+export const MODULE_TYPES = MODULE_TYPE
 
 export interface ModuleInfo {
   address: Address
@@ -260,22 +262,12 @@ export function useModule() {
   )
 
   /**
-   * Get module type name
+   * Get module type name — delegates to @stablenet/types
    */
-  const getModuleTypeName = useCallback((moduleType: ModuleType): string => {
-    switch (moduleType) {
-      case MODULE_TYPES.VALIDATOR:
-        return 'Validator'
-      case MODULE_TYPES.EXECUTOR:
-        return 'Executor'
-      case MODULE_TYPES.FALLBACK:
-        return 'Fallback'
-      case MODULE_TYPES.HOOK:
-        return 'Hook'
-      default:
-        return 'Unknown'
-    }
-  }, [])
+  const getModuleTypeName = useCallback(
+    (moduleType: ModuleType): string => sdkGetModuleTypeName(moduleType),
+    []
+  )
 
   // ============================================================================
   // Validator Init Data Encoders

@@ -1,5 +1,6 @@
 'use client'
 
+import { MODULE_TYPE } from '@stablenet/types'
 import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'
 import {
@@ -11,7 +12,7 @@ import {
   Input,
   useToast,
 } from '@/components/common'
-import { MODULE_TYPES, useModule } from '@/hooks/useModule'
+import { useModule } from '@/hooks/useModule'
 import { useSmartAccount } from '@/hooks/useSmartAccount'
 
 const ACCOUNT_NAME_KEY = 'stablenet_account_name'
@@ -51,7 +52,7 @@ export function AccountSettingsCard({
 
       const ecdsaInstalled = await isModuleInstalled(
         addr,
-        MODULE_TYPES.VALIDATOR,
+        MODULE_TYPE.VALIDATOR,
         contracts.ecdsaValidator as Address
       )
       if (ecdsaInstalled) modules.push('ECDSA Validator')

@@ -172,6 +172,9 @@ importers:
       '@stablenet/plugin-stealth':
         specifier: workspace:*
         version: link:../../packages/sdk-ts/plugins/stealth
+      '@stablenet/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@stablenet/wallet-sdk':
         specifier: workspace:*
         version: link:../../packages/wallet-sdk

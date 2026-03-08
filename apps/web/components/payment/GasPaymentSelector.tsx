@@ -64,7 +64,7 @@ export function GasPaymentSelector({
               key={mode}
               type="button"
               data-testid={`gas-mode-${mode}`}
-              aria-pressed={isSelected}
+              aria-selected={isSelected}
               aria-disabled={!isAvailable ? 'true' : undefined}
               onClick={() => {
                 if (isAvailable) onModeChange(mode)

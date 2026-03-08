@@ -1,5 +1,6 @@
 'use client'
 
+import type { PaymasterData, PaymasterStubData } from '@stablenet/types'
 import {
   getPaymasterData as sdkGetPaymasterData,
   getPaymasterStubData as sdkGetPaymasterStubData,
@@ -9,8 +10,10 @@ import type { Address, Hex } from 'viem'
 import { useStableNetContext } from '@/providers'
 
 // ============================================================================
-// Types
+// Types — PaymasterStubData and PaymasterData from @stablenet/types
 // ============================================================================
+
+export type { PaymasterData, PaymasterStubData }
 
 export type PaymasterType = 'none' | 'verifying' | 'sponsor' | 'erc20' | 'permit2'
 
@@ -21,18 +24,6 @@ export interface PaymasterConfig {
   tokenAddress?: Address
   /** For sponsor paymaster */
   policyId?: string
-}
-
-export interface PaymasterStubData {
-  paymaster: Address
-  paymasterData: Hex
-  paymasterVerificationGasLimit: bigint
-  paymasterPostOpGasLimit: bigint
-}
-
-export interface PaymasterData {
-  paymaster: Address
-  paymasterData: Hex
 }
 
 export interface SponsorshipPolicy {

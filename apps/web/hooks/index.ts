@@ -17,7 +17,7 @@ export type {
   ModuleType,
   UninstallModuleParams,
 } from './useModule'
-export { MODULE_TYPES, useModule } from './useModule'
+export { MODULE_TYPE, MODULE_TYPES, useModule } from './useModule'
 export type {
   ModuleInstallRequest,
   ModuleInstallResult,
