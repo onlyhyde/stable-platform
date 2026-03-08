@@ -1,5 +1,7 @@
 // Types
 
+export { getUserOperationHash, packUserOperation, unpackUserOperation } from '@stablenet/core'
+export type { UserOperation } from '@stablenet/types'
 // ABI
 export { ENTRY_POINT_ABI, ERROR_SELECTORS, EVENT_SIGNATURES } from './abi'
 export { DEFAULT_CONFIG, NETWORK_PRESETS, parseConfig } from './cli/config'
@@ -8,8 +10,6 @@ export { GasEstimator } from './gas/gasEstimator'
 // Components
 export { Mempool } from './mempool/mempool'
 export { RpcServer } from './rpc/server'
-export { getUserOperationHash, packUserOperation, unpackUserOperation } from '@stablenet/core'
-export type { UserOperation } from '@stablenet/types'
 export type {
   BundlerConfig,
   GasEstimation,

@@ -214,6 +214,7 @@ export const SessionKeyCard: FC<SessionKeyCardProps> = ({
           >
             {sessionKey.permissions.map((perm, idx) => (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: same target+selector can appear multiple times
                 key={`${perm.target}-${perm.selector}-${idx}`}
                 className="flex items-center justify-between text-xs"
               >

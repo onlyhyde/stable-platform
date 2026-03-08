@@ -110,6 +110,7 @@ export function SeedPhrase({ mnemonic, onConfirm, onBack }: SeedPhraseProps) {
           >
             {words.map((word, index) => (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: mnemonic words can repeat
                 key={`${index}-${word}`}
                 className="flex items-center gap-2 rounded-lg px-3 py-2"
                 style={{

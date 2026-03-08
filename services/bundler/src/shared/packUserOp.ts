@@ -1,6 +1,6 @@
+import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex } from 'viem'
 import { concat, pad, toHex } from 'viem'
-import type { UserOperation } from '@stablenet/types'
 
 /**
  * Packed UserOperation in the contract format expected by EntryPoint v0.7.

@@ -7,8 +7,8 @@
  */
 
 import { parseGwei } from 'viem'
-import { createJsonRpcClient, type JsonRpcClient } from '../rpc'
 import type { RpcProvider } from '../providers'
+import { createJsonRpcClient, type JsonRpcClient } from '../rpc'
 import type { GasPrices } from './strategies/types'
 
 // ============================================================================
@@ -150,22 +150,18 @@ export function createGasPriceOracle(config: GasPriceOracleConfig): GasPriceOrac
 
   // Create JSON-RPC client for eth_feeHistory (not on RpcProvider interface)
   const rpcClient: JsonRpcClient =
-    injectedRpcClient ??
-    createJsonRpcClient({ url: provider.rpcUrl })
+    injectedRpcClient ?? createJsonRpcClient({ url: provider.rpcUrl })
 
   /**
    * Fetch fee history from the node via eth_feeHistory
    */
   async function fetchFeeHistory(): Promise<FeeHistoryResponse | null> {
     try {
-      const result = await rpcClient.request<FeeHistoryResponse>(
-        'eth_feeHistory',
-        [
-          `0x${blockSampleSize.toString(16)}`,
-          'latest',
-          percentiles,
-        ]
-      )
+      const result = await rpcClient.request<FeeHistoryResponse>('eth_feeHistory', [
+        `0x${blockSampleSize.toString(16)}`,
+        'latest',
+        percentiles,
+      ])
       return result
     } catch {
       // eth_feeHistory not supported on this chain/node
@@ -176,10 +172,7 @@ export function createGasPriceOracle(config: GasPriceOracleConfig): GasPriceOrac
   /**
    * Build gas prices for a single tier from fee history data
    */
-  function buildTierFromHistory(
-    baseFees: bigint[],
-    rewards: bigint[],
-  ): GasPrices {
+  function buildTierFromHistory(baseFees: bigint[], rewards: bigint[]): GasPrices {
     // Use latest base fee (last element includes the next block's base fee)
     const latestBaseFee = baseFees[baseFees.length - 1] ?? 0n
     const medianReward = median(rewards)
@@ -241,9 +234,9 @@ export function createGasPriceOracle(config: GasPriceOracleConfig): GasPriceOrac
     // Derive priority fees from gas price when no fee history is available
     const estimatedPriorityFee = gasPrice > baseFee ? gasPrice - baseFee : minPriorityFee
 
-    const slowPriority = clamp(estimatedPriorityFee * 80n / 100n, minPriorityFee, maxPriorityFee)
+    const slowPriority = clamp((estimatedPriorityFee * 80n) / 100n, minPriorityFee, maxPriorityFee)
     const standardPriority = clamp(estimatedPriorityFee, minPriorityFee, maxPriorityFee)
-    const fastPriority = clamp(estimatedPriorityFee * 130n / 100n, minPriorityFee, maxPriorityFee)
+    const fastPriority = clamp((estimatedPriorityFee * 130n) / 100n, minPriorityFee, maxPriorityFee)
 
     function buildFromPriority(priorityFee: bigint): GasPrices {
       const maxFee = baseFee * 2n + priorityFee

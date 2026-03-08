@@ -1,6 +1,6 @@
+import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex } from 'viem'
 import type { Mempool } from '../mempool/mempool'
-import type { UserOperation } from '@stablenet/types'
 import type { BundlerConfig } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { UserOperationValidator } from '../validation'

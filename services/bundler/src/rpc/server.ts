@@ -1,5 +1,7 @@
 import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
+import { getUserOperationHash, unpackUserOperation } from '@stablenet/core'
+import type { UserOperation } from '@stablenet/types'
 import Fastify, { type FastifyInstance } from 'fastify'
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
 import { DEFAULT_CORS_ORIGINS } from '../cli/config'
@@ -8,13 +10,11 @@ import { BundleExecutor } from '../executor/bundleExecutor'
 import { GasEstimator } from '../gas/gasEstimator'
 import { DependencyTracker } from '../mempool/dependencyTracker'
 import { Mempool } from '../mempool/mempool'
-import type { UserOperation } from '@stablenet/types'
 import type { BundlerConfig, UserOperationReceipt } from '../types'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import { AggregatorValidator, UserOperationValidator } from '../validation'
 import { ReputationPersistence } from '../validation/reputationPersistence'
-import { getUserOperationHash, unpackUserOperation } from '@stablenet/core'
 import { DebugHandlers } from './debugHandlers'
 
 /**
@@ -623,10 +623,10 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
   /**
    * Format a UserOperationReceipt from transaction receipt and UserOp metadata
    */
-  // biome-ignore lint/suspicious/noExplicitAny: viem log types are complex
   private formatUserOpReceipt(
     userOpHash: Hex,
     entryPoint: Address,
+    // biome-ignore lint/suspicious/noExplicitAny: viem TransactionReceipt type is complex
     txReceipt: any,
     meta: {
       sender: Address
@@ -641,6 +641,7 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
     const toHexStr = (v: bigint | number): Hex => `0x${BigInt(v).toString(16)}` as Hex
     // biome-ignore lint/suspicious/noExplicitAny: viem log types are complex
     const mapLogs = (logs: any[]) =>
+      // biome-ignore lint/suspicious/noExplicitAny: viem log types are complex
       logs.map((log: any) => ({
         logIndex: toHexStr(log.logIndex ?? 0),
         transactionIndex: toHexStr(log.transactionIndex ?? 0),

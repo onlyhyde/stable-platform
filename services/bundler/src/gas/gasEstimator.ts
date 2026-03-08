@@ -1,3 +1,4 @@
+import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex, PublicClient } from 'viem'
 import { encodeAbiParameters, encodeFunctionData, hexToBytes, slice as sliceHex } from 'viem'
 import {
@@ -5,7 +6,6 @@ import {
   ENTRY_POINT_SIMULATIONS_BYTECODE,
 } from '../abi/entryPointSimulations'
 import { packForContract } from '../shared/packUserOp'
-import type { UserOperation } from '@stablenet/types'
 import type { GasEstimation } from '../types'
 import type { Logger } from '../utils/logger'
 

@@ -9,6 +9,6 @@ export {
   type MonitorConfig,
   type StatusChangeCallback,
   type TrackedUserOp,
-  type UserOpStatus,
   UserOpMonitor,
+  type UserOpStatus,
 } from './monitor'

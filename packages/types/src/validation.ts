@@ -62,7 +62,8 @@ export function packValidationData(data: ValidationData): bigint {
  * @see https://eips.ethereum.org/EIPS/eip-4337
  */
 export function unpackValidationData(packed: bigint): ValidationData {
-  const authorizer = `0x${((packed >> 96n) & 0xffffffffffffffffffffffffffffffffffffffffn).toString(16).padStart(40, '0')}` as Address
+  const authorizer =
+    `0x${((packed >> 96n) & 0xffffffffffffffffffffffffffffffffffffffffn).toString(16).padStart(40, '0')}` as Address
   const validUntil = (packed >> 48n) & 0xffffffffffffn
   const validAfter = packed & 0xffffffffffffn
   return { authorizer, validUntil, validAfter }
@@ -72,10 +73,7 @@ export function unpackValidationData(packed: bigint): ValidationData {
  * Check if validation data uses block number mode (v0.9)
  */
 export function isBlockNumberMode(data: ValidationData): boolean {
-  return (
-    data.validAfter >= VALIDITY_BLOCK_MODE_FLAG &&
-    data.validUntil >= VALIDITY_BLOCK_MODE_FLAG
-  )
+  return data.validAfter >= VALIDITY_BLOCK_MODE_FLAG && data.validUntil >= VALIDITY_BLOCK_MODE_FLAG
 }
 
 /**

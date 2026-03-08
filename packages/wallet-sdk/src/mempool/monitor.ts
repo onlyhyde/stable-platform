@@ -13,12 +13,7 @@ import type { UserOperationReceipt } from '../rpc'
 // Types
 // ============================================================================
 
-export type UserOpStatus =
-  | 'pending'
-  | 'submitted'
-  | 'included'
-  | 'failed'
-  | 'dropped'
+export type UserOpStatus = 'pending' | 'submitted' | 'included' | 'failed' | 'dropped'
 
 export interface MonitorConfig {
   /** Bundler JSON-RPC endpoint URL */
@@ -60,11 +55,7 @@ interface JsonRpcResponse<T> {
 
 let rpcId = 0
 
-async function bundlerRpc<T>(
-  url: string,
-  method: string,
-  params: unknown[]
-): Promise<T | null> {
+async function bundlerRpc<T>(url: string, method: string, params: unknown[]): Promise<T | null> {
   rpcId += 1
   const response = await fetch(url, {
     method: 'POST',
@@ -93,11 +84,7 @@ async function bundlerRpc<T>(
 // UserOpMonitor
 // ============================================================================
 
-const TERMINAL_STATUSES: ReadonlySet<UserOpStatus> = new Set([
-  'included',
-  'failed',
-  'dropped',
-])
+const TERMINAL_STATUSES: ReadonlySet<UserOpStatus> = new Set(['included', 'failed', 'dropped'])
 
 /**
  * Monitors pending ERC-4337 UserOperations by polling the bundler.
@@ -224,20 +211,13 @@ export class UserOpMonitor {
     const entries = Array.from(this.tracked.entries())
 
     // Poll non-terminal entries for receipt
-    const pending = entries.filter(
-      ([, op]) => !TERMINAL_STATUSES.has(op.status)
-    )
-    await Promise.all(
-      pending.map(([hash]) => this.pollUserOp(hash))
-    )
+    const pending = entries.filter(([, op]) => !TERMINAL_STATUSES.has(op.status))
+    await Promise.all(pending.map(([hash]) => this.pollUserOp(hash)))
 
     // Cleanup completed ops past TTL
     const now = Date.now()
     for (const [hash, op] of entries) {
-      if (
-        TERMINAL_STATUSES.has(op.status) &&
-        now - op.updatedAt > this.config.completedTTL
-      ) {
+      if (TERMINAL_STATUSES.has(op.status) && now - op.updatedAt > this.config.completedTTL) {
         this.tracked.delete(hash)
       }
     }
@@ -265,11 +245,7 @@ export class UserOpMonitor {
     }
   }
 
-  private notifyStatusChange(
-    hash: Hex,
-    oldStatus: UserOpStatus,
-    newStatus: UserOpStatus
-  ): void {
+  private notifyStatusChange(hash: Hex, oldStatus: UserOpStatus, newStatus: UserOpStatus): void {
     for (const callback of this.callbacks) {
       try {
         callback(hash, oldStatus, newStatus)

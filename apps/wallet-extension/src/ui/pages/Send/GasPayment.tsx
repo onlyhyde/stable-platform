@@ -186,6 +186,7 @@ export function GasPaymentSelector({
       <div className="payment-options space-y-2">
         {paymentOptions.map((option, index) => (
           <PaymentOptionCard
+            // biome-ignore lint/suspicious/noArrayIndexKey: type alone may not be unique
             key={`${option.type}-${index}`}
             option={option}
             isSelected={

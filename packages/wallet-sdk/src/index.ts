@@ -220,6 +220,14 @@ export {
   PAYMASTER_POST_OP_GAS,
   PAYMASTER_VERIFICATION_GAS,
 } from './gas'
+// Mempool Monitoring
+export {
+  type MonitorConfig,
+  type StatusChangeCallback,
+  type TrackedUserOp,
+  UserOpMonitor,
+  type UserOpStatus,
+} from './mempool'
 // Nonce Management
 export { encodeNonceKey, getNonce, parseNonce } from './nonce'
 // Paymaster Client
@@ -248,7 +256,6 @@ export {
   type PaymasterSelectorConfig,
   PaymasterSelectorError,
 } from './paymaster/selector'
-
 // ERC-1271 Signature Verification
 export {
   isSmartContractAccount,
@@ -256,15 +263,6 @@ export {
   type SignatureVerificationResult,
   verifySignature,
 } from './signature'
-
-// Mempool Monitoring
-export {
-  type MonitorConfig,
-  type StatusChangeCallback,
-  type TrackedUserOp,
-  type UserOpStatus,
-  UserOpMonitor,
-} from './mempool'
 
 // Simulation
 export {

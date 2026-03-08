@@ -1,6 +1,6 @@
+import { parseValidationData as sdkParseValidationData } from '@stablenet/core'
 import type { Address, Hex } from 'viem'
 import { decodeAbiParameters, slice } from 'viem'
-import { parseValidationData as sdkParseValidationData } from '@stablenet/core'
 import { ERROR_SELECTORS } from '../abi'
 import type {
   AggregatorInfo,

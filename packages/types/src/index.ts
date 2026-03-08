@@ -50,13 +50,13 @@ export {
   type CallType,
   decodeExecutionMode,
   ECDSA_VALIDATOR_ADDRESS,
-  encodeExecutionMode,
   ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   EXEC_MODE,
   EXEC_TYPE,
   type ExecType,
   type ExecutionMode,
+  encodeExecutionMode,
   KERNEL_ADDRESSES,
   KERNEL_V3_1_FACTORY_ADDRESS,
 } from './constants'
@@ -130,20 +130,6 @@ export type {
 } from './smartAccount'
 export * from './token'
 // ============================================================================
-// EIP-4337 Validation Data types
-// ============================================================================
-export {
-  isBlockNumberMode,
-  isValidationFailed,
-  packValidationData,
-  SIG_VALIDATION_FAILED,
-  SIG_VALIDATION_SUCCESS,
-  unpackValidationData,
-  type ValidationData,
-  VALIDITY_BLOCK_MODE_FLAG,
-  VALIDITY_BLOCK_RANGE_MASK,
-} from './validation'
-// ============================================================================
 // Transaction types (new)
 // ============================================================================
 export {
@@ -180,3 +166,17 @@ export type {
   UserOperationReceipt,
   UserOperationStatus,
 } from './userOperation'
+// ============================================================================
+// EIP-4337 Validation Data types
+// ============================================================================
+export {
+  isBlockNumberMode,
+  isValidationFailed,
+  packValidationData,
+  SIG_VALIDATION_FAILED,
+  SIG_VALIDATION_SUCCESS,
+  unpackValidationData,
+  VALIDITY_BLOCK_MODE_FLAG,
+  VALIDITY_BLOCK_RANGE_MASK,
+  type ValidationData,
+} from './validation'

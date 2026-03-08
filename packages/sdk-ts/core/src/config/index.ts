@@ -28,11 +28,11 @@ export {
 export {
   // Base gas limits
   BASE_TRANSFER_GAS,
+  CALLDATA_NONZERO_BYTE_COST,
+  CALLDATA_ZERO_BYTE_COST,
   calculateCalldataCost,
   calculatePreVerificationGas,
   calculateUnusedGasPenalty,
-  CALLDATA_NONZERO_BYTE_COST,
-  CALLDATA_ZERO_BYTE_COST,
   DEFAULT_CALL_GAS_LIMIT,
   DEFAULT_MAX_FEE_PER_GAS,
   DEFAULT_PRE_VERIFICATION_GAS,

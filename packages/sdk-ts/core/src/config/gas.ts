@@ -236,10 +236,7 @@ export function calculateCalldataCost(calldataHex: string): bigint {
  * @param calldataHex - Optional serialized UserOp hex for L1 cost calculation
  * @returns Adjusted preVerificationGas
  */
-export function calculatePreVerificationGas(
-  chainId: number,
-  calldataHex?: string
-): bigint {
+export function calculatePreVerificationGas(chainId: number, calldataHex?: string): bigint {
   const base = DEFAULT_PRE_VERIFICATION_GAS
 
   if (!isL2Chain(chainId) || !calldataHex) {
