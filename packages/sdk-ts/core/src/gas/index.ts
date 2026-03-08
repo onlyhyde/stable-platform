@@ -13,6 +13,14 @@ export {
   type GasPriceInfo,
 } from './gasEstimator'
 
+// Gas Price Oracle (dynamic fee estimation via eth_feeHistory)
+export {
+  createGasPriceOracle,
+  type GasPriceOracle,
+  type GasPriceOracleConfig,
+  type GasPriceTiers,
+} from './oracle'
+
 // Strategy Pattern exports (OCP: allows custom strategy registration)
 export {
   createEIP7702GasStrategy,
