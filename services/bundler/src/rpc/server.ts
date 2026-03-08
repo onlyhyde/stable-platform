@@ -13,8 +13,8 @@ import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import { AggregatorValidator, UserOperationValidator } from '../validation'
 import { ReputationPersistence } from '../validation/reputationPersistence'
+import { getUserOperationHash, unpackUserOperation } from '@stablenet/core'
 import { DebugHandlers } from './debugHandlers'
-import { getUserOperationHash, unpackUserOperation } from './utils'
 
 /**
  * JSON-RPC request

@@ -8,7 +8,7 @@ export { GasEstimator } from './gas/gasEstimator'
 // Components
 export { Mempool } from './mempool/mempool'
 export { RpcServer } from './rpc/server'
-export { getUserOperationHash, packUserOperation, unpackUserOperation } from './rpc/utils'
+export { getUserOperationHash, packUserOperation, unpackUserOperation } from '@stablenet/core'
 export type {
   BundlerConfig,
   GasEstimation,
