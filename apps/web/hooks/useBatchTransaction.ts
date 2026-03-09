@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { detectProvider, type StableNetProvider } from '@stablenet/wallet-sdk'
+import { useCallback, useEffect, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import {
   encodeAbiParameters,
@@ -10,7 +11,8 @@ import {
   parseUnits,
 } from 'viem'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
-
+import { useStableNetContext } from '@/providers'
+import type { GasPaymentContext } from './useUserOp'
 import { useSmartAccount } from './useSmartAccount'
 
 // ============================================================================
@@ -124,6 +126,8 @@ interface ExecuteBatchParams {
   isNative: boolean
   tokenAddress?: Address
   decimals: number
+  /** Gas payment context for Smart Account UserOp path */
+  gasPayment?: GasPaymentContext
 }
 
 // ============================================================================
@@ -139,18 +143,38 @@ function createRecipient(): BatchRecipient {
 // Hook
 // ============================================================================
 
+/**
+ * Batch multiple transfers into a single transaction.
+ *
+ * - Smart Account: Uses ERC-7579 batch execute via eth_sendUserOperation
+ *   through the wallet extension, enabling paymaster gas payment.
+ * - EOA: Uses Multicall3 aggregate3Value via regular transaction.
+ */
 export function useBatchTransaction(): UseBatchTransactionReturn {
   const { address } = useAccount()
   const { data: walletClient } = useWalletClient()
   const publicClient = usePublicClient()
   const { status } = useSmartAccount()
+  const { entryPoint } = useStableNetContext()
 
+  const [provider, setProvider] = useState<StableNetProvider | null>(null)
   const [recipients, setRecipients] = useState<BatchRecipient[]>([
     createRecipient(),
     createRecipient(),
   ])
   const [isExecuting, setIsExecuting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Detect wallet-sdk provider on mount (for Smart Account UserOp path)
+  useEffect(() => {
+    detectProvider({ timeout: 2000 })
+      .then((p) => {
+        if (p) setProvider(p)
+      })
+      .catch(() => {
+        // Provider not available
+      })
+  }, [])
 
   const addRecipient = useCallback(() => {
     setRecipients((prev) => [...prev, createRecipient()])
@@ -173,7 +197,7 @@ export function useBatchTransaction(): UseBatchTransactionReturn {
 
   const executeBatch = useCallback(
     async (params: ExecuteBatchParams): Promise<BatchTransactionResult> => {
-      if (!address || !walletClient || !publicClient) {
+      if (!address) {
         return { success: false, error: 'Wallet not connected' }
       }
 
@@ -205,48 +229,63 @@ export function useBatchTransaction(): UseBatchTransactionReturn {
           }
         })
 
-        const totalNativeValue = calls.reduce((sum, c) => sum + c.value, 0n)
         let txHash: Hex
 
-        if (status.isSmartAccount) {
-          // Smart Account: ERC-7579 batch execute (self-call)
+        if (status.isSmartAccount && provider) {
+          // Smart Account: ERC-7579 batch execute via eth_sendUserOperation
+          // The extension handler accepts pre-encoded callData — it skips
+          // encodeKernelExecute() wrapping when callData is already present.
           const executionCalldata = encodeAbiParameters(
             parseAbiParameters('(address target, uint256 value, bytes callData)[]'),
             [calls.map((c) => ({ target: c.target, value: c.value, callData: c.data }))]
           )
 
-          const data = encodeFunctionData({
+          const callData = encodeFunctionData({
             abi: KERNEL_EXECUTE_ABI,
             functionName: 'execute',
             args: [EXEC_MODE_BATCH, executionCalldata],
           })
 
-          txHash = await walletClient.sendTransaction({
-            to: address,
-            data,
-            value: totalNativeValue,
-          })
-        } else {
-          // EOA: Multicall3 aggregate3Value
-          const data = encodeFunctionData({
-            abi: MULTICALL3_ABI,
-            functionName: 'aggregate3Value',
-            args: [
-              calls.map((c) => ({
-                target: c.target,
-                allowFailure: false,
-                value: c.value,
-                callData: c.data,
-              })),
+          // Send through extension's eth_sendUserOperation with pre-encoded callData
+          const hash = await provider.request<Hex>({
+            method: 'eth_sendUserOperation',
+            params: [
+              {
+                sender: address,
+                callData,
+                gasPayment: params.gasPayment,
+              },
+              entryPoint,
             ],
           })
 
-          txHash = await walletClient.sendTransaction({
-            to: MULTICALL3_ADDRESS,
-            data,
-            value: totalNativeValue,
-          })
+          return { success: true, txHash: hash as Hex }
         }
+
+        if (!walletClient || !publicClient) {
+          return { success: false, error: 'Wallet client not available' }
+        }
+
+        // EOA: Multicall3 aggregate3Value
+        const totalNativeValue = calls.reduce((sum, c) => sum + c.value, 0n)
+        const data = encodeFunctionData({
+          abi: MULTICALL3_ABI,
+          functionName: 'aggregate3Value',
+          args: [
+            calls.map((c) => ({
+              target: c.target,
+              allowFailure: false,
+              value: c.value,
+              callData: c.data,
+            })),
+          ],
+        })
+
+        txHash = await walletClient.sendTransaction({
+          to: MULTICALL3_ADDRESS,
+          data,
+          value: totalNativeValue,
+        })
 
         // Wait for on-chain confirmation
         const receipt = await publicClient.waitForTransactionReceipt({
@@ -268,7 +307,7 @@ export function useBatchTransaction(): UseBatchTransactionReturn {
         setIsExecuting(false)
       }
     },
-    [address, walletClient, publicClient, recipients, status.isSmartAccount]
+    [address, walletClient, publicClient, recipients, status.isSmartAccount, provider, entryPoint]
   )
 
   const estimateGasSavings = useCallback(
