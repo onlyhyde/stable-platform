@@ -116,10 +116,11 @@ export const estimateTokenPaymentParamsSchema = z.tuple([
 
 /**
  * pm_getSponsorPolicy params schema
- * Params: [senderAddress, operation (optional), chainId (hex)]
+ * Params: [senderAddress, operation (optional), chainId (hex), policyId (optional)]
  */
 export const getSponsorPolicyParamsSchema = z
-  .tuple([addressSchema, z.string(), hexSchema])
+  .tuple([addressSchema, z.string(), hexSchema, z.string()])
+  .or(z.tuple([addressSchema, z.string(), hexSchema]))
   .or(z.tuple([addressSchema, hexSchema]))
 
 export type UserOperationInput = z.infer<typeof userOperationSchema>

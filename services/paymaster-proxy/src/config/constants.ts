@@ -258,14 +258,6 @@ export function getReservationPersistenceConfig() {
 }
 
 /**
- * Block Number Mode — EIP-4337 flags bit 47.
- * When set, validUntil/validAfter are interpreted as block numbers instead of timestamps.
- * TODO: PoC does not implement block number mode; requires PublicClient.getBlockNumber()
- *       at validation time. Add support when on-chain validation is needed.
- */
-export const FLAGS_BLOCK_NUMBER_MODE = 1 << 47
-
-/**
  * Print environment variable usage help
  */
 export function getPaymasterEnvHelp(): string {

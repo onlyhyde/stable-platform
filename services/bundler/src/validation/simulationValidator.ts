@@ -1,7 +1,8 @@
 import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex, PublicClient } from 'viem'
-import { concat, encodeFunctionData, pad, toHex } from 'viem'
+import { encodeFunctionData } from 'viem'
 import { ENTRY_POINT_ABI } from '../abi'
+import { packForContract } from '../shared/packUserOp'
 import {
   ENTRY_POINT_SIMULATIONS_ABI,
   ENTRY_POINT_SIMULATIONS_BYTECODE,
@@ -24,62 +25,6 @@ import {
   parseValidationData,
   validateTimestamps,
 } from './errors'
-
-/**
- * Pack a UserOperation for EntryPoint ABI (uses bigint for nonce and preVerificationGas)
- */
-function packUserOperationForAbi(userOp: UserOperation): {
-  sender: Address
-  nonce: bigint
-  initCode: Hex
-  callData: Hex
-  accountGasLimits: Hex
-  preVerificationGas: bigint
-  gasFees: Hex
-  paymasterAndData: Hex
-  signature: Hex
-} {
-  // Build initCode
-  const initCode =
-    userOp.factory && userOp.factoryData
-      ? (concat([userOp.factory, userOp.factoryData]) as Hex)
-      : '0x'
-
-  // Build accountGasLimits (verificationGasLimit + callGasLimit)
-  const accountGasLimits = concat([
-    pad(toHex(userOp.verificationGasLimit), { size: 16 }),
-    pad(toHex(userOp.callGasLimit), { size: 16 }),
-  ]) as Hex
-
-  // Build gasFees (maxPriorityFeePerGas + maxFeePerGas)
-  const gasFees = concat([
-    pad(toHex(userOp.maxPriorityFeePerGas), { size: 16 }),
-    pad(toHex(userOp.maxFeePerGas), { size: 16 }),
-  ]) as Hex
-
-  // Build paymasterAndData
-  let paymasterAndData: Hex = '0x'
-  if (userOp.paymaster) {
-    paymasterAndData = concat([
-      userOp.paymaster,
-      pad(toHex(userOp.paymasterVerificationGasLimit ?? 0n), { size: 16 }),
-      pad(toHex(userOp.paymasterPostOpGasLimit ?? 0n), { size: 16 }),
-      userOp.paymasterData ?? '0x',
-    ]) as Hex
-  }
-
-  return {
-    sender: userOp.sender,
-    nonce: userOp.nonce,
-    initCode,
-    callData: userOp.callData,
-    accountGasLimits,
-    preVerificationGas: userOp.preVerificationGas,
-    gasFees,
-    paymasterAndData,
-    signature: userOp.signature,
-  }
-}
 
 /**
  * Simulation validator for UserOperations
@@ -108,7 +53,7 @@ export class SimulationValidator implements ISimulationValidator {
    * @throws RpcError if validation fails
    */
   async simulate(userOp: UserOperation): Promise<ValidationResult> {
-    const packedOp = packUserOperationForAbi(userOp)
+    const packedOp = packForContract(userOp)
 
     this.logger.debug(
       { sender: userOp.sender, nonce: userOp.nonce.toString() },
@@ -166,7 +111,7 @@ export class SimulationValidator implements ISimulationValidator {
     target: Address = ZERO_ADDRESS,
     targetCallData: Hex = '0x'
   ): Promise<ExecutionResult> {
-    const packedOp = packUserOperationForAbi(userOp)
+    const packedOp = packForContract(userOp)
 
     const calldata = encodeFunctionData({
       abi: ENTRY_POINT_SIMULATIONS_ABI,

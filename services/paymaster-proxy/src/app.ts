@@ -597,6 +597,7 @@ async function handlePmEstimateTokenPayment(
     {
       client: config.client,
       erc20PaymasterAddress: config.erc20PaymasterAddress,
+      oracleAddress: config.oracleAddress,
       supportedChainIds: config.supportedChainIds,
       supportedEntryPoints: config.supportedEntryPoints,
     }
@@ -623,14 +624,15 @@ function handlePmGetSponsorPolicy(params: unknown[], config: HandlerConfig): unk
   }
 
   const parsed = parseResult.data
-  // Handle both [address, chainId] and [address, operation, chainId] forms
+  // Handle [address, chainId], [address, operation, chainId], and [address, operation, chainId, policyId] forms
   const senderAddress = parsed[0] as Address
-  const chainId = parsed.length === 3 ? (parsed[2] as string) : (parsed[1] as string)
+  const chainId = parsed.length >= 3 ? (parsed[2] as string) : (parsed[1] as string)
+  const policyId = parsed.length === 4 ? (parsed[3] as string) : undefined
 
   const result = handleGetSponsorPolicy(senderAddress, chainId, {
     policyManager: config.policyManager,
     supportedChainIds: config.supportedChainIds,
-  })
+  }, policyId)
 
   if (!result.success) {
     throw new RpcError(result.error.message, result.error.code, result.error.data)

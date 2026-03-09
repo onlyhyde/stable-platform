@@ -1,7 +1,7 @@
 import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex, PublicClient } from 'viem'
-import { concat, pad, toHex } from 'viem'
 import { RPC_ERROR_CODES, RpcError } from '../types'
+import { packForContract } from '../shared/packUserOp'
 import type { Logger } from '../utils/logger'
 import { FormatValidator } from './formatValidator'
 import { OpcodeValidator } from './opcodeValidator'
@@ -14,7 +14,6 @@ import type {
   IOpcodeValidator,
   IReputationManager,
   ISimulationValidator,
-  PackedUserOperation,
   ReputationConfig,
   StakeInfo,
   ValidationResult,
@@ -415,7 +414,7 @@ export class UserOperationValidator {
 
       // EIP-4337 Section 15: Validate individual signature through aggregator contract
       if (this.aggregatorValidator) {
-        const packedOp = this.packUserOp(userOp)
+        const packedOp = packForContract(userOp)
         await this.aggregatorValidator.validateUserOpSignature(aggregator, packedOp)
         this.logger.debug(
           { aggregator, sender: userOp.sender },
@@ -554,46 +553,6 @@ export class UserOperationValidator {
    */
   getAggregatorValidator(): IAggregatorValidator | undefined {
     return this.aggregatorValidator
-  }
-
-  /**
-   * Pack a UserOperation into the packed format required by aggregator contracts
-   */
-  private packUserOp(userOp: UserOperation): PackedUserOperation {
-    const initCode =
-      userOp.factory && userOp.factoryData ? concat([userOp.factory, userOp.factoryData]) : '0x'
-
-    const accountGasLimits = concat([
-      pad(toHex(userOp.verificationGasLimit), { size: 16 }),
-      pad(toHex(userOp.callGasLimit), { size: 16 }),
-    ]) as Hex
-
-    const gasFees = concat([
-      pad(toHex(userOp.maxPriorityFeePerGas), { size: 16 }),
-      pad(toHex(userOp.maxFeePerGas), { size: 16 }),
-    ]) as Hex
-
-    let paymasterAndData: Hex = '0x'
-    if (userOp.paymaster) {
-      paymasterAndData = concat([
-        userOp.paymaster,
-        pad(toHex(userOp.paymasterVerificationGasLimit ?? 0n), { size: 16 }),
-        pad(toHex(userOp.paymasterPostOpGasLimit ?? 0n), { size: 16 }),
-        userOp.paymasterData ?? '0x',
-      ]) as Hex
-    }
-
-    return {
-      sender: userOp.sender,
-      nonce: userOp.nonce,
-      initCode,
-      callData: userOp.callData,
-      accountGasLimits,
-      preVerificationGas: userOp.preVerificationGas,
-      gasFees,
-      paymasterAndData,
-      signature: userOp.signature,
-    }
   }
 
   /**

@@ -20,7 +20,8 @@ export type GetSponsorPolicyResult =
 export function handleGetSponsorPolicy(
   senderAddress: Address,
   chainId: string,
-  config: GetSponsorPolicyConfig
+  config: GetSponsorPolicyConfig,
+  policyId: string = 'default'
 ): GetSponsorPolicyResult {
   const chainIdNum = Number(chainId)
   if (!config.supportedChainIds.includes(chainIdNum)) {
@@ -34,7 +35,7 @@ export function handleGetSponsorPolicy(
     }
   }
 
-  const policy = config.policyManager.getPolicy('default')
+  const policy = config.policyManager.getPolicy(policyId)
   if (!policy || !policy.active) {
     return {
       success: true,
