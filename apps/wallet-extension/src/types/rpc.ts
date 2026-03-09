@@ -97,6 +97,9 @@ export type SupportedMethod =
   // Paymaster methods
   | 'pm_registerAccount'
   | 'pm_accountStatus'
+  // Multi-mode transaction (SDK TransactionRouter)
+  | 'wallet_sendMultiModeTransaction'
+  | 'wallet_getTransactionModes'
 
 /**
  * RPC method parameters

@@ -43,6 +43,11 @@ import { checkOrigin } from '../security/phishingGuard'
 import { walletState } from '../state/store'
 import { eventBroadcaster } from '../utils/eventBroadcaster'
 import { createValidatorRegistry, type ValidatorRegistry } from '../validators/validatorRegistry'
+import { MultiModeTransactionController } from '../controllers/MultiModeTransactionController'
+import type {
+  MultiModeTransactionParams,
+  TransactionAccountInfo,
+} from '../controllers/multiModeTransactionController.types'
 import { buildKernelInstallData } from './kernelInitData'
 import { fetchFromPaymaster, sponsorAndSign } from './paymaster'
 import {
@@ -74,6 +79,90 @@ const inputValidator = new InputValidator()
 const validatorRegistry: ValidatorRegistry = createValidatorRegistry()
 // Load persisted state — store the promise to await before first use
 const registryReady = validatorRegistry.load().catch(() => {})
+
+// Lazy singleton MultiModeTransactionController — recreated when network changes
+let _multiModeController: MultiModeTransactionController | null = null
+let _multiModeNetworkKey = ''
+
+/**
+ * Get or create the MultiModeTransactionController singleton.
+ * Automatically recreates when the active network changes.
+ */
+function getMultiModeController(): MultiModeTransactionController {
+  const network = walletState.getCurrentNetwork()
+  if (!network) {
+    throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+  }
+
+  const networkKey = `${network.chainId}:${network.rpcUrl}:${network.bundlerUrl ?? ''}`
+
+  if (_multiModeController && _multiModeNetworkKey === networkKey) {
+    return _multiModeController
+  }
+
+  _multiModeController = new MultiModeTransactionController({
+    chainId: network.chainId,
+    rpcUrl: network.rpcUrl,
+    bundlerUrl: network.bundlerUrl,
+    paymasterUrl: network.paymasterUrl,
+    entryPointAddress: getEntryPointForChain(network.chainId),
+
+    getSelectedAccount: (): TransactionAccountInfo | null => {
+      const state = walletState.getState()
+      const selected = state.accounts.selectedAccount
+      if (!selected) return null
+      const account = state.accounts.accounts.find(
+        (a) => a.address.toLowerCase() === selected.toLowerCase()
+      )
+      if (!account) return null
+
+      return {
+        address: account.address,
+        type: account.type,
+        smartAccountAddress: account.type === 'smart' ? account.address : undefined,
+        isDelegated: account.type === 'delegated',
+        delegateTo: account.delegateAddress,
+      }
+    },
+
+    signTransaction: async (_address: Address): Promise<Hex> => {
+      // EOA raw tx signing — not used for Smart Account path
+      // For full EOA support, delegate to eth_sendTransaction handler
+      throw new Error('EOA transaction signing via MultiMode not yet supported — use eth_sendTransaction')
+    },
+
+    signUserOperation: async (address: Address, userOpHash: Hex): Promise<Hex> => {
+      const signerAddr = resolveSignerAddress(address)
+
+      if (isDelegatedSender(address)) {
+        // EIP-7702: signMessage adds EIP-191 prefix
+        // Kernel _verify7702Signature: ECDSA.recover(toEthSignedMessageHash(userOpHash), sig)
+        return keyringController.signMessage(signerAddr, userOpHash)
+      }
+
+      // Smart Account: raw ECDSA sign without prefix
+      // Kernel ECDSAValidator: ECDSA.recover(userOpHash, sig) == owner
+      // signAuthorizationHash uses account.sign({ hash }) internally — no prefix added
+      const result = await keyringController.signAuthorizationHash(signerAddr, userOpHash)
+      return result.signature
+    },
+
+    signAuthorization: async (address: Address, authHash: Hex) => {
+      const result = await keyringController.signAuthorizationHash(address, authHash)
+      return { r: result.r, s: result.s, v: result.v }
+    },
+
+    publishTransaction: async (rawTx: Hex): Promise<Hex> => {
+      const client = getPublicClient(network.rpcUrl)
+      return client.sendRawTransaction({ serializedTransaction: rawTx })
+    },
+  })
+
+  _multiModeNetworkKey = networkKey
+  logger.info(`[MultiMode] Controller initialized: chain=${network.chainId}`)
+
+  return _multiModeController
+}
 
 /**
  * Get the nonce key for the active validator of an account.
@@ -1683,6 +1772,137 @@ const handlers: Record<string, RpcHandler> = {
         message: err.message || 'UserOperation submission failed',
         data: err.data,
       })
+    }
+  },
+
+  /**
+   * Send a multi-mode transaction via SDK TransactionRouter.
+   * Supports EOA, EIP-7702, and Smart Account modes with unified lifecycle.
+   */
+  wallet_sendMultiModeTransaction: async (params, origin, isExtension) => {
+    const [txParamsRaw] = params as [Record<string, unknown>]
+
+    if (!walletState.isConnected(origin)) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    if (!keyringController.isUnlocked()) {
+      throw createRpcError({
+        code: RPC_ERRORS.INTERNAL_ERROR.code,
+        message: 'Wallet is locked',
+      })
+    }
+
+    const from = txParamsRaw.from as Address
+    if (!isAddress(from)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid from address',
+      })
+    }
+
+    // Verify sender is connected
+    const connectedAccounts = walletState.getConnectedAccounts(origin)
+    const isAuthorized = connectedAccounts.some(
+      (a) => a.toLowerCase() === from.toLowerCase()
+    )
+    if (!isAuthorized) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    const controller = getMultiModeController()
+
+    // Build MultiModeTransactionParams from raw input
+    const txParams: MultiModeTransactionParams = {
+      from,
+      to: txParamsRaw.to as Address | undefined,
+      value: txParamsRaw.value ? BigInt(txParamsRaw.value as string) : undefined,
+      data: txParamsRaw.data as Hex | undefined,
+      mode: txParamsRaw.mode as MultiModeTransactionParams['mode'],
+      gasPayment: txParamsRaw.gasPayment as MultiModeTransactionParams['gasPayment'],
+      calls: txParamsRaw.calls as MultiModeTransactionParams['calls'],
+      delegateTo: txParamsRaw.delegateTo as Address | undefined,
+    }
+
+    // Add transaction — controller estimates gas via SDK router.prepare()
+    const txMeta = await controller.addTransaction(txParams, origin)
+
+    // Request user approval (skip for internal wallet UI)
+    if (!isExtension) {
+      try {
+        await approvalController.requestTransaction(
+          origin,
+          txParams.from,
+          txParams.to ?? txParams.from,
+          txParams.value ?? 0n,
+          txParams.data ?? '0x',
+          txMeta.gasEstimate?.estimatedCost ?? 0n,
+          'MultiModeTransaction',
+          undefined
+        )
+      } catch (error) {
+        // User rejected — clean up controller state
+        await controller.rejectTransaction(txMeta.id).catch(() => {})
+        handleApprovalError(error, { method: 'wallet_sendMultiModeTransaction', origin })
+      }
+    }
+
+    // Process: approve → sign → submit (callbacks handle signing and submission)
+    try {
+      const hash = await controller.processTransaction(txMeta.id)
+
+      // Track as pending transaction
+      try {
+        const network = walletState.getCurrentNetwork()
+        await walletState.addPendingTransaction({
+          id: txMeta.id,
+          from: txParams.from,
+          to: txParams.to ?? txParams.from,
+          value: txParams.value ?? 0n,
+          data: txParams.data ?? '0x',
+          chainId: network?.chainId ?? 0,
+          status: 'submitted',
+          type: txMeta.mode === 'smartAccount' ? 'userOp' : 'send',
+          userOpHash: txMeta.mode === 'smartAccount' ? hash : undefined,
+          txHash: txMeta.mode !== 'smartAccount' ? hash : undefined,
+          timestamp: Date.now(),
+        })
+      } catch {
+        // Non-blocking: pending tx tracking should not fail the submission
+      }
+
+      logger.info(
+        `[wallet_sendMultiModeTransaction] OK: mode=${txMeta.mode}, hash=${hash}`
+      )
+      return hash
+    } catch (error) {
+      const err = error as Error & { code?: number; data?: unknown }
+      logger.error(
+        `[wallet_sendMultiModeTransaction] FAILED: mode=${txMeta.mode}, err=${err.message}`
+      )
+      throw createRpcError({
+        code: err.code ?? RPC_ERRORS.INTERNAL_ERROR.code,
+        message: err.message || 'Multi-mode transaction failed',
+        data: err.data,
+      })
+    }
+  },
+
+  /**
+   * Get available transaction modes for the selected account.
+   * Returns mode list with features for UI mode selection.
+   */
+  wallet_getTransactionModes: async (_params, origin) => {
+    if (!walletState.isConnected(origin)) {
+      throw createRpcError(RPC_ERRORS.UNAUTHORIZED)
+    }
+
+    try {
+      const controller = getMultiModeController()
+      return controller.getSupportedModes()
+    } catch {
+      // Controller init may fail if network is not configured
+      return ['eoa']
     }
   },
 

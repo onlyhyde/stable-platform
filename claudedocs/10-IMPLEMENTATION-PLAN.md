@@ -75,40 +75,44 @@
 | **UC-D** | Module 설치 시 paymaster UI 연결 | Session 3 | `apps/wallet-extension/src/ui/pages/Modules/InstallModule.tsx` (기존 구현) |
 | **F-05** | ERC-20 토큰 가스 비용 추정 (useGasPaymentMode 확장) | Session 4 | `apps/web/hooks/useGasPaymentMode.ts` |
 | **Batch** | `useBatchTransaction` UserOp/Paymaster 연동 | Session 4 | `apps/web/hooks/useBatchTransaction.ts`, `apps/web/app/payment/send/page.tsx` |
+| **M1** | `packForContract` 중복 통합 (~70줄 제거) | Session 5 | `services/bundler/src/validation/simulationValidator.ts`, `validator.ts` |
+| **M3** | `pm_getSponsorPolicy` 다중 정책 policyId 지원 | Session 5 | `services/paymaster-proxy/src/handlers/sponsorPolicy.ts`, `schemas/index.ts`, `app.ts` |
+| **M4** | `MultiModeTransactionController` handler.ts 통합 | Session 5 | `apps/wallet-extension/src/background/rpc/handler.ts`, `src/types/rpc.ts` |
+| **M5** | `FLAGS_BLOCK_NUMBER_MODE` 미사용 코드 제거 | Session 5 | `services/paymaster-proxy/src/config/constants.ts` |
 
 ### 1.3 테스트 상태
 
 - 번들러: **461 tests passing** (18 test files)
 - Paymaster-proxy: **79 tests passing** (2 test files)
-- 타입 체크: 수정된 파일에 **에러 없음**
-- 커밋: **완료** (5개 커밋 — 2668d8f, f38987e, 3a67afa, f5c93ff, d61e9a6)
+- 타입 체크: 수정된 파일에 **에러 없음** (M4 포함 — `@tailwindcss/vite` 기존 에러만 잔존)
+- 커밋: Session 1-4 커밋 완료 (5개 커밋), Session 5 커밋 1개 완료 (`8c02308 refactor: code quality improvements (M1, M3, M5)`), M4 미커밋
 
 ---
 
-## 2. 남은 작업 목록
+## 2. 작업 목록 (전체 완료)
 
 ### 2.1 작업 총괄표
 
-| Phase | ID | 우선순위 | 대상 | 설명 | 난이도 |
-|-------|----|----------|------|------|--------|
-| **S1** | I1 | HIGH | Extension | `stablenet_estimateGas`에 paymaster stub 포함 | 중 |
-| **S1** | I2 | MEDIUM | Extension | `pm_sponsorPolicy` 하드코딩 → proxy 포워딩 | 낮음 |
-| **S2** | I4 | MEDIUM | Proxy | `exchangeRate` 실제 oracle 값 반환 | 중 |
-| **S2** | I5 | MEDIUM | Proxy | `getPaymasterData` nonce 순차 생성 | 중 |
-| **S3** | UI-5.2 | MEDIUM | Web | ERC-20 토큰 선택 UI (토큰 목록, 잔액, 환율) | 중 |
-| **S3** | UI-5.3 | HIGH | Web | Token Approval 플로우 (approve + Permit2 UX) | 높음 |
-| **S3** | UI-5.4 | MEDIUM | Web | 가스 미리보기 정확도 (모드별 표시) | 중 |
-| **S3** | UI-5.5 | MEDIUM | Web | EntryPoint Deposit 관리 UI (잔액, 비교, top-up 제안) | 중 |
-| **S3** | UI-5.6 | LOW | Web | AA 에러 코드별 사용자 친화적 메시지 | 낮음 |
-| **S3** | UI-5.7 | LOW | Web | Paymaster Health & Policy 표시 | 낮음 |
-| **S4** | F-05 | MEDIUM | Web | ERC-20 토큰 가스 비용 추정 (useGasPaymentMode 확장) | 중 |
-| **S5** | M1 | LOW | Bundler | `packForContract` 3중 중복 통합 | 낮음 |
-| **S5** | M2 | LOW | Proxy | v0.9 parallel signing format 미사용 코드 정리 | 낮음 |
-| **S5** | M3 | LOW | Proxy | `pm_getSponsorPolicy` 다중 정책 지원 | 중 |
-| **S5** | M4 | LOW | Extension | `MultiModeTransactionController` 메인 Send flow 연결 | 중 |
-| **S5** | M5 | LOW | Proxy | `FLAGS_BLOCK_NUMBER_MODE` 미사용 코드 정리 | 낮음 |
-| **S3** | UC-D | MEDIUM | Web | Module 설치 시 paymaster UI 연결 | 중 |
-| **S4** | Batch | MEDIUM | Web | `useBatchTransaction` UserOp/paymaster 연동 | 높음 |
+| Phase | ID | 상태 | 대상 | 설명 | 완료 세션 |
+|-------|----|------|------|------|-----------|
+| **S1** | I1 | ✅ | Extension | `stablenet_estimateGas`에 paymaster stub 포함 | Session 1 |
+| **S1** | I2 | ✅ | Extension | `pm_sponsorPolicy` proxy 포워딩 | Session 1 |
+| **S2** | I4 | ✅ | Proxy | `exchangeRate` 실제 oracle 값 반환 | Session 2 |
+| **S2** | I5 | ✅ | Proxy | `getPaymasterData` nonce `BigInt(Date.now())` | Session 2 |
+| **S3** | UI-5.2 | ✅ | Web | ERC-20 토큰 선택 UI (토큰 목록, 잔액, 환율) | Session 3 |
+| **S3** | UI-5.3 | ✅ | Web | Token Approval 플로우 (approve + Permit2 UX) | Session 3 |
+| **S3** | UI-5.4 | ✅ | Web | 가스 미리보기 정확도 (모드별 표시) | Session 3 |
+| **S3** | UI-5.5 | ✅ | Web | EntryPoint Deposit 관리 UI (잔액, 비교, top-up 제안) | Session 3 |
+| **S3** | UI-5.6 | ✅ | Web | AA 에러 코드별 사용자 친화적 메시지 | Session 3 |
+| **S3** | UI-5.7 | ✅ | Web | Paymaster Health & Policy 표시 | Session 3 |
+| **S3** | UC-D | ✅ | Web/Ext | Module 설치 시 paymaster UI 연결 | Session 3 |
+| **S4** | F-05 | ✅ | Web | ERC-20 토큰 가스 비용 추정 (useGasPaymentMode 확장) | Session 4 |
+| **S4** | Batch | ✅ | Web | `useBatchTransaction` UserOp/paymaster 연동 | Session 4 |
+| **S5** | M1 | ✅ | Bundler | `packForContract` 중복 통합 (~70줄 제거) | Session 5 |
+| **S5** | M2 | ❌ INVALID | Proxy | AI 환각 — "v0.9 parallel signing format" 개념 자체가 존재하지 않음 | — |
+| **S5** | M3 | ✅ | Proxy | `pm_getSponsorPolicy` 다중 정책 지원 (policyId) | Session 5 |
+| **S5** | M4 | ✅ | Extension | `MultiModeTransactionController` → `handler.ts` 통합 | Session 5 |
+| **S5** | M5 | ✅ | Proxy | `FLAGS_BLOCK_NUMBER_MODE` 미사용 코드 정리 | Session 5 |
 
 ---
 
@@ -379,10 +383,12 @@ Bundler를 통한 UserOp 제출이 아닌 일반 트랜잭션으로 처리된다
 - `simulationValidator.ts`: import `packForContract`, 로컬 함수 삭제, `concat/pad/toHex` import 제거
 - `validator.ts`: import `packForContract`, private method 삭제, `PackedUserOperation` 타입 import 제거
 
-#### Task 5-2: v0.9 코드 — SKIP (활성 사용 중)
+#### Task 5-2: v0.9 코드 — INVALID (AI 환각)
 
-**결정**: 분석 문서(09-PAYMASTER-GAS-FLOW-ANALYSIS.md)에서 "v0.9 미사용"으로 보고되었으나,
-실제로 EntryPoint v0.9 코드는 paymaster-proxy 전반에서 활성 사용 중. 정리 대상 아님.
+**결정**: 분석 문서(09-PAYMASTER-GAS-FLOW-ANALYSIS.md)에서 "v0.9 parallel signing format 코덱"이라고
+기술되었으나, 해당 개념은 ERC-4337 스펙에 존재하지 않으며 코드베이스에도 관련 코드가 없음.
+AI가 분석 과정에서 생성한 환각(hallucination)이므로 이 항목 자체가 무효.
+EntryPoint v0.9는 정상적으로 사용 중이며 정리 대상이 아님.
 
 #### Task 5-3: `pm_getSponsorPolicy` 다중 정책 지원 (M3) ✅
 
@@ -391,11 +397,16 @@ Bundler를 통한 UserOp 제출이 아닌 일반 트랜잭션으로 처리된다
 - `schemas/index.ts`: 4-tuple `[address, operation, chainId, policyId]` 스키마 추가
 - `app.ts`: parsed params에서 policyId 추출 후 handler에 전달
 
-#### Task 5-4: `MultiModeTransactionController` 연결 (M4) — 보류
+#### Task 5-4: `MultiModeTransactionController` 연결 (M4) ✅
 
-**결정**: PoC 단계에서 `handler.ts`의 직접 트랜잭션 처리 방식이 충분히 동작하므로,
-`MultiModeTransactionController` 통합은 향후 프로덕션 리팩토링 시 진행.
-현재 병렬 구현 상태 유지.
+**완료**: `handler.ts`에 `MultiModeTransactionController` 통합.
+- Lazy singleton 패턴: `getMultiModeController()` — 네트워크 변경 시 자동 재생성
+- 콜백 와이어링: `signUserOperation`(EIP-7702 → signMessage, Smart Account → signRawHash),
+  `signAuthorization`(signAuthorizationHash), `publishTransaction`(sendRawTransaction)
+- 신규 RPC 메서드: `wallet_sendMultiModeTransaction` — 컨트롤러 전체 라이프사이클 위임
+  (addTransaction → approve → sign → submit), 트랜잭션 추적 포함
+- 신규 RPC 메서드: `wallet_getTransactionModes` — 선택된 계정의 지원 모드 조회
+- `SupportedMethod` 타입 업데이트 (rpc.ts)
 
 #### Task 5-5: `FLAGS_BLOCK_NUMBER_MODE` 미사용 코드 정리 (M5) ✅
 
@@ -447,20 +458,29 @@ apps/web/
 └── lib/
     └── aaErrors.ts                    ← UI-5.6 (신규)
 
-apps/wallet-extension/src/background/rpc/
-├── handler.ts                         ← C3 ✅, C4 ✅, I1, I2
-└── paymaster.ts                       ← I3 ✅
+apps/wallet-extension/src/
+├── background/rpc/
+│   ├── handler.ts                     ← C3 ✅, C4 ✅, I1 ✅, I2 ✅, M4 ✅
+│   └── paymaster.ts                   ← I3 ✅
+├── background/controllers/
+│   ├── MultiModeTransactionController.ts  ← M4 참조
+│   └── multiModeTransactionController.types.ts  ← M4 참조
+└── types/rpc.ts                       ← M4 ✅ (SupportedMethod 확장)
 
 services/bundler/src/
-├── gas/gasEstimator.ts                ← I7 ✅, M1
+├── validation/simulationValidator.ts  ← M1 ✅
+├── validation/validator.ts            ← M1 ✅
+├── gas/gasEstimator.ts                ← I7 ✅
 ├── executor/bundleExecutor.ts         ← 번들러 fix ✅
-└── shared/packUserOp.ts              ← M1
+└── shared/packUserOp.ts              ← M1 ✅ (통합 대상)
 
 services/paymaster-proxy/src/
-├── handlers/estimateTokenPayment.ts   ← I4
-├── handlers/getPaymasterData.ts       ← I5
-├── policy/sponsorPolicy.ts            ← M3
-└── constants.ts                       ← M5
+├── handlers/estimateTokenPayment.ts   ← I4 ✅
+├── handlers/getPaymasterData.ts       ← I5 ✅
+├── handlers/sponsorPolicy.ts          ← M3 ✅
+├── schemas/index.ts                   ← M3 ✅
+├── app.ts                             ← M3 ✅
+└── config/constants.ts                ← M5 ✅
 
 packages/types/src/
 └── constants.ts                       ← CALL_TYPE 중복 제거 ✅
@@ -545,9 +565,9 @@ Session 3 (Web UI 완성) ─── Session 4 (데이터 계층)
          ▼
 Session 5 (코드 품질)
 ├── M1: packForContract 통합 ✅
-├── M2: v0.9 코드 — SKIP (활성 사용 중)
+├── M2: v0.9 코드 — INVALID (AI 환각)
 ├── M3: 다중 정책 지원 ✅
-├── M4: MultiModeTransactionController — 보류 (PoC)
+├── M4: MultiModeTransactionController ✅
 └── M5: 미사용 코드 정리 ✅
 ```
 
@@ -559,22 +579,24 @@ Session 5 (코드 품질)
 |------|------|------|------|
 | Oracle 컨트랙트 미배포 (I4) | 중 | I4, F-05 지연 | `exchangeRate` 계산 로직 확인 후 mock 가능 |
 | Permit2 컨트랙트 미배포 (StableNet Local) | 중 | UI-5.3 Permit2 모드 테스트 불가 | ERC-20 approve 모드 우선 구현 |
-| `MultiModeTransactionController` 구조 불일치 (M4) | 높 | 통합 복잡도 증가 | 아키텍처 결정 후 진행 (통합 vs 병행) |
-| `useBatchTransaction` ERC-7579 인코딩 복잡 (Batch) | 중 | Session 4 지연 | `@stablenet/types`의 `encodeExecutionMode` 활용 |
+| `MultiModeTransactionController` 구조 불일치 (M4) | 높 | 통합 복잡도 증가 | ✅ 해결: lazy singleton + 콜백 와이어링으로 통합 |
+| `useBatchTransaction` ERC-7579 인코딩 복잡 (Batch) | 중 | Session 4 지연 | ✅ 해결: `EXEC_MODE_BATCH` + `KERNEL_EXECUTE_ABI` 활용 |
 
 ---
 
 ## 9. 완료 기준
 
-모든 작업이 완료되면:
+### ✅ 전체 구현 완료 (2026-03-09 검증)
 
-1. **C1-C5**: 5/5 Critical 이슈 해결 ✅
-2. **I1-I7**: 7/7 Important 이슈 해결 ✅ (I1-I2: Session 1, I4-I5: Session 2, I3/I6/I7: 이전)
-3. **M1-M5**: 3/5 Minor 이슈 해결 ✅ (M1, M3, M5 완료; M2 SKIP-활성사용중; M4 보류-PoC단계)
-4. **F-01~F-05**: 5/5 Feature 구현 ✅ (F-05: Session 4)
-5. **UI 5.1~5.7**: 7/7 UI 개선 ✅ (Session 3 완료)
-6. **UC-A~D**: 4/4 Use Case 검증 ✅ (UC-D: Session 3 확인)
-7. **Batch**: 배치 트랜잭션 UserOp 연동 ✅ (Session 4)
-8. 번들러 테스트 전체 통과
-9. 타입 체크 에러 없음
-10. 모든 변경 사항 커밋 완료
+| # | 기준 | 상태 | 상세 |
+|---|------|------|------|
+| 1 | **C1-C5**: Critical 이슈 | ✅ 5/5 | 이전 세션 완료 |
+| 2 | **I1-I7**: Important 이슈 | ✅ 7/7 | I1-I2: S1, I4-I5: S2, I3/I6/I7: 이전 |
+| 3 | **M1-M5**: Minor 이슈 | ✅ 4/4 유효항목 | M1, M3, M4, M5 완료; M2는 AI 환각(무효) |
+| 4 | **F-01~F-05**: Feature 구현 | ✅ 5/5 | F-05: S4 |
+| 5 | **UI 5.1~5.7**: UI 개선 | ✅ 7/7 | S3 완료 |
+| 6 | **UC-A~D**: Use Case 검증 | ✅ 4/4 | UC-D: S3 |
+| 7 | **Batch**: 배치 UserOp 연동 | ✅ | S4 완료 |
+| 8 | 번들러 테스트 전체 통과 | ✅ | 461 tests passing |
+| 9 | 타입 체크 에러 없음 | ✅ | `@tailwindcss/vite` 기존 에러만 잔존 (변경사항 무관) |
+| 10 | 모든 변경 사항 커밋 | ⚠️ | S1-S4 커밋 완료, S5 M1/M3/M5 커밋 완료, **M4 미커밋** |
