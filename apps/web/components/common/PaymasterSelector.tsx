@@ -2,6 +2,7 @@
 
 import type { Address } from 'viem'
 import type { PaymasterType, SponsorshipPolicy, SupportedToken } from '@/hooks'
+import type { ApprovalStatus } from '@/hooks/useTokenApproval'
 
 // ============================================================================
 // Types
@@ -32,6 +33,10 @@ interface PaymasterSelectorProps {
   isDepositing?: boolean
   // Health
   paymasterHealthy?: boolean | null
+  // ERC-20 Approval
+  erc20ApprovalStatus?: ApprovalStatus
+  onErc20Approve?: () => void
+  erc20ApprovalError?: string | null
   // Permit2
   permit2Signed?: boolean
   permit2Signing?: boolean
@@ -321,6 +326,9 @@ export function PaymasterSelector({
   onDepositTopUp,
   isDepositing,
   paymasterHealthy,
+  erc20ApprovalStatus,
+  onErc20Approve,
+  erc20ApprovalError,
   permit2Signed,
   permit2Signing,
   onPermit2Sign,
@@ -383,6 +391,27 @@ export function PaymasterSelector({
         })}
       </div>
 
+      {/* Sponsor — Free Gas Label */}
+      {selectedType === 'sponsor' && sponsorEligible === true && (
+        <div
+          className="flex items-center gap-2 p-3 rounded-lg"
+          style={{ backgroundColor: 'rgb(var(--success, 34 197 94) / 0.1)' }}
+        >
+          <span
+            className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+            style={{
+              backgroundColor: 'rgb(var(--success, 34 197 94) / 0.2)',
+              color: 'rgb(var(--success, 34 197 94))',
+            }}
+          >
+            ✓
+          </span>
+          <span className="text-sm font-medium" style={{ color: 'rgb(var(--success, 34 197 94))' }}>
+            Gas: Free (Sponsored)
+          </span>
+        </div>
+      )}
+
       {/* Self-Pay deposit info */}
       {selectedType === 'none' && depositBalance != null && (
         <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
@@ -415,6 +444,11 @@ export function PaymasterSelector({
               No deposit — you need to fund your EntryPoint deposit to send transactions
             </p>
           )}
+          {depositBalance !== '0' && depositBalance !== null && Number(depositBalance) < 0.001 && (
+            <p className="text-xs mt-1" style={{ color: 'rgb(var(--warning, 234 179 8))' }}>
+              Low deposit balance — consider topping up to avoid failed transactions
+            </p>
+          )}
         </div>
       )}
 
@@ -428,6 +462,80 @@ export function PaymasterSelector({
           gasEstimate={tokenGasEstimate}
           isEstimatingGas={isEstimatingGas}
         />
+      )}
+
+      {/* ERC-20 Approval */}
+      {selectedType === 'erc20' && selectedTokenAddress && onErc20Approve && (
+        <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+          {erc20ApprovalStatus === 'checking' && (
+            <div className="flex items-center gap-2">
+              <div
+                className="w-4 h-4 border-2 rounded-full animate-spin"
+                style={{
+                  borderColor: 'rgb(var(--muted-foreground))',
+                  borderTopColor: 'transparent',
+                }}
+              />
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Checking token allowance...
+              </span>
+            </div>
+          )}
+          {erc20ApprovalStatus === 'approved' && (
+            <div className="flex items-center gap-2">
+              <span
+                className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                style={{
+                  backgroundColor: 'rgb(var(--success, 34 197 94) / 0.2)',
+                  color: 'rgb(var(--success, 34 197 94))',
+                }}
+              >
+                ✓
+              </span>
+              <span className="text-sm" style={{ color: 'rgb(var(--success, 34 197 94))' }}>
+                Token approved for paymaster
+              </span>
+            </div>
+          )}
+          {erc20ApprovalStatus === 'needs-approval' && (
+            <div className="space-y-2">
+              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                The paymaster needs approval to use your tokens for gas payment. This requires an
+                on-chain transaction.
+              </p>
+              <button
+                type="button"
+                onClick={onErc20Approve}
+                className="w-full px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: 'rgb(var(--primary))',
+                  color: 'rgb(var(--primary-foreground))',
+                }}
+              >
+                Approve Token
+              </button>
+            </div>
+          )}
+          {erc20ApprovalStatus === 'approving' && (
+            <div className="flex items-center gap-2">
+              <div
+                className="w-4 h-4 border-2 rounded-full animate-spin"
+                style={{
+                  borderColor: 'rgb(var(--muted-foreground))',
+                  borderTopColor: 'transparent',
+                }}
+              />
+              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                Approving token...
+              </span>
+            </div>
+          )}
+          {erc20ApprovalError && (
+            <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
+              {erc20ApprovalError}
+            </p>
+          )}
+        </div>
       )}
 
       {/* Permit2 Approval */}
