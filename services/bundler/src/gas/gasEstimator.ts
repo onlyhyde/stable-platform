@@ -391,6 +391,12 @@ export class GasEstimator {
         throw error
       }
 
+      // FailedOp from EntryPoint — validation-level rejection (bad signature,
+      // nonce mismatch, etc.). Not a gas issue — propagate to trigger fallback.
+      if (this.isFailedOpError(error)) {
+        throw new Error('VALIDATION_FAILED: FailedOp during gas estimation (likely stub data)')
+      }
+
       // Out of gas → gas limit was insufficient
       if (
         errorStr.includes('out of gas') ||
@@ -564,6 +570,12 @@ export class GasEstimator {
         throw error
       }
 
+      // FailedOp from EntryPoint — validation-level rejection, not gas-related.
+      // Must propagate to trigger fallback, not treat as "gas insufficient".
+      if (this.isFailedOpError(error)) {
+        throw new Error('VALIDATION_FAILED: FailedOp during call gas estimation')
+      }
+
       // Out of gas → gas limit was insufficient
       if (
         errorStr.includes('out of gas') ||
@@ -573,7 +585,7 @@ export class GasEstimator {
         return false
       }
 
-      // Any other error (FailedOp, execution reverted, network errors, etc.)
+      // Any other error (execution reverted, network errors, etc.)
       // — we cannot reliably determine if gas was sufficient, so propagate
       // to trigger fallback estimation via eth_estimateGas
       throw error

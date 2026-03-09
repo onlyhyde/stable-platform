@@ -109,10 +109,3 @@ export function decodeExecutionMode(encoded: Hex): ExecutionMode {
   }
 }
 
-export const CALL_TYPE = {
-  SINGLE: '0x00' as const,
-  BATCH: '0x01' as const,
-  /** ERC-7579 §3.4: staticcall mode — read-only execution */
-  STATIC: '0xfe' as const,
-  DELEGATE: '0xff' as const,
-} as const

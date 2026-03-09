@@ -228,7 +228,7 @@ export class BundleExecutor {
    * this works on all chains by calling the actual deployed EntryPoint contract.
    */
   private async preflightHandleOpsCheck(entry: MempoolEntry): Promise<void> {
-    const packedOp = this.packUserOp(entry.userOp)
+    const packedOp = packForContract(entry.userOp)
     const data = encodeFunctionData({
       abi: ENTRY_POINT_ABI,
       functionName: 'handleOps',
