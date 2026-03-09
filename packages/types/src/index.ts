@@ -131,7 +131,15 @@ export type {
   UserOperationMiddleware,
   Validator,
 } from './smartAccount'
-export * from './token'
+export {
+  type ERC20Metadata,
+  isNativeToken,
+  NATIVE_ETH_SENTINEL_ADDRESS,
+  NATIVE_TOKEN_ADDRESS,
+  type TokenApproval,
+  type TokenBalance,
+  type TokenDefinition,
+} from './token'
 // ============================================================================
 // Transaction types (new)
 // ============================================================================

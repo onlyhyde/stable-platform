@@ -89,8 +89,8 @@ export interface MultiModeTransactionRequest {
   /** Sender address */
   from: Address
 
-  /** Recipient address */
-  to: Address
+  /** Recipient address (optional for contract deployment) */
+  to?: Address
 
   /** Value in wei */
   value: bigint

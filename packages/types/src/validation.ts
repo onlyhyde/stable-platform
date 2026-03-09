@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import { type Address, getAddress } from 'viem'
 
 // ============================================================================
 // EIP-4337 ValidationData Packing
@@ -30,10 +30,12 @@ export interface ValidationData {
   validAfter: bigint
 }
 
-/** Signature validation succeeded */
-export const SIG_VALIDATION_SUCCESS = 0n
-/** Signature validation failed */
-export const SIG_VALIDATION_FAILED = 1n
+/** Signature validation succeeded (address 0x0) */
+export const SIG_VALIDATION_SUCCESS =
+  '0x0000000000000000000000000000000000000000' as Address
+/** Signature validation failed (address 0x1) */
+export const SIG_VALIDATION_FAILED =
+  '0x0000000000000000000000000000000000000001' as Address
 
 /**
  * Block number mode flag (v0.9)
@@ -62,8 +64,9 @@ export function packValidationData(data: ValidationData): bigint {
  * @see https://eips.ethereum.org/EIPS/eip-4337
  */
 export function unpackValidationData(packed: bigint): ValidationData {
-  const authorizer =
+  const rawHex =
     `0x${((packed >> 96n) & 0xffffffffffffffffffffffffffffffffffffffffn).toString(16).padStart(40, '0')}` as Address
+  const authorizer = getAddress(rawHex)
   const validUntil = (packed >> 48n) & 0xffffffffffffn
   const validAfter = packed & 0xffffffffffffn
   return { authorizer, validUntil, validAfter }
@@ -80,5 +83,5 @@ export function isBlockNumberMode(data: ValidationData): boolean {
  * Check if validation data indicates signature failure
  */
 export function isValidationFailed(data: ValidationData): boolean {
-  return BigInt(data.authorizer) === SIG_VALIDATION_FAILED
+  return data.authorizer.toLowerCase() === SIG_VALIDATION_FAILED.toLowerCase()
 }

@@ -66,8 +66,19 @@ export interface ERC20Metadata {
 export const NATIVE_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000' as Address
 
 /**
- * Check if address is native token
+ * Sentinel address for native ETH used by DeFi protocols and ERC-4337 paymasters
+ * @see https://eips.ethereum.org/EIPS/eip-7528
+ */
+export const NATIVE_ETH_SENTINEL_ADDRESS =
+  '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' as Address
+
+/**
+ * Check if address is native token (zero address or 0xEeee...EeE sentinel)
  */
 export function isNativeToken(address: Address): boolean {
-  return address.toLowerCase() === NATIVE_TOKEN_ADDRESS.toLowerCase()
+  const lower = address.toLowerCase()
+  return (
+    lower === NATIVE_TOKEN_ADDRESS.toLowerCase() ||
+    lower === NATIVE_ETH_SENTINEL_ADDRESS.toLowerCase()
+  )
 }

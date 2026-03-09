@@ -1,8 +1,6 @@
 import type { Address } from 'viem'
+import type { InstalledModule } from './module'
 import { TRANSACTION_MODE, type TransactionMode } from './transaction'
-
-// Note: InstalledModule will be imported from './module' after 07-MODULE-TYPES.md is implemented
-// import type { InstalledModule } from './module'
 
 // ============================================================================
 // Constants
@@ -67,8 +65,8 @@ export interface Account {
   /** Whether smart account is deployed on-chain */
   isDeployed?: boolean
 
-  /** Installed ERC-7579 modules (will be typed as InstalledModule[] after 07-MODULE-TYPES.md) */
-  installedModules?: unknown[]
+  /** Installed ERC-7579 modules */
+  installedModules?: InstalledModule[]
 
   // ---- Metadata ----
 

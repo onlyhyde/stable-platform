@@ -86,11 +86,11 @@ export interface ExecutionMode {
  * @see https://eips.ethereum.org/EIPS/eip-7579#execution-behavior
  */
 export function encodeExecutionMode(mode: ExecutionMode): Hex {
-  const callType = mode.callType.slice(2).padStart(2, '0')
-  const execType = mode.execType.slice(2).padStart(2, '0')
+  const callType = mode.callType.slice(2).padStart(2, '0').slice(-2)
+  const execType = mode.execType.slice(2).padStart(2, '0').slice(-2)
   const unused = '00000000'
-  const selector = mode.modeSelector.slice(2).padStart(8, '0')
-  const payload = mode.modePayload.slice(2).padStart(44, '0')
+  const selector = mode.modeSelector.slice(2).padStart(8, '0').slice(-8)
+  const payload = mode.modePayload.slice(2).padStart(44, '0').slice(-44)
   return `0x${callType}${execType}${unused}${selector}${payload}` as Hex
 }
 
