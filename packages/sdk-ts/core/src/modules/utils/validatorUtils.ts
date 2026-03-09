@@ -23,10 +23,11 @@ import type { RpcProvider } from '../../providers'
 // ============================================================================
 
 /**
- * Validator validation result
+ * Validator validation result.
+ * Uses `isValid` for consistency with `InputValidator.ValidationResult`.
  */
 export interface ValidatorValidationResult {
-  valid: boolean
+  isValid: boolean
   errors: string[]
 }
 
@@ -113,7 +114,7 @@ export function validateECDSAValidatorConfig(
   }
 
   return {
-    valid: errors.length === 0,
+    isValid: errors.length === 0,
     errors,
   }
 }
@@ -198,7 +199,7 @@ export function validateWebAuthnValidatorConfig(
   }
 
   return {
-    valid: errors.length === 0,
+    isValid: errors.length === 0,
     errors,
   }
 }
@@ -376,7 +377,7 @@ export function validateMultiSigValidatorConfig(
   }
 
   return {
-    valid: errors.length === 0,
+    isValid: errors.length === 0,
     errors,
   }
 }

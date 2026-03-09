@@ -83,6 +83,13 @@ export function parseSignature(signature: Hex): { v: number; r: Hex; s: Hex } {
   // Remove 0x prefix
   const sig = signature.slice(2)
 
+  // ECDSA signature must be exactly 65 bytes (130 hex chars): r(32) + s(32) + v(1)
+  if (sig.length < 130) {
+    throw new Error(
+      `Invalid signature length: expected at least 130 hex chars (65 bytes), got ${sig.length}`
+    )
+  }
+
   // r = first 32 bytes, s = next 32 bytes, v = last byte
   const r = `0x${sig.slice(0, 64)}` as Hex
   const s = `0x${sig.slice(64, 128)}` as Hex

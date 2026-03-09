@@ -116,13 +116,14 @@ export function createSmartAccountStrategy(
 
     /**
      * Smart Account mode supports deployed smart accounts and
-     * delegated accounts (EIP-7702 init path for undeployed)
+     * delegated accounts whose delegation is already active on-chain.
+     * Undeployed delegated accounts must first establish delegation
+     * via the EIP-7702 strategy before using this strategy.
      */
     supports(account: Account): boolean {
-      return (
-        account.type === ACCOUNT_TYPE.SMART ||
-        account.type === ACCOUNT_TYPE.DELEGATED
-      )
+      if (account.type === ACCOUNT_TYPE.SMART) return true
+      if (account.type === ACCOUNT_TYPE.DELEGATED) return account.isDeployed === true
+      return false
     },
 
     /**

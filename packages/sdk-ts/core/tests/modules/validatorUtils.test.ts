@@ -50,7 +50,7 @@ describe('validatorUtils', () => {
       it('should validate valid config', () => {
         const result = validateECDSAValidatorConfig({ owner: validOwner })
 
-        expect(result.valid).toBe(true)
+        expect(result.isValid).toBe(true)
         expect(result.errors).toHaveLength(0)
       })
 
@@ -59,7 +59,7 @@ describe('validatorUtils', () => {
           owner: '0x0000000000000000000000000000000000000000' as Address,
         })
 
-        expect(result.valid).toBe(false)
+        expect(result.isValid).toBe(false)
         expect(result.errors).toContain('Owner cannot be zero address')
       })
 
@@ -68,7 +68,7 @@ describe('validatorUtils', () => {
           owner: 'not-an-address' as Address,
         })
 
-        expect(result.valid).toBe(false)
+        expect(result.isValid).toBe(false)
         expect(result.errors.some((e) => e.includes('valid Ethereum address'))).toBe(true)
       })
 
@@ -77,7 +77,7 @@ describe('validatorUtils', () => {
           owner: '' as Address,
         })
 
-        expect(result.valid).toBe(false)
+        expect(result.isValid).toBe(false)
         expect(result.errors.some((e) => e.includes('required'))).toBe(true)
       })
     })
@@ -127,7 +127,7 @@ describe('validatorUtils', () => {
       it('should validate valid config', () => {
         const result = validateWebAuthnValidatorConfig(validConfig)
 
-        expect(result.valid).toBe(true)
+        expect(result.isValid).toBe(true)
         expect(result.errors).toHaveLength(0)
       })
 
@@ -137,7 +137,7 @@ describe('validatorUtils', () => {
           pubKeyX: 0n,
         })
 
-        expect(result.valid).toBe(false)
+        expect(result.isValid).toBe(false)
         expect(result.errors.some((e) => e.includes('Public key X'))).toBe(true)
       })
 
@@ -147,7 +147,7 @@ describe('validatorUtils', () => {
           pubKeyY: 0n,
         })
 
-        expect(result.valid).toBe(false)
+        expect(result.isValid).toBe(false)
         expect(result.errors.some((e) => e.includes('Public key Y'))).toBe(true)
       })
 
@@ -157,7 +157,7 @@ describe('validatorUtils', () => {
           credentialId: 'not-hex' as Hex,
         })
 
-        expect(result.valid).toBe(false)
+        expect(result.isValid).toBe(false)
         expect(result.errors.some((e) => e.includes('hex string'))).toBe(true)
       })
     })
@@ -199,7 +199,7 @@ describe('validatorUtils', () => {
           threshold: 2,
         })
 
-        expect(result.valid).toBe(true)
+        expect(result.isValid).toBe(true)
         expect(result.errors).toHaveLength(0)
       })
 
@@ -212,7 +212,7 @@ describe('validatorUtils', () => {
           threshold: 3,
         })
 
-        expect(result.valid).toBe(false)
+        expect(result.isValid).toBe(false)
         expect(result.errors.some((e) => e.includes('greater than number of signers'))).toBe(true)
       })
 
@@ -225,7 +225,7 @@ describe('validatorUtils', () => {
           threshold: 1,
         })
 
-        expect(result.valid).toBe(false)
+        expect(result.isValid).toBe(false)
         expect(result.errors.some((e) => e.includes('Duplicate'))).toBe(true)
       })
 
@@ -235,7 +235,7 @@ describe('validatorUtils', () => {
           threshold: 1,
         })
 
-        expect(result.valid).toBe(false)
+        expect(result.isValid).toBe(false)
         expect(result.errors.some((e) => e.includes('signer is required'))).toBe(true)
       })
 
@@ -245,7 +245,7 @@ describe('validatorUtils', () => {
           threshold: 0,
         })
 
-        expect(result.valid).toBe(false)
+        expect(result.isValid).toBe(false)
         expect(result.errors.some((e) => e.includes('at least 1'))).toBe(true)
       })
 
@@ -258,7 +258,7 @@ describe('validatorUtils', () => {
           threshold: 1,
         })
 
-        expect(result.valid).toBe(false)
+        expect(result.isValid).toBe(false)
         expect(result.errors.some((e) => e.includes('zero address'))).toBe(true)
       })
     })

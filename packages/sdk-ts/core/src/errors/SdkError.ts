@@ -16,6 +16,9 @@ import type {
 } from './types'
 import { BUNDLER_ERROR_CODES, SDK_ERROR_CODES } from './types'
 
+/** Paymaster error codes that are safe to retry */
+const RETRYABLE_PAYMASTER_CODES: ReadonlySet<string> = new Set(['TIMEOUT', 'HTTP_ERROR'])
+
 /**
  * Base SDK Error class
  * All SDK errors extend from this class
@@ -297,8 +300,7 @@ export class PaymasterError extends SdkError {
    * Check if paymaster error is retryable
    */
   override isRetryable(): boolean {
-    const retryableCodes = ['TIMEOUT', 'HTTP_ERROR']
-    return retryableCodes.includes(this.paymasterCode)
+    return RETRYABLE_PAYMASTER_CODES.has(this.paymasterCode)
   }
 
   /**

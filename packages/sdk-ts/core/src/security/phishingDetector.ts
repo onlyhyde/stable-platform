@@ -103,20 +103,21 @@ const SUSPICIOUS_TLDS = [
  * Characters that look similar to ASCII (homograph attacks)
  */
 const CONFUSABLE_CHARS: Record<string, string> = {
-  а: 'a', // Cyrillic
-  е: 'e', // Cyrillic
-  і: 'i', // Cyrillic
-  о: 'o', // Cyrillic
-  р: 'p', // Cyrillic
-  с: 'c', // Cyrillic
-  ѕ: 's', // Cyrillic
-  х: 'x', // Cyrillic
-  у: 'y', // Cyrillic
-  ω: 'w', // Greek
-  ν: 'v', // Greek
-  α: 'a', // Greek
-  '0': 'o',
-  '1': 'l',
+  а: 'a', // Cyrillic а (U+0430)
+  е: 'e', // Cyrillic е (U+0435)
+  і: 'i', // Cyrillic і (U+0456)
+  о: 'o', // Cyrillic о (U+043E)
+  р: 'p', // Cyrillic р (U+0440)
+  с: 'c', // Cyrillic с (U+0441)
+  ѕ: 's', // Cyrillic ѕ (U+0455)
+  х: 'x', // Cyrillic х (U+0445)
+  у: 'y', // Cyrillic у (U+0443)
+  ω: 'w', // Greek omega (U+03C9)
+  ν: 'v', // Greek nu (U+03BD)
+  α: 'a', // Greek alpha (U+03B1)
+  // NOTE: ASCII digits '0' and '1' intentionally excluded.
+  // They appear in legitimate domains (e.g. 1inch.io, web3.example.com)
+  // and would cause false positives. Only non-ASCII lookalikes belong here.
 }
 
 /**

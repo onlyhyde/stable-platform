@@ -154,7 +154,8 @@ export class RateLimiter {
 
   constructor(customLimits?: Record<string, RateLimitConfig>) {
     this.limits = { ...DEFAULT_LIMITS, ...(customLimits ?? {}) }
-    this.startCleanup()
+    // Cleanup is started lazily on first checkLimit() call to avoid
+    // leaking timers when RateLimiter is created in short-lived contexts.
   }
 
   /**
@@ -168,6 +169,9 @@ export class RateLimiter {
    * Check if a request is allowed
    */
   checkLimit(origin: string, method: string): RateLimitResult {
+    // Lazily start cleanup on first request
+    this.startCleanup()
+
     const now = Date.now()
     const category = METHOD_CATEGORIES[method] || 'default'
     const config = this.getConfig(category)

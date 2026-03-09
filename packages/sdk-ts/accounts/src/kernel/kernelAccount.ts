@@ -196,9 +196,21 @@ async function getKernelAddress(
       args: [initData, salt],
     })
     return address
-  } catch {
-    // If factory call fails, calculate using CREATE2
-    // This is a fallback for when the factory is not deployed yet
+  } catch (error) {
+    // Only fallback to CREATE2 for contract-level errors (factory not deployed).
+    // Re-throw network/transport errors so callers know the RPC is unreachable.
+    const isNetworkError =
+      error instanceof Error &&
+      (error.message.includes('fetch') ||
+        error.message.includes('network') ||
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('timeout') ||
+        error.message.includes('ENOTFOUND'))
+    if (isNetworkError) {
+      throw error
+    }
+
+    // Factory not deployed or contract revert — calculate using CREATE2
     const initCodeHash = keccak256(initData)
     return getContractAddress({
       bytecodeHash: initCodeHash,

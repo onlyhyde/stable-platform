@@ -292,19 +292,20 @@ export function createPaymasterError(
 }
 
 /**
- * Wrap an async function with error normalization
+ * Wrap an async function with error normalization.
+ * Preserves the original function's parameter and return types.
  */
-export function withErrorHandling<T extends (...args: unknown[]) => Promise<unknown>>(
-  fn: T,
+export function withErrorHandling<A extends unknown[], R>(
+  fn: (...args: A) => Promise<R>,
   context?: ErrorContext
-): T {
-  return (async (...args: Parameters<T>) => {
+): (...args: A) => Promise<R> {
+  return async (...args: A): Promise<R> => {
     try {
       return await fn(...args)
     } catch (error) {
       throw normalizeError(error, context)
     }
-  }) as T
+  }
 }
 
 /**
