@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import type { Address } from 'viem'
-import { isAddress, parseUnits } from 'viem'
+import type { Address, Hex } from 'viem'
+import { encodeFunctionData, isAddress, parseEther, parseUnits } from 'viem'
 import {
   Button,
   Card,
@@ -17,6 +17,7 @@ import {
 import { BatchRecipientList } from '@/components/payment/BatchRecipientList'
 import type { SponsorshipPolicy, SupportedToken, WalletToken } from '@/hooks'
 import { usePaymaster, useUserOp, useWallet, useWalletAssets } from '@/hooks'
+import type { GasPaymentContext } from '@/hooks/useUserOp'
 import { useBatchTransaction } from '@/hooks/useBatchTransaction'
 import { useEntryPointDeposit } from '@/hooks/useEntryPointDeposit'
 import { usePaymasterHealth } from '@/hooks/usePaymasterHealth'
@@ -30,7 +31,7 @@ export default function SendPage() {
   const router = useRouter()
   const { address, isConnected } = useWallet()
   const { native, tokens, isSupported } = useWalletAssets()
-  const { sendTransaction, isLoading, error } = useUserOp()
+  const { sendUserOp, sendTransaction, isLoading, error } = useUserOp()
   const { addToast, updateToast } = useToast()
 
   // Paymaster
@@ -205,7 +206,25 @@ export default function SendPage() {
       const { entryPoint } = await import('@/hooks/useSmartAccount').then((m) =>
         m.getSmartAccountAddresses(8283)
       )
-      const result = await sendTransaction(address, entryPoint, '0.01')
+      // Call EntryPoint.depositTo(sender) instead of plain ETH transfer
+      const depositCalldata = encodeFunctionData({
+        abi: [
+          {
+            type: 'function',
+            name: 'depositTo',
+            inputs: [{ name: 'account', type: 'address' }],
+            outputs: [],
+            stateMutability: 'payable',
+          },
+        ],
+        functionName: 'depositTo',
+        args: [address],
+      })
+      const result = await sendUserOp(address, {
+        to: entryPoint,
+        value: parseEther('0.01'),
+        data: depositCalldata as Hex,
+      })
       if (result?.success) {
         addToast({
           type: 'success',
@@ -225,6 +244,20 @@ export default function SendPage() {
     }
   }
 
+  function buildGasPayment(): GasPaymentContext | undefined {
+    if (paymasterType === 'none' || paymasterType === 'verifying') {
+      return undefined // EOA path or self-pay
+    }
+    const context: GasPaymentContext = { type: paymasterType }
+    if ((paymasterType === 'erc20' || paymasterType === 'permit2') && paymasterTokenAddress) {
+      context.tokenAddress = paymasterTokenAddress
+    }
+    if (paymasterType === 'permit2' && permitSignature) {
+      context.permitSignature = permitSignature
+    }
+    return context
+  }
+
   async function handleSend() {
     if (!canSend || !address) return
     setSendError(null)
@@ -236,7 +269,8 @@ export default function SendPage() {
       persistent: true,
     })
 
-    const result = await sendTransaction(address, recipient as Address, amount)
+    const gasPayment = buildGasPayment()
+    const result = await sendTransaction(address, recipient as Address, amount, gasPayment)
     if (result?.success && result.status === 'confirmed') {
       updateToast(toastId, {
         type: 'success',
