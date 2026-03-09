@@ -62,12 +62,14 @@
 | **번들러** | gasEstimator merge conflict 해결 | 이전 세션 | `services/bundler/src/gas/gasEstimator.ts` |
 | **번들러** | CALL_TYPE 중복 export 제거 | 이전 세션 | `packages/types/src/constants.ts` |
 | **AA24** | Kernel `initialize()` calldata 포함 | 이전 세션 | `apps/wallet-extension/src/background/rpc/handler.ts` |
+| **I1** | `stablenet_estimateGas`에 paymaster stub 포함 | Session 1 | `apps/wallet-extension/src/background/rpc/handler.ts` |
+| **I2** | `pm_sponsorPolicy` proxy 포워딩 (fallback 유지) | Session 1 | `apps/wallet-extension/src/background/rpc/handler.ts` |
 
 ### 1.3 테스트 상태
 
 - 번들러: **461 tests passing** (18 test files)
 - 타입 체크: 수정된 파일에 **에러 없음**
-- 커밋: **미커밋** (현재 세션 변경 사항)
+- 커밋: **완료** (5개 커밋 — 2668d8f, f38987e, 3a67afa, f5c93ff, d61e9a6)
 
 ---
 
