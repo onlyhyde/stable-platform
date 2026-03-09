@@ -1,20 +1,31 @@
 import type { Address } from 'viem'
+import {
+  ENTRY_POINT_ADDRESS as _ENTRY_POINT_ADDRESS,
+  ENTRY_POINT_V07_ADDRESS,
+  ENTRY_POINT_V09_ADDRESS,
+  ENTRY_POINT_V09_CANONICAL_ADDRESS,
+} from '@stablenet/contracts'
 
 /**
  * EntryPoint Addresses
- * Official ERC-4337 EntryPoint contract addresses
+ * Re-exported from @stablenet/contracts (single source of truth)
  */
 
 /**
  * EntryPoint v0.9 address (StableNet deployment)
  */
-export const ENTRY_POINT_V09: Address = '0xEf6817fe73741A8F10088f9511c64b666a338A14'
+export const ENTRY_POINT_V09: Address = ENTRY_POINT_V09_ADDRESS
+
+/**
+ * EntryPoint v0.9 canonical address (EIP-4337 spec standard)
+ */
+export const ENTRY_POINT_V09_CANONICAL: Address = ENTRY_POINT_V09_CANONICAL_ADDRESS
 
 /**
  * EntryPoint v0.7 address (same on all EVM chains)
  * @deprecated Use ENTRY_POINT_V09 for new deployments
  */
-export const ENTRY_POINT_V07: Address = '0x0000000071727De22E5E9d8BAf0edAc6f37da032'
+export const ENTRY_POINT_V07: Address = ENTRY_POINT_V07_ADDRESS
 
 /**
  * EntryPoint v0.6 address (legacy, same on all EVM chains)
@@ -39,7 +50,7 @@ export const CURRENT_ENTRY_POINT_VERSION = 'V09' as const
 /**
  * Current recommended EntryPoint address
  */
-export const ENTRY_POINT_ADDRESS = ENTRY_POINT_V09
+export const ENTRY_POINT_ADDRESS: Address = _ENTRY_POINT_ADDRESS
 
 /**
  * Check if an address is a known EntryPoint

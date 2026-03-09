@@ -23,6 +23,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@stablenet/contracts": "workspace:*",
     "@stablenet/types": "workspace:*",
     "viem": "^2.46.3"
   },
