@@ -294,7 +294,7 @@ function handleErc20Data(
     flags: 0,
     validUntil: BigInt(validUntil),
     validAfter: BigInt(validAfter),
-    nonce: 0n,
+    nonce: BigInt(Date.now()),
     payload,
   })
 
@@ -355,7 +355,7 @@ function handlePermit2Data(
       flags: 0,
       validUntil: BigInt(validUntil),
       validAfter: BigInt(validAfter),
-      nonce: 0n,
+      nonce: BigInt(Date.now()),
       payload,
     })
 

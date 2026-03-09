@@ -1,5 +1,10 @@
 import type { Address, PublicClient } from 'viem'
-import { calculateTokenAmount, getTokenConfig, isTokenSupported } from '../chain/contracts'
+import {
+  calculateTokenAmount,
+  getTokenConfig,
+  getTokenPrice,
+  isTokenSupported,
+} from '../chain/contracts'
 import type { PackedUserOperationRpc, TokenPaymentEstimate, UserOperationRpc } from '../types'
 import { estimateGasCost } from '../utils/gasEstimator'
 import { normalizeUserOp } from '../utils/userOpNormalizer'
@@ -8,6 +13,7 @@ import { validateEntryPoint } from '../utils/validation'
 export interface EstimateTokenPaymentConfig {
   client: PublicClient
   erc20PaymasterAddress: Address
+  oracleAddress?: Address
   supportedChainIds: number[]
   supportedEntryPoints: Address[]
 }
@@ -74,12 +80,30 @@ export async function handleEstimateTokenPayment(
       getTokenConfig(config.client, config.erc20PaymasterAddress, tokenAddress),
     ])
 
+    // Fetch exchange rate from oracle if available
+    let exchangeRate = '0'
+    const oracleAddr = config.oracleAddress ?? tokenConfig.oracle
+    if (oracleAddr && oracleAddr !== '0x0000000000000000000000000000000000000000') {
+      try {
+        exchangeRate = await getTokenPrice(config.client, oracleAddr, tokenAddress)
+      } catch {
+        // Oracle unavailable — fall back to computed ratio
+        if (estimatedGasCost > 0n) {
+          // ratio = tokenAmount * 1e18 / ethAmount (scaled to 18 decimals)
+          exchangeRate = ((tokenAmount * 10n ** 18n) / estimatedGasCost).toString()
+        }
+      }
+    } else if (estimatedGasCost > 0n) {
+      // No oracle configured — derive from on-chain calculateTokenAmount result
+      exchangeRate = ((tokenAmount * 10n ** 18n) / estimatedGasCost).toString()
+    }
+
     return {
       success: true,
       data: {
         tokenAddress,
         estimatedAmount: tokenAmount.toString(),
-        exchangeRate: '0', // Derived from on-chain calculation
+        exchangeRate,
         markup: tokenConfig.markup,
       },
     }
