@@ -194,9 +194,13 @@ export {
 // EntryPoint
 export {
   ENTRY_POINT_ABI,
+  ENTRY_POINT_V09_ADDRESS,
+  ENTRY_POINT_V09_CANONICAL_ADDRESS,
+  SENDER_CREATOR_V09_ADDRESS,
   getEntryPointVersion,
   isEntryPointV06,
   isEntryPointV07,
+  isEntryPointV09,
 } from './entrypoint'
 // Factory / Counterfactual
 export {
@@ -256,17 +260,6 @@ export {
   type PaymasterSelectorConfig,
   PaymasterSelectorError,
 } from './paymaster/selector'
-// EntryPoint
-export {
-  ENTRY_POINT_ABI,
-  ENTRY_POINT_V09_ADDRESS,
-  ENTRY_POINT_V09_CANONICAL_ADDRESS,
-  SENDER_CREATOR_V09_ADDRESS,
-  getEntryPointVersion,
-  isEntryPointV07,
-  isEntryPointV06,
-} from './entrypoint'
-
 // ERC-7579 Execution Mode
 export { CALL_TYPE, EXEC_MODE } from './execution'
 

@@ -8,6 +8,7 @@
 import { ENTRY_POINT_ADDRESS } from '@stablenet/core'
 import type { Address, Hex } from 'viem'
 import { concat, encodeAbiParameters, getContractAddress, type PublicClient } from 'viem'
+import { extractRevertData } from '../validation'
 
 // Re-export factory address from core
 export { KERNEL_V3_1_FACTORY_ADDRESS } from '@stablenet/sdk-types'
@@ -75,18 +76,3 @@ export function predictCounterfactualAddress(
   })
 }
 
-/**
- * Extract revert data from a call error
- */
-function extractRevertData(error: unknown): Hex | undefined {
-  if (error && typeof error === 'object') {
-    const err = error as Record<string, unknown>
-    if (typeof err.data === 'string' && err.data.startsWith('0x')) {
-      return err.data as Hex
-    }
-    if (err.cause && typeof err.cause === 'object') {
-      return extractRevertData(err.cause)
-    }
-  }
-  return undefined
-}

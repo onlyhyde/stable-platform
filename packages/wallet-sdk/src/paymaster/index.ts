@@ -90,6 +90,10 @@ export async function getPaymasterStubData(
     }),
   })
 
+  if (!response.ok) {
+    throw new Error(`pm_getPaymasterStubData HTTP error: ${response.status} ${response.statusText}`)
+  }
+
   const json = await response.json()
 
   if (json.error) {
@@ -133,6 +137,10 @@ export async function getPaymasterData(
       params: [userOp, entryPoint, chainId],
     }),
   })
+
+  if (!response.ok) {
+    throw new Error(`pm_getPaymasterData HTTP error: ${response.status} ${response.statusText}`)
+  }
 
   const json = await response.json()
 

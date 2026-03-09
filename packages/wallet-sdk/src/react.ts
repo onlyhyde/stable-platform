@@ -45,5 +45,3 @@ export { useToken } from './hooks/useToken'
 export { useUserOpReceipt } from './hooks/useUserOpReceipt'
 // React hooks
 export { useWallet } from './hooks/useWallet'
-// Re-export everything from main entry
-export * from './index'

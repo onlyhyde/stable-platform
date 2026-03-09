@@ -102,6 +102,7 @@ export function toNetworkInfo(config: NetworkConfig): NetworkInfo {
     explorerUrl: config.blockExplorers?.default?.url,
     isTestnet: config.testnet,
     iconUrl: config.iconUrl,
+    decimals: config.nativeCurrency.decimals,
   }
 }
 
@@ -115,7 +116,7 @@ export function toNetworkConfig(info: NetworkInfo): NetworkConfig {
     nativeCurrency: {
       name: info.symbol,
       symbol: info.symbol,
-      decimals: 18,
+      decimals: info.decimals ?? 18,
     },
     rpcUrls: {
       default: { http: [info.rpcUrl] },

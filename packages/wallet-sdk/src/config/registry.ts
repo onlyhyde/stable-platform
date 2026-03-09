@@ -4,6 +4,7 @@
  * Provides runtime network management with persistence support
  */
 
+import { walletSdkLogger } from '../logger'
 import type { NetworkConfig, NetworkInfo } from '../types'
 import { DEFAULT_NETWORKS, toNetworkConfig, toNetworkInfo } from './networks'
 
@@ -52,8 +53,8 @@ export class LocalStorage implements NetworkStorage {
   async set(key: string, value: string): Promise<void> {
     try {
       localStorage.setItem(this.prefix + key, value)
-    } catch {
-      // Storage might be full or unavailable
+    } catch (error) {
+      walletSdkLogger.warn('localStorage.set failed (storage may be full or unavailable):', error)
     }
   }
 

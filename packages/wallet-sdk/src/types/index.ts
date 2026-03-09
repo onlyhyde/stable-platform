@@ -76,6 +76,8 @@ export interface NetworkInfo {
   explorerUrl?: string
   isTestnet?: boolean
   iconUrl?: string
+  /** Native currency decimals (default: 18) */
+  decimals?: number
 }
 
 // ============================================================================

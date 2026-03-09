@@ -2,15 +2,22 @@ import { describe, expect, it } from 'vitest'
 import {
   ENTRY_POINT_ABI,
   ENTRY_POINT_V07_ADDRESS,
+  ENTRY_POINT_V09_ADDRESS,
   getEntryPointVersion,
   isEntryPointV06,
   isEntryPointV07,
+  isEntryPointV09,
 } from '../../src/entrypoint'
 
 describe('entrypoint module', () => {
   it('should export ENTRY_POINT_V07_ADDRESS', () => {
     expect(ENTRY_POINT_V07_ADDRESS).toBeDefined()
     expect(ENTRY_POINT_V07_ADDRESS).toMatch(/^0x[0-9a-fA-F]{40}$/)
+  })
+
+  it('should export ENTRY_POINT_V09_ADDRESS', () => {
+    expect(ENTRY_POINT_V09_ADDRESS).toBeDefined()
+    expect(ENTRY_POINT_V09_ADDRESS).toMatch(/^0x[0-9a-fA-F]{40}$/)
   })
 
   it('should export ENTRY_POINT_ABI', () => {
@@ -36,6 +43,10 @@ describe('entrypoint module', () => {
       expect(getEntryPointVersion('0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789')).toBe('v0.6')
     })
 
+    it('should detect v0.9', () => {
+      expect(getEntryPointVersion(ENTRY_POINT_V09_ADDRESS)).toBe('v0.9')
+    })
+
     it('should return unknown for other addresses', () => {
       expect(getEntryPointVersion('0x1234567890123456789012345678901234567890')).toBe('unknown')
     })
@@ -52,6 +63,20 @@ describe('entrypoint module', () => {
 
     it('should return false for unknown address', () => {
       expect(isEntryPointV07('0x1234567890123456789012345678901234567890')).toBe(false)
+    })
+  })
+
+  describe('isEntryPointV09', () => {
+    it('should return true for v0.9 address', () => {
+      expect(isEntryPointV09(ENTRY_POINT_V09_ADDRESS)).toBe(true)
+    })
+
+    it('should return false for v0.7 address', () => {
+      expect(isEntryPointV09('0x0000000071727De22E5E9d8BAf0edAc6f37da032')).toBe(false)
+    })
+
+    it('should return false for unknown address', () => {
+      expect(isEntryPointV09('0x1234567890123456789012345678901234567890')).toBe(false)
     })
   })
 

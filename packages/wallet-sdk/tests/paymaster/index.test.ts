@@ -38,6 +38,7 @@ describe('paymaster module', () => {
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({
+          ok: true,
           json: () => Promise.resolve(mockResponse),
         })
       )
@@ -71,6 +72,7 @@ describe('paymaster module', () => {
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({
+          ok: true,
           json: () =>
             Promise.resolve({
               jsonrpc: '2.0',
@@ -107,6 +109,7 @@ describe('paymaster module', () => {
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({
+          ok: true,
           json: () =>
             Promise.resolve({
               jsonrpc: '2.0',

@@ -1,4 +1,4 @@
-import type { Address, Hash } from 'viem'
+import type { Address, Hash, Hex } from 'viem'
 
 const ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/
 const HASH_REGEX = /^0x[0-9a-fA-F]{64}$/
@@ -34,4 +34,21 @@ export function filterValidAddresses(values: unknown[]): Address[] {
     }
   }
   return result
+}
+
+/**
+ * Extract revert data from a contract call error.
+ * Recursively searches error.data and error.cause for hex revert data.
+ */
+export function extractRevertData(error: unknown): Hex | undefined {
+  if (error && typeof error === 'object') {
+    const err = error as Record<string, unknown>
+    if (typeof err.data === 'string' && err.data.startsWith('0x')) {
+      return err.data as Hex
+    }
+    if (err.cause && typeof err.cause === 'object') {
+      return extractRevertData(err.cause)
+    }
+  }
+  return undefined
 }

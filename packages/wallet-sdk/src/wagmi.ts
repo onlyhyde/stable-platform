@@ -248,13 +248,19 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
         const chain = config.chains.find((x) => x.id === chainId)
         if (!chain) throw new SwitchChainError(new ChainNotConfiguredError())
 
-        const promise = new Promise<void>((resolve) => {
+        const SWITCH_CHAIN_TIMEOUT = 15_000
+        const promise = new Promise<void>((resolve, reject) => {
           const listener = (data: Record<string, unknown> & { chainId?: number }) => {
             if ('chainId' in data && data.chainId === chainId) {
+              clearTimeout(timer)
               config.emitter.off('change', listener)
               resolve()
             }
           }
+          const timer = setTimeout(() => {
+            config.emitter.off('change', listener)
+            reject(new Error(`switchChain timed out after ${SWITCH_CHAIN_TIMEOUT}ms`))
+          }, SWITCH_CHAIN_TIMEOUT)
           config.emitter.on('change', listener)
         })
 

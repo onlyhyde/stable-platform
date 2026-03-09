@@ -8,10 +8,12 @@
  * ValidationResult revert, failure by FailedOp revert.
  */
 
-import { ENTRY_POINT_ADDRESS, packUserOperation } from '@stablenet/core'
+import { packUserOperation } from '@stablenet/core'
+import { ENTRY_POINT_V09_ADDRESS } from '@stablenet/sdk-types'
 import type { UserOperation } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData, type PublicClient } from 'viem'
+import { extractRevertData } from '../validation'
 
 // ============================================================================
 // Types
@@ -131,12 +133,12 @@ const EXECUTION_RESULT_SELECTOR = '0x8b7ac980'
  *
  * @param publicClient - Viem public client
  * @param userOp - UserOperation to validate
- * @param entryPoint - EntryPoint address (default: v0.7)
+ * @param entryPoint - EntryPoint address (default: v0.9)
  */
 export async function simulateValidation(
   publicClient: PublicClient,
   userOp: UserOperation,
-  entryPoint: Address = ENTRY_POINT_ADDRESS
+  entryPoint: Address = ENTRY_POINT_V09_ADDRESS
 ): Promise<SimulationResult> {
   const packed = packUserOperation(userOp)
 
@@ -179,14 +181,14 @@ export async function simulateValidation(
  * @param userOp - UserOperation to simulate
  * @param target - Target contract for post-execution call
  * @param targetCallData - Call data for target
- * @param entryPoint - EntryPoint address (default: v0.7)
+ * @param entryPoint - EntryPoint address (default: v0.9)
  */
 export async function simulateHandleOp(
   publicClient: PublicClient,
   userOp: UserOperation,
   target: Address,
   targetCallData: Hex,
-  entryPoint: Address = ENTRY_POINT_ADDRESS
+  entryPoint: Address = ENTRY_POINT_V09_ADDRESS
 ): Promise<HandleOpSimulationResult> {
   const packed = packUserOperation(userOp)
 
@@ -322,15 +324,3 @@ function emptyStakeInfo(): StakeInfo {
   return { stake: 0n, unstakeDelaySec: 0n }
 }
 
-function extractRevertData(error: unknown): Hex | undefined {
-  if (error && typeof error === 'object') {
-    const err = error as Record<string, unknown>
-    if (typeof err.data === 'string' && err.data.startsWith('0x')) {
-      return err.data as Hex
-    }
-    if (err.cause && typeof err.cause === 'object') {
-      return extractRevertData(err.cause)
-    }
-  }
-  return undefined
-}

@@ -53,6 +53,8 @@ export type StableNetProviderEvent =
 export class StableNetProvider {
   private provider: EIP1193Provider
   private eventListeners: Map<string, Set<EventListener>> = new Map()
+  private providerListeners: { event: string; listener: (...args: unknown[]) => void }[] = []
+  private _destroyed = false
 
   // Current state
   private _isConnected = false
@@ -115,29 +117,66 @@ export class StableNetProvider {
    * Setup internal event listeners
    */
   private setupEventListeners(): void {
-    this.provider.on('connect', (connectInfo: ProviderConnectInfo) => {
+    const addProviderListener = (event: string, listener: (...args: unknown[]) => void) => {
+      this.provider.on(event as 'connect', listener as (connectInfo: ProviderConnectInfo) => void)
+      this.providerListeners.push({ event, listener })
+    }
+
+    addProviderListener('connect', (connectInfo: unknown) => {
+      const info = connectInfo as ProviderConnectInfo
       this._isConnected = true
-      this._chainId = connectInfo.chainId
-      this.emit('connect', connectInfo)
+      this._chainId = info.chainId
+      this.emit('connect', info)
     })
 
-    this.provider.on('disconnect', (error: ProviderRpcError) => {
+    addProviderListener('disconnect', (error: unknown) => {
       this._isConnected = false
       this._account = null
       this.emit('disconnect', error)
     })
 
-    this.provider.on('accountsChanged', (accounts: Address[]) => {
-      const accountList = filterValidAddresses(accounts)
+    addProviderListener('accountsChanged', (accounts: unknown) => {
+      const accountList = filterValidAddresses(accounts as Address[])
       this._account = accountList[0] ?? null
       this._isConnected = accountList.length > 0
       this.emit('accountsChanged', accountList)
     })
 
-    this.provider.on('chainChanged', (chainId: string) => {
-      this._chainId = chainId
+    addProviderListener('chainChanged', (chainId: unknown) => {
+      this._chainId = chainId as string
       this.emit('chainChanged', chainId)
     })
+  }
+
+  /**
+   * Cleanup all event listeners and internal state.
+   * The provider cannot be used after calling destroy().
+   */
+  destroy(): void {
+    if (this._destroyed) return
+    this._destroyed = true
+
+    // Remove listeners from underlying EIP-1193 provider
+    for (const { event, listener } of this.providerListeners) {
+      // biome-ignore lint/suspicious/noExplicitAny: viem's removeListener requires keyof EIP1193EventMap
+      this.provider.removeListener(event as any, listener as any)
+    }
+    this.providerListeners = []
+
+    // Clear all custom event listeners
+    this.eventListeners.clear()
+
+    // Reset state
+    this._isConnected = false
+    this._account = null
+    this._chainId = null
+  }
+
+  /**
+   * Whether this provider has been destroyed.
+   */
+  get destroyed(): boolean {
+    return this._destroyed
   }
 
   /**

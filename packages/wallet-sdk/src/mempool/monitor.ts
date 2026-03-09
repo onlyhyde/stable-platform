@@ -53,16 +53,18 @@ interface JsonRpcResponse<T> {
   error?: { code: number; message: string }
 }
 
-let rpcId = 0
-
-async function bundlerRpc<T>(url: string, method: string, params: unknown[]): Promise<T | null> {
-  rpcId += 1
+async function bundlerRpc<T>(
+  url: string,
+  method: string,
+  params: unknown[],
+  rpcIdFn: () => number
+): Promise<T | null> {
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       jsonrpc: '2.0',
-      id: rpcId,
+      id: rpcIdFn(),
       method,
       params,
     }),
@@ -110,6 +112,7 @@ export class UserOpMonitor {
   private readonly callbacks: Set<StatusChangeCallback> = new Set()
   private pollTimer: ReturnType<typeof setInterval> | null = null
   private destroyed = false
+  private _rpcId = 0
 
   constructor(config: MonitorConfig) {
     this.config = {
@@ -227,7 +230,8 @@ export class UserOpMonitor {
     const receipt = await bundlerRpc<UserOperationReceipt>(
       this.config.bundlerUrl,
       'eth_getUserOperationReceipt',
-      [hash]
+      [hash],
+      () => ++this._rpcId
     )
 
     const op = this.tracked.get(hash)

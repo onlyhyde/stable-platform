@@ -278,4 +278,53 @@ describe('StableNetProvider', () => {
       expect(result).toBe('0x1')
     })
   })
+
+  describe('destroy', () => {
+    it('should set destroyed to true', () => {
+      expect(provider.destroyed).toBe(false)
+      provider.destroy()
+      expect(provider.destroyed).toBe(true)
+    })
+
+    it('should reset connection state', async () => {
+      await provider.connect()
+      expect(provider.isConnected).toBe(true)
+      expect(provider.account).not.toBeNull()
+      expect(provider.chainId).not.toBeNull()
+
+      provider.destroy()
+      expect(provider.isConnected).toBe(false)
+      expect(provider.account).toBeNull()
+      expect(provider.chainId).toBeNull()
+    })
+
+    it('should remove listeners from underlying provider', () => {
+      provider.destroy()
+
+      // After destroy, internal listeners should be cleared
+      // New events from the mock provider should not update state
+      mockProvider._emit('accountsChanged', ['0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'])
+      expect(provider.account).toBeNull()
+      expect(provider.isConnected).toBe(false)
+    })
+
+    it('should stop emitting events to custom listeners', async () => {
+      await provider.connect()
+      const handler = vi.fn()
+      provider.on('chainChanged', handler)
+
+      provider.destroy()
+
+      // Custom listeners should not receive events after destroy
+      mockProvider._emit('chainChanged', '0x89')
+      expect(handler).not.toHaveBeenCalled()
+    })
+
+    it('should be idempotent (calling destroy twice is safe)', () => {
+      provider.destroy()
+      expect(provider.destroyed).toBe(true)
+      provider.destroy()
+      expect(provider.destroyed).toBe(true)
+    })
+  })
 })
