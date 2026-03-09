@@ -21,6 +21,9 @@
       "types": "./dist/watcher.d.ts",
       "import": "./dist/watcher.js",
       "default": "./dist/watcher.js"
+    },
+    "./types": {
+      "types": "./dist/index.d.ts"
     }
   },
   "files": ["dist"],
@@ -31,9 +34,11 @@
     "generate:env": "tsx scripts/generate-addresses.ts && echo 'Precompile addresses included in .env.contracts'",
     "lint": "biome lint src/",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "rm -rf dist"
   },
-  "dependencies": {
+  "optionalDependencies": {
     "chokidar": "^3.6.0"
   },
   "devDependencies": {
@@ -42,7 +47,8 @@
     "tsup": "^8.3.5",
     "tsx": "^4.19.0",
     "typescript": "^5.7.2",
-    "viem": "^2.46.3"
+    "viem": "^2.46.3",
+    "vitest": "^4.0.18"
   },
   "peerDependencies": {
     "viem": "^2.0.0"
