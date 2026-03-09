@@ -16,6 +16,9 @@ export function useRegistryStatus(): UseRegistryStatusResult {
     client.on('connected', handleConnect)
     client.on('disconnected', handleDisconnect)
 
+    // Sync after attaching listeners to close the TOCTOU race window
+    setIsConnected(client.isConnected)
+
     return () => {
       client.off('connected', handleConnect)
       client.off('disconnected', handleDisconnect)

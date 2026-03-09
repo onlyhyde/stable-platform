@@ -10,6 +10,6 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   treeshake: true,
-  splitting: false,
+  splitting: true,
   external: ['react'],
 })

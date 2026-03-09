@@ -29,9 +29,36 @@ export interface ContractFilter {
   readonly name?: string
 }
 
+export interface PaginationParams {
+  readonly limit?: number
+  readonly cursor?: string
+}
+
+export interface PaginatedResult<T> {
+  readonly items: T[]
+  readonly total: number
+  readonly cursor: string | undefined
+}
+
+export interface CreateContractInput {
+  readonly chainId: number
+  readonly name: string
+  readonly address: string
+  readonly version?: string
+  readonly tags?: string[]
+  readonly metadata?: Record<string, unknown>
+}
+
 export interface ImportResult {
   readonly created: number
   readonly updated: number
+  readonly errors?: readonly ImportError[]
+}
+
+export interface ImportError {
+  readonly index: number
+  readonly name: string
+  readonly message: string
 }
 
 export type ClientMessage =
@@ -55,4 +82,6 @@ export interface RegistryClientOptions {
   readonly autoConnect?: boolean
   readonly reconnectInterval?: number
   readonly maxReconnectAttempts?: number
+  readonly connectionTimeout?: number
+  readonly heartbeatInterval?: number
 }

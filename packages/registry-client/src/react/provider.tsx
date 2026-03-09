@@ -11,10 +11,25 @@ export interface RegistryProviderProps {
 
 export function RegistryProvider({ options, children }: RegistryProviderProps) {
   const clientRef = useRef<RegistryClient | null>(null)
+  const initialOptionsRef = useRef(options)
 
   if (!clientRef.current) {
     clientRef.current = new RegistryClient(options)
   }
+
+  useEffect(() => {
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      (options.url !== initialOptionsRef.current.url ||
+        options.apiKey !== initialOptionsRef.current.apiKey)
+    ) {
+      console.warn(
+        '[@stablenet/registry-client] RegistryProvider options changed after initial render. ' +
+          'The client is not recreated on options change. ' +
+          'To use a new configuration, remount the provider with a different key prop.'
+      )
+    }
+  }, [options.url, options.apiKey])
 
   useEffect(() => {
     return () => {

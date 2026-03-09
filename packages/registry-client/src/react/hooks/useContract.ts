@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ContractEntry } from '../../types'
 import { useRegistryClient } from '../provider'
 
@@ -15,25 +15,27 @@ export function useContract(chainId: number, name: string): UseContractResult {
   const [entry, setEntry] = useState<ContractEntry | undefined>()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [fetchKey, setFetchKey] = useState(0)
 
-  const fetchContract = useCallback(() => {
+  useEffect(() => {
+    let cancelled = false
     setIsLoading(true)
     setError(null)
 
     client
       .getContract(chainId, name)
       .then((result) => {
-        setEntry(result)
-        setIsLoading(false)
+        if (!cancelled) {
+          setEntry(result)
+          setIsLoading(false)
+        }
       })
       .catch((err) => {
-        setError(err instanceof Error ? err : new Error(String(err)))
-        setIsLoading(false)
+        if (!cancelled) {
+          setError(err instanceof Error ? err : new Error(String(err)))
+          setIsLoading(false)
+        }
       })
-  }, [client, chainId, name])
-
-  useEffect(() => {
-    fetchContract()
 
     const channel = `contracts:${chainId}:${name}`
     client.subscribe([channel])
@@ -54,17 +56,18 @@ export function useContract(chainId: number, name: string): UseContractResult {
     client.on('contract:deleted', handleDelete)
 
     return () => {
+      cancelled = true
       client.unsubscribe([channel])
       client.off('contract:updated', handleUpdate)
       client.off('contract:deleted', handleDelete)
     }
-  }, [client, chainId, name, fetchContract])
+  }, [client, chainId, name, fetchKey])
 
   return {
     address: entry?.address,
     entry,
     isLoading,
     error,
-    refetch: fetchContract,
+    refetch: () => setFetchKey((k) => k + 1),
   }
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ContractEntry, ResolvedAddressSet } from '../../types'
 import { useRegistryClient } from '../provider'
 
@@ -15,25 +15,27 @@ export function useAddressSet(chainId: number, setName: string): UseAddressSetRe
   const [resolved, setResolved] = useState<ResolvedAddressSet | undefined>()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [fetchKey, setFetchKey] = useState(0)
 
-  const fetchSet = useCallback(() => {
+  useEffect(() => {
+    let cancelled = false
     setIsLoading(true)
     setError(null)
 
     client
       .getAddressSet(chainId, setName)
       .then((result) => {
-        setResolved(result)
-        setIsLoading(false)
+        if (!cancelled) {
+          setResolved(result)
+          setIsLoading(false)
+        }
       })
       .catch((err) => {
-        setError(err instanceof Error ? err : new Error(String(err)))
-        setIsLoading(false)
+        if (!cancelled) {
+          setError(err instanceof Error ? err : new Error(String(err)))
+          setIsLoading(false)
+        }
       })
-  }, [client, chainId, setName])
-
-  useEffect(() => {
-    fetchSet()
 
     const channel = `sets:${chainId}:${setName}`
     client.subscribe([channel])
@@ -44,26 +46,38 @@ export function useAddressSet(chainId: number, setName: string): UseAddressSetRe
       }
     }
 
+    const handleDelete = (data: { chainId: number; name: string }) => {
+      if (data.chainId === chainId && data.name === setName) {
+        setResolved(undefined)
+      }
+    }
+
     client.on('set:updated', handleUpdate)
+    client.on('set:deleted', handleDelete)
 
     return () => {
+      cancelled = true
       client.unsubscribe([channel])
       client.off('set:updated', handleUpdate)
+      client.off('set:deleted', handleDelete)
     }
-  }, [client, chainId, setName, fetchSet])
+  }, [client, chainId, setName, fetchKey])
 
-  const addresses: Record<string, `0x${string}`> = {}
-  if (resolved) {
-    for (const entry of resolved.contracts) {
-      addresses[entry.name] = entry.address
+  const addresses = useMemo(() => {
+    const result: Record<string, `0x${string}`> = {}
+    if (resolved) {
+      for (const entry of resolved.contracts) {
+        result[entry.name] = entry.address
+      }
     }
-  }
+    return result
+  }, [resolved])
 
   return {
     addresses,
     entries: resolved?.contracts ?? [],
     isLoading,
     error,
-    refetch: fetchSet,
+    refetch: () => setFetchKey((k) => k + 1),
   }
 }

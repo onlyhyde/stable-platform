@@ -20,12 +20,13 @@
     "dev": "tsup --watch",
     "lint": "biome lint src/",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "test:watch": "vitest",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "eventemitter3": "^5.0.4"
+    "eventemitter3": "^5.0.4",
+    "zod": "^3.25.76"
   },
   "peerDependencies": {
     "react": ">=18.0.0"
