@@ -94,7 +94,7 @@ function getMultiModeController(): MultiModeTransactionController {
     throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
   }
 
-  const networkKey = `${network.chainId}:${network.rpcUrl}:${network.bundlerUrl ?? ''}`
+  const networkKey = `${network.chainId}:${network.rpcUrl}:${network.bundlerUrl ?? ''}:${network.paymasterUrl ?? ''}`
 
   if (_multiModeController && _multiModeNetworkKey === networkKey) {
     return _multiModeController
@@ -153,7 +153,10 @@ function getMultiModeController(): MultiModeTransactionController {
     },
 
     publishTransaction: async (rawTx: Hex): Promise<Hex> => {
-      const client = getPublicClient(network.rpcUrl)
+      // Read current network inside callback to avoid stale closure
+      const currentNetwork = walletState.getCurrentNetwork()
+      if (!currentNetwork) throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+      const client = getPublicClient(currentNetwork.rpcUrl)
       return client.sendRawTransaction({ serializedTransaction: rawTx })
     },
   })
@@ -1801,6 +1804,13 @@ const handlers: Record<string, RpcHandler> = {
       })
     }
 
+    if (txParamsRaw.to && !isAddress(txParamsRaw.to as string)) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'Invalid to address format',
+      })
+    }
+
     // Verify sender is connected
     const connectedAccounts = walletState.getConnectedAccounts(origin)
     const isAuthorized = connectedAccounts.some(
@@ -1816,7 +1826,10 @@ const handlers: Record<string, RpcHandler> = {
     const txParams: MultiModeTransactionParams = {
       from,
       to: txParamsRaw.to as Address | undefined,
-      value: txParamsRaw.value ? BigInt(txParamsRaw.value as string) : undefined,
+      value: txParamsRaw.value ? (() => {
+        try { return BigInt(txParamsRaw.value as string) }
+        catch { throw createRpcError({ code: RPC_ERRORS.INVALID_PARAMS.code, message: 'Invalid value: must be a numeric string or hex' }) }
+      })() : undefined,
       data: txParamsRaw.data as Hex | undefined,
       mode: txParamsRaw.mode as MultiModeTransactionParams['mode'],
       gasPayment: txParamsRaw.gasPayment as MultiModeTransactionParams['gasPayment'],
@@ -1842,7 +1855,9 @@ const handlers: Record<string, RpcHandler> = {
         )
       } catch (error) {
         // User rejected — clean up controller state
-        await controller.rejectTransaction(txMeta.id).catch(() => {})
+        await controller.rejectTransaction(txMeta.id).catch((e) => {
+          logger.warn(`[wallet_sendMultiModeTransaction] rejectTransaction cleanup failed: ${(e as Error).message}`)
+        })
         handleApprovalError(error, { method: 'wallet_sendMultiModeTransaction', origin })
       }
     }
@@ -1852,24 +1867,21 @@ const handlers: Record<string, RpcHandler> = {
       const hash = await controller.processTransaction(txMeta.id)
 
       // Track as pending transaction
-      try {
-        const network = walletState.getCurrentNetwork()
-        await walletState.addPendingTransaction({
-          id: txMeta.id,
-          from: txParams.from,
-          to: txParams.to ?? txParams.from,
-          value: txParams.value ?? 0n,
-          data: txParams.data ?? '0x',
-          chainId: network?.chainId ?? 0,
-          status: 'submitted',
-          type: txMeta.mode === 'smartAccount' ? 'userOp' : 'send',
-          userOpHash: txMeta.mode === 'smartAccount' ? hash : undefined,
-          txHash: txMeta.mode !== 'smartAccount' ? hash : undefined,
-          timestamp: Date.now(),
-        })
-      } catch {
-        // Non-blocking: pending tx tracking should not fail the submission
-      }
+      // Fire-and-forget: pending tx tracking should not block the response
+      const network = walletState.getCurrentNetwork()
+      walletState.addPendingTransaction({
+        id: txMeta.id,
+        from: txParams.from,
+        to: txParams.to ?? txParams.from,
+        value: txParams.value ?? 0n,
+        data: txParams.data ?? '0x',
+        chainId: network?.chainId ?? 0,
+        status: 'submitted',
+        type: txMeta.mode === 'smartAccount' ? 'userOp' : 'send',
+        userOpHash: txMeta.mode === 'smartAccount' ? hash : undefined,
+        txHash: txMeta.mode !== 'smartAccount' ? hash : undefined,
+        timestamp: Date.now(),
+      }).catch(() => {})
 
       logger.info(
         `[wallet_sendMultiModeTransaction] OK: mode=${txMeta.mode}, hash=${hash}`
@@ -1900,8 +1912,8 @@ const handlers: Record<string, RpcHandler> = {
     try {
       const controller = getMultiModeController()
       return controller.getSupportedModes()
-    } catch {
-      // Controller init may fail if network is not configured
+    } catch (error) {
+      logger.warn(`[wallet_getTransactionModes] fallback to eoa: ${(error as Error).message}`)
       return ['eoa']
     }
   },

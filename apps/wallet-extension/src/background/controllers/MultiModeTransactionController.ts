@@ -332,6 +332,7 @@ export class MultiModeTransactionController {
     this.updateTransaction(updated)
     this.removeFromPending(id)
     this.emit('transaction:rejected', updated)
+    this.removeFromTransactions(id)
 
     logger.debug('Transaction rejected', { id })
   }
@@ -407,7 +408,9 @@ export class MultiModeTransactionController {
         },
       }
       this.updateTransaction(failed)
+      this.removeFromPending(id)
       this.emit('transaction:failed', failed)
+      this.removeFromTransactions(id)
       throw error
     }
   }
@@ -467,7 +470,9 @@ export class MultiModeTransactionController {
         },
       }
       this.updateTransaction(failed)
+      this.removeFromPending(id)
       this.emit('transaction:failed', failed)
+      this.removeFromTransactions(id)
       throw error
     }
   }
@@ -495,6 +500,7 @@ export class MultiModeTransactionController {
     this.removeFromPending(id)
     this.state.confirmedTransactions.push(id)
     this.emit('transaction:confirmed', updated)
+    this.removeFromTransactions(id)
 
     logger.debug('Transaction confirmed', { id, blockNumber: receipt.blockNumber })
   }
@@ -827,6 +833,16 @@ export class MultiModeTransactionController {
     if (index > -1) {
       this.state.pendingTransactions.splice(index, 1)
     }
+  }
+
+  /**
+   * Remove a terminal-state transaction from in-memory state.
+   * Completed/failed/rejected transactions are already persisted
+   * in walletState.transactions (chrome.storage) by the handler,
+   * so the controller only needs to track active lifecycle entries.
+   */
+  private removeFromTransactions(id: string): void {
+    delete this.state.transactions[id]
   }
 
   private emit(
