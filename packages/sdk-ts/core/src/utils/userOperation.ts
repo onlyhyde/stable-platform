@@ -293,10 +293,9 @@ export function detectEntryPointVersion(entryPoint: Address): EntryPointVersion 
 
 /**
  * Version-aware UserOperation hash.
- * Currently supports v0.9 (EIP-712). For v0.7 or unknown EntryPoint addresses,
- * falls back to v0.9 hash with a warning-level assumption.
+ * Only supports v0.9 (EIP-712). Throws for v0.7 or unrecognized EntryPoint addresses.
  *
- * @throws Error if EntryPoint version is v0.7 (not supported — use v0.7 SDK)
+ * @throws Error if EntryPoint version is not v0.9
  */
 export function getUserOperationHashVersioned(
   userOp: UserOperation,
@@ -309,6 +308,10 @@ export function getUserOperationHashVersioned(
       'EntryPoint v0.7 hash is not supported. Use the v0.7 SDK or upgrade to v0.9.'
     )
   }
-  // v0.9 and unknown both use the v0.9 EIP-712 hash
+  if (version === 'unknown') {
+    throw new Error(
+      `Unrecognized EntryPoint address: ${entryPoint}. Only v0.9 EntryPoint is supported.`
+    )
+  }
   return getUserOperationHash(userOp, entryPoint, chainId)
 }
