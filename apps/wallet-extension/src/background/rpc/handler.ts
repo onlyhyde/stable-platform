@@ -3933,6 +3933,59 @@ const handlers: Record<string, RpcHandler> = {
           maxPriorityFeePerGas: 0n,
         }
 
+        // If gasPayment is sponsor/erc20/permit2, fetch paymaster stub for accurate estimation
+        const gasPayment = estimateParams.gasPayment
+        const hasPaymaster =
+          gasPayment && gasPayment.type !== 'none' && gasPayment.type !== 'self-pay'
+
+        if (hasPaymaster && network.paymasterUrl) {
+          try {
+            const chainIdHex = `0x${(network.chainId).toString(16)}`
+            const paymasterContext: Record<string, unknown> =
+              gasPayment.type === 'erc20' && gasPayment.tokenAddress
+                ? { paymasterType: 'erc20', tokenAddress: gasPayment.tokenAddress }
+                : {}
+
+            const userOpHex = {
+              sender: estimateParams.from,
+              nonce: '0x0',
+              callData: partialUserOp.callData,
+              callGasLimit: '0x0',
+              verificationGasLimit: '0x0',
+              preVerificationGas: '0x0',
+              maxFeePerGas: '0x0',
+              maxPriorityFeePerGas: '0x0',
+              signature: '0x',
+            }
+
+            const stubResult = (await fetchFromPaymaster(
+              network.paymasterUrl,
+              'pm_getPaymasterStubData',
+              [userOpHex, entryPoint, chainIdHex, paymasterContext]
+            )) as {
+              paymaster?: string
+              paymasterData?: string
+              paymasterVerificationGasLimit?: string
+              paymasterPostOpGasLimit?: string
+            } | undefined
+
+            if (stubResult?.paymaster) {
+              partialUserOp.paymaster = stubResult.paymaster as Address
+              partialUserOp.paymasterData = (stubResult.paymasterData ?? '0x') as Hex
+              partialUserOp.paymasterVerificationGasLimit = BigInt(
+                stubResult.paymasterVerificationGasLimit ?? '0'
+              )
+              partialUserOp.paymasterPostOpGasLimit = BigInt(
+                stubResult.paymasterPostOpGasLimit ?? '0'
+              )
+            }
+          } catch (stubError) {
+            logger.warn('Paymaster stub fetch failed for gas estimation, proceeding without', {
+              error: stubError,
+            })
+          }
+        }
+
         try {
           const gasEstimate = await bundlerClient.estimateUserOperationGas(
             partialUserOp as UserOperation
@@ -3949,7 +4002,9 @@ const handlers: Record<string, RpcHandler> = {
           const totalGas =
             gasEstimate.preVerificationGas +
             gasEstimate.verificationGasLimit +
-            gasEstimate.callGasLimit
+            gasEstimate.callGasLimit +
+            (gasEstimate.paymasterVerificationGasLimit ?? 0n) +
+            (gasEstimate.paymasterPostOpGasLimit ?? 0n)
           const estimatedCost = totalGas * maxFeePerGas
 
           return {
@@ -3960,6 +4015,13 @@ const handlers: Record<string, RpcHandler> = {
             preVerificationGas: gasEstimate.preVerificationGas.toString(),
             verificationGasLimit: gasEstimate.verificationGasLimit.toString(),
             callGasLimit: gasEstimate.callGasLimit.toString(),
+            ...(gasEstimate.paymasterVerificationGasLimit != null && {
+              paymasterVerificationGasLimit:
+                gasEstimate.paymasterVerificationGasLimit.toString(),
+            }),
+            ...(gasEstimate.paymasterPostOpGasLimit != null && {
+              paymasterPostOpGasLimit: gasEstimate.paymasterPostOpGasLimit.toString(),
+            }),
           }
         } catch (bundlerError) {
           logger.warn('Bundler gas estimation failed, falling back to RPC', { error: bundlerError })
@@ -4245,7 +4307,7 @@ const handlers: Record<string, RpcHandler> = {
 
   /**
    * Get supported gas payment tokens
-   * Returns the native token (WKRC) as the only gas payment option
+   * Forwards to paymaster-proxy for ERC-20 tokens, always includes native token
    */
   pm_supportedTokens: async (params) => {
     const chainId = params?.[0] as number | undefined
@@ -4257,19 +4319,35 @@ const handlers: Record<string, RpcHandler> = {
       throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
     }
 
-    if (!network.paymasterUrl) {
-      return { tokens: [] }
+    // Native token is always available (self-pay via EntryPoint deposit)
+    const nativeToken = {
+      symbol: network.currency.symbol,
+      address: '0x0000000000000000000000000000000000000000' as Address,
+      decimals: network.currency.decimals,
+      isNative: true,
     }
 
-    return {
-      tokens: [
-        {
-          symbol: network.currency.symbol,
-          address: '0x0000000000000000000000000000000000000000' as Address,
-          decimals: network.currency.decimals,
-          isNative: true,
-        },
-      ],
+    if (!network.paymasterUrl) {
+      return { tokens: [nativeToken] }
+    }
+
+    // Forward to paymaster-proxy for ERC-20 tokens
+    try {
+      const chainIdHex = `0x${(network.chainId).toString(16)}`
+      const erc20Tokens = (await fetchFromPaymaster(
+        network.paymasterUrl,
+        'pm_supportedTokens',
+        [chainIdHex]
+      )) as Array<{ symbol: string; address: Address; decimals: number }>
+
+      const tokens = [
+        nativeToken,
+        ...(erc20Tokens ?? []).map((t) => ({ ...t, isNative: false })),
+      ]
+      return { tokens }
+    } catch {
+      // Paymaster-proxy unavailable or ERC20 paymaster not configured — return native only
+      return { tokens: [nativeToken] }
     }
   },
 
@@ -4295,48 +4373,128 @@ const handlers: Record<string, RpcHandler> = {
       }
     }
 
-    // Probe paymaster availability with a stub UserOp
+    // Forward to paymaster-proxy for real policy data
     try {
       const account = requestParams?.account ?? '0x0000000000000000000000000000000000000000'
-      const stubUserOp = {
-        sender: account,
-        nonce: '0x0',
-        callData: '0x',
-        callGasLimit: '0x0',
-        verificationGasLimit: '0x0',
-        preVerificationGas: '0x0',
-        maxFeePerGas: '0x0',
-        maxPriorityFeePerGas: '0x0',
-        signature: '0x',
-      }
+      const chainIdHex = `0x${(network.chainId).toString(16)}`
 
-      const entryPoint = getEntryPointForChain()
-      await fetchFromPaymaster(network.paymasterUrl, 'pm_getPaymasterStubData', [
-        stubUserOp,
-        entryPoint,
-        `0x${(network.chainId).toString(16)}`,
-      ])
+      const policyResult = (await fetchFromPaymaster(
+        network.paymasterUrl,
+        'pm_getSponsorPolicy',
+        [account, chainIdHex]
+      )) as {
+        isAvailable?: boolean
+        reason?: string
+        dailyLimitRemaining?: string
+        perTxLimit?: string
+      } | undefined
+
+      if (!policyResult || policyResult.isAvailable === false) {
+        return {
+          isAvailable: false,
+          reason: policyResult?.reason ?? 'Sponsorship not available for this account',
+        }
+      }
 
       return {
         isAvailable: true,
         sponsor: { name: 'StableNet Paymaster' },
-        maxGas: '100000000000000', // 0.0001 WKRC
-        dailyLimit: '100000000000000000', // 0.1 WKRC
+        dailyLimitRemaining: policyResult.dailyLimitRemaining,
+        perTxLimit: policyResult.perTxLimit,
       }
     } catch {
-      return {
-        isAvailable: false,
-        reason: 'Paymaster is currently unavailable',
+      // Proxy unavailable — probe with stub UserOp as fallback
+      try {
+        const account = requestParams?.account ?? '0x0000000000000000000000000000000000000000'
+        const stubUserOp = {
+          sender: account,
+          nonce: '0x0',
+          callData: '0x',
+          callGasLimit: '0x0',
+          verificationGasLimit: '0x0',
+          preVerificationGas: '0x0',
+          maxFeePerGas: '0x0',
+          maxPriorityFeePerGas: '0x0',
+          signature: '0x',
+        }
+
+        const entryPoint = getEntryPointForChain()
+        await fetchFromPaymaster(network.paymasterUrl, 'pm_getPaymasterStubData', [
+          stubUserOp,
+          entryPoint,
+          `0x${(network.chainId).toString(16)}`,
+        ])
+
+        return {
+          isAvailable: true,
+          sponsor: { name: 'StableNet Paymaster' },
+        }
+      } catch {
+        return {
+          isAvailable: false,
+          reason: 'Paymaster is currently unavailable',
+        }
       }
     }
   },
 
   /**
    * Estimate ERC-20 gas payment
-   * Not supported — paymaster only sponsors native token gas
+   * Forwards to paymaster-proxy's pm_estimateTokenPayment
    */
-  pm_estimateERC20: async () => {
-    return { supported: false }
+  pm_estimateERC20: async (params) => {
+    const [requestParams] = (params ?? []) as [
+      { userOp?: Record<string, unknown>; tokenAddress?: Address; chainId?: number } | undefined,
+    ]
+
+    const chainId = requestParams?.chainId
+    const network = chainId
+      ? walletState.getState().networks.networks.find((n) => n.chainId === chainId)
+      : walletState.getCurrentNetwork()
+
+    if (!network) {
+      throw createRpcError(RPC_ERRORS.CHAIN_DISCONNECTED)
+    }
+
+    if (!network.paymasterUrl) {
+      return { supported: false, reason: 'Paymaster not configured' }
+    }
+
+    const tokenAddress = requestParams?.tokenAddress
+    if (!tokenAddress) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'tokenAddress is required',
+      })
+    }
+
+    const userOp = requestParams?.userOp
+    if (!userOp) {
+      throw createRpcError({
+        code: RPC_ERRORS.INVALID_PARAMS.code,
+        message: 'userOp is required for gas estimation',
+      })
+    }
+
+    try {
+      const entryPoint = getEntryPointForChain(network.chainId)
+      const chainIdHex = `0x${(network.chainId).toString(16)}`
+      const estimate = await fetchFromPaymaster(
+        network.paymasterUrl,
+        'pm_estimateTokenPayment',
+        [userOp, entryPoint, chainIdHex, tokenAddress]
+      )
+
+      return {
+        supported: true,
+        ...(estimate as object),
+      }
+    } catch (error) {
+      return {
+        supported: false,
+        reason: error instanceof Error ? error.message : 'Estimation failed',
+      }
+    }
   },
 
   /**

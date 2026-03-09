@@ -247,7 +247,8 @@ export async function sponsorAndSign(params: {
     const bundlerClient = createBundlerClient({ url: bundlerUrl, entryPoint })
     const gasEstimate = await bundlerClient.estimateUserOperationGas(userOp)
 
-    userOp.preVerificationGas = gasEstimate.preVerificationGas
+    userOp.preVerificationGas =
+      gasEstimate.preVerificationGas + gasEstimate.preVerificationGas / 10n
     userOp.verificationGasLimit =
       gasEstimate.verificationGasLimit + gasEstimate.verificationGasLimit / 5n
     userOp.callGasLimit = gasEstimate.callGasLimit + gasEstimate.callGasLimit / 5n
