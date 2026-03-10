@@ -16,7 +16,8 @@ import type {
 // Config
 // ============================================================================
 
-const ONRAMP_API_BASE = 'http://localhost:3002/api/v1'
+const ONRAMP_API_BASE =
+  process.env.NEXT_PUBLIC_ONRAMP_API_URL ?? 'http://localhost:3002/api/v1'
 
 // ============================================================================
 // Types
@@ -77,7 +78,8 @@ export function useOnRamp(): UseOnRampReturn {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchIdRef = useRef(0)
+  const quoteFetchIdRef = useRef(0)
+  const ordersFetchIdRef = useRef(0)
 
   // Load supported assets on mount
   useEffect(() => {
@@ -94,7 +96,7 @@ export function useOnRamp(): UseOnRampReturn {
       crypto: CryptoCurrency,
       amount: number
     ): Promise<OnRampQuote | null> => {
-      const id = ++fetchIdRef.current
+      const id = ++quoteFetchIdRef.current
       setIsLoadingQuote(true)
       setError(null)
       try {
@@ -102,16 +104,16 @@ export function useOnRamp(): UseOnRampReturn {
           method: 'POST',
           body: JSON.stringify({ fiatCurrency: fiat, cryptoCurrency: crypto, fiatAmount: amount }),
         })
-        if (id !== fetchIdRef.current) return null
+        if (id !== quoteFetchIdRef.current) return null
         setQuote(result)
         return result
       } catch (err) {
-        if (id !== fetchIdRef.current) return null
+        if (id !== quoteFetchIdRef.current) return null
         const msg = err instanceof Error ? err.message : 'Failed to get quote'
         setError(msg)
         return null
       } finally {
-        if (id === fetchIdRef.current) {
+        if (id === quoteFetchIdRef.current) {
           setIsLoadingQuote(false)
         }
       }
@@ -158,16 +160,16 @@ export function useOnRamp(): UseOnRampReturn {
   }, [])
 
   const refreshOrders = useCallback(async () => {
-    const id = ++fetchIdRef.current
+    const id = ++ordersFetchIdRef.current
     setIsLoadingOrders(true)
     try {
       const result = await apiCall<OnRampOrder[]>('/orders')
-      if (id !== fetchIdRef.current) return
+      if (id !== ordersFetchIdRef.current) return
       setOrders(Array.isArray(result) ? result : [])
     } catch {
       // Keep existing orders on error
     } finally {
-      if (id === fetchIdRef.current) {
+      if (id === ordersFetchIdRef.current) {
         setIsLoadingOrders(false)
       }
     }

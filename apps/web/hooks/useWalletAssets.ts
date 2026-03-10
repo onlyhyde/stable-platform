@@ -203,7 +203,7 @@ export function useWalletAssets(): UseWalletAssetsResult {
     } catch (err) {
       if (id !== fetchIdRef.current) return
       setIsError(true)
-      setError((err as Error).message || 'Failed to fetch assets')
+      setError(err instanceof Error ? err.message : 'Failed to fetch assets')
     } finally {
       if (id === fetchIdRef.current) {
         setIsLoading(false)
@@ -239,7 +239,7 @@ export function useWalletAssets(): UseWalletAssetsResult {
       } catch (err) {
         return {
           success: false,
-          error: (err as Error).message || 'Failed to add token',
+          error: err instanceof Error ? err.message : 'Failed to add token',
         }
       }
     },

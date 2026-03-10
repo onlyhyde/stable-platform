@@ -111,6 +111,7 @@ export function useLending(): UseLendingReturn {
   const [error, setError] = useState<string | null>(null)
   const [executorInstalled, setExecutorInstalled] = useState(false)
   const fetchIdRef = useRef(0)
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const fetchAccountData = useCallback(async () => {
     if (!address || !publicClient) return
@@ -220,6 +221,13 @@ export function useLending(): UseLendingReturn {
     fetchAccountData()
   }, [fetchAccountData])
 
+  // Cleanup refresh timer on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout(refreshTimerRef.current)
+    }
+  }, [])
+
   const sendExecutorOp = useCallback(
     async (calldata: Hex): Promise<Hex | null> => {
       if (!address) {
@@ -244,7 +252,7 @@ export function useLending(): UseLendingReturn {
           throw new Error('Failed to send UserOperation')
         }
 
-        setTimeout(() => fetchAccountData(), 3000)
+        refreshTimerRef.current = setTimeout(() => fetchAccountData(), 3000)
         return result.userOpHash
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Operation failed'

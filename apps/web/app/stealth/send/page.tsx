@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { parseUnits } from 'viem'
 import type { Hex } from 'viem'
 import { ConnectWalletCard, PageHeader } from '@/components/common'
 import { StealthTransferCard } from '@/components/stealth'
@@ -20,6 +21,14 @@ export default function StealthSendPage() {
   const [ephemeralPubKey, setEphemeralPubKey] = useState<Hex | null>(null)
   const [txHash, setTxHash] = useState<string | null>(null)
   const [isSending, setIsSending] = useState(false)
+  const navTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  // Cleanup navigation timer on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout(navTimerRef.current)
+    }
+  }, [])
 
   const canGenerate = stealthMetaAddress.startsWith('st:eth:') && Number(amount) > 0 && isConnected
 
@@ -38,7 +47,7 @@ export default function StealthSendPage() {
 
     setIsSending(true)
     try {
-      const amountInWei = BigInt(Math.floor(Number(amount) * 10 ** decimals))
+      const amountInWei = parseUnits(amount, decimals)
       const result = await sendToStealthAddress({
         stealthAddress: generatedAddress as `0x${string}`,
         ephemeralPubKey,
@@ -48,7 +57,13 @@ export default function StealthSendPage() {
       if (result?.hash) {
         setTxHash(result.hash)
         // Navigate to stealth page after successful transaction
-        setTimeout(() => router.push('/stealth'), 2000)
+        navTimerRef.current = setTimeout(() => router.push('/stealth'), 2000)
+      }
+    } catch (err) {
+      // sendToStealthAddress sets its own error state, but catch here
+      // to handle any unexpected errors in the outer try block
+      if (!error) {
+        console.error('Stealth send failed:', err)
       }
     } finally {
       setIsSending(false)

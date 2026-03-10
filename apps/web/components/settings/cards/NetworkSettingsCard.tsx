@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Button,
   Card,
@@ -29,6 +29,12 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
     type: 'success' | 'error'
     text: string
   } | null>(null)
+  const msgTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => clearTimeout(msgTimerRef.current)
+  }, [])
 
   // Load saved settings from localStorage on mount
   useEffect(() => {
@@ -81,7 +87,7 @@ export function NetworkSettingsCard({ currentChainId, onSwitchChain }: NetworkSe
       })
 
       // Clear message after 5 seconds
-      setTimeout(() => {
+      msgTimerRef.current = setTimeout(() => {
         setSaveMessage(null)
       }, 5000)
     } catch {

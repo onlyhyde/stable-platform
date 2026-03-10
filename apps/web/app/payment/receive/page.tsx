@@ -1,7 +1,7 @@
 'use client'
 
 import { QRCodeSVG } from 'qrcode.react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { useWallet } from '@/hooks'
 import { copyToClipboard } from '@/lib/utils'
@@ -9,13 +9,18 @@ import { copyToClipboard } from '@/lib/utils'
 export default function ReceivePage() {
   const { address, isConnected } = useWallet()
   const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => {
+    return () => clearTimeout(copyTimerRef.current)
+  }, [])
 
   async function handleCopy() {
     if (!address) return
     const success = await copyToClipboard(address)
     if (success) {
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
     }
   }
 

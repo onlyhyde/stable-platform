@@ -1,6 +1,6 @@
 'use client'
 
-import { type FC, useEffect, useRef, useState } from 'react'
+import { type FC, useCallback, useEffect, useRef, useState } from 'react'
 import type { PlanDisplayInfo } from '../../types/subscription'
 import { Button } from '../common/Button'
 import { Modal } from '../common/Modal'
@@ -26,25 +26,27 @@ export const PermissionModal: FC<PermissionModalProps> = ({
   const [error, setError] = useState<string | null>(null)
   // Use ref to track current step for setTimeout callback (avoids stale closure)
   const stepRef = useRef<PermissionStep>(step)
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => {
     stepRef.current = step
   }, [step])
 
-  const handleConfirm = async () => {
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout(timerRef.current)
+    }
+  }, [])
+
+  const handleConfirm = useCallback(async () => {
     if (!plan) return
 
     setStep('requesting_permission')
     setError(null)
 
     try {
-      // The onConfirm now handles:
-      // 1. ERC-7715 permission request (wallet_grantPermissions)
-      // 2. Subscribe transaction with permissionId
-      // We track this as two conceptual steps for better UX
-
       // Short delay to show permission step before it transitions
-      // Use stepRef.current to avoid stale closure issue
-      setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         if (stepRef.current === 'requesting_permission') {
           setStep('subscribing')
         }
@@ -56,7 +58,7 @@ export const PermissionModal: FC<PermissionModalProps> = ({
       setError(err instanceof Error ? err.message : 'Failed to complete subscription')
       setStep('review')
     }
-  }
+  }, [plan, onConfirm])
 
   const handleClose = () => {
     setStep('review')

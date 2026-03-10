@@ -48,8 +48,14 @@ export function StableNetProvider({ children }: StableNetProviderProps) {
     const contracts = getContractAddresses(currentChainId)
     const services = getServiceUrls(currentChainId)
 
-    const defaultContracts = getContractAddresses(8283)!
-    const defaultServices = getServiceUrls(8283)!
+    const defaultContracts = getContractAddresses(8283)
+    const defaultServices = getServiceUrls(8283)
+
+    if (!defaultContracts || !defaultServices) {
+      throw new Error(
+        'StableNet default configuration (chainId 8283) is missing. Check your environment setup.'
+      )
+    }
 
     return {
       publicClient,

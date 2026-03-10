@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import type { HTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -290,7 +291,7 @@ export function FeatureCard({
   )
 
   if (href) {
-    return <a href={href}>{content}</a>
+    return <Link href={href}>{content}</Link>
   }
 
   return content

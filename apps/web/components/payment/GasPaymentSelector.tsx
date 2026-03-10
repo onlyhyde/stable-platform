@@ -1,5 +1,6 @@
 'use client'
 
+import type { CSSProperties } from 'react'
 import type { GasPaymentMode } from '@/hooks/useGasPaymentMode'
 
 // ============================================================================
@@ -65,7 +66,7 @@ export function GasPaymentSelector({
               type="button"
               data-testid={`gas-mode-${mode}`}
               aria-selected={isSelected}
-              aria-disabled={!isAvailable ? 'true' : undefined}
+              disabled={!isAvailable}
               onClick={() => {
                 if (isAvailable) onModeChange(mode)
               }}
@@ -76,7 +77,7 @@ export function GasPaymentSelector({
                 backgroundColor: isSelected ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
                 borderColor: isSelected ? 'rgb(var(--primary))' : 'rgb(var(--border))',
                 ...(isSelected &&
-                  ({ '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as React.CSSProperties)),
+                  ({ '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as CSSProperties)),
               }}
             >
               <div className="flex items-center gap-2">

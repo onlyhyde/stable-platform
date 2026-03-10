@@ -833,8 +833,12 @@ export function useSubscription(config: UseSubscriptionConfig = {}): UseSubscrip
   )
 
   // Refetch all data
+  // Each loader uses fetchIdRef independently — run sequentially to prevent
+  // shared fetchIdRef from causing stale-id cancellations.
   const refetch = useCallback(async () => {
-    await Promise.all([loadPlans(), loadMySubscriptions(), loadMerchantPlans()])
+    await loadPlans()
+    await loadMySubscriptions()
+    await loadMerchantPlans()
   }, [loadPlans, loadMySubscriptions, loadMerchantPlans])
 
   // Clear error

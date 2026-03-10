@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import { copyToClipboard } from '@/lib/utils'
 import type { StealthMetaAddress } from '@/types'
@@ -21,6 +21,11 @@ export function StealthMetaAddressCard({
   onGenerate,
 }: StealthMetaAddressCardProps) {
   const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => {
+    return () => clearTimeout(copyTimerRef.current)
+  }, [])
 
   async function handleCopy() {
     if (!stealthMetaAddress) return
@@ -28,7 +33,7 @@ export function StealthMetaAddressCard({
     const success = await copyToClipboard(formattedAddress)
     if (success) {
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
     }
   }
 

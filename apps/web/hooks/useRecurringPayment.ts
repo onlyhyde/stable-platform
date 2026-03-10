@@ -6,8 +6,7 @@ import { decodeEventLog } from 'viem'
 import { useAccount, useChainId, usePublicClient, useWalletClient } from 'wagmi'
 import { getContractAddresses } from '../lib/config'
 
-// Default fallback address for development
-const DEFAULT_recurringPaymentManager = '0x5678901234567890123456789012345678901234' as const
+// No default fallback — callers must ensure the contract is configured for the active chain
 
 // Payment schedule status
 export type PaymentScheduleStatus = 'active' | 'paused' | 'cancelled' | 'completed'
@@ -245,7 +244,14 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
   // Get contract address from config based on chain ID
   const recurringPaymentManager = useMemo(() => {
     const contracts = getContractAddresses(chainId)
-    return (contracts?.recurringPaymentManager ?? DEFAULT_recurringPaymentManager) as Address
+    const addr = contracts?.recurringPaymentManager as Address | undefined
+    if (!addr) {
+      throw new Error(
+        `RecurringPaymentManager contract not configured for chain ${chainId}. ` +
+          'Add the address to @stablenet/contracts or deploy it first.'
+      )
+    }
+    return addr
   }, [chainId])
 
   // State
@@ -477,6 +483,19 @@ export function useRecurringPayment(account?: Address): UseRecurringPaymentRetur
     async (params: CreateScheduleParams): Promise<{ scheduleId: bigint; txHash: Hash } | null> => {
       if (!walletClient || !targetAccount) {
         setError('Wallet not connected')
+        return null
+      }
+
+      if (params.interval <= 0n) {
+        setError('Payment interval must be greater than zero')
+        return null
+      }
+      if (params.amount <= 0n) {
+        setError('Payment amount must be greater than zero')
+        return null
+      }
+      if (params.recipient === '0x0000000000000000000000000000000000000000') {
+        setError('Recipient cannot be the zero address')
         return null
       }
 

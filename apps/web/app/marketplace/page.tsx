@@ -56,7 +56,7 @@ export default function MarketplacePage() {
 
   const findModule = useCallback(
     (id: string) => MODULE_CATALOG.find((m) => m.id === id) ?? null,
-    [MODULE_CATALOG.find]
+    [MODULE_CATALOG]
   )
 
   const handleInstallClick = useCallback(

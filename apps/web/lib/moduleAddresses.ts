@@ -10,21 +10,6 @@ import { MODULE_TYPE } from '@stablenet/types'
 import type { Address, Hex } from 'viem'
 
 // ============================================================================
-// Contract Addresses (sourced from @stablenet/contracts, chain 8283)
-// ============================================================================
-
-const CHAIN_ID = 8283
-
-const ECDSA_VALIDATOR = getEcdsaValidator(CHAIN_ID)
-const SESSION_KEY_VALIDATOR = getContractAddress(CHAIN_ID, 'sessionKeyExecutor')
-const SUBSCRIPTION_EXECUTOR = getRecurringPaymentExecutor(CHAIN_ID)
-const SPENDING_LIMIT_HOOK = getContractAddress(CHAIN_ID, 'spendingLimitHook')
-const SOCIAL_RECOVERY_VALIDATOR = getContractAddress(CHAIN_ID, 'weightedEcdsaValidator')
-const DEX_SWAP_EXECUTOR = getUniswapRouter(CHAIN_ID)
-const STEALTH_ADDRESS_FALLBACK = getContractAddress(CHAIN_ID, 'privateBank')
-const MULTISIG_VALIDATOR = getMultiSigValidator(CHAIN_ID)
-
-// ============================================================================
 // Module Registry
 // ============================================================================
 
@@ -34,59 +19,84 @@ export interface ModuleRegistryEntry {
   defaultInitData: Hex
 }
 
+const DEFAULT_CHAIN_ID = 8283
+
 /**
- * Maps marketplace module ID to on-chain contract address, type, and default init data.
- * Addresses sourced from @stablenet/contracts (chain 8283).
+ * Build the module registry for a given chain.
+ * Addresses sourced from @stablenet/contracts.
  */
-export const MODULE_REGISTRY: Record<string, ModuleRegistryEntry> = {
-  'ecdsa-validator': {
-    address: ECDSA_VALIDATOR,
-    moduleType: MODULE_TYPE.VALIDATOR,
-    defaultInitData: '0x',
-  },
-  'session-key-validator': {
-    address: SESSION_KEY_VALIDATOR,
-    moduleType: MODULE_TYPE.VALIDATOR,
-    defaultInitData: '0x',
-  },
-  'subscription-executor': {
-    address: SUBSCRIPTION_EXECUTOR,
-    moduleType: MODULE_TYPE.EXECUTOR,
-    defaultInitData: '0x',
-  },
-  'spending-limit-hook': {
-    address: SPENDING_LIMIT_HOOK,
-    moduleType: MODULE_TYPE.HOOK,
-    defaultInitData: '0x',
-  },
-  'social-recovery': {
-    address: SOCIAL_RECOVERY_VALIDATOR,
-    moduleType: MODULE_TYPE.VALIDATOR,
-    defaultInitData: '0x',
-  },
-  'dex-swap-executor': {
-    address: DEX_SWAP_EXECUTOR,
-    moduleType: MODULE_TYPE.EXECUTOR,
-    defaultInitData: '0x',
-  },
-  'stealth-address-fallback': {
-    address: STEALTH_ADDRESS_FALLBACK,
-    moduleType: MODULE_TYPE.FALLBACK,
-    defaultInitData: '0x',
-  },
-  'multisig-validator': {
-    address: MULTISIG_VALIDATOR,
-    moduleType: MODULE_TYPE.VALIDATOR,
-    defaultInitData: '0x',
-  },
-} as const
+function buildRegistry(chainId: number): Record<string, ModuleRegistryEntry> {
+  return {
+    'ecdsa-validator': {
+      address: getEcdsaValidator(chainId),
+      moduleType: MODULE_TYPE.VALIDATOR,
+      defaultInitData: '0x',
+    },
+    'session-key-validator': {
+      address: getContractAddress(chainId, 'sessionKeyExecutor'),
+      moduleType: MODULE_TYPE.VALIDATOR,
+      defaultInitData: '0x',
+    },
+    'subscription-executor': {
+      address: getRecurringPaymentExecutor(chainId),
+      moduleType: MODULE_TYPE.EXECUTOR,
+      defaultInitData: '0x',
+    },
+    'spending-limit-hook': {
+      address: getContractAddress(chainId, 'spendingLimitHook'),
+      moduleType: MODULE_TYPE.HOOK,
+      defaultInitData: '0x',
+    },
+    'social-recovery': {
+      address: getContractAddress(chainId, 'weightedEcdsaValidator'),
+      moduleType: MODULE_TYPE.VALIDATOR,
+      defaultInitData: '0x',
+    },
+    'dex-swap-executor': {
+      address: getUniswapRouter(chainId),
+      moduleType: MODULE_TYPE.EXECUTOR,
+      defaultInitData: '0x',
+    },
+    'stealth-address-fallback': {
+      address: getContractAddress(chainId, 'privateBank'),
+      moduleType: MODULE_TYPE.FALLBACK,
+      defaultInitData: '0x',
+    },
+    'multisig-validator': {
+      address: getMultiSigValidator(chainId),
+      moduleType: MODULE_TYPE.VALIDATOR,
+      defaultInitData: '0x',
+    },
+  }
+}
+
+// Cache to avoid rebuilding on every call
+const registryCache = new Map<number, Record<string, ModuleRegistryEntry>>()
+
+function getRegistry(chainId: number): Record<string, ModuleRegistryEntry> {
+  let registry = registryCache.get(chainId)
+  if (!registry) {
+    registry = buildRegistry(chainId)
+    registryCache.set(chainId, registry)
+  }
+  return registry
+}
+
+/**
+ * @deprecated Use getModuleEntry(moduleId, chainId) instead.
+ * Kept for backward compatibility — defaults to chain 8283.
+ */
+export const MODULE_REGISTRY: Record<string, ModuleRegistryEntry> = buildRegistry(DEFAULT_CHAIN_ID)
 
 /**
  * Look up a module's registry entry by marketplace ID.
  * Returns undefined if the module ID is not recognized.
  */
-export function getModuleEntry(moduleId: string): ModuleRegistryEntry | undefined {
-  return MODULE_REGISTRY[moduleId]
+export function getModuleEntry(
+  moduleId: string,
+  chainId: number = DEFAULT_CHAIN_ID
+): ModuleRegistryEntry | undefined {
+  return getRegistry(chainId)[moduleId]
 }
 
 /**

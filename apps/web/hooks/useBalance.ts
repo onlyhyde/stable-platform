@@ -98,9 +98,14 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
           setBalance(BigInt(balanceResult || '0'))
 
           if (symbolResult && symbolResult !== '0x') {
-            // Decode string from ABI
+            // Decode string from ABI using browser-native APIs
             const symbolHex = symbolResult.slice(130).replace(/00+$/, '')
-            setSymbol(Buffer.from(symbolHex, 'hex').toString('utf8') || 'TOKEN')
+            if (symbolHex.length > 0) {
+              const bytes = new Uint8Array(
+                symbolHex.match(/.{1,2}/g)?.map((b) => Number.parseInt(b, 16)) ?? []
+              )
+              setSymbol(new TextDecoder().decode(bytes) || 'TOKEN')
+            }
           }
           if (decimalsResult && decimalsResult !== '0x') {
             setDecimals(Number.parseInt(decimalsResult, 16))
@@ -131,21 +136,44 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
         setChainId(currentChainId)
 
         if (token) {
-          // ERC-20 token balance
-          const balanceResult = (await provider.request({
-            method: 'eth_call',
-            params: [
-              {
-                to: token,
-                data: `0x70a08231000000000000000000000000${address.slice(2)}`,
-              },
-              'latest',
-            ],
-          })) as string
+          // ERC-20 token balance, symbol, and decimals via connector
+          const [balanceResult, symbolResult, decimalsResult] = await Promise.all([
+            provider.request({
+              method: 'eth_call',
+              params: [
+                {
+                  to: token,
+                  data: `0x70a08231000000000000000000000000${address.slice(2)}`,
+                },
+                'latest',
+              ],
+            }) as Promise<string>,
+            provider.request({
+              method: 'eth_call',
+              params: [{ to: token, data: '0x95d89b41' }, 'latest'],
+            }) as Promise<string>,
+            provider.request({
+              method: 'eth_call',
+              params: [{ to: token, data: '0x313ce567' }, 'latest'],
+            }) as Promise<string>,
+          ])
 
           if (id !== fetchIdRef.current) return
 
           setBalance(BigInt(balanceResult || '0'))
+
+          if (symbolResult && symbolResult !== '0x') {
+            const symbolHex = symbolResult.slice(130).replace(/00+$/, '')
+            if (symbolHex.length > 0) {
+              const bytes = new Uint8Array(
+                symbolHex.match(/.{1,2}/g)?.map((b) => Number.parseInt(b, 16)) ?? []
+              )
+              setSymbol(new TextDecoder().decode(bytes) || 'TOKEN')
+            }
+          }
+          if (decimalsResult && decimalsResult !== '0x') {
+            setDecimals(Number.parseInt(decimalsResult, 16))
+          }
         } else {
           // Native balance
           const balanceHex = (await provider.request({

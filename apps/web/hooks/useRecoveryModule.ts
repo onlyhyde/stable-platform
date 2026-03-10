@@ -237,6 +237,20 @@ export function useRecoveryModule(): UseRecoveryModuleReturn {
         return false
       }
 
+      if (guardians.length === 0) {
+        setError('At least one guardian is required')
+        return false
+      }
+      if (threshold <= 0) {
+        setError('Threshold must be greater than zero')
+        return false
+      }
+      const totalWeight = guardians.reduce((sum, g) => sum + g.weight, 0)
+      if (threshold > totalWeight) {
+        setError(`Threshold (${threshold}) exceeds total guardian weight (${totalWeight})`)
+        return false
+      }
+
       setIsInstalling(true)
       setError(null)
 

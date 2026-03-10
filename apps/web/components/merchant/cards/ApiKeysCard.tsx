@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/common/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/common/Card'
 import { Input } from '@/components/common/Input'
@@ -38,6 +38,11 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
   const [isLoading, setIsLoading] = useState(false)
   const [generatedKey, setGeneratedKey] = useState('')
   const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => {
+    return () => clearTimeout(copyTimerRef.current)
+  }, [])
 
   const handleCreateKey = async () => {
     if (!newKeyName || selectedPermissions.length === 0) return
@@ -64,7 +69,7 @@ export function ApiKeysCard({ apiKeys, onCreateKey, onRevokeKey }: ApiKeysCardPr
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(generatedKey)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
   }
 
   const handleCloseNewKeyModal = () => {

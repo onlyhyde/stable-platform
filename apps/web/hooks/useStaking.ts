@@ -98,6 +98,7 @@ export function useStaking(): UseStakingReturn {
   const [error, setError] = useState<string | null>(null)
   const [executorInstalled, setExecutorInstalled] = useState(false)
   const fetchIdRef = useRef(0)
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   // Fetch account config and positions
   const fetchAccountData = useCallback(async () => {
@@ -185,6 +186,13 @@ export function useStaking(): UseStakingReturn {
     fetchAccountData()
   }, [fetchAccountData])
 
+  // Cleanup refresh timer on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout(refreshTimerRef.current)
+    }
+  }, [])
+
   // Send a staking executor operation via useUserOp
   const sendExecutorOp = useCallback(
     async (calldata: Hex): Promise<Hex | null> => {
@@ -210,7 +218,7 @@ export function useStaking(): UseStakingReturn {
           throw new Error('Failed to send UserOperation')
         }
 
-        setTimeout(() => fetchAccountData(), 3000)
+        refreshTimerRef.current = setTimeout(() => fetchAccountData(), 3000)
         return result.userOpHash
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Operation failed'

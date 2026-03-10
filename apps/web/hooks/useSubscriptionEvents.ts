@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type Address, formatUnits, type Hex } from 'viem'
 import { useChainId } from 'wagmi'
 import { getContractAddresses } from '../lib/config'
@@ -146,10 +146,10 @@ export function useSubscriptionEvents(
 
   const fetchIdRef = useRef(0)
 
-  const subscriptionManager = (() => {
+  const subscriptionManager = useMemo(() => {
     const contracts = getContractAddresses(chainId)
     return (contracts?.subscriptionManager ?? DEFAULT_SUBSCRIPTION_MANAGER) as Address
-  })()
+  }, [chainId])
 
   const fetchEvents = useCallback(async () => {
     if (!publicClient || !address) return

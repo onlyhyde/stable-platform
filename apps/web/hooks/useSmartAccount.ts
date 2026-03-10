@@ -176,6 +176,63 @@ export function useSmartAccount() {
   // Get wagmi wallet client for MetaMask/StableNet signing
   const { data: wagmiWalletClient } = useWalletClient()
 
+  /**
+   * Request wallet_signAuthorization from StableNet wallet and convert to viem format.
+   * Shared between upgrade and revoke flows.
+   */
+  const requestStableNetAuthorization = useCallback(
+    async (
+      contractAddress: Address
+    ): Promise<{ viemAuthorization: ViemSignedAuthorization; authInfo: AuthorizationInfo }> => {
+      if (!wagmiWalletClient) {
+        throw new Error('Wallet disconnected during operation')
+      }
+      const transport = wagmiWalletClient.transport as {
+        request?: (args: unknown) => Promise<unknown>
+      }
+      if (!transport?.request) {
+        throw new Error('Wallet transport not available')
+      }
+
+      const result = (await transport.request({
+        method: 'wallet_signAuthorization',
+        params: [{ account: address, contractAddress, chainId }],
+      })) as {
+        signedAuthorization: {
+          chainId: bigint
+          address: Address
+          nonce: bigint
+          v: number
+          r: Hex
+          s: Hex
+        }
+        authorizationHash: Hex
+      }
+
+      const { signedAuthorization } = result
+
+      const viemAuthorization: ViemSignedAuthorization = {
+        chainId: Number(signedAuthorization.chainId),
+        address: signedAuthorization.address,
+        nonce: Number(signedAuthorization.nonce),
+        r: signedAuthorization.r,
+        s: signedAuthorization.s,
+        v: BigInt(
+          signedAuthorization.v === 0 ? 27 : signedAuthorization.v === 1 ? 28 : signedAuthorization.v
+        ),
+      }
+
+      const authInfo: AuthorizationInfo = {
+        chainId,
+        contractAddress,
+        nonce: Number(signedAuthorization.nonce),
+      }
+
+      return { viemAuthorization, authInfo }
+    },
+    [wagmiWalletClient, address, chainId]
+  )
+
   // Check if connected wallet is StableNet (supports wallet_signAuthorization)
   const isStableNetWallet = Boolean(
     wagmiWalletClient?.transport &&
@@ -384,61 +441,7 @@ export function useSmartAccount() {
         }
 
         // Request authorization signature from StableNet wallet
-        // Re-validate walletClient after async operations (may disconnect mid-flow)
-        if (!wagmiWalletClient) {
-          throw new Error('Wallet disconnected during operation')
-        }
-        const transport = wagmiWalletClient.transport as {
-          request?: (args: unknown) => Promise<unknown>
-        }
-        if (!transport?.request) {
-          throw new Error('Wallet transport not available')
-        }
-
-        const result = (await transport.request({
-          method: 'wallet_signAuthorization',
-          params: [
-            {
-              account: address,
-              contractAddress: targetDelegate,
-              chainId,
-            },
-          ],
-        })) as {
-          signedAuthorization: {
-            chainId: bigint
-            address: Address
-            nonce: bigint
-            v: number
-            r: Hex
-            s: Hex
-          }
-          authorizationHash: Hex
-        }
-
-        const { signedAuthorization } = result
-
-        // Convert to viem-compatible format
-        const viemAuthorization: ViemSignedAuthorization = {
-          chainId: Number(signedAuthorization.chainId),
-          address: signedAuthorization.address,
-          nonce: Number(signedAuthorization.nonce),
-          r: signedAuthorization.r,
-          s: signedAuthorization.s,
-          v: BigInt(
-            signedAuthorization.v === 0
-              ? 27
-              : signedAuthorization.v === 1
-                ? 28
-                : signedAuthorization.v
-          ),
-        }
-
-        const authInfo: AuthorizationInfo = {
-          chainId,
-          contractAddress: targetDelegate,
-          nonce: Number(signedAuthorization.nonce),
-        }
+        const { viemAuthorization, authInfo } = await requestStableNetAuthorization(targetDelegate)
         setLastAuthorization(authInfo)
 
         // Create relayer wallet client to send the transaction
@@ -482,6 +485,7 @@ export function useSmartAccount() {
       wagmiWalletClient,
       getDefaultDelegateAddress,
       checkSmartAccountStatus,
+      requestStableNetAuthorization,
     ]
   )
 
@@ -524,60 +528,7 @@ export function useSmartAccount() {
         }
 
         // Request revocation signature from StableNet wallet
-        // Re-validate walletClient after async operations (may disconnect mid-flow)
-        if (!wagmiWalletClient) {
-          throw new Error('Wallet disconnected during operation')
-        }
-        const transport = wagmiWalletClient.transport as {
-          request?: (args: unknown) => Promise<unknown>
-        }
-        if (!transport?.request) {
-          throw new Error('Wallet transport not available')
-        }
-
-        const result = (await transport.request({
-          method: 'wallet_signAuthorization',
-          params: [
-            {
-              account: address,
-              contractAddress: ZERO_ADDRESS,
-              chainId,
-            },
-          ],
-        })) as {
-          signedAuthorization: {
-            chainId: bigint
-            address: Address
-            nonce: bigint
-            v: number
-            r: Hex
-            s: Hex
-          }
-          authorizationHash: Hex
-        }
-
-        const { signedAuthorization } = result
-
-        const viemAuthorization: ViemSignedAuthorization = {
-          chainId: Number(signedAuthorization.chainId),
-          address: signedAuthorization.address,
-          nonce: Number(signedAuthorization.nonce),
-          r: signedAuthorization.r,
-          s: signedAuthorization.s,
-          v: BigInt(
-            signedAuthorization.v === 0
-              ? 27
-              : signedAuthorization.v === 1
-                ? 28
-                : signedAuthorization.v
-          ),
-        }
-
-        const authInfo: AuthorizationInfo = {
-          chainId,
-          contractAddress: ZERO_ADDRESS,
-          nonce: Number(signedAuthorization.nonce),
-        }
+        const { viemAuthorization, authInfo } = await requestStableNetAuthorization(ZERO_ADDRESS)
         setLastAuthorization(authInfo)
 
         const relayerAccount = privateKeyToAccount(relayerKey)
@@ -618,6 +569,7 @@ export function useSmartAccount() {
       status.isSmartAccount,
       wagmiWalletClient,
       checkSmartAccountStatus,
+      requestStableNetAuthorization,
     ]
   )
 

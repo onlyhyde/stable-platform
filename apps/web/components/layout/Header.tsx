@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Button,
   NetworkSelector,
@@ -20,6 +20,16 @@ export function Header() {
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [copied, setCopied] = useState(false)
   const accountMenuRef = useRef<HTMLDivElement>(null)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const walletTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      clearTimeout(copyTimerRef.current)
+      clearTimeout(walletTimerRef.current)
+    }
+  }, [])
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -34,23 +44,23 @@ export function Header() {
     }
   }, [showAccountMenu])
 
-  const handleCopyAddress = async () => {
+  const handleCopyAddress = useCallback(async () => {
     if (!address) return
     const success = await copyToClipboard(address)
     if (success) {
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
     }
-  }
+  }, [address])
 
-  const handleSelectWallet = (connectorId: string) => {
+  const handleSelectWallet = useCallback((connectorId: string) => {
     setPendingConnector(connectorId)
     connect(connectorId)
-    setTimeout(() => {
+    walletTimerRef.current = setTimeout(() => {
       setShowWalletModal(false)
       setPendingConnector(undefined)
     }, 1500)
-  }
+  }, [connect])
 
   return (
     <header

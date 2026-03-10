@@ -6,9 +6,27 @@ import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { createWalletClient, encodeFunctionData, http, toHex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { getConfigByChainId, getStablenetLocal } from '@/lib/chains'
+import {
+  getAnvilLocal,
+  getConfigByChainId,
+  getStablenetLocal,
+  getStablenetTestnet,
+} from '@/lib/chains'
 import { useStableNetContext } from '@/providers'
 import type { Announcement, StealthMetaAddress } from '@/types'
+
+/** Resolve chain definition by chainId. */
+function resolveChain(chainId: number): ReturnType<typeof getStablenetLocal> {
+  switch (chainId) {
+    case 31337:
+      return getAnvilLocal()
+    case 82830:
+      return getStablenetTestnet()
+    case 8283:
+    default:
+      return getStablenetLocal()
+  }
+}
 
 /** Fetch with AbortController timeout (default 10s). */
 function fetchWithTimeout(
@@ -39,6 +57,7 @@ export function useStealth(config: UseStealthConfig = {}) {
   const [error, setError] = useState<Error | null>(null)
   const [stealthMetaAddress, setStealthMetaAddress] = useState<StealthMetaAddress | null>(null)
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const clearError = useCallback(() => setError(null), [])
 
   const {
     getSpendingPublicKey,
@@ -443,7 +462,7 @@ export function useStealth(config: UseStealthConfig = {}) {
         // Create wallet client with the derived stealth private key
         const stealthAccount = privateKeyToAccount(result.stealthPrivateKey)
         const networkConfig = getConfigByChainId(chainId)
-        const chain = getStablenetLocal()
+        const chain = resolveChain(chainId)
         const walletClient = createWalletClient({
           account: stealthAccount,
           chain,
@@ -498,6 +517,6 @@ export function useStealth(config: UseStealthConfig = {}) {
     generateOwnMetaAddress,
     isLoading,
     error,
-    clearError: () => setError(null),
+    clearError,
   }
 }

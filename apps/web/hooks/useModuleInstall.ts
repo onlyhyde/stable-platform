@@ -303,7 +303,7 @@ export function useModuleInstall(): UseModuleInstallReturn {
     setInstalledModules(new Set())
     setInstallingModuleId(null)
     setUninstallingModuleId(null)
-  }, [])
+  }, [address])
 
   return {
     installModule,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { parseUnits } from 'viem'
 import { ConnectWalletCard, PageHeader, PaymasterSelector, useToast } from '@/components/common'
 import { SwapCard } from '@/components/defi'
 import type { SupportedToken } from '@/hooks'
@@ -101,7 +102,7 @@ export default function SwapPage() {
 
   async function handleGetQuote() {
     if (!amountIn || Number(amountIn) <= 0 || !tokenIn || !tokenOut) return
-    const amountInBigInt = BigInt(Math.floor(Number(amountIn) * 10 ** tokenIn.decimals))
+    const amountInBigInt = parseUnits(amountIn, tokenIn.decimals)
     await getQuote({ tokenIn, tokenOut, amountIn: amountInBigInt })
   }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Button,
   Card,
@@ -44,6 +44,12 @@ export function DeveloperSettingsCard() {
     type: 'success' | 'error'
     text: string
   } | null>(null)
+  const msgTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => clearTimeout(msgTimerRef.current)
+  }, [])
 
   useEffect(() => {
     try {
@@ -91,7 +97,7 @@ export function DeveloperSettingsCard() {
         text: 'Contract addresses saved! Refresh to apply changes.',
       })
 
-      setTimeout(() => setSaveMessage(null), 5000)
+      msgTimerRef.current = setTimeout(() => setSaveMessage(null), 5000)
     } catch {
       setSaveMessage({ type: 'error', text: 'Failed to save settings.' })
     } finally {
@@ -103,7 +109,7 @@ export function DeveloperSettingsCard() {
     setContracts(defaultAddresses)
     localStorage.removeItem(STORAGE_KEY)
     setSaveMessage({ type: 'success', text: 'Contract addresses reset to defaults.' })
-    setTimeout(() => setSaveMessage(null), 3000)
+    msgTimerRef.current = setTimeout(() => setSaveMessage(null), 3000)
   }
 
   const contractFields: { key: keyof ContractSettings; label: string; hint: string }[] = [
