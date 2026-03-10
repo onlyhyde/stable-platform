@@ -1,5 +1,6 @@
 import type { Address, Hex } from 'viem'
 import type { PaymasterAddresses, PaymasterProxyConfig } from '../types'
+import { getGlobalLogger } from '../utils/logger'
 import {
   getEnvOptional,
   getServerConfig,
@@ -65,7 +66,7 @@ function parseOptionalAddress(envName: string): Address | undefined {
   const value = getEnvOptional(envName)
   if (!value) return undefined
   if (!isValidAddress(value)) {
-    console.warn(`[paymaster-proxy] Invalid address for ${envName}: ${value}, ignoring`)
+    getGlobalLogger().warn({ envName, value }, 'Invalid address, ignoring')
     return undefined
   }
   return value as Address

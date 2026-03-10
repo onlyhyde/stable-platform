@@ -123,6 +123,37 @@ export const getSponsorPolicyParamsSchema = z
   .or(z.tuple([addressSchema, z.string(), hexSchema]))
   .or(z.tuple([addressSchema, hexSchema]))
 
+/**
+ * Sponsor policy schema for admin API validation
+ */
+export const sponsorPolicySchema = z.object({
+  id: z.string().min(1).max(128),
+  name: z.string().min(1).max(256),
+  active: z.boolean(),
+  whitelist: z.array(addressSchema).optional(),
+  blacklist: z.array(addressSchema).optional(),
+  maxGasLimit: z
+    .union([z.number(), z.string(), z.bigint()])
+    .transform((v) => BigInt(v))
+    .optional(),
+  maxGasCost: z
+    .union([z.number(), z.string(), z.bigint()])
+    .transform((v) => BigInt(v))
+    .optional(),
+  dailyLimitPerSender: z
+    .union([z.number(), z.string(), z.bigint()])
+    .transform((v) => BigInt(v))
+    .optional(),
+  globalDailyLimit: z
+    .union([z.number(), z.string(), z.bigint()])
+    .transform((v) => BigInt(v))
+    .optional(),
+  allowedTargets: z.array(addressSchema).optional(),
+  blockedTargets: z.array(addressSchema).optional(),
+  startTime: z.number().int().optional(),
+  endTime: z.number().int().optional(),
+})
+
 export type UserOperationInput = z.infer<typeof userOperationSchema>
 export type PackedUserOperationInput = z.infer<typeof packedUserOperationSchema>
 export type AnyUserOperationInput = z.infer<typeof anyUserOperationSchema>

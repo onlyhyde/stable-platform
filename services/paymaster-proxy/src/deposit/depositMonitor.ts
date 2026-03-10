@@ -1,5 +1,6 @@
 import type { Address, PublicClient, WalletClient } from 'viem'
 import type { PaymasterAddresses, PaymasterType } from '../types'
+import { getGlobalLogger } from '../utils/logger'
 
 /**
  * EntryPoint ABI — balanceOf (IStakeManager)
@@ -107,12 +108,12 @@ export class DepositMonitor {
 
     // Initial poll
     this.poll().catch((err) => {
-      console.error('[deposit-monitor] Initial poll failed:', err)
+      getGlobalLogger().error({ err }, 'Deposit monitor initial poll failed')
     })
 
     this.timer = setInterval(() => {
       this.poll().catch((err) => {
-        console.error('[deposit-monitor] Poll failed:', err)
+        getGlobalLogger().error({ err }, 'Deposit monitor poll failed')
       })
     }, this.config.pollIntervalMs)
 
@@ -154,8 +155,9 @@ export class DepositMonitor {
           const isLow = deposit < this.config.minDepositThreshold
 
           if (isLow) {
-            console.warn(
-              `[deposit-monitor] LOW DEPOSIT: ${type} paymaster ${address} has ${deposit} wei (threshold: ${this.config.minDepositThreshold} wei)`
+            getGlobalLogger().warn(
+              { type, address, deposit: deposit.toString(), threshold: this.config.minDepositThreshold.toString() },
+              'Low paymaster deposit detected'
             )
             this.tryAutoDeposit(address)
           }
@@ -168,7 +170,7 @@ export class DepositMonitor {
             lastCheckedAt: Date.now(),
           })
         } catch (err) {
-          console.error(`[deposit-monitor] Failed to check deposit for ${type} (${address}):`, err)
+          getGlobalLogger().error({ type, address, err }, 'Failed to check deposit')
         }
       })
 
@@ -220,7 +222,7 @@ export class DepositMonitor {
 
     const account = this.walletClient.account
     if (!account) {
-      console.error('[deposit-monitor] WalletClient has no account configured')
+      getGlobalLogger().error('WalletClient has no account configured for auto-deposit')
       this.autoDepositInFlight.delete(key)
       return
     }
@@ -239,7 +241,7 @@ export class DepositMonitor {
         this.lastAutoDepositAt.set(key, Date.now())
       })
       .catch((err) => {
-        console.error(`[deposit-monitor] Auto-deposit failed for ${address}:`, err)
+        getGlobalLogger().error({ address, err }, 'Auto-deposit failed')
       })
       .finally(() => {
         this.autoDepositInFlight.delete(key)

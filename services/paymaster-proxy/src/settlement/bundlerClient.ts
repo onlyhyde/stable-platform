@@ -47,16 +47,25 @@ export class BundlerClient {
    * Returns null if the operation hasn't been included yet.
    */
   async getUserOperationReceipt(userOpHash: Hex): Promise<UserOperationReceipt | null> {
-    const response = await fetch(this.rpcUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getUserOperationReceipt',
-        params: [userOpHash],
-      }),
-    })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
+
+    let response: Response
+    try {
+      response = await fetch(this.rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getUserOperationReceipt',
+          params: [userOpHash],
+        }),
+      })
+    } finally {
+      clearTimeout(timeout)
+    }
 
     if (!response.ok) {
       throw new Error(`Bundler RPC error: ${response.status} ${response.statusText}`)
@@ -94,17 +103,24 @@ export class BundlerClient {
    */
   async isAvailable(): Promise<boolean> {
     try {
-      const response = await fetch(this.rpcUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'eth_supportedEntryPoints',
-          params: [],
-        }),
-      })
-      return response.ok
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 5_000)
+      try {
+        const response = await fetch(this.rpcUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'eth_supportedEntryPoints',
+            params: [],
+          }),
+        })
+        return response.ok
+      } finally {
+        clearTimeout(timeout)
+      }
     } catch {
       return false
     }

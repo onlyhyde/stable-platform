@@ -40,8 +40,8 @@ export interface ContractSignerConfig {
  * Supports both EOA (ECDSA) and ERC-1271 (smart contract) signing.
  */
 export class PaymasterSigner {
-  private privateKey: Hex
-  private paymasterAddress: Address
+  private readonly privateKey: Hex
+  private readonly paymasterAddress: Address
   private readonly signerType: SignerType
   private readonly contractSignerConfig?: ContractSignerConfig
 

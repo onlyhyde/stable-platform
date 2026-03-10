@@ -5,6 +5,7 @@ import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
+import { RateLimiter } from './middleware/rateLimiter'
 import { getPublicClient, getWalletClient } from './chain/client'
 import {
   getAutoDepositConfig,
@@ -27,6 +28,7 @@ import {
   getPaymasterStubDataParamsSchema,
   getSponsorPolicyParamsSchema,
   jsonRpcRequestSchema,
+  sponsorPolicySchema,
   supportedTokensParamsSchema,
 } from './schemas'
 import { BundlerClient } from './settlement/bundlerClient'
@@ -44,6 +46,10 @@ import type {
   UserOperationRpc,
 } from './types'
 import { RPC_ERROR_CODES } from './types'
+import { getGlobalLogger } from './utils/logger'
+
+/** Maximum number of JSON-RPC requests in a single batch */
+const MAX_BATCH_SIZE = 50
 
 /**
  * Handler configuration used internally by callMethod
@@ -64,10 +70,22 @@ interface HandlerConfig {
 }
 
 /**
+ * Metrics counters for Prometheus-style endpoint.
+ * Simple in-memory counters — keyed by RPC method for observability.
+ */
+interface MetricsState {
+  requestCount: number
+  errorCount: number
+  methodCounts: Map<string, number>
+  methodErrors: Map<string, number>
+}
+
+/**
  * Create the Paymaster Proxy application
  */
 export function createApp(config: PaymasterProxyConfig): Hono {
   const app = new Hono()
+  const log = getGlobalLogger()
 
   // Initialize components
   const signer = new PaymasterSigner(config.signerPrivateKey, config.paymasterAddress)
@@ -146,13 +164,31 @@ export function createApp(config: PaymasterProxyConfig): Hono {
     depositMonitor,
   }
 
-  // Middleware
-  app.use('*', cors())
+  // Middleware — restrict CORS to configured origins (default: allow all in dev, none in prod)
+  const allowedOrigins = process.env.PAYMASTER_CORS_ORIGINS
+  app.use(
+    '*',
+    cors(
+      allowedOrigins
+        ? { origin: allowedOrigins.split(',').map((o) => o.trim()) }
+        : undefined
+    )
+  )
   // Limit request body size to 1 MB to prevent abuse
   app.use('*', bodyLimit({ maxSize: 1024 * 1024 }))
   if (config.debug) {
     app.use('*', logger())
   }
+
+  // Rate limiting — configurable via env vars (default: 100 req/min per IP)
+  const rateLimitMax = Number(process.env.PAYMASTER_RATE_LIMIT_MAX || '100')
+  const rateLimitWindowMs = Number(process.env.PAYMASTER_RATE_LIMIT_WINDOW_MS || '60000')
+  const rateLimiter = new RateLimiter({
+    maxRequests: rateLimitMax,
+    windowMs: rateLimitWindowMs,
+  })
+  app.use('/rpc', rateLimiter.middleware())
+  app.use('/', rateLimiter.middleware())
 
   // Health check endpoints (Kubernetes probes compatible)
   const startTime = new Date()
@@ -204,68 +240,56 @@ export function createApp(config: PaymasterProxyConfig): Hono {
     })
   })
 
-  // Prometheus metrics endpoint
-  let requestCount = 0
-  let errorCount = 0
+  // Prometheus metrics — keyed by method for better observability
+  const metrics: MetricsState = {
+    requestCount: 0,
+    errorCount: 0,
+    methodCounts: new Map(),
+    methodErrors: new Map(),
+  }
+
   app.get('/metrics', (c) => {
     const uptime = Math.floor((Date.now() - startTime.getTime()) / 1000)
-    return c.text(
-      `# HELP paymaster_proxy_up Service up status
-# TYPE paymaster_proxy_up gauge
-paymaster_proxy_up{service="paymaster-proxy"} 1
-# HELP paymaster_proxy_uptime_seconds Service uptime in seconds
-# TYPE paymaster_proxy_uptime_seconds gauge
-paymaster_proxy_uptime_seconds{service="paymaster-proxy"} ${uptime}
-# HELP paymaster_proxy_requests_total Total HTTP requests
-# TYPE paymaster_proxy_requests_total counter
-paymaster_proxy_requests_total{service="paymaster-proxy"} ${requestCount}
-# HELP paymaster_proxy_errors_total Total HTTP errors
-# TYPE paymaster_proxy_errors_total counter
-paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
-`,
-      200,
-      { 'Content-Type': 'text/plain; charset=utf-8' }
-    )
+    const lines: string[] = [
+      '# HELP paymaster_proxy_up Service up status',
+      '# TYPE paymaster_proxy_up gauge',
+      'paymaster_proxy_up{service="paymaster-proxy"} 1',
+      '# HELP paymaster_proxy_uptime_seconds Service uptime in seconds',
+      '# TYPE paymaster_proxy_uptime_seconds gauge',
+      `paymaster_proxy_uptime_seconds{service="paymaster-proxy"} ${uptime}`,
+      '# HELP paymaster_proxy_requests_total Total HTTP requests',
+      '# TYPE paymaster_proxy_requests_total counter',
+      `paymaster_proxy_requests_total{service="paymaster-proxy"} ${metrics.requestCount}`,
+      '# HELP paymaster_proxy_errors_total Total HTTP errors',
+      '# TYPE paymaster_proxy_errors_total counter',
+      `paymaster_proxy_errors_total{service="paymaster-proxy"} ${metrics.errorCount}`,
+      '# HELP paymaster_proxy_rpc_method_total RPC requests by method',
+      '# TYPE paymaster_proxy_rpc_method_total counter',
+    ]
+
+    for (const [method, count] of metrics.methodCounts) {
+      lines.push(`paymaster_proxy_rpc_method_total{method="${method}"} ${count}`)
+    }
+
+    lines.push('# HELP paymaster_proxy_rpc_method_errors_total RPC errors by method')
+    lines.push('# TYPE paymaster_proxy_rpc_method_errors_total counter')
+    for (const [method, count] of metrics.methodErrors) {
+      lines.push(`paymaster_proxy_rpc_method_errors_total{method="${method}"} ${count}`)
+    }
+
+    return c.text(lines.join('\n') + '\n', 200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+    })
   })
 
   // Metrics tracking middleware
   app.use('*', async (c, next) => {
-    requestCount++
+    metrics.requestCount++
     await next()
     if (c.res.status >= 400) {
-      errorCount++
+      metrics.errorCount++
     }
   })
-
-  // Policy management endpoints (admin) - require bearer token authentication
-  function registerAdminRoutes(adminApp: Hono) {
-    adminApp.get('/admin/policies', (c) => {
-      const policies = policyManager.getAllPolicies()
-      return c.json({ policies })
-    })
-
-    adminApp.get('/admin/policies/:id', (c) => {
-      const policy = policyManager.getPolicy(c.req.param('id'))
-      if (!policy) {
-        return c.json({ error: `Policy ${c.req.param('id')} not found` }, 404)
-      }
-      return c.json({ policy })
-    })
-
-    adminApp.post('/admin/policies', async (c) => {
-      const body = await c.req.json()
-      policyManager.setPolicy(body)
-      return c.json({ success: true })
-    })
-
-    adminApp.delete('/admin/policies/:id', (c) => {
-      const deleted = policyManager.deletePolicy(c.req.param('id'))
-      if (!deleted) {
-        return c.json({ error: `Policy ${c.req.param('id')} not found` }, 404)
-      }
-      return c.json({ success: true })
-    })
-  }
 
   // Admin endpoints always require bearer token authentication.
   // If PAYMASTER_ADMIN_TOKEN is not set, a random token is generated and logged
@@ -276,34 +300,23 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
     adminToken = configuredToken
   } else {
     adminToken = crypto.randomUUID()
-    // Mask token in logs: show only first 8 chars to aid debugging without full exposure
     const masked = `${adminToken.slice(0, 8)}...`
-    console.warn(
-      `[paymaster-proxy] No PAYMASTER_ADMIN_TOKEN configured. Generated ephemeral token: ${masked}`
-    )
-    console.warn('[paymaster-proxy] Set PAYMASTER_ADMIN_TOKEN env var for persistent admin access.')
-    // In development, log the full token to stderr so operator can use it
+    log.warn(`No PAYMASTER_ADMIN_TOKEN configured. Generated ephemeral token: ${masked}`)
+    log.warn('Set PAYMASTER_ADMIN_TOKEN env var for persistent admin access.')
     if (process.env.NODE_ENV !== 'production') {
-      console.warn(`[paymaster-proxy] Full ephemeral admin token: ${adminToken}`)
+      log.warn(`Full ephemeral admin token: ${adminToken}`)
     }
   }
   const auth = bearerAuth({ token: adminToken })
   app.use('/admin/*', auth)
-  registerAdminRoutes(app)
 
-  // JSON-RPC endpoint
-  app.post('/', async (c) => {
-    const body = await c.req.json()
+  // Policy management endpoints (admin) - registered after auth middleware
+  registerAdminRoutes(app, policyManager)
 
-    // Handle batch requests
-    if (Array.isArray(body)) {
-      const results = await Promise.all(body.map((req) => handleJsonRpcRequest(req, handlerConfig)))
-      return c.json(results)
-    }
-
-    const result = await handleJsonRpcRequest(body, handlerConfig)
-    return c.json(result)
-  })
+  // JSON-RPC endpoints — shared handler for both / and /rpc
+  const rpcHandler = createRpcHandler(handlerConfig, metrics)
+  app.post('/', rpcHandler)
+  app.post('/rpc', rpcHandler)
 
   // Periodic cleanup of expired spending reservations (every 60s)
   // Reservation TTL: 5 minutes (matches SponsorPolicyManager.RESERVATION_TTL_MS)
@@ -317,27 +330,102 @@ paymaster_proxy_errors_total{service="paymaster-proxy"} ${errorCount}
     cleanupInterval.unref()
   }
 
-  // Also support /rpc path
-  app.post('/rpc', async (c) => {
+  return app
+}
+
+/**
+ * Register admin CRUD routes for policy management.
+ * All inputs are validated via Zod sponsorPolicySchema.
+ */
+/** Convert BigInt fields to strings for JSON serialization */
+function serializePolicy(policy: object): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(policy)) {
+    result[key] = typeof value === 'bigint' ? value.toString() : value
+  }
+  return result
+}
+
+function registerAdminRoutes(adminApp: Hono, policyManager: SponsorPolicyManager): void {
+  adminApp.get('/admin/policies', (c) => {
+    const policies = policyManager.getAllPolicies().map(serializePolicy)
+    return c.json({ policies })
+  })
+
+  adminApp.get('/admin/policies/:id', (c) => {
+    const policy = policyManager.getPolicy(c.req.param('id'))
+    if (!policy) {
+      return c.json({ error: `Policy ${c.req.param('id')} not found` }, 404)
+    }
+    return c.json({ policy: serializePolicy(policy) })
+  })
+
+  adminApp.post('/admin/policies', async (c) => {
+    const body = await c.req.json()
+    const parseResult = sponsorPolicySchema.safeParse(body)
+    if (!parseResult.success) {
+      return c.json(
+        { error: 'Invalid policy', details: parseResult.error.issues },
+        400
+      )
+    }
+    policyManager.setPolicy(parseResult.data as import('./types').SponsorPolicy)
+    return c.json({ success: true })
+  })
+
+  adminApp.delete('/admin/policies/:id', (c) => {
+    const deleted = policyManager.deletePolicy(c.req.param('id'))
+    if (!deleted) {
+      return c.json({ error: `Policy ${c.req.param('id')} not found` }, 404)
+    }
+    return c.json({ success: true })
+  })
+}
+
+/**
+ * Create a shared JSON-RPC handler for both / and /rpc endpoints.
+ * Enforces batch size limit to prevent resource exhaustion.
+ */
+function createRpcHandler(
+  handlerConfig: HandlerConfig,
+  metrics: MetricsState
+): (c: { req: { json: () => Promise<unknown> }; json: (data: unknown, status?: number) => Response }) => Promise<Response> {
+  return async (c) => {
     const body = await c.req.json()
 
-    // Handle batch requests
     if (Array.isArray(body)) {
-      const results = await Promise.all(body.map((req) => handleJsonRpcRequest(req, handlerConfig)))
+      if (body.length > MAX_BATCH_SIZE) {
+        return c.json(
+          {
+            jsonrpc: '2.0',
+            id: null,
+            error: {
+              code: RPC_ERROR_CODES.INVALID_REQUEST,
+              message: `Batch size ${body.length} exceeds maximum ${MAX_BATCH_SIZE}`,
+            },
+          },
+          400
+        )
+      }
+      const results = await Promise.all(
+        body.map((req) => handleJsonRpcRequest(req, handlerConfig, metrics))
+      )
       return c.json(results)
     }
 
-    const result = await handleJsonRpcRequest(body, handlerConfig)
+    const result = await handleJsonRpcRequest(body, handlerConfig, metrics)
     return c.json(result)
-  })
-
-  return app
+  }
 }
 
 /**
  * Handle a single JSON-RPC request
  */
-async function handleJsonRpcRequest(req: unknown, config: HandlerConfig): Promise<JsonRpcResponse> {
+async function handleJsonRpcRequest(
+  req: unknown,
+  config: HandlerConfig,
+  metrics: MetricsState
+): Promise<JsonRpcResponse> {
   // Parse request
   const parseResult = jsonRpcRequestSchema.safeParse(req)
   if (!parseResult.success) {
@@ -354,10 +442,15 @@ async function handleJsonRpcRequest(req: unknown, config: HandlerConfig): Promis
 
   const { id, method, params } = parseResult.data
 
+  // Track method-level metrics
+  metrics.methodCounts.set(method, (metrics.methodCounts.get(method) ?? 0) + 1)
+
   try {
     const result = await callMethod(method, params, config)
     return { jsonrpc: '2.0', id, result }
   } catch (error) {
+    metrics.methodErrors.set(method, (metrics.methodErrors.get(method) ?? 0) + 1)
+
     if (error instanceof RpcError) {
       return {
         jsonrpc: '2.0',

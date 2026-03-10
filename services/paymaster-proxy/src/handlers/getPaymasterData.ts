@@ -294,7 +294,7 @@ function handleErc20Data(
     flags: 0,
     validUntil: BigInt(validUntil),
     validAfter: BigInt(validAfter),
-    nonce: BigInt(Date.now()),
+    nonce: generateEnvelopeNonce(),
     payload,
   })
 
@@ -302,6 +302,16 @@ function handleErc20Data(
     success: true,
     data: { paymaster: paymasterAddress, paymasterData },
   }
+}
+
+/**
+ * Generate a cryptographically random nonce for non-signed envelope types.
+ * Uses crypto.getRandomValues to avoid collision risk from Date.now().
+ */
+function generateEnvelopeNonce(): bigint {
+  const bytes = new Uint8Array(8)
+  crypto.getRandomValues(bytes)
+  return bytes.reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n)
 }
 
 /**
@@ -342,8 +352,8 @@ function handlePermit2Data(
     })
 
     const now = Math.floor(Date.now() / 1000)
-    const validUntil = now + 300
-    const validAfter = now - 60
+    const validUntil = now + DEFAULT_VALID_UNTIL_SECONDS
+    const validAfter = now - DEFAULT_CLOCK_SKEW_SECONDS
 
     const timeError = validateTimeRange(validUntil, validAfter, now)
     if (timeError) {
@@ -355,7 +365,7 @@ function handlePermit2Data(
       flags: 0,
       validUntil: BigInt(validUntil),
       validAfter: BigInt(validAfter),
-      nonce: BigInt(Date.now()),
+      nonce: generateEnvelopeNonce(),
       payload,
     })
 

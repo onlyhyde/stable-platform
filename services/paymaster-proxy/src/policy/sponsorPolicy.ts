@@ -42,6 +42,9 @@ export type PolicyResult = { allowed: true } | { allowed: false; rejection: Poli
  * Sponsor Policy Manager
  */
 export class SponsorPolicyManager {
+  /** Maximum tracked senders before FIFO eviction */
+  static readonly MAX_TRACKED_SENDERS = 100_000
+
   private policies: Map<string, SponsorPolicy> = new Map()
   private trackers: Map<Address, SponsorTracker> = new Map()
   private globalDailySpent = 0n
@@ -265,6 +268,10 @@ export class SponsorPolicyManager {
   /** Reservation TTL (5 minutes) */
   private static readonly RESERVATION_TTL_MS = 5 * 60 * 1000
 
+  // NOTE: Methods below intentionally mutate in-memory tracker state (+=, push, splice)
+  // for performance in high-frequency spending paths. Immutability is not practical here
+  // as these are hot-path operations on process-local Maps that must be fast and GC-friendly.
+
   /**
    * Record gas spending for a sender (immediate confirmation, no reservation)
    */
@@ -279,9 +286,13 @@ export class SponsorPolicyManager {
   }
 
   /**
-   * Atomically check policy and reserve spending.
-   * Eliminates the TOCTOU race between checkPolicy() and reserveSpending()
+   * Check policy and reserve spending in one call.
+   * Mitigates the TOCTOU race between checkPolicy() and reserveSpending()
    * that could allow concurrent requests to exceed spending limits.
+   *
+   * NOTE: This is safe in Node.js single-threaded event loop as long as
+   * no `await` is introduced between check and reserve. If async operations
+   * are added inside checkPolicy(), the atomicity guarantee would be lost.
    */
   checkAndReserve(
     userOp: UserOperationRpc,
@@ -372,6 +383,11 @@ export class SponsorPolicyManager {
   private getOrCreateTracker(sender: Address): SponsorTracker {
     let tracker = this.trackers.get(sender)
     if (!tracker) {
+      // Evict oldest tracker when at capacity to prevent unbounded memory growth
+      if (this.trackers.size >= SponsorPolicyManager.MAX_TRACKED_SENDERS) {
+        const oldestKey = this.trackers.keys().next().value
+        if (oldestKey) this.trackers.delete(oldestKey)
+      }
       tracker = {
         sender,
         dailyGasSpent: 0n,

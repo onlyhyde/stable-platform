@@ -48,8 +48,7 @@ export class ReservationTracker {
       this.reservationIdIndex.set(reservation.reservationId, reservation.userOpHash)
     }
 
-    if (loaded.length > 0) {
-    }
+    // loaded.length intentionally not logged — caller can check getStats()
   }
 
   /**

@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import type { Address, Hex } from 'viem'
+import { getGlobalLogger } from '../utils/logger'
 import type { TrackedReservation } from './reservationTracker'
 
 /**
@@ -29,10 +30,12 @@ export class ReservationPersistence {
   private pendingData: TrackedReservation[] | null = null
 
   constructor(dataDir: string) {
-    if (!existsSync(dataDir)) {
-      mkdirSync(dataDir, { recursive: true })
+    // Resolve to absolute path to prevent path traversal from misconfigured env vars
+    const resolvedDir = resolve(dataDir)
+    if (!existsSync(resolvedDir)) {
+      mkdirSync(resolvedDir, { recursive: true })
     }
-    this.filePath = join(dataDir, 'reservations.json')
+    this.filePath = join(resolvedDir, 'reservations.json')
   }
 
   /**
@@ -56,7 +59,7 @@ export class ReservationPersistence {
         createdAt: s.createdAt,
       }))
     } catch (err) {
-      console.error('[reservation-persistence] Failed to load reservations:', err)
+      getGlobalLogger().error({ err }, 'Failed to load reservations')
       return []
     }
   }
@@ -111,7 +114,7 @@ export class ReservationPersistence {
     try {
       writeFileSync(this.filePath, JSON.stringify(serialized, null, 2), 'utf-8')
     } catch (err) {
-      console.error('[reservation-persistence] Failed to save reservations:', err)
+      getGlobalLogger().error({ err }, 'Failed to save reservations')
     }
 
     this.pendingData = null

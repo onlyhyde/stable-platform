@@ -83,6 +83,8 @@ interface SenderHistory {
  * - Factory/paymaster patterns
  */
 export class RiskScorer {
+  /** Maximum sender history entries to prevent unbounded memory growth */
+  private static readonly MAX_SENDER_HISTORY = 10_000
   private readonly config: RiskScorerConfig
   private readonly senderHistory: Map<string, SenderHistory> = new Map()
 
@@ -304,7 +306,7 @@ export class RiskScorer {
   /**
    * Record sender activity for history tracking
    */
-  private recordSenderActivity(sender: Address, userOp: UserOperationRpc): void {
+  private recordSenderActivity(sender: Address, _userOp: UserOperationRpc): void {
     const key = sender.toLowerCase()
     const now = Date.now()
     const existing = this.senderHistory.get(key)
@@ -313,6 +315,11 @@ export class RiskScorer {
       existing.opCount++
       existing.lastSeenAt = now
     } else {
+      // Evict oldest entry (FIFO via Map insertion order) when exceeding capacity
+      if (this.senderHistory.size >= RiskScorer.MAX_SENDER_HISTORY) {
+        const oldestKey = this.senderHistory.keys().next().value
+        if (oldestKey) this.senderHistory.delete(oldestKey)
+      }
       this.senderHistory.set(key, {
         opCount: 1,
         firstSeenAt: now,
