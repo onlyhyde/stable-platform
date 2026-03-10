@@ -241,7 +241,7 @@ export class GasFeeController {
   updateConfig(config: Partial<GasFeeControllerConfig>): void {
     this.config = { ...this.config, ...config }
     if (config.chainId !== undefined) {
-      this.state.chainId = config.chainId
+      this.state = { ...this.state, chainId: config.chainId }
     }
     // Re-initialize gas estimator with new config
     this.initializeGasEstimator()
@@ -320,8 +320,7 @@ export class GasFeeController {
         method: 'eth_gasPrice',
       })) as string
 
-      this.state.gasPrice = gasPrice
-      this.state.lastUpdated = Date.now()
+      this.state = { ...this.state, gasPrice, lastUpdated: Date.now() }
 
       // Add to history
       this.addToHistory(gasPrice)
@@ -358,10 +357,13 @@ export class GasFeeController {
       const fastMaxFee = this.toHex(baseFee * 2n + BigInt(fastPriorityFee))
 
       // Update state
-      this.state.baseFeePerGas = baseFeePerGas ?? null
-      this.state.maxPriorityFeePerGas = avgPriorityFee ?? null
-      this.state.maxFeePerGas = avgMaxFee ?? null
-      this.state.lastUpdated = Date.now()
+      this.state = {
+        ...this.state,
+        baseFeePerGas: baseFeePerGas ?? null,
+        maxPriorityFeePerGas: avgPriorityFee ?? null,
+        maxFeePerGas: avgMaxFee ?? null,
+        lastUpdated: Date.now(),
+      }
 
       return {
         baseFeePerGas: baseFeePerGas,
@@ -469,13 +471,16 @@ export class GasFeeController {
    * Set chain ID and clear history
    */
   setChainId(chainId: number): void {
-    this.state.chainId = chainId
-    this.state.gasPriceHistory = []
-    this.state.gasPrice = null
-    this.state.baseFeePerGas = null
-    this.state.maxPriorityFeePerGas = null
-    this.state.maxFeePerGas = null
-    this.state.lastUpdated = null
+    this.state = {
+      ...this.state,
+      chainId,
+      gasPriceHistory: [],
+      gasPrice: null,
+      baseFeePerGas: null,
+      maxPriorityFeePerGas: null,
+      maxFeePerGas: null,
+      lastUpdated: null,
+    }
   }
 
   /**
@@ -486,7 +491,7 @@ export class GasFeeController {
       return
     }
 
-    this.state.isPolling = true
+    this.state = { ...this.state, isPolling: true }
 
     // Initial fetch - errors are handled internally, polling continues on failure
     this.getGasPrice().catch((error) => {
@@ -511,7 +516,7 @@ export class GasFeeController {
       clearInterval(this.pollingTimer)
       this.pollingTimer = null
     }
-    this.state.isPolling = false
+    this.state = { ...this.state, isPolling: false }
   }
 
   /**
@@ -597,8 +602,7 @@ export class GasFeeController {
       if (this.indexerClient) {
         try {
           const avgPrice = await this.indexerClient.getAverageGasPrice(50)
-          this.state.gasPrice = avgPrice
-          this.state.lastUpdated = Date.now()
+          this.state = { ...this.state, gasPrice: avgPrice, lastUpdated: Date.now() }
           return avgPrice
         } catch (indexerError) {
           logger.error('Indexer fallback also failed', { indexerError })
@@ -650,15 +654,14 @@ export class GasFeeController {
   // Private helpers
 
   private addToHistory(gasPrice: string): void {
-    this.state.gasPriceHistory.push({
-      timestamp: Date.now(),
-      gasPrice,
-    })
-
-    // Limit history length
     const maxLength = getMaxHistoryLength()
-    if (this.state.gasPriceHistory.length > maxLength) {
-      this.state.gasPriceHistory = this.state.gasPriceHistory.slice(-maxLength)
+    const newHistory = [...this.state.gasPriceHistory, { timestamp: Date.now(), gasPrice }].slice(
+      -maxLength
+    )
+
+    this.state = {
+      ...this.state,
+      gasPriceHistory: newHistory,
     }
   }
 

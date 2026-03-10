@@ -112,7 +112,7 @@ export function WebAuthnConfig({ accountAddress, onSubmit, onBack }: WebAuthnCon
       }
 
       const validation = validateWebAuthnValidatorConfig(config)
-      if (!validation.valid) {
+      if (!validation.isValid) {
         throw new Error(validation.errors.join(', '))
       }
 

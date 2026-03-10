@@ -422,15 +422,35 @@ export class Vault {
    * Import vault data (for restore)
    */
   async import(data: string, password: string): Promise<void> {
-    const parsed = JSON.parse(data) as VaultData
-    await this.saveVault(parsed, password)
+    const parsed: unknown = JSON.parse(data)
+
+    // Validate vault data schema before persisting
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('Invalid vault data: expected an object')
+    }
+
+    const obj = parsed as Record<string, unknown>
+
+    if (!Array.isArray(obj.keyrings)) {
+      throw new Error('Invalid vault data: missing keyrings array')
+    }
+
+    for (let i = 0; i < obj.keyrings.length; i++) {
+      const kr = obj.keyrings[i] as Record<string, unknown> | undefined
+      if (!kr || typeof kr !== 'object' || typeof kr.type !== 'string') {
+        throw new Error(`Invalid vault data: keyring at index ${i} must have a 'type' string`)
+      }
+    }
+
+    const validated = parsed as VaultData
+    await this.saveVault(validated, password)
     this.cachedPassword = password
-    this.cachedData = parsed
+    this.cachedData = validated
     this.isSessionRestored = false
     this.resetAutoLock()
 
     // Save to session storage
-    await this.saveToSession(parsed)
+    await this.saveToSession(validated)
   }
 
   /**
@@ -476,7 +496,7 @@ export class Vault {
     const hex = vault.salt
     const bytes = new Uint8Array(hex.length / 2)
     for (let i = 0; i < hex.length; i += 2) {
-      bytes[i / 2] = Number.parseInt(hex.substr(i, 2), 16)
+      bytes[i / 2] = Number.parseInt(hex.substring(i, i + 2), 16)
     }
     return bytes
   }

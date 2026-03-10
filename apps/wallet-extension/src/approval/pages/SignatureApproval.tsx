@@ -11,9 +11,7 @@ interface SignatureApprovalProps {
 /**
  * Detect whether the typed data represents an EIP-4337 PackedUserOperation.
  */
-function isUserOpTypedData(
-  typedData: unknown
-): typedData is {
+function isUserOpTypedData(typedData: unknown): typedData is {
   primaryType: 'PackedUserOperation'
   domain: { name: string; version: string; chainId: string; verifyingContract: string }
   types: Record<string, Array<{ name: string; type: string }>>
@@ -155,10 +153,7 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
             <p className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
               {isEip712 ? t('eip712Label') : t('eip191Label')}
             </p>
-            <p
-              className="text-xs mt-2"
-              style={{ color: 'rgb(var(--muted-foreground))' }}
-            >
+            <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
               {isEip712 ? t('userOpTypedDataDesc') : t('userOpHashDesc')}
             </p>
           </Card>
@@ -209,7 +204,10 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
           <>
             {/* Domain */}
             <Card padding="md">
-              <p className="text-xs font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              <p
+                className="text-xs font-medium mb-2"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
                 EIP-712 Domain
               </p>
               <div className="space-y-2">
@@ -234,7 +232,10 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
 
             {/* Message fields */}
             <Card padding="md">
-              <p className="text-xs font-medium mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              <p
+                className="text-xs font-medium mb-2"
+                style={{ color: 'rgb(var(--muted-foreground))' }}
+              >
                 PackedUserOperation
               </p>
               <div className="space-y-3">

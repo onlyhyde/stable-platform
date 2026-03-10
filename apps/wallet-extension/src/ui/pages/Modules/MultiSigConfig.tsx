@@ -94,7 +94,7 @@ export function MultiSigConfigUI({ accountAddress, onSubmit, onBack }: MultiSigC
     }
 
     const validation = validateMultiSigValidatorConfig(config)
-    if (!validation.valid) {
+    if (!validation.isValid) {
       setErrors(validation.errors)
       return
     }

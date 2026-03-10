@@ -49,17 +49,45 @@ export function isEncryptedSessionData(data: unknown): data is EncryptedSessionD
 }
 
 /**
+ * Get installation-specific entropy for session key derivation.
+ * Binds the session key to this specific extension installation so that
+ * raw storage data copied to another machine/extension cannot be decrypted.
+ */
+function getInstallationEntropy(): Uint8Array {
+  const encoder = new TextEncoder()
+  try {
+    // chrome.runtime.getURL('') returns "chrome-extension://[unique-id]/"
+    // This is unique per extension installation
+    const extensionOrigin = chrome.runtime.getURL('')
+    return encoder.encode(extensionOrigin)
+  } catch {
+    // Fallback for test environments where chrome.runtime may not be available
+    return encoder.encode('stablenet-wallet-session')
+  }
+}
+
+/**
  * Derive session encryption key from vault salt
  *
  * Uses PBKDF2 with a fixed purpose string to derive a key specifically
  * for session encryption. This is separate from the vault encryption key.
+ *
+ * Key material includes:
+ * - Vault salt (from chrome.storage.local)
+ * - Purpose string (domain separator)
+ * - Extension installation origin (binds key to this installation)
  */
 export async function deriveSessionKey(salt: Uint8Array): Promise<CryptoKey> {
-  // Import the salt combined with purpose as key material
+  // Import the salt combined with purpose and installation entropy as key material
   const encoder = new TextEncoder()
+  const installationEntropy = getInstallationEntropy()
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
-    new Uint8Array([...salt, ...encoder.encode(SESSION_ENCRYPTION_PURPOSE)]),
+    new Uint8Array([
+      ...salt,
+      ...encoder.encode(SESSION_ENCRYPTION_PURPOSE),
+      ...installationEntropy,
+    ]),
     'PBKDF2',
     false,
     ['deriveKey']

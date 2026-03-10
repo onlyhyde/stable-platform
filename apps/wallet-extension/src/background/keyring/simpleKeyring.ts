@@ -73,10 +73,10 @@ export class SimpleKeyring {
   removeAccount(address: Address): void {
     const normalizedAddress = address.toLowerCase() as Address
 
-    // Find account in accounts array
-    const index = this.accounts.findIndex((a) => a.address.toLowerCase() === normalizedAddress)
+    // Check account exists
+    const exists = this.accounts.some((a) => a.address.toLowerCase() === normalizedAddress)
 
-    if (index === -1) {
+    if (!exists) {
       throw new Error('Account not found')
     }
 
@@ -88,7 +88,7 @@ export class SimpleKeyring {
     if (mapKey) {
       this.privateKeys.delete(mapKey)
     }
-    this.accounts.splice(index, 1)
+    this.accounts = this.accounts.filter((a) => a.address.toLowerCase() !== normalizedAddress)
   }
 
   /**

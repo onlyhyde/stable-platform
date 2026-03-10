@@ -983,7 +983,12 @@ interface CustomModuleInputProps {
   onBack: () => void
 }
 
-function CustomModuleInput({ initialType, knownModules, onSubmit, onBack }: CustomModuleInputProps) {
+function CustomModuleInput({
+  initialType,
+  knownModules,
+  onSubmit,
+  onBack,
+}: CustomModuleInputProps) {
   const { t } = useTranslation('modules')
   const { t: tc } = useTranslation('common')
 
@@ -1073,10 +1078,16 @@ function CustomModuleInput({ initialType, knownModules, onSubmit, onBack }: Cust
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: 'rgb(var(--foreground))' }}
+                      >
                         {mod.name}
                       </p>
-                      <p className="text-xs mt-0.5" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                      <p
+                        className="text-xs mt-0.5"
+                        style={{ color: 'rgb(var(--muted-foreground))' }}
+                      >
                         {mod.description}
                       </p>
                       <p
@@ -1087,7 +1098,10 @@ function CustomModuleInput({ initialType, knownModules, onSubmit, onBack }: Cust
                       </p>
                     </div>
                     {isSelected && (
-                      <span className="text-xs mt-0.5 shrink-0" style={{ color: 'rgb(var(--primary))' }}>
+                      <span
+                        className="text-xs mt-0.5 shrink-0"
+                        style={{ color: 'rgb(var(--primary))' }}
+                      >
                         ✓
                       </span>
                     )}

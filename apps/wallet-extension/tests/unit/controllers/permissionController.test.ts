@@ -397,4 +397,121 @@ describe('PermissionController', () => {
       expect(eventHandler).toHaveBeenCalledTimes(2)
     })
   })
+
+  describe('persistence', () => {
+    it('should persist permissions to chrome.storage.local on approve', async () => {
+      const permissions: PermissionType[] = ['eth_accounts']
+      const request = await controller.requestPermissions(testOrigin, permissions)
+      await controller.approvePermissions(request.id, [testAddress])
+
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stablenet_permissions: expect.objectContaining({
+            [testOrigin]: expect.objectContaining({
+              origin: testOrigin,
+              accounts: [testAddress],
+            }),
+          }),
+        })
+      )
+    })
+
+    it('should persist permissions on revokePermission', async () => {
+      const permissions: PermissionType[] = ['eth_accounts']
+      const request = await controller.requestPermissions(testOrigin, permissions)
+      await controller.approvePermissions(request.id, [testAddress])
+
+      // Clear mock to isolate the revoke call
+      ;(chrome.storage.local.set as jest.Mock).mockClear()
+
+      await controller.revokePermission(testOrigin, 'eth_accounts')
+
+      expect(chrome.storage.local.set).toHaveBeenCalled()
+    })
+
+    it('should persist permissions on revokeAllPermissions', async () => {
+      const permissions: PermissionType[] = ['eth_accounts']
+      const request = await controller.requestPermissions(testOrigin, permissions)
+      await controller.approvePermissions(request.id, [testAddress])
+
+      ;(chrome.storage.local.set as jest.Mock).mockClear()
+
+      await controller.revokeAllPermissions(testOrigin)
+
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stablenet_permissions: expect.not.objectContaining({
+            [testOrigin]: expect.anything(),
+          }),
+        })
+      )
+    })
+
+    it('should persist permissions on updateAccountsForOrigin', async () => {
+      const permissions: PermissionType[] = ['eth_accounts']
+      const request = await controller.requestPermissions(testOrigin, permissions)
+      await controller.approvePermissions(request.id, [testAddress])
+
+      ;(chrome.storage.local.set as jest.Mock).mockClear()
+
+      await controller.updateAccountsForOrigin(testOrigin, [testAddress2])
+
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stablenet_permissions: expect.objectContaining({
+            [testOrigin]: expect.objectContaining({
+              accounts: [testAddress2],
+            }),
+          }),
+        })
+      )
+    })
+
+    it('should restore permissions from chrome.storage.local on initialize', async () => {
+      const storedPermissions = {
+        [testOrigin]: {
+          origin: testOrigin,
+          permissions: [
+            {
+              id: 'test-perm-1',
+              parentCapability: 'eth_accounts' as PermissionType,
+              invoker: testOrigin,
+              caveats: [{ type: 'restrictToAccounts' as const, value: [testAddress] }],
+              date: Date.now(),
+            },
+          ],
+          accounts: [testAddress],
+          lastUpdated: Date.now(),
+        },
+      }
+
+      ;(chrome.storage.local.get as jest.Mock).mockResolvedValueOnce({
+        stablenet_permissions: storedPermissions,
+      })
+
+      await controller.initialize()
+
+      expect(controller.hasPermission(testOrigin, 'eth_accounts')).toBe(true)
+      expect(controller.getAccountsForOrigin(testOrigin)).toContain(testAddress)
+    })
+
+    it('should not restore pending requests on initialize', async () => {
+      ;(chrome.storage.local.get as jest.Mock).mockResolvedValueOnce({
+        stablenet_permissions: {},
+      })
+
+      await controller.initialize()
+
+      expect(controller.getPendingRequests()).toEqual([])
+    })
+
+    it('should handle storage failure gracefully on initialize', async () => {
+      ;(chrome.storage.local.get as jest.Mock).mockRejectedValueOnce(new Error('Storage error'))
+
+      // Should not throw
+      await controller.initialize()
+
+      expect(controller.getConnectedOrigins()).toEqual([])
+    })
+  })
 })

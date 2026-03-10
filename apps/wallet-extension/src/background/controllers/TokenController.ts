@@ -247,11 +247,21 @@ export class TokenController {
   removeToken(address: string): void {
     const normalizedAddress = address.toLowerCase()
 
-    delete this.state.tokens[normalizedAddress]
+    const { [normalizedAddress]: _removedToken, ...remainingTokens } = this.state.tokens
 
-    // Remove balances for this token
-    for (const account of Object.keys(this.state.balances)) {
-      delete this.state.balances[account]?.[normalizedAddress]
+    // Remove balances for this token immutably
+    const updatedBalances: typeof this.state.balances = {}
+    for (const [account, tokenBalances] of Object.entries(this.state.balances)) {
+      if (tokenBalances) {
+        const { [normalizedAddress]: _removedBalance, ...rest } = tokenBalances
+        updatedBalances[account] = rest
+      }
+    }
+
+    this.state = {
+      ...this.state,
+      tokens: remainingTokens,
+      balances: updatedBalances,
     }
   }
 
@@ -415,9 +425,12 @@ export class TokenController {
    * Set chain ID and clear state
    */
   setChainId(chainId: number): void {
-    this.state.chainId = chainId
-    this.state.tokens = {}
-    this.state.balances = {}
+    this.state = {
+      ...this.state,
+      chainId,
+      tokens: {},
+      balances: {},
+    }
   }
 
   // ============================================

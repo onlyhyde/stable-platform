@@ -74,12 +74,14 @@ export class NetworkController {
       isCustom: true,
     }
 
-    this.state.networks[chainId] = {
-      config,
-      status: 'disconnected',
+    this.state = {
+      ...this.state,
+      networks: {
+        ...this.state.networks,
+        [chainId]: { config, status: 'disconnected' },
+      },
+      customNetworks: [...this.state.customNetworks, chainId],
     }
-
-    this.state.customNetworks.push(chainId)
 
     this.emit('network:added', config)
 
@@ -106,13 +108,12 @@ export class NetworkController {
       await this.switchNetwork(this.options.defaultChainId)
     }
 
-    // Remove from state
-    delete this.state.networks[chainId]
-
-    // Remove from custom networks list
-    const index = this.state.customNetworks.indexOf(chainId)
-    if (index > -1) {
-      this.state.customNetworks.splice(index, 1)
+    // Remove from state immutably
+    const { [chainId]: _removed, ...remainingNetworks } = this.state.networks
+    this.state = {
+      ...this.state,
+      networks: remainingNetworks,
+      customNetworks: this.state.customNetworks.filter((id) => id !== chainId),
     }
 
     this.emit('network:removed', chainId)
@@ -127,7 +128,7 @@ export class NetworkController {
       throw new Error('Network not found')
     }
 
-    this.state.selectedChainId = chainId
+    this.state = { ...this.state, selectedChainId: chainId }
 
     this.emit('network:switched', chainId)
     this.emit('chainChanged', network.config.chainIdHex)
@@ -194,7 +195,13 @@ export class NetworkController {
       return
     }
 
-    network.status = status
+    this.state = {
+      ...this.state,
+      networks: {
+        ...this.state.networks,
+        [chainId]: { ...network, status },
+      },
+    }
 
     this.emit('network:statusChanged', chainId, status)
   }
@@ -208,7 +215,13 @@ export class NetworkController {
       return
     }
 
-    network.latestBlock = blockNumber
+    this.state = {
+      ...this.state,
+      networks: {
+        ...this.state.networks,
+        [chainId]: { ...network, latestBlock: blockNumber },
+      },
+    }
   }
 
   /**
@@ -340,21 +353,26 @@ export class NetworkController {
     const healthy = await this.pingRpc(rpcUrl)
 
     if (healthy) {
-      network.status = 'connected'
-      network.lastHealthCheck = Date.now()
-      network.consecutiveFailures = 0
+      this.updateNetworkState(chainId, {
+        status: 'connected',
+        lastHealthCheck: Date.now(),
+        consecutiveFailures: 0,
+      })
       return true
     }
 
     // RPC failed - increment failure count
-    network.consecutiveFailures = (network.consecutiveFailures ?? 0) + 1
-    network.lastError = `RPC ${rpcUrl} unreachable`
+    const failures = (network.consecutiveFailures ?? 0) + 1
+    this.updateNetworkState(chainId, {
+      consecutiveFailures: failures,
+      lastError: `RPC ${rpcUrl} unreachable`,
+    })
 
     // Attempt failover after 3 consecutive failures
-    if (network.consecutiveFailures >= 3) {
+    if (failures >= 3) {
       const didFailover = await this.attemptFailover(chainId)
       if (!didFailover) {
-        network.status = 'error'
+        this.updateNetworkState(chainId, { status: 'error' })
         this.emit('network:statusChanged', chainId, 'error')
       }
       return didFailover
@@ -380,10 +398,12 @@ export class NetworkController {
     for (const url of candidates) {
       const healthy = await this.pingRpc(url)
       if (healthy) {
-        network.activeRpcUrl = url
-        network.status = 'connected'
-        network.consecutiveFailures = 0
-        network.lastHealthCheck = Date.now()
+        this.updateNetworkState(chainId, {
+          activeRpcUrl: url,
+          status: 'connected',
+          consecutiveFailures: 0,
+          lastHealthCheck: Date.now(),
+        })
         this.emit('network:statusChanged', chainId, 'connected')
         return true
       }
@@ -425,6 +445,18 @@ export class NetworkController {
   }
 
   // Private methods
+
+  private updateNetworkState(chainId: number, updates: Partial<NetworkState>): void {
+    const network = this.state.networks[chainId]
+    if (!network) return
+    this.state = {
+      ...this.state,
+      networks: {
+        ...this.state.networks,
+        [chainId]: { ...network, ...updates },
+      },
+    }
+  }
 
   private emit(event: NetworkEventType, ...args: unknown[]): void {
     const handlers = this.eventHandlers.get(event)

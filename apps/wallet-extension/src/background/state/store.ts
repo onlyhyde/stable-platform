@@ -1,5 +1,6 @@
 import type { Address } from 'viem'
 import { DEFAULT_NETWORKS, STORAGE_KEYS } from '../../shared/constants'
+import { createLogger } from '../../shared/utils/logger'
 import type {
   Account,
   AssetState,
@@ -60,6 +61,8 @@ const initialState: WalletState = {
  * State manager for the wallet
  * Uses chrome.storage.local for persistence
  */
+const logger = createLogger('WalletStore')
+
 class WalletStateManager {
   private state: WalletState = initialState
   private listeners: Set<(state: WalletState) => void> = new Set()
@@ -150,7 +153,7 @@ class WalletStateManager {
         [STORAGE_KEYS.WALLET_STATE]: this.state,
       })
     } catch (error) {
-      console.error('[WalletStore] Failed to persist state:', error)
+      logger.error('Failed to persist state:', error)
     }
   }
 

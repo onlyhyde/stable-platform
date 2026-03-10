@@ -357,14 +357,12 @@ export function SessionKeyConfigUI({
                           ? 'rgb(var(--primary))'
                           : 'rgb(var(--muted-foreground))',
                         borderWidth: 1,
-                        borderColor: alreadyAdded
-                          ? 'rgb(var(--primary) / 0.4)'
-                          : 'transparent',
+                        borderColor: alreadyAdded ? 'rgb(var(--primary) / 0.4)' : 'transparent',
                       }}
                       onClick={() => {
                         if (!alreadyAdded) {
                           setForm((prev) => {
-                            const emptyIdx = prev.allowedTargets.findIndex((t) => t === '')
+                            const emptyIdx = prev.allowedTargets.indexOf('')
                             if (emptyIdx >= 0) {
                               return {
                                 ...prev,
@@ -381,7 +379,8 @@ export function SessionKeyConfigUI({
                         }
                       }}
                     >
-                      {alreadyAdded ? '✓ ' : '+ '}{contract.name}
+                      {alreadyAdded ? '✓ ' : '+ '}
+                      {contract.name}
                     </button>
                   )
                 })}

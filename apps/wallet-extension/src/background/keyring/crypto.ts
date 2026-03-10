@@ -159,11 +159,8 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
 
   let result = 0
   for (let i = 0; i < a.length; i++) {
-    const aVal = a[i]
-    const bVal = b[i]
-    if (aVal !== undefined && bVal !== undefined) {
-      result |= aVal ^ bVal
-    }
+    // Non-null assertions are safe: index is bounded by verified equal lengths
+    result |= a[i]! ^ b[i]!
   }
 
   return result === 0

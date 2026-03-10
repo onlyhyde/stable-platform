@@ -27,8 +27,8 @@ const SENSITIVE_PATTERNS = [
   /node_modules\/[^\s]+/g,
   /\.\.\/[^\s]+/g,
 
-  // Memory addresses
-  /0x[0-9a-fA-F]{8,}/g,
+  // Memory addresses (8-16 hex chars, but NOT 40-char Ethereum addresses or 64-char tx hashes)
+  /0x(?=[0-9a-fA-F]{8,16}(?![0-9a-fA-F]))[0-9a-fA-F]+/g,
 
   // Internal error codes that might reveal implementation
   /ENOENT|EACCES|EPERM|ECONNREFUSED/g,
@@ -36,8 +36,8 @@ const SENSITIVE_PATTERNS = [
   // Database/storage errors
   /IndexedDB|localStorage|sessionStorage|chrome\.storage/gi,
 
-  // API keys or tokens (partial matches)
-  /[a-zA-Z0-9_-]{20,}/g,
+  // API keys or tokens (base64-like strings with mixed case + digits + special, 32+ chars)
+  /[A-Za-z0-9+/=_-]{32,}(?=\s|$|[.,;:!?'")])/g,
 
   // IP addresses (internal)
   /\b(?:192\.168|10\.|172\.(?:1[6-9]|2[0-9]|3[01]))\.\d{1,3}\.\d{1,3}\b/g,

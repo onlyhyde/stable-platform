@@ -1,9 +1,12 @@
 /**
  * PermissionController
  * Manages dApp permissions and access control
+ * Persists approved permissions to chrome.storage.local
+ * Pending requests are ephemeral (cleared on service worker restart)
  */
 
 import type { Address } from 'viem'
+import { createLogger } from '../../shared/utils/logger'
 import type {
   Caveat,
   OriginPermissions,
@@ -13,6 +16,11 @@ import type {
   PermissionRequest,
   PermissionType,
 } from './permissionController.types'
+
+const logger = createLogger('PermissionController')
+
+/** Storage key for persisted permission state */
+const PERMISSION_STORAGE_KEY = 'stablenet_permissions'
 
 type PermissionEventType =
   | 'permission:requested'
@@ -41,6 +49,45 @@ export class PermissionController {
   }
 
   /**
+   * Initialize controller by restoring persisted permissions from chrome.storage.local.
+   * Pending requests are NOT restored (they are ephemeral).
+   */
+  async initialize(): Promise<void> {
+    try {
+      const stored = await chrome.storage.local.get(PERMISSION_STORAGE_KEY)
+      const persisted = stored[PERMISSION_STORAGE_KEY] as
+        | Record<string, OriginPermissions>
+        | undefined
+
+      if (persisted && typeof persisted === 'object') {
+        this.state = {
+          permissions: persisted,
+          pendingRequests: {},
+        }
+        logger.info('Restored permissions from storage', {
+          origins: Object.keys(persisted).length,
+        })
+      }
+    } catch (error) {
+      logger.error('Failed to restore permissions from storage', error)
+    }
+  }
+
+  /**
+   * Persist approved permissions to chrome.storage.local.
+   * Only permissions are persisted — pending requests are ephemeral.
+   */
+  private async persist(): Promise<void> {
+    try {
+      await chrome.storage.local.set({
+        [PERMISSION_STORAGE_KEY]: this.state.permissions,
+      })
+    } catch (error) {
+      logger.error('Failed to persist permissions', error)
+    }
+  }
+
+  /**
    * Request permissions for an origin
    */
   async requestPermissions(
@@ -58,7 +105,10 @@ export class PermissionController {
       date: Date.now(),
     }
 
-    this.state.pendingRequests[id] = request
+    this.state = {
+      ...this.state,
+      pendingRequests: { ...this.state.pendingRequests, [id]: request },
+    }
 
     this.emit('permission:requested', request)
 
@@ -94,17 +144,24 @@ export class PermissionController {
       }
     })
 
-    // Store permissions
-    this.state.permissions[request.origin] = {
-      origin: request.origin,
-      permissions,
-      accounts,
-      lastUpdated: Date.now(),
+    // Store permissions and remove from pending immutably
+    const { [requestId]: _removed, ...remainingRequests } = this.state.pendingRequests
+
+    this.state = {
+      ...this.state,
+      permissions: {
+        ...this.state.permissions,
+        [request.origin]: {
+          origin: request.origin,
+          permissions,
+          accounts,
+          lastUpdated: Date.now(),
+        },
+      },
+      pendingRequests: remainingRequests,
     }
 
-    // Remove from pending
-    delete this.state.pendingRequests[requestId]
-
+    await this.persist()
     this.emit('permission:approved', request.origin, permissions)
   }
 
@@ -119,8 +176,12 @@ export class PermissionController {
 
     const origin = request.origin
 
-    // Remove from pending
-    delete this.state.pendingRequests[requestId]
+    // Remove from pending immutably
+    const { [requestId]: _removed, ...remainingRequests } = this.state.pendingRequests
+    this.state = {
+      ...this.state,
+      pendingRequests: remainingRequests,
+    }
 
     this.emit('permission:rejected', origin, requestId)
   }
@@ -146,11 +207,19 @@ export class PermissionController {
       return
     }
 
-    originPerms.permissions = originPerms.permissions.filter(
-      (p) => p.parentCapability !== permission
-    )
-    originPerms.lastUpdated = Date.now()
+    this.state = {
+      ...this.state,
+      permissions: {
+        ...this.state.permissions,
+        [origin]: {
+          ...originPerms,
+          permissions: originPerms.permissions.filter((p) => p.parentCapability !== permission),
+          lastUpdated: Date.now(),
+        },
+      },
+    }
 
+    await this.persist()
     this.emit('permission:revoked', origin, permission)
   }
 
@@ -163,8 +232,13 @@ export class PermissionController {
       return
     }
 
-    delete this.state.permissions[origin]
+    const { [origin]: _removed, ...remainingPermissions } = this.state.permissions
+    this.state = {
+      ...this.state,
+      permissions: remainingPermissions,
+    }
 
+    await this.persist()
     this.emit('accounts:changed', origin, [])
   }
 
@@ -196,20 +270,31 @@ export class PermissionController {
       return
     }
 
-    originPerms.accounts = accounts
-    originPerms.lastUpdated = Date.now()
+    const updatedPermissions = originPerms.permissions.map((p) => {
+      if (p.parentCapability !== 'eth_accounts') return p
 
-    // Update the eth_accounts caveat
-    const ethAccountsPerm = originPerms.permissions.find(
-      (p) => p.parentCapability === 'eth_accounts'
-    )
-    if (ethAccountsPerm) {
-      const accountCaveat = ethAccountsPerm.caveats.find((c) => c.type === 'restrictToAccounts')
-      if (accountCaveat) {
-        accountCaveat.value = accounts.map((a) => a)
+      return {
+        ...p,
+        caveats: p.caveats.map((c) =>
+          c.type === 'restrictToAccounts' ? { ...c, value: accounts.map((a) => a) } : c
+        ),
       }
+    })
+
+    this.state = {
+      ...this.state,
+      permissions: {
+        ...this.state.permissions,
+        [origin]: {
+          ...originPerms,
+          accounts,
+          permissions: updatedPermissions,
+          lastUpdated: Date.now(),
+        },
+      },
     }
 
+    await this.persist()
     this.emit('accounts:changed', origin, accounts)
   }
 
@@ -272,7 +357,11 @@ export class PermissionController {
   // Private methods
 
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+    const bytes = crypto.getRandomValues(new Uint8Array(8))
+    const hex = Array.from(bytes)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+    return `${Date.now()}-${hex}`
   }
 
   private emit(event: PermissionEventType, ...args: unknown[]): void {

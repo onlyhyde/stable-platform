@@ -6,14 +6,10 @@
  * token, DeFi, and module contract address fields.
  */
 
-import {
-  getChainAddresses,
-  isChainSupported,
-  isZeroAddress,
-} from '@stablenet/contracts'
+import { getChainAddresses, isChainSupported, isZeroAddress } from '@stablenet/contracts'
+import type { ModuleType } from '@stablenet/core'
 import { MODULE_TYPE } from '@stablenet/core'
 import { useMemo } from 'react'
-import type { ModuleType } from '@stablenet/core'
 import { useSelectedNetwork } from '../../../hooks'
 
 export interface KnownToken {

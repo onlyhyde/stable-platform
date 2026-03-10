@@ -265,6 +265,22 @@ function isIPAddress(host: string): boolean {
 }
 
 /**
+ * Check if an IP address is a private/local address (RFC 1918, loopback, link-local).
+ * These are safe for local development and should not trigger phishing warnings.
+ */
+function isPrivateIP(ip: string): boolean {
+  return (
+    ip === '127.0.0.1' ||
+    ip.startsWith('10.') ||
+    ip.startsWith('192.168.') ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(ip) ||
+    ip.startsWith('169.254.') ||
+    ip === '0.0.0.0' ||
+    ip === '::1'
+  )
+}
+
+/**
  * Check an origin for phishing indicators.
  * Returns a result indicating whether the origin is safe to connect.
  */
@@ -302,13 +318,21 @@ export function checkOrigin(origin: string): PhishingCheckResult {
     return { isSafe: true, riskLevel: 'safe' }
   }
 
-  // 3. IP address check
+  // 3. IP address check (allow private/local IPs for development)
   if (isIPAddress(hostname)) {
+    if (isPrivateIP(hostname)) {
+      return { isSafe: true, riskLevel: 'safe' }
+    }
     return {
       isSafe: false,
-      reason: 'IP address URLs are commonly used in phishing attacks',
+      reason: 'Public IP address URLs are commonly used in phishing attacks',
       riskLevel: 'high',
     }
+  }
+
+  // Also allow localhost explicitly
+  if (hostname === 'localhost') {
+    return { isSafe: true, riskLevel: 'safe' }
   }
 
   // 4. Homograph attack check

@@ -132,23 +132,7 @@ const tabSubscriptions: Map<string, TabSubscription> = new Map()
 const pendingRequests: Map<string, PendingRequest> = new Map()
 const tabOrigins: Map<number, string> = new Map()
 
-/**
- * Recursively convert BigInt values to strings for JSON-safe serialization.
- * Chrome extension messaging uses JSON serialization, which does not support BigInt.
- */
-function serializeBigInts<T>(obj: T): T {
-  if (obj === null || obj === undefined) return obj
-  if (typeof obj === 'bigint') return String(obj) as unknown as T
-  if (Array.isArray(obj)) return obj.map(serializeBigInts) as unknown as T
-  if (typeof obj === 'object') {
-    const result: Record<string, unknown> = {}
-    for (const [key, value] of Object.entries(obj)) {
-      result[key] = serializeBigInts(value)
-    }
-    return result as T
-  }
-  return obj
-}
+// Use sanitizeForMessage (defined above) for BigInt serialization
 
 /**
  * Unsubscribe all subscriptions for a tab
@@ -822,7 +806,7 @@ async function handleMessage(
         type: 'APPROVAL_DATA',
         id: message.id,
         payload: {
-          approval: serializeBigInts(approval),
+          approval: sanitizeForMessage(approval),
           accounts,
           selectedAccount,
         },
