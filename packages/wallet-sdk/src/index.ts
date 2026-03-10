@@ -181,6 +181,13 @@ export {
 // New ERC-4337 Modules (from @stablenet/core integration)
 // ============================================================================
 
+// EIP-4337 v0.9 Gas Penalty
+export {
+  calculateEffectiveGasCost,
+  calculateUnusedGasPenalty,
+  UNUSED_GAS_PENALTY_DIVISOR,
+  UNUSED_GAS_PENALTY_THRESHOLD,
+} from '@stablenet/core'
 // Bundler Client
 export {
   type BundlerClient,
@@ -196,19 +203,20 @@ export {
   ENTRY_POINT_ABI,
   ENTRY_POINT_V09_ADDRESS,
   ENTRY_POINT_V09_CANONICAL_ADDRESS,
-  SENDER_CREATOR_V09_ADDRESS,
   getEntryPointVersion,
   isEntryPointV06,
   isEntryPointV07,
   isEntryPointV09,
+  SENDER_CREATOR_V09_ADDRESS,
 } from './entrypoint'
+// ERC-7579 Execution Mode
+export { CALL_TYPE, EXEC_MODE } from './execution'
 // Factory / Counterfactual
 export {
   getSenderAddress,
   KERNEL_V3_1_FACTORY_ADDRESS,
   predictCounterfactualAddress,
 } from './factory'
-
 // Gas Estimation
 export {
   createGasEstimator,
@@ -260,24 +268,6 @@ export {
   type PaymasterSelectorConfig,
   PaymasterSelectorError,
 } from './paymaster/selector'
-// ERC-7579 Execution Mode
-export { CALL_TYPE, EXEC_MODE } from './execution'
-
-// EIP-4337 ValidationData
-export {
-  packValidationData,
-  parseValidationData,
-  usesBlockNumberMode,
-} from './validationData'
-
-// EIP-4337 v0.9 Gas Penalty
-export {
-  calculateEffectiveGasCost,
-  calculateUnusedGasPenalty,
-  UNUSED_GAS_PENALTY_DIVISOR,
-  UNUSED_GAS_PENALTY_THRESHOLD,
-} from '@stablenet/core'
-
 // ERC-1271 Signature Verification
 export {
   isSmartContractAccount,
@@ -285,7 +275,6 @@ export {
   type SignatureVerificationResult,
   verifySignature,
 } from './signature'
-
 // Simulation
 export {
   type HandleOpSimulationResult,
@@ -295,3 +284,9 @@ export {
   simulateHandleOp,
   simulateValidation,
 } from './simulation'
+// EIP-4337 ValidationData
+export {
+  packValidationData,
+  parseValidationData,
+  usesBlockNumberMode,
+} from './validationData'

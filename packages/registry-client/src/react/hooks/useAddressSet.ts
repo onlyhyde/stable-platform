@@ -15,7 +15,7 @@ export function useAddressSet(chainId: number, setName: string): UseAddressSetRe
   const [resolved, setResolved] = useState<ResolvedAddressSet | undefined>()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-  const [fetchKey, setFetchKey] = useState(0)
+  const [_fetchKey, setFetchKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -61,7 +61,7 @@ export function useAddressSet(chainId: number, setName: string): UseAddressSetRe
       client.off('set:updated', handleUpdate)
       client.off('set:deleted', handleDelete)
     }
-  }, [client, chainId, setName, fetchKey])
+  }, [client, chainId, setName])
 
   const addresses = useMemo(() => {
     const result: Record<string, `0x${string}`> = {}

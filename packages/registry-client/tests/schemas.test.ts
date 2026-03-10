@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ContractEntrySchema,
   ContractEntryListSchema,
+  ContractEntrySchema,
   ImportResultSchema,
   ResolvedAddressSetSchema,
   ServerMessageSchema,
@@ -46,33 +46,28 @@ describe('ContractEntrySchema', () => {
   })
 
   it('rejects address with wrong length', () => {
-    expect(() =>
-      ContractEntrySchema.parse({ ...validContract, address: '0x123' })
-    ).toThrow()
+    expect(() => ContractEntrySchema.parse({ ...validContract, address: '0x123' })).toThrow()
   })
 
   it('rejects invalid txHash', () => {
-    expect(() =>
-      ContractEntrySchema.parse({ ...validContract, txHash: '0xshort' })
-    ).toThrow()
+    expect(() => ContractEntrySchema.parse({ ...validContract, txHash: '0xshort' })).toThrow()
   })
 
   it('rejects negative chainId', () => {
-    expect(() =>
-      ContractEntrySchema.parse({ ...validContract, chainId: -1 })
-    ).toThrow()
+    expect(() => ContractEntrySchema.parse({ ...validContract, chainId: -1 })).toThrow()
   })
 
   it('rejects non-integer chainId', () => {
-    expect(() =>
-      ContractEntrySchema.parse({ ...validContract, chainId: 1.5 })
-    ).toThrow()
+    expect(() => ContractEntrySchema.parse({ ...validContract, chainId: 1.5 })).toThrow()
   })
 })
 
 describe('ContractEntryListSchema', () => {
   it('parses an array of contracts', () => {
-    const result = ContractEntryListSchema.parse([validContract, { ...validContract, id: 'c2', name: 'DAI' }])
+    const result = ContractEntryListSchema.parse([
+      validContract,
+      { ...validContract, id: 'c2', name: 'DAI' },
+    ])
     expect(result).toHaveLength(2)
   })
 

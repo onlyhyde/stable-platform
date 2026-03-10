@@ -7,8 +7,7 @@ import type { BankAccountType, BankTransfer, LinkedBankAccount } from '@/types/b
 // Config
 // ============================================================================
 
-const BANK_API_BASE =
-  process.env.NEXT_PUBLIC_BANK_API_URL ?? 'http://localhost:3001/api/v1'
+const BANK_API_BASE = process.env.NEXT_PUBLIC_BANK_API_URL ?? 'http://localhost:3001/api/v1'
 const STORAGE_KEY = 'stablenet:linked-bank-accounts'
 
 // ============================================================================

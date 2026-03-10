@@ -69,8 +69,7 @@ export const NATIVE_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000'
  * Sentinel address for native ETH used by DeFi protocols and ERC-4337 paymasters
  * @see https://eips.ethereum.org/EIPS/eip-7528
  */
-export const NATIVE_ETH_SENTINEL_ADDRESS =
-  '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' as Address
+export const NATIVE_ETH_SENTINEL_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' as Address
 
 /**
  * Check if address is native token (zero address or 0xEeee...EeE sentinel)

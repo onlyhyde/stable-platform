@@ -6,22 +6,22 @@
  * package to provide a unified config API.
  */
 
-import {
-  CHAIN_ADDRESSES,
-  DEFAULT_TOKENS,
-  SERVICE_URLS,
-  ZERO_ADDRESS,
-  getChainAddresses as contractsGetChainAddresses,
-  getChainConfig as contractsGetChainConfig,
-  getDefaultTokens as contractsGetDefaultTokens,
-  getServiceUrls as contractsGetServiceUrls,
-  isChainSupported,
-} from '@stablenet/contracts'
 import type {
   ChainAddresses,
   ChainConfig,
   ServiceUrls,
   TokenDefinition,
+} from '@stablenet/contracts'
+import {
+  CHAIN_ADDRESSES,
+  getChainAddresses as contractsGetChainAddresses,
+  getChainConfig as contractsGetChainConfig,
+  getDefaultTokens as contractsGetDefaultTokens,
+  getServiceUrls as contractsGetServiceUrls,
+  DEFAULT_TOKENS,
+  isChainSupported,
+  SERVICE_URLS,
+  ZERO_ADDRESS,
 } from '@stablenet/contracts'
 
 /**

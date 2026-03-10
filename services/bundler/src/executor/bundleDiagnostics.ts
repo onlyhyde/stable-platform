@@ -139,8 +139,7 @@ export async function diagnoseBundleFailure(
   }
 
   // Step 3: Log UserOp details for the failed operation(s)
-  const failedEntry =
-    result.failedOpIndex !== undefined ? entries[result.failedOpIndex] : undefined
+  const failedEntry = result.failedOpIndex !== undefined ? entries[result.failedOpIndex] : undefined
   const opsToLog = failedEntry ? [failedEntry] : entries
 
   result.userOpDetails = opsToLog.map((e) => ({

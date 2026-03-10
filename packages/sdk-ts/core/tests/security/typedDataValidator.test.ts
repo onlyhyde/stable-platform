@@ -5,11 +5,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import {
-  createTypedDataValidator,
-  TypedDataValidator,
-} from '../../src/security/typedDataValidator'
 import type { TypedData } from '../../src/security/typedDataValidator'
+import { createTypedDataValidator, TypedDataValidator } from '../../src/security/typedDataValidator'
 
 describe('TypedDataValidator', () => {
   const validator = new TypedDataValidator()
@@ -257,8 +254,7 @@ describe('TypedDataValidator', () => {
       const data = {
         ...validTypedData,
         message: {
-          amount:
-            '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+          amount: '115792089237316195423570985008687907853269984665640564039457584007913129639935',
         },
       }
       const result = validator.validateTypedData(data, chainId, origin)
@@ -322,7 +318,11 @@ describe('TypedDataValidator', () => {
   describe('formatWarningsForDisplay', () => {
     it('should sort by severity and add prefixes', () => {
       const warnings = [
-        { type: 'missing_verifying_contract' as const, message: 'low msg', severity: 'low' as const },
+        {
+          type: 'missing_verifying_contract' as const,
+          message: 'low msg',
+          severity: 'low' as const,
+        },
         { type: 'chain_mismatch' as const, message: 'critical msg', severity: 'critical' as const },
         { type: 'empty_domain' as const, message: 'medium msg', severity: 'medium' as const },
       ]

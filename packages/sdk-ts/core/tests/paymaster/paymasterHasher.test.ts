@@ -4,6 +4,7 @@
  * T2: Missing paymasterHasher.ts unit tests
  */
 
+import type { Address, Hex } from 'viem'
 import { describe, expect, it } from 'vitest'
 import {
   computePaymasterDomainSeparator,
@@ -12,7 +13,6 @@ import {
   PAYMASTER_DOMAIN_NAME,
   PAYMASTER_DOMAIN_VERSION,
 } from '../../src/paymaster/paymasterHasher'
-import type { Address, Hex } from 'viem'
 
 const ENTRY_POINT = '0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address
 const PAYMASTER = '0xaabbccddaabbccddaabbccddaabbccddaabbccdd' as Address

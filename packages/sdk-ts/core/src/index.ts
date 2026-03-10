@@ -249,14 +249,14 @@ export {
 } from './errors'
 // Gas Module
 export {
+  // EIP-4337 v0.9 unused gas penalty
+  calculateEffectiveGasCost,
+  calculateUnusedGasPenalty,
   createEIP7702GasStrategy,
   createEOAGasStrategy,
   createGasEstimator,
   // Gas Price Oracle (dynamic fee estimation)
   createGasPriceOracle,
-  // EIP-4337 v0.9 unused gas penalty
-  calculateEffectiveGasCost,
-  calculateUnusedGasPenalty,
   createGasStrategyRegistry,
   createSmartAccountGasStrategy,
   type ERC20GasEstimate,

@@ -2,8 +2,8 @@
  * React hook for UserOperation gas estimation via bundler.
  */
 
-import type { BundlerClient, UserOperation, UserOperationGasEstimation } from '@stablenet/sdk-types'
 import { calculateEffectiveGasCost } from '@stablenet/core'
+import type { BundlerClient, UserOperation, UserOperationGasEstimation } from '@stablenet/sdk-types'
 import { useCallback, useState } from 'react'
 import type { Address, Hex } from 'viem'
 
@@ -78,21 +78,24 @@ export function useGasEstimation(config: UseGasEstimationConfig): UseGasEstimati
     [bundlerClient]
   )
 
-  const calculatePenalty = useCallback((params: {
-    actualGasCost: bigint
-    callGasUsed: bigint
-    callGasLimit: bigint
-    postOpGasUsed: bigint
-    postOpGasLimit: bigint
-  }): GasPenaltyInfo => {
-    return calculateEffectiveGasCost(
-      params.actualGasCost,
-      params.callGasUsed,
-      params.callGasLimit,
-      params.postOpGasUsed,
-      params.postOpGasLimit,
-    )
-  }, [])
+  const calculatePenalty = useCallback(
+    (params: {
+      actualGasCost: bigint
+      callGasUsed: bigint
+      callGasLimit: bigint
+      postOpGasUsed: bigint
+      postOpGasLimit: bigint
+    }): GasPenaltyInfo => {
+      return calculateEffectiveGasCost(
+        params.actualGasCost,
+        params.callGasUsed,
+        params.callGasLimit,
+        params.postOpGasUsed,
+        params.postOpGasLimit
+      )
+    },
+    []
+  )
 
   return { gasEstimate, calculatePenalty, estimate, isLoading, error }
 }

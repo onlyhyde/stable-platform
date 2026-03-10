@@ -2,11 +2,11 @@ import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex, PublicClient } from 'viem'
 import { encodeFunctionData } from 'viem'
 import { ENTRY_POINT_ABI } from '../abi'
-import { packForContract } from '../shared/packUserOp'
 import {
   ENTRY_POINT_SIMULATIONS_ABI,
   ENTRY_POINT_SIMULATIONS_BYTECODE,
 } from '../abi/entryPointSimulations'
+import { packForContract } from '../shared/packUserOp'
 import { RPC_ERROR_CODES, RpcError } from '../types'
 import type { Logger } from '../utils/logger'
 import type { ExecutionResult, ISimulationValidator, StakeInfo, ValidationResult } from './types'

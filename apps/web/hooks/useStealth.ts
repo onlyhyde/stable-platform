@@ -22,7 +22,6 @@ function resolveChain(chainId: number): ReturnType<typeof getStablenetLocal> {
       return getAnvilLocal()
     case 82830:
       return getStablenetTestnet()
-    case 8283:
     default:
       return getStablenetLocal()
   }

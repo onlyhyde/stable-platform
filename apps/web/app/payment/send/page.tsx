@@ -17,14 +17,14 @@ import {
 import { BatchRecipientList } from '@/components/payment/BatchRecipientList'
 import type { PaymasterType, SponsorshipPolicy, SupportedToken, WalletToken } from '@/hooks'
 import { usePaymaster, useUserOp, useWallet, useWalletAssets } from '@/hooks'
-import type { GasPaymentContext } from '@/hooks/useUserOp'
 import { useBatchTransaction } from '@/hooks/useBatchTransaction'
 import { useEntryPointDeposit } from '@/hooks/useEntryPointDeposit'
 import { usePaymasterHealth } from '@/hooks/usePaymasterHealth'
 import { usePermit2Approval } from '@/hooks/usePermit2Approval'
 import { useTokenApproval } from '@/hooks/useTokenApproval'
 import { useTokenGasEstimate } from '@/hooks/useTokenGasEstimate'
-import { parseAAError, getUserFriendlyError } from '@/lib/aaErrors'
+import type { GasPaymentContext } from '@/hooks/useUserOp'
+import { getUserFriendlyError, parseAAError } from '@/lib/aaErrors'
 import { formatTokenAmount } from '@/lib/utils'
 
 type SelectedAsset = 'native' | WalletToken
@@ -143,7 +143,14 @@ export default function SendPage() {
     if (paymasterType !== 'erc20') {
       resetApproval()
     }
-  }, [paymasterType, paymasterTokenAddress, address, paymasterAddress, checkAllowance, resetApproval])
+  }, [
+    paymasterType,
+    paymasterTokenAddress,
+    address,
+    paymasterAddress,
+    checkAllowance,
+    resetApproval,
+  ])
 
   // Estimate token gas cost when token selected in erc20/permit2 mode
   useEffect(() => {
@@ -646,51 +653,52 @@ export default function SendPage() {
           </div>
 
           {/* Error with AA code detection */}
-          {(error || sendError || batchError) && (() => {
-            const errorMsg = sendError ?? batchError ?? error?.message ?? ''
-            const aaError = parseAAError(errorMsg)
-            return (
-              <div
-                className="p-3 rounded-lg border space-y-2"
-                style={{
-                  backgroundColor: 'rgb(var(--destructive) / 0.1)',
-                  borderColor: 'rgb(var(--destructive) / 0.3)',
-                }}
-              >
-                <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
-                  {aaError ? aaError.message : errorMsg}
-                </p>
-                {aaError?.suggestion && (
-                  <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                    {aaError.suggestion}
+          {(error || sendError || batchError) &&
+            (() => {
+              const errorMsg = sendError ?? batchError ?? error?.message ?? ''
+              const aaError = parseAAError(errorMsg)
+              return (
+                <div
+                  className="p-3 rounded-lg border space-y-2"
+                  style={{
+                    backgroundColor: 'rgb(var(--destructive) / 0.1)',
+                    borderColor: 'rgb(var(--destructive) / 0.3)',
+                  }}
+                >
+                  <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
+                    {aaError ? aaError.message : errorMsg}
                   </p>
-                )}
-                {aaError?.action === 'deposit' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymasterType('none' as PaymasterType | 'none')
-                      setSendError(null)
-                    }}
-                    className="text-xs font-medium underline"
-                    style={{ color: 'rgb(var(--primary))' }}
-                  >
-                    Switch to Self-Pay & Top Up Deposit
-                  </button>
-                )}
-                {aaError?.action === 'change-mode' && (
-                  <button
-                    type="button"
-                    onClick={() => setSendError(null)}
-                    className="text-xs font-medium underline"
-                    style={{ color: 'rgb(var(--primary))' }}
-                  >
-                    Try a Different Gas Payment Method
-                  </button>
-                )}
-              </div>
-            )
-          })()}
+                  {aaError?.suggestion && (
+                    <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                      {aaError.suggestion}
+                    </p>
+                  )}
+                  {aaError?.action === 'deposit' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymasterType('none' as PaymasterType | 'none')
+                        setSendError(null)
+                      }}
+                      className="text-xs font-medium underline"
+                      style={{ color: 'rgb(var(--primary))' }}
+                    >
+                      Switch to Self-Pay & Top Up Deposit
+                    </button>
+                  )}
+                  {aaError?.action === 'change-mode' && (
+                    <button
+                      type="button"
+                      onClick={() => setSendError(null)}
+                      className="text-xs font-medium underline"
+                      style={{ color: 'rgb(var(--primary))' }}
+                    >
+                      Try a Different Gas Payment Method
+                    </button>
+                  )}
+                </div>
+              )
+            })()}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">

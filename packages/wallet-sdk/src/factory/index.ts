@@ -75,4 +75,3 @@ export function predictCounterfactualAddress(
     opcode: 'CREATE2',
   })
 }
-

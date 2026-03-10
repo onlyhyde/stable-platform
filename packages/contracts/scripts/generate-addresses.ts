@@ -17,11 +17,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const MONOREPO_ROOT = resolve(__dirname, '../../..')
 
-import {
-  GROUP_DEFAULTS,
-  GROUP_ORDER,
-  KEY_MAP,
-} from '../src/keymap'
+import { GROUP_DEFAULTS, GROUP_ORDER, KEY_MAP } from '../src/keymap'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 

@@ -19,7 +19,7 @@ function encodeSimulationResult(targetSuccess = true): { data: Hex } {
       { name: 'targetSuccess', type: 'bool' },
       { name: 'targetResult', type: 'bytes' },
     ],
-    [50000n, 100000n, 0n, 0n, targetSuccess, '0x'],
+    [50000n, 100000n, 0n, 0n, targetSuccess, '0x']
   )
   return { data }
 }
@@ -476,30 +476,28 @@ describe('GasEstimator', () => {
       const actualCallGasNeeded = 60000n
       const verificationGas = userOp.verificationGasLimit || 100000n
 
-      mockClient.call = vi
-        .fn()
-        .mockImplementation(async (params: { gas?: bigint }) => {
-          // simulateHandleOp calls have gas = callGas + verificationGas
-          if (params.gas && params.gas > verificationGas) {
-            const callGas = params.gas - verificationGas
-            const targetSuccess = callGas >= actualCallGasNeeded
+      mockClient.call = vi.fn().mockImplementation(async (params: { gas?: bigint }) => {
+        // simulateHandleOp calls have gas = callGas + verificationGas
+        if (params.gas && params.gas > verificationGas) {
+          const callGas = params.gas - verificationGas
+          const targetSuccess = callGas >= actualCallGasNeeded
 
-            const data = encodeAbiParameters(
-              [
-                { name: 'preOpGas', type: 'uint256' },
-                { name: 'paid', type: 'uint256' },
-                { name: 'accountValidationData', type: 'uint256' },
-                { name: 'paymasterValidationData', type: 'uint256' },
-                { name: 'targetSuccess', type: 'bool' },
-                { name: 'targetResult', type: 'bytes' },
-              ],
-              [50000n, 100000n, 0n, 0n, targetSuccess, '0x'],
-            )
-            return { data }
-          }
-          // simulateValidation calls — return success
-          return encodeSimulationResult()
-        })
+          const data = encodeAbiParameters(
+            [
+              { name: 'preOpGas', type: 'uint256' },
+              { name: 'paid', type: 'uint256' },
+              { name: 'accountValidationData', type: 'uint256' },
+              { name: 'paymasterValidationData', type: 'uint256' },
+              { name: 'targetSuccess', type: 'bool' },
+              { name: 'targetResult', type: 'bytes' },
+            ],
+            [50000n, 100000n, 0n, 0n, targetSuccess, '0x']
+          )
+          return { data }
+        }
+        // simulateValidation calls — return success
+        return encodeSimulationResult()
+      })
 
       const result = await gasEstimator.estimate(userOp)
 

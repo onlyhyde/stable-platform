@@ -3,71 +3,63 @@ import {
   // Account
   ACCOUNT_TYPE,
   type Account,
-  canInstallModules,
-  getAvailableTransactionModes,
-  getDefaultTransactionMode,
-  KEYRING_TYPE,
-  supportsSmartAccount,
-
   // Bundler
   BUNDLER_ERROR_CODES,
-
   // Constants & Execution Mode
   CALL_TYPE,
+  // Network
+  CHAIN_IDS,
+  canInstallModules,
   decodeExecutionMode,
   ECDSA_VALIDATOR_ADDRESS,
-  encodeExecutionMode,
   ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   EXEC_MODE,
   EXEC_TYPE,
   type ExecutionMode,
-  KERNEL_ADDRESSES,
-  KERNEL_V3_1_FACTORY_ADDRESS,
-
-  // Module
-  getModuleTypeName,
-  isExecutor,
-  isFallback,
-  isHook,
-  isPolicy,
-  isSigner,
-  isValidator,
-  MODULE_STATUS,
-  MODULE_TYPE,
-
-  // Network
-  CHAIN_IDS,
-  getDefaultCurrency,
-
-  // RPC
-  PROVIDER_EVENTS,
-  RPC_ERROR_CODES,
-  RpcError,
-
-  // Token
-  isNativeToken,
-  NATIVE_ETH_SENTINEL_ADDRESS,
-  NATIVE_TOKEN_ADDRESS,
-
+  encodeExecutionMode,
   // Transaction
   GAS_PAYMENT_TYPE,
+  getAvailableTransactionModes,
+  getDefaultCurrency,
+  getDefaultTransactionMode,
+  // Module
+  getModuleTypeName,
+  // Validation
+  isBlockNumberMode,
   isEIP7702Mode,
   isEOAMode,
   isERC20Gas,
+  isExecutor,
+  isFallback,
+  isHook,
+  // Token
+  isNativeToken,
+  isPolicy,
+  isSigner,
   isSmartAccountMode,
   isSponsoredGas,
-  TRANSACTION_MODE,
-
-  // Validation
-  isBlockNumberMode,
   isValidationFailed,
+  isValidator,
+  KERNEL_ADDRESSES,
+  KERNEL_V3_1_FACTORY_ADDRESS,
+  KEYRING_TYPE,
+  MODULE_STATUS,
+  MODULE_TYPE,
+  NATIVE_ETH_SENTINEL_ADDRESS,
+  NATIVE_TOKEN_ADDRESS,
+  // RPC
+  PROVIDER_EVENTS,
   packValidationData,
+  RPC_ERROR_CODES,
+  RpcError,
   SIG_VALIDATION_FAILED,
   SIG_VALIDATION_SUCCESS,
+  supportsSmartAccount,
+  TRANSACTION_MODE,
   unpackValidationData,
-  type ValidationData,
   VALIDITY_BLOCK_MODE_FLAG,
+  type ValidationData,
 } from '../src'
 
 // ============================================================================
@@ -266,9 +258,7 @@ describe('encodeExecutionMode / decodeExecutionMode', () => {
     }
     const encoded = encodeExecutionMode(mode)
     expect(encoded).toMatch(/^0x[a-fA-F0-9]{64}$/)
-    expect(encoded).toBe(
-      '0x0000000000000000000000000000000000000000000000000000000000000000'
-    )
+    expect(encoded).toBe('0x0000000000000000000000000000000000000000000000000000000000000000')
   })
 
   it('should encode a batch-call with try execution', () => {
@@ -745,9 +735,7 @@ describe('Token utilities', () => {
   })
 
   it('isNativeToken should handle case-insensitive sentinel', () => {
-    expect(
-      isNativeToken('0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' as `0x${string}`)
-    ).toBe(true)
+    expect(isNativeToken('0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' as `0x${string}`)).toBe(true)
   })
 
   it('isNativeToken should return false for ERC20 address', () => {
@@ -759,9 +747,7 @@ describe('Token utilities', () => {
   })
 
   it('NATIVE_ETH_SENTINEL_ADDRESS should be 0xEeee...EeE', () => {
-    expect(NATIVE_ETH_SENTINEL_ADDRESS).toBe(
-      '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
-    )
+    expect(NATIVE_ETH_SENTINEL_ADDRESS).toBe('0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE')
   })
 })
 

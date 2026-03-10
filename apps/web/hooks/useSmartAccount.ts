@@ -218,7 +218,11 @@ export function useSmartAccount() {
         r: signedAuthorization.r,
         s: signedAuthorization.s,
         v: BigInt(
-          signedAuthorization.v === 0 ? 27 : signedAuthorization.v === 1 ? 28 : signedAuthorization.v
+          signedAuthorization.v === 0
+            ? 27
+            : signedAuthorization.v === 1
+              ? 28
+              : signedAuthorization.v
         ),
       }
 

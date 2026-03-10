@@ -1,8 +1,5 @@
 import type { PackedUserOperation, UserOperation } from '@stablenet/sdk-types'
-import {
-  ENTRY_POINT_ADDRESS,
-  ENTRY_POINT_V07_ADDRESS,
-} from '@stablenet/sdk-types'
+import { ENTRY_POINT_ADDRESS, ENTRY_POINT_V07_ADDRESS } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { concat, encodeAbiParameters, pad, stringToHex, toHex } from 'viem'
 
@@ -89,7 +86,11 @@ export function unpackUserOperation(packed: Record<string, Hex>): UserOperation 
   // Parse initCode
   let factory: Address | undefined
   let factoryData: Hex | undefined
-  if (packed.initCode && packed.initCode !== '0x' && packed.initCode.length > INIT_CODE_FACTORY_END) {
+  if (
+    packed.initCode &&
+    packed.initCode !== '0x' &&
+    packed.initCode.length > INIT_CODE_FACTORY_END
+  ) {
     factory = `0x${packed.initCode.slice(PREFIX_LEN, INIT_CODE_FACTORY_END)}` as Address
     factoryData = `0x${packed.initCode.slice(INIT_CODE_FACTORY_END)}` as Hex
   }
@@ -97,14 +98,22 @@ export function unpackUserOperation(packed: Record<string, Hex>): UserOperation 
   // Parse accountGasLimits
   const accountGasLimits = packed.accountGasLimits || '0x'
   const verificationGasLimit =
-    accountGasLimits.length >= GAS_FIELD1_END ? BigInt(`0x${accountGasLimits.slice(PREFIX_LEN, GAS_FIELD1_END)}`) : 0n
+    accountGasLimits.length >= GAS_FIELD1_END
+      ? BigInt(`0x${accountGasLimits.slice(PREFIX_LEN, GAS_FIELD1_END)}`)
+      : 0n
   const callGasLimit =
-    accountGasLimits.length >= GAS_FIELD2_END ? BigInt(`0x${accountGasLimits.slice(GAS_FIELD1_END, GAS_FIELD2_END)}`) : 0n
+    accountGasLimits.length >= GAS_FIELD2_END
+      ? BigInt(`0x${accountGasLimits.slice(GAS_FIELD1_END, GAS_FIELD2_END)}`)
+      : 0n
 
   // Parse gasFees
   const gasFees = packed.gasFees || '0x'
-  const maxPriorityFeePerGas = gasFees.length >= GAS_FIELD1_END ? BigInt(`0x${gasFees.slice(PREFIX_LEN, GAS_FIELD1_END)}`) : 0n
-  const maxFeePerGas = gasFees.length >= GAS_FIELD2_END ? BigInt(`0x${gasFees.slice(GAS_FIELD1_END, GAS_FIELD2_END)}`) : 0n
+  const maxPriorityFeePerGas =
+    gasFees.length >= GAS_FIELD1_END ? BigInt(`0x${gasFees.slice(PREFIX_LEN, GAS_FIELD1_END)}`) : 0n
+  const maxFeePerGas =
+    gasFees.length >= GAS_FIELD2_END
+      ? BigInt(`0x${gasFees.slice(GAS_FIELD1_END, GAS_FIELD2_END)}`)
+      : 0n
 
   // Parse paymasterAndData
   let paymaster: Address | undefined
@@ -119,8 +128,12 @@ export function unpackUserOperation(packed: Record<string, Hex>): UserOperation 
   ) {
     paymaster = `0x${packed.paymasterAndData.slice(PREFIX_LEN, PM_ADDRESS_END)}` as Address
     if (packed.paymasterAndData.length >= PM_POST_GAS_END) {
-      paymasterVerificationGasLimit = BigInt(`0x${packed.paymasterAndData.slice(PM_ADDRESS_END, PM_VER_GAS_END)}`)
-      paymasterPostOpGasLimit = BigInt(`0x${packed.paymasterAndData.slice(PM_VER_GAS_END, PM_POST_GAS_END)}`)
+      paymasterVerificationGasLimit = BigInt(
+        `0x${packed.paymasterAndData.slice(PM_ADDRESS_END, PM_VER_GAS_END)}`
+      )
+      paymasterPostOpGasLimit = BigInt(
+        `0x${packed.paymasterAndData.slice(PM_VER_GAS_END, PM_POST_GAS_END)}`
+      )
       if (packed.paymasterAndData.length > PM_POST_GAS_END) {
         paymasterData = `0x${packed.paymasterAndData.slice(PM_POST_GAS_END)}` as Hex
       }
@@ -332,9 +345,7 @@ export function getUserOperationHashVersioned(
 ): Hex {
   const version = detectEntryPointVersion(entryPoint)
   if (version === 'v0.7') {
-    throw new Error(
-      'EntryPoint v0.7 hash is not supported. Use the v0.7 SDK or upgrade to v0.9.'
-    )
+    throw new Error('EntryPoint v0.7 hash is not supported. Use the v0.7 SDK or upgrade to v0.9.')
   }
   if (version === 'unknown') {
     throw new Error(

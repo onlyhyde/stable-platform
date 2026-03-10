@@ -389,10 +389,7 @@ describe('RegistryClient', () => {
       vi.stubGlobal('fetch', mockFetchResponse([validContract]))
       const client = createClient()
 
-      const result = await client.listContracts(
-        { chainId: 1 },
-        { limit: 10, cursor: 'abc' }
-      )
+      const result = await client.listContracts({ chainId: 1 }, { limit: 10, cursor: 'abc' })
       expect(result.items).toHaveLength(1)
 
       const fetchCall = vi.mocked(globalThis.fetch).mock.calls[0]
@@ -508,10 +505,7 @@ describe('RegistryClient', () => {
 
   describe('error handling', () => {
     it('throws RegistryClientError with status code on HTTP error', async () => {
-      vi.stubGlobal(
-        'fetch',
-        mockFetchResponse({ message: 'Not found', code: 'NOT_FOUND' }, 404)
-      )
+      vi.stubGlobal('fetch', mockFetchResponse({ message: 'Not found', code: 'NOT_FOUND' }, 404))
       const client = createClient()
 
       try {
@@ -580,10 +574,7 @@ describe('RegistryClient', () => {
     it('error details do not contain message or code fields', async () => {
       vi.stubGlobal(
         'fetch',
-        mockFetchResponse(
-          { message: 'Not found', code: 'NOT_FOUND', extra: 'info' },
-          404
-        )
+        mockFetchResponse({ message: 'Not found', code: 'NOT_FOUND', extra: 'info' }, 404)
       )
       const client = createClient()
 

@@ -1,5 +1,5 @@
 import type { Address, Hex } from 'viem'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock the chain client and config modules before importing app
 vi.mock('../src/chain/client', () => ({
@@ -50,7 +50,7 @@ const TEST_CONFIG: PaymasterProxyConfig = {
   paymasterAddresses: {
     verifying: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address,
   },
-  signerPrivateKey: '0x' + 'ab'.repeat(32) as Hex,
+  signerPrivateKey: ('0x' + 'ab'.repeat(32)) as Hex,
   rpcUrl: 'http://localhost:8545',
   supportedChainIds: [8283],
   debug: false,

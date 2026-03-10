@@ -114,11 +114,13 @@ export function parseAAError(errorMessage: string): AAErrorInfo | null {
   if (!match) return null
 
   const code = `AA${match[1]}`
-  return AA_ERRORS[code] ?? {
-    message: `Account Abstraction error (${code}).`,
-    suggestion: 'Please try again or switch gas payment method.',
-    action: 'retry',
-  }
+  return (
+    AA_ERRORS[code] ?? {
+      message: `Account Abstraction error (${code}).`,
+      suggestion: 'Please try again or switch gas payment method.',
+      action: 'retry',
+    }
+  )
 }
 
 /**

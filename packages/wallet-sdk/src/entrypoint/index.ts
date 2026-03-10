@@ -4,8 +4,8 @@
  * EntryPoint v0.9 constants, ABI, and version detection utilities.
  */
 
-import type { Address } from 'viem'
 import { ENTRY_POINT_V09_ADDRESS } from '@stablenet/sdk-types'
+import type { Address } from 'viem'
 
 export { ENTRY_POINT_ABI } from '@stablenet/core'
 // Re-export EntryPoint constants and ABI

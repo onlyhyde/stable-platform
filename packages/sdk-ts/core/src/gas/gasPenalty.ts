@@ -16,10 +16,7 @@ export const UNUSED_GAS_PENALTY_DIVISOR = 10n
  * Calculate 10% penalty for a single gas limit.
  * Returns 0 if unused gas is below the 40,000 threshold.
  */
-export function calculateUnusedGasPenalty(
-  usedGas: bigint,
-  gasLimit: bigint
-): bigint {
+export function calculateUnusedGasPenalty(usedGas: bigint, gasLimit: bigint): bigint {
   if (gasLimit <= usedGas) return 0n
   const unused = gasLimit - usedGas
   if (unused <= UNUSED_GAS_PENALTY_THRESHOLD) return 0n

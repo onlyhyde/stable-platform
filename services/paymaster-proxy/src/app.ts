@@ -5,7 +5,6 @@ import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
-import { RateLimiter } from './middleware/rateLimiter'
 import { getPublicClient, getWalletClient } from './chain/client'
 import {
   getAutoDepositConfig,
@@ -21,6 +20,7 @@ import {
   handleGetSponsorPolicy,
   handleSupportedTokens,
 } from './handlers'
+import { RateLimiter } from './middleware/rateLimiter'
 import { SponsorPolicyManager } from './policy/sponsorPolicy'
 import {
   estimateTokenPaymentParamsSchema,
@@ -168,11 +168,7 @@ export function createApp(config: PaymasterProxyConfig): Hono {
   const allowedOrigins = process.env.PAYMASTER_CORS_ORIGINS
   app.use(
     '*',
-    cors(
-      allowedOrigins
-        ? { origin: allowedOrigins.split(',').map((o) => o.trim()) }
-        : undefined
-    )
+    cors(allowedOrigins ? { origin: allowedOrigins.split(',').map((o) => o.trim()) } : undefined)
   )
   // Limit request body size to 1 MB to prevent abuse
   app.use('*', bodyLimit({ maxSize: 1024 * 1024 }))
@@ -364,10 +360,7 @@ function registerAdminRoutes(adminApp: Hono, policyManager: SponsorPolicyManager
     const body = await c.req.json()
     const parseResult = sponsorPolicySchema.safeParse(body)
     if (!parseResult.success) {
-      return c.json(
-        { error: 'Invalid policy', details: parseResult.error.issues },
-        400
-      )
+      return c.json({ error: 'Invalid policy', details: parseResult.error.issues }, 400)
     }
     policyManager.setPolicy(parseResult.data as import('./types').SponsorPolicy)
     return c.json({ success: true })
@@ -389,7 +382,10 @@ function registerAdminRoutes(adminApp: Hono, policyManager: SponsorPolicyManager
 function createRpcHandler(
   handlerConfig: HandlerConfig,
   metrics: MetricsState
-): (c: { req: { json: () => Promise<unknown> }; json: (data: unknown, status?: number) => Response }) => Promise<Response> {
+): (c: {
+  req: { json: () => Promise<unknown> }
+  json: (data: unknown, status?: number) => Response
+}) => Promise<Response> {
   return async (c) => {
     const body = await c.req.json()
 
@@ -722,10 +718,15 @@ function handlePmGetSponsorPolicy(params: unknown[], config: HandlerConfig): unk
   const chainId = parsed.length >= 3 ? (parsed[2] as string) : (parsed[1] as string)
   const policyId = parsed.length === 4 ? (parsed[3] as string) : undefined
 
-  const result = handleGetSponsorPolicy(senderAddress, chainId, {
-    policyManager: config.policyManager,
-    supportedChainIds: config.supportedChainIds,
-  }, policyId)
+  const result = handleGetSponsorPolicy(
+    senderAddress,
+    chainId,
+    {
+      policyManager: config.policyManager,
+      supportedChainIds: config.supportedChainIds,
+    },
+    policyId
+  )
 
   if (!result.success) {
     throw new RpcError(result.error.message, result.error.code, result.error.data)

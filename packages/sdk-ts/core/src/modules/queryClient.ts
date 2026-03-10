@@ -201,10 +201,7 @@ export function createModuleQueryClient(config: ModuleQueryClientConfig) {
   /**
    * Check if account supports a specific execution mode (ERC-7579 §3.5)
    */
-  async function supportsExecutionMode(
-    account: Address,
-    encodedMode: Hex
-  ): Promise<boolean> {
+  async function supportsExecutionMode(account: Address, encodedMode: Hex): Promise<boolean> {
     try {
       return await provider.readContract<boolean>({
         address: account,
@@ -220,10 +217,7 @@ export function createModuleQueryClient(config: ModuleQueryClientConfig) {
   /**
    * Check if account supports a specific module type (ERC-7579 §3.5)
    */
-  async function supportsModule(
-    account: Address,
-    moduleTypeId: bigint
-  ): Promise<boolean> {
+  async function supportsModule(account: Address, moduleTypeId: bigint): Promise<boolean> {
     try {
       return await provider.readContract<boolean>({
         address: account,

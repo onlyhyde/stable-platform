@@ -119,7 +119,7 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
         stopLoading()
       }
     },
-    [paymasterUrl, chainId]
+    [paymasterUrl, chainId, startLoading, stopLoading]
   )
 
   /**
@@ -152,7 +152,7 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
         stopLoading()
       }
     },
-    [paymasterUrl, chainId]
+    [paymasterUrl, chainId, startLoading, stopLoading]
   )
 
   /**
@@ -199,7 +199,7 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
         stopLoading()
       }
     },
-    [paymasterUrl, chainId, config.policyId]
+    [paymasterUrl, chainId, config.policyId, startLoading, stopLoading]
   )
 
   /**
@@ -242,7 +242,7 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
     } finally {
       stopLoading()
     }
-  }, [paymasterUrl, chainId])
+  }, [paymasterUrl, chainId, startLoading, stopLoading])
 
   /**
    * Get paymaster balance info
@@ -286,7 +286,7 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
         stopLoading()
       }
     },
-    [paymasterUrl, chainId, defaultPaymasterAddress]
+    [paymasterUrl, chainId, defaultPaymasterAddress, startLoading, stopLoading]
   )
 
   /**
@@ -328,7 +328,7 @@ export function usePaymaster(config: UsePaymasterConfig = {}) {
     } finally {
       stopLoading()
     }
-  }, [paymasterUrl, chainId])
+  }, [paymasterUrl, chainId, startLoading, stopLoading])
 
   return {
     // Config

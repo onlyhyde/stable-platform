@@ -9,8 +9,8 @@
  */
 
 import { packUserOperation } from '@stablenet/core'
-import { ENTRY_POINT_V09_ADDRESS } from '@stablenet/sdk-types'
 import type { UserOperation } from '@stablenet/sdk-types'
+import { ENTRY_POINT_V09_ADDRESS } from '@stablenet/sdk-types'
 import type { Address, Hex } from 'viem'
 import { encodeFunctionData, type PublicClient } from 'viem'
 import { extractRevertData } from '../validation'
@@ -323,4 +323,3 @@ function emptyReturnInfo(): ReturnInfo {
 function emptyStakeInfo(): StakeInfo {
   return { stake: 0n, unstakeDelaySec: 0n }
 }
-

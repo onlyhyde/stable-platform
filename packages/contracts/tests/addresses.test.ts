@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  assertNotZeroAddress,
   CHAIN_ADDRESSES,
   ENTRY_POINT_ADDRESS,
-  SUPPORTED_CHAIN_IDS,
-  ZERO_ADDRESS,
-  assertNotZeroAddress,
   getAccountManager,
   getBlsPopPrecompile,
   getChainAddresses,
@@ -25,6 +23,8 @@ import {
   getServiceUrls,
   isChainSupported,
   isZeroAddress,
+  SUPPORTED_CHAIN_IDS,
+  ZERO_ADDRESS,
 } from '../src/addresses'
 
 const VALID_CHAIN_ID = 8283
@@ -39,9 +39,7 @@ describe('isZeroAddress', () => {
   })
 
   it('is case-insensitive', () => {
-    expect(
-      isZeroAddress('0x0000000000000000000000000000000000000000' as `0x${string}`)
-    ).toBe(true)
+    expect(isZeroAddress('0x0000000000000000000000000000000000000000' as `0x${string}`)).toBe(true)
   })
 })
 

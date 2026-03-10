@@ -12,8 +12,8 @@ import {
 } from 'viem'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { useStableNetContext } from '@/providers'
-import type { GasPaymentContext } from './useUserOp'
 import { useSmartAccount } from './useSmartAccount'
+import type { GasPaymentContext } from './useUserOp'
 
 // ============================================================================
 // Constants

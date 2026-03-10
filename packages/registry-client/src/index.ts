@@ -6,10 +6,10 @@ export {
   WebSocketError,
 } from './errors'
 export {
-  ContractEntrySchema,
   ContractEntryListSchema,
-  ResolvedAddressSetSchema,
+  ContractEntrySchema,
   ImportResultSchema,
+  ResolvedAddressSetSchema,
   ServerMessageSchema,
 } from './schemas'
 export type {

@@ -15,7 +15,7 @@ export function useContract(chainId: number, name: string): UseContractResult {
   const [entry, setEntry] = useState<ContractEntry | undefined>()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-  const [fetchKey, setFetchKey] = useState(0)
+  const [_fetchKey, setFetchKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -61,7 +61,7 @@ export function useContract(chainId: number, name: string): UseContractResult {
       client.off('contract:updated', handleUpdate)
       client.off('contract:deleted', handleDelete)
     }
-  }, [client, chainId, name, fetchKey])
+  }, [client, chainId, name])
 
   return {
     address: entry?.address,

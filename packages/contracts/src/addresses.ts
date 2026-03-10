@@ -4,8 +4,8 @@
 
 import type { Address } from 'viem'
 import {
-  CHAIN_ADDRESSES as GENERATED_CHAIN_ADDRESSES,
   DEFAULT_TOKENS,
+  CHAIN_ADDRESSES as GENERATED_CHAIN_ADDRESSES,
   SERVICE_URLS,
 } from './generated/addresses'
 import {

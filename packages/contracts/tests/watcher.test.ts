@@ -1,7 +1,7 @@
-import { writeFile, mkdir, rm } from 'node:fs/promises'
-import { join } from 'node:path'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { describe, expect, it, beforeEach, afterEach } from 'vitest'
+import { join } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ContractAddressWatcher, createAddressWatcher } from '../src/watcher'
 
 const VALID_ADDRESS = '0xEf6817fe73741A8F10088f9511c64b666a338A14'

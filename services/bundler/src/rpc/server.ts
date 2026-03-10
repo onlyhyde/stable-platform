@@ -1,7 +1,7 @@
 import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
 import Fastify, { type FastifyInstance } from 'fastify'
-import type { Address, Hex, PublicClient, WalletClient } from 'viem'
+import type { PublicClient, WalletClient } from 'viem'
 import { DEFAULT_CORS_ORIGINS } from '../cli/config'
 import { getReputationPersistenceConfig, getServerConfig } from '../config/constants'
 import { BundleExecutor } from '../executor/bundleExecutor'
@@ -208,7 +208,7 @@ export class RpcServer {
     // CORS configuration
     const corsOrigins = this.config.debug
       ? true // Allow all origins in debug mode
-      : this.config.corsOrigins ?? [...DEFAULT_CORS_ORIGINS]
+      : (this.config.corsOrigins ?? [...DEFAULT_CORS_ORIGINS])
 
     await this.app.register(cors, {
       origin: corsOrigins,
@@ -300,7 +300,10 @@ bundler_mempool_pending{service="bundler"} ${this.mempool.pendingCount}
               return {
                 jsonrpc: '2.0' as const,
                 id: (req as Record<string, unknown>)?.id ?? null,
-                error: { code: RPC_ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON-RPC request' },
+                error: {
+                  code: RPC_ERROR_CODES.INVALID_REQUEST,
+                  message: 'Invalid JSON-RPC request',
+                },
               }
             }
             return this.handleRequest(req)

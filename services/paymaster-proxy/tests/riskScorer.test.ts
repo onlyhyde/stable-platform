@@ -1,5 +1,5 @@
 import type { Address, Hex } from 'viem'
-import { describe, expect, it, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { RiskScorer } from '../src/policy/riskScorer'
 import type { UserOperationRpc } from '../src/types'
 
@@ -94,9 +94,7 @@ describe('RiskScorer', () => {
 
     it('should flag unusually high maxFeePerGas', () => {
       // 600 gwei
-      const result = scorer.assess(
-        createTestUserOp({ maxFeePerGas: '0x8BB2C97000' as Hex })
-      )
+      const result = scorer.assess(createTestUserOp({ maxFeePerGas: '0x8BB2C97000' as Hex }))
 
       const gasFactor = result.factors.find((f) => f.name === 'gas_parameters')
       expect(gasFactor!.score).toBeGreaterThanOrEqual(0.5)

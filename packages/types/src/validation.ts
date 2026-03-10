@@ -31,11 +31,9 @@ export interface ValidationData {
 }
 
 /** Signature validation succeeded (address 0x0) */
-export const SIG_VALIDATION_SUCCESS =
-  '0x0000000000000000000000000000000000000000' as Address
+export const SIG_VALIDATION_SUCCESS = '0x0000000000000000000000000000000000000000' as Address
 /** Signature validation failed (address 0x1) */
-export const SIG_VALIDATION_FAILED =
-  '0x0000000000000000000000000000000000000001' as Address
+export const SIG_VALIDATION_FAILED = '0x0000000000000000000000000000000000000001' as Address
 
 /**
  * Block number mode flag (v0.9)

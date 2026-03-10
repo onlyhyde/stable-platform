@@ -307,7 +307,9 @@ describe('BundleExecutor', () => {
       // Operation should be marked as failed
       const entry = mempool.get(hash)
       expect(entry?.status).toBe('failed')
-      expect(entry?.error).toBe('Transient failure: eth_call succeeded on retry (state may have changed)')
+      expect(entry?.error).toBe(
+        'Transient failure: eth_call succeeded on retry (state may have changed)'
+      )
     })
   })
 

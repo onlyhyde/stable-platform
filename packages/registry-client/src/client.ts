@@ -1,9 +1,5 @@
 import EventEmitter from 'eventemitter3'
-import {
-  ConnectionTimeoutError,
-  RegistryClientError,
-  WebSocketError,
-} from './errors'
+import { ConnectionTimeoutError, RegistryClientError, WebSocketError } from './errors'
 import {
   ContractEntryListSchema,
   ContractEntrySchema,
@@ -87,9 +83,7 @@ export class RegistryClient extends EventEmitter<ClientEvent> {
   async getContract(chainId: number, name: string): Promise<ContractEntry> {
     validateChainId(chainId)
     validateName(name)
-    const res = await this.fetch(
-      `/api/v1/contracts/${chainId}/${encodeURIComponent(name)}`
-    )
+    const res = await this.fetch(`/api/v1/contracts/${chainId}/${encodeURIComponent(name)}`)
     return ContractEntrySchema.parse(res)
   }
 
@@ -128,9 +122,7 @@ export class RegistryClient extends EventEmitter<ClientEvent> {
   async getAddressSet(chainId: number, name: string): Promise<ResolvedAddressSet> {
     validateChainId(chainId)
     validateName(name)
-    const res = await this.fetch(
-      `/api/v1/sets/${chainId}/${encodeURIComponent(name)}`
-    )
+    const res = await this.fetch(`/api/v1/sets/${chainId}/${encodeURIComponent(name)}`)
     return ResolvedAddressSetSchema.parse(res)
   }
 

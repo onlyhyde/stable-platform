@@ -1,7 +1,7 @@
 import type { Address, Hex } from 'viem'
-import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { ReservationTracker } from '../src/settlement/reservationTracker'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReservationPersistence } from '../src/settlement/reservationPersistence'
+import { ReservationTracker } from '../src/settlement/reservationTracker'
 
 const SENDER = '0x1234567890123456789012345678901234567890' as Address
 const HASH_1 = '0xaaaa' as Hex

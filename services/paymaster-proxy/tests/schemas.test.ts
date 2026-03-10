@@ -24,7 +24,9 @@ describe('Schemas', () => {
 
   describe('addressSchema', () => {
     it('should accept valid addresses', () => {
-      expect(addressSchema.safeParse('0x1234567890123456789012345678901234567890').success).toBe(true)
+      expect(addressSchema.safeParse('0x1234567890123456789012345678901234567890').success).toBe(
+        true
+      )
     })
 
     it('should reject invalid addresses', () => {

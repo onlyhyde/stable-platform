@@ -1,6 +1,6 @@
 import type { Address, Hex } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
-import { PaymasterSigner, type ContractSignerConfig } from '../src/signer/paymasterSigner'
+import { type ContractSignerConfig, PaymasterSigner } from '../src/signer/paymasterSigner'
 
 // Mock dependencies
 vi.mock('../src/config/constants', () => ({
@@ -147,7 +147,7 @@ describe('PaymasterSigner', () => {
     it('should throw without contract signer config', async () => {
       const signer = new PaymasterSigner(PRIVATE_KEY, PAYMASTER_ADDRESS)
       await expect(
-        signer.verifyERC1271Signature('0x' + 'ab'.repeat(32) as Hex, '0x' as Hex)
+        signer.verifyERC1271Signature(('0x' + 'ab'.repeat(32)) as Hex, '0x' as Hex)
       ).rejects.toThrow('ERC-1271 verification requires contract signer config')
     })
 

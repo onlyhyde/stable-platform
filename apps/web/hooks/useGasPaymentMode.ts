@@ -122,12 +122,7 @@ export function useGasPaymentMode(sender?: Address): GasPaymentModeState {
             jsonrpc: '2.0',
             id: 1,
             method: 'pm_estimateTokenPayment',
-            params: [
-              { sender },
-              entryPoint,
-              `0x${chainId.toString(16)}`,
-              selectedTokenAddress,
-            ],
+            params: [{ sender }, entryPoint, `0x${chainId.toString(16)}`, selectedTokenAddress],
           }),
         })
 

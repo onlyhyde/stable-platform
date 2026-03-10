@@ -53,14 +53,17 @@ export function Header() {
     }
   }, [address])
 
-  const handleSelectWallet = useCallback((connectorId: string) => {
-    setPendingConnector(connectorId)
-    connect(connectorId)
-    walletTimerRef.current = setTimeout(() => {
-      setShowWalletModal(false)
-      setPendingConnector(undefined)
-    }, 1500)
-  }, [connect])
+  const handleSelectWallet = useCallback(
+    (connectorId: string) => {
+      setPendingConnector(connectorId)
+      connect(connectorId)
+      walletTimerRef.current = setTimeout(() => {
+        setShowWalletModal(false)
+        setPendingConnector(undefined)
+      }, 1500)
+    },
+    [connect]
+  )
 
   return (
     <header

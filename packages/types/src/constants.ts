@@ -108,4 +108,3 @@ export function decodeExecutionMode(encoded: Hex): ExecutionMode {
     modePayload: `0x${hex.slice(20, 64)}` as Hex,
   }
 }
-

@@ -17,11 +17,9 @@ import {
   GAS_PAYMENT_TYPE,
   TRANSACTION_MODE,
 } from '@stablenet/sdk-types'
-import type { UserOperation as UserOperationType } from '@stablenet/sdk-types'
 import type { Address, Hash, Hex } from 'viem'
 import { concat, encodeFunctionData, pad, toHex } from 'viem'
 import { ENTRY_POINT_ABI } from '../../abis/entryPoint'
-import { EIP7702_INIT_CODE_ADDRESS } from '../../eip7702/constants'
 import { KERNEL_ABI } from '../../abis/kernel'
 import { createBundlerClient } from '../../clients/bundlerClient'
 import {
@@ -31,6 +29,7 @@ import {
   DEFAULT_PRE_VERIFICATION_GAS,
   DEFAULT_VERIFICATION_GAS_LIMIT,
 } from '../../config'
+import { EIP7702_INIT_CODE_ADDRESS } from '../../eip7702/constants'
 import { createTransactionError } from '../../errors'
 import { createPaymasterClient } from '../../paymasterClient'
 import { createViemProvider, type RpcProvider } from '../../providers'

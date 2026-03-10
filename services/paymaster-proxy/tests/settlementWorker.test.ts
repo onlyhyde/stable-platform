@@ -1,9 +1,9 @@
 import type { Address, Hex } from 'viem'
-import { describe, expect, it, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { SponsorPolicyManager } from '../src/policy/sponsorPolicy'
+import type { BundlerClient, UserOperationReceipt } from '../src/settlement/bundlerClient'
 import { ReservationTracker } from '../src/settlement/reservationTracker'
 import { SettlementWorker } from '../src/settlement/settlementWorker'
-import type { BundlerClient, UserOperationReceipt } from '../src/settlement/bundlerClient'
-import { SponsorPolicyManager } from '../src/policy/sponsorPolicy'
 
 // Mock logger
 vi.mock('../src/utils/logger', () => ({

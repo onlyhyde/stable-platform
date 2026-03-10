@@ -16,8 +16,7 @@ import type {
 // Config
 // ============================================================================
 
-const ONRAMP_API_BASE =
-  process.env.NEXT_PUBLIC_ONRAMP_API_URL ?? 'http://localhost:3002/api/v1'
+const ONRAMP_API_BASE = process.env.NEXT_PUBLIC_ONRAMP_API_URL ?? 'http://localhost:3002/api/v1'
 
 // ============================================================================
 // Types

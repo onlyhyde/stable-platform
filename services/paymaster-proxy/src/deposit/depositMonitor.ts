@@ -156,7 +156,12 @@ export class DepositMonitor {
 
           if (isLow) {
             getGlobalLogger().warn(
-              { type, address, deposit: deposit.toString(), threshold: this.config.minDepositThreshold.toString() },
+              {
+                type,
+                address,
+                deposit: deposit.toString(),
+                threshold: this.config.minDepositThreshold.toString(),
+              },
               'Low paymaster deposit detected'
             )
             this.tryAutoDeposit(address)

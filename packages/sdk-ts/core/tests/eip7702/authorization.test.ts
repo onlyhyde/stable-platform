@@ -4,6 +4,7 @@
  * T3: parseSignature edge cases + other authorization functions
  */
 
+import type { Hex } from 'viem'
 import { describe, expect, it } from 'vitest'
 import {
   classifyAccountByCode,
@@ -14,15 +15,14 @@ import {
   extractDelegateAddress,
   formatAuthorization,
   getDelegationStatus,
-  isEIP7702InitCode,
   isDelegatedAccount,
+  isEIP7702InitCode,
   isRevocationAuthorization,
   isValidAddress,
   parseEIP7702InitCode,
   parseSignature,
 } from '../../src/eip7702/authorization'
 import { EIP7702_INIT_CODE_ADDRESS, ZERO_ADDRESS } from '../../src/eip7702/constants'
-import type { Hex } from 'viem'
 
 // ============================================================================
 // parseSignature

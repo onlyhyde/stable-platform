@@ -1,10 +1,10 @@
-import type { Address } from 'viem'
 import {
   ENTRY_POINT_ADDRESS as _ENTRY_POINT_ADDRESS,
   ENTRY_POINT_V07_ADDRESS,
   ENTRY_POINT_V09_ADDRESS,
   ENTRY_POINT_V09_CANONICAL_ADDRESS,
 } from '@stablenet/contracts'
+import type { Address } from 'viem'
 
 /**
  * EntryPoint Addresses

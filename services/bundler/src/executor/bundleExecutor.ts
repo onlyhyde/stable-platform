@@ -11,7 +11,6 @@ import type { UserOperationEventData, UserOpsPerAggregator } from '../validation
 import { VALIDATION_CONSTANTS } from '../validation/types'
 import {
   applyStorageConflictOrdering,
-  calculateMaxGasCost,
   deduplicateSenders,
   detectFactoryCollisions,
   detectStorageWriteConflicts,
@@ -19,10 +18,7 @@ import {
   separateByAggregator,
   validatePaymasterDeposits,
 } from './bundleBuilder'
-import {
-  diagnoseBundleFailure,
-  parseUserOperationEvents,
-} from './bundleDiagnostics'
+import { diagnoseBundleFailure, parseUserOperationEvents } from './bundleDiagnostics'
 
 /**
  * Bundle executor configuration

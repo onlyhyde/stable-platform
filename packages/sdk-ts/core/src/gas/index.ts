@@ -12,15 +12,6 @@ export {
   type GasEstimatorConfig,
   type GasPriceInfo,
 } from './gasEstimator'
-
-// Gas Price Oracle (dynamic fee estimation via eth_feeHistory)
-export {
-  createGasPriceOracle,
-  type GasPriceOracle,
-  type GasPriceOracleConfig,
-  type GasPriceTiers,
-} from './oracle'
-
 // EIP-4337 v0.9 unused gas penalty
 export {
   calculateEffectiveGasCost,
@@ -28,6 +19,13 @@ export {
   UNUSED_GAS_PENALTY_DIVISOR,
   UNUSED_GAS_PENALTY_THRESHOLD,
 } from './gasPenalty'
+// Gas Price Oracle (dynamic fee estimation via eth_feeHistory)
+export {
+  createGasPriceOracle,
+  type GasPriceOracle,
+  type GasPriceOracleConfig,
+  type GasPriceTiers,
+} from './oracle'
 
 // Strategy Pattern exports (OCP: allows custom strategy registration)
 export {

@@ -1,7 +1,12 @@
 import type { UserOperation } from '@stablenet/types'
 import type { Address, Hex, PublicClient } from 'viem'
-import { concat, decodeAbiParameters, encodeAbiParameters, encodeFunctionData, hexToBytes, pad, slice as sliceHex, toHex } from 'viem'
-import { ENTRY_POINT_ABI } from '../abi'
+import {
+  decodeAbiParameters,
+  encodeAbiParameters,
+  encodeFunctionData,
+  hexToBytes,
+  slice as sliceHex,
+} from 'viem'
 import {
   ENTRY_POINT_SIMULATIONS_ABI,
   ENTRY_POINT_SIMULATIONS_BYTECODE,
@@ -549,7 +554,7 @@ export class GasEstimator {
             { name: 'targetSuccess', type: 'bool' },
             { name: 'targetResult', type: 'bytes' },
           ],
-          result.data,
+          result.data
         )
         const targetSuccess = decoded[4]
         if (!targetSuccess) {

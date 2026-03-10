@@ -1,5 +1,5 @@
 import type { Address, PublicClient, WalletClient } from 'viem'
-import { describe, expect, it, beforeEach, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DepositMonitor, type DepositMonitorConfig } from '../src/deposit/depositMonitor'
 
 // Mock logger

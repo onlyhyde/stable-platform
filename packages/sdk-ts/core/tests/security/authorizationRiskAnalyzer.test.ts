@@ -4,14 +4,14 @@
  * T1: Security module coverage - EIP-7702 authorization risk analysis
  */
 
+import type { Address } from 'viem'
 import { describe, expect, it } from 'vitest'
+import { ZERO_ADDRESS } from '../../src/eip7702/constants'
 import {
   analyzeAuthorizationRisk,
   formatRiskWarningsForUI,
   getAuthorizationSummary,
 } from '../../src/security/authorizationRiskAnalyzer'
-import { ZERO_ADDRESS } from '../../src/eip7702/constants'
-import type { Address } from 'viem'
 
 const ACCOUNT = '0x1234567890123456789012345678901234567890' as Address
 const UNKNOWN_CONTRACT = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address

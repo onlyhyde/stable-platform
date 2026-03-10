@@ -121,9 +121,7 @@ export class EthHandlers {
    */
   private resolveEntryPoint(entryPoint: Address): Address {
     const entryPointLower = entryPoint.toLowerCase()
-    const matched = this.config.entryPoints.find(
-      (ep) => ep.toLowerCase() === entryPointLower
-    )
+    const matched = this.config.entryPoints.find((ep) => ep.toLowerCase() === entryPointLower)
     if (!matched) {
       throw new RpcError(`EntryPoint ${entryPoint} not supported`, RPC_ERROR_CODES.INVALID_PARAMS)
     }
@@ -232,9 +230,8 @@ export class EthHandlers {
     // Limit block range to prevent full-chain scans on mainnet.
     try {
       const currentBlock = await this.publicClient.getBlockNumber()
-      const fromBlock = currentBlock > LOG_SEARCH_BLOCK_RANGE
-        ? currentBlock - LOG_SEARCH_BLOCK_RANGE
-        : 0n
+      const fromBlock =
+        currentBlock > LOG_SEARCH_BLOCK_RANGE ? currentBlock - LOG_SEARCH_BLOCK_RANGE : 0n
 
       for (const entryPoint of this.config.entryPoints) {
         const logs = await this.publicClient.getLogs({
@@ -267,10 +264,7 @@ export class EthHandlers {
         })
 
         // Try to recover the UserOperation from transaction calldata
-        const userOperation = await this.recoverUserOpFromCalldata(
-          log.transactionHash,
-          hash
-        )
+        const userOperation = await this.recoverUserOpFromCalldata(log.transactionHash, hash)
 
         return {
           userOperation,
@@ -291,9 +285,7 @@ export class EthHandlers {
   /**
    * eth_getUserOperationReceipt
    */
-  async ethGetUserOperationReceipt(
-    params: unknown[]
-  ): Promise<RpcUserOperationReceipt | null> {
+  async ethGetUserOperationReceipt(params: unknown[]): Promise<RpcUserOperationReceipt | null> {
     const hash = validateHashParam(params)
 
     const toHexStr = (v: bigint | number): Hex => `0x${BigInt(v).toString(16)}` as Hex
@@ -320,9 +312,8 @@ export class EthHandlers {
     // Limit block range to prevent full-chain scans on mainnet.
     try {
       const currentBlock = await this.publicClient.getBlockNumber()
-      const fromBlock = currentBlock > LOG_SEARCH_BLOCK_RANGE
-        ? currentBlock - LOG_SEARCH_BLOCK_RANGE
-        : 0n
+      const fromBlock =
+        currentBlock > LOG_SEARCH_BLOCK_RANGE ? currentBlock - LOG_SEARCH_BLOCK_RANGE : 0n
 
       for (const entryPoint of this.config.entryPoints) {
         const logs = await this.publicClient.getLogs({
@@ -519,9 +510,10 @@ export class EthHandlers {
           const packedOp = ops[0]!
           const result: Record<string, Hex> = {}
           for (const [key, value] of Object.entries(packedOp)) {
-            result[key] = typeof value === 'bigint'
-              ? `0x${value.toString(16)}` as Hex
-              : (String(value) as Hex)
+            result[key] =
+              typeof value === 'bigint'
+                ? (`0x${value.toString(16)}` as Hex)
+                : (String(value) as Hex)
           }
           return result
         }
