@@ -11,8 +11,8 @@
     "lint": "biome lint app/ components/ hooks/ lib/",
     "lint:fix": "biome lint --write app/ components/ hooks/ lib/",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
-    "test:run": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@stablenet/contracts": "workspace:*",
