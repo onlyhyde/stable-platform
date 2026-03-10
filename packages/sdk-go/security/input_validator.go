@@ -2,12 +2,16 @@
 package security
 
 import (
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 )
+
+// Pre-compiled regex patterns for hot validation paths.
+var hexCharRegex = regexp.MustCompile(`^[0-9a-fA-F]*$`)
 
 // ============================================================================
 // Validation Result
@@ -119,8 +123,7 @@ func (v *InputValidator) ValidateAddress(address string) *ValidationResult {
 	// Check for valid hex characters
 	if len(address) > 2 {
 		hexPart := address[2:]
-		matched, _ := regexp.MatchString(`^[0-9a-fA-F]*$`, hexPart)
-		if !matched {
+		if !hexCharRegex.MatchString(hexPart) {
 			errors = append(errors, "Address contains invalid characters")
 		}
 	}
@@ -189,8 +192,7 @@ func (v *InputValidator) ValidateHex(hex string, options *HexValidationOptions) 
 	}
 
 	// Check for valid hex characters
-	matched, _ := regexp.MatchString(`^[0-9a-fA-F]*$`, hexContent)
-	if !matched {
+	if !hexCharRegex.MatchString(hexContent) {
 		errors = append(errors, "Invalid hex characters")
 	}
 
@@ -256,6 +258,12 @@ func (v *InputValidator) ValidateChainId(chainId any) *ValidationResult {
 	case int64:
 		normalizedValue = cid
 	case uint64:
+		if cid > math.MaxInt64 {
+			return &ValidationResult{
+				IsValid: false,
+				Errors:  []string{"Chain ID too large"},
+			}
+		}
 		normalizedValue = int64(cid)
 	case float64:
 		normalizedValue = int64(cid)
@@ -419,8 +427,9 @@ func (v *InputValidator) SanitizeString(input string, options *SanitizeOptions) 
 	if maxLength <= 0 {
 		maxLength = 10000
 	}
-	if len(result) > maxLength {
-		result = result[:maxLength]
+	runes := []rune(result)
+	if len(runes) > maxLength {
+		result = string(runes[:maxLength])
 	}
 
 	// Escape HTML if enabled

@@ -18,11 +18,11 @@ import (
 
 // EncodeSessionKeyInit encodes session key executor initialization data.
 func EncodeSessionKeyInit(config types.SessionKeyConfig) (types.Hex, error) {
-	addressType, _ := abi.NewType("address", "", nil)
-	addressArrayType, _ := abi.NewType("address[]", "", nil)
-	bytes4ArrayType, _ := abi.NewType("bytes4[]", "", nil)
-	uint256Type, _ := abi.NewType("uint256", "", nil)
-	uint48Type, _ := abi.NewType("uint48", "", nil)
+	addressType := mustNewType("address")
+	addressArrayType := mustNewType("address[]")
+	bytes4ArrayType := mustNewType("bytes4[]")
+	uint256Type := mustNewType("uint256")
+	uint48Type := mustNewType("uint48")
 
 	arguments := abi.Arguments{
 		{Type: addressType, Name: "sessionKey"},
@@ -182,9 +182,9 @@ func CheckSessionKeyPermission(config types.SessionKeyConfig, target types.Addre
 
 // EncodeRecurringPaymentInit encodes recurring payment executor initialization data.
 func EncodeRecurringPaymentInit(config types.RecurringPaymentConfig) (types.Hex, error) {
-	addressType, _ := abi.NewType("address", "", nil)
-	uint256Type, _ := abi.NewType("uint256", "", nil)
-	uint64Type, _ := abi.NewType("uint64", "", nil)
+	addressType := mustNewType("address")
+	uint256Type := mustNewType("uint256")
+	uint64Type := mustNewType("uint64")
 
 	arguments := abi.Arguments{
 		{Type: addressType, Name: "recipient"},
@@ -288,9 +288,9 @@ func CalculateTotalRecurringCost(config types.RecurringPaymentConfig, executedCo
 
 // EncodeExecutorCall encodes a call for executor execution.
 func EncodeExecutorCall(to types.Address, value *big.Int, data types.Hex) (types.Hex, error) {
-	addressType, _ := abi.NewType("address", "", nil)
-	uint256Type, _ := abi.NewType("uint256", "", nil)
-	bytesType, _ := abi.NewType("bytes", "", nil)
+	addressType := mustNewType("address")
+	uint256Type := mustNewType("uint256")
+	bytesType := mustNewType("bytes")
 
 	arguments := abi.Arguments{
 		{Type: addressType, Name: "to"},
@@ -318,7 +318,10 @@ func EncodeBatchExecutorCalls(calls []types.Call) (types.Hex, error) {
 		{Name: "value", Type: "uint256"},
 		{Name: "data", Type: "bytes"},
 	}
-	callTupleType, _ := abi.NewType("tuple[]", "", callComponents)
+	callTupleType, err := abi.NewType("tuple[]", "", callComponents)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tuple[] ABI type: %w", err)
+	}
 
 	arguments := abi.Arguments{{Type: callTupleType}}
 

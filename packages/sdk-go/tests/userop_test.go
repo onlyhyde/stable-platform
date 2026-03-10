@@ -59,7 +59,7 @@ func TestUnpackUserOperation(t *testing.T) {
 		"callData":           "0x040506",
 		"accountGasLimits":   "0x0000000000000000000000000003093000000000000000000000000000030d40",
 		"preVerificationGas": "0xc350",
-		"gasFees":            "0x00000000000000000000000005f5e10000000000000000000000000003b9aca00",
+		"gasFees":            "0x00000000000000000000000005f5e1000000000000000000000000003b9aca00",
 		"paymasterAndData":   "0x",
 		"signature":          "0x070809",
 	}

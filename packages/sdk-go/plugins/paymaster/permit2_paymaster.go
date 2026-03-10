@@ -324,8 +324,10 @@ func (p *Permit2Paymaster) GetNonce() uint64 {
 
 // maxUint128 returns the maximum uint128 value.
 func maxUint128() *big.Int {
-	max := new(big.Int)
-	max.SetString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
+	max, ok := new(big.Int).SetString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)
+	if !ok {
+		panic("failed to parse maxUint128 constant")
+	}
 	return max
 }
 

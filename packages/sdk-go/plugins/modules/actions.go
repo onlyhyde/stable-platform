@@ -79,9 +79,21 @@ const moduleInterfaceABI = `[
 ]`
 
 var (
-	kernelABI, _  = abi.JSON(strings.NewReader(kernelModuleABI))
-	iModuleABI, _ = abi.JSON(strings.NewReader(moduleInterfaceABI))
+	kernelABI  abi.ABI
+	iModuleABI abi.ABI
 )
+
+func init() {
+	var err error
+	kernelABI, err = abi.JSON(strings.NewReader(kernelModuleABI))
+	if err != nil {
+		panic("failed to parse kernel module ABI: " + err.Error())
+	}
+	iModuleABI, err = abi.JSON(strings.NewReader(moduleInterfaceABI))
+	if err != nil {
+		panic("failed to parse module interface ABI: " + err.Error())
+	}
+}
 
 // ============================================================================
 // Module Installation

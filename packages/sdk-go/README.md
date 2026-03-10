@@ -1,22 +1,29 @@
 # StableNet Go SDK
 
-Go SDK for ERC-4337 Account Abstraction, providing a Go implementation of the StableNet TypeScript SDK.
+Go SDK for [ERC-4337](https://eips.ethereum.org/EIPS/eip-4337) Account Abstraction, providing a Go implementation of the StableNet platform. Build applications with smart accounts, modular modules (ERC-7579), stealth addresses (EIP-5564), and multi-mode transaction routing (EOA / EIP-7702 / Smart Account).
 
 ## Features
 
-- **ERC-4337 v0.7 Support**: Full UserOperation building, packing, and signing
-- **Kernel Smart Account**: ERC-7579 modular smart account implementation
-- **Bundler Client**: Send and monitor UserOperations
-- **Paymaster Client**: Gas sponsorship and ERC20 payment
-- **Multi-Chain Support**: Address resolution for Ethereum, Polygon, and testnets
+- **ERC-4337 v0.7**: Full UserOperation building, packing, hashing, and signing
+- **Kernel v3 Smart Account**: ERC-7579 modular smart account with ECDSA validator
+- **Multi-Mode Transactions**: Strategy-based routing across EOA, EIP-7702 delegate, and Smart Account modes
+- **ERC-7579 Module System**: Registry with 15+ built-in modules (validators, executors, hooks, fallbacks)
+- **Bundler Client**: Send, estimate gas, and monitor UserOperations via JSON-RPC
+- **Paymaster Client**: Gas sponsorship, ERC-20 token payment, and Permit2 paymaster support
+- **Stealth Addresses**: EIP-5564/6538 privacy-preserving one-time addresses
+- **EIP-7702 Support**: Type-4 delegation transactions with authorization lifecycle
+- **Security Layer**: Input validation, transaction risk analysis, phishing detection, signature verification, rate limiting
+- **Multi-Chain Support**: Contract address resolution for Ethereum, Polygon, StableNet, and testnets
 - **Crypto Abstraction**: Pluggable crypto providers (go-ethereum included)
-- **ECDSA Validator**: Built-in ECDSA signing for smart accounts
+- **Plugin Architecture**: Session keys, subscriptions, DeFi integrations, stealth addresses
 
 ## Installation
 
 ```bash
 go get github.com/stablenet/sdk-go
 ```
+
+**Requirements**: Go 1.24+, go-ethereum v1.17.0
 
 ## Quick Start
 
@@ -31,26 +38,22 @@ import (
 
     "github.com/stablenet/sdk-go/core"
     "github.com/stablenet/sdk-go/core/bundler"
-    "github.com/stablenet/sdk-go/types"
 )
 
 func main() {
     ctx := context.Background()
 
-    // Create bundler client
     client := bundler.NewClient(bundler.ClientConfig{
         URL:        "https://bundler.example.com",
         EntryPoint: core.EntryPointV07Address,
     })
 
-    // Get supported entry points
     entryPoints, err := client.GetSupportedEntryPoints(ctx)
     if err != nil {
         log.Fatal(err)
     }
     log.Printf("Supported EntryPoints: %v", entryPoints)
 
-    // Get chain ID
     chainID, err := client.GetChainID(ctx)
     if err != nil {
         log.Fatal(err)
@@ -80,13 +83,11 @@ import (
 func main() {
     ctx := context.Background()
 
-    // Create bundler client
     client := bundler.NewClient(bundler.ClientConfig{
         URL:        "https://bundler.sepolia.example.com",
         EntryPoint: core.EntryPointV07Address,
     })
 
-    // Build UserOperation
     userOp := &types.UserOperation{
         Sender:               common.HexToAddress("0xYourSmartAccount"),
         Nonce:                big.NewInt(0),
@@ -99,7 +100,6 @@ func main() {
         Signature:            types.Hex([]byte{/* signature */}),
     }
 
-    // Calculate UserOperation hash
     hash, err := userop.GetUserOperationHash(
         userOp,
         core.EntryPointV07Address,
@@ -110,70 +110,17 @@ func main() {
     }
     log.Printf("UserOp Hash: %s", hash.Hex())
 
-    // Send UserOperation
     opHash, err := client.SendUserOperation(ctx, userOp)
     if err != nil {
         log.Fatal(err)
     }
-    log.Printf("Submitted UserOp: %s", opHash.Hex())
+    log.Printf("Submitted: %s", opHash.Hex())
 
-    // Wait for receipt
     receipt, err := client.WaitForUserOperationReceipt(ctx, opHash, nil)
     if err != nil {
         log.Fatal(err)
     }
     log.Printf("Success: %v, Gas Used: %s", receipt.Success, receipt.ActualGasUsed)
-}
-```
-
-### Use Paymaster for Gas Sponsorship
-
-```go
-package main
-
-import (
-    "context"
-    "log"
-    "math/big"
-
-    "github.com/stablenet/sdk-go/core/paymaster"
-    "github.com/stablenet/sdk-go/types"
-)
-
-func main() {
-    ctx := context.Background()
-
-    // Create paymaster client
-    pm := paymaster.NewClient(paymaster.ClientConfig{
-        URL:     "https://paymaster.sepolia.example.com",
-        ChainID: types.ChainIDSepolia,
-        APIKey:  "your-api-key",
-    })
-
-    // Check if service is available
-    if !pm.IsAvailable(ctx) {
-        log.Fatal("Paymaster service not available")
-    }
-
-    // Get sponsored paymaster data
-    partialOp := &paymaster.PartialUserOperation{
-        Sender:               yourSenderAddress,
-        Nonce:                big.NewInt(0),
-        CallData:             callData,
-        CallGasLimit:         big.NewInt(100000),
-        VerificationGasLimit: big.NewInt(100000),
-        PreVerificationGas:   big.NewInt(50000),
-        MaxFeePerGas:         big.NewInt(1000000000),
-        MaxPriorityFeePerGas: big.NewInt(100000000),
-    }
-
-    pmData, err := pm.GetSponsoredPaymasterData(ctx, partialOp)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    log.Printf("Paymaster: %s", pmData.Paymaster.Hex())
-    log.Printf("Paymaster Data: %s", pmData.PaymasterData.String())
 }
 ```
 
@@ -195,13 +142,11 @@ import (
 func main() {
     ctx := context.Background()
 
-    // Connect to Ethereum node
     client, err := ethclient.DialContext(ctx, "https://rpc.sepolia.example.com")
     if err != nil {
         log.Fatal(err)
     }
 
-    // Create ECDSA validator with your private key
     privateKey, err := ethcrypto.HexToECDSA("your-private-key-hex")
     if err != nil {
         log.Fatal(err)
@@ -209,135 +154,219 @@ func main() {
 
     validator, err := kernel.NewECDSAValidator(kernel.ECDSAValidatorConfig{
         PrivateKey:       privateKey,
-        ValidatorAddress: yourValidatorAddress, // deployed ECDSA validator
+        ValidatorAddress: yourValidatorAddress,
     })
     if err != nil {
         log.Fatal(err)
     }
 
-    // Create Kernel smart account
     account, err := kernel.NewAccount(ctx, kernel.AccountConfig{
         Client:    client,
         Validator: validator,
-        Index:     0, // Account index for deterministic address
+        Index:     0,
     })
     if err != nil {
         log.Fatal(err)
     }
 
-    log.Printf("Smart Account Address: %s", account.Address().Hex())
-
-    // Check if deployed
-    deployed, err := account.IsDeployed(ctx)
-    if err != nil {
-        log.Fatal(err)
-    }
-    log.Printf("Is Deployed: %v", deployed)
-
-    // Get init code for deployment
-    initCode, err := account.GetInitCode(ctx)
-    if err != nil {
-        log.Fatal(err)
-    }
-    if len(initCode) > 0 {
-        log.Printf("Init Code Length: %d bytes", len(initCode))
-    }
+    log.Printf("Smart Account: %s", account.Address().Hex())
+    deployed, _ := account.IsDeployed(ctx)
+    log.Printf("Deployed: %v", deployed)
 }
 ```
 
-### Get Contract Addresses
+### Multi-Mode Transaction Routing
 
 ```go
 package main
 
 import (
+    "context"
     "log"
 
-    "github.com/stablenet/sdk-go/addresses"
+    "github.com/stablenet/sdk-go/transaction"
     "github.com/stablenet/sdk-go/types"
 )
 
 func main() {
-    // Check if chain is supported
-    if !addresses.IsChainSupported(types.ChainIDSepolia) {
-        log.Fatal("Chain not supported")
-    }
+    ctx := context.Background()
 
-    // Get all addresses for a chain
-    addrs, err := addresses.GetChainAddresses(types.ChainIDSepolia)
+    // Register strategies
+    registry := transaction.NewRegistry()
+    // registry.Register(eoaStrategy)
+    // registry.Register(smartAccountStrategy)
+    // registry.Register(eip7702Strategy)
+
+    router := transaction.NewRouter(registry)
+
+    // Route auto-selects the best strategy for the account type
+    result, err := router.Route(ctx, &types.MultiModeTransactionRequest{
+        Mode: types.TransactionModeSmartAccount,
+        To:    targetAddress,
+        Value: value,
+        Data:  callData,
+    }, account, signer, nil)
     if err != nil {
         log.Fatal(err)
     }
-
-    log.Printf("EntryPoint: %s", addrs.Core.EntryPoint.Hex())
-    log.Printf("Kernel Factory: %s", addrs.Core.KernelFactory.Hex())
-    log.Printf("ECDSA Validator: %s", addrs.Validators.ECDSAValidator.Hex())
-
-    // Get service URLs
-    urls, err := addresses.GetServiceURLs(types.ChainIDSepolia)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    log.Printf("Bundler: %s", urls.Bundler)
-    log.Printf("Paymaster: %s", urls.Paymaster)
-
-    // Get default tokens
-    tokens := addresses.GetDefaultTokens(types.ChainIDSepolia)
-    for _, token := range tokens {
-        log.Printf("Token: %s (%s)", token.Name, token.Symbol)
-    }
+    log.Printf("TX Hash: %s", result.Hash.Hex())
 }
 ```
 
-## Package Structure
+### Use Paymaster for Gas Sponsorship
+
+```go
+import "github.com/stablenet/sdk-go/core/paymaster"
+
+pm := paymaster.NewClient(paymaster.ClientConfig{
+    URL:     "https://paymaster.sepolia.example.com",
+    ChainID: types.ChainIDSepolia,
+    APIKey:  "your-api-key",
+})
+
+pmData, err := pm.GetSponsoredPaymasterData(ctx, partialOp)
+if err != nil {
+    log.Fatal(err)
+}
+log.Printf("Paymaster: %s", pmData.Paymaster.Hex())
+```
+
+### Stealth Addresses (EIP-5564)
+
+```go
+import (
+    stealthcrypto "github.com/stablenet/sdk-go/plugins/stealth/crypto"
+    "github.com/stablenet/sdk-go/plugins/stealth/actions"
+)
+
+// Generate stealth keys
+keys, err := stealthcrypto.GenerateStealthKeys()
+uri, _ := stealthcrypto.EncodeStealthMetaAddressURI("eth", keys.Spending.PublicKey, keys.Viewing.PublicKey)
+
+// Generate a one-time stealth address for the recipient
+result, _ := actions.GenerateStealthAddress(actions.GenerateStealthAddressParams{
+    StealthMetaAddressURI: uri,
+})
+// Send funds to result.StealthAddress, then announce
+```
+
+### Contract Address Resolution
+
+```go
+addrs, err := addresses.GetChainAddresses(types.ChainIDSepolia)
+if err != nil {
+    log.Fatal(err)
+}
+log.Printf("EntryPoint: %s", addrs.Core.EntryPoint.Hex())
+log.Printf("ECDSA Validator: %s", addrs.Validators.ECDSAValidator.Hex())
+
+urls, _ := addresses.GetServiceURLs(types.ChainIDSepolia)
+log.Printf("Bundler: %s", urls.Bundler)
+```
+
+## Architecture
+
+### Package Dependency Graph
 
 ```
-sdk-go/
-├── accounts/        # Smart account implementations
-│   ├── kernel/         # Kernel v3 smart account
-│   │   ├── account.go      # Account implementation
-│   │   ├── abi.go          # ABI definitions
-│   │   ├── constants.go    # Kernel constants
-│   │   ├── ecdsa_validator.go  # ECDSA validator
-│   │   └── utils.go        # Encoding utilities
-│   └── types.go        # Account types & interfaces
-├── addresses/       # Contract address resolution
-│   ├── addresses.go    # Address lookup functions
-│   ├── generated.go    # Generated address data
-│   └── types.go        # Address types
-├── core/            # Core SDK functionality
-│   ├── bundler/        # Bundler client
-│   ├── paymaster/      # Paymaster client
-│   ├── rpc/            # JSON-RPC client
-│   ├── userop/         # UserOperation utilities
-│   └── constants.go    # SDK constants
-├── crypto/          # Crypto interfaces
-│   ├── geth/           # go-ethereum implementation
-│   └── interfaces.go   # Crypto interfaces
-├── types/           # Core type definitions
-│   ├── primitives.go   # Address, Hash, Hex
-│   ├── user_operation.go
-│   ├── module.go
-│   ├── network.go
-│   └── signature.go
-├── tests/           # SDK tests
-└── sdk.go           # Main package documentation
+sdk.go (root facade)
+ |
+ +-- types/              (base types: Address, Hash, Hex, UserOperation)
+ |
+ +-- crypto/             (CryptoProvider interface)
+ |   +-- geth/           (go-ethereum implementation)
+ |
+ +-- addresses/          (per-chain contract address registry)
+ +-- errors/             (structured SDK errors with codes)
+ +-- eip7702/            (EIP-7702 authorization lifecycle)
+ |
+ +-- accounts/           (SmartAccount + Validator interfaces)
+ |   +-- kernel/         (Kernel v3 implementation)
+ |
+ +-- modules/            (ERC-7579 module registry)
+ |   +-- config/         (15+ built-in module definitions)
+ |   +-- utils/          (init data encoders)
+ |   +-- client/         (on-chain query + operation client)
+ |
+ +-- transaction/        (Strategy pattern router)
+ |   +-- strategies/     (EOA, SmartAccount, EIP7702)
+ |
+ +-- core/
+ |   +-- bundler/        (ERC-4337 bundler RPC client)
+ |   +-- paymaster/      (paymaster RPC client)
+ |   +-- rpc/            (JSON-RPC utilities)
+ |   +-- userop/         (UserOp hash, pack, validation)
+ |
+ +-- security/           (5-layer protection)
+ +-- plugins/            (independent feature plugins)
+ +-- clients/            (high-level orchestrating clients)
+ +-- config/             (gas config, client config)
+ +-- gas/                (gas estimation)
 ```
+
+### Design Patterns
+
+| Pattern | Location | Purpose |
+|---------|----------|---------|
+| **Strategy** | `transaction/` | Multi-mode TX routing (EOA/EIP-7702/SmartAccount) |
+| **Registry** | `transaction/`, `modules/` | Strategy and module discovery |
+| **Factory** | `accounts/kernel/` | `NewAccount()` with CREATE2 address derivation |
+| **Facade** | `crypto/interfaces.go` | `CryptoProvider` composing 4 sub-interfaces |
+| **Builder** | `transaction/router.go` | Fluent `TransactionBuilder` API |
+| **Observer** | `core/bundler/` | Polling-based receipt waiting |
+
+### Security Layer
+
+The `security/` package provides five independent protection mechanisms:
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Input Validation | `input_validator.go` | Address/hex/chainID/transaction/RPC validation |
+| Transaction Risk | `transaction_risk.go` | Static calldata analysis (approvals, suspicious selectors) |
+| Phishing Detection | `phishing.go` | URL analysis (homograph, typosquatting, suspicious TLDs) |
+| Signature Verification | `signature_verifier.go` | EIP-191/712/1271 aware verification |
+| Rate Limiting | `rate_limiter.go` | Per-category sliding window + token bucket |
+
+### ERC-7579 Module Catalog
+
+**Validators**: ECDSA, WebAuthn, Multi-ECDSA
+**Executors**: Session Key, Recurring Payment, Swap, Staking, Lending
+**Hooks**: Spending Limit, Audit, Whitelist, Timelock
+**Fallbacks**: Token Receiver, Flash Loan Receiver, ERC-777 Receiver
+
+### Plugin System
+
+| Plugin | Package | Standard |
+|--------|---------|----------|
+| Stealth Addresses | `plugins/stealth/` | EIP-5564 / EIP-6538 |
+| Session Keys | `plugins/sessionkeys/` | ERC-7579 Executor |
+| Subscriptions | `plugins/subscription/` | Recurring Payment Executor |
+| DeFi | `plugins/defi/` | Swap/Staking/Lending |
+| Paymaster | `plugins/paymaster/` | Sponsor/Verifying/Permit2 |
+| ECDSA Validator | `plugins/ecdsa/` | ERC-7579 Validator |
+| Module Management | `plugins/modules/` | Install/Uninstall modules |
 
 ## Supported Chains
 
 | Chain | Chain ID | Status |
 |-------|----------|--------|
+| StableNet | 8283 | Active |
+| Sepolia | 11155111 | Active |
+| Polygon Amoy | 80002 | Partial |
 | Ethereum Mainnet | 1 | Coming Soon |
-| Sepolia | 11155111 | ✅ |
-| Polygon Amoy | 80002 | ✅ |
-| Local (Anvil) | 31337 | ✅ |
+| Local (Anvil) | 31337 | Development |
 
-## Requirements
+## Standards Implemented
 
-- Go 1.22 or later
-- go-ethereum v1.14.12
+- [ERC-4337](https://eips.ethereum.org/EIPS/eip-4337) v0.7 - Account Abstraction
+- [ERC-7579](https://eips.ethereum.org/EIPS/eip-7579) - Modular Smart Accounts
+- [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) - EOA Delegation (Type-4 TX)
+- [EIP-5564](https://eips.ethereum.org/EIPS/eip-5564) - Stealth Addresses
+- [EIP-6538](https://eips.ethereum.org/EIPS/eip-6538) - Stealth Meta-Address Registry
+- [EIP-1271](https://eips.ethereum.org/EIPS/eip-1271) - Contract Signature Validation
+- [EIP-712](https://eips.ethereum.org/EIPS/eip-712) - Typed Structured Data Hashing
+- [EIP-191](https://eips.ethereum.org/EIPS/eip-191) - Personal Message Signing
+- [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) - Fee Market (gas pricing)
 
 ## License
 

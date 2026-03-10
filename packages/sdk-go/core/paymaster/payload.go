@@ -8,13 +8,34 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// ABI types used for payload encoding.
+// ABI types used for payload encoding (initialized at package load; panic on
+// failure indicates a go-ethereum ABI incompatibility — a build-time invariant).
 var (
-	uint48Type, _  = abi.NewType("uint48", "", nil)
-	uint160Type, _ = abi.NewType("uint160", "", nil)
-	bytes4Type, _  = abi.NewType("bytes4", "", nil)
-	bytesType, _   = abi.NewType("bytes", "", nil)
+	uint48Type  abi.Type
+	uint160Type abi.Type
+	bytes4Type  abi.Type
+	bytesType   abi.Type
 )
+
+func init() {
+	var err error
+	uint48Type, err = abi.NewType("uint48", "", nil)
+	if err != nil {
+		panic("failed to create uint48 ABI type: " + err.Error())
+	}
+	uint160Type, err = abi.NewType("uint160", "", nil)
+	if err != nil {
+		panic("failed to create uint160 ABI type: " + err.Error())
+	}
+	bytes4Type, err = abi.NewType("bytes4", "", nil)
+	if err != nil {
+		panic("failed to create bytes4 ABI type: " + err.Error())
+	}
+	bytesType, err = abi.NewType("bytes", "", nil)
+	if err != nil {
+		panic("failed to create bytes ABI type: " + err.Error())
+	}
+}
 
 // ============================================================================
 // Verifying Payload (Type 0)

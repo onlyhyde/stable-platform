@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"sync"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -47,6 +48,7 @@ type Account struct {
 	initData           types.Hex
 	salt               [32]byte
 	client             *ethclient.Client
+	cacheMu            sync.Mutex
 	isDeployedCache    *bool
 }
 
@@ -156,6 +158,10 @@ func (a *Account) GetNonceWithKey(ctx context.Context, key *big.Int) (uint64, er
 		return 0, fmt.Errorf("unexpected nonce type")
 	}
 
+	if !nonce.IsUint64() {
+		return 0, fmt.Errorf("nonce value %s exceeds uint64 range", nonce.String())
+	}
+
 	return nonce.Uint64(), nil
 }
 
@@ -262,9 +268,13 @@ func (a *Account) GetFactoryData(ctx context.Context) (types.Hex, error) {
 
 // IsDeployed returns whether the account is deployed on-chain.
 func (a *Account) IsDeployed(ctx context.Context) (bool, error) {
+	a.cacheMu.Lock()
 	if a.isDeployedCache != nil {
-		return *a.isDeployedCache, nil
+		v := *a.isDeployedCache
+		a.cacheMu.Unlock()
+		return v, nil
 	}
+	a.cacheMu.Unlock()
 
 	code, err := a.client.CodeAt(ctx, a.address, nil)
 	if err != nil {
@@ -272,14 +282,18 @@ func (a *Account) IsDeployed(ctx context.Context) (bool, error) {
 	}
 
 	deployed := len(code) > 0
+	a.cacheMu.Lock()
 	a.isDeployedCache = &deployed
+	a.cacheMu.Unlock()
 	return deployed, nil
 }
 
 // ClearDeployedCache clears the cached deployment status.
 // Call this after deploying the account.
 func (a *Account) ClearDeployedCache() {
+	a.cacheMu.Lock()
 	a.isDeployedCache = nil
+	a.cacheMu.Unlock()
 }
 
 // getKernelAddress calculates the counterfactual address for a Kernel account.

@@ -2,8 +2,10 @@
 package geth
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
+	stdsha256 "crypto/sha256"
 	"fmt"
 	"math/big"
 
@@ -134,7 +136,7 @@ func (e *AbiEncoder) DecodeParameters(abiTypes []string, data types.Hex) ([]inte
 
 // EncodeFunctionCall encodes a function call.
 func (e *AbiEncoder) EncodeFunctionCall(abiJSON []byte, functionName string, args ...interface{}) (types.Hex, error) {
-	parsedABI, err := abi.JSON(nil)
+	parsedABI, err := abi.JSON(bytes.NewReader(abiJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse ABI: %w", err)
 	}
@@ -149,7 +151,7 @@ func (e *AbiEncoder) EncodeFunctionCall(abiJSON []byte, functionName string, arg
 
 // DecodeFunctionResult decodes a function result.
 func (e *AbiEncoder) DecodeFunctionResult(abiJSON []byte, functionName string, data types.Hex) ([]interface{}, error) {
-	parsedABI, err := abi.JSON(nil)
+	parsedABI, err := abi.JSON(bytes.NewReader(abiJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse ABI: %w", err)
 	}
@@ -222,7 +224,8 @@ func (h *HashAlgorithm) Keccak256(data []byte) types.Hash {
 
 // Sha256 computes the SHA-256 hash.
 func (h *HashAlgorithm) Sha256(data []byte) types.Hash {
-	return ethcrypto.Keccak256Hash(data) // Note: This should use sha256
+	hash := stdsha256.Sum256(data)
+	return types.Hash(hash)
 }
 
 // Signer implements crypto.Signer using go-ethereum.
@@ -404,7 +407,7 @@ func (r *RpcClient) EstimateGas(ctx context.Context, params crypto.EstimateGasPa
 	if err != nil {
 		return nil, err
 	}
-	return big.NewInt(int64(gas)), nil
+	return new(big.Int).SetUint64(gas), nil
 }
 
 // GetGasPrice returns the current gas price.

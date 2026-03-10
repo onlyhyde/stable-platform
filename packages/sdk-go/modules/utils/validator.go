@@ -36,6 +36,15 @@ var addressRegex = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
 // ZeroAddress is the zero Ethereum address.
 var ZeroAddress = common.HexToAddress("0x0000000000000000000000000000000000000000")
 
+// mustNewType creates an ABI type or panics (build-time invariant).
+func mustNewType(t string) abi.Type {
+	typ, err := abi.NewType(t, "", nil)
+	if err != nil {
+		panic("failed to create ABI type " + t + ": " + err.Error())
+	}
+	return typ
+}
+
 // ============================================================================
 // ECDSA Validator Utils
 // ============================================================================
@@ -43,7 +52,10 @@ var ZeroAddress = common.HexToAddress("0x000000000000000000000000000000000000000
 // EncodeECDSAValidatorInit encodes ECDSA validator initialization data.
 // The init data is just the owner address (20 bytes).
 func EncodeECDSAValidatorInit(config types.ECDSAValidatorConfig) (types.Hex, error) {
-	addressType, _ := abi.NewType("address", "", nil)
+	addressType, err := abi.NewType("address", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create address ABI type: %w", err)
+	}
 	arguments := abi.Arguments{{Type: addressType}}
 
 	encoded, err := arguments.Pack(config.Owner)
@@ -56,7 +68,10 @@ func EncodeECDSAValidatorInit(config types.ECDSAValidatorConfig) (types.Hex, err
 
 // DecodeECDSAValidatorInit decodes ECDSA validator initialization data.
 func DecodeECDSAValidatorInit(data types.Hex) (*types.ECDSAValidatorConfig, error) {
-	addressType, _ := abi.NewType("address", "", nil)
+	addressType, err := abi.NewType("address", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create address ABI type: %w", err)
+	}
 	arguments := abi.Arguments{{Type: addressType}}
 
 	values, err := arguments.Unpack(data.Bytes())
@@ -106,12 +121,26 @@ func EncodeECDSASignature(r, s types.Hex, v uint8) types.Hex {
 // ============================================================================
 
 // P256N is the P-256 curve order.
-var P256N, _ = new(big.Int).SetString("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551", 16)
+var P256N *big.Int
+
+func init() {
+	var ok bool
+	P256N, ok = new(big.Int).SetString("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551", 16)
+	if !ok {
+		panic("failed to parse P-256 curve order")
+	}
+}
 
 // EncodeWebAuthnValidatorInit encodes WebAuthn validator initialization data.
 func EncodeWebAuthnValidatorInit(config types.WebAuthnValidatorConfig) (types.Hex, error) {
-	uint256Type, _ := abi.NewType("uint256", "", nil)
-	bytesType, _ := abi.NewType("bytes", "", nil)
+	uint256Type, err := abi.NewType("uint256", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create uint256 ABI type: %w", err)
+	}
+	bytesType, err := abi.NewType("bytes", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create bytes ABI type: %w", err)
+	}
 
 	arguments := abi.Arguments{
 		{Type: uint256Type, Name: "pubKeyX"},
@@ -129,8 +158,14 @@ func EncodeWebAuthnValidatorInit(config types.WebAuthnValidatorConfig) (types.He
 
 // DecodeWebAuthnValidatorInit decodes WebAuthn validator initialization data.
 func DecodeWebAuthnValidatorInit(data types.Hex) (*types.WebAuthnValidatorConfig, error) {
-	uint256Type, _ := abi.NewType("uint256", "", nil)
-	bytesType, _ := abi.NewType("bytes", "", nil)
+	uint256Type, err := abi.NewType("uint256", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create uint256 ABI type: %w", err)
+	}
+	bytesType, err := abi.NewType("bytes", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create bytes ABI type: %w", err)
+	}
 
 	arguments := abi.Arguments{
 		{Type: uint256Type, Name: "pubKeyX"},
@@ -207,8 +242,14 @@ type WebAuthnSignatureData struct {
 
 // EncodeWebAuthnSignature encodes a WebAuthn signature.
 func EncodeWebAuthnSignature(data WebAuthnSignatureData) (types.Hex, error) {
-	bytesType, _ := abi.NewType("bytes", "", nil)
-	uint256Type, _ := abi.NewType("uint256", "", nil)
+	bytesType, err := abi.NewType("bytes", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create bytes ABI type: %w", err)
+	}
+	uint256Type, err := abi.NewType("uint256", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create uint256 ABI type: %w", err)
+	}
 
 	arguments := abi.Arguments{
 		{Type: bytesType, Name: "authenticatorData"},
@@ -252,8 +293,14 @@ const (
 
 // EncodeMultiSigValidatorInit encodes MultiSig validator initialization data.
 func EncodeMultiSigValidatorInit(config types.MultiSigValidatorConfig) (types.Hex, error) {
-	addressArrayType, _ := abi.NewType("address[]", "", nil)
-	uint8Type, _ := abi.NewType("uint8", "", nil)
+	addressArrayType, err := abi.NewType("address[]", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create address[] ABI type: %w", err)
+	}
+	uint8Type, err := abi.NewType("uint8", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create uint8 ABI type: %w", err)
+	}
 
 	arguments := abi.Arguments{
 		{Type: addressArrayType, Name: "signers"},
@@ -276,8 +323,14 @@ func EncodeMultiSigValidatorInit(config types.MultiSigValidatorConfig) (types.He
 
 // DecodeMultiSigValidatorInit decodes MultiSig validator initialization data.
 func DecodeMultiSigValidatorInit(data types.Hex) (*types.MultiSigValidatorConfig, error) {
-	addressArrayType, _ := abi.NewType("address[]", "", nil)
-	uint8Type, _ := abi.NewType("uint8", "", nil)
+	addressArrayType, err := abi.NewType("address[]", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create address[] ABI type: %w", err)
+	}
+	uint8Type, err := abi.NewType("uint8", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create uint8 ABI type: %w", err)
+	}
 
 	arguments := abi.Arguments{
 		{Type: addressArrayType, Name: "signers"},

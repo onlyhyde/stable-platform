@@ -1,6 +1,7 @@
 package errors
 
 import (
+	stderrors "errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -304,48 +305,30 @@ func NewModuleError(code SdkErrorCode, message string, moduleAddress types.Addre
 }
 
 // Is checks if the target error matches the SdkError code.
+// Walks the error chain via errors.As to match wrapped errors.
 func Is(err error, code SdkErrorCode) bool {
-	if sdkErr, ok := err.(*SdkError); ok {
+	var sdkErr *SdkError
+	if stderrors.As(err, &sdkErr) {
 		return sdkErr.Code == code
-	}
-	if bundlerErr, ok := err.(*BundlerError); ok {
-		return bundlerErr.Code == code
-	}
-	if userOpErr, ok := err.(*UserOperationError); ok {
-		return userOpErr.Code == code
-	}
-	if txErr, ok := err.(*TransactionError); ok {
-		return txErr.Code == code
-	}
-	if gasErr, ok := err.(*GasEstimationError); ok {
-		return gasErr.Code == code
-	}
-	if cfgErr, ok := err.(*ConfigurationError); ok {
-		return cfgErr.Code == code
-	}
-	if valErr, ok := err.(*ValidationError); ok {
-		return valErr.Code == code
-	}
-	if pmErr, ok := err.(*PaymasterError); ok {
-		return pmErr.Code == code
-	}
-	if modErr, ok := err.(*ModuleError); ok {
-		return modErr.Code == code
 	}
 	return false
 }
 
 // IsBundlerError checks if the error is a bundler error with a specific code.
+// Walks the error chain via errors.As to match wrapped errors.
 func IsBundlerError(err error, code BundlerErrorCode) bool {
-	if bundlerErr, ok := err.(*BundlerError); ok {
+	var bundlerErr *BundlerError
+	if stderrors.As(err, &bundlerErr) {
 		return bundlerErr.BundlerCode == code
 	}
 	return false
 }
 
 // IsPaymasterError checks if the error is a paymaster error with a specific code.
+// Walks the error chain via errors.As to match wrapped errors.
 func IsPaymasterError(err error, code PaymasterErrorCode) bool {
-	if pmErr, ok := err.(*PaymasterError); ok {
+	var pmErr *PaymasterError
+	if stderrors.As(err, &pmErr) {
 		return pmErr.PaymasterCode == code
 	}
 	return false

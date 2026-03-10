@@ -306,6 +306,9 @@ func FormatEstimate(estimate *types.GasEstimate) map[string]string {
 
 // formatGwei formats a value in gwei.
 func formatGwei(wei *big.Int) string {
+	if wei == nil {
+		return "0.00"
+	}
 	gwei := new(big.Float).Quo(
 		new(big.Float).SetInt(wei),
 		new(big.Float).SetInt64(1e9),

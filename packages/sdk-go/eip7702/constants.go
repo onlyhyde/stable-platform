@@ -29,25 +29,9 @@ var ZeroAddress = common.HexToAddress("0x000000000000000000000000000000000000000
 const DelegationBytecodeLength = 23
 
 // DelegatePresets contains known delegate contracts by chain ID.
+// Chains without deployed delegates are omitted; use GetDelegatePresets()
+// which returns nil for unsupported chains.
 var DelegatePresets = map[types.ChainID][]DelegatePreset{
-	// Sepolia Testnet
-	types.ChainIDSepolia: {
-		{
-			Name:        "Kernel v3.1",
-			Address:     common.HexToAddress("0x0000000000000000000000000000000000000000"), // TODO: Update with actual address
-			Description: "Kernel v3.1 ERC-7579 Smart Account",
-			IsVerified:  true,
-		},
-	},
-	// Polygon Amoy Testnet
-	types.ChainIDPolygonAmoy: {
-		{
-			Name:        "Kernel v3.1",
-			Address:     common.HexToAddress("0x0000000000000000000000000000000000000000"), // TODO: Update with actual address
-			Description: "Kernel v3.1 ERC-7579 Smart Account",
-			IsVerified:  true,
-		},
-	},
 	// Local Anvil
 	types.ChainIDAnvil: {
 		{

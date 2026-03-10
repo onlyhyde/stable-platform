@@ -311,7 +311,10 @@ func (s *SmartAccountStrategy) getPaymasterData(ctx context.Context, userOp *sdk
 	}
 
 	paymasterAddr := sdktypes.Address(common.HexToAddress(result.Paymaster))
-	paymasterData, _ := sdktypes.HexFromString(result.PaymasterData)
+	paymasterData, err := sdktypes.HexFromString(result.PaymasterData)
+	if err != nil {
+		return nil, fmt.Errorf("invalid paymaster data hex: %w", err)
+	}
 
 	pd := &PaymasterData{
 		Paymaster:     &paymasterAddr,

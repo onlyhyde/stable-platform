@@ -21,6 +21,9 @@ func CalculateHealthFactor(collateralValue, debtValue *big.Int, liquidationThres
 		// No debt = infinite health factor, return max value
 		return new(big.Int).Exp(big.NewInt(10), big.NewInt(36), nil) // 1e36
 	}
+	if collateralValue == nil {
+		return big.NewInt(0)
+	}
 
 	// numerator = collateral * threshold * 1e18
 	numerator := new(big.Int).Mul(collateralValue, big.NewInt(int64(liquidationThresholdBPS)))
@@ -36,6 +39,9 @@ func CalculateHealthFactor(collateralValue, debtValue *big.Int, liquidationThres
 // IsLiquidatable checks if a position is liquidatable.
 // A position is liquidatable when health factor < 1e18.
 func IsLiquidatable(healthFactor *big.Int) bool {
+	if healthFactor == nil {
+		return true
+	}
 	oneWAD := big.NewInt(ScaleWAD)
 	return healthFactor.Cmp(oneWAD) < 0
 }
@@ -84,6 +90,9 @@ func CalculateMaxBorrow(collateralValue *big.Int, ltvBPS uint64) *big.Int {
 // Formula: ltv = (debt * 10000) / collateral
 func CalculateLTV(debtValue, collateralValue *big.Int) uint64 {
 	if collateralValue == nil || collateralValue.Sign() == 0 {
+		return 0
+	}
+	if debtValue == nil {
 		return 0
 	}
 

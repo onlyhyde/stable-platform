@@ -64,9 +64,9 @@ func GetPeriodName(period uint64) string {
 
 // EncodeSpendingLimitInit encodes spending limit hook initialization data.
 func EncodeSpendingLimitInit(config types.SpendingLimitConfig) (types.Hex, error) {
-	addressType, _ := abi.NewType("address", "", nil)
-	uint256Type, _ := abi.NewType("uint256", "", nil)
-	uint64Type, _ := abi.NewType("uint64", "", nil)
+	addressType := mustNewType("address")
+	uint256Type := mustNewType("uint256")
+	uint64Type := mustNewType("uint64")
 
 	var arguments abi.Arguments
 	var values []interface{}
@@ -113,7 +113,10 @@ func EncodeMultipleSpendingLimitsInit(configs []types.SpendingLimitConfig) (type
 		{Name: "limit", Type: "uint256"},
 		{Name: "period", Type: "uint64"},
 	}
-	tupleArrayType, _ := abi.NewType("tuple[]", "", tupleComponents)
+	tupleArrayType, err := abi.NewType("tuple[]", "", tupleComponents)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tuple[] ABI type: %w", err)
+	}
 
 	arguments := abi.Arguments{{Type: tupleArrayType}}
 
@@ -242,9 +245,9 @@ func FormatSpendingLimit(limit *big.Int, decimals int, symbol string) string {
 
 // EncodeSetLimit encodes a call to set a new spending limit.
 func EncodeSetLimit(token types.Address, limit *big.Int, period uint64) (types.Hex, error) {
-	addressType, _ := abi.NewType("address", "", nil)
-	uint256Type, _ := abi.NewType("uint256", "", nil)
-	uint64Type, _ := abi.NewType("uint64", "", nil)
+	addressType := mustNewType("address")
+	uint256Type := mustNewType("uint256")
+	uint64Type := mustNewType("uint64")
 
 	arguments := abi.Arguments{
 		{Type: addressType, Name: "token"},
@@ -292,8 +295,8 @@ const (
 
 // EncodeAuditHookInit encodes audit hook initialization data.
 func EncodeAuditHookInit(config types.AuditHookConfig) (types.Hex, error) {
-	addressType, _ := abi.NewType("address", "", nil)
-	uint32Type, _ := abi.NewType("uint32", "", nil)
+	addressType := mustNewType("address")
+	uint32Type := mustNewType("uint32")
 
 	arguments := abi.Arguments{
 		{Type: addressType, Name: "auditAddress"},

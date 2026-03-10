@@ -3,6 +3,7 @@ package subscription
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -331,7 +332,10 @@ func (c *PermissionManagerClient) EncodeAdjustPermission(permissionID types.Hash
 // permission type and rules for subscription payment flows.
 func (c *PermissionManagerClient) EncodeGrantSubscriptionPermission(params GrantSubscriptionPermissionParams) (types.Hex, error) {
 	// Encode spending limit data
-	uint256Type, _ := abi.NewType("uint256", "", nil)
+	uint256Type, err := abi.NewType("uint256", "", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create uint256 ABI type: %w", err)
+	}
 	spendingLimitData, err := abi.Arguments{{Type: uint256Type}}.Pack(params.SpendingLimit)
 	if err != nil {
 		return nil, err

@@ -252,13 +252,18 @@ func (c *Client) WaitForUserOperationReceipt(ctx context.Context, hash types.Has
 		}
 	}
 
-	deadline := time.Now().Add(timeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	ticker := time.NewTicker(pollingInterval)
 	defer ticker.Stop()
 
 	for {
-		receipt, err := c.GetUserOperationReceipt(ctx, hash)
+		receipt, err := c.GetUserOperationReceipt(timeoutCtx, hash)
 		if err != nil {
+			if timeoutCtx.Err() != nil {
+				return nil, fmt.Errorf("timeout waiting for user operation receipt: %s", hash.Hex())
+			}
 			return nil, err
 		}
 		if receipt != nil {
@@ -266,12 +271,9 @@ func (c *Client) WaitForUserOperationReceipt(ctx context.Context, hash types.Has
 		}
 
 		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
+		case <-timeoutCtx.Done():
+			return nil, fmt.Errorf("timeout waiting for user operation receipt: %s", hash.Hex())
 		case <-ticker.C:
-			if time.Now().After(deadline) {
-				return nil, fmt.Errorf("timeout waiting for user operation receipt: %s", hash.Hex())
-			}
 		}
 	}
 }
@@ -347,7 +349,10 @@ func parseLogs(rawLogs []rawLog) []types.Log {
 			topics[j] = common.HexToHash(t)
 		}
 
-		data, _ := types.HexFromString(raw.Data)
+		data, err := types.HexFromString(raw.Data)
+		if err != nil {
+			data = types.Hex{}
+		}
 
 		logs[i] = types.Log{
 			Address:          common.HexToAddress(raw.Address),
@@ -409,8 +414,12 @@ func hexToBigInt(s string) *big.Int {
 	if s == "" || s == "0x" {
 		return big.NewInt(0)
 	}
-	n, _ := new(big.Int).SetString(s[2:], 16)
-	if n == nil {
+	hex := s
+	if len(hex) > 2 && hex[:2] == "0x" {
+		hex = hex[2:]
+	}
+	n, ok := new(big.Int).SetString(hex, 16)
+	if !ok || n == nil {
 		return big.NewInt(0)
 	}
 	return n

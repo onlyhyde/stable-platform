@@ -1,6 +1,7 @@
 package security
 
 import (
+	"encoding/hex"
 	"math/big"
 	"strings"
 
@@ -294,7 +295,7 @@ func (a *TransactionRiskAnalyzer) analyzeData(data types.Hex) struct {
 	// Get function selector (first 4 bytes)
 	selector := ""
 	if len(data) >= 4 {
-		selector = strings.ToLower("0x" + data[:4].String()[2:10])
+		selector = "0x" + hex.EncodeToString(data[:4])
 	}
 
 	// Mark as contract interaction
@@ -365,26 +366,32 @@ func (a *TransactionRiskAnalyzer) analyzeData(data types.Hex) struct {
 
 // isUnlimitedApproval checks if approval amount is unlimited (max uint256).
 func (a *TransactionRiskAnalyzer) isUnlimitedApproval(data types.Hex) bool {
-	// approve(address,uint256) - amount is last 32 bytes
+	// approve(address,uint256) - amount is the 3rd 32-byte word
 	// selector (4 bytes) + address (32 bytes) + amount (32 bytes) = 68 bytes
 	if len(data) < 68 {
 		return false
 	}
 
-	amountHex := "0x" + data.String()[74:138]
-	return strings.ToLower(amountHex) == strings.ToLower(maxUint256)
+	// Extract amount directly from byte slice: bytes [36:68]
+	amountBytes := data[36:68]
+	for _, b := range amountBytes {
+		if b != 0xff {
+			return false
+		}
+	}
+	return true
 }
 
 // isApprovalEnabled checks if setApprovalForAll is enabling (true) approval.
 func (a *TransactionRiskAnalyzer) isApprovalEnabled(data types.Hex) bool {
-	// setApprovalForAll(address,bool) - bool is last 32 bytes
+	// setApprovalForAll(address,bool) - bool is the 3rd 32-byte word
+	// selector (4 bytes) + address (32 bytes) + bool (32 bytes) = 68 bytes
 	if len(data) < 68 {
 		return true // Assume true if can't parse
 	}
 
-	boolHex := data.String()[138:202]
-	// Last byte indicates true/false
-	return strings.HasSuffix(boolHex, "1")
+	// Extract bool directly from byte slice: bytes [36:68], last byte is the bool
+	return data[67] == 1
 }
 
 // decodeMethod decodes method selector to human-readable name.
@@ -393,7 +400,7 @@ func (a *TransactionRiskAnalyzer) decodeMethod(data types.Hex) *DecodedMethod {
 		return nil
 	}
 
-	selector := strings.ToLower("0x" + data.String()[2:10])
+	selector := "0x" + hex.EncodeToString(data[:4])
 
 	knownMethods := map[string]string{
 		erc20Selectors["transfer"]:             "transfer",

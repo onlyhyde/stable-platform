@@ -34,13 +34,13 @@ func Pack(userOp *types.UserOperation) *PackedUserOperation {
 	}
 
 	// Build accountGasLimits: verificationGasLimit (16 bytes) + callGasLimit (16 bytes)
-	verificationGasBytes := padLeft(userOp.VerificationGasLimit.Bytes(), 16)
-	callGasBytes := padLeft(userOp.CallGasLimit.Bytes(), 16)
+	verificationGasBytes := padLeft(bigIntBytes(userOp.VerificationGasLimit), 16)
+	callGasBytes := padLeft(bigIntBytes(userOp.CallGasLimit), 16)
 	accountGasLimits := "0x" + hex.EncodeToString(append(verificationGasBytes, callGasBytes...))
 
 	// Build gasFees: maxPriorityFeePerGas (16 bytes) + maxFeePerGas (16 bytes)
-	maxPriorityFeeBytes := padLeft(userOp.MaxPriorityFeePerGas.Bytes(), 16)
-	maxFeeBytes := padLeft(userOp.MaxFeePerGas.Bytes(), 16)
+	maxPriorityFeeBytes := padLeft(bigIntBytes(userOp.MaxPriorityFeePerGas), 16)
+	maxFeeBytes := padLeft(bigIntBytes(userOp.MaxFeePerGas), 16)
 	gasFees := "0x" + hex.EncodeToString(append(maxPriorityFeeBytes, maxFeeBytes...))
 
 	// Build paymasterAndData
@@ -94,7 +94,10 @@ func Unpack(packed map[string]string) (*types.UserOperation, error) {
 	if initCode != "" && initCode != "0x" && len(initCode) > 42 {
 		factoryAddr := common.HexToAddress(initCode[:42])
 		userOp.Factory = &factoryAddr
-		factoryData, _ := hex.DecodeString(initCode[42:])
+		factoryData, err := hex.DecodeString(initCode[42:])
+		if err != nil {
+			return nil, fmt.Errorf("invalid initCode factoryData hex: %w", err)
+		}
 		userOp.FactoryData = types.Hex(factoryData)
 	}
 
@@ -107,7 +110,10 @@ func Unpack(packed map[string]string) (*types.UserOperation, error) {
 	// Parse accountGasLimits
 	accountGasLimits := packed["accountGasLimits"]
 	if accountGasLimits != "" && accountGasLimits != "0x" {
-		data, _ := hex.DecodeString(strings.TrimPrefix(accountGasLimits, "0x"))
+		data, err := hex.DecodeString(strings.TrimPrefix(accountGasLimits, "0x"))
+		if err != nil {
+			return nil, fmt.Errorf("invalid accountGasLimits hex: %w", err)
+		}
 		if len(data) >= 32 {
 			userOp.VerificationGasLimit = new(big.Int).SetBytes(data[:16])
 			userOp.CallGasLimit = new(big.Int).SetBytes(data[16:32])
@@ -123,7 +129,10 @@ func Unpack(packed map[string]string) (*types.UserOperation, error) {
 	// Parse gasFees
 	gasFees := packed["gasFees"]
 	if gasFees != "" && gasFees != "0x" {
-		data, _ := hex.DecodeString(strings.TrimPrefix(gasFees, "0x"))
+		data, err := hex.DecodeString(strings.TrimPrefix(gasFees, "0x"))
+		if err != nil {
+			return nil, fmt.Errorf("invalid gasFees hex: %w", err)
+		}
 		if len(data) >= 32 {
 			userOp.MaxPriorityFeePerGas = new(big.Int).SetBytes(data[:16])
 			userOp.MaxFeePerGas = new(big.Int).SetBytes(data[16:32])
@@ -136,7 +145,10 @@ func Unpack(packed map[string]string) (*types.UserOperation, error) {
 		paymasterAddr := common.HexToAddress(paymasterAndData[:42])
 		userOp.Paymaster = &paymasterAddr
 
-		data, _ := hex.DecodeString(strings.TrimPrefix(paymasterAndData, "0x"))
+		data, err := hex.DecodeString(strings.TrimPrefix(paymasterAndData, "0x"))
+		if err != nil {
+			return nil, fmt.Errorf("invalid paymasterAndData hex: %w", err)
+		}
 		if len(data) >= 52 { // 20 (address) + 16 + 16
 			userOp.PaymasterVerificationGasLimit = new(big.Int).SetBytes(data[20:36])
 			userOp.PaymasterPostOpGasLimit = new(big.Int).SetBytes(data[36:52])
@@ -153,6 +165,14 @@ func Unpack(packed map[string]string) (*types.UserOperation, error) {
 	}
 
 	return userOp, nil
+}
+
+// bigIntBytes returns the byte representation of a *big.Int, nil-safe.
+func bigIntBytes(n *big.Int) []byte {
+	if n == nil {
+		return nil
+	}
+	return n.Bytes()
 }
 
 // padLeft pads a byte slice to the specified length on the left with zeros.

@@ -241,9 +241,9 @@ func (a *SignatureRiskAnalyzer) analyzePermit2(data *EIP712TypedData) SignatureR
 	details := make(map[string]any)
 
 	// Permit2 is inherently more risky as it handles transfers
-	if details, ok := data.Message["permitted"]; ok {
+	if permitted, ok := data.Message["permitted"]; ok {
 		level = SignatureRiskHigh
-		_ = details
+		details["permitted"] = permitted
 	}
 
 	return SignatureRiskFactor{

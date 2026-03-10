@@ -68,7 +68,7 @@ type TokenReceiverCapability struct {
 
 // EncodeTokenReceiverInit encodes token receiver fallback initialization data.
 func EncodeTokenReceiverInit(config types.TokenReceiverConfig) (types.Hex, error) {
-	bytes4ArrayType, _ := abi.NewType("bytes4[]", "", nil)
+	bytes4ArrayType := mustNewType("bytes4[]")
 
 	arguments := abi.Arguments{
 		{Type: bytes4ArrayType, Name: "supportedInterfaces"},
@@ -92,7 +92,7 @@ func EncodeTokenReceiverInit(config types.TokenReceiverConfig) (types.Hex, error
 
 // DecodeTokenReceiverFlags decodes token receiver flags from initialization data.
 func DecodeTokenReceiverFlags(data types.Hex) ([]types.Hex, error) {
-	bytes4ArrayType, _ := abi.NewType("bytes4[]", "", nil)
+	bytes4ArrayType := mustNewType("bytes4[]")
 
 	arguments := abi.Arguments{
 		{Type: bytes4ArrayType, Name: "supportedInterfaces"},
@@ -193,8 +193,8 @@ type FlashLoanCallbackConfig struct {
 
 // EncodeFlashLoanInit encodes flash loan fallback initialization data.
 func EncodeFlashLoanInit(config types.FlashLoanConfig) (types.Hex, error) {
-	addressType, _ := abi.NewType("address", "", nil)
-	addressArrayType, _ := abi.NewType("address[]", "", nil)
+	addressType := mustNewType("address")
+	addressArrayType := mustNewType("address[]")
 
 	arguments := abi.Arguments{
 		{Type: addressType, Name: "authorizedBorrower"},
@@ -286,9 +286,9 @@ type FallbackHandlerRegistration struct {
 
 // EncodeFallbackHandlerRegistration encodes a fallback handler registration.
 func EncodeFallbackHandlerRegistration(reg FallbackHandlerRegistration) (types.Hex, error) {
-	bytes4Type, _ := abi.NewType("bytes4", "", nil)
-	addressType, _ := abi.NewType("address", "", nil)
-	uint8Type, _ := abi.NewType("uint8", "", nil)
+	bytes4Type := mustNewType("bytes4")
+	addressType := mustNewType("address")
+	uint8Type := mustNewType("uint8")
 
 	arguments := abi.Arguments{
 		{Type: bytes4Type, Name: "selector"},
@@ -314,7 +314,10 @@ func EncodeBatchFallbackRegistration(registrations []FallbackHandlerRegistration
 		{Name: "handler", Type: "address"},
 		{Name: "mode", Type: "uint8"},
 	}
-	tupleArrayType, _ := abi.NewType("tuple[]", "", tupleComponents)
+	tupleArrayType, err := abi.NewType("tuple[]", "", tupleComponents)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tuple[] ABI type: %w", err)
+	}
 
 	arguments := abi.Arguments{{Type: tupleArrayType}}
 
@@ -348,7 +351,7 @@ func EncodeBatchFallbackRegistration(registrations []FallbackHandlerRegistration
 
 // EncodeSupportsInterfaceCall encodes a supportsInterface call.
 func EncodeSupportsInterfaceCall(interfaceId types.Hex) (types.Hex, error) {
-	bytes4Type, _ := abi.NewType("bytes4", "", nil)
+	bytes4Type := mustNewType("bytes4")
 
 	// Function selector for supportsInterface(bytes4)
 	selector := CalculateSelector("supportsInterface(bytes4)")

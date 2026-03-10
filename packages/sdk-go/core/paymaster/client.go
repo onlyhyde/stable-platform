@@ -144,8 +144,10 @@ func (c *Client) GetSponsorPolicy(ctx context.Context, sender types.Address, ope
 	}
 
 	if result.RemainingQuota != "" {
-		quota, _ := new(big.Int).SetString(result.RemainingQuota, 10)
-		policy.RemainingQuota = quota
+		quota, ok := new(big.Int).SetString(result.RemainingQuota, 10)
+		if ok {
+			policy.RemainingQuota = quota
+		}
 	}
 
 	return policy, nil
@@ -177,7 +179,10 @@ func (c *Client) GetSponsoredPaymasterData(ctx context.Context, userOp *PartialU
 		return nil, fmt.Errorf("failed to get sponsored paymaster data: %w", err)
 	}
 
-	paymasterData, _ := types.HexFromString(result.PaymasterData)
+	paymasterData, err := types.HexFromString(result.PaymasterData)
+	if err != nil {
+		return nil, fmt.Errorf("invalid paymaster data in response: %w", err)
+	}
 
 	return &PaymasterResponse{
 		Paymaster:                     common.HexToAddress(result.Paymaster),
@@ -267,7 +272,10 @@ func (c *Client) GetERC20PaymasterData(ctx context.Context, userOp *PartialUserO
 		return nil, fmt.Errorf("failed to get ERC20 paymaster data: %w", err)
 	}
 
-	paymasterData, _ := types.HexFromString(result.PaymasterData)
+	paymasterData, err := types.HexFromString(result.PaymasterData)
+	if err != nil {
+		return nil, fmt.Errorf("invalid paymaster data in response: %w", err)
+	}
 
 	return &PaymasterWithTokenResponse{
 		PaymasterResponse: PaymasterResponse{
@@ -332,11 +340,12 @@ func hexToBigInt(s string) *big.Int {
 	if s == "" || s == "0x" {
 		return big.NewInt(0)
 	}
-	if len(s) > 2 && s[:2] == "0x" {
-		s = s[2:]
+	hex := s
+	if len(hex) > 2 && hex[:2] == "0x" {
+		hex = hex[2:]
 	}
-	n, _ := new(big.Int).SetString(s, 16)
-	if n == nil {
+	n, ok := new(big.Int).SetString(hex, 16)
+	if !ok || n == nil {
 		return big.NewInt(0)
 	}
 	return n

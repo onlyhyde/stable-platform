@@ -18,12 +18,29 @@ var domainTypeHash = crypto.Keccak256Hash(
 	[]byte("EIP712Domain(string name,string version,uint256 chainId,address entryPoint,address paymaster)"),
 )
 
-// ABI types used for encoding.
+// ABI types used for encoding (initialized at package load; panic on failure
+// indicates a go-ethereum ABI incompatibility — a build-time invariant).
 var (
-	bytes32Type, _ = abi.NewType("bytes32", "", nil)
-	uint256Type, _ = abi.NewType("uint256", "", nil)
-	addressType, _ = abi.NewType("address", "", nil)
+	bytes32Type abi.Type
+	uint256Type abi.Type
+	addressType abi.Type
 )
+
+func init() {
+	var err error
+	bytes32Type, err = abi.NewType("bytes32", "", nil)
+	if err != nil {
+		panic("failed to create bytes32 ABI type: " + err.Error())
+	}
+	uint256Type, err = abi.NewType("uint256", "", nil)
+	if err != nil {
+		panic("failed to create uint256 ABI type: " + err.Error())
+	}
+	addressType, err = abi.NewType("address", "", nil)
+	if err != nil {
+		panic("failed to create address ABI type: " + err.Error())
+	}
+}
 
 // ComputeDomainSeparator computes the EIP-712-like domain separator.
 // Matches BasePaymaster._computeDomainSeparator() in Solidity.

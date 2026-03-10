@@ -89,17 +89,20 @@ func (s *SponsorPaymaster) GetPaymasterStubData(ctx context.Context, userOp *typ
 		return nil, fmt.Errorf("failed to parse paymaster stub data: %w", err)
 	}
 
-	verificationGas, _ := new(big.Int).SetString(result.PaymasterVerificationGasLimit, 0)
-	if verificationGas == nil {
+	verificationGas, ok := new(big.Int).SetString(result.PaymasterVerificationGasLimit, 0)
+	if !ok || verificationGas == nil {
 		verificationGas = big.NewInt(DefaultSponsorVerificationGas)
 	}
 
-	postOpGas, _ := new(big.Int).SetString(result.PaymasterPostOpGasLimit, 0)
-	if postOpGas == nil {
+	postOpGas, ok := new(big.Int).SetString(result.PaymasterPostOpGasLimit, 0)
+	if !ok || postOpGas == nil {
 		postOpGas = big.NewInt(DefaultSponsorPostOpGas)
 	}
 
-	paymasterData, _ := types.HexFromString(result.PaymasterData)
+	paymasterData, err := types.HexFromString(result.PaymasterData)
+	if err != nil {
+		return nil, fmt.Errorf("invalid paymaster stub data: %w", err)
+	}
 
 	return &StubData{
 		Paymaster:                     common.HexToAddress(result.Paymaster),
@@ -129,17 +132,20 @@ func (s *SponsorPaymaster) GetPaymasterData(ctx context.Context, userOp *types.P
 		return nil, fmt.Errorf("failed to parse paymaster data: %w", err)
 	}
 
-	verificationGas, _ := new(big.Int).SetString(result.PaymasterVerificationGasLimit, 0)
-	if verificationGas == nil {
+	verificationGas, ok := new(big.Int).SetString(result.PaymasterVerificationGasLimit, 0)
+	if !ok || verificationGas == nil {
 		verificationGas = big.NewInt(DefaultSponsorVerificationGas)
 	}
 
-	postOpGas, _ := new(big.Int).SetString(result.PaymasterPostOpGasLimit, 0)
-	if postOpGas == nil {
+	postOpGas, ok := new(big.Int).SetString(result.PaymasterPostOpGasLimit, 0)
+	if !ok || postOpGas == nil {
 		postOpGas = big.NewInt(DefaultSponsorPostOpGas)
 	}
 
-	paymasterData, _ := types.HexFromString(result.PaymasterData)
+	paymasterData, err := types.HexFromString(result.PaymasterData)
+	if err != nil {
+		return nil, fmt.Errorf("invalid paymaster data: %w", err)
+	}
 
 	return &PaymasterData{
 		Paymaster:                     common.HexToAddress(result.Paymaster),
@@ -200,9 +206,22 @@ func (s *SponsorPaymaster) GetSponsorshipPolicy(ctx context.Context, sender type
 		return &SponsorshipPolicy{IsAvailable: true}, nil
 	}
 
-	remainingQuota, _ := new(big.Int).SetString(result.RemainingQuota, 0)
-	dailyLimit, _ := new(big.Int).SetString(result.DailyLimit, 0)
-	usedToday, _ := new(big.Int).SetString(result.UsedToday, 0)
+	var remainingQuota, dailyLimit, usedToday *big.Int
+	if result.RemainingQuota != "" {
+		if v, ok := new(big.Int).SetString(result.RemainingQuota, 0); ok {
+			remainingQuota = v
+		}
+	}
+	if result.DailyLimit != "" {
+		if v, ok := new(big.Int).SetString(result.DailyLimit, 0); ok {
+			dailyLimit = v
+		}
+	}
+	if result.UsedToday != "" {
+		if v, ok := new(big.Int).SetString(result.UsedToday, 0); ok {
+			usedToday = v
+		}
+	}
 
 	return &SponsorshipPolicy{
 		IsAvailable:    result.IsAvailable,

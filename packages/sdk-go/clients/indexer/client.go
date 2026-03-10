@@ -691,16 +691,16 @@ func parseBigInt(s string) *big.Int {
 
 	// Handle hex format
 	if len(s) >= 2 && s[:2] == "0x" {
-		n, _ := new(big.Int).SetString(s[2:], 16)
-		if n == nil {
+		n, ok := new(big.Int).SetString(s[2:], 16)
+		if !ok || n == nil {
 			return big.NewInt(0)
 		}
 		return n
 	}
 
 	// Handle decimal format
-	n, _ := new(big.Int).SetString(s, 10)
-	if n == nil {
+	n, ok := new(big.Int).SetString(s, 10)
+	if !ok || n == nil {
 		return big.NewInt(0)
 	}
 	return n

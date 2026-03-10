@@ -317,7 +317,11 @@ func validateFieldValue(field *config.ModuleConfigField, value interface{}) stri
 		var numValue *big.Int
 		switch v := value.(type) {
 		case string:
-			numValue, _ = new(big.Int).SetString(v, 10)
+			var ok bool
+			numValue, ok = new(big.Int).SetString(v, 10)
+			if !ok {
+				return field.Label + " must be a valid number"
+			}
 		case int64:
 			numValue = big.NewInt(v)
 		case *big.Int:
@@ -329,8 +333,8 @@ func validateFieldValue(field *config.ModuleConfigField, value interface{}) stri
 		}
 
 		if validation.Min != "" {
-			minVal, _ := new(big.Int).SetString(validation.Min, 10)
-			if minVal != nil && numValue.Cmp(minVal) < 0 {
+			minVal, ok := new(big.Int).SetString(validation.Min, 10)
+			if ok && minVal != nil && numValue.Cmp(minVal) < 0 {
 				if validation.Message != "" {
 					return validation.Message
 				}
@@ -339,8 +343,8 @@ func validateFieldValue(field *config.ModuleConfigField, value interface{}) stri
 		}
 
 		if validation.Max != "" {
-			maxVal, _ := new(big.Int).SetString(validation.Max, 10)
-			if maxVal != nil && numValue.Cmp(maxVal) > 0 {
+			maxVal, ok := new(big.Int).SetString(validation.Max, 10)
+			if ok && maxVal != nil && numValue.Cmp(maxVal) > 0 {
 				if validation.Message != "" {
 					return validation.Message
 				}

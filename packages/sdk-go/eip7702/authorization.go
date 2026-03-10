@@ -14,6 +14,9 @@ import (
 	"github.com/stablenet/sdk-go/types"
 )
 
+// addressRegex validates Ethereum address format.
+var addressRegex = regexp.MustCompile(`^0x[a-fA-F0-9]{40}$`)
+
 // CreateAuthorizationHash creates the authorization hash according to EIP-7702.
 // Hash = keccak256(0x05 || rlp([chainId, address, nonce]))
 func CreateAuthorizationHash(auth Authorization) (types.Hash, error) {
@@ -145,8 +148,7 @@ func GetDelegationStatus(code types.Hex) *DelegationStatus {
 
 // IsValidAddress validates if a string is a valid Ethereum address.
 func IsValidAddress(address string) bool {
-	matched, _ := regexp.MatchString(`^0x[a-fA-F0-9]{40}$`, address)
-	return matched
+	return addressRegex.MatchString(address)
 }
 
 // IsRevocationAuthorization checks if an authorization is for revocation.
