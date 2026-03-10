@@ -1,23 +1,28 @@
 import type { Address, Hex, PublicClient, WalletClient } from 'viem'
-import { decodeEventLog, encodeFunctionData } from 'viem'
-import { ENTRY_POINT_ABI, EVENT_SIGNATURES, HANDLE_AGGREGATED_OPS_ABI } from '../abi'
-import type { DependencyTracker, StorageAccessRecord } from '../mempool/dependencyTracker'
+import { encodeFunctionData } from 'viem'
+import { ENTRY_POINT_ABI, HANDLE_AGGREGATED_OPS_ABI } from '../abi'
+import type { DependencyTracker } from '../mempool/dependencyTracker'
 import type { Mempool } from '../mempool/mempool'
 import { packForContract } from '../shared/packUserOp'
 import type { MempoolEntry } from '../types'
 import type { Logger } from '../utils/logger'
 import type { AggregatorValidator, OpcodeValidator, UserOperationValidator } from '../validation'
-import {
-  decodeFailedOp,
-  decodeFailedOpWithRevert,
-  extractErrorData,
-  formatRevertReason,
-  matchesErrorSelector,
-  parseSimulationError,
-} from '../validation/errors'
-import type { TraceCall } from '../validation/opcodeValidator'
 import type { UserOperationEventData, UserOpsPerAggregator } from '../validation/types'
 import { VALIDATION_CONSTANTS } from '../validation/types'
+import {
+  applyStorageConflictOrdering,
+  calculateMaxGasCost,
+  deduplicateSenders,
+  detectFactoryCollisions,
+  detectStorageWriteConflicts,
+  extractStorageAccess,
+  separateByAggregator,
+  validatePaymasterDeposits,
+} from './bundleBuilder'
+import {
+  diagnoseBundleFailure,
+  parseUserOperationEvents,
+} from './bundleDiagnostics'
 
 /**
  * Bundle executor configuration
@@ -125,7 +130,14 @@ export class BundleExecutor {
     }
 
     // EIP-4337 Section 7.1: Deduplicate senders (unstaked senders get max 1 op per bundle)
-    const dedupedEntries = await this.deduplicateSenders(validEntries)
+    const simulationValidator = this.validator.getSimulationValidator()
+    const reputationManager = this.validator.getReputationManager()
+    const dedupedEntries = await deduplicateSenders(
+      validEntries,
+      simulationValidator,
+      reputationManager,
+      this.logger
+    )
 
     if (dedupedEntries.length === 0) {
       this.logger.debug('No valid operations after sender deduplication')
@@ -133,7 +145,11 @@ export class BundleExecutor {
     }
 
     // EIP-4337 Section 7.3: Detect factory CREATE2 address collisions
-    const collisionFreeEntries = this.detectFactoryCollisions(dedupedEntries)
+    const collisionFreeEntries = detectFactoryCollisions(
+      dedupedEntries,
+      this.dependencyTracker,
+      this.logger
+    )
 
     if (collisionFreeEntries.length === 0) {
       this.logger.debug('No valid operations after factory collision detection')
@@ -141,7 +157,11 @@ export class BundleExecutor {
     }
 
     // EIP-4337 Section 7.3: Detect and exclude write-write storage conflicts
-    const writeConflictFreeEntries = this.detectStorageWriteConflicts(collisionFreeEntries)
+    const writeConflictFreeEntries = detectStorageWriteConflicts(
+      collisionFreeEntries,
+      this.dependencyTracker,
+      this.logger
+    )
 
     if (writeConflictFreeEntries.length === 0) {
       this.logger.debug('No valid operations after storage write conflict detection')
@@ -149,7 +169,11 @@ export class BundleExecutor {
     }
 
     // EIP-4337 Section 7.3: Order by storage dependencies to prevent conflicts
-    const orderedEntries = this.applyStorageConflictOrdering(writeConflictFreeEntries)
+    const orderedEntries = applyStorageConflictOrdering(
+      writeConflictFreeEntries,
+      this.dependencyTracker,
+      this.logger
+    )
 
     if (orderedEntries.length === 0) {
       this.logger.debug('No valid operations after storage conflict resolution')
@@ -157,7 +181,11 @@ export class BundleExecutor {
     }
 
     // EIP-4337 Section 7.1: Validate paymaster deposits cover total gas in bundle
-    const depositValidEntries = await this.validatePaymasterDeposits(orderedEntries)
+    const depositValidEntries = await validatePaymasterDeposits(
+      orderedEntries,
+      simulationValidator,
+      this.logger
+    )
 
     if (depositValidEntries.length === 0) {
       this.logger.debug('No valid operations after paymaster deposit validation')
@@ -168,8 +196,8 @@ export class BundleExecutor {
   }
 
   /**
-   * Pre-flight validation before bundling
-   * Re-validates operations to ensure they're still valid
+   * Pre-flight validation before bundling.
+   * Re-validates operations to ensure they're still valid.
    */
   private async preflightValidation(entries: MempoolEntry[]): Promise<MempoolEntry[]> {
     const valid: MempoolEntry[] = []
@@ -197,7 +225,7 @@ export class BundleExecutor {
         if (this.dependencyTracker && opcodeValidator) {
           const traceResult = opcodeValidator.getLastTraceResult()
           if (traceResult) {
-            const accessRecord = this.extractStorageAccess(
+            const accessRecord = extractStorageAccess(
               entry.userOpHash,
               entry.userOp.sender,
               traceResult.calls
@@ -243,147 +271,10 @@ export class BundleExecutor {
   }
 
   /**
-   * EIP-4337 Section 7.1: Deduplicate senders in bundle
-   * A bundle MUST NOT include multiple UserOperations from the same sender,
-   * unless that sender is staked (has sufficient stake and unstake delay).
-   */
-  private async deduplicateSenders(entries: MempoolEntry[]): Promise<MempoolEntry[]> {
-    const simulationValidator = this.validator.getSimulationValidator()
-    const reputationManager = this.validator.getReputationManager()
-    const senderSeen = new Map<string, MempoolEntry>()
-    const result: MempoolEntry[] = []
-
-    for (const entry of entries) {
-      const senderKey = entry.userOp.sender.toLowerCase()
-
-      if (!senderSeen.has(senderKey)) {
-        senderSeen.set(senderKey, entry)
-        result.push(entry)
-        continue
-      }
-
-      // Duplicate sender — check if staked
-      try {
-        const depositInfo = await simulationValidator.getDepositInfo(entry.userOp.sender)
-        const isStaked = reputationManager.isStaked({
-          stake: depositInfo.stake,
-          unstakeDelaySec: BigInt(depositInfo.unstakeDelaySec),
-        })
-
-        if (isStaked) {
-          result.push(entry)
-          this.logger.debug(
-            { sender: entry.userOp.sender, userOpHash: entry.userOpHash },
-            'Allowing duplicate sender in bundle (sender is staked)'
-          )
-        } else {
-          this.logger.debug(
-            { sender: entry.userOp.sender, userOpHash: entry.userOpHash },
-            'Skipping duplicate sender in bundle (sender is not staked)'
-          )
-        }
-      } catch (error) {
-        // On error, skip the duplicate (conservative approach)
-        this.logger.warn(
-          { sender: entry.userOp.sender, error },
-          'Failed to check sender stake, skipping duplicate'
-        )
-      }
-    }
-
-    return result
-  }
-
-  /**
-   * EIP-4337 Section 7.1: Validate paymaster deposits across bundle
-   * The total gas required by all UserOperations using a given paymaster
-   * must not exceed that paymaster's deposit in the EntryPoint.
-   */
-  private async validatePaymasterDeposits(entries: MempoolEntry[]): Promise<MempoolEntry[]> {
-    const simulationValidator = this.validator.getSimulationValidator()
-
-    // Aggregate gas requirements per paymaster
-    const paymasterGas = new Map<string, { totalGas: bigint; entries: MempoolEntry[] }>()
-
-    for (const entry of entries) {
-      if (!entry.userOp.paymaster) continue
-
-      const paymasterKey = entry.userOp.paymaster.toLowerCase()
-      const existing = paymasterGas.get(paymasterKey) || { totalGas: 0n, entries: [] }
-
-      // Calculate max gas cost for this UserOp:
-      // verificationGasLimit + callGasLimit + paymasterVerificationGasLimit + paymasterPostOpGasLimit + preVerificationGas
-      const opMaxGas =
-        entry.userOp.verificationGasLimit +
-        entry.userOp.callGasLimit +
-        (entry.userOp.paymasterVerificationGasLimit ?? 0n) +
-        (entry.userOp.paymasterPostOpGasLimit ?? 0n) +
-        entry.userOp.preVerificationGas
-
-      // Gas cost in wei = opMaxGas * maxFeePerGas
-      const opMaxCost = opMaxGas * entry.userOp.maxFeePerGas
-
-      existing.totalGas += opMaxCost
-      existing.entries.push(entry)
-      paymasterGas.set(paymasterKey, existing)
-    }
-
-    // Check each paymaster's deposit covers the total gas
-    const excludedEntries = new Set<string>()
-
-    for (const [paymasterKey, { totalGas, entries: paymasterEntries }] of paymasterGas) {
-      try {
-        const depositInfo = await simulationValidator.getDepositInfo(paymasterKey as Address)
-
-        if (depositInfo.deposit < totalGas) {
-          this.logger.warn(
-            {
-              paymaster: paymasterKey,
-              deposit: depositInfo.deposit.toString(),
-              requiredGas: totalGas.toString(),
-              opCount: paymasterEntries.length,
-            },
-            'Paymaster deposit insufficient for bundle total gas, removing excess ops'
-          )
-
-          // Keep ops until deposit is exhausted, exclude the rest
-          let runningCost = 0n
-          for (const entry of paymasterEntries) {
-            const opMaxGas =
-              entry.userOp.verificationGasLimit +
-              entry.userOp.callGasLimit +
-              (entry.userOp.paymasterVerificationGasLimit ?? 0n) +
-              (entry.userOp.paymasterPostOpGasLimit ?? 0n) +
-              entry.userOp.preVerificationGas
-            const opMaxCost = opMaxGas * entry.userOp.maxFeePerGas
-
-            if (runningCost + opMaxCost <= depositInfo.deposit) {
-              runningCost += opMaxCost
-            } else {
-              excludedEntries.add(entry.userOpHash)
-            }
-          }
-        }
-      } catch (error) {
-        this.logger.warn(
-          { paymaster: paymasterKey, error },
-          'Failed to check paymaster deposit, excluding all ops for this paymaster'
-        )
-        for (const entry of paymasterEntries) {
-          excludedEntries.add(entry.userOpHash)
-        }
-      }
-    }
-
-    return entries.filter((e) => !excludedEntries.has(e.userOpHash))
-  }
-
-  /**
    * Submit a bundle of UserOperations
    */
   async submitBundle(entries: MempoolEntry[]): Promise<Hex> {
-    // Separate aggregated and non-aggregated operations
-    const { aggregatedEntries, nonAggregatedEntries } = this.separateByAggregator(entries)
+    const { aggregatedEntries, nonAggregatedEntries } = separateByAggregator(entries)
 
     let data: Hex
 
@@ -453,7 +344,15 @@ export class BundleExecutor {
       return hash
     } catch (error) {
       // ── Detailed revert reason analysis ───────────────────────────────
-      const failureReason = await this.diagnoseBundleFailure(error, data, entries)
+      const failureReason = await diagnoseBundleFailure(
+        error,
+        data,
+        entries,
+        this.publicClient,
+        this.walletClient,
+        this.config.entryPoint,
+        this.logger
+      )
 
       this.logger.error(
         {
@@ -478,158 +377,6 @@ export class BundleExecutor {
   }
 
   /**
-   * Diagnose why a bundle submission failed.
-   * Extracts structured revert data from the error and optionally
-   * re-runs handleOps via eth_call to get detailed revert info.
-   */
-  private async diagnoseBundleFailure(
-    error: unknown,
-    handleOpsData: Hex,
-    entries: MempoolEntry[]
-  ): Promise<{
-    decodedReason?: string
-    failedOpIndex?: number
-    failedOpReason?: string
-    innerRevertData?: string
-    errorSelector?: string
-    rawErrorData?: string
-    userOpDetails?: Record<string, unknown>[]
-  }> {
-    const result: {
-      decodedReason?: string
-      failedOpIndex?: number
-      failedOpReason?: string
-      innerRevertData?: string
-      errorSelector?: string
-      rawErrorData?: string
-      userOpDetails?: Record<string, unknown>[]
-    } = {}
-
-    // Step 1: Extract error data from the caught exception
-    const errorData = extractErrorData(error)
-
-    if (errorData) {
-      result.rawErrorData = errorData
-      result.errorSelector = errorData.length >= 10 ? errorData.slice(0, 10) : undefined
-
-      // Decode FailedOp(uint256 opIndex, string reason)
-      if (matchesErrorSelector(errorData, 'FailedOp')) {
-        try {
-          const { opIndex, reason } = decodeFailedOp(errorData)
-          result.failedOpIndex = Number(opIndex)
-          result.failedOpReason = reason
-          result.decodedReason = `FailedOp[${opIndex}]: ${formatRevertReason(reason)}`
-          this.logger.error(
-            { opIndex: Number(opIndex), reason, userOpHash: entries[Number(opIndex)]?.userOpHash },
-            `handleOps FailedOp at index ${opIndex}: ${reason}`
-          )
-        } catch (decodeErr) {
-          this.logger.warn({ err: decodeErr }, 'Failed to decode FailedOp data')
-        }
-      }
-
-      // Decode FailedOpWithRevert(uint256 opIndex, string reason, bytes inner)
-      else if (matchesErrorSelector(errorData, 'FailedOpWithRevert')) {
-        try {
-          const { opIndex, reason, inner } = decodeFailedOpWithRevert(errorData)
-          result.failedOpIndex = Number(opIndex)
-          result.failedOpReason = reason
-          result.innerRevertData = inner
-          result.decodedReason = `FailedOpWithRevert[${opIndex}]: ${formatRevertReason(reason)} | inner=${inner}`
-          this.logger.error(
-            {
-              opIndex: Number(opIndex),
-              reason,
-              inner,
-              innerLength: inner.length,
-              userOpHash: entries[Number(opIndex)]?.userOpHash,
-            },
-            `handleOps FailedOpWithRevert at index ${opIndex}: ${reason}`
-          )
-        } catch (decodeErr) {
-          this.logger.warn({ err: decodeErr }, 'Failed to decode FailedOpWithRevert data')
-        }
-      }
-
-      // Decode SignatureValidationFailed
-      else if (matchesErrorSelector(errorData, 'SignatureValidationFailed')) {
-        result.decodedReason = 'SignatureValidationFailed: on-chain signature check failed'
-        this.logger.error(
-          'handleOps SignatureValidationFailed: ECDSA signature validation failed on-chain'
-        )
-      }
-
-      // Unknown selector — log raw data for analysis
-      else {
-        result.decodedReason = `Unknown revert (selector=${result.errorSelector}): ${errorData.slice(0, 66)}...`
-      }
-    }
-
-    // Step 2: If no structured data was extracted, try eth_call to get revert reason
-    if (!result.decodedReason) {
-      try {
-        await this.publicClient.call({
-          account: this.walletClient.account!,
-          to: this.config.entryPoint,
-          data: handleOpsData,
-        })
-        // If eth_call succeeds, the revert was transient (state changed between attempts)
-        result.decodedReason =
-          'Transient failure: eth_call succeeded on retry (state may have changed)'
-      } catch (callError) {
-        const callErrorData = extractErrorData(callError)
-        if (callErrorData) {
-          result.rawErrorData = callErrorData
-
-          const parsed = parseSimulationError(callError)
-          if (parsed.failedOp) {
-            result.failedOpIndex = Number(parsed.failedOp.opIndex)
-            result.failedOpReason = parsed.failedOp.reason
-            result.innerRevertData = parsed.failedOp.inner
-            result.decodedReason = `FailedOp[${parsed.failedOp.opIndex}]: ${formatRevertReason(parsed.failedOp.reason)}${parsed.failedOp.inner ? ` | inner=${parsed.failedOp.inner}` : ''}`
-          } else if (parsed.rawError) {
-            result.decodedReason = `eth_call revert: ${parsed.rawError}`
-          }
-
-          this.logger.error(
-            { callErrorData: callErrorData.slice(0, 200), parsed },
-            'handleOps eth_call diagnostic result'
-          )
-        } else {
-          result.decodedReason = `eth_call also reverted: ${callError instanceof Error ? callError.message : String(callError)}`
-        }
-      }
-    }
-
-    // Step 3: Log UserOp details for the failed operation(s)
-    const failedEntry =
-      result.failedOpIndex !== undefined ? entries[result.failedOpIndex] : undefined
-    const opsToLog = failedEntry ? [failedEntry] : entries
-
-    result.userOpDetails = opsToLog.map((e) => ({
-      userOpHash: e.userOpHash,
-      sender: e.userOp.sender,
-      nonce: e.userOp.nonce.toString(),
-      hasFactory: !!(e.userOp.factory && e.userOp.factory !== '0x'),
-      factory: e.userOp.factory || 'none',
-      hasPaymaster: !!(e.userOp.paymaster && e.userOp.paymaster !== '0x'),
-      signatureLength: e.userOp.signature?.length ?? 0,
-      callDataSelector: e.userOp.callData?.slice(0, 10) ?? 'none',
-      verificationGasLimit: e.userOp.verificationGasLimit.toString(),
-      callGasLimit: e.userOp.callGasLimit.toString(),
-      preVerificationGas: e.userOp.preVerificationGas.toString(),
-      maxFeePerGas: e.userOp.maxFeePerGas.toString(),
-      maxPriorityFeePerGas: e.userOp.maxPriorityFeePerGas.toString(),
-    }))
-
-    for (const detail of result.userOpDetails) {
-      this.logger.error(detail, 'Failed UserOp details')
-    }
-
-    return result
-  }
-
-  /**
    * Wait for bundle transaction receipt and update statuses
    */
   private async waitForReceipt(hash: Hex, entries: MempoolEntry[]): Promise<void> {
@@ -642,7 +389,11 @@ export class BundleExecutor {
       const blockNumber = receipt.blockNumber
 
       // Parse UserOperationEvent logs
-      const userOpEvents = this.parseUserOperationEvents(receipt.logs)
+      const userOpEvents = parseUserOperationEvents(
+        receipt.logs,
+        this.config.entryPoint,
+        this.logger
+      )
 
       // Create a map of userOpHash to event data
       const eventMap = new Map<Hex, UserOperationEventData>()
@@ -697,240 +448,6 @@ export class BundleExecutor {
     } catch (error) {
       this.logger.error({ error, hash }, 'Failed to get transaction receipt')
     }
-  }
-
-  /**
-   * Parse UserOperationEvent logs from transaction receipt
-   */
-  private parseUserOperationEvents(
-    logs: Array<{
-      address: Address
-      topics: Hex[]
-      data: Hex
-    }>
-  ): UserOperationEventData[] {
-    const events: UserOperationEventData[] = []
-
-    for (const log of logs) {
-      // Check if this is a UserOperationEvent
-      if (
-        log.address.toLowerCase() === this.config.entryPoint.toLowerCase() &&
-        log.topics[0]?.toLowerCase() === EVENT_SIGNATURES.UserOperationEvent.toLowerCase()
-      ) {
-        try {
-          // Type cast required for decodeEventLog topics parameter
-          const topics = log.topics as [Hex, ...Hex[]]
-          const decoded = decodeEventLog({
-            abi: ENTRY_POINT_ABI,
-            data: log.data,
-            topics,
-          })
-
-          if (decoded.eventName === 'UserOperationEvent') {
-            const args = decoded.args as {
-              userOpHash: Hex
-              sender: Address
-              paymaster: Address
-              nonce: bigint
-              success: boolean
-              actualGasCost: bigint
-              actualGasUsed: bigint
-            }
-
-            events.push({
-              userOpHash: args.userOpHash,
-              sender: args.sender,
-              paymaster: args.paymaster,
-              nonce: args.nonce,
-              success: args.success,
-              actualGasCost: args.actualGasCost,
-              actualGasUsed: args.actualGasUsed,
-            })
-          }
-        } catch (error) {
-          this.logger.warn({ error, log }, 'Failed to decode UserOperationEvent')
-        }
-      }
-    }
-
-    return events
-  }
-
-  /**
-   * EIP-4337 Section 7.3: Detect factory CREATE2 address collisions.
-   * Two UserOps that would CREATE2 the same address cannot both succeed.
-   * Keeps the first-seen op and excludes later duplicates.
-   */
-  private detectFactoryCollisions(entries: MempoolEntry[]): MempoolEntry[] {
-    if (!this.dependencyTracker || entries.length <= 1) {
-      return entries
-    }
-
-    const hashes = entries.map((e) => e.userOpHash)
-    const collisions = this.dependencyTracker.findFactoryCollisions(hashes)
-
-    if (collisions.length === 0) {
-      return entries
-    }
-
-    const excluded = new Set(collisions.map((c) => c.excluded))
-
-    for (const collision of collisions) {
-      this.logger.warn(
-        {
-          keeper: collision.keeper,
-          excluded: collision.excluded,
-          address: collision.address,
-        },
-        'Factory CREATE2 address collision detected, excluding later operation'
-      )
-    }
-
-    return entries.filter((e) => !excluded.has(e.userOpHash))
-  }
-
-  /**
-   * EIP-4337 Section 7.3: Apply storage conflict ordering using DependencyTracker.
-   * Orders entries by topological sort of storage dependencies.
-   * Removes entries with circular dependencies.
-   */
-  private applyStorageConflictOrdering(entries: MempoolEntry[]): MempoolEntry[] {
-    if (!this.dependencyTracker || entries.length <= 1) {
-      return entries
-    }
-
-    const { ordered, conflicting } = this.dependencyTracker.orderByDependencies(entries)
-
-    if (conflicting.length > 0) {
-      this.logger.warn(
-        { conflictCount: conflicting.length },
-        'Removed operations with circular storage dependencies from bundle'
-      )
-    }
-
-    return ordered
-  }
-
-  /**
-   * EIP-4337 Section 7.3: Detect write-write storage conflicts.
-   * Two ops from different senders that both SSTORE to the same slot cannot
-   * safely coexist in a bundle. Excludes the later op (keeps first-seen).
-   */
-  private detectStorageWriteConflicts(entries: MempoolEntry[]): MempoolEntry[] {
-    if (!this.dependencyTracker || entries.length <= 1) {
-      return entries
-    }
-
-    const hashes = entries.map((e) => e.userOpHash)
-    const conflicts = this.dependencyTracker.findWriteConflicts(hashes)
-
-    if (conflicts.length === 0) {
-      return entries
-    }
-
-    const excluded = new Set(conflicts.map((c) => c.excluded))
-
-    for (const conflict of conflicts) {
-      this.logger.warn(
-        {
-          keeper: conflict.keeper,
-          excluded: conflict.excluded,
-          contract: conflict.contract,
-          slot: conflict.slot,
-        },
-        'Storage write-write conflict detected, excluding later operation'
-      )
-    }
-
-    return entries.filter((e) => !excluded.has(e.userOpHash))
-  }
-
-  /**
-   * Extract storage access records and CREATE2 addresses from trace calls
-   * for dependency tracking and factory collision detection
-   */
-  private extractStorageAccess(
-    userOpHash: Hex,
-    sender: Address,
-    calls: TraceCall[]
-  ): StorageAccessRecord {
-    const accessedSlots = new Map<Address, Set<string>>()
-    const writtenSlots = new Map<Address, Set<string>>()
-    const createdAddresses = new Set<Address>()
-
-    const collectData = (traceCalls: TraceCall[]) => {
-      for (const call of traceCalls) {
-        // Collect storage access
-        if (call.storage) {
-          // Geth callTracer constraint: opcode↔slot 1:1 mapping not available.
-          // Use call-frame-level heuristic: if SSTORE appears in the frame's opcodes,
-          // treat ALL storage entries in that frame as writes (conservative but correct).
-          const hasStore = call.opcodes.some((op) => op.toUpperCase() === 'SSTORE')
-
-          for (const [contractAddr, slots] of Object.entries(call.storage)) {
-            const addr = contractAddr as Address
-            if (!accessedSlots.has(addr)) {
-              accessedSlots.set(addr, new Set())
-            }
-            const slotSet = accessedSlots.get(addr)!
-            for (const slot of slots) {
-              slotSet.add(slot)
-            }
-
-            // Record write slots when SSTORE is present in this call frame
-            if (hasStore) {
-              if (!writtenSlots.has(addr)) {
-                writtenSlots.set(addr, new Set())
-              }
-              const writeSet = writtenSlots.get(addr)!
-              for (const slot of slots) {
-                writeSet.add(slot)
-              }
-            }
-          }
-        }
-
-        // EIP-4337 Section 7.3: Collect CREATE2 addresses for factory collision detection
-        if (call.type === 'CREATE2' && call.to) {
-          createdAddresses.add(call.to)
-        }
-
-        if (call.calls) {
-          collectData(call.calls)
-        }
-      }
-    }
-
-    collectData(calls)
-
-    return {
-      userOpHash,
-      sender,
-      accessedSlots,
-      writtenSlots: writtenSlots.size > 0 ? writtenSlots : new Map(),
-      createdAddresses: createdAddresses.size > 0 ? createdAddresses : undefined,
-    }
-  }
-
-  /**
-   * Separate entries by whether they have an aggregator
-   */
-  private separateByAggregator(entries: MempoolEntry[]): {
-    aggregatedEntries: MempoolEntry[]
-    nonAggregatedEntries: MempoolEntry[]
-  } {
-    const aggregatedEntries: MempoolEntry[] = []
-    const nonAggregatedEntries: MempoolEntry[] = []
-
-    for (const entry of entries) {
-      if (entry.aggregator && entry.aggregator !== VALIDATION_CONSTANTS.ZERO_ADDRESS) {
-        aggregatedEntries.push(entry)
-      } else {
-        nonAggregatedEntries.push(entry)
-      }
-    }
-
-    return { aggregatedEntries, nonAggregatedEntries }
   }
 
   /**

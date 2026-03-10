@@ -85,20 +85,20 @@ export type PackedUserOperation = RpcPackedUserOperation
 export type UserOperationStatus = 'pending' | 'submitted' | 'included' | 'failed' | 'dropped'
 
 /**
- * Mempool entry
+ * Mempool entry (immutable — always create new objects via spread)
  */
 export interface MempoolEntry {
-  userOp: UserOperation
-  userOpHash: Hex
-  entryPoint: Address
-  status: UserOperationStatus
-  addedAt: number
-  submittedAt?: number
-  transactionHash?: Hex
-  blockNumber?: bigint
-  error?: string
+  readonly userOp: UserOperation
+  readonly userOpHash: Hex
+  readonly entryPoint: Address
+  readonly status: UserOperationStatus
+  readonly addedAt: number
+  readonly submittedAt?: number
+  readonly transactionHash?: Hex
+  readonly blockNumber?: bigint
+  readonly error?: string
   /** Aggregator address if this op uses signature aggregation */
-  aggregator?: Address
+  readonly aggregator?: Address
 }
 
 /**
