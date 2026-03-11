@@ -48,6 +48,8 @@
   "importWalletTitle": "지갑 가져오기",
   "importWalletSubtitle": "12개 또는 24개 단어의 시드 문구를 입력하세요",
   "invalidSeedPhrase": "유효한 12개 또는 24개 단어의 시드 문구를 입력해 주세요",
+  "invalidWords": "유효하지 않은 단어: {{words}}",
+  "invalidChecksum": "시드 문구 체크섬이 유효하지 않습니다. 단어를 다시 확인해 주세요.",
   "wordCount": "{{count}} / 12 또는 24 단어",
   "secretRecoveryPhrase": "비밀 복구 문구",
   "enterSeedPhrase": "단어 사이에 공백을 넣어 시드 문구를 입력하세요",

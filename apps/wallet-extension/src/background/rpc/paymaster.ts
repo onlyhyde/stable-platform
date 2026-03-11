@@ -192,7 +192,9 @@ export async function sponsorAndSign(params: {
   bundlerUrl: string
   signer: (userOp: UserOperation) => Promise<Hex>
 }): Promise<UserOperation | null> {
-  const { userOp, paymasterUrl, entryPoint, chainId, context, bundlerUrl, signer } = params
+  const { paymasterUrl, entryPoint, chainId, context, bundlerUrl, signer } = params
+  // Work on a shallow copy to avoid mutating the caller's userOp on failure
+  const userOp = { ...params.userOp }
   const chainIdHex = `0x${chainId.toString(16)}`
 
   // ── Step 1: Stub RPC ─────────────────────────────────────────────────

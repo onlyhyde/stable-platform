@@ -18,5 +18,6 @@
   "swapRequiresSmartAccount": "Swap requires a Smart Account with Swap Executor module installed.",
   "installSwapModule": "Install Swap Executor module",
   "swapModuleNotInstalledDesc": "Swap Executor module not installed. Install it from Modules page.",
-  "swapFailed": "Swap failed"
+  "swapFailed": "Swap failed",
+  "priceImpact": "Price Impact"
 }

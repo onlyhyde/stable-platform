@@ -483,6 +483,30 @@ export class ApprovalController {
   }
 
   /**
+   * Handle approval window being closed by user.
+   * Rejects all pending approvals as "user closed window".
+   */
+  handleWindowClosed(windowId: number): void {
+    if (this.approvalWindowId !== windowId) return
+
+    this.approvalWindowId = null
+
+    // Reject all pending approvals
+    for (const [id, approval] of this.pendingApprovals) {
+      const resolver = this.resolvers.get(id)
+      if (resolver) {
+        approval.status = 'rejected'
+        this.approvalHistory.unshift(approval)
+        resolver.reject(new Error('User closed approval window'))
+        this.resolvers.delete(id)
+        this.clearExpiryTimer(id)
+        this.emit('approvalResolved', approval)
+      }
+    }
+    this.pendingApprovals.clear()
+  }
+
+  /**
    * Reject all pending approvals for an origin
    */
   async rejectAllForOrigin(origin: string): Promise<void> {
@@ -697,11 +721,11 @@ export class ApprovalController {
     // Check for high value transactions with tiered thresholds
     const ONE_ETH = BigInt(10 ** 18)
     if (value >= 100n * ONE_ETH) {
-      warnings.push('Critical: Very high value transaction (>=100 ETH equivalent)')
+      warnings.push('Critical: Very high value transaction (>=100 WKRC equivalent)')
     } else if (value > 10n * ONE_ETH) {
-      warnings.push('High value transaction (>10 ETH equivalent)')
+      warnings.push('High value transaction (>10 WKRC equivalent)')
     } else if (value > ONE_ETH) {
-      warnings.push('Moderate value transaction (>1 ETH equivalent)')
+      warnings.push('Moderate value transaction (>1 WKRC equivalent)')
     }
 
     // Decode and analyze contract interaction data

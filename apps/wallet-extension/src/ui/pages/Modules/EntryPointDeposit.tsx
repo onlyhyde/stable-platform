@@ -30,7 +30,7 @@ export function EntryPointDeposit({ account, network, onBack }: EntryPointDeposi
   const [error, setError] = useState<string | null>(null)
 
   const formattedDeposit = formatEther(deposit)
-  const currencySymbol = network?.currency.symbol ?? 'ETH'
+  const currencySymbol = network?.currency.symbol ?? 'WKRC'
 
   const handleDeposit = async () => {
     if (!amount || Number.parseFloat(amount) <= 0) return

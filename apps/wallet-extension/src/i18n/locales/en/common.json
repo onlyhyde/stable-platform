@@ -49,5 +49,9 @@
   "hook": "Hook",
   "fallback": "Fallback",
   "tokens": "Tokens",
-  "eth": "ETH"
+  "eth": "WKRC",
+  "qrCodeFailed": "Failed to generate QR code",
+  "copyFailed": "Copy failed",
+  "receiveWarningNetwork": "Only send assets on {{network}}. Sending to a different network may result in loss of funds.",
+  "currentNetwork": "the current network"
 }

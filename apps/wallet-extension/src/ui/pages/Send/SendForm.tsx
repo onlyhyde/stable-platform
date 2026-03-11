@@ -16,7 +16,7 @@ interface SendFormProps {
 /**
  * Send form component for entering transaction details
  */
-export function SendForm({ formData, onFormChange, currencySymbol = 'ETH' }: SendFormProps) {
+export function SendForm({ formData, onFormChange, currencySymbol = 'WKRC' }: SendFormProps) {
   const { t } = useTranslation('send')
   const handleRecipientChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

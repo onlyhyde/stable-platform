@@ -1,15 +1,16 @@
+import { ENTRY_POINT_ADDRESS, getEntryPoint, isChainSupported } from '@stablenet/contracts'
 import {
   GAS_PAYMENT_TYPE,
   type GasEstimate,
   type GasPaymentConfig,
   type SponsorPolicy,
 } from '@stablenet/core'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Address } from 'viem'
 import { formatEther, formatUnits } from 'viem'
 
-import { useNetworkCurrency } from '../../hooks/useNetworkCurrency'
+import { useNetworkCurrency, useSelectedNetwork } from '../../hooks/useNetworkCurrency'
 import { usePaymasterClient } from './hooks/usePaymasterClient'
 
 // ============================================================================
@@ -54,6 +55,8 @@ interface PaymentOption {
   tokenAddress?: Address
   tokenSymbol?: string
   tokenDecimals?: number
+  /** EntryPoint deposit status for native payment */
+  depositStatus?: 'sufficient' | 'insufficient'
 }
 
 // ============================================================================
@@ -70,9 +73,11 @@ export function GasPaymentSelector({
 }: GasPaymentSelectorProps) {
   const { t } = useTranslation('send')
   const { symbol: nativeSymbol } = useNetworkCurrency()
+  const currentNetwork = useSelectedNetwork()
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [customMaxFee, setCustomMaxFee] = useState('')
   const [customPriorityFee, setCustomPriorityFee] = useState('')
+  const [entryPointDeposit, setEntryPointDeposit] = useState<bigint | null>(null)
 
   const {
     supportedTokens,
@@ -84,19 +89,68 @@ export function GasPaymentSelector({
     fetchERC20Estimate,
   } = usePaymasterClient(accountAddress)
 
+  // Fetch EntryPoint deposit for native gas payment check
+  const fetchEntryPointDeposit = useCallback(async () => {
+    if (!accountAddress || !currentNetwork) return
+
+    try {
+      const entryPoint = isChainSupported(currentNetwork.chainId)
+        ? getEntryPoint(currentNetwork.chainId)
+        : ENTRY_POINT_ADDRESS
+      const paddedAddress = accountAddress.toLowerCase().replace('0x', '').padStart(64, '0')
+
+      const response = await chrome.runtime.sendMessage({
+        type: 'RPC_REQUEST',
+        id: `ep-deposit-${Date.now()}`,
+        payload: {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_call',
+          // balanceOf(address) selector: 0x70a08231
+          params: [{ to: entryPoint, data: `0x70a08231${paddedAddress}` }, 'latest'],
+        },
+      })
+
+      if (response?.payload?.result && response.payload.result !== '0x') {
+        setEntryPointDeposit(BigInt(response.payload.result))
+      } else {
+        setEntryPointDeposit(0n)
+      }
+    } catch {
+      setEntryPointDeposit(null)
+    }
+  }, [accountAddress, currentNetwork])
+
+  useEffect(() => {
+    fetchEntryPointDeposit()
+  }, [fetchEntryPointDeposit])
+
   // Build payment options
   const paymentOptions = useMemo<PaymentOption[]>(() => {
     const nativeCost = gasEstimate?.estimatedCost ?? 0n
+
+    // Check if EntryPoint deposit is sufficient for native gas payment
+    const hasDeposit = entryPointDeposit !== null && entryPointDeposit > 0n
+    const depositSufficient = hasDeposit && nativeCost > 0n && entryPointDeposit >= nativeCost
 
     const options: PaymentOption[] = [
       // Native currency
       {
         type: GAS_PAYMENT_TYPE.NATIVE,
         label: t('payWithNative', { symbol: nativeSymbol }),
-        description: t('useNativeForGas', { symbol: nativeSymbol }),
+        description:
+          entryPointDeposit !== null
+            ? `${t('useNativeForGas', { symbol: nativeSymbol })} (Deposit: ${formatEther(entryPointDeposit)} ${nativeSymbol})`
+            : t('useNativeForGas', { symbol: nativeSymbol }),
         icon: 'Ξ',
         available: true,
         cost: nativeCost > 0n ? `${formatEther(nativeCost)} ${nativeSymbol}` : t('calculating'),
+        depositStatus:
+          entryPointDeposit !== null
+            ? depositSufficient
+              ? 'sufficient'
+              : 'insufficient'
+            : undefined,
       },
 
       // Sponsored
@@ -134,7 +188,7 @@ export function GasPaymentSelector({
     }
 
     return options
-  }, [gasEstimate, sponsorPolicy, supportedTokens, gasPayment, erc20Estimate, t, nativeSymbol])
+  }, [gasEstimate, sponsorPolicy, supportedTokens, gasPayment, erc20Estimate, t, nativeSymbol, entryPointDeposit])
 
   // Handle option selection
   const handleOptionSelect = (option: PaymentOption) => {
@@ -371,6 +425,19 @@ function PaymentOptionCard({ option, isSelected, onSelect }: PaymentOptionCardPr
                 <p className="text-xs" style={{ color: 'rgb(var(--success))' }}>
                   {option.savings}
                 </p>
+              )}
+              {option.depositStatus && (
+                <span
+                  className="text-xs font-medium"
+                  style={{
+                    color:
+                      option.depositStatus === 'sufficient'
+                        ? 'rgb(var(--success))'
+                        : 'rgb(var(--destructive))',
+                  }}
+                >
+                  {option.depositStatus === 'sufficient' ? '● Available' : '● Insufficient deposit'}
+                </span>
               )}
               {isSelected && (
                 <span className="text-sm ml-1" style={{ color: 'rgb(var(--primary))' }}>

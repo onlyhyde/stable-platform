@@ -18,7 +18,7 @@ export function Home() {
   const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false)
 
   // Token balances from indexer
-  const { tokenBalances, isLoadingTokens, refreshTokenBalances, isIndexerAvailable } =
+  const { tokenBalances, isLoadingTokens, refreshTokenBalances, isTokenIndexerAvailable } =
     useIndexerData()
 
   // Asset management (custom tokens, visibility)
@@ -385,7 +385,7 @@ export function Home() {
         />
 
         {/* Indexer Status */}
-        {!isIndexerAvailable && !isLoadingTokens && (
+        {!isTokenIndexerAvailable && !isLoadingTokens && (
           <p className="text-xs text-center mt-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
             {t('tokenDiscoveryUnavailable')}
           </p>

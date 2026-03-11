@@ -43,11 +43,11 @@ const HEALTH_FACTOR_PRESETS = [
 ]
 
 const BORROW_LIMIT_PRESETS = [
-  { label: '1 ETH', value: '1' },
-  { label: '5 ETH', value: '5' },
-  { label: '10 ETH', value: '10' },
-  { label: '25 ETH', value: '25' },
-  { label: '50 ETH', value: '50' },
+  { label: '1 WKRC', value: '1' },
+  { label: '5 WKRC', value: '5' },
+  { label: '10 WKRC', value: '10' },
+  { label: '25 WKRC', value: '25' },
+  { label: '50 WKRC', value: '50' },
 ]
 
 // ============================================================================
@@ -375,7 +375,7 @@ export function LendingExecutorConfigUI({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">{t('dailyBorrowLimitLabel')}</span>
-              <span className="font-medium">{form.dailyBorrowLimitEth} ETH</span>
+              <span className="font-medium">{form.dailyBorrowLimitEth} WKRC</span>
             </div>
           </div>
 
@@ -474,7 +474,7 @@ export function LendingExecutorDisplay({
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">{t('dailyBorrowUsage')}</span>
           <span>
-            {formatEther(borrowedToday)} / {formatEther(dailyBorrowLimit)} ETH
+            {formatEther(borrowedToday)} / {formatEther(dailyBorrowLimit)} WKRC
           </span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">

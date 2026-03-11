@@ -11,7 +11,7 @@ interface BankPageProps {
 }
 
 export function Bank({ onBack }: BankPageProps) {
-  const { t } = useTranslation('buy')
+  const { t } = useTranslation('bank')
   const { t: tc } = useTranslation('common')
   const [activeTab, setActiveTab] = useState<TabType>('accounts')
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedBankAccount[]>([])
@@ -57,6 +57,12 @@ export function Bank({ onBack }: BankPageProps) {
       return
     }
 
+    const accountNoDigits = linkForm.accountNo.replace(/\D/g, '')
+    if (accountNoDigits.length < 6 || accountNoDigits.length > 20) {
+      setError(t('invalidAccountNumber'))
+      return
+    }
+
     setIsLinking(true)
     setError('')
     try {
@@ -84,6 +90,8 @@ export function Bank({ onBack }: BankPageProps) {
   }
 
   async function handleUnlinkAccount(accountNo: string) {
+    if (!window.confirm(t('confirmUnlink'))) return
+
     try {
       await chrome.runtime.sendMessage({
         type: 'UNLINK_BANK_ACCOUNT',
@@ -114,6 +122,7 @@ export function Bank({ onBack }: BankPageProps) {
 
   async function handleTransfer(from: string, to: string, amount: number, description?: string) {
     setIsTransferring(true)
+    setError('')
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'BANK_TRANSFER',
@@ -127,6 +136,8 @@ export function Bank({ onBack }: BankPageProps) {
       // Refresh accounts after transfer
       await loadLinkedAccounts()
       setActiveTab('accounts')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('transferFailed'))
     } finally {
       setIsTransferring(false)
     }
@@ -225,13 +236,17 @@ export function Bank({ onBack }: BankPageProps) {
           <div className="space-y-3">
             {linkedAccounts.length === 0 ? (
               <Card padding="lg" className="text-center">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+                  style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                >
                   <svg
-                    className="w-6 h-6 text-gray-400"
+                    className="w-6 h-6"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     aria-hidden="true"
+                    style={{ color: 'rgb(var(--muted-foreground))' }}
                   >
                     <path
                       strokeLinecap="round"
@@ -241,7 +256,9 @@ export function Bank({ onBack }: BankPageProps) {
                     />
                   </svg>
                 </div>
-                <p className="text-sm text-gray-500 mb-3">{t('noLinkedAccounts')}</p>
+                <p className="text-sm mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  {t('noLinkedAccounts')}
+                </p>
                 <Button size="sm" onClick={() => setShowLinkModal(true)}>
                   {t('linkFirstAccount')}
                 </Button>
@@ -260,7 +277,9 @@ export function Bank({ onBack }: BankPageProps) {
         ) : activeTab === 'transfer' ? (
           linkedAccounts.length < 2 ? (
             <Card padding="lg" className="text-center">
-              <p className="text-sm text-gray-500">{t('needTwoAccounts')}</p>
+              <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {t('needTwoAccounts')}
+              </p>
             </Card>
           ) : (
             <TransferForm

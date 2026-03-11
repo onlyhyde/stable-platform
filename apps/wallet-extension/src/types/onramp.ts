@@ -5,7 +5,7 @@ import type { Address } from 'viem'
  */
 
 export type FiatCurrency = 'USD' | 'EUR' | 'GBP' | 'KRW' | 'JPY'
-export type CryptoCurrency = 'ETH' | 'USDC' | 'USDT' | 'DAI'
+export type CryptoCurrency = 'WKRC' | 'USDC' | 'USDT' | 'DAI'
 export type PaymentMethod = 'bank_transfer' | 'card' | 'wire'
 export type OrderStatus =
   | 'pending'

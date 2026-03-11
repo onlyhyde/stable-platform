@@ -145,14 +145,13 @@ export function getMultiModeController(): MultiModeTransactionController {
       const signerAddr = resolveSignerAddress(address)
 
       if (isDelegatedSender(address)) {
-        // EIP-7702: signMessage adds EIP-191 prefix
-        // Kernel _verify7702Signature: ECDSA.recover(toEthSignedMessageHash(userOpHash), sig)
+        // EIP-7702: Kernel calls _verify7702Signature(toEthSignedMessageHash(userOpHash), sig)
+        // Must sign with EIP-191 prefix (signMessage adds the prefix)
         return keyringController.signMessage(signerAddr, userOpHash)
       }
 
-      // Smart Account: raw ECDSA sign without prefix
-      // Kernel ECDSAValidator: ECDSA.recover(userOpHash, sig) == owner
-      // signAuthorizationHash uses account.sign({ hash }) internally — no prefix added
+      // Smart Account: raw ECDSA sign for MultiMode callback
+      // The main signUserOp path uses EIP-712 signTypedData instead
       const result = await keyringController.signAuthorizationHash(signerAddr, userOpHash)
       return result.signature
     },
@@ -319,15 +318,15 @@ export async function signUserOp(
   const signerAddr = resolveSignerAddress(userOp.sender)
 
   if (isDelegatedSender(userOp.sender)) {
-    // EIP-7702 path: Kernel uses _verify7702Signature which expects
-    // ECDSA.recover(toEthSignedMessageHash(userOpHash), sig) == address(this)
-    // signMessage with raw hash adds the EIP-191 prefix automatically
+    // EIP-7702 path: Kernel validateUserOp calls
+    //   _verify7702Signature(ECDSA.toEthSignedMessageHash(userOpHash), userOpSig)
+    // which then does ECDSA.recover(wrappedHash, sig) == address(this)
+    // So we must sign with EIP-191 prefix (signMessage adds "\x19Ethereum Signed Message:\n32")
     const userOpHash = getUserOperationHash(userOp, entryPoint, BigInt(chainId))
     logger.info(
       `[signUserOp] EIP-7702 path: sender=${userOp.sender.slice(0, 10)}..., signerAddr=${signerAddr.slice(0, 10)}..., userOpHash=${userOpHash.slice(0, 14)}...`
     )
 
-    // Show EIP-191 signing data and wait for user confirmation
     await approvalController.requestSignature(origin, 'personal_sign', signerAddr, userOpHash)
 
     return keyringController.signMessage(signerAddr, userOpHash)

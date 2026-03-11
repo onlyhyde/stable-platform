@@ -519,9 +519,9 @@ export class KeyringController {
 
   /**
    * Sign a raw hash (without personal_sign prefix)
-   * Used for EIP-7702 authorization signatures
+   * Used for EIP-7702 authorization and UserOp signatures
    */
-  private async signRawHash(address: Address, hash: Hex): Promise<Hex> {
+  async signRawHash(address: Address, hash: Hex): Promise<Hex> {
     if (!vault.isUnlocked()) {
       throw new Error('Vault is locked')
     }

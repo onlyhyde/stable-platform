@@ -1,33 +1,49 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSelectedNetwork } from '../hooks/useNetworkCurrency'
 import { useWalletStore } from '../hooks/useWalletStore'
 
 export function Receive() {
   const { t: tc } = useTranslation('common')
   const { selectedAccount, accounts } = useWalletStore()
+  const selectedNetwork = useSelectedNetwork()
+  const networkName = selectedNetwork?.name
   const [copied, setCopied] = useState(false)
+  const [copyError, setCopyError] = useState(false)
 
   const currentAccount = accounts.find((a) => a.address === selectedAccount)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [qrFailed, setQrFailed] = useState(false)
 
   useEffect(() => {
     if (!selectedAccount) return
+    setQrFailed(false)
+    setQrDataUrl(null)
     QRCode.toDataURL(selectedAccount, {
       width: 192,
       margin: 1,
       color: { dark: '#000000', light: '#ffffff' },
     })
       .then(setQrDataUrl)
-      .catch(() => setQrDataUrl(null))
+      .catch(() => {
+        setQrDataUrl(null)
+        setQrFailed(true)
+      })
   }, [selectedAccount])
 
   async function copyAddress() {
     if (!selectedAccount) return
 
-    await navigator.clipboard.writeText(selectedAccount)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(selectedAccount)
+      setCopied(true)
+      setCopyError(false)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopyError(true)
+      setTimeout(() => setCopyError(false), 3000)
+    }
   }
 
   if (!currentAccount) {
@@ -58,6 +74,27 @@ export function Receive() {
         >
           {qrDataUrl ? (
             <img src={qrDataUrl} alt="Wallet address QR code" className="w-full h-full" />
+          ) : qrFailed ? (
+            <div className="text-center p-4">
+              <svg
+                className="w-16 h-16 mx-auto"
+                style={{ color: 'rgb(var(--destructive, 239 68 68))' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+              <p className="text-xs mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {tc('qrCodeFailed', 'Failed to generate QR code')}
+              </p>
+            </div>
           ) : (
             <div className="text-center p-4">
               <svg
@@ -95,10 +132,28 @@ export function Receive() {
         type="button"
         onClick={copyAddress}
         className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 ${
-          copied ? 'badge-success' : 'btn-primary'
+          copyError ? 'badge-destructive' : copied ? 'badge-success' : 'btn-primary'
         }`}
       >
-        {copied ? (
+        {copyError ? (
+          <>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+            {tc('copyFailed', 'Copy failed')}
+          </>
+        ) : copied ? (
           <>
             <svg
               className="w-5 h-5"
@@ -137,11 +192,27 @@ export function Receive() {
         )}
       </button>
 
+      {/* Network Badge */}
+      {networkName && (
+        <div className="flex justify-center mt-4 mb-2">
+          <span
+            className="text-xs font-medium px-3 py-1 rounded-full"
+            style={{
+              backgroundColor: 'rgb(var(--primary) / 0.1)',
+              color: 'rgb(var(--primary))',
+            }}
+          >
+            {networkName}
+          </span>
+        </div>
+      )}
+
       {/* Info */}
-      <p className="text-xs text-center mt-4" style={{ color: 'rgb(var(--muted-foreground))' }}>
+      <p className="text-xs text-center mt-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
         {tc(
-          'receiveWarning',
-          'Only send assets on the same network. Sending to a different network may result in loss of funds.'
+          'receiveWarningNetwork',
+          'Only send assets on {{network}}. Sending to a different network may result in loss of funds.',
+          { network: networkName || tc('currentNetwork', 'the current network') }
         )}
       </p>
     </div>

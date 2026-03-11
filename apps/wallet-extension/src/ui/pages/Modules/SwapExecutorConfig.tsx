@@ -37,11 +37,11 @@ const SLIPPAGE_PRESETS = [
 ]
 
 const DAILY_LIMIT_PRESETS = [
-  { label: '1 ETH', value: '1' },
-  { label: '5 ETH', value: '5' },
-  { label: '10 ETH', value: '10' },
-  { label: '50 ETH', value: '50' },
-  { label: '100 ETH', value: '100' },
+  { label: '1 WKRC', value: '1' },
+  { label: '5 WKRC', value: '5' },
+  { label: '10 WKRC', value: '10' },
+  { label: '50 WKRC', value: '50' },
+  { label: '100 WKRC', value: '100' },
 ]
 
 // ============================================================================
@@ -268,7 +268,7 @@ export function SwapExecutorConfigUI({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">{t('dailyLimit')}</span>
-              <span className="font-medium">{form.dailyLimitEth} ETH</span>
+              <span className="font-medium">{form.dailyLimitEth} WKRC</span>
             </div>
           </div>
 
@@ -342,7 +342,7 @@ export function SwapExecutorDisplay({
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">{t('dailyLimitUsage')}</span>
           <span>
-            {formatEther(usedToday)} / {formatEther(dailyLimit)} ETH
+            {formatEther(usedToday)} / {formatEther(dailyLimit)} WKRC
           </span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">

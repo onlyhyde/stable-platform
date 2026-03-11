@@ -64,8 +64,10 @@ interface IndexerDataState {
   transactions: IndexedTransaction[]
   /** Token transfer history */
   tokenTransfers: TokenTransfer[]
-  /** Whether indexer is available for current network */
-  isIndexerAvailable: boolean
+  /** Whether indexer is available for current network (tokens) */
+  isTokenIndexerAvailable: boolean
+  /** Whether indexer is available for current network (transactions) */
+  isTxIndexerAvailable: boolean
   /** Loading states */
   isLoadingTokens: boolean
   isLoadingTransactions: boolean
@@ -74,11 +76,17 @@ interface IndexerDataState {
   hasMore: boolean
   /** Current page offset */
   offset: number
-  /** Error state */
-  error: string | null
+  /** Error state for token balances */
+  tokenError: string | null
+  /** Error state for transaction history */
+  txError: string | null
 }
 
 interface UseIndexerDataReturn extends IndexerDataState {
+  /** Whether indexer is available (either tokens or txs succeeded) */
+  isIndexerAvailable: boolean
+  /** Combined error (txError takes priority for Activity page) */
+  error: string | null
   /** Refresh token balances */
   refreshTokenBalances: () => Promise<void>
   /** Refresh transaction history */
@@ -101,13 +109,15 @@ export function useIndexerData(): UseIndexerDataReturn {
     tokenBalances: [],
     transactions: [],
     tokenTransfers: [],
-    isIndexerAvailable: false,
+    isTokenIndexerAvailable: false,
+    isTxIndexerAvailable: false,
     isLoadingTokens: false,
     isLoadingTransactions: false,
     isLoadingMore: false,
     hasMore: true,
     offset: 0,
-    error: null,
+    tokenError: null,
+    txError: null,
   })
 
   // Check if current network has indexer configured
@@ -122,7 +132,7 @@ export function useIndexerData(): UseIndexerDataReturn {
   const refreshTokenBalances = useCallback(async () => {
     if (!selectedAccount || !hasIndexer) return
 
-    setState((prev) => ({ ...prev, isLoadingTokens: true, error: null }))
+    setState((prev) => ({ ...prev, isLoadingTokens: true, tokenError: null }))
 
     try {
       const response = await chrome.runtime.sendMessage({
@@ -135,22 +145,22 @@ export function useIndexerData(): UseIndexerDataReturn {
         setState((prev) => ({
           ...prev,
           tokenBalances: response.payload.balances ?? [],
-          isIndexerAvailable: true,
+          isTokenIndexerAvailable: true,
           isLoadingTokens: false,
         }))
       } else {
         setState((prev) => ({
           ...prev,
-          isIndexerAvailable: false,
+          isTokenIndexerAvailable: false,
           isLoadingTokens: false,
-          error: response?.payload?.error ?? 'Failed to fetch token balances',
+          tokenError: response?.payload?.error ?? 'Failed to fetch token balances',
         }))
       }
     } catch (err) {
       setState((prev) => ({
         ...prev,
         isLoadingTokens: false,
-        error: err instanceof Error ? err.message : 'Failed to fetch token balances',
+        tokenError: err instanceof Error ? err.message : 'Failed to fetch token balances',
       }))
     }
   }, [selectedAccount, hasIndexer])
@@ -159,7 +169,7 @@ export function useIndexerData(): UseIndexerDataReturn {
   const refreshTransactions = useCallback(async () => {
     if (!selectedAccount || !hasIndexer) return
 
-    setState((prev) => ({ ...prev, isLoadingTransactions: true, error: null }))
+    setState((prev) => ({ ...prev, isLoadingTransactions: true, txError: null }))
 
     try {
       const response = await chrome.runtime.sendMessage({
@@ -174,7 +184,7 @@ export function useIndexerData(): UseIndexerDataReturn {
           ...prev,
           transactions: txs,
           tokenTransfers: response.payload.tokenTransfers ?? [],
-          isIndexerAvailable: true,
+          isTxIndexerAvailable: true,
           isLoadingTransactions: false,
           hasMore: txs.length >= PAGE_SIZE,
           offset: txs.length,
@@ -182,16 +192,16 @@ export function useIndexerData(): UseIndexerDataReturn {
       } else {
         setState((prev) => ({
           ...prev,
-          isIndexerAvailable: false,
+          isTxIndexerAvailable: false,
           isLoadingTransactions: false,
-          error: response?.payload?.error ?? 'Failed to fetch transactions',
+          txError: response?.payload?.error ?? 'Failed to fetch transactions',
         }))
       }
     } catch (err) {
       setState((prev) => ({
         ...prev,
         isLoadingTransactions: false,
-        error: err instanceof Error ? err.message : 'Failed to fetch transactions',
+        txError: err instanceof Error ? err.message : 'Failed to fetch transactions',
       }))
     }
   }, [selectedAccount, hasIndexer])
@@ -242,19 +252,27 @@ export function useIndexerData(): UseIndexerDataReturn {
         tokenBalances: [],
         transactions: [],
         tokenTransfers: [],
-        isIndexerAvailable: false,
+        isTokenIndexerAvailable: false,
+        isTxIndexerAvailable: false,
         isLoadingTokens: false,
         isLoadingTransactions: false,
         isLoadingMore: false,
         hasMore: true,
         offset: 0,
-        error: null,
+        tokenError: null,
+        txError: null,
       })
     }
   }, [selectedAccount, hasIndexer, refreshAll])
 
+  // Derive combined flags for backward compatibility
+  const isIndexerAvailable = state.isTokenIndexerAvailable || state.isTxIndexerAvailable
+  const error = state.txError || state.tokenError
+
   return {
     ...state,
+    isIndexerAvailable,
+    error,
     refreshTokenBalances,
     refreshTransactions,
     loadMoreTransactions,

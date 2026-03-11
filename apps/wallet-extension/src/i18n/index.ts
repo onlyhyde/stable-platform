@@ -4,8 +4,10 @@ import { initReactI18next } from 'react-i18next'
 // English
 import enActivity from './locales/en/activity.json'
 import enApproval from './locales/en/approval.json'
+import enBank from './locales/en/bank.json'
 import enBuy from './locales/en/buy.json'
 import enCommon from './locales/en/common.json'
+import enDashboard from './locales/en/dashboard.json'
 import enHome from './locales/en/home.json'
 import enLock from './locales/en/lock.json'
 import enModules from './locales/en/modules.json'
@@ -18,8 +20,10 @@ import enTx from './locales/en/tx.json'
 // Korean
 import koActivity from './locales/ko/activity.json'
 import koApproval from './locales/ko/approval.json'
+import koBank from './locales/ko/bank.json'
 import koBuy from './locales/ko/buy.json'
 import koCommon from './locales/ko/common.json'
+import koDashboard from './locales/ko/dashboard.json'
 import koHome from './locales/ko/home.json'
 import koLock from './locales/ko/lock.json'
 import koModules from './locales/ko/modules.json'
@@ -31,6 +35,7 @@ import koTx from './locales/ko/tx.json'
 
 const resources = {
   en: {
+    bank: enBank,
     common: enCommon,
     home: enHome,
     lock: enLock,
@@ -43,8 +48,10 @@ const resources = {
     swap: enSwap,
     buy: enBuy,
     tx: enTx,
+    dashboard: enDashboard,
   },
   ko: {
+    bank: koBank,
     common: koCommon,
     home: koHome,
     lock: koLock,
@@ -57,6 +64,7 @@ const resources = {
     swap: koSwap,
     buy: koBuy,
     tx: koTx,
+    dashboard: koDashboard,
   },
 }
 
@@ -93,6 +101,7 @@ export async function initI18n() {
     fallbackLng: 'en',
     defaultNS: 'common',
     ns: [
+      'bank',
       'common',
       'home',
       'lock',
@@ -105,6 +114,7 @@ export async function initI18n() {
       'swap',
       'buy',
       'tx',
+      'dashboard',
     ],
     interpolation: {
       escapeValue: false,

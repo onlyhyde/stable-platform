@@ -1,3 +1,5 @@
+import { validateMnemonic as validateBip39Mnemonic } from '@scure/bip39'
+import { wordlist as english } from '@scure/bip39/wordlists/english'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, TextArea } from '../../components/common'
@@ -15,10 +17,30 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
   const [mnemonic, setMnemonic] = useState('')
   const [validationError, setValidationError] = useState('')
 
-  const validateMnemonic = (phrase: string): boolean => {
+  const validateMnemonicInput = (phrase: string): string | null => {
     const words = phrase.trim().split(/\s+/)
-    // Valid mnemonics are 12 or 24 words
-    return words.length === 12 || words.length === 24
+
+    if (words.length !== 12 && words.length !== 24) {
+      return t('invalidSeedPhrase')
+    }
+
+    // Check each word against BIP-39 English wordlist
+    const invalidWords = words.filter((word) => !english.includes(word))
+    if (invalidWords.length > 0) {
+      return t('invalidWords', {
+        words: invalidWords.join(', '),
+        defaultValue: `Invalid words: ${invalidWords.join(', ')}`,
+      })
+    }
+
+    // Validate checksum via BIP-39
+    if (!validateBip39Mnemonic(phrase.trim().toLowerCase(), english)) {
+      return t('invalidChecksum', {
+        defaultValue: 'Invalid seed phrase checksum. Please check your words.',
+      })
+    }
+
+    return null
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -26,9 +48,10 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
     setValidationError('')
 
     const cleanedMnemonic = mnemonic.trim().toLowerCase()
+    const validationResult = validateMnemonicInput(cleanedMnemonic)
 
-    if (!validateMnemonic(cleanedMnemonic)) {
-      setValidationError(t('invalidSeedPhrase'))
+    if (validationResult) {
+      setValidationError(validationResult)
       return
     }
 
@@ -102,7 +125,7 @@ export function ImportWallet({ onImport, onBack, isLoading, error }: ImportWalle
                 />
               </svg>
               <div className="text-sm">
-                <p className="font-medium" style={{ color: 'rgb(234 179 8)' }}>
+                <p className="font-medium" style={{ color: 'rgb(var(--warning))' }}>
                   {t('importOnTrustedDevices')}
                 </p>
                 <p style={{ color: 'rgb(var(--warning) / 0.8)' }}>{t('neverEnterOnWebsites')}</p>

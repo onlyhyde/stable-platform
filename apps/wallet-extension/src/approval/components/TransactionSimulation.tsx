@@ -177,7 +177,7 @@ export function TransactionSimulation({ simulation }: SimulationProps) {
               />
             </svg>
             <div>
-              <p className="text-sm font-medium" style={{ color: 'rgb(234 179 8)' }}>
+              <p className="text-sm font-medium" style={{ color: 'rgb(var(--warning, 234 179 8))' }}>
                 {t('unknownFunction')}
               </p>
               <p className="text-xs" style={{ color: 'rgb(var(--warning) / 0.8)' }}>

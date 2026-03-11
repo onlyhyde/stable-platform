@@ -12,11 +12,28 @@ jest.mock('qrcode', () => ({
 
 const TEST_ADDRESS = '0x1234567890abcdef1234567890abcdef12345678'
 
+const defaultNetworks = [
+  {
+    name: 'Ethereum Mainnet',
+    chainId: 1,
+    rpcUrl: 'https://eth.example.com',
+    currency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+  },
+]
+
 function setupStore(overrides: Record<string, unknown> = {}) {
-  ;(useWalletStore as unknown as jest.Mock).mockReturnValue({
-    selectedAccount: TEST_ADDRESS,
-    accounts: [{ address: TEST_ADDRESS, name: 'Account 1', type: 'eoa' }],
-    ...overrides,
+  ;(useWalletStore as unknown as jest.Mock).mockImplementation((selector?: unknown) => {
+    const state = {
+      selectedAccount: TEST_ADDRESS,
+      accounts: [{ address: TEST_ADDRESS, name: 'Account 1', type: 'eoa' }],
+      networks: defaultNetworks,
+      selectedChainId: 1,
+      ...overrides,
+    }
+    if (typeof selector === 'function') {
+      return (selector as (s: typeof state) => unknown)(state)
+    }
+    return state
   })
 }
 
@@ -107,7 +124,7 @@ describe('Receive', () => {
     render(<Receive />)
     expect(
       screen.getByText(
-        'Only send assets on the same network. Sending to a different network may result in loss of funds.'
+        'Only send assets on Ethereum Mainnet. Sending to a different network may result in loss of funds.'
       )
     ).toBeTruthy()
   })

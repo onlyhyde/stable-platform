@@ -43,21 +43,35 @@ export function App() {
   useEffect(() => {
     let isSyncing = false
 
+    const doSync = async () => {
+      if (isSyncing) return
+      isSyncing = true
+      try {
+        await syncWithBackground()
+      } finally {
+        isSyncing = false
+      }
+    }
+
     const handleMessage = async (message: { type: string; id?: string }) => {
       // Only react to background-originated pushes (bg-push- prefix)
-      if (message.type === 'STATE_UPDATE' && message.id?.startsWith('bg-push-') && !isSyncing) {
-        isSyncing = true
-        try {
-          await syncWithBackground()
-        } finally {
-          isSyncing = false
-        }
+      if (message.type === 'STATE_UPDATE' && message.id?.startsWith('bg-push-')) {
+        await doSync()
+      }
+    }
+
+    // Re-sync when page becomes visible (sidepanel may miss messages while hidden)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        doSync()
       }
     }
 
     chrome.runtime?.onMessage?.addListener(handleMessage)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => {
       chrome.runtime?.onMessage?.removeListener(handleMessage)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [syncWithBackground])
 
@@ -88,6 +102,7 @@ export function App() {
       <div className={sizeClass} style={{ backgroundColor: 'rgb(var(--background))' }}>
         <Lock
           onUnlock={async (password) => {
+            setError(null)
             const success = await unlockWallet(password)
             if (!success) {
               throw new Error('Invalid password')

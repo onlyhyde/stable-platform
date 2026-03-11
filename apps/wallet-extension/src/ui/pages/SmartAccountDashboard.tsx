@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Address } from 'viem'
 import { useWalletStore } from '../hooks/useWalletStore'
@@ -11,7 +12,7 @@ import { useSmartAccountInfo } from './Modules/hooks/useSmartAccountInfo'
  * and quick actions for module management.
  */
 export function SmartAccountDashboard() {
-  const { t } = useTranslation('tx')
+  const { t } = useTranslation('dashboard')
   const { selectedAccount, accounts, setPage } = useWalletStore()
   const currentAccount = accounts.find((a) => a.address === selectedAccount)
   const { info, isLoading: isInfoLoading } = useSmartAccountInfo(
@@ -21,6 +22,7 @@ export function SmartAccountDashboard() {
     selectedAccount as Address | undefined
   )
 
+  const [delegationCopied, setDelegationCopied] = useState(false)
   const isLoading = isInfoLoading || isModulesLoading
 
   // Count modules by type
@@ -72,7 +74,7 @@ export function SmartAccountDashboard() {
           </svg>
         </button>
         <h1 className="text-lg font-semibold" style={{ color: 'rgb(var(--foreground))' }}>
-          {t('dashboardTitle')}
+          {t('title')}
         </h1>
       </div>
 
@@ -129,27 +131,50 @@ export function SmartAccountDashboard() {
             </div>
             <button
               type="button"
-              onClick={() => {
-                navigator.clipboard.writeText(info.delegationTarget!)
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(info.delegationTarget!)
+                  setDelegationCopied(true)
+                  setTimeout(() => setDelegationCopied(false), 2000)
+                } catch {
+                  // clipboard write failed
+                }
               }}
               className="p-1.5 rounded-lg transition-colors"
-              style={{ color: 'rgb(var(--primary))' }}
+              style={{ color: delegationCopied ? 'rgb(var(--success))' : 'rgb(var(--primary))' }}
               title={t('copyDelegationAddress')}
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
+              {delegationCopied ? (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+              )}
             </button>
           </div>
         </div>

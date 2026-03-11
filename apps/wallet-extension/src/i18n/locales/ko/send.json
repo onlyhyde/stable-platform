@@ -12,12 +12,12 @@
   "transactionMode": "트랜잭션 모드",
   "directEoa": "직접 (EOA)",
   "standardTransaction": "표준 트랜잭션",
-  "directEoaDesc": "지갑에서 직접 표준 이더리움 트랜잭션을 보냅니다. 가장 간단하고 호환성이 높은 방법입니다.",
+  "directEoaDesc": "지갑에서 직접 표준 트랜잭션을 보냅니다. 가장 간단하고 호환성이 높은 방법입니다.",
   "maxCompatibility": "최대 호환성",
   "lowestGasOverhead": "최소 가스 오버헤드",
   "worksEverywhere": "모든 곳에서 작동",
-  "ethForGas": "ETH로 가스비 지불",
-  "payGasWithEth": "ETH로 가스비 지불",
+  "ethForGas": "WKRC로 가스비 지불",
+  "payGasWithEth": "WKRC로 가스비 지불",
 
   "setupSmartAccount": "스마트 계정 설정",
   "upgradeToSmartAccount": "스마트 계정으로 업그레이드",
@@ -71,8 +71,8 @@
   "cost": "비용:",
   "yourBalance": "잔액:",
   "insufficientBalance": "가스비를 위한 {{symbol}} 잔액이 부족합니다",
-  "dailyLimitRemaining": "일일 한도 남음: {{amount}} ETH",
-  "perTxLimit": "트랜잭션당 한도: {{amount}} ETH",
+  "dailyLimitRemaining": "일일 한도 남음: {{amount}} WKRC",
+  "perTxLimit": "트랜잭션당 한도: {{amount}} WKRC",
   "gasSponsorshipActive": "가스 후원 활성화됨",
   "loadingGasOptions": "가스 옵션 로딩 중...",
 
@@ -99,5 +99,6 @@
   "waitingConfirmation": "확인 대기 중",
   "confirmedInBlock": "블록 #{{block}}에서 확인됨",
   "transactionConfirmed": "트랜잭션 확인됨",
-  "waitingForBlock": "블록에 포함되기를 기다리는 중..."
+  "waitingForBlock": "블록에 포함되기를 기다리는 중...",
+  "sendingToken": "{{symbol}} 전송"
 }

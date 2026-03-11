@@ -11,6 +11,7 @@ import type {
 import { Button, Card, Input, Modal, Select, Spinner } from '../components/common'
 import { OrderCard, PaymentMethodSelector, QuoteCard } from '../components/onramp'
 import { useWalletStore } from '../hooks/useWalletStore'
+import { getApiConfig } from '../../config'
 
 type ViewType = 'buy' | 'orders'
 
@@ -26,7 +27,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
   // Buy form state
   const [fiatAmount, setFiatAmount] = useState('')
   const [fiatCurrency, setFiatCurrency] = useState<FiatCurrency>('USD')
-  const [cryptoCurrency, setCryptoCurrency] = useState<CryptoCurrency>('ETH')
+  const [cryptoCurrency, setCryptoCurrency] = useState<CryptoCurrency>('WKRC')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('')
   const [selectedBankAccount, setSelectedBankAccount] = useState('')
 
@@ -52,12 +53,12 @@ export function BuyPage({ onBack }: BuyPageProps) {
   const [pendingOrder, setPendingOrder] = useState<OnRampOrder | null>(null)
 
   // Order polling for status updates
-  const [_isPollingOrder, setIsPollingOrder] = useState(false)
+  const [, setIsPollingOrder] = useState(false)
 
   // Supported currencies (loaded dynamically)
   const [supportedFiat, setSupportedFiat] = useState<FiatCurrency[]>([])
   const [supportedCrypto, setSupportedCrypto] = useState<CryptoCurrency[]>([])
-  const [_isLoadingCurrencies, setIsLoadingCurrencies] = useState(true)
+  const [, setIsLoadingCurrencies] = useState(true)
 
   const loadOrders = useCallback(async () => {
     setIsLoadingOrders(true)
@@ -96,7 +97,8 @@ export function BuyPage({ onBack }: BuyPageProps) {
       }
       setIsLoadingKyc(true)
       try {
-        const response = await fetch(`http://localhost:3002/api/v1/kyc/status/${selectedAccount}`)
+        const { onrampApiUrl } = getApiConfig()
+        const response = await fetch(`${onrampApiUrl}/kyc/status/${selectedAccount}`)
         if (response.ok) {
           const data = await response.json()
           setKycStatus(data.status ?? 'none')
@@ -112,7 +114,8 @@ export function BuyPage({ onBack }: BuyPageProps) {
     async function loadSupportedCurrencies() {
       setIsLoadingCurrencies(true)
       try {
-        const response = await fetch('http://localhost:3002/api/v1/supported-assets')
+        const { onrampApiUrl } = getApiConfig()
+        const response = await fetch(`${onrampApiUrl}/supported-assets`)
         if (response.ok) {
           const data = await response.json()
           if (data.fiatCurrencies?.length) setSupportedFiat(data.fiatCurrencies)
@@ -162,6 +165,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
     const checkExpiration = setInterval(() => {
       if (Date.now() > expiresAt) {
         setQuote(null)
+        setQuoteError(t('quoteExpired'))
         clearInterval(checkExpiration)
       }
     }, 1000)
@@ -239,13 +243,17 @@ export function BuyPage({ onBack }: BuyPageProps) {
 
   async function handleCancelOrder(orderId: string) {
     try {
-      await chrome.runtime.sendMessage({
+      const response = await chrome.runtime.sendMessage({
         type: 'CANCEL_ONRAMP_ORDER',
         payload: { orderId },
       })
+      if (response?.error) {
+        setQuoteError(response.error)
+        return
+      }
       await loadOrders()
     } catch {
-      // Handle error
+      setQuoteError(t('cancelOrderFailed'))
     }
   }
 
@@ -258,14 +266,14 @@ export function BuyPage({ onBack }: BuyPageProps) {
   }
 
   const CRYPTO_LABELS: Record<CryptoCurrency, string> = {
-    ETH: t('eth'),
+    WKRC: t('eth'),
     USDC: t('usdc'),
     USDT: t('usdt'),
     DAI: t('dai'),
   }
 
   const DEFAULT_FIAT: FiatCurrency[] = ['USD', 'EUR', 'GBP', 'KRW', 'JPY']
-  const DEFAULT_CRYPTO: CryptoCurrency[] = ['ETH', 'USDC', 'USDT', 'DAI']
+  const DEFAULT_CRYPTO: CryptoCurrency[] = ['WKRC', 'USDC', 'USDT', 'DAI']
 
   const fiatList = supportedFiat.length > 0 ? supportedFiat : DEFAULT_FIAT
   const cryptoList = supportedCrypto.length > 0 ? supportedCrypto : DEFAULT_CRYPTO
@@ -421,9 +429,13 @@ export function BuyPage({ onBack }: BuyPageProps) {
                 </div>
 
                 <div className="flex justify-center">
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                  >
                     <svg
-                      className="w-4 h-4 text-gray-400"
+                      className="w-4 h-4"
+                      style={{ color: 'rgb(var(--muted-foreground))' }}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -453,7 +465,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
                   onClick={handleGetQuote}
                   fullWidth
                   isLoading={isLoadingQuote}
-                  disabled={!fiatAmount || Number.parseFloat(fiatAmount) <= 0}
+                  disabled={!fiatAmount || Number.parseFloat(fiatAmount) <= 0 || kycStatus === 'rejected'}
                 >
                   {t('getQuote')}
                 </Button>
@@ -522,13 +534,17 @@ export function BuyPage({ onBack }: BuyPageProps) {
               </div>
             ) : orders.length === 0 ? (
               <Card padding="lg" className="text-center">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+                  style={{ backgroundColor: 'rgb(var(--secondary))' }}
+                >
                   <svg
-                    className="w-6 h-6 text-gray-400"
+                    className="w-6 h-6"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     aria-hidden="true"
+                    style={{ color: 'rgb(var(--muted-foreground))' }}
                   >
                     <path
                       strokeLinecap="round"
@@ -538,7 +554,9 @@ export function BuyPage({ onBack }: BuyPageProps) {
                     />
                   </svg>
                 </div>
-                <p className="text-sm text-gray-500 mb-3">{t('noOrders')}</p>
+                <p className="text-sm mb-3" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  {t('noOrders')}
+                </p>
                 <Button size="sm" onClick={() => setActiveView('buy')}>
                   {t('title')}
                 </Button>
@@ -568,14 +586,16 @@ export function BuyPage({ onBack }: BuyPageProps) {
       >
         {pendingOrder && (
           <div className="space-y-4">
-            <Card padding="md" variant="filled" className="bg-amber-50">
-              <p className="text-sm text-amber-800">{t('completePaymentWithin')}</p>
+            <Card padding="md" variant="filled" style={{ backgroundColor: 'rgb(var(--warning, 245 158 11) / 0.1)' }}>
+              <p className="text-sm" style={{ color: 'rgb(var(--warning, 245 158 11))' }}>
+                {t('completePaymentWithin')}
+              </p>
             </Card>
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t('amountToPay')}</span>
-                <span className="font-medium text-gray-900">
+                <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('amountToPay')}</span>
+                <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
                   {new Intl.NumberFormat('en-US', {
                     style: 'currency',
                     currency: pendingOrder.fiatCurrency,
@@ -583,18 +603,22 @@ export function BuyPage({ onBack }: BuyPageProps) {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t('reference')}</span>
-                <span className="font-mono text-gray-900">{pendingOrder.id.slice(0, 12)}</span>
+                <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('reference')}</span>
+                <span className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>
+                  {pendingOrder.id.slice(0, 12)}
+                </span>
               </div>
             </div>
 
             {pendingOrder.paymentMethod === 'bank_transfer' && (
               <Card padding="md">
-                <p className="text-xs text-gray-500 mb-2">{t('transferTo')}</p>
-                <div className="space-y-1 text-sm">
-                  <p className="text-gray-900">{t('bankName')}</p>
-                  <p className="text-gray-900">{t('bankAccount')}</p>
-                  <p className="text-gray-900">{t('bankRouting')}</p>
+                <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                  {t('transferTo')}
+                </p>
+                <div className="space-y-1 text-sm" style={{ color: 'rgb(var(--foreground))' }}>
+                  <p>{t('bankName')}</p>
+                  <p>{t('bankAccount')}</p>
+                  <p>{t('bankRouting')}</p>
                 </div>
               </Card>
             )}

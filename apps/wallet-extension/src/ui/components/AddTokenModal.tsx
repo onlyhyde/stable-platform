@@ -7,7 +7,7 @@
 
 import { useCallback, useState } from 'react'
 import type { Address } from 'viem'
-import { useAssets } from '../hooks'
+import { useAssets, useWalletStore } from '../hooks'
 import { Button } from './common/Button'
 import { Input } from './common/Input'
 import { Modal, ModalFooter } from './common/Modal'
@@ -23,6 +23,8 @@ interface TokenPreview {
   symbol: string
   name: string
   decimals: number
+  balance?: string
+  formattedBalance?: string
 }
 
 const isValidAddress = (address: string): boolean => {
@@ -31,6 +33,7 @@ const isValidAddress = (address: string): boolean => {
 
 export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
   const { addToken } = useAssets()
+  const { selectedAccount } = useWalletStore()
 
   const [tokenAddress, setTokenAddress] = useState('')
   const [symbol, setSymbol] = useState('')
@@ -47,7 +50,7 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
   /**
    * Fetch token metadata from contract
    */
-  const fetchTokenMetadata = useCallback(async (address: string) => {
+  const fetchTokenMetadata = useCallback(async (address: string, account: string | null) => {
     if (!isValidAddress(address)) {
       setError('Invalid token address')
       return
@@ -58,56 +61,39 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
     setTokenPreview(null)
 
     try {
-      // Call background to fetch token metadata
-      const _response = await chrome.runtime.sendMessage({
-        type: 'RPC_REQUEST',
-        id: `fetch-metadata-${Date.now()}`,
-        payload: {
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'wallet_getTokenMetadata',
-          params: [address],
-        },
-      })
-
-      // If wallet_getTokenMetadata is not implemented, try direct RPC calls
-      // This is a fallback - in production, the RPC handler should support this
-
-      // Fetch symbol
-      const symbolResponse = await chrome.runtime.sendMessage({
-        type: 'RPC_REQUEST',
-        id: `symbol-${Date.now()}`,
-        payload: {
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'eth_call',
-          params: [{ to: address, data: '0x95d89b41' }, 'latest'],
-        },
-      })
-
-      // Fetch name
-      const nameResponse = await chrome.runtime.sendMessage({
-        type: 'RPC_REQUEST',
-        id: `name-${Date.now()}`,
-        payload: {
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'eth_call',
-          params: [{ to: address, data: '0x06fdde03' }, 'latest'],
-        },
-      })
-
-      // Fetch decimals
-      const decimalsResponse = await chrome.runtime.sendMessage({
-        type: 'RPC_REQUEST',
-        id: `decimals-${Date.now()}`,
-        payload: {
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'eth_call',
-          params: [{ to: address, data: '0x313ce567' }, 'latest'],
-        },
-      })
+      // Fetch symbol, name, decimals via ERC-20 standard calls
+      const [symbolResponse, nameResponse, decimalsResponse] = await Promise.all([
+        chrome.runtime.sendMessage({
+          type: 'RPC_REQUEST',
+          id: `symbol-${Date.now()}`,
+          payload: {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'eth_call',
+            params: [{ to: address, data: '0x95d89b41' }, 'latest'],
+          },
+        }),
+        chrome.runtime.sendMessage({
+          type: 'RPC_REQUEST',
+          id: `name-${Date.now()}`,
+          payload: {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'eth_call',
+            params: [{ to: address, data: '0x06fdde03' }, 'latest'],
+          },
+        }),
+        chrome.runtime.sendMessage({
+          type: 'RPC_REQUEST',
+          id: `decimals-${Date.now()}`,
+          payload: {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'eth_call',
+            params: [{ to: address, data: '0x313ce567' }, 'latest'],
+          },
+        }),
+      ])
 
       // Decode responses
       const fetchedSymbol = decodeString(symbolResponse?.payload?.result)
@@ -121,11 +107,35 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
         return
       }
 
+      // Fetch balanceOf for current account
+      let balanceRaw: string | undefined
+      let formattedBal: string | undefined
+      if (account) {
+        const paddedAccount = account.toLowerCase().replace('0x', '').padStart(64, '0')
+        const balanceResponse = await chrome.runtime.sendMessage({
+          type: 'RPC_REQUEST',
+          id: `balanceOf-${Date.now()}`,
+          payload: {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'eth_call',
+            params: [{ to: address, data: `0x70a08231${paddedAccount}` }, 'latest'],
+          },
+        })
+
+        if (balanceResponse?.payload?.result && balanceResponse.payload.result !== '0x') {
+          balanceRaw = BigInt(balanceResponse.payload.result).toString()
+          formattedBal = formatTokenBalance(balanceRaw, fetchedDecimals)
+        }
+      }
+
       setTokenPreview({
         address: address as Address,
         symbol: fetchedSymbol || 'UNKNOWN',
         name: fetchedName || 'Unknown Token',
         decimals: fetchedDecimals,
+        balance: balanceRaw,
+        formattedBalance: formattedBal,
       })
 
       // Pre-fill fields
@@ -149,7 +159,7 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
 
     // Auto-fetch metadata when valid address is entered
     if (isValidAddress(value)) {
-      fetchTokenMetadata(value)
+      fetchTokenMetadata(value, selectedAccount)
     }
   }
 
@@ -264,8 +274,19 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
                 </p>
               </div>
             </div>
-            <div className="mt-3 text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              Decimals: {tokenPreview.decimals}
+            <div
+              className="mt-3 flex items-center justify-between text-xs"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
+              <span>Decimals: {tokenPreview.decimals}</span>
+              {tokenPreview.formattedBalance !== undefined && (
+                <span>
+                  Balance:{' '}
+                  <span style={{ color: 'rgb(var(--foreground))' }}>
+                    {tokenPreview.formattedBalance} {tokenPreview.symbol}
+                  </span>
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -396,6 +417,29 @@ export function AddTokenModal({ isOpen, onClose }: AddTokenModalProps) {
       </ModalFooter>
     </Modal>
   )
+}
+
+/**
+ * Format token balance for display
+ */
+function formatTokenBalance(balance: string, decimals: number): string {
+  const value = BigInt(balance)
+  const divisor = BigInt(10 ** decimals)
+  const whole = value / divisor
+  const remainder = value % divisor
+
+  if (remainder === 0n) {
+    return whole.toString()
+  }
+
+  const remainderStr = remainder.toString().padStart(decimals, '0')
+  const trimmed = remainderStr.replace(/0+$/, '').slice(0, 6)
+
+  if (trimmed === '') {
+    return whole.toString()
+  }
+
+  return `${whole}.${trimmed}`
 }
 
 /**

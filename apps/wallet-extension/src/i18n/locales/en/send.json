@@ -12,12 +12,12 @@
   "transactionMode": "Transaction Mode",
   "directEoa": "Direct (EOA)",
   "standardTransaction": "Standard transaction",
-  "directEoaDesc": "Send a standard Ethereum transaction directly from your wallet. This is the simplest and most compatible method.",
+  "directEoaDesc": "Send a standard transaction directly from your wallet. This is the simplest and most compatible method.",
   "maxCompatibility": "Maximum compatibility",
   "lowestGasOverhead": "Lowest gas overhead",
   "worksEverywhere": "Works everywhere",
-  "ethForGas": "ETH for gas",
-  "payGasWithEth": "Pay gas with ETH",
+  "ethForGas": "WKRC for gas",
+  "payGasWithEth": "Pay gas with WKRC",
 
   "setupSmartAccount": "Setup Smart Account",
   "upgradeToSmartAccount": "Upgrade to Smart Account",
@@ -71,8 +71,8 @@
   "cost": "Cost:",
   "yourBalance": "Your balance:",
   "insufficientBalance": "Insufficient {{symbol}} balance for gas",
-  "dailyLimitRemaining": "Daily limit remaining: {{amount}} ETH",
-  "perTxLimit": "Per-transaction limit: {{amount}} ETH",
+  "dailyLimitRemaining": "Daily limit remaining: {{amount}} WKRC",
+  "perTxLimit": "Per-transaction limit: {{amount}} WKRC",
   "gasSponsorshipActive": "Gas Sponsorship Active",
   "loadingGasOptions": "Loading gas options...",
 
@@ -99,5 +99,6 @@
   "waitingConfirmation": "Waiting for confirmation",
   "confirmedInBlock": "Confirmed in block #{{block}}",
   "transactionConfirmed": "Transaction Confirmed",
-  "waitingForBlock": "Waiting to be included in a block..."
+  "waitingForBlock": "Waiting to be included in a block...",
+  "sendingToken": "Sending {{symbol}}"
 }

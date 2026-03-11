@@ -10,8 +10,8 @@ export const DEFAULT_NETWORKS: Network[] = [
     rpcUrl: 'http://127.0.0.1:8545',
     bundlerUrl: 'http://127.0.0.1:8545',
     currency: {
-      name: 'Ether',
-      symbol: 'ETH',
+      name: 'WKRC Coin',
+      symbol: 'WKRC',
       decimals: 18,
     },
     isTestnet: true,

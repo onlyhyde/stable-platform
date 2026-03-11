@@ -76,7 +76,7 @@ const SEVERITY_STYLES: Record<
   medium: {
     bg: 'rgb(234 179 8 / 0.1)',
     border: 'rgb(234 179 8 / 0.3)',
-    icon: 'rgb(234 179 8)',
+    icon: 'rgb(var(--warning, 234 179 8))',
     text: 'rgb(234 179 8 / 0.9)',
     labelKey: 'severityWarning',
   },

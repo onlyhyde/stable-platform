@@ -32,7 +32,7 @@ interface SwapEstimate {
  */
 export function SwapPage() {
   const { t } = useTranslation('swap')
-  const { selectedAccount, accounts, balances, setPage } = useWalletStore()
+  const { selectedAccount, accounts, balances, setPage, syncWithBackground } = useWalletStore()
   const { tokens: assetTokens } = useAssets()
   const currentNetwork = useSelectedNetwork()
   const { symbol: nativeSymbol } = useNetworkCurrency()
@@ -247,6 +247,8 @@ export function SwapPage() {
       // Reset form after success
       setForm((prev) => ({ ...prev, fromAmount: '' }))
       setEstimate(null)
+      // Refresh balances after successful swap
+      syncWithBackground().catch(() => {})
     } catch (err) {
       setSwapError(err instanceof Error ? err.message : t('swapFailed'))
     } finally {
@@ -255,7 +257,7 @@ export function SwapPage() {
   }
 
   const fromBalance = getFromBalance()
-  const isSmartAccount = currentAccount?.type === 'smart'
+  const isSmartAccount = currentAccount?.type !== 'eoa'
   const canSwap =
     isSmartAccount && !!swapExecutorAddress && !!form.fromAmount && !!form.toToken && !isSwapping
 
@@ -397,6 +399,9 @@ export function SwapPage() {
             }}
           >
             <option value="">{t('selectToken')}</option>
+            {nativeSymbol !== form.fromToken && (
+              <option value={nativeSymbol}>{nativeSymbol}</option>
+            )}
             {assetTokens
               .filter((t) => t.symbol !== form.fromToken)
               .map((t) => (
@@ -449,7 +454,7 @@ export function SwapPage() {
                       : 'rgb(var(--muted-foreground))',
               }}
             >
-              <span>{t('priceImpact', 'Price Impact')}</span>
+              <span>{t('priceImpact')}</span>
               <span>{estimate.priceImpact}%</span>
             </div>
           )}

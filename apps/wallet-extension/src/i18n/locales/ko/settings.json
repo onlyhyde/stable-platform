@@ -13,7 +13,7 @@
   "bundlerUrlPlaceholder": "선택사항, 기본값: RPC URL",
   "paymasterUrlLabel": "페이마스터 URL",
   "currencySymbolLabel": "통화 심볼",
-  "currencySymbolPlaceholder": "예: ETH, MATIC",
+  "currencySymbolPlaceholder": "예: WKRC, MATIC",
   "explorerUrlLabel": "블록 탐색기 URL",
   "explorerUrlPlaceholder": "선택사항",
   "indexerUrlLabel": "인덱서 URL",

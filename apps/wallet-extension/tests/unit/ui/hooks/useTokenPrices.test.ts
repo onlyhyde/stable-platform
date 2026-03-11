@@ -130,14 +130,14 @@ describe('useTokenPrices', () => {
     expect(getSendMessage()).toHaveBeenCalledTimes(callCount)
   })
 
-  it('should return null for totalValueUsd', () => {
+  it('should not include totalValueUsd in return value', () => {
     getSendMessage().mockResolvedValue({
       payload: { prices: { ETH: 2500 } },
     })
 
     const { result } = renderHook(() => useTokenPrices(SYMBOLS_ETH))
 
-    // totalValueUsd is always null in current implementation
-    expect(result.current.totalValueUsd).toBeNull()
+    // totalValueUsd was removed from the hook return value
+    expect('totalValueUsd' in result.current).toBe(false)
   })
 })

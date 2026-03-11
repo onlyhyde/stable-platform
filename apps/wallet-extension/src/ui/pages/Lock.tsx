@@ -4,16 +4,18 @@ import { Button, Card, Input } from '../components/common'
 
 interface LockProps {
   onUnlock: (password: string) => Promise<void>
+  onResetWallet?: () => void
   error?: string
 }
 
-export function Lock({ onUnlock, error }: LockProps) {
+export function Lock({ onUnlock, onResetWallet, error }: LockProps) {
   const { t } = useTranslation('lock')
   const { t: tc } = useTranslation('common')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [localError, setLocalError] = useState('')
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,7 +60,10 @@ export function Lock({ onUnlock, error }: LockProps) {
           <Input
             type={showPassword ? 'text' : 'password'}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              if (localError) setLocalError('')
+            }}
             placeholder={t('enterPassword')}
             error={localError || error}
             autoFocus
@@ -115,15 +120,37 @@ export function Lock({ onUnlock, error }: LockProps) {
         </Button>
       </form>
 
-      <button type="button" className="mt-6 text-sm" style={{ color: 'rgb(var(--primary))' }}>
+      <button
+        type="button"
+        className="mt-6 text-sm"
+        style={{ color: 'rgb(var(--primary))' }}
+        onClick={() => setShowResetConfirm((prev) => !prev)}
+      >
         {t('forgotPassword')}
       </button>
 
-      <Card variant="filled" padding="sm" className="mt-8 max-w-sm">
-        <p className="text-xs text-center" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          {t('forgotPasswordHint')}
-        </p>
-      </Card>
+      {showResetConfirm ? (
+        <Card variant="filled" padding="md" className="mt-4 max-w-sm">
+          <p className="text-xs mb-3" style={{ color: 'rgb(var(--destructive))' }}>
+            {t('resetWarning')}
+          </p>
+          <Button
+            variant="danger"
+            size="sm"
+            fullWidth
+            onClick={onResetWallet}
+            disabled={!onResetWallet}
+          >
+            {t('resetWallet')}
+          </Button>
+        </Card>
+      ) : (
+        <Card variant="filled" padding="sm" className="mt-8 max-w-sm">
+          <p className="text-xs text-center" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            {t('forgotPasswordHint')}
+          </p>
+        </Card>
+      )}
     </div>
   )
 }

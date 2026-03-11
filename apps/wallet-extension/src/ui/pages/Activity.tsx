@@ -38,10 +38,11 @@ export function Activity() {
   const {
     transactions: indexedTransactions,
     isIndexerAvailable,
+    isTxIndexerAvailable,
     isLoadingTransactions,
     isLoadingMore,
     hasMore,
-    error: indexerError,
+    txError,
     loadMoreTransactions,
     refreshTransactions,
   } = useIndexerData()
@@ -62,15 +63,20 @@ export function Activity() {
     return () => clearInterval(timer)
   }, [pendingTransactions, syncWithBackground])
 
-  // Merge local pending txs with indexer history, deduplicating by txHash
+  // Merge local pending txs with indexer history, deduplicating by txHash and userOpHash
   const allTransactions = useMemo(() => {
     const localTxs = [...pendingTransactions, ...history]
     const indexedDisplayTxs = indexedTransactions.map(toDisplayTransaction)
 
-    // Build a set of txHashes from local txs so local versions take priority
-    const localHashes = new Set(
-      localTxs.filter((tx) => tx.txHash).map((tx) => tx.txHash!.toLowerCase())
-    )
+    // Build sets of both txHash and userOpHash from local txs so local versions take priority.
+    // For userOp transactions, the initial txHash may be the userOpHash until the bundler
+    // resolves the actual on-chain txHash. The indexer uses the real txHash, so we need
+    // to match both to prevent duplicate entries.
+    const localHashes = new Set<string>()
+    for (const tx of localTxs) {
+      if (tx.txHash) localHashes.add(tx.txHash.toLowerCase())
+      if (tx.userOpHash) localHashes.add(tx.userOpHash.toLowerCase())
+    }
 
     const deduplicatedIndexed = indexedDisplayTxs.filter(
       (tx) => !tx.txHash || !localHashes.has(tx.txHash.toLowerCase())
@@ -160,8 +166,8 @@ export function Activity() {
         </button>
       </div>
 
-      {/* Indexer unavailable info */}
-      {!isIndexerAvailable && !isLoadingTransactions && (
+      {/* Indexer unavailable info — only when tx indexer specifically failed */}
+      {!isTxIndexerAvailable && !isLoadingTransactions && (
         <div
           className="rounded-lg px-3 py-2 mb-4 text-xs"
           style={{
@@ -173,8 +179,8 @@ export function Activity() {
         </div>
       )}
 
-      {/* Error state */}
-      {indexerError && (
+      {/* Error state — only show tx-specific errors */}
+      {txError && (
         <div
           className="rounded-lg px-3 py-2 mb-4 text-xs flex items-center justify-between"
           style={{
@@ -263,7 +269,7 @@ export function Activity() {
           ))}
 
           {/* Load More button */}
-          {isIndexerAvailable && hasMore && (
+          {isTxIndexerAvailable && hasMore && (
             <div className="text-center pt-2">
               <button
                 type="button"

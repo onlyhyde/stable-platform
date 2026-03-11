@@ -29,7 +29,7 @@ export function Settings() {
     return accounts.find((a) => a.address === selectedAccount) ?? null
   }, [accounts, selectedAccount])
 
-  const isSmartAccount = currentAccount?.type === 'smart'
+  const isSmartAccount = currentAccount?.type !== 'eoa'
 
   const [metaMaskMode, setMetaMaskMode] = useState(false)
   const [autoLockMinutes, setAutoLockMinutes] = useState(5)

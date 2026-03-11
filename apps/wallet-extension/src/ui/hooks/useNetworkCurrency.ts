@@ -18,8 +18,8 @@ export interface NetworkCurrency {
 }
 
 const DEFAULT_CURRENCY: NetworkCurrency = {
-  symbol: 'ETH',
-  name: 'Ethereum',
+  symbol: 'WKRC',
+  name: 'StableNet KRC',
   decimals: 18,
 }
 

@@ -13,7 +13,7 @@
   "bundlerUrlPlaceholder": "optional, defaults to RPC URL",
   "paymasterUrlLabel": "Paymaster URL",
   "currencySymbolLabel": "Currency Symbol",
-  "currencySymbolPlaceholder": "e.g., ETH, MATIC",
+  "currencySymbolPlaceholder": "e.g., WKRC, MATIC",
   "explorerUrlLabel": "Block Explorer URL",
   "explorerUrlPlaceholder": "optional",
   "indexerUrlLabel": "Indexer URL",

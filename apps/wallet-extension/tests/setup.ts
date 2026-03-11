@@ -5,8 +5,10 @@ import { TextDecoder, TextEncoder } from 'util'
 // Import English locale files for i18n mock
 import enActivity from '../src/i18n/locales/en/activity.json'
 import enApproval from '../src/i18n/locales/en/approval.json'
+import enBank from '../src/i18n/locales/en/bank.json'
 import enBuy from '../src/i18n/locales/en/buy.json'
 import enCommon from '../src/i18n/locales/en/common.json'
+import enDashboard from '../src/i18n/locales/en/dashboard.json'
 import enHome from '../src/i18n/locales/en/home.json'
 import enLock from '../src/i18n/locales/en/lock.json'
 import enModules from '../src/i18n/locales/en/modules.json'
@@ -30,15 +32,20 @@ const enResources: Record<string, Record<string, string>> = {
   modules: enModules,
   swap: enSwap,
   buy: enBuy,
+  bank: enBank,
+  dashboard: enDashboard,
   tx: enTx,
 }
 
 function createTFunction(ns: string) {
-  return (key: string, params?: Record<string, unknown>) => {
+  return (key: string, defaultValueOrParams?: string | Record<string, unknown>, params?: Record<string, unknown>) => {
     const resource = enResources[ns] ?? enResources.common
     let value = resource[key] ?? enResources.common[key] ?? key
-    if (params) {
-      for (const [k, v] of Object.entries(params)) {
+
+    // Support both t(key, params) and t(key, defaultValue, params) signatures
+    const resolvedParams = typeof defaultValueOrParams === 'object' ? defaultValueOrParams : params
+    if (resolvedParams) {
+      for (const [k, v] of Object.entries(resolvedParams)) {
         value = value.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), String(v))
       }
     }

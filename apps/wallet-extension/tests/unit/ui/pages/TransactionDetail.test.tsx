@@ -147,7 +147,7 @@ describe('TransactionDetail', () => {
 
     render(<TransactionDetail />)
     expect(screen.getByText('Gas Used')).toBeTruthy()
-    expect(screen.getByText('21000')).toBeTruthy()
+    expect(screen.getByText('21,000')).toBeTruthy()
     expect(screen.getByText('Gas Price')).toBeTruthy()
   })
 

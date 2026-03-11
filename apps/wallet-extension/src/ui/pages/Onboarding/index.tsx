@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
+import { clearString } from '../../../shared/security/memorySanitizer'
 import { useWalletStore } from '../../hooks/useWalletStore'
 import { Complete } from './Complete'
 import { ConfirmSeed } from './ConfirmSeed'
@@ -30,6 +31,26 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [createdAddress, setCreatedAddress] = useState<Address | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Track mounted state for cleanup
+  const mountedRef = useRef(true)
+
+  // Cleanup sensitive data on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false
+      setPassword((prev) => clearString(prev))
+      setMnemonic((prev) => clearString(prev))
+    }
+  }, [])
+
+  // Clear all sensitive state and reset to initial
+  const clearSensitiveState = useCallback(() => {
+    setPassword((prev) => clearString(prev))
+    setMnemonic((prev) => clearString(prev))
+    setCreatedAddress(null)
+    setError('')
+  }, [])
 
   // Flow: Create New Wallet
   // welcome -> createPassword -> seedPhrase -> confirmSeed -> complete
@@ -98,31 +119,38 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   )
 
   const handleFinish = useCallback(() => {
-    // Clear sensitive data
-    setPassword('')
-    setMnemonic('')
+    clearSensitiveState()
     onComplete()
-  }, [onComplete])
+  }, [onComplete, clearSensitiveState])
 
   const handleBack = useCallback(() => {
     switch (step) {
       case 'createPassword':
       case 'importWallet':
+        // Going back to welcome: clear everything from the current flow
+        clearSensitiveState()
         setStep('welcome')
         break
       case 'seedPhrase':
+        // Going back to createPassword: clear generated mnemonic/address
+        // so a fresh wallet is created with the new password
+        setMnemonic((prev) => clearString(prev))
+        setCreatedAddress(null)
         setStep('createPassword')
         break
       case 'confirmSeed':
         setStep('seedPhrase')
         break
       case 'importPassword':
+        // Going back to import: clear password, keep mnemonic for re-entry
+        setPassword((prev) => clearString(prev))
         setStep('importWallet')
         break
       default:
+        clearSensitiveState()
         setStep('welcome')
     }
-  }, [step])
+  }, [step, clearSensitiveState])
 
   return (
     <div className="h-full" style={{ backgroundColor: 'rgb(var(--background))' }}>

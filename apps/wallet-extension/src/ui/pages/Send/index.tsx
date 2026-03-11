@@ -9,13 +9,15 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Address } from 'viem'
-import { formatEther, isAddress, parseEther } from 'viem'
+import { encodeFunctionData, formatEther, isAddress, parseEther, parseUnits } from 'viem'
 import type { TransactionStepperStatus } from '../../components/common/TransactionStepper'
 import { TransactionStepper } from '../../components/common/TransactionStepper'
 import { useNetworkCurrency, useSelectedNetwork, useWalletStore } from '../../hooks'
+import { GasPaymentSelector } from './GasPayment'
 import { useGasEstimate } from './hooks/useGasEstimate'
 import { useSendTransaction } from './hooks/useSendTransaction'
 import { SendForm } from './SendForm'
+import { TransactionModeSelector } from './TransactionMode'
 
 // ============================================================================
 // Types
@@ -27,7 +29,27 @@ interface SendFormData {
   data: string
 }
 
+/** Token context when sending ERC-20 (from Home token click) */
+interface SendTokenContext {
+  address: Address
+  symbol: string
+  name: string
+  decimals: number
+}
+
 type SendStep = 'form' | 'review' | 'pending' | 'success' | 'confirming' | 'error'
+
+const ERC20_TRANSFER_ABI = [
+  {
+    name: 'transfer',
+    type: 'function',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ type: 'bool' }],
+  },
+] as const
 
 // ============================================================================
 // Component
@@ -39,6 +61,8 @@ export function Send() {
   const {
     accounts,
     selectedAccount: selectedAddress,
+    selectedSendToken,
+    setSelectedSendToken,
     setPage,
     pendingTransactions,
     history,
@@ -51,6 +75,27 @@ export function Send() {
   const selectedAccount = useMemo(() => {
     return accounts.find((acc) => acc.address === selectedAddress) ?? null
   }, [accounts, selectedAddress])
+
+  // ERC-20 token context (from Home token click)
+  const [tokenContext, setTokenContext] = useState<SendTokenContext | null>(null)
+
+  // Consume selectedSendToken on mount
+  useEffect(() => {
+    if (selectedSendToken && selectedSendToken !== 'native') {
+      const token = selectedSendToken as { address: string; symbol: string; name: string; decimals: number }
+      if (token.address && token.symbol) {
+        setTokenContext({
+          address: token.address as Address,
+          symbol: token.symbol,
+          name: token.name || token.symbol,
+          decimals: token.decimals ?? 18,
+        })
+      }
+      setSelectedSendToken(null)
+    } else if (selectedSendToken === 'native') {
+      setSelectedSendToken(null)
+    }
+  }, [selectedSendToken, setSelectedSendToken])
 
   // Form state
   const [formData, setFormData] = useState<SendFormData>({
@@ -82,7 +127,7 @@ export function Send() {
 
   // Hooks
   const { sendTransaction, isPending } = useSendTransaction()
-  const { gasEstimate, isLoading: isEstimating } = useGasEstimate({
+  const gasEstimateParams = useMemo(() => ({
     mode: transactionMode,
     from: selectedAddress ?? ('' as Address),
     to: formData.recipient || ('' as Address),
@@ -90,7 +135,9 @@ export function Send() {
     data: formData.data as `0x${string}`,
     gasPayment,
     enabled: !!formData.recipient && !!formData.amount,
-  })
+  }), [transactionMode, selectedAddress, formData.recipient, formData.amount, formData.data, gasPayment])
+
+  const { gasEstimate, isLoading: isEstimating, error: gasEstimateError } = useGasEstimate(gasEstimateParams)
 
   // Available modes for current account
   const availableModes = useMemo(() => {
@@ -129,12 +176,27 @@ export function Send() {
       setStep('pending')
       setError(null)
 
+      // For ERC-20 tokens, construct transfer calldata
+      const isTokenTransfer = tokenContext !== null
+      const to = isTokenTransfer ? tokenContext.address : (formData.recipient as Address)
+      const value = isTokenTransfer ? 0n : parseEther(formData.amount)
+      const data = isTokenTransfer
+        ? encodeFunctionData({
+            abi: ERC20_TRANSFER_ABI,
+            functionName: 'transfer',
+            args: [
+              formData.recipient as Address,
+              parseUnits(formData.amount, tokenContext.decimals),
+            ],
+          })
+        : (formData.data as `0x${string}`)
+
       const result = await sendTransaction({
         mode: transactionMode,
         from: selectedAddress,
-        to: formData.recipient as Address,
-        value: parseEther(formData.amount),
-        data: formData.data as `0x${string}`,
+        to,
+        value,
+        data,
         gasPayment: transactionMode === TRANSACTION_MODE.SMART_ACCOUNT ? gasPayment : undefined,
       })
 
@@ -144,7 +206,7 @@ export function Send() {
       setError(err instanceof Error ? err.message : 'Transaction failed')
       setStep('error')
     }
-  }, [selectedAddress, formData, transactionMode, gasPayment, sendTransaction])
+  }, [selectedAddress, formData, transactionMode, gasPayment, sendTransaction, tokenContext])
 
   // Handle review
   const handleReview = useCallback(() => {
@@ -160,6 +222,7 @@ export function Send() {
       pollingRef.current = null
     }
     setFormData({ recipient: '', amount: '', data: '0x' })
+    setTokenContext(null)
     setStep('form')
     setError(null)
     setTxResult(null)
@@ -240,43 +303,52 @@ export function Send() {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-6" style={{ color: 'rgb(var(--foreground))' }}>
+      <h2 className="text-xl font-bold mb-4" style={{ color: 'rgb(var(--foreground))' }}>
         {t('title')}
       </h2>
 
-      {/* Transaction Mode Selector */}
-      <div className="mb-4">
-        <span
-          className="block text-sm font-medium mb-2"
-          style={{ color: 'rgb(var(--foreground-secondary))' }}
+      {/* ERC-20 Token Context Banner */}
+      {tokenContext && (
+        <div
+          className="flex items-center justify-between p-3 rounded-lg mb-4"
+          style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
         >
-          {t('transactionMode')}
-        </span>
-        <div className="flex gap-2">
-          {availableModes.map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => handleModeChange(mode)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                transactionMode === mode ? 'btn-primary' : ''
-              }`}
-              style={
-                transactionMode !== mode
-                  ? {
-                      backgroundColor: 'rgb(var(--secondary))',
-                      color: 'rgb(var(--foreground))',
-                    }
-                  : undefined
-              }
+          <div className="flex items-center gap-2">
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+              style={{
+                backgroundColor: 'rgb(var(--muted))',
+                color: 'rgb(var(--foreground))',
+              }}
             >
-              {mode === TRANSACTION_MODE.EOA && 'EOA'}
-              {mode === TRANSACTION_MODE.EIP7702 && 'EIP-7702'}
-              {mode === TRANSACTION_MODE.SMART_ACCOUNT && t('smartAccountMode')}
-            </button>
-          ))}
+              {tokenContext.symbol.charAt(0)}
+            </div>
+            <span className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              {t('sendingToken', { symbol: tokenContext.symbol })}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setTokenContext(null)}
+            className="text-xs px-2 py-1 rounded"
+            style={{ color: 'rgb(var(--muted-foreground))' }}
+          >
+            {tc('cancel')}
+          </button>
         </div>
-      </div>
+      )}
+
+      {/* Transaction Mode Selector */}
+      {selectedAccount && (
+        <TransactionModeSelector
+          account={selectedAccount}
+          availableModes={availableModes}
+          selectedMode={transactionMode}
+          onModeChange={handleModeChange}
+          showDescriptions={step === 'form'}
+          disabled={step !== 'form'}
+        />
+      )}
 
       {/* Send Form */}
       {step === 'form' && (
@@ -291,41 +363,18 @@ export function Send() {
           {/* Gas Payment Selector (Smart Account only) */}
           {transactionMode === TRANSACTION_MODE.SMART_ACCOUNT && (
             <div className="mt-4">
-              <span
-                className="block text-sm font-medium mb-2"
-                style={{ color: 'rgb(var(--foreground-secondary))' }}
-              >
-                {t('gasPayment')}
-              </span>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="gasPayment"
-                    checked={gasPayment.type === 'native'}
-                    onChange={() => setGasPayment({ type: 'native' })}
-                    className="text-primary"
-                  />
-                  <span style={{ color: 'rgb(var(--foreground))' }}>
-                    {t('payWithNative', { symbol: currencySymbol })}
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="gasPayment"
-                    checked={gasPayment.type === 'sponsor'}
-                    onChange={() => setGasPayment({ type: 'sponsor' })}
-                    className="text-primary"
-                  />
-                  <span style={{ color: 'rgb(var(--foreground))' }}>{t('freeSponsored')}</span>
-                </label>
-              </div>
+              <GasPaymentSelector
+                gasPayment={gasPayment}
+                onGasPaymentChange={setGasPayment}
+                gasEstimate={gasEstimate}
+                isLoading={isEstimating}
+                accountAddress={selectedAddress ?? undefined}
+              />
             </div>
           )}
 
-          {/* Gas Estimate Display */}
-          {gasEstimate && (
+          {/* Gas Estimate Display (EOA/EIP-7702 modes) */}
+          {transactionMode !== TRANSACTION_MODE.SMART_ACCOUNT && gasEstimate && (
             <div
               className="mt-4 p-3 rounded-lg"
               style={{ backgroundColor: 'rgb(var(--secondary))' }}
@@ -336,11 +385,19 @@ export function Send() {
               <p className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>
                 {formatEther(gasEstimate.estimatedCost)} {currencySymbol}
               </p>
-              {gasPayment.type === 'sponsor' && (
-                <p className="text-sm mt-1" style={{ color: 'rgb(var(--success))' }}>
-                  {t('gasWillBeSponsored')}
-                </p>
-              )}
+            </div>
+          )}
+
+          {/* Gas Estimate Error */}
+          {gasEstimateError && (
+            <div
+              className="mt-4 p-3 rounded-lg text-sm"
+              style={{
+                backgroundColor: 'rgb(var(--destructive) / 0.1)',
+                color: 'rgb(var(--destructive))',
+              }}
+            >
+              {gasEstimateError.message}
             </div>
           )}
 
@@ -410,7 +467,7 @@ export function Send() {
               <div className="flex justify-between">
                 <span style={{ color: 'rgb(var(--muted-foreground))' }}>{t('amount')}</span>
                 <span style={{ color: 'rgb(var(--foreground))' }}>
-                  {formData.amount} {currencySymbol}
+                  {formData.amount} {tokenContext?.symbol ?? currencySymbol}
                 </span>
               </div>
               {gasEstimate && (

@@ -30,19 +30,19 @@ type Step = 'pool-limit' | 'daily-limit' | 'review'
 // ============================================================================
 
 const POOL_LIMIT_PRESETS = [
-  { label: '1 ETH', value: '1' },
-  { label: '5 ETH', value: '5' },
-  { label: '10 ETH', value: '10' },
-  { label: '32 ETH', value: '32', description: 'Validator stake' },
-  { label: '100 ETH', value: '100' },
+  { label: '1 WKRC', value: '1' },
+  { label: '5 WKRC', value: '5' },
+  { label: '10 WKRC', value: '10' },
+  { label: '32 WKRC', value: '32', description: 'Validator stake' },
+  { label: '100 WKRC', value: '100' },
 ]
 
 const DAILY_LIMIT_PRESETS = [
-  { label: '5 ETH', value: '5' },
-  { label: '10 ETH', value: '10' },
-  { label: '32 ETH', value: '32' },
-  { label: '50 ETH', value: '50' },
-  { label: '100 ETH', value: '100' },
+  { label: '5 WKRC', value: '5' },
+  { label: '10 WKRC', value: '10' },
+  { label: '32 WKRC', value: '32' },
+  { label: '50 WKRC', value: '50' },
+  { label: '100 WKRC', value: '100' },
 ]
 
 // ============================================================================
@@ -298,11 +298,11 @@ export function StakingExecutorConfigUI({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">{t('maxStakePerPool')}</span>
-              <span className="font-medium">{form.maxStakePerPoolEth} ETH</span>
+              <span className="font-medium">{form.maxStakePerPoolEth} WKRC</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">{t('dailyStakeLimit')}</span>
-              <span className="font-medium">{form.dailyStakeLimitEth} ETH</span>
+              <span className="font-medium">{form.dailyStakeLimitEth} WKRC</span>
             </div>
           </div>
 
@@ -380,24 +380,24 @@ export function StakingExecutorDisplay({
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-green-50 rounded-lg p-3">
           <div className="text-sm text-green-600">{t('totalStaked')}</div>
-          <div className="font-semibold text-lg">{formatEther(totalStaked)} ETH</div>
+          <div className="font-semibold text-lg">{formatEther(totalStaked)} WKRC</div>
         </div>
         <div className="bg-yellow-50 rounded-lg p-3">
           <div className="text-sm text-yellow-600">{t('pendingRewards')}</div>
-          <div className="font-semibold text-lg">{formatEther(pendingRewards)} ETH</div>
+          <div className="font-semibold text-lg">{formatEther(pendingRewards)} WKRC</div>
         </div>
       </div>
 
       <div className="flex justify-between items-center">
         <span className="text-gray-600">{t('maxStakePerPool')}</span>
-        <span className="font-medium">{formatEther(maxStakePerPool)} ETH</span>
+        <span className="font-medium">{formatEther(maxStakePerPool)} WKRC</span>
       </div>
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">{t('dailyStakeUsage')}</span>
           <span>
-            {formatEther(stakedToday)} / {formatEther(dailyStakeLimit)} ETH
+            {formatEther(stakedToday)} / {formatEther(dailyStakeLimit)} WKRC
           </span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">

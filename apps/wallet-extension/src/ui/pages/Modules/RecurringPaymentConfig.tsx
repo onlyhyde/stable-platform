@@ -197,7 +197,7 @@ export function RecurringPaymentConfigUI({
   const totalPayments = form.unlimited ? t('unlimited') : form.maxPayments
   const totalAmount = form.unlimited
     ? t('unlimited')
-    : `${(Number.parseFloat(form.amountEth) * form.maxPayments).toFixed(4)} ETH`
+    : `${(Number.parseFloat(form.amountEth) * form.maxPayments).toFixed(4)} ${nativeSymbol}`
 
   return (
     <div className="space-y-4">

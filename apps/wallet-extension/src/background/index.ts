@@ -1516,6 +1516,11 @@ chrome.tabs.onRemoved.addListener(handleTabRemoved)
 chrome.tabs.onUpdated.addListener(handleTabUpdated)
 chrome.tabs.onActivated.addListener(handleTabActivated)
 
+// Reject pending approvals when approval window is closed
+chrome.windows.onRemoved.addListener((windowId) => {
+  approvalController.handleWindowClosed(windowId)
+})
+
 // =============================================================================
 // Installation Handler
 // =============================================================================

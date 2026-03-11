@@ -48,6 +48,8 @@
   "importWalletTitle": "Import Wallet",
   "importWalletSubtitle": "Enter your 12 or 24 word seed phrase",
   "invalidSeedPhrase": "Please enter a valid 12 or 24 word seed phrase",
+  "invalidWords": "Invalid words: {{words}}",
+  "invalidChecksum": "Invalid seed phrase checksum. Please check your words.",
   "wordCount": "{{count}} / 12 or 24 words",
   "secretRecoveryPhrase": "Secret Recovery Phrase",
   "enterSeedPhrase": "Enter your seed phrase with spaces between words",

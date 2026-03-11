@@ -54,7 +54,11 @@ export function ModulesPage() {
 
   const currentNetwork = useSelectedNetwork()
   const { installedModules, isLoading, error, refetch } = useModules(selectedAccount?.address)
-  const { registryModules, isLoading: isLoadingRegistry } = useModuleMarketplace()
+  const {
+    registryModules,
+    isLoading: isLoadingRegistry,
+    error: registryError,
+  } = useModuleMarketplace()
   const {
     info: smartAccountInfo,
     isLoading: isLoadingSmartInfo,
@@ -358,6 +362,10 @@ export function ModulesPage() {
                 className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
                 style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
               />
+            </div>
+          ) : registryError ? (
+            <div className="text-center py-8" style={{ color: 'rgb(var(--destructive))' }}>
+              {t('failedToLoadRegistry', { message: registryError.message })}
             </div>
           ) : registryModules.length === 0 ? (
             <div className="text-center py-8">

@@ -300,7 +300,7 @@ export class GasFeeController {
         gasLimit: estimate.gasLimit.toString(),
         maxFeePerGas: `${estimate.maxFeePerGas.toString()} wei`,
         estimatedCost: `${estimate.estimatedCost.toString()} wei`,
-        estimatedCostEth: `${(Number(estimate.estimatedCost) / 1e18).toFixed(6)} ETH`,
+        estimatedCostEth: `${(Number(estimate.estimatedCost) / 1e18).toFixed(6)} WKRC`,
       }
     }
 
