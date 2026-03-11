@@ -57,6 +57,8 @@
   "gasSponsoredByStableNet": "Gas sponsored by StableNet",
   "payWithToken": "Pay with {{symbol}}",
   "useTokenForGas": "Use {{symbol}} for gas payment",
+  "payWithUsdc": "Pay with USDC",
+  "usdcPaymasterDesc": "Paymaster sponsors gas, you reimburse in USDC",
   "selectToEstimate": "Select to estimate",
   "calculating": "Calculating...",
   "estimatingTokenAmount": "Estimating token amount...",

@@ -155,7 +155,10 @@ async function handleVerifyingData(
     entryPoint,
     BigInt(chainId),
     PaymasterTypeEnum.VERIFYING,
-    payload
+    payload,
+    undefined,
+    undefined,
+    paymasterAddress
   )
 
   // Phase 1: Track reservation with userOpHash for receipt-based settlement
@@ -215,7 +218,10 @@ async function handleSponsorData(
     entryPoint,
     BigInt(chainId),
     PaymasterTypeEnum.SPONSOR,
-    payload
+    payload,
+    undefined,
+    undefined,
+    paymasterAddress
   )
 
   // Phase 1: Track reservation with userOpHash for receipt-based settlement

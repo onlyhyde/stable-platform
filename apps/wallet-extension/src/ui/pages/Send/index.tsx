@@ -476,7 +476,9 @@ export function Send() {
                   <span style={{ color: 'rgb(var(--foreground))' }}>
                     {gasPayment.type === 'sponsor'
                       ? t('sponsored')
-                      : `${formatEther(gasEstimate.estimatedCost)} ${currencySymbol}`}
+                      : gasPayment.type === 'erc20' && gasPayment.estimatedAmount
+                        ? `~${Number(gasPayment.estimatedAmount) / 10 ** (gasPayment.tokenDecimals ?? 6)} ${gasPayment.tokenSymbol ?? 'USDC'}`
+                        : `${formatEther(gasEstimate.estimatedCost)} ${currencySymbol}`}
                   </span>
                 </div>
               )}

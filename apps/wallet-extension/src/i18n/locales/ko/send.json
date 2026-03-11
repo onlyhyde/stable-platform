@@ -57,6 +57,8 @@
   "gasSponsoredByStableNet": "StableNet이 가스비 후원",
   "payWithToken": "{{symbol}}로 결제",
   "useTokenForGas": "{{symbol}}로 가스비 지불",
+  "payWithUsdc": "USDC로 결제",
+  "usdcPaymasterDesc": "Paymaster가 가스비 대납 후, USDC로 정산",
   "selectToEstimate": "선택하여 추정",
   "calculating": "계산 중...",
   "estimatingTokenAmount": "토큰 금액 추정 중...",

@@ -168,7 +168,9 @@ export class PaymasterSigner {
     paymasterType: PaymasterType,
     payload: Hex,
     validitySeconds?: number,
-    nonce?: bigint
+    nonce?: bigint,
+    /** Override paymaster address for domain separator (must match deployed contract address) */
+    overridePaymasterAddress?: Address
   ): Promise<{
     paymasterData: Hex
     validUntil: number
@@ -196,11 +198,12 @@ export class PaymasterSigner {
       payload,
     })
 
-    // Compute hash using SDK core
+    // Compute hash using SDK core — use override address if provided (must match deployed contract)
+    const effectiveAddress = overridePaymasterAddress ?? this.paymasterAddress
     const domainSeparator = computePaymasterDomainSeparator(
       chainId,
       entryPoint,
-      this.paymasterAddress
+      effectiveAddress
     )
     const packedUserOp = toPackedForCoreHash(userOp)
     const userOpCoreHash = computeUserOpCoreHash(packedUserOp)

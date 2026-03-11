@@ -416,6 +416,20 @@ export function encodeKernelExecute(to: Address, value: bigint = 0n, data: Hex =
 }
 
 /**
+ * Encode a Kernel v0.3.3 executeBatch call for multiple calls in one UserOp.
+ * Uses Kernel's native executeBatch(Call[]) where Call = (address target, uint256 value, bytes callData).
+ */
+export function encodeKernelExecuteBatch(
+  calls: ReadonlyArray<{ to: Address; value: bigint; data: Hex }>
+): Hex {
+  return encodeFunctionData({
+    abi: KERNEL_ABI,
+    functionName: 'executeBatch',
+    args: [calls.map((c) => ({ target: c.to, value: c.value, callData: c.data }))],
+  })
+}
+
+/**
  * Encode Kernel.initialize() calldata for EIP-7702 delegation.
  * Sets the root validator (ECDSA) and registers the EOA as its owner.
  *

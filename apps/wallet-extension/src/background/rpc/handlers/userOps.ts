@@ -1,5 +1,6 @@
 import type { Address, Hex } from 'viem'
-import { isAddress } from 'viem/utils'
+import { encodeFunctionData, isAddress, maxUint256 } from 'viem'
+import { getChainAddresses } from '@stablenet/contracts'
 import {
   approvalController,
   createBundlerClient,
@@ -10,6 +11,7 @@ import {
   DEFAULT_VERIFICATION_GAS_LIMIT,
   ENTRY_POINT_ABI,
   encodeKernelExecute,
+  encodeKernelExecuteBatch,
   getEntryPointForChain,
   getNonceKeyForAccount,
   getPublicClient,
@@ -27,6 +29,19 @@ import {
   type UserOperation,
   walletState,
 } from './shared'
+
+/** ERC-20 approve ABI for encoding approve(spender, amount) */
+const ERC20_APPROVE_ABI = [
+  {
+    name: 'approve',
+    type: 'function',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ type: 'bool' }],
+  },
+] as const
 
 export const userOpsHandlers: Record<string, RpcHandler> = {
   /**
@@ -49,19 +64,55 @@ export const userOpsHandlers: Record<string, RpcHandler> = {
       })
     }
 
-    // Encode callData from target/value/data if not already present (UI sends this format)
-    const raw = userOpParam as Record<string, unknown>
-    if (!raw.callData && raw.target) {
-      raw.callData = encodeKernelExecute(
-        raw.target as Address,
-        raw.value ? BigInt(raw.value as string) : 0n,
-        (raw.data as Hex) || '0x'
-      )
-    }
-
     // Extract gasPayment before parsing (not part of UserOperation schema)
+    const raw = userOpParam as Record<string, unknown>
     const gasPayment = raw.gasPayment as { type: string; tokenAddress?: string } | undefined
     delete raw.gasPayment
+
+    // Encode callData from target/value/data if not already present (UI sends this format)
+    if (!raw.callData && raw.target) {
+      const targetAddr = raw.target as Address
+      const targetValue = raw.value ? BigInt(raw.value as string) : 0n
+      const targetData = ((raw.data as Hex) || '0x') as Hex
+
+      // ERC20 paymaster: batch approve(paymaster, maxUint256) + actual call
+      // The paymaster deducts USDC in postOp, so the user must have approved the paymaster
+      if (gasPayment?.type === 'erc20' && gasPayment.tokenAddress) {
+        const network = walletState.getCurrentNetwork()
+        const chainAddresses = network ? getChainAddresses(network.chainId) : null
+        const erc20PaymasterAddr = chainAddresses?.paymasters?.erc20Paymaster as Address | undefined
+
+        if (erc20PaymasterAddr) {
+          const approveData = encodeFunctionData({
+            abi: ERC20_APPROVE_ABI,
+            functionName: 'approve',
+            args: [erc20PaymasterAddr, maxUint256],
+          })
+
+          raw.callData = encodeKernelExecuteBatch([
+            {
+              to: gasPayment.tokenAddress as Address,
+              value: 0n,
+              data: approveData,
+            },
+            {
+              to: targetAddr,
+              value: targetValue,
+              data: targetData,
+            },
+          ])
+          logger.info(
+            `[eth_sendUserOperation] ERC20 paymaster: batched approve(${erc20PaymasterAddr}) + call(${targetAddr})`
+          )
+        } else {
+          // Fallback: no known ERC20 paymaster address, encode single call
+          logger.warn('[eth_sendUserOperation] ERC20 paymaster address not found, skipping approve batch')
+          raw.callData = encodeKernelExecute(targetAddr, targetValue, targetData)
+        }
+      } else {
+        raw.callData = encodeKernelExecute(targetAddr, targetValue, targetData)
+      }
+    }
 
     // Parse and validate UserOperation
     const userOp = parseUserOperation(userOpParam)

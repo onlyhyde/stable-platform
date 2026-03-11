@@ -166,25 +166,28 @@ export function GasPaymentSelector({
       },
     ]
 
-    // ERC20 Tokens
+    // ERC20 Token — only USDC (Paymaster pays gas, user reimburses in USDC)
     if (supportedTokens) {
-      supportedTokens.forEach((token) => {
+      const usdcToken = supportedTokens.find(
+        (token) => token.symbol === 'USDC' || token.symbol === 'usdc'
+      )
+      if (usdcToken) {
         options.push({
           type: GAS_PAYMENT_TYPE.ERC20,
-          label: t('payWithToken', { symbol: token.symbol }),
-          description: t('useTokenForGas', { symbol: token.symbol }),
-          icon: '💰',
-          logoUrl: token.logoUrl,
+          label: t('payWithUsdc'),
+          description: t('usdcPaymasterDesc'),
+          icon: '💵',
+          logoUrl: usdcToken.logoUrl,
           available: true,
-          tokenAddress: token.address,
-          tokenSymbol: token.symbol,
-          tokenDecimals: token.decimals,
+          tokenAddress: usdcToken.address,
+          tokenSymbol: usdcToken.symbol,
+          tokenDecimals: usdcToken.decimals,
           cost:
-            gasPayment.tokenAddress === token.address && erc20Estimate
-              ? `${formatUnits(erc20Estimate.estimatedAmount, token.decimals)} ${token.symbol}`
+            gasPayment.tokenAddress === usdcToken.address && erc20Estimate
+              ? `${formatUnits(erc20Estimate.estimatedAmount, usdcToken.decimals)} USDC`
               : t('selectToEstimate'),
         })
-      })
+      }
     }
 
     return options
