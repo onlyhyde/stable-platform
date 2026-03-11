@@ -34,7 +34,7 @@ export interface DepositMonitorConfig {
   entryPoint: Address
   /** Paymaster addresses by type */
   paymasterAddresses: PaymasterAddresses
-  /** Minimum deposit threshold in wei (default: 0.01 ETH) */
+  /** Minimum deposit threshold in wei (default: 0.01 WKRC) */
   minDepositThreshold: bigint
   /** Polling interval in ms (default: 30000) */
   pollIntervalMs: number
@@ -42,7 +42,7 @@ export interface DepositMonitorConfig {
   rejectOnLowDeposit: boolean
   /** Enable automatic deposit when balance is low (default: false) */
   autoDepositEnabled?: boolean
-  /** Amount to deposit in wei (default: 0.1 ETH) */
+  /** Amount to deposit in wei (default: 0.1 WKRC) */
   autoDepositAmount?: bigint
   /** Cooldown between auto-deposits in ms (default: 300000 = 5 min) */
   autoDepositCooldownMs?: number
@@ -221,7 +221,7 @@ export class DepositMonitor {
     if (lastDeposit && Date.now() - lastDeposit < cooldown) return
     if (this.autoDepositInFlight.has(key)) return
 
-    const amount = this.config.autoDepositAmount ?? 10n ** 17n // 0.1 ETH
+    const amount = this.config.autoDepositAmount ?? 10n ** 17n // 0.1 WKRC
 
     this.autoDepositInFlight.add(key)
 

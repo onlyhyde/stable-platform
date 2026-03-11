@@ -9,7 +9,7 @@ export interface BundlerConfig {
   network: string
   /** Chain ID (overrides RPC-reported chainId when set) */
   chainId?: number
-  /** Native currency symbol (default: ETH) */
+  /** Native currency symbol (default: WKRC) */
   nativeCurrencySymbol: string
   /** RPC port */
   port: number

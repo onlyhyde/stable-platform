@@ -69,9 +69,9 @@ const DEFAULTS = {
   validitySeconds: 300, // 5 minutes — shorter window reduces signature replay risk
   clockSkewSeconds: 60, // 1 minute
   maxGasLimit: 5_000_000n,
-  maxGasCost: 10n ** 18n, // 1 ETH
-  dailyLimitPerSender: 10n ** 17n, // 0.1 ETH
-  globalDailyLimit: 10n ** 19n, // 10 ETH
+  maxGasCost: 10n ** 21n, // 1000 WKRC (devnet gas prices are high)
+  dailyLimitPerSender: 10n ** 20n, // 100 WKRC
+  globalDailyLimit: 10n ** 22n, // 10000 WKRC
   supportedChainIds: [8283, 1, 11155111, 84532], // stablenet-local, mainnet, sepolia, base-sepolia
 } as const
 
@@ -222,7 +222,7 @@ export function getDepositMonitorConfig() {
   return {
     depositMonitorEnabled: getEnvBool(PAYMASTER_ENV_VARS.DEPOSIT_MONITOR_ENABLED, true),
     depositMonitorPollMs: getEnvNumber(PAYMASTER_ENV_VARS.DEPOSIT_MONITOR_POLL_MS, 30_000),
-    depositMinThreshold: getEnvBigInt(PAYMASTER_ENV_VARS.DEPOSIT_MIN_THRESHOLD, 10n ** 16n), // 0.01 ETH
+    depositMinThreshold: getEnvBigInt(PAYMASTER_ENV_VARS.DEPOSIT_MIN_THRESHOLD, 10n ** 16n), // 0.01 WKRC
     depositRejectOnLow: getEnvBool(PAYMASTER_ENV_VARS.DEPOSIT_REJECT_ON_LOW, false),
   }
 }
@@ -243,7 +243,7 @@ export function getTimeRangeConfig() {
 export function getAutoDepositConfig() {
   return {
     autoDepositEnabled: getEnvBool(PAYMASTER_ENV_VARS.DEPOSIT_AUTO_ENABLED, false),
-    autoDepositAmount: getEnvBigInt(PAYMASTER_ENV_VARS.DEPOSIT_AUTO_AMOUNT, 10n ** 17n), // 0.1 ETH
+    autoDepositAmount: getEnvBigInt(PAYMASTER_ENV_VARS.DEPOSIT_AUTO_AMOUNT, 10n ** 17n), // 0.1 WKRC
     autoDepositCooldownMs: getEnvNumber(PAYMASTER_ENV_VARS.DEPOSIT_AUTO_COOLDOWN_MS, 300_000), // 5 minutes
   }
 }
@@ -277,9 +277,9 @@ Signer:
 
 Policy Defaults:
   ${PAYMASTER_ENV_VARS.DEFAULT_MAX_GAS_LIMIT}          Max gas limit per operation (default: 5000000)
-  ${PAYMASTER_ENV_VARS.DEFAULT_MAX_GAS_COST}           Max gas cost in wei (default: 1000000000000000000 = 1 ETH)
-  ${PAYMASTER_ENV_VARS.DEFAULT_DAILY_LIMIT_PER_SENDER} Daily limit per sender in wei (default: 100000000000000000 = 0.1 ETH)
-  ${PAYMASTER_ENV_VARS.DEFAULT_GLOBAL_DAILY_LIMIT}     Global daily limit in wei (default: 10000000000000000000 = 10 ETH)
+  ${PAYMASTER_ENV_VARS.DEFAULT_MAX_GAS_COST}           Max gas cost in wei (default: 1000000000000000000 = 1000 WKRC)
+  ${PAYMASTER_ENV_VARS.DEFAULT_DAILY_LIMIT_PER_SENDER} Daily limit per sender in wei (default: 100000000000000000 = 100 WKRC)
+  ${PAYMASTER_ENV_VARS.DEFAULT_GLOBAL_DAILY_LIMIT}     Global daily limit in wei (default: 10000000000000000000 = 10000 WKRC)
 
 Multi-Paymaster Addresses (optional, overrides PAYMASTER_ADDRESS for specific types):
   ${PAYMASTER_ENV_VARS.VERIFYING_PAYMASTER_ADDRESS}    VerifyingPaymaster contract address
@@ -299,12 +299,12 @@ Settlement (receipt-based, Phase 2):
 Deposit Monitoring:
   ${PAYMASTER_ENV_VARS.DEPOSIT_MONITOR_ENABLED}        Enable deposit monitoring (default: true)
   ${PAYMASTER_ENV_VARS.DEPOSIT_MONITOR_POLL_MS}        Polling interval in ms (default: 30000)
-  ${PAYMASTER_ENV_VARS.DEPOSIT_MIN_THRESHOLD}          Min deposit threshold in wei (default: 10000000000000000 = 0.01 ETH)
+  ${PAYMASTER_ENV_VARS.DEPOSIT_MIN_THRESHOLD}          Min deposit threshold in wei (default: 10000000000000000 = 0.01 WKRC)
   ${PAYMASTER_ENV_VARS.DEPOSIT_REJECT_ON_LOW}          Reject signing when deposit is low (default: false)
 
 Auto-Deposit:
   ${PAYMASTER_ENV_VARS.DEPOSIT_AUTO_ENABLED}           Enable auto-deposit when balance is low (default: false)
-  ${PAYMASTER_ENV_VARS.DEPOSIT_AUTO_AMOUNT}            Auto-deposit amount in wei (default: 100000000000000000 = 0.1 ETH)
+  ${PAYMASTER_ENV_VARS.DEPOSIT_AUTO_AMOUNT}            Auto-deposit amount in wei (default: 100000000000000000 = 100 WKRC)
   ${PAYMASTER_ENV_VARS.DEPOSIT_AUTO_COOLDOWN_MS}       Cooldown between auto-deposits in ms (default: 300000 = 5 min)
 
 Time Range Validation:

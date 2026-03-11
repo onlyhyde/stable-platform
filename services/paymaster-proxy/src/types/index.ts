@@ -54,7 +54,7 @@ export interface SupportedToken {
   symbol: string
   /** Token decimals */
   decimals: number
-  /** Exchange rate (token per ETH, scaled by 1e18) */
+  /** Exchange rate (token per WKRC, scaled by 1e18) */
   exchangeRate: string
 }
 

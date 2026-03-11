@@ -165,7 +165,7 @@ export function validateSpendingLimitConfig(config: SpendingLimitHookConfig): Ho
 
   // Warnings for potentially risky configurations
   if (config.limit && config.limit > 10n ** 21n && config.token === ZERO_ADDRESS) {
-    warnings.push('Very high ETH limit (>1000 ETH) - ensure this is intentional')
+    warnings.push('Very high WKRC limit (>1000 WKRC) - ensure this is intentional')
   }
 
   if (config.period && config.period > 30 * 24 * 60 * 60) {
@@ -237,7 +237,7 @@ export function wouldExceedLimit(
 export function formatSpendingLimit(
   status: SpendingLimitStatus,
   tokenDecimals = 18,
-  tokenSymbol = 'ETH'
+  tokenSymbol = 'WKRC'
 ): {
   limit: string
   spent: string

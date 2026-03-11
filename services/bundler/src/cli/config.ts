@@ -104,7 +104,7 @@ export const DEFAULT_CORS_ORIGINS = [
  */
 export const DEFAULT_CONFIG: Partial<BundlerConfig> = {
   port: 4337,
-  minBalance: 100000000000000000n, // 0.1 ETH
+  minBalance: 100000000000000000n, // 0.1 WKRC
   bundleInterval: 1000,
   maxBundleSize: 10,
   logLevel: 'info',
@@ -225,9 +225,9 @@ export function parseConfig(options: CliOptions): BundlerConfig {
     )
   }
 
-  // Native currency symbol: CLI > env > default (ETH)
+  // Native currency symbol: CLI > env > default (WKRC)
   const nativeCurrencySymbol =
-    options.nativeCurrencySymbol || getEnv(ENV_VARS.NATIVE_CURRENCY_SYMBOL) || 'ETH'
+    options.nativeCurrencySymbol || getEnv(ENV_VARS.NATIVE_CURRENCY_SYMBOL) || 'WKRC'
 
   // Port: CLI > env > default
   const port = options.port ?? getEnvNumber(ENV_VARS.PORT) ?? DEFAULT_CONFIG.port!

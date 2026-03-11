@@ -40,7 +40,7 @@ export const SPENDING_LIMIT_HOOK: ModuleRegistryEntry = createModuleEntry(
       {
         name: 'token',
         label: 'Token',
-        description: 'Token to limit (0x0 for native ETH)',
+        description: 'Token to limit (0x0 for native WKRC)',
         type: 'address',
         required: true,
         defaultValue: '0x0000000000000000000000000000000000000000',

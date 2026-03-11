@@ -191,7 +191,7 @@ export async function isTokenSupported(
 }
 
 /**
- * Calculate token amount for a given ETH amount
+ * Calculate token amount for a given WKRC amount
  */
 export async function calculateTokenAmount(
   client: PublicClient,

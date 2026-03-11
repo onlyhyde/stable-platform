@@ -35,7 +35,7 @@ export interface SupportedToken {
   /** Token decimals */
   decimals: number
 
-  /** Exchange rate: tokens per 1 ETH (in token's smallest unit) */
+  /** Exchange rate: tokens per 1 native token (in token's smallest unit) */
   exchangeRate: bigint
 
   /** Optional: Token logo URL */

@@ -10,7 +10,7 @@
 export interface NetworkCurrency {
   /** Currency name (e.g., "Ether", "Polygon") */
   name: string
-  /** Currency symbol (e.g., "ETH", "MATIC") */
+  /** Currency symbol (e.g., "WKRC", "MATIC") */
   symbol: string
   /** Number of decimals (typically 18) */
   decimals: number
@@ -93,7 +93,7 @@ export const DEFAULT_CURRENCIES: Record<number, NetworkCurrency> = {
   [CHAIN_IDS.BSC]: { name: 'BNB', symbol: 'BNB', decimals: 18 },
   [CHAIN_IDS.AVALANCHE]: { name: 'AVAX', symbol: 'AVAX', decimals: 18 },
   [CHAIN_IDS.SEPOLIA]: { name: 'Sepolia Ether', symbol: 'ETH', decimals: 18 },
-  [CHAIN_IDS.LOCALHOST]: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  [CHAIN_IDS.LOCALHOST]: { name: 'Wrapped KRC', symbol: 'WKRC', decimals: 18 },
 }
 
 /**
@@ -102,8 +102,8 @@ export const DEFAULT_CURRENCIES: Record<number, NetworkCurrency> = {
 export function getDefaultCurrency(chainId: number): NetworkCurrency {
   return (
     DEFAULT_CURRENCIES[chainId] ?? {
-      name: 'Ether',
-      symbol: 'ETH',
+      name: 'Wrapped KRC',
+      symbol: 'WKRC',
       decimals: 18,
     }
   )

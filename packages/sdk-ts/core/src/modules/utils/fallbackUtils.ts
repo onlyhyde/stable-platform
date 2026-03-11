@@ -296,7 +296,7 @@ export function validateFlashLoanConfig(config: FlashLoanCallbackConfig): Fallba
   }
 
   if (config.maxLoanAmount > 10n ** 24n) {
-    warnings.push('Very high max loan amount (>1M ETH equivalent) - verify this is intentional')
+    warnings.push('Very high max loan amount (>1M WKRC equivalent) - verify this is intentional')
   }
 
   return {

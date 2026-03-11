@@ -88,7 +88,7 @@ export interface ReputationConfig {
   throttlingSlack: number
   /** Additional slack before banning (default: 50) */
   banSlack: number
-  /** Minimum stake required (default: 0.1 ETH) */
+  /** Minimum stake required (default: 0.1 WKRC) */
   minStake: bigint
   /** Minimum unstake delay in seconds (default: 86400 = 1 day) */
   minUnstakeDelay: number
@@ -201,7 +201,7 @@ import { getReputationConfig } from '../config/constants'
  * - BUNDLER_REP_MIN_INCLUSION_DENOMINATOR: Min inclusion ratio denominator (default: 10)
  * - BUNDLER_REP_THROTTLING_SLACK: Slack before throttling (default: 10)
  * - BUNDLER_REP_BAN_SLACK: Additional slack before banning (default: 50)
- * - BUNDLER_REP_MIN_STAKE: Min stake in wei (default: 0.1 ETH)
+ * - BUNDLER_REP_MIN_STAKE: Min stake in wei (default: 0.1 WKRC)
  * - BUNDLER_REP_MIN_UNSTAKE_DELAY: Min unstake delay in seconds (default: 86400 = 1 day)
  * - BUNDLER_REP_DECAY_INTERVAL_MS: Decay interval in ms (default: 0 = disabled)
  * - BUNDLER_REP_DECAY_AMOUNT: Decay amount per interval (default: 0)

@@ -52,7 +52,7 @@ export type TransactionMode = (typeof TRANSACTION_MODE)[keyof typeof TRANSACTION
 export const GAS_PAYMENT_TYPE = {
   /** Paymaster sponsors gas (free for user) */
   SPONSOR: 'sponsor',
-  /** User pays with native token (ETH) */
+  /** User pays with native token (WKRC) */
   NATIVE: 'native',
   /** User pays with ERC20 token */
   ERC20: 'erc20',

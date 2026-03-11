@@ -135,7 +135,7 @@ export const MODULE_TYPE = {
 export const DEFAULTS = {
   /** Default max slippage: 1% (100 basis points) */
   MAX_SLIPPAGE_BPS: 100,
-  /** Default daily limit: 10 ETH */
+  /** Default daily limit: 10 WKRC */
   DAILY_LIMIT: BigInt('10000000000000000000'),
   /** Default max LTV: 80% (8000 basis points) */
   MAX_LTV: 8000,

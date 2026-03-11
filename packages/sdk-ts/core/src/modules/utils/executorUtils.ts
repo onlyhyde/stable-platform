@@ -307,7 +307,7 @@ export function validateRecurringPaymentConfig(
 
   // Validate token
   if (!config.token) {
-    errors.push('Token address is required (use zero address for native ETH)')
+    errors.push('Token address is required (use zero address for native WKRC)')
   } else if (!ADDRESS_REGEX.test(config.token)) {
     errors.push('Token must be a valid Ethereum address')
   }
@@ -333,7 +333,7 @@ export function validateRecurringPaymentConfig(
   }
 
   if (config.token === ZERO_ADDRESS && config.amount > 10n ** 18n) {
-    warnings.push('Large ETH payment amount - verify this is correct')
+    warnings.push('Large WKRC payment amount - verify this is correct')
   }
 
   return {

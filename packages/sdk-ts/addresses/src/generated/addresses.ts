@@ -128,8 +128,8 @@ export const DEFAULT_TOKENS: Record<
   31337: [
     {
       address: '0x0000000000000000000000000000000000000000',
-      name: 'Ether',
-      symbol: 'ETH',
+      name: 'Wrapped KRC',
+      symbol: 'WKRC',
       decimals: 18,
     },
     {

@@ -61,7 +61,7 @@ export const SESSION_KEY_EXECUTOR: ModuleRegistryEntry = createModuleEntry(
       {
         name: 'maxValuePerTx',
         label: 'Max Value Per Transaction',
-        description: 'Maximum ETH value per transaction (in wei)',
+        description: 'Maximum WKRC value per transaction (in wei)',
         type: 'uint256',
         required: true,
         defaultValue: '0',
@@ -125,7 +125,7 @@ export const RECURRING_PAYMENT_EXECUTOR: ModuleRegistryEntry = createModuleEntry
       {
         name: 'token',
         label: 'Token',
-        description: 'Token address (0x0 for native ETH)',
+        description: 'Token address (0x0 for native WKRC)',
         type: 'address',
         required: true,
         defaultValue: '0x0000000000000000000000000000000000000000',

@@ -125,7 +125,7 @@ const REPUTATION_DEFAULTS = {
   minInclusionDenominator: 10,
   throttlingSlack: 10,
   banSlack: 50,
-  minStake: 100000000000000000n, // 0.1 ETH
+  minStake: 100000000000000000n, // 0.1 WKRC
   minUnstakeDelay: 86400, // 1 day in seconds
   decayIntervalMs: 0, // disabled
   decayAmount: 0, // disabled
@@ -368,7 +368,7 @@ Reputation System:
   ${CONSTANTS_ENV_VARS.REP_MIN_INCLUSION_DENOMINATOR}  Min inclusion ratio denominator (default: 10)
   ${CONSTANTS_ENV_VARS.REP_THROTTLING_SLACK}           Slack before throttling (default: 10)
   ${CONSTANTS_ENV_VARS.REP_BAN_SLACK}                  Additional slack before banning (default: 50)
-  ${CONSTANTS_ENV_VARS.REP_MIN_STAKE}                  Min stake in wei (default: 100000000000000000 = 0.1 ETH)
+  ${CONSTANTS_ENV_VARS.REP_MIN_STAKE}                  Min stake in wei (default: 100000000000000000 = 0.1 WKRC)
   ${CONSTANTS_ENV_VARS.REP_MIN_UNSTAKE_DELAY}          Min unstake delay in seconds (default: 86400 = 1 day)
   ${CONSTANTS_ENV_VARS.REP_DECAY_INTERVAL_MS}          Decay interval in ms (default: 0 = disabled)
   ${CONSTANTS_ENV_VARS.REP_DECAY_AMOUNT}               Decay amount per interval (default: 0)

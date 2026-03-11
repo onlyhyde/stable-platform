@@ -215,15 +215,15 @@ export class TransactionRiskAnalyzer {
     if (value > 0n) {
       if (value >= VALUE_THRESHOLDS.CRITICAL) {
         riskTypes.push(TransactionRiskType.HIGH_VALUE)
-        warnings.push('Very high value transaction (≥100 ETH equivalent)')
+        warnings.push('Very high value transaction (≥100 WKRC equivalent)')
         upgradeRisk(TransactionRiskLevel.CRITICAL)
       } else if (value >= VALUE_THRESHOLDS.HIGH) {
         riskTypes.push(TransactionRiskType.HIGH_VALUE)
-        warnings.push('High value transaction (≥10 ETH equivalent)')
+        warnings.push('High value transaction (≥10 WKRC equivalent)')
         upgradeRisk(TransactionRiskLevel.HIGH)
       } else if (value >= VALUE_THRESHOLDS.MEDIUM) {
         riskTypes.push(TransactionRiskType.HIGH_VALUE)
-        warnings.push('Moderate value transaction (≥1 ETH equivalent)')
+        warnings.push('Moderate value transaction (≥1 WKRC equivalent)')
         upgradeRisk(TransactionRiskLevel.MEDIUM)
       }
     }

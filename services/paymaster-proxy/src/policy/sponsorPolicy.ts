@@ -7,9 +7,9 @@ import { type RiskAssessment, RiskScorer, type RiskScorerConfig } from './riskSc
  * Get default policy configuration from environment
  * Configurable via:
  * - PAYMASTER_DEFAULT_MAX_GAS_LIMIT: Max gas limit per operation (default: 5000000)
- * - PAYMASTER_DEFAULT_MAX_GAS_COST: Max gas cost in wei (default: 1 ETH)
- * - PAYMASTER_DEFAULT_DAILY_LIMIT_PER_SENDER: Daily limit per sender (default: 0.1 ETH)
- * - PAYMASTER_DEFAULT_GLOBAL_DAILY_LIMIT: Global daily limit (default: 10 ETH)
+ * - PAYMASTER_DEFAULT_MAX_GAS_COST: Max gas cost in wei (default: 1 WKRC)
+ * - PAYMASTER_DEFAULT_DAILY_LIMIT_PER_SENDER: Daily limit per sender (default: 0.1 WKRC)
+ * - PAYMASTER_DEFAULT_GLOBAL_DAILY_LIMIT: Global daily limit (default: 10 WKRC)
  */
 function createDefaultPolicy(): SponsorPolicy {
   const policyConfig = getDefaultPolicyConfig()

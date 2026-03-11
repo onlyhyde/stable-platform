@@ -72,7 +72,7 @@ export interface ERC20GasEstimate extends GasEstimate {
   /** Estimated token amount for gas */
   tokenAmount: bigint
 
-  /** Exchange rate: tokens per 1 ETH */
+  /** Exchange rate: tokens per 1 WKRC */
   exchangeRate: bigint
 }
 
@@ -248,7 +248,7 @@ export function createGasEstimator(config: GasEstimatorConfig) {
       gasLimit: gasEstimate.gasLimit.toString(),
       maxFeePerGas: `${formatGwei(gasEstimate.maxFeePerGas)} gwei`,
       estimatedCost: `${gasEstimate.estimatedCost.toString()} wei`,
-      estimatedCostEth: `${(Number(gasEstimate.estimatedCost) / 1e18).toFixed(6)} ETH`,
+      estimatedCostEth: `${(Number(gasEstimate.estimatedCost) / 1e18).toFixed(6)} WKRC`,
     }
   }
 
