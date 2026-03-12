@@ -72,7 +72,7 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Addr
 // canonical address below.
 
 /** Canonical EntryPoint address (ERC-4337 v0.9, StableNet deployment) */
-export const ENTRY_POINT_ADDRESS: Address = '0xEf6817fe73741A8F10088f9511c64b666a338A14'
+export const ENTRY_POINT_ADDRESS: Address = '0xD23Ee0D8E8DfabE76AA52a872Ce015B0BcAED6Ce'
 
 /** Explicit v0.9 alias for multi-version codebases */
 export const ENTRY_POINT_V09_ADDRESS: Address = ENTRY_POINT_ADDRESS

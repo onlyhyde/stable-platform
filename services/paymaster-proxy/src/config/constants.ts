@@ -1,3 +1,4 @@
+import { getEntryPoint, isChainSupported } from '@stablenet/contracts'
 import type { Address } from 'viem'
 
 /**
@@ -138,19 +139,33 @@ function parseChainIds(name: string, defaultValue: readonly number[]): number[] 
 }
 
 /**
- * Parse comma-separated EntryPoint addresses
- * Defaults to ERC-4337 v0.9 EntryPoint
+ * Parse comma-separated EntryPoint addresses.
+ * Defaults to chain-specific EntryPoint from @stablenet/contracts.
  */
 export function parseEntryPoints(): Address[] {
-  const DEFAULT_ENTRY_POINT = '0xEf6817fe73741A8F10088f9511c64b666a338A14'
   const value = process.env[PAYMASTER_ENV_VARS.SUPPORTED_ENTRY_POINTS]
-  if (value === undefined || value === '') {
-    return [DEFAULT_ENTRY_POINT as Address]
+  if (value !== undefined && value !== '') {
+    return value
+      .split(',')
+      .map((addr) => addr.trim() as Address)
+      .filter((addr) => /^0x[0-9a-fA-F]{40}$/.test(addr))
   }
-  return value
-    .split(',')
-    .map((addr) => addr.trim() as Address)
-    .filter((addr) => /^0x[0-9a-fA-F]{40}$/.test(addr))
+
+  // Derive from supported chains — each chain may have a different EntryPoint
+  const chainIds = parseChainIds(PAYMASTER_ENV_VARS.SUPPORTED_CHAIN_IDS, DEFAULTS.supportedChainIds)
+  const entryPoints = new Set<Address>()
+  for (const chainId of chainIds) {
+    if (isChainSupported(chainId)) {
+      entryPoints.add(getEntryPoint(chainId) as Address)
+    }
+  }
+
+  if (entryPoints.size > 0) {
+    return [...entryPoints]
+  }
+
+  // Final fallback: canonical v0.7 EntryPoint
+  return ['0x0000000071727De22E5E9d8BAf0edAc6f37da032' as Address]
 }
 
 /**
