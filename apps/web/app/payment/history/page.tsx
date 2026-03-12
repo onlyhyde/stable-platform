@@ -1,9 +1,8 @@
 'use client'
 
 import { getNativeCurrencySymbol } from '@stablenet/wallet-sdk'
-import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
-import type { Hex } from 'viem'
+import type { Address, Hex } from 'viem'
 import { formatEther, formatUnits } from 'viem'
 import {
   Button,
@@ -25,10 +24,8 @@ import type { Transaction } from '@/types'
 const ITEMS_PER_PAGE = 10
 
 export default function HistoryPage() {
-  const searchParams = useSearchParams()
-  const _showPending = searchParams.get('pending') === 'true'
   const { isConnected, address } = useWallet()
-  const { transactions, isLoading, error } = useTransactionHistory({ address })
+  const { transactions, isLoading, error, refresh } = useTransactionHistory({ address })
   const { recheckUserOp, getPendingUserOps, removePendingUserOp } = useUserOp()
   const { addToast } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
@@ -38,10 +35,15 @@ export default function HistoryPage() {
   const [recheckingHash, setRecheckingHash] = useState<Hex | null>(null)
   const [actionHash, setActionHash] = useState<Hex | null>(null)
 
-  // Load pending ops on mount and when showPending changes
+  // Load pending ops on mount
   useEffect(() => {
     setPendingOps(getPendingUserOps())
   }, [getPendingUserOps])
+
+  // Reset to page 1 when transactions change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [transactions])
 
   const handleRecheck = useCallback(
     async (userOpHash: Hex) => {
@@ -55,9 +57,11 @@ export default function HistoryPage() {
             message: 'Transaction confirmed on-chain',
           })
           setPendingOps((prev) => prev.filter((op) => op.userOpHash !== userOpHash))
+          refresh()
         } else if (result.status === 'failed') {
           addToast({ type: 'error', title: 'Failed', message: 'Transaction failed on-chain' })
           setPendingOps((prev) => prev.filter((op) => op.userOpHash !== userOpHash))
+          refresh()
         } else {
           addToast({
             type: 'info',
@@ -71,7 +75,7 @@ export default function HistoryPage() {
         setRecheckingHash(null)
       }
     },
-    [recheckUserOp, addToast]
+    [recheckUserOp, addToast, refresh]
   )
 
   const handleDismissPending = useCallback(
@@ -196,7 +200,7 @@ export default function HistoryPage() {
                       {op.userOpHash.slice(0, 10)}...{op.userOpHash.slice(-8)}
                     </p>
                     <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                      Submitted {formatRelativeTime(op.timestamp)}
+                      {op.timestamp ? `Submitted ${formatRelativeTime(op.timestamp)}` : 'Pending'}
                       {op.to ? ` to ${op.to.slice(0, 8)}...` : ''}
                     </p>
                   </div>
@@ -278,7 +282,7 @@ export default function HistoryPage() {
                 {transactions
                   .slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
                   .map((tx) => (
-                    <TransactionItem key={tx.hash} transaction={tx} />
+                    <TransactionItem key={tx.hash} transaction={tx} userAddress={address} />
                   ))}
               </div>
               <Pagination
@@ -297,10 +301,14 @@ export default function HistoryPage() {
 
 interface TransactionItemProps {
   transaction: Transaction
+  userAddress?: Address
 }
 
-function TransactionItem({ transaction }: TransactionItemProps) {
+function TransactionItem({ transaction, userAddress }: TransactionItemProps) {
   const nativeSymbol = getNativeCurrencySymbol(transaction.chainId)
+
+  const isReceived =
+    userAddress && transaction.to.toLowerCase() === userAddress.toLowerCase()
 
   const statusStyles: Record<string, { bg: string; color: string }> = {
     pending: { bg: 'rgb(var(--warning) / 0.1)', color: 'rgb(var(--warning))' },
@@ -314,41 +322,70 @@ function TransactionItem({ transaction }: TransactionItemProps) {
     ? `${formatUnits(transaction.tokenTransfer.value, transaction.tokenTransfer.decimals ?? 18)} ${transaction.tokenTransfer.symbol ?? formatAddress(transaction.tokenTransfer.contractAddress, 3)}`
     : `${formatEther(transaction.value)} ${nativeSymbol}`
 
+  const counterparty = isReceived ? transaction.from : transaction.to
+
   return (
     <div className="py-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: 'rgb(var(--primary) / 0.1)' }}
+          style={{
+            backgroundColor: isReceived
+              ? 'rgb(var(--success) / 0.1)'
+              : 'rgb(var(--primary) / 0.1)',
+          }}
         >
-          <svg
-            className="w-5 h-5"
-            style={{ color: 'rgb(var(--primary))' }}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-            />
-          </svg>
+          {isReceived ? (
+            <svg
+              className="w-5 h-5"
+              style={{ color: 'rgb(var(--success))' }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
+              />
+            </svg>
+          ) : (
+            <svg
+              className="w-5 h-5"
+              style={{ color: 'rgb(var(--primary))' }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+              />
+            </svg>
+          )}
         </div>
         <div>
           <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-            To: {formatAddress(transaction.to)}
+            {isReceived ? 'From' : 'To'}: {formatAddress(counterparty)}
           </p>
           <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            {formatRelativeTime(transaction.timestamp)}
+            {transaction.timestamp ? formatRelativeTime(transaction.timestamp) : 'Unknown'}
           </p>
         </div>
       </div>
       <div className="text-right">
-        <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-          -{displayAmount}
+        <p
+          className="font-medium"
+          style={{
+            color: isReceived ? 'rgb(var(--success))' : 'rgb(var(--foreground))',
+          }}
+        >
+          {isReceived ? '+' : '-'}{displayAmount}
         </p>
         <span
           className="text-xs px-2 py-0.5 rounded"

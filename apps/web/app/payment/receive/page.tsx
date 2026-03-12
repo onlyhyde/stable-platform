@@ -2,7 +2,7 @@
 
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useRef, useState } from 'react'
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
+import { Button, Card, CardContent, CardHeader, CardTitle, useToast } from '@/components/common'
 import { useWallet } from '@/hooks'
 import { copyToClipboard } from '@/lib/utils'
 
@@ -10,6 +10,7 @@ export default function ReceivePage() {
   const { address, isConnected } = useWallet()
   const [copied, setCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const { addToast } = useToast()
 
   useEffect(() => {
     return () => clearTimeout(copyTimerRef.current)
@@ -19,8 +20,15 @@ export default function ReceivePage() {
     if (!address) return
     const success = await copyToClipboard(address)
     if (success) {
+      clearTimeout(copyTimerRef.current)
       setCopied(true)
       copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
+    } else {
+      addToast({
+        type: 'error',
+        title: 'Copy Failed',
+        message: 'Failed to copy address to clipboard',
+      })
     }
   }
 
