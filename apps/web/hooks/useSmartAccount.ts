@@ -663,6 +663,12 @@ export function useSmartAccount() {
 
   const clearError = useCallback(() => setError(null), [])
 
+  // Clear stale authorization/txHash from previous operations
+  const clearLastTransaction = useCallback(() => {
+    setLastAuthorization(null)
+    setLastTxHash(null)
+  }, [])
+
   return {
     // Status
     status,
@@ -692,6 +698,7 @@ export function useSmartAccount() {
     // Common actions
     refreshStatus: checkSmartAccountStatus,
     clearError,
+    clearLastTransaction,
 
     // Helpers
     getDefaultDelegateAddress,

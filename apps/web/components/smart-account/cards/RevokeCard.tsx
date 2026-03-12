@@ -7,9 +7,16 @@ interface RevokeCardProps {
   isRevoking: boolean
   isLoading: boolean
   canPerformAction: boolean
+  onChangeDelegate?: () => void
 }
 
-export function RevokeCard({ onRevoke, isRevoking, isLoading, canPerformAction }: RevokeCardProps) {
+export function RevokeCard({
+  onRevoke,
+  isRevoking,
+  isLoading,
+  canPerformAction,
+  onChangeDelegate,
+}: RevokeCardProps) {
   return (
     <Card>
       <CardContent className="py-6">
@@ -40,23 +47,35 @@ export function RevokeCard({ onRevoke, isRevoking, isLoading, canPerformAction }
           <p className="mb-6 max-w-md mx-auto" style={{ color: 'rgb(var(--muted-foreground))' }}>
             Revoke the smart account delegation and return to a regular EOA.
           </p>
-          <Button
-            variant="danger"
-            onClick={onRevoke}
-            disabled={isRevoking || isLoading || !canPerformAction}
-            className="min-w-[200px]"
-          >
-            {isRevoking ? (
-              <span className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                Revoking...
-              </span>
-            ) : !canPerformAction ? (
-              'Enter Private Key First'
-            ) : (
-              'Revoke Smart Account'
+          <div className="flex justify-center gap-3">
+            <Button
+              variant="danger"
+              onClick={onRevoke}
+              disabled={isRevoking || isLoading || !canPerformAction}
+              className="min-w-[200px]"
+            >
+              {isRevoking ? (
+                <span className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                  Revoking...
+                </span>
+              ) : !canPerformAction ? (
+                'Enter Private Key First'
+              ) : (
+                'Revoke Smart Account'
+              )}
+            </Button>
+            {onChangeDelegate && (
+              <Button
+                variant="secondary"
+                onClick={onChangeDelegate}
+                disabled={isRevoking || isLoading}
+                className="min-w-[160px]"
+              >
+                Change Delegate
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

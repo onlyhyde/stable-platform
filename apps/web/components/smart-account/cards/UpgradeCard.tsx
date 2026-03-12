@@ -12,6 +12,8 @@ interface UpgradeCardProps {
   isUpgrading: boolean
   isLoading: boolean
   canPerformAction: boolean
+  isRedelegating?: boolean
+  onCancelRedelegate?: () => void
 }
 
 export function UpgradeCard({
@@ -22,7 +24,15 @@ export function UpgradeCard({
   isUpgrading,
   isLoading,
   canPerformAction,
+  isRedelegating,
+  onCancelRedelegate,
 }: UpgradeCardProps) {
+  const title = isRedelegating ? 'Change Delegate' : 'Upgrade to Smart Account'
+  const description = isRedelegating
+    ? 'Re-delegate your Smart Account to a different implementation contract.'
+    : 'Delegate your EOA to a Smart Account using EIP-7702 SetCode transaction.'
+  const buttonLabel = isRedelegating ? 'Change Delegate' : 'Upgrade to Smart Account'
+
   return (
     <Card>
       <CardContent className="py-6">
@@ -48,10 +58,10 @@ export function UpgradeCard({
             </svg>
           </div>
           <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
-            Upgrade to Smart Account
+            {title}
           </h3>
           <p className="max-w-md mx-auto" style={{ color: 'rgb(var(--muted-foreground))' }}>
-            Delegate your EOA to a Smart Account using EIP-7702 SetCode transaction.
+            {description}
           </p>
         </div>
 
@@ -70,7 +80,7 @@ export function UpgradeCard({
           />
         </div>
 
-        <div className="text-center">
+        <div className="text-center flex justify-center gap-3">
           <Button
             onClick={onUpgrade}
             disabled={isUpgrading || isLoading || !canPerformAction}
@@ -79,14 +89,24 @@ export function UpgradeCard({
             {isUpgrading ? (
               <span className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                Upgrading...
+                {isRedelegating ? 'Changing...' : 'Upgrading...'}
               </span>
             ) : !canPerformAction ? (
               'Enter Private Key First'
             ) : (
-              'Upgrade to Smart Account'
+              buttonLabel
             )}
           </Button>
+          {isRedelegating && onCancelRedelegate && (
+            <Button
+              variant="secondary"
+              onClick={onCancelRedelegate}
+              disabled={isUpgrading}
+              className="min-w-[120px]"
+            >
+              Cancel
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -45,6 +45,7 @@ export default function SmartAccountPage() {
     revokeWithStableNet,
     isStableNetWallet,
     refreshStatus,
+    clearLastTransaction,
     contracts,
     anvilAccounts,
   } = useSmartAccount()
@@ -54,11 +55,20 @@ export default function SmartAccountPage() {
   // State for signing method selection
   const [signingMethod, setSigningMethod] = useState<SigningMethod>('privateKey')
 
-  // State for selected delegate address
-  const [selectedDelegate, setSelectedDelegate] = useState<Address>(() => {
-    const presets = getDelegatePresets(31337)
-    return presets.length > 0 ? presets[0].address : contracts.defaultKernelImplementation
-  })
+  // State for selected delegate address (synced with chainId)
+  const [selectedDelegate, setSelectedDelegate] = useState<Address>(
+    contracts.defaultKernelImplementation
+  )
+
+  // State for re-delegation mode (change delegate while already smart account)
+  const [isRedelegating, setIsRedelegating] = useState(false)
+
+  // Sync selectedDelegate when chainId changes
+  useEffect(() => {
+    const presets = getDelegatePresets(chainId)
+    const defaultAddr = presets.length > 0 ? presets[0].address : contracts.defaultKernelImplementation
+    setSelectedDelegate(defaultAddr)
+  }, [chainId, contracts.defaultKernelImplementation])
 
   // SECURITY: Private key stored in SecureKeyStore (XOR-encrypted, auto-clear 60s)
   // Never in React state/ref — invisible to React DevTools
@@ -102,6 +112,19 @@ export default function SmartAccountPage() {
 
   // Handle upgrade with selected delegate
   const handleUpgrade = async () => {
+    // Issue 4: Guard against undefined/null selectedDelegate
+    if (!selectedDelegate) {
+      addToast({
+        type: 'error',
+        title: 'No Delegate Selected',
+        message: 'Please select a delegate contract address before upgrading.',
+      })
+      return
+    }
+
+    // Issue 3: Clear stale authorization data before new attempt
+    clearLastTransaction()
+
     const toastId = addToast({
       type: 'loading',
       title: 'Upgrading to Smart Account',
@@ -116,15 +139,23 @@ export default function SmartAccountPage() {
       } else {
         // SECURITY: Retrieve-and-clear ensures key is wiped immediately after use
         const key = secureKeyStore.retrieveAndClear()
-        setHasPrivateKey(false)
+        // Issue 1: Only clear hasPrivateKey after confirming retrieval succeeded
         if (!key) {
+          setHasPrivateKey(false)
           removeToast(toastId)
+          addToast({
+            type: 'error',
+            title: 'Key Expired',
+            message: 'Private key expired or was already used. Please re-enter.',
+          })
           return
         }
+        setHasPrivateKey(false)
         result = await upgradeToSmartAccount(key as Hex, selectedDelegate)
       }
 
       if (result.success) {
+        setIsRedelegating(false)
         updateToast(toastId, {
           type: 'success',
           title: 'Upgrade Successful',
@@ -152,6 +183,9 @@ export default function SmartAccountPage() {
 
   // Handle revoke
   const handleRevoke = async () => {
+    // Issue 3: Clear stale authorization data before new attempt
+    clearLastTransaction()
+
     const toastId = addToast({
       type: 'loading',
       title: 'Revoking Smart Account',
@@ -166,11 +200,18 @@ export default function SmartAccountPage() {
       } else {
         // SECURITY: Retrieve-and-clear ensures key is wiped immediately after use
         const key = secureKeyStore.retrieveAndClear()
-        setHasPrivateKey(false)
+        // Issue 1: Only clear hasPrivateKey after confirming retrieval succeeded
         if (!key) {
+          setHasPrivateKey(false)
           removeToast(toastId)
+          addToast({
+            type: 'error',
+            title: 'Key Expired',
+            message: 'Private key expired or was already used. Please re-enter.',
+          })
           return
         }
+        setHasPrivateKey(false)
         result = await revokeSmartAccount(key as Hex)
       }
 
@@ -264,7 +305,8 @@ export default function SmartAccountPage() {
             />
           )}
 
-          {!status.isSmartAccount ? (
+          {/* Issue 6: Show UpgradeCard when not smart account OR when re-delegating */}
+          {(!status.isSmartAccount || isRedelegating) ? (
             <UpgradeCard
               chainId={chainId}
               selectedDelegate={selectedDelegate}
@@ -273,6 +315,8 @@ export default function SmartAccountPage() {
               isUpgrading={isUpgrading}
               isLoading={status.isLoading}
               canPerformAction={canPerformAction}
+              isRedelegating={isRedelegating}
+              onCancelRedelegate={() => setIsRedelegating(false)}
             />
           ) : (
             <RevokeCard
@@ -280,6 +324,7 @@ export default function SmartAccountPage() {
               isRevoking={isRevoking}
               isLoading={status.isLoading}
               canPerformAction={canPerformAction}
+              onChangeDelegate={() => setIsRedelegating(true)}
             />
           )}
 

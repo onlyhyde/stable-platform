@@ -2,7 +2,6 @@
 
 import type { Address } from 'viem'
 import { Card, CardContent } from '@/components/common'
-import { formatAddress } from '@/lib/utils'
 
 interface ContractAddressesCardProps {
   contracts: {
@@ -45,7 +44,7 @@ export function ContractAddressesCard({
           {addressList.map((item, index) => (
             <div
               key={item.label}
-              className="flex justify-between items-center py-2 -mx-4 px-4 rounded"
+              className="flex flex-col sm:flex-row sm:justify-between gap-1 py-2 -mx-4 px-4 rounded"
               style={{
                 borderBottom:
                   index < addressList.length - 1 ? '1px solid rgb(var(--border))' : 'none',
@@ -53,7 +52,7 @@ export function ContractAddressesCard({
               }}
             >
               <span
-                className={item.highlight ? 'font-medium' : ''}
+                className={`shrink-0 ${item.highlight ? 'font-medium' : ''}`}
                 style={{
                   color: item.highlight ? 'rgb(var(--success))' : 'rgb(var(--muted-foreground))',
                 }}
@@ -61,10 +60,10 @@ export function ContractAddressesCard({
                 {item.label}
               </span>
               <span
-                className="font-mono"
+                className="font-mono text-xs break-all"
                 style={{ color: item.highlight ? 'rgb(var(--success))' : 'rgb(var(--foreground))' }}
               >
-                {formatAddress(item.address, 6)}
+                {item.address}
               </span>
             </div>
           ))}
