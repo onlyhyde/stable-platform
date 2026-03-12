@@ -107,6 +107,12 @@ export function stableNetWallet(parameters: StableNetWalletParameters = {}) {
             accountsChanged = this.onAccountsChanged.bind(this)
             provider.on('accountsChanged', accountsChanged as (...args: unknown[]) => void)
           }
+          // Subscribe to chainChanged early so chain switches are detected
+          // even before connect() is called (e.g., during auto-reconnect)
+          if (!chainChanged) {
+            chainChanged = this.onChainChanged.bind(this)
+            provider.on('chainChanged', chainChanged as (...args: unknown[]) => void)
+          }
         }
       },
 

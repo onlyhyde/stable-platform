@@ -1,18 +1,24 @@
-const PREFIX = '[wallet-sdk]'
-
 /**
- * Internal logger for wallet-sdk.
- * Outputs to console with a [wallet-sdk] prefix.
- * Can be silenced via `walletSdkLogger.silent = true`.
+ * Legacy logger export for backward compatibility.
+ * New code should use createLogger() from ./provider/logger.ts instead.
  */
+import { createLogger, setLoggerSilent } from './provider/logger'
+
+const logger = createLogger('SDK')
+
 export const walletSdkLogger = {
-  silent: false,
+  get silent() {
+    return false
+  },
+  set silent(value: boolean) {
+    setLoggerSilent(value)
+  },
 
   warn(...args: unknown[]) {
-    if (!this.silent) console.warn(PREFIX, ...args)
+    logger.warn(...args)
   },
 
   error(...args: unknown[]) {
-    if (!this.silent) console.error(PREFIX, ...args)
+    logger.error(...args)
   },
 }

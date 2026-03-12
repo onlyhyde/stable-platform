@@ -1,7 +1,7 @@
 import type { EIP1193Provider } from 'viem'
 import type { WalletSDKConfig } from '../types'
 import { getProviderRegistry } from './eip6963'
-import { StableNetProvider } from './StableNetProvider'
+import { StableNetProvider, type StableNetProviderConfig } from './StableNetProvider'
 
 // Extend window type for provider
 declare global {
@@ -25,10 +25,17 @@ export async function detectProvider(
 ): Promise<StableNetProvider | null> {
   const { timeout = 3000 } = config
 
+  // Forward provider-level config
+  const providerConfig: StableNetProviderConfig = {
+    enableSession: config.enableSession,
+    sessionMaxAge: config.sessionMaxAge,
+    readOnlyRpcUrl: config.readOnlyRpcUrl,
+  }
+
   // Check if provider is already available synchronously
   const existingProvider = getExistingProvider()
   if (existingProvider) {
-    return new StableNetProvider(existingProvider)
+    return new StableNetProvider(existingProvider, providerConfig)
   }
 
   // Use EIP-6963 registry for discovery
@@ -38,7 +45,7 @@ export async function detectProvider(
   // Check if StableNet was discovered
   const stableNetProvider = registry.getStableNetProvider()
   if (stableNetProvider) {
-    return new StableNetProvider(stableNetProvider.provider)
+    return new StableNetProvider(stableNetProvider.provider, providerConfig)
   }
 
   // If not found yet, wait a bit longer for late announcements
@@ -54,7 +61,7 @@ export async function detectProvider(
         if (event.type === 'providerAdded' && event.provider.isStableNet) {
           clearTimeout(timeoutId)
           unsubscribe()
-          resolve(new StableNetProvider(event.provider.provider))
+          resolve(new StableNetProvider(event.provider.provider, providerConfig))
         }
       })
     })

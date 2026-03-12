@@ -242,6 +242,12 @@ export interface WalletSDKConfig {
   timeout?: number
   /** Custom networks to add */
   networks?: NetworkConfig[]
+  /** Enable session persistence for instant reconnection */
+  enableSession?: boolean
+  /** Max session age in ms (default: 24 hours) */
+  sessionMaxAge?: number
+  /** Public RPC URL for read-only calls without wallet connection */
+  readOnlyRpcUrl?: string
 }
 
 // ============================================================================
