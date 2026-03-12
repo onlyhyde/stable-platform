@@ -48,7 +48,7 @@
     "@testing-library/react": "^16.3.2",
     "@types/chrome": "^0.1.37",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.3.5",
+    "@types/node": "^25.4.0",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^5.1.4",
