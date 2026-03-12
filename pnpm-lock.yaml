@@ -7,7 +7,7 @@ settings:
 overrides:
   esbuild: '>=0.25.0'
   axios: '>=1.13.5'
-  tar: '>=7.5.8'
+  tar: '>=7.5.11'
   ajv: '>=8.18.0'
   minimatch: '>=10.2.3'
   rollup: '>=4.59.0'
@@ -5863,8 +5863,8 @@ packages:
     resolution: {integrity: sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==}
     engines: {node: '>=6'}
 
-  tar@7.5.10:
-    resolution: {integrity: sha512-8mOPs1//5q/rlkNSPcCegA6hiHJYDmSLEI8aMH/CdSQJNWztHC9WHNam5zdQlfpTwB9Xp7IBEsHfV5LKMJGVAw==}
+  tar@7.5.11:
+    resolution: {integrity: sha512-ChjMH33/KetonMTAtpYdgUFr0tbz69Fp2v7zWxQfYZX4g5ZN2nOBXm1R2xyA+lMIKrLKIoKAwFj93jE/avX9cQ==}
     engines: {node: '>=18'}
 
   term-size@2.2.1:
@@ -8130,7 +8130,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.12
-      debug: 4.3.4
+      debug: 4.4.3
       pony-cause: 2.1.11
       semver: 7.7.4
       uuid: 9.0.1
@@ -8145,7 +8145,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.12
-      debug: 4.3.4
+      debug: 4.4.3
       pony-cause: 2.1.11
       semver: 7.7.4
       uuid: 9.0.1
@@ -9097,22 +9097,6 @@ snapshots:
       '@walletconnect/ethereum-provider': 2.21.1(@types/react@19.2.9)(bufferutil@4.1.0)(react@19.2.3)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
       porto: 0.2.35(@tanstack/react-query@5.90.21(react@19.2.3))(@types/react@19.2.9)(@wagmi/core@3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.9)(immer@11.1.4)(ox@0.14.0(typescript@5.9.3)(zod@4.3.6))(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)))(immer@11.1.4)(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(wagmi@3.5.0)
       typescript: 5.9.3
-
-  '@wagmi/core@3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.9)(immer@11.1.4)(ox@0.14.0(typescript@5.9.3)(zod@4.3.6))(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))':
-    dependencies:
-      eventemitter3: 5.0.1
-      mipd: 0.0.7(typescript@5.9.3)
-      viem: 2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
-      zustand: 5.0.0(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.4.0(react@19.2.3))
-    optionalDependencies:
-      '@tanstack/query-core': 5.90.20
-      ox: 0.14.0(typescript@5.9.3)(zod@4.3.6)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-      - react
-      - use-sync-external-store
 
   '@wagmi/core@3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.9)(immer@11.1.4)(ox@0.14.0(typescript@5.9.3)(zod@4.3.6))(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))':
     dependencies:
@@ -12064,11 +12048,11 @@ snapshots:
   ox@0.6.7(typescript@5.9.3)(zod@4.3.6):
     dependencies:
       '@adraffy/ens-normalize': 1.11.1
-      '@noble/curves': 1.8.1
-      '@noble/hashes': 1.7.1
-      '@scure/bip32': 1.6.2
-      '@scure/bip39': 1.5.4
-      abitype: 1.0.8(typescript@5.9.3)(zod@4.3.6)
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
+      abitype: 1.2.3(typescript@5.9.3)(zod@4.3.6)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.9.3
@@ -12388,7 +12372,7 @@ snapshots:
       execa: 9.6.1
       get-port: 7.1.0
       http-proxy: 1.18.1
-      tar: 7.5.10
+      tar: 7.5.11
     transitivePeerDependencies:
       - debug
 
@@ -12935,7 +12919,7 @@ snapshots:
 
   tapable@2.3.0: {}
 
-  tar@7.5.10:
+  tar@7.5.11:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
       chownr: 3.0.0
@@ -13463,7 +13447,7 @@ snapshots:
     dependencies:
       '@tanstack/react-query': 5.90.21(react@19.2.3)
       '@wagmi/connectors': 7.2.1(342f7b36a0d23e35b0c9e9bd9ce76032)
-      '@wagmi/core': 3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.9)(immer@11.1.4)(ox@0.14.0(typescript@5.9.3)(zod@4.3.6))(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))
+      '@wagmi/core': 3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.9)(immer@11.1.4)(ox@0.14.0(typescript@5.9.3)(zod@4.3.6))(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.3))(viem@2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))
       react: 19.2.3
       use-sync-external-store: 1.4.0(react@19.2.3)
       viem: 2.46.3(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -13661,13 +13645,6 @@ snapshots:
 
   zod@4.3.6:
     optional: true
-
-  zustand@5.0.0(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.4.0(react@19.2.3)):
-    optionalDependencies:
-      '@types/react': 19.2.9
-      immer: 11.1.4
-      react: 19.2.3
-      use-sync-external-store: 1.4.0(react@19.2.3)
 
   zustand@5.0.0(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)):
     optionalDependencies:
