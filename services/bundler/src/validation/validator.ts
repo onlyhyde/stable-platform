@@ -160,11 +160,21 @@ export class UserOperationValidator {
     await this.validateState(userOp)
 
     // Phase 4: Simulation
+    // Paymaster UserOps MUST always be simulated — skipping simulation would let
+    // invalid paymaster data (wrong oracle, unsupported token, stale price) enter
+    // the mempool, only to fail at the executor's handleOps pre-flight check.
     let result: ValidationResult
-    if (this.config.skipSimulation) {
-      // Create dummy result for testing
+    const hasPaymaster = !!userOp.paymaster
+    if (this.config.skipSimulation && !hasPaymaster) {
+      // Create dummy result for testing (non-paymaster ops only)
       result = this.createDummyValidationResult()
     } else {
+      if (this.config.skipSimulation && hasPaymaster) {
+        this.logger.warn(
+          { sender: userOp.sender, paymaster: userOp.paymaster },
+          'skipSimulation active but paymaster detected — running simulation anyway'
+        )
+      }
       result = await this.simulationValidator.simulate(userOp)
     }
 

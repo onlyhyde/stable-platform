@@ -7,6 +7,12 @@ import { packForContract } from '../shared/packUserOp'
 import type { MempoolEntry } from '../types'
 import type { Logger } from '../utils/logger'
 import type { AggregatorValidator, OpcodeValidator, UserOperationValidator } from '../validation'
+import {
+  decodeFailedOp,
+  decodeFailedOpWithRevert,
+  extractErrorData,
+  matchesErrorSelector,
+} from '../validation/errors'
 import type { UserOperationEventData, UserOpsPerAggregator } from '../validation/types'
 import { VALIDATION_CONSTANTS } from '../validation/types'
 import {
@@ -232,12 +238,18 @@ export class BundleExecutor {
           }
         }
       } catch (error) {
-        // Remove invalid operation from mempool
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        this.mempool.updateStatus(entry.userOpHash, 'dropped', undefined, undefined, errorMessage)
+        // Parse revert data for better diagnostics (FailedOp / FailedOpWithRevert)
+        const diagnostics = this.diagnosePreflightError(error, entry)
+        this.mempool.updateStatus(entry.userOpHash, 'dropped', undefined, undefined, diagnostics.message)
 
         this.logger.warn(
-          { userOpHash: entry.userOpHash, error: errorMessage },
+          {
+            userOpHash: entry.userOpHash,
+            error: diagnostics.message,
+            reason: diagnostics.reason,
+            hasPaymaster: !!entry.userOp.paymaster,
+            paymaster: entry.userOp.paymaster,
+          },
           'Operation failed pre-flight validation, dropped from mempool'
         )
       }
@@ -264,6 +276,43 @@ export class BundleExecutor {
       to: this.config.entryPoint,
       data,
     })
+  }
+
+  /**
+   * Extract structured diagnostics from a pre-flight handleOps revert.
+   * Attempts to decode FailedOp / FailedOpWithRevert from the revert data.
+   */
+  private diagnosePreflightError(
+    error: unknown,
+    entry: MempoolEntry
+  ): { message: string; reason?: string } {
+    const revertData = extractErrorData(error)
+
+    if (!revertData) {
+      const fallbackMsg = error instanceof Error ? error.message : 'Unknown error'
+      return { message: fallbackMsg }
+    }
+
+    if (matchesErrorSelector(revertData, 'FailedOp')) {
+      const { reason } = decodeFailedOp(revertData)
+      return {
+        message: `FailedOp: ${reason}`,
+        reason,
+      }
+    }
+
+    if (matchesErrorSelector(revertData, 'FailedOpWithRevert')) {
+      const { reason, inner } = decodeFailedOpWithRevert(revertData)
+      return {
+        message: `FailedOpWithRevert: ${reason} (inner: ${inner})`,
+        reason,
+      }
+    }
+
+    // Unknown revert — include hex data for debugging
+    return {
+      message: `handleOps reverted: ${revertData.slice(0, 138)}${revertData.length > 138 ? '...' : ''}`,
+    }
   }
 
   /**

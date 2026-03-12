@@ -1,17 +1,15 @@
+import { getDefaultTokens } from '@stablenet/contracts'
 import type { Address, PublicClient } from 'viem'
 import type { SupportedToken } from '../types'
 
 /**
  * ERC20Paymaster ABI (read-only functions)
+ *
+ * Note: The on-chain contract uses `mapping(address => bool) supportedTokens`
+ * and `isTokenSupported(address)` — there is no `getSupportedTokens()` function.
+ * Token discovery uses known tokens from @stablenet/contracts + isTokenSupported checks.
  */
 export const ERC20_PAYMASTER_ABI = [
-  {
-    type: 'function',
-    name: 'getSupportedTokens',
-    inputs: [],
-    outputs: [{ type: 'address[]', name: 'tokens' }],
-    stateMutability: 'view',
-  },
   {
     type: 'function',
     name: 'isTokenSupported',
@@ -121,57 +119,82 @@ const tokenListCache = new TtlCache<SupportedToken[]>()
 const tokenPriceCache = new TtlCache<string>()
 
 /**
- * Fetch supported tokens from ERC20Paymaster contract
+ * Fetch supported tokens by checking known tokens against the on-chain
+ * `isTokenSupported(address)` function.
+ *
+ * The ERC20Paymaster contract uses a mapping, not a getter array, so we
+ * discover tokens from @stablenet/contracts' known token list and verify
+ * each one on-chain.
  */
 export async function fetchSupportedTokens(
   client: PublicClient,
   paymasterAddress: Address,
-  oracleAddress?: Address
+  oracleAddress?: Address,
+  chainId?: number
 ): Promise<SupportedToken[]> {
-  const cacheKey = `${paymasterAddress}`
+  const cacheKey = `${paymasterAddress}:${chainId ?? 'unknown'}`
   const cached = tokenListCache.get(cacheKey)
   if (cached) return cached
 
-  const tokenAddresses = (await client.readContract({
-    address: paymasterAddress,
-    abi: ERC20_PAYMASTER_ABI,
-    functionName: 'getSupportedTokens',
-  })) as Address[]
+  // Get chain ID from client if not provided
+  const resolvedChainId = chainId ?? Number(await client.getChainId())
 
-  const tokens: SupportedToken[] = await Promise.all(
-    tokenAddresses.map(async (tokenAddr) => {
-      const [symbol, decimals, exchangeRate] = await Promise.all([
-        client.readContract({
-          address: tokenAddr,
-          abi: ERC20_ABI,
-          functionName: 'symbol',
-        }) as Promise<string>,
-        client.readContract({
-          address: tokenAddr,
-          abi: ERC20_ABI,
-          functionName: 'decimals',
-        }) as Promise<number>,
-        oracleAddress
-          ? (client.readContract({
-              address: oracleAddress,
-              abi: PRICE_ORACLE_ABI,
-              functionName: 'getPrice',
-              args: [tokenAddr],
-            }) as Promise<bigint>)
-          : Promise.resolve(0n),
-      ])
+  // Get known ERC-20 tokens for this chain (exclude native zero-address)
+  const knownTokens = getDefaultTokens(resolvedChainId).filter(
+    (t) => t.address !== '0x0000000000000000000000000000000000000000'
+  )
 
-      return {
-        address: tokenAddr,
-        symbol,
-        decimals,
-        exchangeRate: exchangeRate.toString(),
-      }
+  if (knownTokens.length === 0) {
+    return []
+  }
+
+  // Check each known token against the on-chain isTokenSupported mapping
+  const supportChecks = await Promise.allSettled(
+    knownTokens.map(async (token) => {
+      const supported = (await client.readContract({
+        address: paymasterAddress,
+        abi: ERC20_PAYMASTER_ABI,
+        functionName: 'isTokenSupported',
+        args: [token.address as Address],
+      })) as boolean
+
+      return { token, supported }
     })
   )
 
-  tokenListCache.set(cacheKey, tokens)
-  return tokens
+  const supportedTokens: SupportedToken[] = []
+
+  for (const result of supportChecks) {
+    if (result.status !== 'fulfilled' || !result.value.supported) continue
+
+    const { token } = result.value
+
+    // Optionally fetch exchange rate from oracle
+    let exchangeRate = '0'
+    if (oracleAddress) {
+      try {
+        const price = (await client.readContract({
+          address: oracleAddress,
+          abi: PRICE_ORACLE_ABI,
+          functionName: 'getPrice',
+          args: [token.address as Address],
+        })) as bigint
+        exchangeRate = price.toString()
+      } catch {
+        // Oracle price unavailable — use 0 as fallback
+      }
+    }
+
+    supportedTokens.push({
+      address: token.address as Address,
+      symbol: token.symbol,
+      decimals: token.decimals,
+      exchangeRate,
+    })
+  }
+
+  tokenListCache.set(cacheKey, supportedTokens)
+  return supportedTokens
 }
 
 /**
