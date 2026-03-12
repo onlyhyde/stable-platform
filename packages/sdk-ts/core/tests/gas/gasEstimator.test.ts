@@ -132,7 +132,7 @@ describe('createGasEstimator', () => {
       expect(formatted.gasLimit).toBe('21000')
       expect(formatted.maxFeePerGas).toContain('gwei')
       expect(formatted.estimatedCost).toContain('wei')
-      expect(formatted.estimatedCostEth).toContain('ETH')
+      expect(formatted.estimatedCostEth).toContain('WKRC')
     })
   })
 })
