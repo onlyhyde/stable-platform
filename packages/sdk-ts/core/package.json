@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@stablenet/sdk-types": "workspace:*",
-    "viem": "^2.46.3"
+    "viem": "^2.47.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",
@@ -37,6 +37,6 @@
     "vitest": "^4.0.18"
   },
   "peerDependencies": {
-    "viem": "^2.46.3"
+    "viem": "^2.47.2"
   }
 }
