@@ -126,9 +126,12 @@ export function useTokenApproval(): TokenApprovalState {
           throw new Error('Wallet not connected — cannot send approval transaction')
         }
 
+        // Use sponsored gas for the approve tx so users without native
+        // balance can still approve ERC-20 paymaster (matches wallet-extension)
         const result = await sendUserOp(owner, {
           to: tokenAddress,
           data: calldata as Hex,
+          gasPayment: { type: 'sponsor' },
         })
 
         if (result?.success) {
