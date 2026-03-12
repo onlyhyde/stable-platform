@@ -91,5 +91,8 @@
   "severityCritical": "심각",
   "severityHigh": "높음",
   "severityWarning": "경고",
-  "severityInfo": "정보"
+  "severityInfo": "정보",
+
+  "userOpGasToken": "가스 결제 토큰",
+  "userOpGasTokenCost": "최대 가스 비용"
 }

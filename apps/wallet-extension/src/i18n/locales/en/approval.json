@@ -91,5 +91,8 @@
   "severityCritical": "CRITICAL",
   "severityHigh": "HIGH",
   "severityWarning": "WARNING",
-  "severityInfo": "INFO"
+  "severityInfo": "INFO",
+
+  "userOpGasToken": "Gas Token",
+  "userOpGasTokenCost": "Max Gas Cost"
 }

@@ -140,6 +140,10 @@ export const RPC_ERRORS = {
     code: 4901,
     message: 'The provider is disconnected from the specified chain',
   },
+  TOKEN_APPROVAL_REQUIRED: {
+    code: -32010,
+    message: 'Token approval required for ERC-20 paymaster',
+  },
 } as const
 
 /**

@@ -40,6 +40,21 @@ interface GasPaymentSelectorProps {
 
   /** Custom gas settings change handler */
   onCustomGasChange?: (settings: CustomGasSettings) => void
+
+  /** Whether token approval is in progress */
+  isSendingApprove?: boolean
+
+  /** Whether token allowance is sufficient for ERC-20 paymaster */
+  isAllowanceSufficient?: boolean
+
+  /** Whether allowance is being checked */
+  isCheckingAllowance?: boolean
+
+  /** Approve error message */
+  approveError?: string | null
+
+  /** Handler to send approve transaction */
+  onApproveToken?: (tokenAddress: Address) => void
 }
 
 interface PaymentOption {
@@ -70,6 +85,11 @@ export function GasPaymentSelector({
   isLoading = false,
   accountAddress,
   onCustomGasChange,
+  isSendingApprove = false,
+  isAllowanceSufficient,
+  isCheckingAllowance = false,
+  approveError,
+  onApproveToken,
 }: GasPaymentSelectorProps) {
   const { t } = useTranslation('send')
   const { symbol: nativeSymbol } = useNetworkCurrency()
@@ -268,6 +288,18 @@ export function GasPaymentSelector({
         </div>
       )}
 
+      {/* ERC20 Token Approval Status */}
+      {gasPayment.type === GAS_PAYMENT_TYPE.ERC20 && gasPayment.tokenAddress && (
+        <TokenApprovalStatus
+          isCheckingAllowance={isCheckingAllowance}
+          isAllowanceSufficient={isAllowanceSufficient}
+          isSendingApprove={isSendingApprove}
+          approveError={approveError ?? undefined}
+          tokenSymbol={gasPayment.tokenSymbol ?? 'Token'}
+          onApprove={() => onApproveToken?.(gasPayment.tokenAddress as Address)}
+        />
+      )}
+
       {/* Advanced Gas Settings */}
       {gasPayment.type === GAS_PAYMENT_TYPE.NATIVE && onCustomGasChange && (
         <div className="mt-3">
@@ -457,6 +489,119 @@ function PaymentOptionCard({ option, isSelected, onSelect }: PaymentOptionCardPr
       </div>
     </button>
   )
+}
+
+// ============================================================================
+// Token Approval Status
+// ============================================================================
+
+interface TokenApprovalStatusProps {
+  isCheckingAllowance: boolean
+  isAllowanceSufficient?: boolean
+  isSendingApprove: boolean
+  approveError?: string
+  tokenSymbol: string
+  onApprove: () => void
+}
+
+function TokenApprovalStatus({
+  isCheckingAllowance,
+  isAllowanceSufficient,
+  isSendingApprove,
+  approveError,
+  tokenSymbol,
+  onApprove,
+}: TokenApprovalStatusProps) {
+  const { t } = useTranslation('send')
+
+  if (isCheckingAllowance) {
+    return (
+      <div
+        className="mt-2 p-3 rounded-lg flex items-center gap-2"
+        style={{ backgroundColor: 'rgb(var(--secondary))' }}
+      >
+        <div
+          className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
+        />
+        <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          {t('checkingAllowance', { symbol: tokenSymbol })}
+        </span>
+      </div>
+    )
+  }
+
+  if (isAllowanceSufficient === true) {
+    return (
+      <div
+        className="mt-2 p-3 rounded-lg flex items-center gap-2"
+        style={{
+          backgroundColor: 'rgb(var(--success) / 0.1)',
+          border: '1px solid rgb(var(--success) / 0.2)',
+        }}
+      >
+        <span style={{ color: 'rgb(var(--success))' }}>✓</span>
+        <span className="text-xs" style={{ color: 'rgb(var(--success))' }}>
+          {t('approvalActive', { symbol: tokenSymbol })}
+        </span>
+      </div>
+    )
+  }
+
+  if (isAllowanceSufficient === false) {
+    return (
+      <div
+        className="mt-2 p-3 rounded-lg space-y-2"
+        style={{
+          backgroundColor: 'rgb(var(--warning) / 0.1)',
+          border: '1px solid rgb(var(--warning) / 0.2)',
+        }}
+      >
+        <div className="flex items-start gap-2">
+          <span className="text-sm">⚠️</span>
+          <div className="flex-1">
+            <p className="text-xs font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              {t('approvalRequired', { symbol: tokenSymbol })}
+            </p>
+            <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              {t('approvalRequiredDesc', { symbol: tokenSymbol })}
+            </p>
+          </div>
+        </div>
+
+        {approveError && (
+          <p className="text-xs" style={{ color: 'rgb(var(--destructive))' }}>
+            {approveError}
+          </p>
+        )}
+
+        <button
+          type="button"
+          className="w-full py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+          style={{
+            backgroundColor: isSendingApprove ? 'rgb(var(--secondary))' : 'rgb(var(--primary))',
+            color: isSendingApprove ? 'rgb(var(--muted-foreground))' : 'rgb(var(--primary-foreground))',
+          }}
+          onClick={onApprove}
+          disabled={isSendingApprove}
+        >
+          {isSendingApprove ? (
+            <span className="flex items-center justify-center gap-2">
+              <span
+                className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"
+                style={{ borderColor: 'currentColor', borderTopColor: 'transparent' }}
+              />
+              {t('approvingToken', { symbol: tokenSymbol })}
+            </span>
+          ) : (
+            t('approveToken', { symbol: tokenSymbol })
+          )}
+        </button>
+      </div>
+    )
+  }
+
+  return null
 }
 
 interface SponsorInfoProps {

@@ -19,8 +19,8 @@ export function usePaymasterHealth() {
         body: JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
-          method: 'pm_getSupportedTokens',
-          params: [`0x${chainId.toString(16)}`],
+          method: 'pm_supportedChainIds',
+          params: [],
         }),
         signal: AbortSignal.timeout(5000),
       })

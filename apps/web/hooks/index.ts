@@ -27,12 +27,10 @@ export { useModuleInstall } from './useModuleInstall'
 export { useModuleRegistry } from './useModuleRegistry'
 export { useOnRamp } from './useOnRamp'
 export type {
-  PaymasterBalance,
   PaymasterConfig,
   PaymasterData,
   PaymasterStubData,
   PaymasterType,
-  SponsorshipPolicy,
   SupportedToken,
 } from './usePaymaster'
 export { usePaymaster } from './usePaymaster'

@@ -1,3 +1,4 @@
+import { getChainAddresses, isChainSupported } from '@stablenet/contracts'
 import type { Address } from 'viem'
 import { isAddress } from 'viem/utils'
 import {
@@ -46,8 +47,28 @@ export const paymasterHandlers: Record<string, RpcHandler> = {
 
       const tokens = [nativeToken, ...(erc20Tokens ?? []).map((t) => ({ ...t, isNative: false }))]
       return { tokens }
-    } catch {
-      // Paymaster-proxy unavailable or ERC20 paymaster not configured — return native only
+    } catch (err) {
+      logger.warn(`[pm_supportedTokens] Paymaster-proxy call failed: ${(err as Error).message}`)
+
+      // Fallback: if chain has known USDC + ERC20 paymaster, include USDC manually
+      if (isChainSupported(network.chainId)) {
+        const addrs = getChainAddresses(network.chainId)
+        if (addrs.paymasters?.erc20Paymaster && addrs.tokens?.usdc) {
+          logger.info('[pm_supportedTokens] Using fallback USDC from chain addresses')
+          return {
+            tokens: [
+              nativeToken,
+              {
+                symbol: 'USDC',
+                address: addrs.tokens.usdc,
+                decimals: 6,
+                isNative: false,
+              },
+            ],
+          }
+        }
+      }
+
       return { tokens: [nativeToken] }
     }
   },

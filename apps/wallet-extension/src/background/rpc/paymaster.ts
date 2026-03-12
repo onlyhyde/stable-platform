@@ -259,10 +259,41 @@ export async function sponsorAndSign(params: {
       `[sponsorAndSign] Step 2 OK: preVerif=${userOp.preVerificationGas}, verifLimit=${userOp.verificationGasLimit}, callLimit=${userOp.callGasLimit}`
     )
   } catch (err) {
-    logger.error(
-      `[sponsorAndSign] Step 2 FAILED (gas estimation): ${err instanceof Error ? err.message : String(err)}`
-    )
-    return null
+    const isErc20 = context.paymasterType === 'erc20'
+
+    if (isErc20) {
+      // ERC-20 paymaster: gas estimation fails because the paymaster's
+      // _validatePaymasterUserOp reads token balanceOf/allowance during
+      // EntryPointSimulations, which reverts in simulation context.
+      // Use the stub's gas limits (from Step 1) as reasonable defaults.
+      logger.warn(
+        `[sponsorAndSign] Step 2: ERC-20 gas estimation failed (expected during simulation), using stub gas limits: ${err instanceof Error ? err.message : String(err)}`
+      )
+
+      // Use conservative defaults if stub didn't provide gas limits
+      const FALLBACK_PRE_VERIFICATION_GAS = 60000n
+      const FALLBACK_VERIFICATION_GAS = 500000n
+      const FALLBACK_CALL_GAS = 300000n
+
+      if (userOp.preVerificationGas === 0n) {
+        userOp.preVerificationGas = FALLBACK_PRE_VERIFICATION_GAS
+      }
+      if (userOp.verificationGasLimit === 0n) {
+        userOp.verificationGasLimit = FALLBACK_VERIFICATION_GAS
+      }
+      if (userOp.callGasLimit === 0n) {
+        userOp.callGasLimit = FALLBACK_CALL_GAS
+      }
+
+      logger.info(
+        `[sponsorAndSign] Step 2 (ERC-20 fallback): preVerif=${userOp.preVerificationGas}, verifLimit=${userOp.verificationGasLimit}, callLimit=${userOp.callGasLimit}`
+      )
+    } else {
+      logger.error(
+        `[sponsorAndSign] Step 2 FAILED (gas estimation): ${err instanceof Error ? err.message : String(err)}`
+      )
+      return null
+    }
   }
 
   // ── Step 3: Final RPC (if stub was not final) ────────────────────────

@@ -122,6 +122,10 @@ export function useTokenApproval(): TokenApprovalState {
           args: [spender, approveAmount],
         })
 
+        if (!sendUserOp) {
+          throw new Error('Wallet not connected — cannot send approval transaction')
+        }
+
         const result = await sendUserOp(owner, {
           to: tokenAddress,
           data: calldata as Hex,
@@ -133,6 +137,9 @@ export function useTokenApproval(): TokenApprovalState {
           return true
         }
 
+        setError(new Error(
+          result ? 'Approval transaction failed on-chain' : 'Wallet rejected the approval request'
+        ))
         setStatus('needs-approval')
         return false
       } catch (err) {

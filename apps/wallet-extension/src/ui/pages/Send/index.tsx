@@ -15,6 +15,7 @@ import { TransactionStepper } from '../../components/common/TransactionStepper'
 import { useNetworkCurrency, useSelectedNetwork, useWalletStore } from '../../hooks'
 import { GasPaymentSelector } from './GasPayment'
 import { useGasEstimate } from './hooks/useGasEstimate'
+import { usePaymasterClient } from './hooks/usePaymasterClient'
 import { useSendTransaction } from './hooks/useSendTransaction'
 import { SendForm } from './SendForm'
 import { TransactionModeSelector } from './TransactionMode'
@@ -127,6 +128,22 @@ export function Send() {
 
   // Hooks
   const { sendTransaction, isPending } = useSendTransaction()
+  const {
+    tokenAllowance,
+    isCheckingAllowance,
+    isSendingApprove,
+    approveError,
+    checkTokenAllowance,
+    sendApproveTransaction,
+  } = usePaymasterClient(selectedAddress ?? undefined)
+
+  // Check token allowance when ERC-20 gas payment is selected
+  useEffect(() => {
+    if (gasPayment.type === 'erc20' && gasPayment.tokenAddress) {
+      checkTokenAllowance(gasPayment.tokenAddress as Address)
+    }
+  }, [gasPayment.type, gasPayment.tokenAddress, checkTokenAllowance])
+
   const gasEstimateParams = useMemo(() => ({
     mode: transactionMode,
     from: selectedAddress ?? ('' as Address),
@@ -203,10 +220,19 @@ export function Send() {
       setTxResult(result)
       setStep('confirming')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed')
+      const errorMsg = err instanceof Error ? err.message : 'Transaction failed'
+
+      // Handle TOKEN_APPROVAL_REQUIRED: go back to form to let user approve
+      if (errorMsg.includes('Token approval required') || errorMsg.includes('-32010')) {
+        setError(t('tokenApprovalNeeded', { symbol: gasPayment.tokenSymbol ?? 'USDC' }))
+        setStep('form')
+        return
+      }
+
+      setError(errorMsg)
       setStep('error')
     }
-  }, [selectedAddress, formData, transactionMode, gasPayment, sendTransaction, tokenContext])
+  }, [selectedAddress, formData, transactionMode, gasPayment, sendTransaction, tokenContext, t])
 
   // Handle review
   const handleReview = useCallback(() => {
@@ -369,6 +395,11 @@ export function Send() {
                 gasEstimate={gasEstimate}
                 isLoading={isEstimating}
                 accountAddress={selectedAddress ?? undefined}
+                isAllowanceSufficient={tokenAllowance?.isSufficient}
+                isCheckingAllowance={isCheckingAllowance}
+                isSendingApprove={isSendingApprove}
+                approveError={approveError}
+                onApproveToken={sendApproveTransaction}
               />
             </div>
           )}

@@ -102,5 +102,13 @@
   "confirmedInBlock": "블록 #{{block}}에서 확인됨",
   "transactionConfirmed": "트랜잭션 확인됨",
   "waitingForBlock": "블록에 포함되기를 기다리는 중...",
-  "sendingToken": "{{symbol}} 전송"
+  "sendingToken": "{{symbol}} 전송",
+
+  "checkingAllowance": "{{symbol}} 승인 상태 확인 중...",
+  "approvalActive": "{{symbol}} Paymaster 승인 완료",
+  "approvalRequired": "{{symbol}} 승인 필요",
+  "approvalRequiredDesc": "ERC-20 Paymaster가 가스비로 {{symbol}}을 사용할 수 있도록 승인이 필요합니다. 1회만 승인하면 됩니다.",
+  "approveToken": "{{symbol}} 승인",
+  "approvingToken": "{{symbol}} 승인 중...",
+  "tokenApprovalNeeded": "전송 전 {{symbol}} 승인이 필요합니다. 먼저 승인해 주세요."
 }

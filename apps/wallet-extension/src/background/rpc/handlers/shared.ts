@@ -327,7 +327,17 @@ export async function signUserOp(
       `[signUserOp] EIP-7702 path: sender=${userOp.sender.slice(0, 10)}..., signerAddr=${signerAddr.slice(0, 10)}..., userOpHash=${userOpHash.slice(0, 14)}...`
     )
 
-    await approvalController.requestSignature(origin, 'personal_sign', signerAddr, userOpHash)
+    // Build typed data for display purposes (even though we sign with EIP-191)
+    // This allows the approval UI to show human-readable UserOp details
+    const typedData = buildUserOpTypedData(userOp, entryPoint, BigInt(chainId))
+
+    await approvalController.requestSignature(
+      origin,
+      'personal_sign',
+      signerAddr,
+      userOpHash,
+      toJsonSafe(typedData)
+    )
 
     return keyringController.signMessage(signerAddr, userOpHash)
   }

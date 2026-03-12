@@ -1,5 +1,5 @@
 import type { Address, Hex } from 'viem'
-import { encodeFunctionData, isAddress, maxUint256 } from 'viem'
+import { isAddress } from 'viem'
 import { getChainAddresses } from '@stablenet/contracts'
 import {
   approvalController,
@@ -11,7 +11,6 @@ import {
   DEFAULT_VERIFICATION_GAS_LIMIT,
   ENTRY_POINT_ABI,
   encodeKernelExecute,
-  encodeKernelExecuteBatch,
   getEntryPointForChain,
   getNonceKeyForAccount,
   getPublicClient,
@@ -30,18 +29,40 @@ import {
   walletState,
 } from './shared'
 
-/** ERC-20 approve ABI for encoding approve(spender, amount) */
-const ERC20_APPROVE_ABI = [
+/** ERC-20 allowance ABI for reading allowance(owner, spender) */
+const ERC20_ALLOWANCE_ABI = [
   {
-    name: 'approve',
+    name: 'allowance',
     type: 'function',
     inputs: [
+      { name: 'owner', type: 'address' },
       { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
     ],
-    outputs: [{ type: 'bool' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
   },
 ] as const
+
+/** ERC-20 balanceOf ABI for reading balanceOf(account) */
+const ERC20_BALANCE_OF_ABI = [
+  {
+    name: 'balanceOf',
+    type: 'function',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+] as const
+
+/** Minimum token balance required for ERC-20 gas payment (0.01 USDC with 6 decimals) */
+const MIN_TOKEN_BALANCE = BigInt(1e4)
+
+/**
+ * Minimum allowance threshold to consider approval sufficient.
+ * Using a large value so a single maxUint256 approval covers many txs.
+ * If allowance falls below this, the user is prompted to re-approve.
+ */
+const MIN_ALLOWANCE_THRESHOLD = BigInt(1e12) // 1M USDC (6 decimals)
 
 export const userOpsHandlers: Record<string, RpcHandler> = {
   /**
@@ -75,43 +96,7 @@ export const userOpsHandlers: Record<string, RpcHandler> = {
       const targetValue = raw.value ? BigInt(raw.value as string) : 0n
       const targetData = ((raw.data as Hex) || '0x') as Hex
 
-      // ERC20 paymaster: batch approve(paymaster, maxUint256) + actual call
-      // The paymaster deducts USDC in postOp, so the user must have approved the paymaster
-      if (gasPayment?.type === 'erc20' && gasPayment.tokenAddress) {
-        const network = walletState.getCurrentNetwork()
-        const chainAddresses = network ? getChainAddresses(network.chainId) : null
-        const erc20PaymasterAddr = chainAddresses?.paymasters?.erc20Paymaster as Address | undefined
-
-        if (erc20PaymasterAddr) {
-          const approveData = encodeFunctionData({
-            abi: ERC20_APPROVE_ABI,
-            functionName: 'approve',
-            args: [erc20PaymasterAddr, maxUint256],
-          })
-
-          raw.callData = encodeKernelExecuteBatch([
-            {
-              to: gasPayment.tokenAddress as Address,
-              value: 0n,
-              data: approveData,
-            },
-            {
-              to: targetAddr,
-              value: targetValue,
-              data: targetData,
-            },
-          ])
-          logger.info(
-            `[eth_sendUserOperation] ERC20 paymaster: batched approve(${erc20PaymasterAddr}) + call(${targetAddr})`
-          )
-        } else {
-          // Fallback: no known ERC20 paymaster address, encode single call
-          logger.warn('[eth_sendUserOperation] ERC20 paymaster address not found, skipping approve batch')
-          raw.callData = encodeKernelExecute(targetAddr, targetValue, targetData)
-        }
-      } else {
-        raw.callData = encodeKernelExecute(targetAddr, targetValue, targetData)
-      }
+      raw.callData = encodeKernelExecute(targetAddr, targetValue, targetData)
     }
 
     // Parse and validate UserOperation
@@ -273,6 +258,71 @@ export const userOpsHandlers: Record<string, RpcHandler> = {
       return userOpHash
     }
 
+    // ERC-20 paymaster: verify token allowance before proceeding.
+    // The ERC20Paymaster contract checks allowance during validatePaymasterUserOp.
+    // If insufficient, the user must send a separate approve tx first.
+    if (gasPayment?.type === 'erc20' && gasPayment.tokenAddress) {
+      const chainAddresses = getChainAddresses(network.chainId)
+      const erc20PaymasterAddr = chainAddresses?.paymasters?.erc20Paymaster as Address | undefined
+
+      if (!erc20PaymasterAddr) {
+        throw createRpcError({
+          code: RPC_ERRORS.INVALID_PARAMS.code,
+          message: 'ERC-20 paymaster not configured for this chain',
+        })
+      }
+
+      const publicClient = getPublicClient(network.rpcUrl)
+      const allowance = await publicClient.readContract({
+        address: gasPayment.tokenAddress as Address,
+        abi: ERC20_ALLOWANCE_ABI,
+        functionName: 'allowance',
+        args: [userOp.sender, erc20PaymasterAddr],
+      }).catch(() => 0n)
+
+      if ((allowance as bigint) < MIN_ALLOWANCE_THRESHOLD) {
+        logger.warn(
+          `[eth_sendUserOperation] Insufficient token allowance: ${allowance} < ${MIN_ALLOWANCE_THRESHOLD}, paymaster=${erc20PaymasterAddr}`
+        )
+        throw createRpcError({
+          code: RPC_ERRORS.TOKEN_APPROVAL_REQUIRED.code,
+          message: RPC_ERRORS.TOKEN_APPROVAL_REQUIRED.message,
+          data: {
+            tokenAddress: gasPayment.tokenAddress,
+            spender: erc20PaymasterAddr,
+            currentAllowance: String(allowance),
+            requiredApproval: 'unlimited',
+          },
+        })
+      }
+
+      // Also verify token balance — ERC20Paymaster checks balanceOf during validation
+      const balance = await publicClient.readContract({
+        address: gasPayment.tokenAddress as Address,
+        abi: ERC20_BALANCE_OF_ABI,
+        functionName: 'balanceOf',
+        args: [userOp.sender],
+      }).catch(() => 0n)
+
+      if ((balance as bigint) < MIN_TOKEN_BALANCE) {
+        logger.warn(
+          `[eth_sendUserOperation] Insufficient token balance: ${balance}, paymaster=${erc20PaymasterAddr}`
+        )
+        throw createRpcError({
+          code: RPC_ERRORS.INTERNAL_ERROR.code,
+          message: `Insufficient token balance for gas payment. Current balance: ${balance}`,
+          data: {
+            tokenAddress: gasPayment.tokenAddress,
+            currentBalance: String(balance),
+          },
+        })
+      }
+
+      logger.info(
+        `[eth_sendUserOperation] Token allowance OK: ${allowance}, balance OK: ${balance} (paymaster=${erc20PaymasterAddr})`
+      )
+    }
+
     // ERC-7677: sponsorAndSign handles stub → estimate → final → sign
     const shouldSponsor =
       gasPayment?.type === 'sponsor' ||
@@ -352,6 +402,20 @@ export const userOpsHandlers: Record<string, RpcHandler> = {
           })
         }
       }
+
+      // ERC-20 gas payment must NOT fall through to self-pay — the user explicitly
+      // chose token payment, so failing silently to self-pay is misleading.
+      if (gasPayment?.type === 'erc20') {
+        logger.error(
+          '[eth_sendUserOperation] ERC-20 paymaster sponsorAndSign failed — cannot fall through to self-pay'
+        )
+        throw createRpcError({
+          code: RPC_ERRORS.INTERNAL_ERROR.code,
+          message:
+            'ERC-20 gas payment failed. Possible causes: insufficient token balance, approve not yet confirmed on-chain, or paymaster validation error.',
+        })
+      }
+
       logger.warn(
         '[eth_sendUserOperation] sponsorAndSign returned null, falling through to self-pay'
       )

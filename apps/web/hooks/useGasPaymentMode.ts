@@ -131,10 +131,14 @@ export function useGasPaymentMode(sender?: Address): GasPaymentModeState {
         if (cancelled) return
 
         if (result.error) {
-          throw new Error(result.error.message)
+          throw new Error(result.error.message ?? 'Token estimation failed')
         }
 
         const data = result.result
+        if (!data) {
+          throw new Error('No estimation data returned')
+        }
+
         setEstimatedTokenCost({
           tokenAddress: data.tokenAddress,
           estimatedAmount: data.tokenAmount ?? data.estimatedAmount,

@@ -1,71 +1,228 @@
 'use client'
 
 import type { Address } from 'viem'
-import type { PaymasterType, SponsorshipPolicy, SupportedToken } from '@/hooks'
+import type { SupportedToken } from '@/hooks'
 import type { ApprovalStatus } from '@/hooks/useTokenApproval'
 
 // ============================================================================
 // Types
 // ============================================================================
 
+/**
+ * Gas payment mode — aligned with wallet-extension's GasPayment component.
+ *
+ * - 'native': Self-pay from EntryPoint deposit
+ * - 'sponsor': Free gas via sponsorship
+ * - 'erc20': Pay gas with ERC-20 token (e.g. USDC)
+ */
+export type GasPaymentMode = 'native' | 'sponsor' | 'erc20'
+
 interface PaymasterSelectorProps {
-  selectedType: PaymasterType | 'none'
-  onTypeChange: (type: PaymasterType | 'none') => void
-  // Token sub-selector (erc20/permit2)
-  supportedTokens?: SupportedToken[] | null
-  selectedTokenAddress?: Address
-  onTokenSelect?: (address: Address) => void
-  isLoadingTokens?: boolean
-  // Token gas estimate
-  tokenGasEstimate?: { formattedCost: string; symbol: string } | null
-  isEstimatingGas?: boolean
-  // Sponsor sub-selector
-  sponsorshipPolicies?: SponsorshipPolicy[] | null
-  selectedPolicyId?: string
-  onPolicySelect?: (id: string) => void
-  isLoadingPolicies?: boolean
-  sponsorEligible?: boolean | null
-  sponsorIneligibleReason?: string
-  // Self-pay (no paymaster)
+  /** Currently selected gas payment mode */
+  selectedMode: GasPaymentMode
+  /** Mode change handler */
+  onModeChange: (mode: GasPaymentMode) => void
+
+  // --- Native (Self-Pay) ---
+  /** EntryPoint deposit balance (formatted ETH string) */
   depositBalance?: string | null
   /** Callback to deposit ETH to EntryPoint */
   onDepositTopUp?: () => void
+  /** Whether deposit top-up is in progress */
   isDepositing?: boolean
-  // Health
-  paymasterHealthy?: boolean | null
-  // ERC-20 Approval
+
+  // --- Sponsor ---
+  /** Whether sponsorship is available */
+  sponsorAvailable?: boolean | null
+  /** Reason if sponsorship is unavailable */
+  sponsorUnavailableReason?: string
+
+  // --- ERC-20 ---
+  /** Supported tokens for ERC-20 gas payment */
+  supportedTokens?: SupportedToken[] | null
+  /** Currently selected token address */
+  selectedTokenAddress?: Address
+  /** Token selection handler */
+  onTokenSelect?: (address: Address) => void
+  /** Whether tokens are loading */
+  isLoadingTokens?: boolean
+  /** Token gas estimate display */
+  tokenGasEstimate?: { formattedCost: string; symbol: string } | null
+  /** Whether gas is being estimated */
+  isEstimatingGas?: boolean
+  /** ERC-20 approval status */
   erc20ApprovalStatus?: ApprovalStatus
+  /** ERC-20 approval handler */
   onErc20Approve?: () => void
+  /** ERC-20 approval error */
   erc20ApprovalError?: string | null
-  // Permit2
-  permit2Signed?: boolean
-  permit2Signing?: boolean
-  onPermit2Sign?: () => void
-  permit2Error?: string | null
-  // State
+
+  // --- Health ---
+  /** Paymaster service health */
+  paymasterHealthy?: boolean | null
+
+  // --- State ---
+  /** Loading state */
   isLoading?: boolean
+  /** Error message */
   error?: string | null
 }
 
 // ============================================================================
-// Constants
+// Mode Config
 // ============================================================================
 
-const PAYMASTER_TYPES: Record<PaymasterType | 'none', { label: string; description: string }> = {
-  none: { label: 'Self-Pay', description: 'Pay gas from EntryPoint deposit' },
-  verifying: { label: 'Verifying', description: 'Standard gas validation' },
-  sponsor: { label: 'Sponsored', description: 'Free gas sponsorship' },
-  erc20: { label: 'ERC-20', description: 'Pay gas with tokens' },
-  permit2: { label: 'Permit2', description: 'Gasless token approval' },
+interface ModeConfig {
+  label: string
+  description: string
+  icon: string
 }
 
-const TYPE_ORDER: (PaymasterType | 'none')[] = ['none', 'verifying', 'sponsor', 'erc20', 'permit2']
+const MODE_CONFIG: Record<GasPaymentMode, ModeConfig> = {
+  native: {
+    label: 'Self-Pay',
+    description: 'Pay gas from EntryPoint deposit',
+    icon: 'Ξ',
+  },
+  sponsor: {
+    label: 'Sponsored',
+    description: 'Free gas sponsorship',
+    icon: '🎁',
+  },
+  erc20: {
+    label: 'ERC-20',
+    description: 'Pay gas with USDC',
+    icon: '💵',
+  },
+}
+
+const MODE_ORDER: GasPaymentMode[] = ['native', 'sponsor', 'erc20']
 
 // ============================================================================
 // Sub-components
 // ============================================================================
 
-function TokenSubSelector({
+function DepositInfo({
+  balance,
+  onTopUp,
+  isDepositing,
+}: {
+  balance: string | null
+  onTopUp?: () => void
+  isDepositing?: boolean
+}) {
+  if (balance === null || balance === undefined) return null
+
+  const isZero = balance === '0'
+  const isLow = !isZero && Number(balance) < 0.001
+
+  return (
+    <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+            EntryPoint Deposit
+          </p>
+          <p className="font-medium font-mono" style={{ color: 'rgb(var(--foreground))' }}>
+            {balance} ETH
+          </p>
+        </div>
+        {onTopUp && (
+          <button
+            type="button"
+            onClick={onTopUp}
+            disabled={isDepositing}
+            className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-50"
+            style={{
+              backgroundColor: 'rgb(var(--primary))',
+              color: 'rgb(var(--primary-foreground))',
+            }}
+          >
+            {isDepositing ? 'Depositing...' : 'Top Up'}
+          </button>
+        )}
+      </div>
+      {isZero && (
+        <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
+          No deposit — fund your EntryPoint deposit to send transactions
+        </p>
+      )}
+      {isLow && (
+        <p className="text-xs mt-1" style={{ color: 'rgb(var(--warning, 234 179 8))' }}>
+          Low deposit — consider topping up to avoid failed transactions
+        </p>
+      )}
+    </div>
+  )
+}
+
+function SponsorInfo({
+  available,
+  reason,
+}: {
+  available: boolean | null | undefined
+  reason?: string
+}) {
+  if (available === null || available === undefined) {
+    return (
+      <div
+        className="flex items-center gap-2 p-3 rounded-lg"
+        style={{ backgroundColor: 'rgb(var(--secondary))' }}
+      >
+        <div
+          className="w-4 h-4 border-2 rounded-full animate-spin"
+          style={{ borderColor: 'rgb(var(--muted-foreground))', borderTopColor: 'transparent' }}
+        />
+        <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
+          Checking sponsorship...
+        </span>
+      </div>
+    )
+  }
+
+  if (!available) {
+    return (
+      <div
+        className="p-3 rounded-lg border"
+        style={{
+          backgroundColor: 'rgb(var(--destructive) / 0.1)',
+          borderColor: 'rgb(var(--destructive) / 0.3)',
+        }}
+      >
+        <p className="text-sm" style={{ color: 'rgb(var(--destructive))' }}>
+          Sponsorship unavailable
+        </p>
+        {reason && (
+          <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
+            {reason}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="flex items-center gap-2 p-3 rounded-lg"
+      style={{ backgroundColor: 'rgb(var(--success, 34 197 94) / 0.1)' }}
+    >
+      <span
+        className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+        style={{
+          backgroundColor: 'rgb(var(--success, 34 197 94) / 0.2)',
+          color: 'rgb(var(--success, 34 197 94))',
+        }}
+      >
+        ✓
+      </span>
+      <span className="text-sm font-medium" style={{ color: 'rgb(var(--success, 34 197 94))' }}>
+        Gas: Free (Sponsored)
+      </span>
+    </div>
+  )
+}
+
+function TokenSelector({
   tokens,
   selectedAddress,
   onSelect,
@@ -143,7 +300,6 @@ function TokenSubSelector({
           </button>
         ))}
       </div>
-      {/* Token gas estimate */}
       {selectedAddress && (
         <div
           className="flex items-center justify-between p-2 rounded-lg"
@@ -174,7 +330,7 @@ function TokenSubSelector({
             </span>
           ) : (
             <span className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-              --
+              Select to estimate
             </span>
           )}
         </div>
@@ -183,22 +339,18 @@ function TokenSubSelector({
   )
 }
 
-function SponsorSubSelector({
-  eligible,
-  ineligibleReason,
-  policies,
-  selectedPolicyId,
-  onPolicySelect,
-  isLoading,
+function TokenApprovalSection({
+  status,
+  onApprove,
+  error,
 }: {
-  eligible?: boolean | null
-  ineligibleReason?: string
-  policies?: SponsorshipPolicy[] | null
-  selectedPolicyId?: string
-  onPolicySelect?: (id: string) => void
-  isLoading?: boolean
+  status?: ApprovalStatus
+  onApprove?: () => void
+  error?: string | null
 }) {
-  if (eligible === null || eligible === undefined) {
+  if (!status || status === 'unknown') return null
+
+  if (status === 'checking') {
     return (
       <div
         className="flex items-center gap-2 p-3 rounded-lg"
@@ -209,34 +361,72 @@ function SponsorSubSelector({
           style={{ borderColor: 'rgb(var(--muted-foreground))', borderTopColor: 'transparent' }}
         />
         <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Checking eligibility...
+          Checking token allowance...
         </span>
       </div>
     )
   }
 
-  if (eligible === false) {
+  if (status === 'approved') {
     return (
       <div
-        className="p-3 rounded-lg border"
+        className="flex items-center gap-2 p-3 rounded-lg"
         style={{
-          backgroundColor: 'rgb(var(--destructive) / 0.1)',
-          borderColor: 'rgb(var(--destructive) / 0.3)',
+          backgroundColor: 'rgb(var(--success, 34 197 94) / 0.1)',
+          border: '1px solid rgb(var(--success, 34 197 94) / 0.2)',
         }}
       >
-        <p className="text-sm font-medium" style={{ color: 'rgb(var(--destructive))' }}>
-          Not eligible for sponsorship
-        </p>
-        {ineligibleReason && (
-          <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
-            {ineligibleReason}
+        <span style={{ color: 'rgb(var(--success, 34 197 94))' }}>✓</span>
+        <span className="text-xs" style={{ color: 'rgb(var(--success, 34 197 94))' }}>
+          Token approved for paymaster
+        </span>
+      </div>
+    )
+  }
+
+  if (status === 'needs-approval') {
+    return (
+      <div
+        className="p-3 rounded-lg space-y-2"
+        style={{
+          backgroundColor: 'rgb(var(--warning, 234 179 8) / 0.1)',
+          border: '1px solid rgb(var(--warning, 234 179 8) / 0.2)',
+        }}
+      >
+        <div className="flex items-start gap-2">
+          <span className="text-sm">⚠️</span>
+          <div className="flex-1">
+            <p className="text-xs font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+              Token approval required
+            </p>
+            <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+              The paymaster needs approval to use your tokens for gas payment.
+            </p>
+          </div>
+        </div>
+        {error && (
+          <p className="text-xs" style={{ color: 'rgb(var(--destructive))' }}>
+            {error}
           </p>
+        )}
+        {onApprove && (
+          <button
+            type="button"
+            onClick={onApprove}
+            className="w-full py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: 'rgb(var(--primary))',
+              color: 'rgb(var(--primary-foreground))',
+            }}
+          >
+            Approve Token
+          </button>
         )}
       </div>
     )
   }
 
-  if (isLoading) {
+  if (status === 'approving') {
     return (
       <div
         className="flex items-center gap-2 p-3 rounded-lg"
@@ -244,63 +434,16 @@ function SponsorSubSelector({
       >
         <div
           className="w-4 h-4 border-2 rounded-full animate-spin"
-          style={{ borderColor: 'rgb(var(--muted-foreground))', borderTopColor: 'transparent' }}
+          style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
         />
         <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-          Loading policies...
+          Approving token...
         </span>
       </div>
     )
   }
 
-  if (!policies || policies.length === 0) {
-    return (
-      <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-        <p className="text-sm" style={{ color: 'rgb(var(--success, 34 197 94))' }}>
-          Default policy applied — gas will be sponsored
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-2">
-      <span className="block text-xs font-medium" style={{ color: 'rgb(var(--muted-foreground))' }}>
-        Select Policy
-      </span>
-      <div className="space-y-1">
-        {policies
-          .filter((p) => p.active)
-          .map((policy) => (
-            <button
-              key={policy.id}
-              type="button"
-              onClick={() => onPolicySelect?.(policy.id)}
-              className={`w-full px-3 py-2 rounded-lg border text-left transition-all ${
-                selectedPolicyId === policy.id ? 'ring-2' : ''
-              }`}
-              style={{
-                backgroundColor:
-                  selectedPolicyId === policy.id
-                    ? 'rgb(var(--primary) / 0.1)'
-                    : 'rgb(var(--secondary))',
-                borderColor:
-                  selectedPolicyId === policy.id ? 'rgb(var(--primary))' : 'rgb(var(--border))',
-                ...(selectedPolicyId === policy.id &&
-                  ({ '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as React.CSSProperties)),
-              }}
-            >
-              <p className="font-medium text-sm" style={{ color: 'rgb(var(--foreground))' }}>
-                {policy.name}
-              </p>
-              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Max {policy.maxOpsPerDay} ops/day
-              </p>
-            </button>
-          ))}
-      </div>
-    </div>
-  )
+  return null
 }
 
 // ============================================================================
@@ -308,31 +451,23 @@ function SponsorSubSelector({
 // ============================================================================
 
 export function PaymasterSelector({
-  selectedType,
-  onTypeChange,
+  selectedMode,
+  onModeChange,
+  depositBalance,
+  onDepositTopUp,
+  isDepositing,
+  sponsorAvailable,
+  sponsorUnavailableReason,
   supportedTokens,
   selectedTokenAddress,
   onTokenSelect,
   isLoadingTokens,
   tokenGasEstimate,
   isEstimatingGas,
-  sponsorshipPolicies,
-  selectedPolicyId,
-  onPolicySelect,
-  isLoadingPolicies,
-  sponsorEligible,
-  sponsorIneligibleReason,
-  depositBalance,
-  onDepositTopUp,
-  isDepositing,
-  paymasterHealthy,
   erc20ApprovalStatus,
   onErc20Approve,
   erc20ApprovalError,
-  permit2Signed,
-  permit2Signing,
-  onPermit2Sign,
-  permit2Error,
+  paymasterHealthy,
   isLoading: _isLoading,
   error,
 }: PaymasterSelectorProps) {
@@ -342,7 +477,6 @@ export function PaymasterSelector({
         <span className="block text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
           Gas Payment
         </span>
-        {/* Paymaster health indicator */}
         {paymasterHealthy !== null && paymasterHealthy !== undefined && (
           <span className="flex items-center gap-1 text-xs">
             <span
@@ -360,240 +494,98 @@ export function PaymasterSelector({
         )}
       </div>
 
-      {/* 2x2 Type Grid */}
-      <div className="grid grid-cols-2 gap-2">
-        {TYPE_ORDER.map((type) => {
-          const config = PAYMASTER_TYPES[type]
+      {/* 3-Mode Selection — aligned with wallet-extension */}
+      <div className="space-y-2">
+        {MODE_ORDER.map((mode) => {
+          const config = MODE_CONFIG[mode]
+          const isSelected = selectedMode === mode
+          const isDisabled = mode === 'sponsor' && sponsorAvailable === false
+
           return (
             <button
-              key={type}
+              key={mode}
               type="button"
-              onClick={() => onTypeChange(type)}
-              className={`p-3 rounded-lg border text-left transition-all ${
-                selectedType === type ? 'ring-2' : ''
+              onClick={() => {
+                if (!isDisabled) onModeChange(mode)
+              }}
+              disabled={isDisabled}
+              className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
+                isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
               }`}
               style={{
-                backgroundColor:
-                  selectedType === type ? 'rgb(var(--primary) / 0.1)' : 'rgb(var(--secondary))',
-                borderColor: selectedType === type ? 'rgb(var(--primary))' : 'rgb(var(--border))',
-                ...(selectedType === type &&
-                  ({ '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as React.CSSProperties)),
+                borderColor: isSelected ? 'rgb(var(--primary))' : 'rgb(var(--border))',
+                backgroundColor: isSelected
+                  ? 'rgb(var(--primary) / 0.05)'
+                  : isDisabled
+                    ? 'rgb(var(--secondary))'
+                    : 'transparent',
               }}
             >
-              <p className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
-                {config.label}
-              </p>
-              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                {config.description}
-              </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{config.icon}</span>
+                  <div>
+                    <span className="font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                      {config.label}
+                    </span>
+                    <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                      {config.description}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  {mode === 'sponsor' && sponsorAvailable && (
+                    <span
+                      className="font-mono"
+                      style={{ color: 'rgb(var(--success, 34 197 94))', fontWeight: 500 }}
+                    >
+                      Free
+                    </span>
+                  )}
+                  {mode === 'sponsor' && isDisabled && (
+                    <span className="text-xs" style={{ color: 'rgb(var(--destructive))' }}>
+                      {sponsorUnavailableReason ?? 'Unavailable'}
+                    </span>
+                  )}
+                  {isSelected && (
+                    <span className="text-sm ml-1" style={{ color: 'rgb(var(--primary))' }}>
+                      ✓
+                    </span>
+                  )}
+                </div>
+              </div>
             </button>
           )
         })}
       </div>
 
-      {/* Sponsor — Free Gas Label */}
-      {selectedType === 'sponsor' && sponsorEligible === true && (
-        <div
-          className="flex items-center gap-2 p-3 rounded-lg"
-          style={{ backgroundColor: 'rgb(var(--success, 34 197 94) / 0.1)' }}
-        >
-          <span
-            className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-            style={{
-              backgroundColor: 'rgb(var(--success, 34 197 94) / 0.2)',
-              color: 'rgb(var(--success, 34 197 94))',
-            }}
-          >
-            ✓
-          </span>
-          <span className="text-sm font-medium" style={{ color: 'rgb(var(--success, 34 197 94))' }}>
-            Gas: Free (Sponsored)
-          </span>
-        </div>
+      {/* Mode-specific content */}
+      {selectedMode === 'native' && (
+        <DepositInfo balance={depositBalance ?? null} onTopUp={onDepositTopUp} isDepositing={isDepositing} />
       )}
 
-      {/* Self-Pay deposit info */}
-      {selectedType === 'none' && depositBalance != null && (
-        <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                EntryPoint Deposit
-              </p>
-              <p className="font-medium font-mono" style={{ color: 'rgb(var(--foreground))' }}>
-                {depositBalance} ETH
-              </p>
-            </div>
-            {onDepositTopUp && (
-              <button
-                type="button"
-                onClick={onDepositTopUp}
-                disabled={isDepositing}
-                className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-50"
-                style={{
-                  backgroundColor: 'rgb(var(--primary))',
-                  color: 'rgb(var(--primary-foreground))',
-                }}
-              >
-                {isDepositing ? 'Depositing...' : 'Top Up'}
-              </button>
-            )}
-          </div>
-          {depositBalance === '0' && (
-            <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
-              No deposit — you need to fund your EntryPoint deposit to send transactions
-            </p>
-          )}
-          {depositBalance !== '0' && depositBalance !== null && Number(depositBalance) < 0.001 && (
-            <p className="text-xs mt-1" style={{ color: 'rgb(var(--warning, 234 179 8))' }}>
-              Low deposit balance — consider topping up to avoid failed transactions
-            </p>
-          )}
-        </div>
+      {selectedMode === 'sponsor' && (
+        <SponsorInfo available={sponsorAvailable} reason={sponsorUnavailableReason} />
       )}
 
-      {/* Token Sub-selector */}
-      {(selectedType === 'erc20' || selectedType === 'permit2') && (
-        <TokenSubSelector
-          tokens={supportedTokens}
-          selectedAddress={selectedTokenAddress}
-          onSelect={onTokenSelect}
-          isLoading={isLoadingTokens}
-          gasEstimate={tokenGasEstimate}
-          isEstimatingGas={isEstimatingGas}
-        />
-      )}
-
-      {/* ERC-20 Approval */}
-      {selectedType === 'erc20' && selectedTokenAddress && onErc20Approve && (
-        <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-          {erc20ApprovalStatus === 'checking' && (
-            <div className="flex items-center gap-2">
-              <div
-                className="w-4 h-4 border-2 rounded-full animate-spin"
-                style={{
-                  borderColor: 'rgb(var(--muted-foreground))',
-                  borderTopColor: 'transparent',
-                }}
-              />
-              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Checking token allowance...
-              </span>
-            </div>
+      {selectedMode === 'erc20' && (
+        <>
+          <TokenSelector
+            tokens={supportedTokens}
+            selectedAddress={selectedTokenAddress}
+            onSelect={onTokenSelect}
+            isLoading={isLoadingTokens}
+            gasEstimate={tokenGasEstimate}
+            isEstimatingGas={isEstimatingGas}
+          />
+          {selectedTokenAddress && (
+            <TokenApprovalSection
+              status={erc20ApprovalStatus}
+              onApprove={onErc20Approve}
+              error={erc20ApprovalError}
+            />
           )}
-          {erc20ApprovalStatus === 'approved' && (
-            <div className="flex items-center gap-2">
-              <span
-                className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                style={{
-                  backgroundColor: 'rgb(var(--success, 34 197 94) / 0.2)',
-                  color: 'rgb(var(--success, 34 197 94))',
-                }}
-              >
-                ✓
-              </span>
-              <span className="text-sm" style={{ color: 'rgb(var(--success, 34 197 94))' }}>
-                Token approved for paymaster
-              </span>
-            </div>
-          )}
-          {erc20ApprovalStatus === 'needs-approval' && (
-            <div className="space-y-2">
-              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                The paymaster needs approval to use your tokens for gas payment. This requires an
-                on-chain transaction.
-              </p>
-              <button
-                type="button"
-                onClick={onErc20Approve}
-                className="w-full px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: 'rgb(var(--primary))',
-                  color: 'rgb(var(--primary-foreground))',
-                }}
-              >
-                Approve Token
-              </button>
-            </div>
-          )}
-          {erc20ApprovalStatus === 'approving' && (
-            <div className="flex items-center gap-2">
-              <div
-                className="w-4 h-4 border-2 rounded-full animate-spin"
-                style={{
-                  borderColor: 'rgb(var(--muted-foreground))',
-                  borderTopColor: 'transparent',
-                }}
-              />
-              <span className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Approving token...
-              </span>
-            </div>
-          )}
-          {erc20ApprovalError && (
-            <p className="text-xs mt-1" style={{ color: 'rgb(var(--destructive))' }}>
-              {erc20ApprovalError}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Permit2 Approval */}
-      {selectedType === 'permit2' && selectedTokenAddress && onPermit2Sign && (
-        <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgb(var(--secondary))' }}>
-          {permit2Signed ? (
-            <div className="flex items-center gap-2">
-              <span
-                className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                style={{
-                  backgroundColor: 'rgb(var(--success, 34 197 94) / 0.2)',
-                  color: 'rgb(var(--success, 34 197 94))',
-                }}
-              >
-                ✓
-              </span>
-              <span className="text-sm" style={{ color: 'rgb(var(--success, 34 197 94))' }}>
-                Permit2 signature approved
-              </span>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                Permit2 requires a one-time signature to authorize the paymaster to use your tokens
-                for gas payment. No on-chain transaction needed.
-              </p>
-              <button
-                type="button"
-                onClick={onPermit2Sign}
-                disabled={permit2Signing}
-                className="w-full px-3 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
-                style={{
-                  backgroundColor: 'rgb(var(--primary))',
-                  color: 'rgb(var(--primary-foreground))',
-                }}
-              >
-                {permit2Signing ? 'Waiting for signature...' : 'Sign Permit2 Approval'}
-              </button>
-              {permit2Error && (
-                <p className="text-xs" style={{ color: 'rgb(var(--destructive))' }}>
-                  {permit2Error}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Sponsor Sub-selector */}
-      {selectedType === 'sponsor' && (
-        <SponsorSubSelector
-          eligible={sponsorEligible}
-          ineligibleReason={sponsorIneligibleReason}
-          policies={sponsorshipPolicies}
-          selectedPolicyId={selectedPolicyId}
-          onPolicySelect={onPolicySelect}
-          isLoading={isLoadingPolicies}
-        />
+        </>
       )}
 
       {/* Error Banner */}

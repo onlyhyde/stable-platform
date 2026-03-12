@@ -59,6 +59,12 @@ interface DecodedUserOpInfo {
   paymasterAddress?: string
   paymasterType?: string
   hasPaymaster: boolean
+  /** ERC-20 paymaster: token address for gas payment */
+  gasTokenAddress?: string
+  /** ERC-20 paymaster: estimated max token cost */
+  gasTokenMaxCost?: string
+  /** ERC-20 paymaster: formatted max token cost for display */
+  gasTokenMaxCostFormatted?: string
 }
 
 /**
@@ -166,6 +172,37 @@ function decodeUserOpInfo(message: Record<string, string>): DecodedUserOpInfo {
         3: 'Permit2',
       }
       result.paymasterType = typeNames[typeByte] ?? `Type ${typeByte}`
+
+      // ERC-20 paymaster: decode token address and maxTokenCost from payload
+      // Envelope: version(1) + type(1) + flags(1) + validUntil(6) + validAfter(6) + nonce(8) + payloadLen(2) + payload
+      // = 25 bytes = 50 hex chars of envelope header
+      // Payload for ERC20: ABI-encoded (address token, uint256 maxTokenCost, uint256 quoteId, bytes erc20Extra)
+      if (typeByte === 2) {
+        try {
+          const payloadStart = envelopeStart + 50 // after envelope header
+          if (pmData.length > payloadStart + 128) {
+            // ABI-encoded: first 32 bytes = token address (padded), next 32 bytes = maxTokenCost
+            const tokenHex = pmData.slice(payloadStart + 24, payloadStart + 64)
+            result.gasTokenAddress = `0x${tokenHex}`
+
+            const maxCostHex = pmData.slice(payloadStart + 64, payloadStart + 128)
+            const maxCostBigInt = BigInt(`0x${maxCostHex}`)
+            result.gasTokenMaxCost = maxCostBigInt.toString()
+
+            // Format as USDC (6 decimals) — most common ERC-20 gas token
+            if (maxCostBigInt > 0n) {
+              const whole = maxCostBigInt / 1000000n
+              const frac = maxCostBigInt % 1000000n
+              const fracStr = frac.toString().padStart(6, '0').replace(/0+$/, '')
+              result.gasTokenMaxCostFormatted = fracStr
+                ? `${whole}.${fracStr} USDC`
+                : `${whole} USDC`
+            }
+          }
+        } catch {
+          // ignore decode errors
+        }
+      }
     }
   } else if (pmData === '0x' || pmData === '') {
     result.hasPaymaster = false
@@ -328,8 +365,33 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
           </Card>
         )}
 
-        {/* UserOp EIP-191 hash display */}
-        {data.message && isUserOp && !isEip712 && (
+        {/* UserOp EIP-191 hash display (collapsed, shown after human-readable summary) */}
+        {data.message && isUserOp && !isEip712 && decodedInfo && (
+          <details>
+            <summary
+              className="text-xs cursor-pointer py-1"
+              style={{ color: 'rgb(var(--muted-foreground))' }}
+            >
+              UserOperation Hash
+            </summary>
+            <Card padding="md">
+              <div
+                className="rounded-lg p-3 overflow-x-auto"
+                style={{ backgroundColor: 'rgb(var(--surface))' }}
+              >
+                <code
+                  className="text-xs break-all font-mono"
+                  style={{ color: 'rgb(var(--foreground))' }}
+                >
+                  {String(data.message)}
+                </code>
+              </div>
+            </Card>
+          </details>
+        )}
+
+        {/* UserOp EIP-191 hash display (full, when no typed data available) */}
+        {data.message && isUserOp && !isEip712 && !decodedInfo && (
           <Card padding="md">
             <p className="text-xs mb-2" style={{ color: 'rgb(var(--muted-foreground))' }}>
               UserOperation Hash
@@ -349,9 +411,9 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
         )}
 
         {/* ================================================================ */}
-        {/* UserOp EIP-712 — Human-Readable Summary */}
+        {/* UserOp Human-Readable Summary (EIP-712 or EIP-191 with typedData) */}
         {/* ================================================================ */}
-        {isUserOp && isEip712 && decodedInfo && (
+        {isUserOp && decodedInfo && (
           <>
             {/* Transaction Summary Card */}
             <Card padding="md">
@@ -440,6 +502,22 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
                   )}
                   {decodedInfo.paymasterType && (
                     <InfoRow label={t('userOpPaymasterType')} value={decodedInfo.paymasterType} />
+                  )}
+                  {/* ERC-20 gas payment details */}
+                  {decodedInfo.gasTokenAddress && (
+                    <InfoRow
+                      label={t('userOpGasToken')}
+                      value={truncateAddress(decodedInfo.gasTokenAddress)}
+                      mono
+                      title={decodedInfo.gasTokenAddress}
+                    />
+                  )}
+                  {decodedInfo.gasTokenMaxCostFormatted && (
+                    <InfoRow
+                      label={t('userOpGasTokenCost')}
+                      value={decodedInfo.gasTokenMaxCostFormatted}
+                      highlight
+                    />
                   )}
                 </div>
               </Card>

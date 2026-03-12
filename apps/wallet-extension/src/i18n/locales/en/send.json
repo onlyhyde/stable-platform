@@ -102,5 +102,13 @@
   "confirmedInBlock": "Confirmed in block #{{block}}",
   "transactionConfirmed": "Transaction Confirmed",
   "waitingForBlock": "Waiting to be included in a block...",
-  "sendingToken": "Sending {{symbol}}"
+  "sendingToken": "Sending {{symbol}}",
+
+  "checkingAllowance": "Checking {{symbol}} allowance...",
+  "approvalActive": "{{symbol}} approved for paymaster",
+  "approvalRequired": "{{symbol}} approval required",
+  "approvalRequiredDesc": "You need to approve the ERC-20 paymaster to spend {{symbol}} for gas. This is a one-time approval.",
+  "approveToken": "Approve {{symbol}}",
+  "approvingToken": "Approving {{symbol}}...",
+  "tokenApprovalNeeded": "{{symbol}} approval is required before sending. Please approve first."
 }

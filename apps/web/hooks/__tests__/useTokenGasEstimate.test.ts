@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ============================================================================
 // F-05: ERC-20 token gas estimation display
-// RED phase — useTokenGasEstimate does not exist yet
 // ============================================================================
 
 // Mock fetch for paymaster RPC calls
@@ -27,7 +26,7 @@ describe('F-05: useTokenGasEstimate', () => {
   })
 
   it('should estimate token cost for a UserOp', async () => {
-    // Mock pm_estimateTokenPayment RPC response
+    // Mock pm_estimateTokenPayment RPC response (matches server format)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () =>
@@ -36,11 +35,9 @@ describe('F-05: useTokenGasEstimate', () => {
           id: 1,
           result: {
             tokenAddress: USDC_ADDRESS,
-            tokenAmount: '2500000', // 2.5 USDC (6 decimals)
-            tokenSymbol: 'USDC',
-            tokenDecimals: 6,
+            estimatedAmount: '2500000', // 2.5 USDC (6 decimals)
             exchangeRate: '2500',
-            gasCostInWei: '1000000000000000', // 0.001 ETH
+            markup: 10,
           },
         }),
     })
@@ -49,17 +46,21 @@ describe('F-05: useTokenGasEstimate', () => {
     const { result } = renderHook(() => useTokenGasEstimate())
 
     await act(async () => {
-      await result.current.estimateTokenCost(USDC_ADDRESS, {
-        sender: '0x056DB290F8Ba3250ca64a45D16284D04Bc6f5FBf',
-        callGasLimit: '0x10000',
-        verificationGasLimit: '0x10000',
-        preVerificationGas: '0x5208',
-      })
+      await result.current.estimateTokenCost(
+        USDC_ADDRESS,
+        {
+          sender: '0x056DB290F8Ba3250ca64a45D16284D04Bc6f5FBf',
+          callGasLimit: '0x10000',
+          verificationGasLimit: '0x10000',
+          preVerificationGas: '0x5208',
+        },
+        6
+      )
     })
 
     expect(result.current.estimate).toBeDefined()
-    expect(result.current.estimate?.tokenAmount).toBe('2500000')
-    expect(result.current.estimate?.tokenSymbol).toBe('USDC')
+    expect(result.current.estimate?.estimatedAmount).toBe('2500000')
+    expect(result.current.estimate?.exchangeRate).toBe('2500')
     expect(result.current.isLoading).toBe(false)
     expect(result.current.error).toBeNull()
   })
@@ -97,11 +98,9 @@ describe('F-05: useTokenGasEstimate', () => {
           id: 1,
           result: {
             tokenAddress: USDC_ADDRESS,
-            tokenAmount: '2500000',
-            tokenSymbol: 'USDC',
-            tokenDecimals: 6,
+            estimatedAmount: '2500000',
             exchangeRate: '2500',
-            gasCostInWei: '1000000000000000',
+            markup: 10,
           },
         }),
     })
@@ -110,9 +109,12 @@ describe('F-05: useTokenGasEstimate', () => {
     const { result } = renderHook(() => useTokenGasEstimate())
 
     await act(async () => {
-      await result.current.estimateTokenCost(USDC_ADDRESS, {
-        sender: '0x056DB290F8Ba3250ca64a45D16284D04Bc6f5FBf',
-      })
+      // Pass tokenDecimals = 6 for USDC
+      await result.current.estimateTokenCost(
+        USDC_ADDRESS,
+        { sender: '0x056DB290F8Ba3250ca64a45D16284D04Bc6f5FBf' },
+        6
+      )
     })
 
     // 2500000 / 10^6 = 2.5 USDC

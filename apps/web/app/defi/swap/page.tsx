@@ -1,8 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Address } from 'viem'
 import { parseUnits } from 'viem'
-import { ConnectWalletCard, PageHeader, PaymasterSelector, useToast } from '@/components/common'
+import { ConnectWalletCard, PageHeader, useToast } from '@/components/common'
+import { PaymasterSelector, type GasPaymentMode } from '@/components/common/PaymasterSelector'
 import { SwapCard } from '@/components/defi'
 import type { SupportedToken } from '@/hooks'
 import { usePaymaster, useSwap, useUserOp, useWallet } from '@/hooks'
@@ -18,10 +20,6 @@ export default function SwapPage() {
     sendUserOp,
   })
   const {
-    selectedType: paymasterType,
-    setSelectedType: setPaymasterType,
-    selectedTokenAddress: paymasterTokenAddress,
-    setSelectedTokenAddress: setPaymasterTokenAddress,
     getSupportedTokens,
     checkSponsorshipEligibility,
     isLoading: paymasterLoading,
@@ -33,6 +31,8 @@ export default function SwapPage() {
   const [tokenOut, setTokenOut] = useState<Token | null>(null)
   const [amountIn, setAmountIn] = useState('')
   const [slippage, setSlippage] = useState(0.5)
+  const [gasMode, setGasMode] = useState<GasPaymentMode>('sponsor')
+  const [gasTokenAddress, setGasTokenAddress] = useState<Address | undefined>(undefined)
   const [gasSponsored, setGasSponsored] = useState<boolean | null>(null)
   const [supportedTokens, setSupportedTokens] = useState<SupportedToken[] | null>(null)
   const [isLoadingTokens, setIsLoadingTokens] = useState(false)
@@ -53,15 +53,15 @@ export default function SwapPage() {
     })
   }, [address, checkSponsorshipEligibility])
 
-  // Fetch tokens when erc20/permit2 selected
+  // Fetch tokens when erc20 selected
   useEffect(() => {
-    if (paymasterType === 'erc20' || paymasterType === 'permit2') {
+    if (gasMode === 'erc20') {
       setIsLoadingTokens(true)
       getSupportedTokens()
         .then(setSupportedTokens)
         .finally(() => setIsLoadingTokens(false))
     }
-  }, [paymasterType, getSupportedTokens])
+  }, [gasMode, getSupportedTokens])
 
   // Compute formatted balances from token data
   const balanceIn = useMemo(() => {
@@ -149,13 +149,13 @@ export default function SwapPage() {
       <PageHeader title="Swap" description="Exchange tokens at the best rates" />
 
       <PaymasterSelector
-        selectedType={paymasterType}
-        onTypeChange={setPaymasterType}
+        selectedMode={gasMode}
+        onModeChange={setGasMode}
         supportedTokens={supportedTokens}
-        selectedTokenAddress={paymasterTokenAddress}
-        onTokenSelect={setPaymasterTokenAddress}
+        selectedTokenAddress={gasTokenAddress}
+        onTokenSelect={setGasTokenAddress}
         isLoadingTokens={isLoadingTokens}
-        sponsorEligible={gasSponsored}
+        sponsorAvailable={gasSponsored}
         isLoading={paymasterLoading}
         error={paymasterError?.message}
       />

@@ -31,6 +31,30 @@ import {
 const DEFAULT_VALID_UNTIL_SECONDS = 300
 const DEFAULT_CLOCK_SKEW_SECONDS = 60
 
+/**
+ * Fallback KRWC→USDC conversion rate for display purposes.
+ * 1 USDC = 1500 KRWC → 1 KRWC = 1/1500 USDC.
+ * To avoid precision loss with integer division, we multiply by a scale factor first.
+ *
+ * Formula: usdcAmount = gasCostWei * USDC_SCALE / (KRWC_PER_USDC * NATIVE_DECIMALS_FACTOR)
+ * where USDC_SCALE = 1e6 (USDC has 6 decimals)
+ */
+const KRWC_PER_USDC = 1500n
+const USDC_SCALE = 10n ** 6n
+const NATIVE_DECIMALS_FACTOR = 10n ** 18n
+/** Buffer for price volatility + paymaster markup (30%) */
+const PRICE_BUFFER_PERCENT = 30n
+
+/**
+ * Estimate maxTokenCost (USDC, 6 decimals) from gas cost in native wei (KRWC).
+ * Adds a 30% buffer over the base estimate for price safety.
+ */
+function estimateMaxTokenCostFromGas(gasCostWei: bigint): bigint {
+  if (gasCostWei <= 0n) return 0n
+  const baseCost = (gasCostWei * USDC_SCALE) / (KRWC_PER_USDC * NATIVE_DECIMALS_FACTOR)
+  return baseCost + (baseCost * PRICE_BUFFER_PERCENT) / 100n
+}
+
 export type { GetPaymasterDataParams }
 
 /**
@@ -276,7 +300,11 @@ function handleErc20Data(
     return { success: false, error: policyResult.rejection }
   }
 
-  const maxTokenCost = BigInt(context?.maxTokenCost ?? 0)
+  // Calculate maxTokenCost from gas estimate if not provided by context.
+  // This allows the wallet UI to display the estimated USDC cost to the user.
+  const contextMaxTokenCost = context?.maxTokenCost ? BigInt(context.maxTokenCost) : 0n
+  const maxTokenCost =
+    contextMaxTokenCost > 0n ? contextMaxTokenCost : estimateMaxTokenCostFromGas(estimatedGasCost)
   const quoteId = BigInt(context?.quoteId ?? 0)
 
   const payload = encodeErc20Payload({
