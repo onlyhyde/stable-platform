@@ -1,9 +1,10 @@
 'use client'
 
-import { createBundlerClient, detectProvider, type StableNetProvider } from '@stablenet/wallet-sdk'
+import { createBundlerClient, type StableNetProvider } from '@stablenet/wallet-sdk'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import { parseEther } from 'viem'
+import { useAccount } from 'wagmi'
 import { useStableNetContext } from '@/providers'
 
 // ============================================================================
@@ -86,20 +87,27 @@ function removePendingOp(userOpHash: Hex): void {
  */
 export function useUserOp() {
   const { bundlerUrl, entryPoint } = useStableNetContext()
+  const { connector } = useAccount()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [provider, setProvider] = useState<StableNetProvider | null>(null)
 
-  // Detect wallet-sdk provider on mount
+  // Get provider from wagmi connector (shared with useWallet)
   useEffect(() => {
-    detectProvider({ timeout: 2000 })
+    if (!connector) {
+      setProvider(null)
+      return
+    }
+
+    connector
+      .getProvider()
       .then((p) => {
-        if (p) setProvider(p)
+        if (p) setProvider(p as unknown as StableNetProvider)
       })
       .catch(() => {
-        // Provider not available
+        setProvider(null)
       })
-  }, [])
+  }, [connector])
 
   // Bundler client — only for recheckUserOp (receipt polling of old submissions)
   const bundlerClient = useMemo(

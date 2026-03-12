@@ -864,10 +864,10 @@ export default function SendPage() {
             </div>
           )}
 
-          {(error || sendError || batchError || paymasterError) &&
+          {(error || sendError || batchError) &&
             (() => {
               const errorMsg =
-                sendError ?? batchError ?? paymasterError?.message ?? error?.message ?? ''
+                sendError ?? batchError ?? error?.message ?? ''
               const aaError = parseAAError(errorMsg)
               return (
                 <div

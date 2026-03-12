@@ -1,6 +1,6 @@
 {
   "name": "@stablenet/wallet-extension",
-  "version": "0.1.39",
+  "version": "0.1.40",
   "private": true,
   "description": "StableNet Wallet Chrome Extension",
   "scripts": {

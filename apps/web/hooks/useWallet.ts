@@ -1,58 +1,66 @@
 'use client'
 
-import { detectProvider, type StableNetProvider } from '@stablenet/wallet-sdk'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from 'wagmi'
 
+const STABLENET_CONNECTOR_ID = 'stableNetWallet'
+
 export function useWallet() {
-  const { address, isConnected, isConnecting } = useAccount()
+  const { address, isConnected, isConnecting, connector } = useAccount()
   const chainId = useChainId()
   const { connect, connectors, isPending: isConnectPending } = useConnect()
   const { disconnect, isPending: isDisconnectPending } = useDisconnect()
   const { switchChain, isPending: isSwitchPending } = useSwitchChain()
   const queryClient = useQueryClient()
 
-  // StableNet provider for event listening
-  const [stableNetProvider, setStableNetProvider] = useState<StableNetProvider | null>(null)
-
-  // Detect StableNet provider on mount
+  // Invalidate all queries on account/chain change so data hooks refetch
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (!connector) return
 
-    detectProvider({ timeout: 2000 })
-      .then((provider) => {
-        if (provider) {
-          setStableNetProvider(provider)
-        }
-      })
-      .catch(() => {
-        // Provider not available, that's okay
-      })
-  }, [])
+    const provider = connector.getProvider?.() as
+      | { on?: (e: string, fn: () => void) => void; removeListener?: (e: string, fn: () => void) => void }
+      | undefined
 
-  // Listen for chain and account changes via wallet-sdk
-  useEffect(() => {
-    if (!stableNetProvider) return
+    // getProvider() returns a Promise in wagmi v2+
+    let cleanup: (() => void) | undefined
 
-    // Use wallet-sdk's 'on' prefix methods for event subscription
-    const unsubNetworkChange = stableNetProvider.onNetworkChange(() => {
-      queryClient.invalidateQueries({ type: 'active' })
-    })
+    const setupListeners = async () => {
+      const resolved = await (connector.getProvider?.() as Promise<{
+        on?: (e: string, fn: () => void) => void
+        removeListener?: (e: string, fn: () => void) => void
+      } | undefined>)
 
-    const unsubAccountChange = stableNetProvider.onAccountChange(() => {
-      queryClient.invalidateQueries({ type: 'active' })
-    })
+      if (!resolved?.on) return
+
+      const invalidate = () => {
+        queryClient.invalidateQueries({ type: 'active' })
+      }
+
+      resolved.on('accountsChanged', invalidate)
+      resolved.on('chainChanged', invalidate)
+
+      cleanup = () => {
+        resolved.removeListener?.('accountsChanged', invalidate)
+        resolved.removeListener?.('chainChanged', invalidate)
+      }
+    }
+
+    setupListeners()
 
     return () => {
-      unsubNetworkChange()
-      unsubAccountChange()
+      cleanup?.()
     }
-  }, [stableNetProvider, queryClient])
+  }, [connector, queryClient])
 
   const connectWallet = useCallback(
     (connectorId?: string) => {
-      const connector = connectorId ? connectors.find((c) => c.id === connectorId) : connectors[0]
+      // Prefer StableNet connector, fall back to specified or first available
+      const id = connectorId ?? STABLENET_CONNECTOR_ID
+      const connector =
+        connectors.find((c) => c.id === id) ??
+        connectors.find((c) => c.id === STABLENET_CONNECTOR_ID) ??
+        connectors[0]
 
       if (connector) {
         connect({ connector })

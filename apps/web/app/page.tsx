@@ -2,21 +2,25 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { formatEther, formatUnits } from 'viem'
+import { formatTokenBalance } from '@stablenet/core'
+import { formatUnits } from 'viem'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import type { WalletToken } from '@/hooks'
 import { useWallet, useWalletAssets } from '@/hooks'
 import { useTransactionHistory } from '@/hooks/useTransactionHistory'
-import { formatAddress, formatTokenAmount } from '@/lib/utils'
+import { formatAddress, formatRelativeTime } from '@/lib/utils'
 
 export default function DashboardPage() {
   const { address, isConnected, connect } = useWallet()
-  const { native, tokens, isLoading, isSupported, refetch, addToken: _addToken } = useWalletAssets()
-  const { transactions } = useTransactionHistory({ address })
+  const { native, tokens, isLoading, isSupported, refetch } = useWalletAssets()
+  const {
+    transactions,
+    isLoading: isTxLoading,
+    error: txError,
+  } = useTransactionHistory({ address })
   const recentTxs = transactions.slice(0, 5)
 
-  // For backward compatibility
-  const balance = native?.balance ? BigInt(native.balance) : BigInt(0)
+  const balance = native?.balance ?? '0'
   const decimals = native?.decimals ?? 18
   const symbol = native?.symbol ?? 'ETH'
 
@@ -80,7 +84,7 @@ export default function DashboardPage() {
             <div>
               <p className="text-sm font-medium text-white/80">Total Balance</p>
               <h2 className="text-4xl font-bold text-white mt-2">
-                {isLoading ? '...' : formatTokenAmount(balance, decimals)} {symbol}
+                {isLoading ? '...' : formatTokenBalance(balance, decimals)} {symbol}
               </h2>
               <p className="text-sm mt-2 text-white/70">{address && formatAddress(address, 6)}</p>
             </div>
@@ -110,8 +114,8 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Token List (StableNet wallet only) */}
-      {isSupported && tokens.length > 0 && (
+      {/* Token List — always shown when tokens have been fetched */}
+      {tokens.length > 0 && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Tokens</CardTitle>
@@ -234,7 +238,33 @@ export default function DashboardPage() {
           </Link>
         </CardHeader>
         <CardContent>
-          {recentTxs.length === 0 ? (
+          {txError ? (
+            <div className="text-center py-8">
+              <svg
+                className="w-12 h-12 mx-auto mb-4"
+                style={{ color: 'rgb(var(--destructive) / 0.5)' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+              <p style={{ color: 'rgb(var(--destructive))' }}>Failed to load transactions</p>
+              <p className="text-xs mt-1" style={{ color: 'rgb(var(--muted-foreground))' }}>
+                {txError.message}
+              </p>
+            </div>
+          ) : isTxLoading ? (
+            <div className="text-center py-8">
+              <p style={{ color: 'rgb(var(--muted-foreground))' }}>Loading transactions...</p>
+            </div>
+          ) : recentTxs.length === 0 ? (
             <div className="text-center py-8">
               <svg
                 className="w-12 h-12 mx-auto mb-4"
@@ -256,22 +286,33 @@ export default function DashboardPage() {
           ) : (
             <div className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
               {recentTxs.map((tx) => {
-                const isSent = address && tx.from.toLowerCase() === address.toLowerCase()
+                const isSent =
+                  address && tx.from?.toLowerCase() === address.toLowerCase()
+                const counterparty = isSent ? tx.to : tx.from
+
+                // Format the transfer amount and token symbol
+                const tokenSymbol = tx.tokenTransfer?.symbol ?? 'Token'
+                const tokenDecimals = tx.tokenTransfer?.decimals ?? 18
+                const displayAmount = tx.tokenTransfer
+                  ? formatUnits(tx.tokenTransfer.value, tokenDecimals)
+                  : '0'
+
                 return (
-                  <div key={tx.hash} className="flex items-center justify-between py-3">
+                  <div key={`${tx.hash}:${tx.tokenTransfer?.contractAddress ?? 'native'}`} className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-3">
+                      {/* Direction icon: arrow up-right (sent) / arrow down-left (received) */}
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center"
                         style={{
                           backgroundColor: isSent
-                            ? 'rgb(var(--destructive) / 0.1)'
+                            ? 'rgb(var(--primary) / 0.1)'
                             : 'rgb(var(--success) / 0.1)',
                         }}
                       >
                         <svg
                           className="w-4 h-4"
                           style={{
-                            color: isSent ? 'rgb(var(--destructive))' : 'rgb(var(--success))',
+                            color: isSent ? 'rgb(var(--primary))' : 'rgb(var(--success))',
                           }}
                           fill="none"
                           viewBox="0 0 24 24"
@@ -284,8 +325,8 @@ export default function DashboardPage() {
                             strokeWidth={2}
                             d={
                               isSent
-                                ? 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8'
-                                : 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4'
+                                ? 'M7 17L17 7M17 7H7M17 7V17'
+                                : 'M17 7L7 17M7 17H17M7 17V7'
                             }
                           />
                         </svg>
@@ -295,12 +336,13 @@ export default function DashboardPage() {
                           className="text-sm font-medium"
                           style={{ color: 'rgb(var(--foreground))' }}
                         >
-                          {isSent ? 'Sent' : 'Received'}
+                          {isSent ? 'Sent' : 'Received'} {tokenSymbol}
                         </p>
                         <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                          {isSent
-                            ? `To ${formatAddress(tx.to, 4)}`
-                            : `From ${formatAddress(tx.from, 4)}`}
+                          {isSent ? 'To ' : 'From '}
+                          {counterparty
+                            ? formatAddress(counterparty, 4)
+                            : 'Unknown'}
                         </p>
                       </div>
                     </div>
@@ -308,16 +350,13 @@ export default function DashboardPage() {
                       <p
                         className="text-sm font-medium"
                         style={{
-                          color: isSent ? 'rgb(var(--destructive))' : 'rgb(var(--success))',
+                          color: isSent ? 'rgb(var(--foreground))' : 'rgb(var(--success))',
                         }}
                       >
-                        {isSent ? '-' : '+'}
-                        {tx.tokenTransfer
-                          ? `${formatUnits(tx.tokenTransfer.value, tx.tokenTransfer.decimals ?? 18)} ${tx.tokenTransfer.symbol ?? formatAddress(tx.tokenTransfer.contractAddress, 3)}`
-                          : `${formatEther(tx.value)} ${symbol}`}
+                        {isSent ? '-' : '+'}{displayAmount} {tokenSymbol}
                       </p>
                       <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                        {tx.status}
+                        {formatRelativeTime(tx.timestamp)}
                       </p>
                     </div>
                   </div>

@@ -1,8 +1,10 @@
 'use client'
 
-import { createIndexerClient } from '@stablenet/core'
+import { formatTokenBalance } from '@stablenet/core'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
+import { erc20Abi } from 'viem'
+import { getDefaultTokens } from '@stablenet/contracts'
 import { useWallet } from '@/hooks/useWallet'
 import { useStableNetContext } from '@/providers/StableNetProvider'
 import type { Token } from '@/types'
@@ -21,7 +23,7 @@ interface UseTokensReturn {
 
 export function useTokens(config: UseTokensConfig = {}): UseTokensReturn {
   const { fetchTokens: externalFetch, autoFetch = true } = config
-  const { indexerUrl } = useStableNetContext()
+  const { publicClient, chainId } = useStableNetContext()
   const { address } = useWallet()
   const [tokens, setTokens] = useState<Token[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -57,21 +59,41 @@ export function useTokens(config: UseTokensConfig = {}): UseTokensReturn {
       return
     }
 
-    // Default: use IndexerClient
+    // On-chain: read balanceOf for known ERC-20 tokens
     const id = ++fetchIdRef.current
     setIsLoading(true)
     setError(null)
     try {
-      const client = createIndexerClient(indexerUrl)
-      const balances = await client.getTokenBalances(address, 'ERC20')
+      const knownTokens = getDefaultTokens(chainId).filter(
+        (t) => t.address !== '0x0000000000000000000000000000000000000000'
+      )
+
+      const balanceResults = await Promise.allSettled(
+        knownTokens.map((token) =>
+          publicClient.readContract({
+            address: token.address as Address,
+            abi: erc20Abi,
+            functionName: 'balanceOf',
+            args: [address as Address],
+          })
+        )
+      )
+
       if (id !== fetchIdRef.current) return
-      const mapped: Token[] = balances.map((tb) => ({
-        address: tb.address as Address,
-        name: tb.name ?? 'Unknown',
-        symbol: tb.symbol ?? '???',
-        decimals: tb.decimals ?? 18,
-        balance: BigInt(tb.balance),
-      }))
+
+      const mapped: Token[] = knownTokens
+        .map((token, i) => {
+          const result = balanceResults[i]
+          const balance = result.status === 'fulfilled' ? result.value : 0n
+          return {
+            address: token.address as Address,
+            name: token.name,
+            symbol: token.symbol,
+            decimals: token.decimals,
+            balance,
+          }
+        })
+
       setTokens(mapped)
     } catch (err) {
       if (id !== fetchIdRef.current) return
@@ -83,7 +105,7 @@ export function useTokens(config: UseTokensConfig = {}): UseTokensReturn {
         setIsLoading(false)
       }
     }
-  }, [externalFetch, address, indexerUrl])
+  }, [externalFetch, address, publicClient, chainId])
 
   useEffect(() => {
     if (autoFetch) {

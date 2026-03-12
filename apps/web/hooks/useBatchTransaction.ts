@@ -1,6 +1,6 @@
 'use client'
 
-import { detectProvider, type StableNetProvider } from '@stablenet/wallet-sdk'
+import type { StableNetProvider } from '@stablenet/wallet-sdk'
 import { useCallback, useEffect, useState } from 'react'
 import type { Address, Hex } from 'viem'
 import {
@@ -151,7 +151,7 @@ function createRecipient(): BatchRecipient {
  * - EOA: Uses Multicall3 aggregate3Value via regular transaction.
  */
 export function useBatchTransaction(): UseBatchTransactionReturn {
-  const { address } = useAccount()
+  const { address, connector } = useAccount()
   const { data: walletClient } = useWalletClient()
   const publicClient = usePublicClient()
   const { status } = useSmartAccount()
@@ -165,16 +165,22 @@ export function useBatchTransaction(): UseBatchTransactionReturn {
   const [isExecuting, setIsExecuting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Detect wallet-sdk provider on mount (for Smart Account UserOp path)
+  // Get provider from wagmi connector (shared with useWallet)
   useEffect(() => {
-    detectProvider({ timeout: 2000 })
+    if (!connector) {
+      setProvider(null)
+      return
+    }
+
+    connector
+      .getProvider()
       .then((p) => {
-        if (p) setProvider(p)
+        if (p) setProvider(p as unknown as StableNetProvider)
       })
       .catch(() => {
-        // Provider not available
+        setProvider(null)
       })
-  }, [])
+  }, [connector])
 
   const addRecipient = useCallback(() => {
     setRecipients((prev) => [...prev, createRecipient()])

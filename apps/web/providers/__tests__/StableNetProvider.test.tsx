@@ -19,6 +19,24 @@ vi.mock('@/lib/chains', () => ({
     nativeCurrency: { decimals: 18, name: 'WKRC', symbol: 'WKRC' },
     rpcUrls: { default: { http: ['http://127.0.0.1:8501'] } },
   }),
+  stablenetLocal: {
+    id: 8283,
+    name: 'StableNet Local',
+    nativeCurrency: { decimals: 18, name: 'WKRC', symbol: 'WKRC' },
+    rpcUrls: { default: { http: ['http://127.0.0.1:8501'] } },
+  },
+  stablenetTestnet: {
+    id: 82830,
+    name: 'StableNet Testnet',
+    nativeCurrency: { decimals: 18, name: 'WKRC', symbol: 'WKRC' },
+    rpcUrls: { default: { http: ['http://127.0.0.1:8501'] } },
+  },
+  anvilLocal: {
+    id: 31337,
+    name: 'Anvil Local',
+    nativeCurrency: { decimals: 18, name: 'ETH', symbol: 'ETH' },
+    rpcUrls: { default: { http: ['http://127.0.0.1:8545'] } },
+  },
 }))
 
 import { StableNetProvider, useStableNetContext } from '../StableNetProvider'

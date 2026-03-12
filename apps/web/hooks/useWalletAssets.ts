@@ -1,10 +1,13 @@
 'use client'
 
+import { formatTokenBalance } from '@stablenet/core'
 import { getNativeCurrencySymbol } from '@stablenet/wallet-sdk'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
-import { formatUnits } from 'viem'
-import { useAccount, useChainId } from 'wagmi'
+import { erc20Abi, formatUnits } from 'viem'
+import { useAccount } from 'wagmi'
+import { getDefaultTokens } from '@stablenet/contracts'
+import { useStableNetContext } from '@/providers/StableNetProvider'
 
 /**
  * Token asset from wallet
@@ -85,21 +88,41 @@ export interface UseWalletAssetsResult {
   addToken: (params: AddTokenParams) => Promise<AddTokenResult>
 }
 
-/**
- * Get provider from window.ethereum
- */
-function getProvider(): {
+type RpcProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
-} | null {
+}
+
+/**
+ * Get wallet provider — checks window.stablenet first (StableNet wallet),
+ * then falls back to window.ethereum for other wallets.
+ */
+function getProvider(): RpcProvider | null {
   if (typeof window === 'undefined') return null
-  const ethereum = (window as { ethereum?: { request?: (...args: unknown[]) => unknown } }).ethereum
-  if (!ethereum?.request) return null
-  return ethereum as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
+
+  const win = window as {
+    stablenet?: { isStableNet?: boolean; request?: (...args: unknown[]) => unknown }
+    ethereum?: { isStableNet?: boolean; request?: (...args: unknown[]) => unknown }
+  }
+
+  // Prefer StableNet wallet provider
+  if (win.stablenet?.isStableNet && win.stablenet.request) {
+    return win.stablenet as RpcProvider
+  }
+  // Check if window.ethereum is StableNet
+  if (win.ethereum?.isStableNet && win.ethereum.request) {
+    return win.ethereum as RpcProvider
+  }
+  // Fallback to generic ethereum provider
+  if (win.ethereum?.request) {
+    return win.ethereum as RpcProvider
+  }
+
+  return null
 }
 
 export function useWalletAssets(): UseWalletAssetsResult {
   const { address, isConnected } = useAccount()
-  const _chainId = useChainId()
+  const { publicClient, chainId: currentChainId } = useStableNetContext()
 
   const [isSupported, setIsSupported] = useState(false)
   const [assets, setAssets] = useState<WalletAssetsResponse | null>(null)
@@ -112,8 +135,94 @@ export function useWalletAssets(): UseWalletAssetsResult {
   const fetchIdRef = useRef(0)
 
   /**
-   * Core fetch — tries wallet_getAssets first, falls back to eth_getBalance.
-   * Returns { assets, supported } so callers can update both in one pass.
+   * Fetch ERC-20 balances directly on-chain using known token list.
+   * No indexer dependency — reads balanceOf() for each token via publicClient.
+   */
+  const fetchOnChainTokenBalances = useCallback(
+    async (targetAddress: Address, currentChainId: number): Promise<WalletToken[]> => {
+      const knownTokens = getDefaultTokens(currentChainId)
+      // Filter out native (zero address) tokens
+      const erc20Tokens = knownTokens.filter(
+        (t) => t.address !== '0x0000000000000000000000000000000000000000'
+      )
+
+      if (erc20Tokens.length === 0) return []
+
+      // Read balanceOf for all known ERC-20 tokens in parallel
+      const balanceResults = await Promise.allSettled(
+        erc20Tokens.map((token) =>
+          publicClient.readContract({
+            address: token.address as Address,
+            abi: erc20Abi,
+            functionName: 'balanceOf',
+            args: [targetAddress],
+          })
+        )
+      )
+
+      const tokens: WalletToken[] = []
+      for (let i = 0; i < erc20Tokens.length; i++) {
+        const result = balanceResults[i]
+        if (result.status !== 'fulfilled') continue
+
+        const rawBalance = result.value
+        const balanceStr = rawBalance.toString()
+
+        tokens.push({
+          address: erc20Tokens[i].address as Address,
+          symbol: erc20Tokens[i].symbol,
+          name: erc20Tokens[i].name,
+          decimals: erc20Tokens[i].decimals,
+          balance: balanceStr,
+          formattedBalance: formatTokenBalance(balanceStr, erc20Tokens[i].decimals),
+          logoURI: erc20Tokens[i].logoUrl,
+        })
+      }
+
+      return tokens
+    },
+    [publicClient]
+  )
+
+  /**
+   * Merge on-chain token balances with wallet-provided tokens.
+   * Wallet may only return "tracked" tokens — known tokens from getDefaultTokens()
+   * are always fetched on-chain and merged so no balances are missed.
+   */
+  const mergeOnChainTokens = useCallback(
+    async (
+      targetAddress: Address,
+      currentChainId: number,
+      walletTokens: WalletToken[]
+    ): Promise<WalletToken[]> => {
+      const onChainTokens = await fetchOnChainTokenBalances(targetAddress, currentChainId)
+      const walletAddrs = new Set(walletTokens.map((t) => t.address.toLowerCase()))
+
+      // Start with on-chain data for known tokens (authoritative balances)
+      const merged = new Map<string, WalletToken>()
+      for (const t of onChainTokens) {
+        merged.set(t.address.toLowerCase(), t)
+      }
+      // Overlay wallet-tracked tokens (may include custom tokens not in known list)
+      for (const t of walletTokens) {
+        const key = t.address.toLowerCase()
+        if (merged.has(key)) {
+          // On-chain balance is authoritative; keep wallet metadata if richer
+          const onChain = merged.get(key)!
+          merged.set(key, { ...t, balance: onChain.balance, formattedBalance: onChain.formattedBalance })
+        } else {
+          merged.set(key, t)
+        }
+      }
+
+      return [...merged.values()]
+    },
+    [fetchOnChainTokenBalances]
+  )
+
+  /**
+   * Core fetch — tries wallet_getAssets first, falls back to eth_getBalance + on-chain balanceOf.
+   * Always supplements with on-chain balanceOf for known tokens from getDefaultTokens().
    */
   const doFetch = useCallback(
     async (
@@ -124,33 +233,42 @@ export function useWalletAssets(): UseWalletAssetsResult {
 
       // Try wallet_getAssets (StableNet wallet)
       try {
-        const result = (await provider.request({
+        const walletResult = (await provider.request({
           method: 'wallet_getAssets',
           params: [],
         })) as WalletAssetsResponse
 
-        return { result, supported: true }
+        // Always merge with on-chain balances for known tokens
+        const mergedTokens = await mergeOnChainTokens(
+          targetAddress,
+          walletResult.chainId,
+          walletResult.tokens
+        )
+
+        return {
+          result: { ...walletResult, tokens: mergedTokens },
+          supported: true,
+        }
       } catch (err) {
         const error = err as { code?: number; message?: string }
         const isUnsupported =
           error.code === 4200 || error.code === -32601 || error.message?.includes('not supported')
 
-        if (!isUnsupported) {
-          // Method exists but failed for another reason (e.g. not connected) —
-          // still mark as supported, fall through to eth_getBalance
-        }
-
-        // Fallback: eth_getBalance
+        // Fallback: eth_getBalance (native) + on-chain balanceOf (ERC-20)
         try {
           const chainIdHex = (await provider.request({ method: 'eth_chainId' })) as string
           const currentChainId = Number.parseInt(chainIdHex, 16)
 
-          const balanceHex = (await provider.request({
-            method: 'eth_getBalance',
-            params: [targetAddress, 'latest'],
-          })) as string
-          const balance = BigInt(balanceHex || '0')
+          // Fetch native balance and ERC-20 token balances in parallel
+          const [balanceHex, tokens] = await Promise.all([
+            provider.request({
+              method: 'eth_getBalance',
+              params: [targetAddress, 'latest'],
+            }) as Promise<string>,
+            fetchOnChainTokenBalances(targetAddress, currentChainId),
+          ])
 
+          const balance = BigInt(balanceHex || '0')
           const symbol = getNativeCurrencySymbol(currentChainId)
           const decimals = 18
 
@@ -165,7 +283,7 @@ export function useWalletAssets(): UseWalletAssetsResult {
                 balance: balance.toString(),
                 formattedBalance: formatUnits(balance, decimals),
               },
-              tokens: [],
+              tokens,
             },
             supported: !isUnsupported,
           }
@@ -174,7 +292,7 @@ export function useWalletAssets(): UseWalletAssetsResult {
         }
       }
     },
-    []
+    [fetchOnChainTokenBalances, mergeOnChainTokens]
   )
 
   /**
@@ -246,7 +364,7 @@ export function useWalletAssets(): UseWalletAssetsResult {
     [isSupported, fetchAssets]
   )
 
-  // Single effect: fetch whenever connection state, address, or chainId changes.
+  // Refetch whenever connection state, address, or chainId changes.
   useEffect(() => {
     if (isConnected && address) {
       fetchAssets()
@@ -254,32 +372,33 @@ export function useWalletAssets(): UseWalletAssetsResult {
       setAssets(null)
       setIsLoading(false)
     }
-  }, [isConnected, address, fetchAssets])
+  }, [isConnected, address, currentChainId, fetchAssets])
 
-  // Listen for wallet events (chain/account/assets changes)
+  // Listen for assetsChanged events from wallet extension to auto-refresh
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const ethereum = window as {
-      ethereum?: {
-        on?: (event: string, handler: () => void) => void
-        removeListener?: (event: string, handler: () => void) => void
-      }
+    type EventProvider = {
+      on?: (event: string, fn: (...args: unknown[]) => void) => void
+      removeListener?: (event: string, fn: (...args: unknown[]) => void) => void
     }
-    if (!ethereum.ethereum?.on) return
 
-    const handleChange = () => {
+    const win = window as {
+      stablenet?: { isStableNet?: boolean } & EventProvider
+      ethereum?: EventProvider
+    }
+
+    const provider: EventProvider | undefined =
+      win.stablenet?.isStableNet ? win.stablenet : win.ethereum
+    if (!provider?.on) return
+
+    const handleAssetsChanged = () => {
       fetchAssets()
     }
 
-    ethereum.ethereum.on('chainChanged', handleChange)
-    ethereum.ethereum.on('accountsChanged', handleChange)
-    ethereum.ethereum.on('assetsChanged', handleChange)
-
+    provider.on('assetsChanged', handleAssetsChanged)
     return () => {
-      ethereum.ethereum?.removeListener?.('chainChanged', handleChange)
-      ethereum.ethereum?.removeListener?.('accountsChanged', handleChange)
-      ethereum.ethereum?.removeListener?.('assetsChanged', handleChange)
+      provider.removeListener?.('assetsChanged', handleAssetsChanged)
     }
   }, [fetchAssets])
 

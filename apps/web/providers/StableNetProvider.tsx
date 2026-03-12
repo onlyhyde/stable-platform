@@ -3,7 +3,13 @@
 import { createContext, type ReactNode, useContext, useMemo } from 'react'
 import { createPublicClient, http, type PublicClient } from 'viem'
 import { useAccount, useChainId } from 'wagmi'
-import { getConfigByChainId, getStablenetLocal } from '@/lib/chains'
+import {
+  anvilLocal,
+  getConfigByChainId,
+  getStablenetLocal,
+  stablenetLocal,
+  stablenetTestnet,
+} from '@/lib/chains'
 import { getContractAddresses, getServiceUrls } from '@/lib/constants'
 
 interface StableNetContextValue {
@@ -37,10 +43,18 @@ export function StableNetProvider({ children }: StableNetProviderProps) {
   // Memoize publicClient separately so it is not recreated when isConnected toggles
   const publicClient = useMemo(() => {
     const networkConfig = getConfigByChainId(currentChainId)
-    const chain = getStablenetLocal()
+
+    // Use the correct chain definition for the current chainId
+    const chain =
+      currentChainId === 82830
+        ? stablenetTestnet
+        : currentChainId === 31337
+          ? anvilLocal
+          : stablenetLocal
+
     return createPublicClient({
       chain,
-      transport: http(networkConfig?.rpcUrl),
+      transport: http(networkConfig?.rpcUrl ?? stablenetLocal.rpcUrls.default.http[0]),
     })
   }, [currentChainId])
 

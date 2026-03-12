@@ -7,22 +7,30 @@ import { useUserOp } from '../useUserOp'
 // Mocks — vi.hoisted ensures these are available during vi.mock hoisting
 // ============================================================================
 
-const { mockSendTransaction, mockWaitReceipt } = vi.hoisted(() => ({
+const { mockSendTransaction, mockWaitReceipt, mockRequest, mockGetProvider } = vi.hoisted(() => ({
   mockSendTransaction: vi.fn(),
   mockWaitReceipt: vi.fn().mockResolvedValue({
     success: true,
     receipt: { transactionHash: `0x${'ee'.repeat(32)}` },
   }),
+  mockRequest: vi.fn(),
+  mockGetProvider: vi.fn(),
 }))
 
-// Mock wallet-sdk: detectProvider returns our mock provider
+// Mock wallet-sdk: only createBundlerClient is still used directly
 vi.mock('@stablenet/wallet-sdk', () => ({
-  detectProvider: vi.fn().mockResolvedValue({
-    sendTransaction: mockSendTransaction,
-  }),
   createBundlerClient: vi.fn(() => ({
     waitForUserOperationReceipt: mockWaitReceipt,
   })),
+}))
+
+// Mock wagmi: useAccount returns a connector with getProvider()
+vi.mock('wagmi', () => ({
+  useAccount: () => ({
+    connector: {
+      getProvider: mockGetProvider,
+    },
+  }),
 }))
 
 // Mock context provider
@@ -45,13 +53,19 @@ describe('useUserOp', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSendTransaction.mockResolvedValue(TX_HASH)
+    mockRequest.mockResolvedValue(TX_HASH)
+    // Mock connector.getProvider() to return provider with sendTransaction
+    mockGetProvider.mockResolvedValue({
+      sendTransaction: mockSendTransaction,
+      request: mockRequest,
+    })
   })
 
   describe('sendUserOp', () => {
-    it('should send transaction through wallet-sdk provider', async () => {
+    it('should send transaction through wallet provider', async () => {
       const { result } = renderHook(() => useUserOp())
 
-      // Wait for provider detection
+      // Wait for provider resolution from connector
       await act(async () => {
         await new Promise((r) => setTimeout(r, 10))
       })
@@ -208,10 +222,9 @@ describe('useUserOp', () => {
       expect(result.current.error?.message).toContain('User rejected')
     })
 
-    it('should return null when provider is not detected', async () => {
-      // Override detectProvider to return null
-      const { detectProvider } = await import('@stablenet/wallet-sdk')
-      vi.mocked(detectProvider).mockResolvedValueOnce(null)
+    it('should return null when connector has no provider', async () => {
+      // Override getProvider to return null
+      mockGetProvider.mockResolvedValueOnce(null)
 
       const { result } = renderHook(() => useUserOp())
       await act(async () => {
