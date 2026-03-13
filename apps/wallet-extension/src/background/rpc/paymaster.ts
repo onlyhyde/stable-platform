@@ -270,10 +270,14 @@ export async function sponsorAndSign(params: {
         `[sponsorAndSign] Step 2: ERC-20 gas estimation failed (expected during simulation), using stub gas limits: ${err instanceof Error ? err.message : String(err)}`
       )
 
-      // Use conservative defaults if stub didn't provide gas limits
+      // Use conservative defaults if stub didn't provide gas limits.
+      // ERC20Paymaster validatePaymasterUserOp costs ~15k gas (oracle + balanceOf + allowance).
+      // Account verification (ECDSA) costs ~150k. Combined: ~165k + buffer → 300k.
       const FALLBACK_PRE_VERIFICATION_GAS = 60000n
-      const FALLBACK_VERIFICATION_GAS = 500000n
+      const FALLBACK_VERIFICATION_GAS = 300000n
       const FALLBACK_CALL_GAS = 300000n
+      const FALLBACK_PAYMASTER_VERIFICATION_GAS = 100000n
+      const FALLBACK_PAYMASTER_POST_OP_GAS = 60000n
 
       if (userOp.preVerificationGas === 0n) {
         userOp.preVerificationGas = FALLBACK_PRE_VERIFICATION_GAS
@@ -284,9 +288,15 @@ export async function sponsorAndSign(params: {
       if (userOp.callGasLimit === 0n) {
         userOp.callGasLimit = FALLBACK_CALL_GAS
       }
+      if (userOp.paymasterVerificationGasLimit === 0n) {
+        userOp.paymasterVerificationGasLimit = FALLBACK_PAYMASTER_VERIFICATION_GAS
+      }
+      if (userOp.paymasterPostOpGasLimit === 0n) {
+        userOp.paymasterPostOpGasLimit = FALLBACK_PAYMASTER_POST_OP_GAS
+      }
 
       logger.info(
-        `[sponsorAndSign] Step 2 (ERC-20 fallback): preVerif=${userOp.preVerificationGas}, verifLimit=${userOp.verificationGasLimit}, callLimit=${userOp.callGasLimit}`
+        `[sponsorAndSign] Step 2 (ERC-20 fallback): preVerif=${userOp.preVerificationGas}, verifLimit=${userOp.verificationGasLimit}, callLimit=${userOp.callGasLimit}, pmVerif=${userOp.paymasterVerificationGasLimit}, pmPostOp=${userOp.paymasterPostOpGasLimit}`
       )
     } else {
       logger.error(

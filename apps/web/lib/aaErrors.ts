@@ -101,6 +101,18 @@ const AA_ERRORS: Record<string, AAErrorInfo> = {
 }
 
 /**
+ * RPC error code → user-friendly message mapping.
+ * These are custom error codes from the wallet extension (not AA codes).
+ */
+const RPC_ERRORS: Record<number, AAErrorInfo> = {
+  [-32010]: {
+    message: 'Token approval required for ERC-20 gas payment.',
+    suggestion: 'Please approve the token for the paymaster before sending.',
+    action: 'change-mode',
+  },
+}
+
+/**
  * Parse an error message for AA error codes and return user-friendly info.
  *
  * AA codes appear in EntryPoint revert messages like:
@@ -124,12 +136,34 @@ export function parseAAError(errorMessage: string): AAErrorInfo | null {
 }
 
 /**
+ * Parse an RPC error code from the error message.
+ * Wallet extension returns errors like: "Token approval required..." with code -32010.
+ */
+export function parseRpcError(errorMessage: string): AAErrorInfo | null {
+  for (const [code, info] of Object.entries(RPC_ERRORS)) {
+    const codeNum = Number(code)
+    if (errorMessage.includes(String(codeNum)) || errorMessage.includes(info.message)) {
+      return info
+    }
+  }
+  // Check for known RPC error patterns
+  if (errorMessage.includes('Token approval required') || errorMessage.includes('token approval')) {
+    return RPC_ERRORS[-32010]
+  }
+  return null
+}
+
+/**
  * Get a user-friendly error message, falling back to the original if no AA code found.
  */
 export function getUserFriendlyError(errorMessage: string): string {
   const aaError = parseAAError(errorMessage)
   if (aaError) {
     return aaError.suggestion ? `${aaError.message} ${aaError.suggestion}` : aaError.message
+  }
+  const rpcError = parseRpcError(errorMessage)
+  if (rpcError) {
+    return rpcError.suggestion ? `${rpcError.message} ${rpcError.suggestion}` : rpcError.message
   }
   return errorMessage
 }
