@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getApiConfig } from '../../config'
 import type {
   CryptoCurrency,
   FiatCurrency,
@@ -11,7 +12,6 @@ import type {
 import { Button, Card, Input, Modal, Select, Spinner } from '../components/common'
 import { OrderCard, PaymentMethodSelector, QuoteCard } from '../components/onramp'
 import { useWalletStore } from '../hooks/useWalletStore'
-import { getApiConfig } from '../../config'
 
 type ViewType = 'buy' | 'orders'
 
@@ -170,7 +170,7 @@ export function BuyPage({ onBack }: BuyPageProps) {
       }
     }, 1000)
     return () => clearInterval(checkExpiration)
-  }, [quote])
+  }, [quote, t])
 
   async function handleGetQuote() {
     if (!fiatAmount || Number.parseFloat(fiatAmount) <= 0) {
@@ -465,7 +465,9 @@ export function BuyPage({ onBack }: BuyPageProps) {
                   onClick={handleGetQuote}
                   fullWidth
                   isLoading={isLoadingQuote}
-                  disabled={!fiatAmount || Number.parseFloat(fiatAmount) <= 0 || kycStatus === 'rejected'}
+                  disabled={
+                    !fiatAmount || Number.parseFloat(fiatAmount) <= 0 || kycStatus === 'rejected'
+                  }
                 >
                   {t('getQuote')}
                 </Button>
@@ -586,7 +588,11 @@ export function BuyPage({ onBack }: BuyPageProps) {
       >
         {pendingOrder && (
           <div className="space-y-4">
-            <Card padding="md" variant="filled" style={{ backgroundColor: 'rgb(var(--warning, 245 158 11) / 0.1)' }}>
+            <Card
+              padding="md"
+              variant="filled"
+              style={{ backgroundColor: 'rgb(var(--warning, 245 158 11) / 0.1)' }}
+            >
               <p className="text-sm" style={{ color: 'rgb(var(--warning, 245 158 11))' }}>
                 {t('completePaymentWithin')}
               </p>

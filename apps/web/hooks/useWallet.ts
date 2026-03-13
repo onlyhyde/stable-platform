@@ -24,10 +24,12 @@ export function useWallet() {
     let removeListeners: (() => void) | undefined
 
     const setupListeners = async () => {
-      const resolved = await connector.getProvider?.() as {
-        on?: (e: string, fn: () => void) => void
-        removeListener?: (e: string, fn: () => void) => void
-      } | undefined
+      const resolved = (await connector.getProvider?.()) as
+        | {
+            on?: (e: string, fn: () => void) => void
+            removeListener?: (e: string, fn: () => void) => void
+          }
+        | undefined
 
       if (cancelled || !resolved?.on) return
 

@@ -43,7 +43,7 @@ export default function HistoryPage() {
   // Reset to page 1 when transactions change
   useEffect(() => {
     setCurrentPage(1)
-  }, [transactions])
+  }, [])
 
   const handleRecheck = useCallback(
     async (userOpHash: Hex) => {
@@ -307,8 +307,7 @@ interface TransactionItemProps {
 function TransactionItem({ transaction, userAddress }: TransactionItemProps) {
   const nativeSymbol = getNativeCurrencySymbol(transaction.chainId)
 
-  const isReceived =
-    userAddress && transaction.to.toLowerCase() === userAddress.toLowerCase()
+  const isReceived = userAddress && transaction.to.toLowerCase() === userAddress.toLowerCase()
 
   const statusStyles: Record<string, { bg: string; color: string }> = {
     pending: { bg: 'rgb(var(--warning) / 0.1)', color: 'rgb(var(--warning))' },
@@ -330,9 +329,7 @@ function TransactionItem({ transaction, userAddress }: TransactionItemProps) {
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center"
           style={{
-            backgroundColor: isReceived
-              ? 'rgb(var(--success) / 0.1)'
-              : 'rgb(var(--primary) / 0.1)',
+            backgroundColor: isReceived ? 'rgb(var(--success) / 0.1)' : 'rgb(var(--primary) / 0.1)',
           }}
         >
           {isReceived ? (
@@ -385,7 +382,8 @@ function TransactionItem({ transaction, userAddress }: TransactionItemProps) {
             color: isReceived ? 'rgb(var(--success))' : 'rgb(var(--foreground))',
           }}
         >
-          {isReceived ? '+' : '-'}{displayAmount}
+          {isReceived ? '+' : '-'}
+          {displayAmount}
         </p>
         <span
           className="text-xs px-2 py-0.5 rounded"

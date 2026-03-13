@@ -38,7 +38,11 @@ const enResources: Record<string, Record<string, string>> = {
 }
 
 function createTFunction(ns: string) {
-  return (key: string, defaultValueOrParams?: string | Record<string, unknown>, params?: Record<string, unknown>) => {
+  return (
+    key: string,
+    defaultValueOrParams?: string | Record<string, unknown>,
+    params?: Record<string, unknown>
+  ) => {
     const resource = enResources[ns] ?? enResources.common
     let value = resource[key] ?? enResources.common[key] ?? key
 

@@ -8,7 +8,7 @@ import { useStableNetContext } from '@/providers'
  * Pings pm_supportedTokens as a lightweight health probe.
  */
 export function usePaymasterHealth() {
-  const { paymasterUrl, chainId } = useStableNetContext()
+  const { paymasterUrl } = useStableNetContext()
   const [isHealthy, setIsHealthy] = useState<boolean | null>(null)
 
   const checkHealth = useCallback(async () => {
@@ -28,7 +28,7 @@ export function usePaymasterHealth() {
     } catch {
       setIsHealthy(false)
     }
-  }, [paymasterUrl, chainId])
+  }, [paymasterUrl])
 
   useEffect(() => {
     checkHealth()

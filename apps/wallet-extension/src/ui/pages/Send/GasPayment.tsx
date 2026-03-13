@@ -211,7 +211,16 @@ export function GasPaymentSelector({
     }
 
     return options
-  }, [gasEstimate, sponsorPolicy, supportedTokens, gasPayment, erc20Estimate, t, nativeSymbol, entryPointDeposit])
+  }, [
+    gasEstimate,
+    sponsorPolicy,
+    supportedTokens,
+    gasPayment,
+    erc20Estimate,
+    t,
+    nativeSymbol,
+    entryPointDeposit,
+  ])
 
   // Handle option selection
   const handleOptionSelect = (option: PaymentOption) => {
@@ -580,7 +589,9 @@ function TokenApprovalStatus({
           className="w-full py-2 px-3 rounded-lg text-sm font-medium transition-colors"
           style={{
             backgroundColor: isSendingApprove ? 'rgb(var(--secondary))' : 'rgb(var(--primary))',
-            color: isSendingApprove ? 'rgb(var(--muted-foreground))' : 'rgb(var(--primary-foreground))',
+            color: isSendingApprove
+              ? 'rgb(var(--muted-foreground))'
+              : 'rgb(var(--primary-foreground))',
           }}
           onClick={onApprove}
           disabled={isSendingApprove}

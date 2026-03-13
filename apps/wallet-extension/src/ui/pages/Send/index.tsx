@@ -83,7 +83,12 @@ export function Send() {
   // Consume selectedSendToken on mount
   useEffect(() => {
     if (selectedSendToken && selectedSendToken !== 'native') {
-      const token = selectedSendToken as { address: string; symbol: string; name: string; decimals: number }
+      const token = selectedSendToken as {
+        address: string
+        symbol: string
+        name: string
+        decimals: number
+      }
       if (token.address && token.symbol) {
         setTokenContext({
           address: token.address as Address,
@@ -144,17 +149,31 @@ export function Send() {
     }
   }, [gasPayment.type, gasPayment.tokenAddress, checkTokenAllowance])
 
-  const gasEstimateParams = useMemo(() => ({
-    mode: transactionMode,
-    from: selectedAddress ?? ('' as Address),
-    to: formData.recipient || ('' as Address),
-    value: formData.amount ? parseEther(formData.amount) : 0n,
-    data: formData.data as `0x${string}`,
-    gasPayment,
-    enabled: !!formData.recipient && !!formData.amount,
-  }), [transactionMode, selectedAddress, formData.recipient, formData.amount, formData.data, gasPayment])
+  const gasEstimateParams = useMemo(
+    () => ({
+      mode: transactionMode,
+      from: selectedAddress ?? ('' as Address),
+      to: formData.recipient || ('' as Address),
+      value: formData.amount ? parseEther(formData.amount) : 0n,
+      data: formData.data as `0x${string}`,
+      gasPayment,
+      enabled: !!formData.recipient && !!formData.amount,
+    }),
+    [
+      transactionMode,
+      selectedAddress,
+      formData.recipient,
+      formData.amount,
+      formData.data,
+      gasPayment,
+    ]
+  )
 
-  const { gasEstimate, isLoading: isEstimating, error: gasEstimateError } = useGasEstimate(gasEstimateParams)
+  const {
+    gasEstimate,
+    isLoading: isEstimating,
+    error: gasEstimateError,
+  } = useGasEstimate(gasEstimateParams)
 
   // Available modes for current account
   const availableModes = useMemo(() => {

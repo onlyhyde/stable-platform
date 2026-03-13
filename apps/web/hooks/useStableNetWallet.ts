@@ -97,10 +97,14 @@ export function useStableNetWallet(): UseStableNetWalletResult {
     if (!provider?.onTransactionSent) return
 
     const handleTxSent = (event: TransactionSentEvent) => {
-      txSentHandlersRef.current.forEach((handler) => handler(event))
+      txSentHandlersRef.current.forEach((handler) => {
+        handler(event)
+      })
     }
     const handleTxConfirmed = (event: TransactionConfirmedEvent) => {
-      txConfirmedHandlersRef.current.forEach((handler) => handler(event))
+      txConfirmedHandlersRef.current.forEach((handler) => {
+        handler(event)
+      })
     }
 
     const unsubSent = provider.onTransactionSent(handleTxSent)
@@ -115,7 +119,9 @@ export function useStableNetWallet(): UseStableNetWalletResult {
   const onTransactionSent = useCallback(
     (handler: (event: TransactionSentEvent) => void): (() => void) => {
       txSentHandlersRef.current.add(handler)
-      return () => { txSentHandlersRef.current.delete(handler) }
+      return () => {
+        txSentHandlersRef.current.delete(handler)
+      }
     },
     []
   )
@@ -123,7 +129,9 @@ export function useStableNetWallet(): UseStableNetWalletResult {
   const onTransactionConfirmed = useCallback(
     (handler: (event: TransactionConfirmedEvent) => void): (() => void) => {
       txConfirmedHandlersRef.current.add(handler)
-      return () => { txConfirmedHandlersRef.current.delete(handler) }
+      return () => {
+        txConfirmedHandlersRef.current.delete(handler)
+      }
     },
     []
   )

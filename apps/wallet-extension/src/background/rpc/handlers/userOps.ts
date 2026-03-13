@@ -1,6 +1,6 @@
+import { getChainAddresses } from '@stablenet/contracts'
 import type { Address, Hex } from 'viem'
 import { isAddress } from 'viem'
-import { getChainAddresses } from '@stablenet/contracts'
 import {
   approvalController,
   createBundlerClient,
@@ -273,12 +273,14 @@ export const userOpsHandlers: Record<string, RpcHandler> = {
       }
 
       const publicClient = getPublicClient(network.rpcUrl)
-      const allowance = await publicClient.readContract({
-        address: gasPayment.tokenAddress as Address,
-        abi: ERC20_ALLOWANCE_ABI,
-        functionName: 'allowance',
-        args: [userOp.sender, erc20PaymasterAddr],
-      }).catch(() => 0n)
+      const allowance = await publicClient
+        .readContract({
+          address: gasPayment.tokenAddress as Address,
+          abi: ERC20_ALLOWANCE_ABI,
+          functionName: 'allowance',
+          args: [userOp.sender, erc20PaymasterAddr],
+        })
+        .catch(() => 0n)
 
       if ((allowance as bigint) < MIN_ALLOWANCE_THRESHOLD) {
         logger.warn(
@@ -297,12 +299,14 @@ export const userOpsHandlers: Record<string, RpcHandler> = {
       }
 
       // Also verify token balance — ERC20Paymaster checks balanceOf during validation
-      const balance = await publicClient.readContract({
-        address: gasPayment.tokenAddress as Address,
-        abi: ERC20_BALANCE_OF_ABI,
-        functionName: 'balanceOf',
-        args: [userOp.sender],
-      }).catch(() => 0n)
+      const balance = await publicClient
+        .readContract({
+          address: gasPayment.tokenAddress as Address,
+          abi: ERC20_BALANCE_OF_ABI,
+          functionName: 'balanceOf',
+          args: [userOp.sender],
+        })
+        .catch(() => 0n)
 
       if ((balance as bigint) < MIN_TOKEN_BALANCE) {
         logger.warn(

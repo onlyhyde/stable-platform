@@ -29,10 +29,7 @@ function createRpcTransport(rpcUrl: string) {
 export const wagmiConfig = createConfig({
   chains: supportedChains,
   multiInjectedProviderDiscovery: true,
-  connectors: [
-    stableNetWallet(),
-    injected(),
-  ],
+  connectors: [stableNetWallet(), injected()],
   transports: {
     [anvilLocal.id]: createRpcTransport('http://127.0.0.1:8545'),
     [stablenetLocal.id]: createRpcTransport(getLocalConfig().rpcUrl),

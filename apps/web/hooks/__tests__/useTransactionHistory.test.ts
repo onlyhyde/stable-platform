@@ -2,7 +2,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import type { Address } from 'viem'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTransactionHistory } from '../useTransactionHistory'
 
 // Mock publicClient with getLogs, getBlockNumber, getBlock, readContract

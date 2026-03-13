@@ -1,4 +1,9 @@
-import { ENTRY_POINT_ADDRESS, getChainAddresses, getEntryPoint, isChainSupported } from '@stablenet/contracts'
+import {
+  ENTRY_POINT_ADDRESS,
+  getChainAddresses,
+  getEntryPoint,
+  isChainSupported,
+} from '@stablenet/contracts'
 import type { SponsorPolicy, SupportedToken } from '@stablenet/core'
 import { useCallback, useEffect, useState } from 'react'
 import type { Address } from 'viem'

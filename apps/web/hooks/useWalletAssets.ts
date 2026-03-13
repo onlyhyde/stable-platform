@@ -1,12 +1,12 @@
 'use client'
 
+import { getDefaultTokens } from '@stablenet/contracts'
 import { formatTokenBalance } from '@stablenet/core'
 import { getNativeCurrencySymbol } from '@stablenet/wallet-sdk'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
 import { erc20Abi, formatUnits } from 'viem'
 import { useAccount } from 'wagmi'
-import { getDefaultTokens } from '@stablenet/contracts'
 import { useStableNetContext } from '@/providers/StableNetProvider'
 
 /**
@@ -122,7 +122,7 @@ function getProvider(): RpcProvider | null {
 
 export function useWalletAssets(): UseWalletAssetsResult {
   const { address, isConnected } = useAccount()
-  const { publicClient, chainId: currentChainId } = useStableNetContext()
+  const { publicClient } = useStableNetContext()
 
   const [isSupported, setIsSupported] = useState(false)
   const [assets, setAssets] = useState<WalletAssetsResponse | null>(null)
@@ -196,7 +196,7 @@ export function useWalletAssets(): UseWalletAssetsResult {
       walletTokens: WalletToken[]
     ): Promise<WalletToken[]> => {
       const onChainTokens = await fetchOnChainTokenBalances(targetAddress, currentChainId)
-      const walletAddrs = new Set(walletTokens.map((t) => t.address.toLowerCase()))
+      const _walletAddrs = new Set(walletTokens.map((t) => t.address.toLowerCase()))
 
       // Start with on-chain data for known tokens (authoritative balances)
       const merged = new Map<string, WalletToken>()
@@ -209,7 +209,11 @@ export function useWalletAssets(): UseWalletAssetsResult {
         if (merged.has(key)) {
           // On-chain balance is authoritative; keep wallet metadata if richer
           const onChain = merged.get(key)!
-          merged.set(key, { ...t, balance: onChain.balance, formattedBalance: onChain.formattedBalance })
+          merged.set(key, {
+            ...t,
+            balance: onChain.balance,
+            formattedBalance: onChain.formattedBalance,
+          })
         } else {
           merged.set(key, t)
         }
@@ -372,7 +376,7 @@ export function useWalletAssets(): UseWalletAssetsResult {
       setAssets(null)
       setIsLoading(false)
     }
-  }, [isConnected, address, currentChainId, fetchAssets])
+  }, [isConnected, address, fetchAssets])
 
   // Listen for assetsChanged events from wallet extension to auto-refresh
   useEffect(() => {
@@ -388,8 +392,9 @@ export function useWalletAssets(): UseWalletAssetsResult {
       ethereum?: EventProvider
     }
 
-    const provider: EventProvider | undefined =
-      win.stablenet?.isStableNet ? win.stablenet : win.ethereum
+    const provider: EventProvider | undefined = win.stablenet?.isStableNet
+      ? win.stablenet
+      : win.ethereum
     if (!provider?.on) return
 
     const handleAssetsChanged = () => {

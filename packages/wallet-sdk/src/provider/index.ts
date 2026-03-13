@@ -1,3 +1,6 @@
+// Internal modules (exported for advanced usage and testing)
+export { ChainManager } from './ChainManager'
+export { ConnectionManager, type ConnectionManagerCallbacks } from './ConnectionManager'
 export { detectProvider, getProvider, isWalletInstalled } from './detect'
 // EIP-6963 Multi-Provider Discovery
 export {
@@ -12,6 +15,10 @@ export {
   type RegisteredProvider,
   resetProviderRegistry,
 } from './eip6963'
+export { createLogger, type Logger, setLoggerSilent } from './logger'
+export { ReadOnlyTransport } from './ReadOnlyTransport'
+export { type RpcRoute, routeRpcMethod } from './rpcRouter'
+export { type SessionData, SessionManager, type SessionManagerConfig } from './SessionManager'
 export type {
   AddTokenParams,
   AddTokenResult,
@@ -25,10 +32,3 @@ export type {
   WalletNativeAsset,
 } from './StableNetProvider'
 export { StableNetProvider } from './StableNetProvider'
-// Internal modules (exported for advanced usage and testing)
-export { ChainManager } from './ChainManager'
-export { ConnectionManager, type ConnectionManagerCallbacks } from './ConnectionManager'
-export { createLogger, setLoggerSilent, type Logger } from './logger'
-export { ReadOnlyTransport } from './ReadOnlyTransport'
-export { routeRpcMethod, type RpcRoute } from './rpcRouter'
-export { SessionManager, type SessionData, type SessionManagerConfig } from './SessionManager'

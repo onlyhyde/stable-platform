@@ -1,9 +1,9 @@
 'use client'
 
+import { getDefaultTokens } from '@stablenet/contracts'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address, Hex, PublicClient } from 'viem'
 import { erc20Abi, parseAbiItem } from 'viem'
-import { getDefaultTokens } from '@stablenet/contracts'
 import { useStableNetContext } from '@/providers/StableNetProvider'
 import type { Transaction } from '@/types'
 
@@ -58,16 +58,20 @@ async function resolveUnknownTokens(
   const results = await Promise.allSettled(
     unknownAddresses.map(async (addr) => {
       const [symbol, decimals] = await Promise.all([
-        publicClient.readContract({
-          address: addr as Address,
-          abi: erc20Abi,
-          functionName: 'symbol',
-        }).catch(() => null),
-        publicClient.readContract({
-          address: addr as Address,
-          abi: erc20Abi,
-          functionName: 'decimals',
-        }).catch(() => null),
+        publicClient
+          .readContract({
+            address: addr as Address,
+            abi: erc20Abi,
+            functionName: 'symbol',
+          })
+          .catch(() => null),
+        publicClient
+          .readContract({
+            address: addr as Address,
+            abi: erc20Abi,
+            functionName: 'decimals',
+          })
+          .catch(() => null),
       ])
       return { addr, symbol, decimals }
     })
@@ -148,9 +152,7 @@ export function useTransactionHistory(
         const tokenMeta = buildTokenMeta(chainId)
         const unknownAddresses = [
           ...new Set(
-            allLogs
-              .map((log) => log.address.toLowerCase())
-              .filter((addr) => !tokenMeta.has(addr))
+            allLogs.map((log) => log.address.toLowerCase()).filter((addr) => !tokenMeta.has(addr))
           ),
         ]
         await resolveUnknownTokens(publicClient, unknownAddresses, tokenMeta)
@@ -165,9 +167,7 @@ export function useTransactionHistory(
         for (let i = 0; i < uniqueBlocks.length; i += batchSize) {
           const batch = uniqueBlocks.slice(i, i + batchSize)
           const blocks = await Promise.all(
-            batch.map((bn) =>
-              publicClient.getBlock({ blockNumber: bn }).catch(() => null)
-            )
+            batch.map((bn) => publicClient.getBlock({ blockNumber: bn }).catch(() => null))
           )
           for (let j = 0; j < batch.length; j++) {
             const block = blocks[j]
@@ -222,7 +222,7 @@ export function useTransactionHistory(
     if (autoFetch && address) {
       refresh()
     }
-  }, [autoFetch, address, chainId, refresh])
+  }, [autoFetch, address, refresh])
 
   return {
     transactions,

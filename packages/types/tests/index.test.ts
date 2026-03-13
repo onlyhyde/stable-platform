@@ -69,7 +69,7 @@ import {
 describe('Constants', () => {
   describe('Entry Point', () => {
     it('should have correct EntryPoint address (v0.9)', () => {
-      expect(ENTRY_POINT_ADDRESS).toBe('0xEf6817fe73741A8F10088f9511c64b666a338A14')
+      expect(ENTRY_POINT_ADDRESS).toBe('0xD23Ee0D8E8DfabE76AA52a872Ce015B0BcAED6Ce')
     })
 
     it('should be a valid Ethereum address', () => {

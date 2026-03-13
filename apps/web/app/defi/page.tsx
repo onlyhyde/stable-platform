@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useMemo } from 'react'
-import { formatUnits } from 'viem'
 import { Card, CardContent, CardHeader, CardTitle, PageHeader } from '@/components/common'
 import { DefiNavigationCards, DefiStatsCards } from '@/components/defi'
 import { usePools } from '@/hooks/usePools'
@@ -44,10 +43,7 @@ export default function DeFiPage() {
           <CardContent>
             <div className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
               {pools.map((pool) => (
-                <div
-                  key={pool.address}
-                  className="py-4 flex items-center justify-between"
-                >
+                <div key={pool.address} className="py-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
                       className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
@@ -63,14 +59,16 @@ export default function DeFiPage() {
                         {pool.token0.symbol} / {pool.token1.symbol}
                       </p>
                       <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
-                        Fee: {pool.fee}%
-                        {pool.apr > 0 ? ` · APR: ${pool.apr.toFixed(1)}%` : ''}
+                        Fee: {pool.fee}%{pool.apr > 0 ? ` · APR: ${pool.apr.toFixed(1)}%` : ''}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-sm font-medium" style={{ color: 'rgb(var(--foreground))' }}>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: 'rgb(var(--foreground))' }}
+                      >
                         {pool.tvl > 0 ? formatUSD(pool.tvl) : '-'}
                       </p>
                       <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>

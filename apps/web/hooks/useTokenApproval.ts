@@ -140,9 +140,11 @@ export function useTokenApproval(): TokenApprovalState {
           return true
         }
 
-        setError(new Error(
-          result ? 'Approval transaction failed on-chain' : 'Wallet rejected the approval request'
-        ))
+        setError(
+          new Error(
+            result ? 'Approval transaction failed on-chain' : 'Wallet rejected the approval request'
+          )
+        )
         setStatus('needs-approval')
         return false
       } catch (err) {

@@ -255,9 +255,7 @@ export function TransactionDetail() {
               {currentNetwork?.explorerUrl && tx.txHash && (
                 <button
                   type="button"
-                  onClick={() =>
-                    openExplorer(`${currentNetwork.explorerUrl}/tx/${tx.txHash}`)
-                  }
+                  onClick={() => openExplorer(`${currentNetwork.explorerUrl}/tx/${tx.txHash}`)}
                   className="p-1"
                   style={{ color: 'rgb(var(--primary))' }}
                   title={t('viewOnExplorer')}

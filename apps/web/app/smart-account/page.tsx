@@ -66,7 +66,8 @@ export default function SmartAccountPage() {
   // Sync selectedDelegate when chainId changes
   useEffect(() => {
     const presets = getDelegatePresets(chainId)
-    const defaultAddr = presets.length > 0 ? presets[0].address : contracts.defaultKernelImplementation
+    const defaultAddr =
+      presets.length > 0 ? presets[0].address : contracts.defaultKernelImplementation
     setSelectedDelegate(defaultAddr)
   }, [chainId, contracts.defaultKernelImplementation])
 
@@ -306,7 +307,7 @@ export default function SmartAccountPage() {
           )}
 
           {/* Issue 6: Show UpgradeCard when not smart account OR when re-delegating */}
-          {(!status.isSmartAccount || isRedelegating) ? (
+          {!status.isSmartAccount || isRedelegating ? (
             <UpgradeCard
               chainId={chainId}
               selectedDelegate={selectedDelegate}

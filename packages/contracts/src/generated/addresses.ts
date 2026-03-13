@@ -145,13 +145,15 @@ export const CHAIN_ADDRESSES: Record<number, ChainAddresses> = {
       withdrawalManager: '0xa6A7175F663c14bF4Bea75A097dc273aB100E4C8',
     },
   },
-
 }
 
 /**
  * Service URLs by chain ID
  */
-export const SERVICE_URLS: Record<number, { bundler: string; paymaster: string; stealthServer: string }> = {
+export const SERVICE_URLS: Record<
+  number,
+  { bundler: string; paymaster: string; stealthServer: string }
+> = {
   8283: {
     bundler: 'http://localhost:4337',
     paymaster: 'http://localhost:4338',
@@ -162,7 +164,16 @@ export const SERVICE_URLS: Record<number, { bundler: string; paymaster: string; 
 /**
  * Default tokens by chain ID
  */
-export const DEFAULT_TOKENS: Record<number, Array<{ address: `0x${string}`; name: string; symbol: string; decimals: number; logoUrl?: string }>> = {
+export const DEFAULT_TOKENS: Record<
+  number,
+  Array<{
+    address: `0x${string}`
+    name: string
+    symbol: string
+    decimals: number
+    logoUrl?: string
+  }>
+> = {
   8283: [
     {
       address: '0x0000000000000000000000000000000000000000',

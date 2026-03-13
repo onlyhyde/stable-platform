@@ -38,7 +38,10 @@ function withAccount(
   account = '0x1234567890abcdef1234567890abcdef12345678'
 ) {
   // Set internal account via connectionManager (private field access for testing)
-  const cm = (prov as unknown as Record<string, unknown>).connectionManager as Record<string, unknown>
+  const cm = (prov as unknown as Record<string, unknown>).connectionManager as Record<
+    string,
+    unknown
+  >
   cm._accounts = [account]
   cm._status = 'connected'
   return prov

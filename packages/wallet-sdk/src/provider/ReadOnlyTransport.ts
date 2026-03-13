@@ -35,7 +35,10 @@ export class ReadOnlyTransport {
       throw new Error(`RPC request failed: ${response.status} ${response.statusText}`)
     }
 
-    const json = (await response.json()) as { result?: unknown; error?: { code: number; message: string } }
+    const json = (await response.json()) as {
+      result?: unknown
+      error?: { code: number; message: string }
+    }
 
     if (json.error) {
       log.warn('RPC error', { method, code: json.error.code, message: json.error.message })

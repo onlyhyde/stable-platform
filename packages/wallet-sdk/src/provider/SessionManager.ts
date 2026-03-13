@@ -35,9 +35,7 @@ export class SessionManager {
   constructor(config: SessionManagerConfig = {}) {
     this.storageKey = config.storageKey ?? DEFAULT_STORAGE_KEY
     this.maxAge = config.maxAge ?? DEFAULT_MAX_AGE
-    this.storage = typeof window !== 'undefined'
-      ? (config.storage ?? window.localStorage)
-      : null
+    this.storage = typeof window !== 'undefined' ? (config.storage ?? window.localStorage) : null
   }
 
   save(data: SessionData): void {

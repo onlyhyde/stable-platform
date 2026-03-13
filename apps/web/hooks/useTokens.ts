@@ -1,10 +1,9 @@
 'use client'
 
-import { formatTokenBalance } from '@stablenet/core'
+import { getDefaultTokens } from '@stablenet/contracts'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
 import { erc20Abi } from 'viem'
-import { getDefaultTokens } from '@stablenet/contracts'
 import { useWallet } from '@/hooks/useWallet'
 import { useStableNetContext } from '@/providers/StableNetProvider'
 import type { Token } from '@/types'
@@ -81,18 +80,17 @@ export function useTokens(config: UseTokensConfig = {}): UseTokensReturn {
 
       if (id !== fetchIdRef.current) return
 
-      const mapped: Token[] = knownTokens
-        .map((token, i) => {
-          const result = balanceResults[i]
-          const balance = result.status === 'fulfilled' ? result.value : 0n
-          return {
-            address: token.address as Address,
-            name: token.name,
-            symbol: token.symbol,
-            decimals: token.decimals,
-            balance,
-          }
-        })
+      const mapped: Token[] = knownTokens.map((token, i) => {
+        const result = balanceResults[i]
+        const balance = result.status === 'fulfilled' ? result.value : 0n
+        return {
+          address: token.address as Address,
+          name: token.name,
+          symbol: token.symbol,
+          decimals: token.decimals,
+          balance,
+        }
+      })
 
       setTokens(mapped)
     } catch (err) {

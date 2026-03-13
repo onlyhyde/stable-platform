@@ -434,7 +434,10 @@ export class StableNetProvider {
   on(event: 'chainChanged', listener: (chainId: string) => void): () => void
   on(event: 'statusChanged', listener: (status: ConnectionStatus) => void): () => void
   on(event: 'transactionSent', listener: (event: TransactionSentEvent) => void): () => void
-  on(event: 'transactionConfirmed', listener: (event: TransactionConfirmedEvent) => void): () => void
+  on(
+    event: 'transactionConfirmed',
+    listener: (event: TransactionConfirmedEvent) => void
+  ): () => void
   on(event: 'assetsChanged', listener: (event: AssetsChangedEvent) => void): () => void
   // biome-ignore lint/suspicious/noExplicitAny: overload implementation requires widest type
   on(event: string, listener: (...args: any[]) => void): () => void {
@@ -442,7 +445,9 @@ export class StableNetProvider {
       this.eventListeners.set(event, new Set())
     }
     this.eventListeners.get(event)!.add(listener)
-    return () => { this.eventListeners.get(event)?.delete(listener) }
+    return () => {
+      this.eventListeners.get(event)?.delete(listener)
+    }
   }
 
   private emit(event: string, data: unknown): void {
@@ -512,17 +517,25 @@ export class StableNetProvider {
   }
 
   async getDelegationStatus(address?: Address): Promise<{
-    isDelegated: boolean; delegate: Address | null; chainId: number; nonce: bigint
+    isDelegated: boolean
+    delegate: Address | null
+    chainId: number
+    nonce: bigint
   }> {
     const targetAddress = address ?? this.account
     if (!targetAddress) throw new Error('No account specified')
     return this.rpc({ method: 'wallet_getDelegationStatus', params: [{ address: targetAddress }] })
   }
 
-  async getInstalledModules(account?: Address): Promise<
+  async getInstalledModules(
+    account?: Address
+  ): Promise<
     { address: Address; type: number; initData: Hash; installedAt: number; isActive: boolean }[]
   > {
-    return this.rpc({ method: 'wallet_getInstalledModules', params: [{ account: account ?? this.account }] })
+    return this.rpc({
+      method: 'wallet_getInstalledModules',
+      params: [{ account: account ?? this.account }],
+    })
   }
 
   async createSessionKey(config: {
@@ -535,19 +548,31 @@ export class StableNetProvider {
   }
 
   async generateStealthAddress(recipientMeta: Address): Promise<{
-    stealthAddress: Address; ephemeralPubKey: Hash; viewTag: Hash
+    stealthAddress: Address
+    ephemeralPubKey: Hash
+    viewTag: Hash
   }> {
     return this.rpc({ method: 'wallet_generateStealthAddress', params: [{ recipientMeta }] })
   }
 
   async scanStealthPayments(options?: { fromBlock?: number; toBlock?: number }): Promise<
-    { stealthAddress: Address; ephemeralPubKey: Hash; txHash: Hash; blockNumber: number; amount: bigint; token: Address; timestamp: number }[]
+    {
+      stealthAddress: Address
+      ephemeralPubKey: Hash
+      txHash: Hash
+      blockNumber: number
+      amount: bigint
+      token: Address
+      timestamp: number
+    }[]
   > {
     return this.rpc({ method: 'wallet_scanStealthPayments', params: [options ?? {}] })
   }
 
   async getStealthMetaAddress(): Promise<{
-    spendingPubKey: Hash; viewingPubKey: Hash; metaAddress: Address
+    spendingPubKey: Hash
+    viewingPubKey: Hash
+    metaAddress: Address
   }> {
     return this.rpc({ method: 'wallet_getStealthMetaAddress', params: [{ account: this.account }] })
   }
@@ -584,11 +609,15 @@ export class StableNetProvider {
   // ============================================================================
 
   async sendUserOperation(userOp: UserOperationRequest, entryPoint: Address): Promise<Hash> {
-    return (await this.rpc({ method: 'wallet_sendUserOperation', params: [userOp, entryPoint] })) as Hash
+    return (await this.rpc({
+      method: 'wallet_sendUserOperation',
+      params: [userOp, entryPoint],
+    })) as Hash
   }
 
   async estimateUserOperationGas(
-    userOp: UserOperationRequest, entryPoint: Address
+    userOp: UserOperationRequest,
+    entryPoint: Address
   ): Promise<UserOperationGasEstimate> {
     return this.rpc({ method: 'wallet_estimateUserOperationGas', params: [userOp, entryPoint] })
   }

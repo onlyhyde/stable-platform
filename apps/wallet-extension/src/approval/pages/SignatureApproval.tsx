@@ -425,7 +425,12 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
               </p>
               <div className="space-y-2">
                 {/* Sender */}
-                <InfoRow label={t('userOpSender')} value={truncateAddress(decodedInfo.sender)} mono title={decodedInfo.sender} />
+                <InfoRow
+                  label={t('userOpSender')}
+                  value={truncateAddress(decodedInfo.sender)}
+                  mono
+                  title={decodedInfo.sender}
+                />
 
                 {/* Nonce */}
                 <InfoRow label={t('userOpNonce')} value={`#${decodedInfo.nonce}`} />
@@ -461,7 +466,10 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
               </p>
               <div className="space-y-2">
                 {decodedInfo.verificationGasLimit && (
-                  <InfoRow label={t('userOpVerificationGas')} value={decodedInfo.verificationGasLimit} />
+                  <InfoRow
+                    label={t('userOpVerificationGas')}
+                    value={decodedInfo.verificationGasLimit}
+                  />
                 )}
                 {decodedInfo.callGasLimit && (
                   <InfoRow label={t('userOpCallGas')} value={decodedInfo.callGasLimit} />
@@ -470,7 +478,10 @@ export function SignatureApproval({ approval, onApprove, onReject }: SignatureAp
                   <InfoRow label={t('userOpMaxFee')} value={`${decodedInfo.maxFeePerGas} Gwei`} />
                 )}
                 {decodedInfo.maxPriorityFeePerGas && (
-                  <InfoRow label={t('userOpPriorityFee')} value={`${decodedInfo.maxPriorityFeePerGas} Gwei`} />
+                  <InfoRow
+                    label={t('userOpPriorityFee')}
+                    value={`${decodedInfo.maxPriorityFeePerGas} Gwei`}
+                  />
                 )}
                 {/* PreVerificationGas */}
                 {userOpTypedData?.message.preVerificationGas && (

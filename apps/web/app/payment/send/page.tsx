@@ -13,7 +13,7 @@ import {
   Input,
   useToast,
 } from '@/components/common'
-import { PaymasterSelector, type GasPaymentMode } from '@/components/common/PaymasterSelector'
+import { type GasPaymentMode, PaymasterSelector } from '@/components/common/PaymasterSelector'
 import { BatchRecipientList } from '@/components/payment/BatchRecipientList'
 import type { SupportedToken, WalletToken } from '@/hooks'
 import { useUserOp, useWallet, useWalletAssets } from '@/hooks'
@@ -58,7 +58,7 @@ export default function SendPage() {
   const router = useRouter()
   const { address, isConnected } = useWallet()
   const { chainId } = useStableNetContext()
-  const { native, tokens, isSupported } = useWalletAssets()
+  const { native, tokens } = useWalletAssets()
   const { sendUserOp, isLoading, error } = useUserOp()
   const { addToast, updateToast } = useToast()
 
@@ -224,7 +224,11 @@ export default function SendPage() {
         }
       }
     }
-    return { batchTotal: total, batchExceedsBalance: total > balance, batchParseErrors: parseErrors }
+    return {
+      batchTotal: total,
+      batchExceedsBalance: total > balance,
+      batchParseErrors: parseErrors,
+    }
   }, [isBatchMode, batchRecipients, decimals, balance])
 
   const batchValidCount = batchRecipients.filter(
@@ -294,7 +298,7 @@ export default function SendPage() {
     } finally {
       setIsDepositing(false)
     }
-  }, [address, chainId, sendUserOp, addToast, fetchDeposit])
+  }, [address, chainId, sendUserOp, addToast, fetchDeposit, native?.symbol])
 
   const handleReview = useCallback(() => {
     if (canSend) {
@@ -477,10 +481,7 @@ export default function SendPage() {
                 style={{ borderColor: 'rgb(var(--primary))', borderTopColor: 'transparent' }}
               />
             </div>
-            <h3
-              className="text-lg font-semibold mb-2"
-              style={{ color: 'rgb(var(--foreground))' }}
-            >
+            <h3 className="text-lg font-semibold mb-2" style={{ color: 'rgb(var(--foreground))' }}>
               {isBatchMode ? 'Sending Batch Transaction...' : 'Sending Transaction...'}
             </h3>
             <p className="text-sm" style={{ color: 'rgb(var(--muted-foreground))' }}>
@@ -524,9 +525,7 @@ export default function SendPage() {
                     <div className="flex justify-between">
                       <span style={{ color: 'rgb(var(--muted-foreground))' }}>To</span>
                       <span className="font-mono" style={{ color: 'rgb(var(--foreground))' }}>
-                        {recipient
-                          ? `${recipient.slice(0, 6)}...${recipient.slice(-4)}`
-                          : '-'}
+                        {recipient ? `${recipient.slice(0, 6)}...${recipient.slice(-4)}` : '-'}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -572,9 +571,7 @@ export default function SendPage() {
                 {!isNativeAsset && (
                   <div className="flex justify-between">
                     <span style={{ color: 'rgb(var(--muted-foreground))' }}>Asset</span>
-                    <span style={{ color: 'rgb(var(--foreground))' }}>
-                      {symbol} (ERC-20)
-                    </span>
+                    <span style={{ color: 'rgb(var(--foreground))' }}>{symbol} (ERC-20)</span>
                   </div>
                 )}
               </div>
@@ -662,9 +659,7 @@ export default function SendPage() {
                     backgroundColor: isNativeAsset
                       ? 'rgb(var(--primary) / 0.1)'
                       : 'rgb(var(--secondary))',
-                    borderColor: isNativeAsset
-                      ? 'rgb(var(--primary))'
-                      : 'rgb(var(--border))',
+                    borderColor: isNativeAsset ? 'rgb(var(--primary))' : 'rgb(var(--border))',
                     ...(isNativeAsset &&
                       ({ '--tw-ring-color': 'rgb(var(--primary) / 0.3)' } as React.CSSProperties)),
                   }}
@@ -691,9 +686,7 @@ export default function SendPage() {
                         backgroundColor: isSelected
                           ? 'rgb(var(--primary) / 0.1)'
                           : 'rgb(var(--secondary))',
-                        borderColor: isSelected
-                          ? 'rgb(var(--primary))'
-                          : 'rgb(var(--border))',
+                        borderColor: isSelected ? 'rgb(var(--primary))' : 'rgb(var(--border))',
                       }}
                     >
                       <p
@@ -866,8 +859,7 @@ export default function SendPage() {
 
           {(error || sendError || batchError) &&
             (() => {
-              const errorMsg =
-                sendError ?? batchError ?? error?.message ?? ''
+              const errorMsg = sendError ?? batchError ?? error?.message ?? ''
               const aaError = parseAAError(errorMsg)
               return (
                 <div
@@ -917,11 +909,7 @@ export default function SendPage() {
             <Button variant="secondary" onClick={() => router.back()} className="flex-1">
               Cancel
             </Button>
-            <Button
-              onClick={handleReview}
-              disabled={!canSend}
-              className="flex-1"
-            >
+            <Button onClick={handleReview} disabled={!canSend} className="flex-1">
               {isBatchMode ? `Review Batch (${batchValidCount})` : 'Review'}
             </Button>
           </div>

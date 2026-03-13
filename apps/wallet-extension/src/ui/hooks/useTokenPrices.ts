@@ -44,7 +44,7 @@ export function useTokenPrices(symbols: string[] = []): UseTokenPricesReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [symbolsKey])
+  }, [])
 
   useEffect(() => {
     fetchPrices()

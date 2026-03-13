@@ -561,7 +561,11 @@ export function PaymasterSelector({
 
       {/* Mode-specific content */}
       {selectedMode === 'native' && (
-        <DepositInfo balance={depositBalance ?? null} onTopUp={onDepositTopUp} isDepositing={isDepositing} />
+        <DepositInfo
+          balance={depositBalance ?? null}
+          onTopUp={onDepositTopUp}
+          isDepositing={isDepositing}
+        />
       )}
 
       {selectedMode === 'sponsor' && (

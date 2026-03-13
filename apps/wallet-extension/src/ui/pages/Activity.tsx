@@ -37,7 +37,6 @@ export function Activity() {
 
   const {
     transactions: indexedTransactions,
-    isIndexerAvailable,
     isTxIndexerAvailable,
     isLoadingTransactions,
     isLoadingMore,

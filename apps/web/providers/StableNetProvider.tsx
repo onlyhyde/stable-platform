@@ -3,13 +3,7 @@
 import { createContext, type ReactNode, useContext, useMemo } from 'react'
 import { createPublicClient, http, type PublicClient } from 'viem'
 import { useAccount, useChainId } from 'wagmi'
-import {
-  anvilLocal,
-  getConfigByChainId,
-  getStablenetLocal,
-  stablenetLocal,
-  stablenetTestnet,
-} from '@/lib/chains'
+import { anvilLocal, getConfigByChainId, stablenetLocal, stablenetTestnet } from '@/lib/chains'
 import { getContractAddresses, getServiceUrls } from '@/lib/constants'
 
 interface StableNetContextValue {

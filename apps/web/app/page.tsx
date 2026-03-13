@@ -1,8 +1,8 @@
 'use client'
 
+import { formatTokenBalance } from '@stablenet/core'
 import Image from 'next/image'
 import Link from 'next/link'
-import { formatTokenBalance } from '@stablenet/core'
 import { formatUnits } from 'viem'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/common'
 import type { WalletToken } from '@/hooks'
@@ -286,8 +286,7 @@ export default function DashboardPage() {
           ) : (
             <div className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
               {recentTxs.map((tx) => {
-                const isSent =
-                  address && tx.from?.toLowerCase() === address.toLowerCase()
+                const isSent = address && tx.from?.toLowerCase() === address.toLowerCase()
                 const counterparty = isSent ? tx.to : tx.from
 
                 // Format the transfer amount and token symbol
@@ -298,7 +297,10 @@ export default function DashboardPage() {
                   : '0'
 
                 return (
-                  <div key={`${tx.hash}:${tx.tokenTransfer?.contractAddress ?? 'native'}`} className="flex items-center justify-between py-3">
+                  <div
+                    key={`${tx.hash}:${tx.tokenTransfer?.contractAddress ?? 'native'}`}
+                    className="flex items-center justify-between py-3"
+                  >
                     <div className="flex items-center gap-3">
                       {/* Direction icon: arrow up-right (sent) / arrow down-left (received) */}
                       <div
@@ -323,11 +325,7 @@ export default function DashboardPage() {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d={
-                              isSent
-                                ? 'M7 17L17 7M17 7H7M17 7V17'
-                                : 'M17 7L7 17M7 17H17M7 17V7'
-                            }
+                            d={isSent ? 'M7 17L17 7M17 7H7M17 7V17' : 'M17 7L7 17M7 17H17M7 17V7'}
                           />
                         </svg>
                       </div>
@@ -340,9 +338,7 @@ export default function DashboardPage() {
                         </p>
                         <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                           {isSent ? 'To ' : 'From '}
-                          {counterparty
-                            ? formatAddress(counterparty, 4)
-                            : 'Unknown'}
+                          {counterparty ? formatAddress(counterparty, 4) : 'Unknown'}
                         </p>
                       </div>
                     </div>
@@ -353,7 +349,8 @@ export default function DashboardPage() {
                           color: isSent ? 'rgb(var(--foreground))' : 'rgb(var(--success))',
                         }}
                       >
-                        {isSent ? '-' : '+'}{displayAmount} {tokenSymbol}
+                        {isSent ? '-' : '+'}
+                        {displayAmount} {tokenSymbol}
                       </p>
                       <p className="text-xs" style={{ color: 'rgb(var(--muted-foreground))' }}>
                         {formatRelativeTime(tx.timestamp)}

@@ -48,10 +48,7 @@ const WALLET_METHODS = new Set([
 ])
 
 /** Methods that can be served from local cached state */
-const CACHED_METHODS = new Set([
-  'eth_accounts',
-  'eth_chainId',
-])
+const CACHED_METHODS = new Set(['eth_accounts', 'eth_chainId'])
 
 /** Read-only methods that don't need wallet connection */
 const READ_ONLY_METHODS = new Set([

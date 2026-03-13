@@ -200,11 +200,7 @@ export class PaymasterSigner {
 
     // Compute hash using SDK core — use override address if provided (must match deployed contract)
     const effectiveAddress = overridePaymasterAddress ?? this.paymasterAddress
-    const domainSeparator = computePaymasterDomainSeparator(
-      chainId,
-      entryPoint,
-      effectiveAddress
-    )
+    const domainSeparator = computePaymasterDomainSeparator(chainId, entryPoint, effectiveAddress)
     const packedUserOp = toPackedForCoreHash(userOp)
     const userOpCoreHash = computeUserOpCoreHash(packedUserOp)
     const hash = computePaymasterHash(domainSeparator, userOpCoreHash, envelope)

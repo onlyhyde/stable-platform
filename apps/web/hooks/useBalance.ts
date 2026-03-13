@@ -67,16 +67,20 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
               functionName: 'balanceOf',
               args: [address],
             }),
-            publicClient.readContract({
-              address: token,
-              abi: erc20Abi,
-              functionName: 'symbol',
-            }).catch(() => 'TOKEN'),
-            publicClient.readContract({
-              address: token,
-              abi: erc20Abi,
-              functionName: 'decimals',
-            }).catch(() => 18),
+            publicClient
+              .readContract({
+                address: token,
+                abi: erc20Abi,
+                functionName: 'symbol',
+              })
+              .catch(() => 'TOKEN'),
+            publicClient
+              .readContract({
+                address: token,
+                abi: erc20Abi,
+                functionName: 'decimals',
+              })
+              .catch(() => 18),
           ])
 
           if (id !== fetchIdRef.current) return
@@ -126,7 +130,7 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
           setDecimals(18)
         }
       }
-    } catch (err) {
+    } catch (_err) {
       if (id !== fetchIdRef.current) return
       setIsError(true)
     } finally {
@@ -134,7 +138,7 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
         setIsLoading(false)
       }
     }
-  }, [address, token, connector, publicClient, wagmiChainId])
+  }, [address, token, connector, publicClient])
 
   // Fetch on mount and when dependencies change
   useEffect(() => {
@@ -163,8 +167,9 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
       ethereum?: EventProvider
     }
 
-    const provider: EventProvider | undefined =
-      win.stablenet?.isStableNet ? win.stablenet : win.ethereum
+    const provider: EventProvider | undefined = win.stablenet?.isStableNet
+      ? win.stablenet
+      : win.ethereum
     if (!provider?.on) return
 
     const handleChainChanged = () => {
@@ -195,12 +200,13 @@ export function useBalance(options: UseBalanceOptions = {}): BalanceResult {
  * Resolve an RPC provider from wagmi connector or window globals.
  * Prefers window.stablenet over window.ethereum.
  */
-async function resolveProvider(
-  connector?: { getProvider?: () => Promise<unknown> }
-): Promise<{ request: (args: { method: string; params?: unknown[] }) => Promise<unknown> } | null> {
+async function resolveProvider(connector?: { getProvider?: () => Promise<unknown> }): Promise<{
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+} | null> {
   if (connector?.getProvider) {
     const p = (await connector.getProvider()) as { request?: (...args: unknown[]) => unknown }
-    if (p?.request) return p as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
+    if (p?.request)
+      return p as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
   }
 
   if (typeof window === 'undefined') return null
@@ -211,10 +217,14 @@ async function resolveProvider(
   }
 
   if (win.stablenet?.isStableNet && win.stablenet.request) {
-    return win.stablenet as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
+    return win.stablenet as {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+    }
   }
   if (win.ethereum?.request) {
-    return win.ethereum as { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
+    return win.ethereum as {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+    }
   }
 
   return null

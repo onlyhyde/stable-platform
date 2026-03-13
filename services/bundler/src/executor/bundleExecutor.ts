@@ -240,7 +240,13 @@ export class BundleExecutor {
       } catch (error) {
         // Parse revert data for better diagnostics (FailedOp / FailedOpWithRevert)
         const diagnostics = this.diagnosePreflightError(error, entry)
-        this.mempool.updateStatus(entry.userOpHash, 'dropped', undefined, undefined, diagnostics.message)
+        this.mempool.updateStatus(
+          entry.userOpHash,
+          'dropped',
+          undefined,
+          undefined,
+          diagnostics.message
+        )
 
         this.logger.warn(
           {
