@@ -27,7 +27,7 @@ vi.mock('../src/config/constants', () => ({
     autoDepositCooldownMs: 300000,
   })),
   PAYMASTER_ENV_VARS: { SUPPORTED_ENTRY_POINTS: 'SUPPORTED_ENTRY_POINTS' },
-  parseEntryPoints: vi.fn(() => ['0xEf6817fe73741A8F10088f9511c64b666a338A14']),
+  parseEntryPoints: vi.fn(() => ['0xD23Ee0D8E8DfabE76AA52a872Ce015B0BcAED6Ce']),
   getSettlementConfig: vi.fn(() => ({
     bundlerRpcUrl: undefined,
     settlementPollMs: 15000,
@@ -54,7 +54,7 @@ const TEST_CONFIG: PaymasterProxyConfig = {
   rpcUrl: 'http://localhost:8545',
   supportedChainIds: [8283],
   debug: false,
-  supportedEntryPoints: ['0xEf6817fe73741A8F10088f9511c64b666a338A14' as Address],
+  supportedEntryPoints: ['0xD23Ee0D8E8DfabE76AA52a872Ce015B0BcAED6Ce' as Address],
 }
 
 describe('App - JSON-RPC', () => {

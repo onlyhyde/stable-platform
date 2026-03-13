@@ -21,7 +21,7 @@ jest.mock('@stablenet/core', () => {
       EIP7702: 'eip7702',
       SMART_ACCOUNT: 'smartAccount',
     },
-    ENTRY_POINT_ADDRESS: '0xEf6817fe73741A8F10088f9511c64b666a338A14',
+    ENTRY_POINT_ADDRESS: '0xD23Ee0D8E8DfabE76AA52a872Ce015B0BcAED6Ce',
     DEFAULT_CALL_GAS_LIMIT: 100000n,
     DEFAULT_VERIFICATION_GAS_LIMIT: 200000n,
     DEFAULT_PRE_VERIFICATION_GAS: 50000n,
@@ -61,7 +61,7 @@ jest.mock('@stablenet/core', () => {
 
 jest.mock('@stablenet/contracts', () => ({
   isChainSupported: jest.fn().mockReturnValue(true),
-  getEntryPoint: jest.fn().mockReturnValue('0xEf6817fe73741A8F10088f9511c64b666a338A14'),
+  getEntryPoint: jest.fn().mockReturnValue('0xD23Ee0D8E8DfabE76AA52a872Ce015B0BcAED6Ce'),
 }))
 
 const mockAccount: TransactionAccountInfo = {

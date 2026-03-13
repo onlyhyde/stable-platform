@@ -12,7 +12,7 @@ vi.mock('../src/utils/logger', () => ({
   })),
 }))
 
-const ENTRY_POINT = '0xEf6817fe73741A8F10088f9511c64b666a338A14' as Address
+const ENTRY_POINT = '0xD23Ee0D8E8DfabE76AA52a872Ce015B0BcAED6Ce' as Address
 const PAYMASTER_ADDR = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address
 
 function createMockClient(balance: bigint): PublicClient {
