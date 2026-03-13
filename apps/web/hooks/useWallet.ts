@@ -14,24 +14,22 @@ export function useWallet() {
   const { switchChain, isPending: isSwitchPending } = useSwitchChain()
   const queryClient = useQueryClient()
 
-  // Invalidate all queries on account/chain change so data hooks refetch
+  // Invalidate all queries on account/chain change so data hooks refetch.
+  // The wagmi connector bridges EIP-1193 events to wagmi state automatically,
+  // but react-query caches (balances, tokens, etc.) need manual invalidation.
   useEffect(() => {
     if (!connector) return
 
-    const provider = connector.getProvider?.() as
-      | { on?: (e: string, fn: () => void) => void; removeListener?: (e: string, fn: () => void) => void }
-      | undefined
-
-    // getProvider() returns a Promise in wagmi v2+
-    let cleanup: (() => void) | undefined
+    let cancelled = false
+    let removeListeners: (() => void) | undefined
 
     const setupListeners = async () => {
-      const resolved = await (connector.getProvider?.() as Promise<{
+      const resolved = await connector.getProvider?.() as {
         on?: (e: string, fn: () => void) => void
         removeListener?: (e: string, fn: () => void) => void
-      } | undefined>)
+      } | undefined
 
-      if (!resolved?.on) return
+      if (cancelled || !resolved?.on) return
 
       const invalidate = () => {
         queryClient.invalidateQueries({ type: 'active' })
@@ -40,7 +38,7 @@ export function useWallet() {
       resolved.on('accountsChanged', invalidate)
       resolved.on('chainChanged', invalidate)
 
-      cleanup = () => {
+      removeListeners = () => {
         resolved.removeListener?.('accountsChanged', invalidate)
         resolved.removeListener?.('chainChanged', invalidate)
       }
@@ -49,7 +47,8 @@ export function useWallet() {
     setupListeners()
 
     return () => {
-      cleanup?.()
+      cancelled = true
+      removeListeners?.()
     }
   }, [connector, queryClient])
 

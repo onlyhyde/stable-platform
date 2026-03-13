@@ -92,11 +92,11 @@ useEffect(() => {
 
 **잠재 이슈**:
 - `connector`가 undefined인 시점에 `setProvider(null)` → 이후 `sendUserOp` 호출 시 null 에러
-- `connector.getProvider()`가 generic EIP-1193 provider를 반환할 수 있음 → `as unknown as StableNetProvider` 캐스팅이 런타임에서 메서드 누락 발생 가능
+- ~~`connector.getProvider()`가 generic EIP-1193 provider를 반환할 수 있음 → `as unknown as StableNetProvider` 캐스팅이 런타임에서 메서드 누락 발생 가능~~ **해결됨**: provider 타입을 `EIP1193Provider`로 변경, `request()` 메서드만 사용
 - `connector` 변경 시 effect 재실행되지만, 이전 provider가 정리(cleanup)되지 않음
 
 **검증 항목**:
-- [ ] 지갑 연결 후 `connector.getProvider()`가 `sendUserOp` 메서드를 가진 provider를 반환하는지
+- [x] ~~지갑 연결 후 `connector.getProvider()`가 `sendUserOp` 메서드를 가진 provider를 반환하는지~~ **수정됨**: `provider.request({ method: 'eth_sendTransaction' })` 방식으로 변경, `sendTransaction()` 메서드 의존 제거
 - [ ] 지갑 연결 전 상태에서 UserOp 관련 UI가 올바르게 disabled 되는지
 - [ ] MetaMask 등 다른 지갑 연결 시에도 provider가 올바르게 설정되는지
 
@@ -131,11 +131,13 @@ setupListeners()
 ```
 
 **잠재 이슈**:
-- `setupListeners()`가 async → cleanup 함수가 설정되기 전에 useEffect return 실행될 수 있음
+- ~~`setupListeners()`가 async → cleanup 함수가 설정되기 전에 useEffect return 실행될 수 있음~~ **해결됨**: `cancelled` flag 패턴으로 race condition 방지
 - wallet-sdk의 `onNetworkChange`/`onAccountChange`는 내부적으로 debounce/normalize할 수 있지만, raw `on('chainChanged')` 는 그렇지 않음
-- `connector`가 변경되면 이전 provider의 listener가 정리되지 않을 수 있음 (race condition)
+- ~~`connector`가 변경되면 이전 provider의 listener가 정리되지 않을 수 있음 (race condition)~~ **해결됨**: cleanup에서 `cancelled = true` 설정 → async 완료 후 listener 등록 방지
 
 **검증 항목**:
+- [x] ~~async cleanup race condition~~ **수정됨**: `cancelled` flag로 stale effect에서 listener 등록 차단
+- [x] ~~dead code 제거~~ **수정됨**: 미사용 동기 `getProvider()` 호출 제거
 - [ ] 체인 변경 시 잔고/트랜잭션 데이터가 즉시 갱신되는지
 - [ ] 계정 변경 시 주소와 잔고가 올바르게 업데이트되는지
 - [ ] 빠른 체인 전환 시 listener leak 발생하지 않는지
@@ -158,10 +160,11 @@ connector.getProvider().then((p) => setProvider(p as unknown as StableNetProvide
 ```
 
 **잠재 이슈**:
-- useUserOp.ts와 동일한 패턴 → 동일한 이슈 (connector undefined, type casting)
+- ~~useUserOp.ts와 동일한 패턴 → 동일한 이슈 (connector undefined, type casting)~~ **해결됨**: provider 타입을 `EIP1193Provider`로 변경
 - Batch 모드에서 multiple UserOp을 순차 전송할 때 provider 상태 일관성 문제
 
 **검증 항목**:
+- [x] ~~type casting 이슈~~ **수정됨**: `StableNetProvider` → `EIP1193Provider`로 변경, `request()` 메서드만 사용
 - [ ] Batch 전송이 정상 동작하는지
 - [ ] 단일 전송 → Batch 전환 시 provider가 유지되는지
 
@@ -188,15 +191,16 @@ stable-platform:
 ```
 
 **잠재 이슈**:
-- `publicClient`의 RPC URL이 현재 체인과 불일치하면 잔고 전부 0 표시
-- `getDefaultTokens(chainId)` 결과가 비어있으면 ERC-20 토큰이 표시 안됨
-- `chainChanged`/`accountsChanged` 이벤트 구독 제거 → `useWallet`에서만 처리되는데 타이밍 차이 가능
-- `useStableNetContext().chainId` 사용 → `useChainId()` (wagmi) 와 값이 다를 수 있음
+- ~~`publicClient`의 RPC URL이 현재 체인과 불일치하면 잔고 전부 0 표시~~ **확인됨**: StableNetProvider.tsx에서 `useMemo([currentChainId])`로 체인 변경 시 publicClient 재생성
+- `getDefaultTokens(chainId)` 결과가 비어있으면 ERC-20 토큰이 표시 안됨 — 런타임 확인 필요
+- ~~`chainChanged`/`accountsChanged` 이벤트 구독 제거~~ **확인됨**: useEffect에서 `currentChainId` 의존성으로 체인 변경 시 refetch 정상 동작. `useWallet`의 `queryClient.invalidateQueries()`도 병행
+- ~~`useStableNetContext().chainId` 사용 → `useChainId()` 와 값이 다를 수 있음~~ **확인됨**: StableNetProvider.tsx가 `useChainId()`에서 값을 받아 context에 전달하므로 동일 소스
 
 **검증 항목**:
-- [ ] 대시보드에서 USDC 등 ERC-20 토큰 잔고가 표시되는지
-- [ ] 체인 전환 후 토큰 목록이 갱신되는지
-- [ ] `getDefaultTokens(8283)` 이 올바른 토큰 목록을 반환하는지
+- [x] ~~publicClient RPC 불일치~~ **확인됨**: 체인 변경 시 publicClient 재생성 정상
+- [x] ~~이벤트 구독 제거 영향~~ **확인됨**: useEffect 의존성 + useWallet invalidation으로 커버
+- [ ] 대시보드에서 USDC 등 ERC-20 토큰 잔고가 표시되는지 (런타임 확인 필요)
+- [ ] `getDefaultTokens(8283)` 이 올바른 토큰 목록을 반환하는지 (런타임 확인 필요)
 
 ---
 
@@ -218,12 +222,13 @@ await publicClient.readContract({
 ```
 
 **잠재 이슈**:
-- `publicClient`가 null이면 fallback 경로를 타야 하는데, fallback 코드가 제대로 유지되었는지 확인 필요
-- 체인 전환 시 `publicClient`가 이전 체인의 RPC를 가리킬 수 있음
+- ~~`publicClient`가 null이면 fallback 경로를 타야 하는데, fallback 코드가 제대로 유지되었는지 확인 필요~~ **확인됨**: fallback 경로 (line 96-127) 정상 구현. `resolveProvider(connector)` → raw RPC 사용
+- ~~체인 전환 시 `publicClient`가 이전 체인의 RPC를 가리킬 수 있음~~ **확인됨**: wagmi `usePublicClient()`가 체인 변경 시 자동 갱신 + `chainChanged` 이벤트 구독으로 refetch
 
 **검증 항목**:
-- [ ] Payment Send 페이지에서 잔고가 올바르게 표시되는지
-- [ ] 토큰 잔고와 native 잔고가 모두 정상인지
+- [x] ~~publicClient null fallback~~ **확인됨**: raw RPC fallback 정상 구현
+- [x] ~~체인 전환 시 stale publicClient~~ **확인됨**: wagmi 자동 갱신 + 이벤트 리스너
+- [ ] Payment Send 페이지에서 잔고가 올바르게 표시되는지 (런타임 확인 필요)
 
 ---
 
@@ -244,12 +249,13 @@ await publicClient.readContract({ abi: erc20Abi, functionName: 'balanceOf', ... 
 ```
 
 **잠재 이슈**:
-- Indexer 의존 제거는 좋지만, `getDefaultTokens()`에 없는 토큰은 표시 불가
-- publicClient 가용성에 의존
+- Indexer 의존 제거는 좋지만, `getDefaultTokens()`에 없는 토큰은 표시 불가 — 의도된 제한사항
+- ~~publicClient 가용성에 의존~~ **확인됨**: StableNetProvider에서 항상 제공
 
 **검증 항목**:
-- [ ] Swap 페이지에서 토큰 목록이 올바르게 표시되는지
-- [ ] 커스텀 토큰 (getDefaultTokens에 없는) 처리가 필요한지
+- [x] ~~publicClient 가용성~~ **확인됨**: StableNetProvider 컨텍스트에서 항상 제공
+- [ ] Swap 페이지에서 토큰 목록이 올바르게 표시되는지 (런타임 확인 필요)
+- [ ] 커스텀 토큰 (getDefaultTokens에 없는) 처리가 필요한지 — 현재는 known tokens만 지원 (의도적)
 
 ---
 
@@ -274,8 +280,8 @@ const chain = currentChainId === 82830 ? stablenetTestnet
 - 이 publicClient를 사용하는 모든 hook에 영향
 
 **검증 항목**:
-- [ ] 앱 시작 시 올바른 chainId로 publicClient가 생성되는지
-- [ ] Settings에서 체인 변경 시 publicClient가 갱신되는지
+- [x] 앱 시작 시 올바른 chainId로 publicClient가 생성되는지 — **확인됨**: wagmi `useChainId()`가 config 기본 체인 반환, `currentChainId || 8283` fallback 정상
+- [x] Settings에서 체인 변경 시 publicClient가 갱신되는지 — **확인됨**: `useMemo([currentChainId])` 의존성으로 체인 변경 시 재생성
 
 ---
 

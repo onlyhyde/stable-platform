@@ -1,8 +1,8 @@
 'use client'
 
-import { createBundlerClient, type StableNetProvider } from '@stablenet/wallet-sdk'
+import { createBundlerClient } from '@stablenet/wallet-sdk'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Address, Hex } from 'viem'
+import type { Address, EIP1193Provider, Hex } from 'viem'
 import { parseEther } from 'viem'
 import { useAccount } from 'wagmi'
 import { useStableNetContext } from '@/providers'
@@ -90,9 +90,11 @@ export function useUserOp() {
   const { connector } = useAccount()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
-  const [provider, setProvider] = useState<StableNetProvider | null>(null)
+  const [provider, setProvider] = useState<EIP1193Provider | null>(null)
 
   // Get provider from wagmi connector (shared with useWallet)
+  // Note: wagmi connector returns the inpage EIP-1193 provider, not
+  // the wallet-sdk StableNetProvider class. Use request() only.
   useEffect(() => {
     if (!connector) {
       setProvider(null)
@@ -102,7 +104,7 @@ export function useUserOp() {
     connector
       .getProvider()
       .then((p) => {
-        if (p) setProvider(p as unknown as StableNetProvider)
+        if (p) setProvider(p as EIP1193Provider)
       })
       .catch(() => {
         setProvider(null)
@@ -138,8 +140,8 @@ export function useUserOp() {
         if (hasPaymaster) {
           // Use eth_sendUserOperation — extension handles Kernel calldata wrapping,
           // nonce, gas estimation, sponsorAndSign, and bundler submission
-          const hash = await provider.request<Hex>({
-            method: 'eth_sendUserOperation',
+          const hash = (await provider.request({
+            method: 'eth_sendUserOperation' as 'eth_sendTransaction',
             params: [
               {
                 sender,
@@ -149,8 +151,8 @@ export function useUserOp() {
                 gasPayment: params.gasPayment,
               },
               entryPoint,
-            ],
-          })
+            ] as unknown as [{ from: Address; to: Address }],
+          })) as Hex
 
           return {
             userOpHash: hash as Hex,
@@ -161,15 +163,19 @@ export function useUserOp() {
         }
 
         // Fallback: regular eth_sendTransaction (extension auto-detects smart account)
-        const txHash = await provider.sendTransaction(
-          {
-            from: sender,
-            to: params.to,
-            value: params.value,
-            data: params.data,
-          },
-          { waitForConfirmation: true }
-        )
+        // Use provider.request() directly since the wagmi connector returns the
+        // inpage EIP-1193 provider, not the wallet-sdk StableNetProvider class.
+        const txHash = (await provider.request({
+          method: 'eth_sendTransaction',
+          params: [
+            {
+              from: sender,
+              to: params.to,
+              value: params.value ? `0x${params.value.toString(16)}` : '0x0',
+              data: params.data ?? '0x',
+            },
+          ],
+        })) as Hex
 
         return {
           userOpHash: txHash as Hex,

@@ -1,8 +1,7 @@
 'use client'
 
-import type { StableNetProvider } from '@stablenet/wallet-sdk'
 import { useCallback, useEffect, useState } from 'react'
-import type { Address, Hex } from 'viem'
+import type { Address, EIP1193Provider, Hex } from 'viem'
 import {
   encodeAbiParameters,
   encodeFunctionData,
@@ -157,7 +156,7 @@ export function useBatchTransaction(): UseBatchTransactionReturn {
   const { status } = useSmartAccount()
   const { entryPoint } = useStableNetContext()
 
-  const [provider, setProvider] = useState<StableNetProvider | null>(null)
+  const [provider, setProvider] = useState<EIP1193Provider | null>(null)
   const [recipients, setRecipients] = useState<BatchRecipient[]>([
     createRecipient(),
     createRecipient(),
@@ -175,7 +174,7 @@ export function useBatchTransaction(): UseBatchTransactionReturn {
     connector
       .getProvider()
       .then((p) => {
-        if (p) setProvider(p as unknown as StableNetProvider)
+        if (p) setProvider(p as EIP1193Provider)
       })
       .catch(() => {
         setProvider(null)
@@ -253,8 +252,8 @@ export function useBatchTransaction(): UseBatchTransactionReturn {
           })
 
           // Send through extension's eth_sendUserOperation with pre-encoded callData
-          const hash = await provider.request<Hex>({
-            method: 'eth_sendUserOperation',
+          const hash = (await provider.request({
+            method: 'eth_sendUserOperation' as 'eth_sendTransaction',
             params: [
               {
                 sender: address,
@@ -262,10 +261,10 @@ export function useBatchTransaction(): UseBatchTransactionReturn {
                 gasPayment: params.gasPayment,
               },
               entryPoint,
-            ],
-          })
+            ] as unknown as [{ from: Address; to: Address }],
+          })) as Hex
 
-          return { success: true, txHash: hash as Hex }
+          return { success: true, txHash: hash }
         }
 
         if (!walletClient || !publicClient) {
